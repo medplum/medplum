@@ -1,12 +1,15 @@
 {
-  "resourceName": "SpecimenDefinition",
+  "name": "SpecimenDefinition",
+  "location": "resource",
   "description": "A kind of specimen with associated set of requirements.",
   "properties": [
     {
       "name": "SpecimenDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SpecimenDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SpecimenDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SpecimenDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SpecimenDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "typeCollected",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeCollected",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "patientPreparation",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.patientPreparation",
       "min": 0,
@@ -182,7 +214,9 @@
       "name": "timeAspect",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.timeAspect",
       "min": 0,
@@ -196,7 +230,10 @@
       "name": "collection",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.collection",
       "min": 0,
@@ -210,7 +247,9 @@
       "name": "typeTested",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SpecimenDefinition.typeTested",
       "min": 0,
@@ -224,7 +263,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.id",
       "min": 0,
@@ -239,7 +280,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.extension",
       "min": 0,
@@ -254,7 +298,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.modifierExtension",
       "min": 0,
@@ -269,7 +316,9 @@
       "name": "isDerived",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.isDerived",
       "min": 0,
@@ -283,7 +332,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.type",
       "min": 0,
@@ -297,7 +349,9 @@
       "name": "preference",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.preference",
       "min": 1,
@@ -311,7 +365,9 @@
       "name": "container",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container",
       "min": 0,
@@ -325,7 +381,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.id",
       "min": 0,
@@ -340,7 +398,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.extension",
       "min": 0,
@@ -355,7 +416,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.modifierExtension",
       "min": 0,
@@ -370,7 +434,10 @@
       "name": "material",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.material",
       "min": 0,
@@ -384,7 +451,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.type",
       "min": 0,
@@ -398,7 +468,10 @@
       "name": "cap",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.cap",
       "min": 0,
@@ -412,7 +485,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.description",
       "min": 0,
@@ -426,7 +501,10 @@
       "name": "capacity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.capacity",
       "min": 0,
@@ -440,8 +518,13 @@
       "name": "minimumVolume[x]",
       "depth": 3,
       "types": [
-        "Quantity",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
       "min": 0,
@@ -455,7 +538,9 @@
       "name": "additive",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.additive",
       "min": 0,
@@ -469,7 +554,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.additive.id",
       "min": 0,
@@ -484,7 +571,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.additive.extension",
       "min": 0,
@@ -499,7 +589,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.additive.modifierExtension",
       "min": 0,
@@ -514,11 +607,20 @@
       "name": "additive[x]",
       "depth": 4,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Substance"
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
       "min": 1,
@@ -532,7 +634,9 @@
       "name": "preparation",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.container.preparation",
       "min": 0,
@@ -546,7 +650,9 @@
       "name": "requirement",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.requirement",
       "min": 0,
@@ -560,7 +666,10 @@
       "name": "retentionTime",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.retentionTime",
       "min": 0,
@@ -574,7 +683,10 @@
       "name": "rejectionCriterion",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.rejectionCriterion",
       "min": 0,
@@ -588,7 +700,9 @@
       "name": "handling",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling",
       "min": 0,
@@ -602,7 +716,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.id",
       "min": 0,
@@ -617,7 +733,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.extension",
       "min": 0,
@@ -632,7 +751,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.modifierExtension",
       "min": 0,
@@ -647,7 +769,10 @@
       "name": "temperatureQualifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
       "min": 0,
@@ -661,7 +786,10 @@
       "name": "temperatureRange",
       "depth": 3,
       "types": [
-        "Range"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.temperatureRange",
       "min": 0,
@@ -675,7 +803,10 @@
       "name": "maxDuration",
       "depth": 3,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.maxDuration",
       "min": 0,
@@ -689,7 +820,9 @@
       "name": "instruction",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SpecimenDefinition.typeTested.handling.instruction",
       "min": 0,

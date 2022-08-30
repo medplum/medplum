@@ -1,12 +1,15 @@
 {
-  "resourceName": "CommunicationRequest",
+  "name": "CommunicationRequest",
+  "location": "resource",
   "description": "A request to convey information; e.g. the CDS system proposes that an alert be sent to a responsible provider, the CDS system proposes that the public health agency be notified about a reportable condition.",
   "properties": [
     {
       "name": "CommunicationRequest",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CommunicationRequest",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CommunicationRequest.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CommunicationRequest.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CommunicationRequest.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CommunicationRequest.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.identifier",
       "min": 0,
@@ -154,10 +180,15 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CommunicationRequest.basedOn",
       "min": 0,
@@ -171,10 +202,16 @@
       "name": "replaces",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CommunicationRequest"
+        {
+          "datatype": "CommunicationRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.replaces",
       "min": 0,
@@ -188,7 +225,10 @@
       "name": "groupIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.groupIdentifier",
       "min": 0,
@@ -202,7 +242,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CommunicationRequest.status",
       "min": 1,
@@ -216,7 +258,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.statusReason",
       "min": 0,
@@ -230,7 +275,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.category",
       "min": 0,
@@ -244,7 +292,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CommunicationRequest.priority",
       "min": 0,
@@ -258,7 +308,9 @@
       "name": "doNotPerform",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CommunicationRequest.doNotPerform",
       "min": 0,
@@ -272,7 +324,10 @@
       "name": "medium",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.medium",
       "min": 0,
@@ -286,11 +341,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.subject",
       "min": 0,
@@ -304,10 +368,15 @@
       "name": "about",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CommunicationRequest.about",
       "min": 0,
@@ -321,10 +390,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.encounter",
       "min": 0,
@@ -338,7 +413,9 @@
       "name": "payload",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CommunicationRequest.payload",
       "min": 0,
@@ -352,7 +429,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CommunicationRequest.payload.id",
       "min": 0,
@@ -367,7 +446,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.payload.extension",
       "min": 0,
@@ -382,7 +464,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.payload.modifierExtension",
       "min": 0,
@@ -397,12 +482,22 @@
       "name": "content[x]",
       "depth": 2,
       "types": [
-        "string",
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CommunicationRequest.payload.content[x]",
       "min": 1,
@@ -416,8 +511,13 @@
       "name": "occurrence[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.occurrence[x]",
       "min": 0,
@@ -431,7 +531,9 @@
       "name": "authoredOn",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CommunicationRequest.authoredOn",
       "min": 0,
@@ -445,15 +547,36 @@
       "name": "requester",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.requester",
       "min": 0,
@@ -467,18 +590,48 @@
       "name": "recipient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson",
-        "Group",
-        "CareTeam",
-        "HealthcareService"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.recipient",
       "min": 0,
@@ -492,16 +645,40 @@
       "name": "sender",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson",
-        "HealthcareService"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.sender",
       "min": 0,
@@ -515,7 +692,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.reasonCode",
       "min": 0,
@@ -529,13 +709,28 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CommunicationRequest.reasonReference",
       "min": 0,
@@ -549,7 +744,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CommunicationRequest.note",
       "min": 0,

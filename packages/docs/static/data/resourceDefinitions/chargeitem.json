@@ -1,12 +1,15 @@
 {
-  "resourceName": "ChargeItem",
+  "name": "ChargeItem",
+  "location": "resource",
   "description": "The resource ChargeItem describes the provision of healthcare provider products for a certain patient, therefore referring not only to the product, but containing in addition details of the provision, like date, time, amounts and participating organizations and persons. Main Usage of the ChargeItem is to enable the billing process and internal cost allocation.",
   "properties": [
     {
       "name": "ChargeItem",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ChargeItem",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItem.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ChargeItem.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ChargeItem.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ChargeItem.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "definitionUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ChargeItem.definitionUri",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "definitionCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ChargeItem.definitionCanonical",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ChargeItem.status",
       "min": 1,
@@ -196,10 +228,16 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ChargeItem"
+        {
+          "datatype": "ChargeItem",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.partOf",
       "min": 0,
@@ -213,7 +251,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.code",
       "min": 1,
@@ -227,11 +268,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.subject",
       "min": 1,
@@ -245,11 +295,20 @@
       "name": "context",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter",
-        "EpisodeOfCare"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "EpisodeOfCare",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.context",
       "min": 0,
@@ -263,9 +322,17 @@
       "name": "occurrence[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.occurrence[x]",
       "min": 0,
@@ -279,7 +346,9 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ChargeItem.performer",
       "min": 0,
@@ -293,7 +362,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItem.performer.id",
       "min": 0,
@@ -308,7 +379,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.performer.extension",
       "min": 0,
@@ -323,7 +397,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.performer.modifierExtension",
       "min": 0,
@@ -338,7 +415,10 @@
       "name": "function",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.performer.function",
       "min": 0,
@@ -352,16 +432,40 @@
       "name": "actor",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "CareTeam",
-        "Patient",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.performer.actor",
       "min": 1,
@@ -375,10 +479,16 @@
       "name": "performingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.performingOrganization",
       "min": 0,
@@ -392,10 +502,16 @@
       "name": "requestingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.requestingOrganization",
       "min": 0,
@@ -409,10 +525,16 @@
       "name": "costCenter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.costCenter",
       "min": 0,
@@ -426,7 +548,10 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.quantity",
       "min": 0,
@@ -440,7 +565,10 @@
       "name": "bodysite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.bodysite",
       "min": 0,
@@ -454,7 +582,9 @@
       "name": "factorOverride",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ChargeItem.factorOverride",
       "min": 0,
@@ -468,7 +598,10 @@
       "name": "priceOverride",
       "depth": 1,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.priceOverride",
       "min": 0,
@@ -482,7 +615,9 @@
       "name": "overrideReason",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItem.overrideReason",
       "min": 0,
@@ -496,15 +631,36 @@
       "name": "enterer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.enterer",
       "min": 0,
@@ -518,7 +674,9 @@
       "name": "enteredDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ChargeItem.enteredDate",
       "min": 0,
@@ -532,7 +690,10 @@
       "name": "reason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.reason",
       "min": 0,
@@ -546,17 +707,44 @@
       "name": "service",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DiagnosticReport",
-        "ImagingStudy",
-        "Immunization",
-        "MedicationAdministration",
-        "MedicationDispense",
-        "Observation",
-        "Procedure",
-        "SupplyDelivery"
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImagingStudy",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationAdministration",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationDispense",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "SupplyDelivery",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.service",
       "min": 0,
@@ -570,13 +758,28 @@
       "name": "product[x]",
       "depth": 1,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Medication",
-        "Substance"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.product[x]",
       "min": 0,
@@ -590,10 +793,16 @@
       "name": "account",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Account"
+        {
+          "datatype": "Account",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItem.account",
       "min": 0,
@@ -607,7 +816,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItem.note",
       "min": 0,
@@ -621,10 +833,15 @@
       "name": "supportingInformation",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ChargeItem.supportingInformation",
       "min": 0,

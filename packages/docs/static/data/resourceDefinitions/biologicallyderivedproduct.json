@@ -1,12 +1,15 @@
 {
-  "resourceName": "BiologicallyDerivedProduct",
+  "name": "BiologicallyDerivedProduct",
+  "location": "resource",
   "description": "A material substance originating from a biological entity intended to be transplanted or infused\ninto another (possibly the same) biological entity.",
   "properties": [
     {
       "name": "BiologicallyDerivedProduct",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "BiologicallyDerivedProduct",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "BiologicallyDerivedProduct.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "BiologicallyDerivedProduct.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "productCategory",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "BiologicallyDerivedProduct.productCategory",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "productCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.productCode",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "BiologicallyDerivedProduct.status",
       "min": 0,
@@ -196,10 +229,16 @@
       "name": "request",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.request",
       "min": 0,
@@ -213,7 +252,9 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "BiologicallyDerivedProduct.quantity",
       "min": 0,
@@ -227,10 +268,16 @@
       "name": "parent",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "BiologicallyDerivedProduct"
+        {
+          "datatype": "BiologicallyDerivedProduct",
+          "documentLocation": "resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.parent",
       "min": 0,
@@ -244,7 +291,9 @@
       "name": "collection",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection",
       "min": 0,
@@ -258,7 +307,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.id",
       "min": 0,
@@ -273,7 +324,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.extension",
       "min": 0,
@@ -288,7 +342,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.modifierExtension",
       "min": 0,
@@ -303,11 +360,20 @@
       "name": "collector",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.collector",
       "min": 0,
@@ -321,11 +387,20 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.source",
       "min": 0,
@@ -339,8 +414,13 @@
       "name": "collected[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.collection.collected[x]",
       "min": 0,
@@ -354,7 +434,9 @@
       "name": "processing",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing",
       "min": 0,
@@ -368,7 +450,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.id",
       "min": 0,
@@ -383,7 +467,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.extension",
       "min": 0,
@@ -398,7 +485,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.modifierExtension",
       "min": 0,
@@ -413,7 +503,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.description",
       "min": 0,
@@ -427,7 +519,10 @@
       "name": "procedure",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.procedure",
       "min": 0,
@@ -441,10 +536,16 @@
       "name": "additive",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Substance"
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.additive",
       "min": 0,
@@ -458,8 +559,13 @@
       "name": "time[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.processing.time[x]",
       "min": 0,
@@ -473,7 +579,9 @@
       "name": "manipulation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation",
       "min": 0,
@@ -487,7 +595,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation.id",
       "min": 0,
@@ -502,7 +612,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation.extension",
       "min": 0,
@@ -517,7 +630,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation.modifierExtension",
       "min": 0,
@@ -532,7 +648,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation.description",
       "min": 0,
@@ -546,8 +664,13 @@
       "name": "time[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.manipulation.time[x]",
       "min": 0,
@@ -561,7 +684,9 @@
       "name": "storage",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage",
       "min": 0,
@@ -575,7 +700,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.id",
       "min": 0,
@@ -590,7 +717,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.extension",
       "min": 0,
@@ -605,7 +735,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.modifierExtension",
       "min": 0,
@@ -620,7 +753,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.description",
       "min": 0,
@@ -634,7 +769,9 @@
       "name": "temperature",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.temperature",
       "min": 0,
@@ -648,7 +785,9 @@
       "name": "scale",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.scale",
       "min": 0,
@@ -662,7 +801,10 @@
       "name": "duration",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "BiologicallyDerivedProduct.storage.duration",
       "min": 0,
@@ -672,6 +814,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

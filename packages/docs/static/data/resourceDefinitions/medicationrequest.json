@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicationRequest",
+  "name": "MedicationRequest",
+  "location": "resource",
   "description": "An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called \"MedicationRequest\" rather than \"MedicationPrescription\" or \"MedicationOrder\" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns.",
   "properties": [
     {
       "name": "MedicationRequest",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicationRequest",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationRequest.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicationRequest.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationRequest.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicationRequest.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationRequest.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.statusReason",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationRequest.intent",
       "min": 1,
@@ -196,7 +229,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.category",
       "min": 0,
@@ -210,7 +246,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationRequest.priority",
       "min": 0,
@@ -224,7 +262,9 @@
       "name": "doNotPerform",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "MedicationRequest.doNotPerform",
       "min": 0,
@@ -238,15 +278,35 @@
       "name": "reported[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.reported[x]",
       "min": 0,
@@ -260,11 +320,20 @@
       "name": "medication[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.medication[x]",
       "min": 1,
@@ -278,11 +347,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.subject",
       "min": 1,
@@ -296,10 +374,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.encounter",
       "min": 0,
@@ -313,10 +397,15 @@
       "name": "supportingInformation",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicationRequest.supportingInformation",
       "min": 0,
@@ -330,7 +419,9 @@
       "name": "authoredOn",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicationRequest.authoredOn",
       "min": 0,
@@ -344,15 +435,36 @@
       "name": "requester",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.requester",
       "min": 0,
@@ -366,16 +478,40 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "Device",
-        "RelatedPerson",
-        "CareTeam"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.performer",
       "min": 0,
@@ -389,7 +525,10 @@
       "name": "performerType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.performerType",
       "min": 0,
@@ -403,11 +542,20 @@
       "name": "recorder",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.recorder",
       "min": 0,
@@ -421,7 +569,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.reasonCode",
       "min": 0,
@@ -435,11 +586,20 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.reasonReference",
       "min": 0,
@@ -453,7 +613,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "MedicationRequest.instantiatesCanonical",
       "min": 0,
@@ -467,7 +629,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicationRequest.instantiatesUri",
       "min": 0,
@@ -481,13 +645,28 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "MedicationRequest",
-        "ServiceRequest",
-        "ImmunizationRecommendation"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImmunizationRecommendation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.basedOn",
       "min": 0,
@@ -501,7 +680,10 @@
       "name": "groupIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.groupIdentifier",
       "min": 0,
@@ -515,7 +697,10 @@
       "name": "courseOfTherapyType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.courseOfTherapyType",
       "min": 0,
@@ -529,11 +714,20 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage",
-        "ClaimResponse"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.insurance",
       "min": 0,
@@ -547,7 +741,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.note",
       "min": 0,
@@ -561,7 +758,10 @@
       "name": "dosageInstruction",
       "depth": 1,
       "types": [
-        "Dosage"
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dosageInstruction",
       "min": 0,
@@ -575,7 +775,9 @@
       "name": "dispenseRequest",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest",
       "min": 0,
@@ -589,7 +791,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.id",
       "min": 0,
@@ -604,7 +808,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.extension",
       "min": 0,
@@ -619,7 +826,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.modifierExtension",
       "min": 0,
@@ -634,7 +844,9 @@
       "name": "initialFill",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill",
       "min": 0,
@@ -648,7 +860,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill.id",
       "min": 0,
@@ -663,7 +877,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill.extension",
       "min": 0,
@@ -678,7 +895,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
       "min": 0,
@@ -693,7 +913,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill.quantity",
       "min": 0,
@@ -707,7 +930,10 @@
       "name": "duration",
       "depth": 3,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.initialFill.duration",
       "min": 0,
@@ -721,7 +947,10 @@
       "name": "dispenseInterval",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.dispenseInterval",
       "min": 0,
@@ -735,7 +964,10 @@
       "name": "validityPeriod",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.validityPeriod",
       "min": 0,
@@ -749,7 +981,9 @@
       "name": "numberOfRepeatsAllowed",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
       "min": 0,
@@ -763,7 +997,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.quantity",
       "min": 0,
@@ -777,7 +1014,10 @@
       "name": "expectedSupplyDuration",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
       "min": 0,
@@ -791,10 +1031,16 @@
       "name": "performer",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.dispenseRequest.performer",
       "min": 0,
@@ -808,7 +1054,9 @@
       "name": "substitution",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationRequest.substitution",
       "min": 0,
@@ -822,7 +1070,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationRequest.substitution.id",
       "min": 0,
@@ -837,7 +1087,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.substitution.extension",
       "min": 0,
@@ -852,7 +1105,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.substitution.modifierExtension",
       "min": 0,
@@ -867,8 +1123,13 @@
       "name": "allowed[x]",
       "depth": 2,
       "types": [
-        "boolean",
-        "CodeableConcept"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.substitution.allowed[x]",
       "min": 1,
@@ -882,7 +1143,10 @@
       "name": "reason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationRequest.substitution.reason",
       "min": 0,
@@ -896,10 +1160,16 @@
       "name": "priorPrescription",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicationRequest"
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.priorPrescription",
       "min": 0,
@@ -913,10 +1183,16 @@
       "name": "detectedIssue",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DetectedIssue"
+        {
+          "datatype": "DetectedIssue",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.detectedIssue",
       "min": 0,
@@ -930,10 +1206,16 @@
       "name": "eventHistory",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Provenance"
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationRequest.eventHistory",
       "min": 0,

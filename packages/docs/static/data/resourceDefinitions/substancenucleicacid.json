@@ -1,12 +1,15 @@
 {
-  "resourceName": "SubstanceNucleicAcid",
+  "name": "SubstanceNucleicAcid",
+  "location": "resource",
   "description": "Nucleic acids are defined by three distinct elements: the base, sugar and linkage. Individual substance/moiety IDs will be created for each of these elements. The nucleotide sequence will be always entered in the 5’-3’ direction.",
   "properties": [
     {
       "name": "SubstanceNucleicAcid",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceNucleicAcid",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstanceNucleicAcid.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstanceNucleicAcid.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstanceNucleicAcid.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "sequenceType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.sequenceType",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "numberOfSubunits",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceNucleicAcid.numberOfSubunits",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "areaOfHybridisation",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.areaOfHybridisation",
       "min": 0,
@@ -182,7 +212,10 @@
       "name": "oligoNucleotideType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.oligoNucleotideType",
       "min": 0,
@@ -196,7 +229,9 @@
       "name": "subunit",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit",
       "min": 0,
@@ -210,7 +245,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.id",
       "min": 0,
@@ -225,7 +262,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.extension",
       "min": 0,
@@ -240,7 +280,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.modifierExtension",
       "min": 0,
@@ -255,7 +298,9 @@
       "name": "subunit",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.subunit",
       "min": 0,
@@ -269,7 +314,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sequence",
       "min": 0,
@@ -283,7 +330,9 @@
       "name": "length",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.length",
       "min": 0,
@@ -297,7 +346,10 @@
       "name": "sequenceAttachment",
       "depth": 2,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sequenceAttachment",
       "min": 0,
@@ -311,7 +363,10 @@
       "name": "fivePrime",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.fivePrime",
       "min": 0,
@@ -325,7 +380,10 @@
       "name": "threePrime",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.threePrime",
       "min": 0,
@@ -339,7 +397,9 @@
       "name": "linkage",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage",
       "min": 0,
@@ -353,7 +413,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.id",
       "min": 0,
@@ -368,7 +430,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.extension",
       "min": 0,
@@ -383,7 +448,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.modifierExtension",
       "min": 0,
@@ -398,7 +466,9 @@
       "name": "connectivity",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.connectivity",
       "min": 0,
@@ -412,7 +482,10 @@
       "name": "identifier",
       "depth": 3,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.identifier",
       "min": 0,
@@ -426,7 +499,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.name",
       "min": 0,
@@ -440,7 +515,9 @@
       "name": "residueSite",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.linkage.residueSite",
       "min": 0,
@@ -454,7 +531,9 @@
       "name": "sugar",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar",
       "min": 0,
@@ -468,7 +547,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.id",
       "min": 0,
@@ -483,7 +564,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.extension",
       "min": 0,
@@ -498,7 +582,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.modifierExtension",
       "min": 0,
@@ -513,7 +600,10 @@
       "name": "identifier",
       "depth": 3,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.identifier",
       "min": 0,
@@ -527,7 +617,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.name",
       "min": 0,
@@ -541,7 +633,9 @@
       "name": "residueSite",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceNucleicAcid.subunit.sugar.residueSite",
       "min": 0,
@@ -551,6 +645,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

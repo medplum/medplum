@@ -1,12 +1,15 @@
 {
-  "resourceName": "DetectedIssue",
+  "name": "DetectedIssue",
+  "location": "resource",
   "description": "Indicates an actual or potential clinical issue with or between one or more active or proposed clinical actions for a patient; e.g. Drug-drug interaction, Ineffective treatment frequency, Procedure-condition conflict, etc.",
   "properties": [
     {
       "name": "DetectedIssue",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "DetectedIssue",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DetectedIssue.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DetectedIssue.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DetectedIssue.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "DetectedIssue.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DetectedIssue.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.code",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "severity",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DetectedIssue.severity",
       "min": 0,
@@ -196,10 +229,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DetectedIssue.patient",
       "min": 0,
@@ -213,8 +252,13 @@
       "name": "identified[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.identified[x]",
       "min": 0,
@@ -228,12 +272,24 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DetectedIssue.author",
       "min": 0,
@@ -247,10 +303,15 @@
       "name": "implicated",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "DetectedIssue.implicated",
       "min": 0,
@@ -264,7 +325,9 @@
       "name": "evidence",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DetectedIssue.evidence",
       "min": 0,
@@ -278,7 +341,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DetectedIssue.evidence.id",
       "min": 0,
@@ -293,7 +358,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.evidence.extension",
       "min": 0,
@@ -308,7 +376,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.evidence.modifierExtension",
       "min": 0,
@@ -323,7 +394,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.evidence.code",
       "min": 0,
@@ -337,10 +411,15 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "DetectedIssue.evidence.detail",
       "min": 0,
@@ -354,7 +433,9 @@
       "name": "detail",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DetectedIssue.detail",
       "min": 0,
@@ -368,7 +449,9 @@
       "name": "reference",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DetectedIssue.reference",
       "min": 0,
@@ -382,7 +465,9 @@
       "name": "mitigation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DetectedIssue.mitigation",
       "min": 0,
@@ -396,7 +481,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DetectedIssue.mitigation.id",
       "min": 0,
@@ -411,7 +498,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.mitigation.extension",
       "min": 0,
@@ -426,7 +516,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.mitigation.modifierExtension",
       "min": 0,
@@ -441,7 +534,10 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DetectedIssue.mitigation.action",
       "min": 1,
@@ -455,7 +551,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "DetectedIssue.mitigation.date",
       "min": 0,
@@ -469,11 +567,20 @@
       "name": "author",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DetectedIssue.mitigation.author",
       "min": 0,

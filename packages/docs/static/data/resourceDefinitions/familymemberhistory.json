@@ -1,12 +1,15 @@
 {
-  "resourceName": "FamilyMemberHistory",
+  "name": "FamilyMemberHistory",
+  "location": "resource",
   "description": "Significant health conditions for a person related to the patient relevant in the context of care for the patient.",
   "properties": [
     {
       "name": "FamilyMemberHistory",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "FamilyMemberHistory",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "FamilyMemberHistory.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "FamilyMemberHistory.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "FamilyMemberHistory.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "FamilyMemberHistory.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "FamilyMemberHistory.instantiatesUri",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "FamilyMemberHistory.status",
       "min": 1,
@@ -196,7 +228,10 @@
       "name": "dataAbsentReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.dataAbsentReason",
       "min": 0,
@@ -210,10 +245,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "FamilyMemberHistory.patient",
       "min": 1,
@@ -227,7 +268,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "FamilyMemberHistory.date",
       "min": 0,
@@ -241,7 +284,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.name",
       "min": 0,
@@ -255,7 +300,10 @@
       "name": "relationship",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.relationship",
       "min": 1,
@@ -269,7 +317,10 @@
       "name": "sex",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.sex",
       "min": 0,
@@ -283,9 +334,16 @@
       "name": "born[x]",
       "depth": 1,
       "types": [
-        "Period",
-        "date",
-        "string"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.born[x]",
       "min": 0,
@@ -299,9 +357,17 @@
       "name": "age[x]",
       "depth": 1,
       "types": [
-        "Age",
-        "Range",
-        "string"
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.age[x]",
       "min": 0,
@@ -315,7 +381,9 @@
       "name": "estimatedAge",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "FamilyMemberHistory.estimatedAge",
       "min": 0,
@@ -329,11 +397,23 @@
       "name": "deceased[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "Age",
-        "Range",
-        "date",
-        "string"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.deceased[x]",
       "min": 0,
@@ -347,7 +427,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.reasonCode",
       "min": 0,
@@ -361,15 +444,36 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "AllergyIntolerance",
-        "QuestionnaireResponse",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "AllergyIntolerance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "FamilyMemberHistory.reasonReference",
       "min": 0,
@@ -383,7 +487,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.note",
       "min": 0,
@@ -397,7 +504,9 @@
       "name": "condition",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "FamilyMemberHistory.condition",
       "min": 0,
@@ -411,7 +520,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.condition.id",
       "min": 0,
@@ -426,7 +537,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.condition.extension",
       "min": 0,
@@ -441,7 +555,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.condition.modifierExtension",
       "min": 0,
@@ -456,7 +573,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.condition.code",
       "min": 1,
@@ -470,7 +590,10 @@
       "name": "outcome",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.condition.outcome",
       "min": 0,
@@ -484,7 +607,9 @@
       "name": "contributedToDeath",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "FamilyMemberHistory.condition.contributedToDeath",
       "min": 0,
@@ -498,10 +623,21 @@
       "name": "onset[x]",
       "depth": 2,
       "types": [
-        "Age",
-        "Range",
-        "Period",
-        "string"
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "FamilyMemberHistory.condition.onset[x]",
       "min": 0,
@@ -515,7 +651,10 @@
       "name": "note",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "FamilyMemberHistory.condition.note",
       "min": 0,

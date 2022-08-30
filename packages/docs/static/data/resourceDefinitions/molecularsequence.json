@@ -1,12 +1,15 @@
 {
-  "resourceName": "MolecularSequence",
+  "name": "MolecularSequence",
+  "location": "resource",
   "description": "Raw data describing a biological sequence.",
   "properties": [
     {
       "name": "MolecularSequence",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MolecularSequence",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MolecularSequence.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MolecularSequence.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.type",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "coordinateSystem",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.coordinateSystem",
       "min": 1,
@@ -182,10 +212,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.patient",
       "min": 0,
@@ -199,10 +235,16 @@
       "name": "specimen",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Specimen"
+        {
+          "datatype": "Specimen",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.specimen",
       "min": 0,
@@ -216,10 +258,16 @@
       "name": "device",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.device",
       "min": 0,
@@ -233,10 +281,16 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.performer",
       "min": 0,
@@ -250,7 +304,10 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quantity",
       "min": 0,
@@ -264,7 +321,9 @@
       "name": "referenceSeq",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.referenceSeq",
       "min": 0,
@@ -278,7 +337,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.id",
       "min": 0,
@@ -293,7 +354,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.extension",
       "min": 0,
@@ -308,7 +372,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.modifierExtension",
       "min": 0,
@@ -323,7 +390,10 @@
       "name": "chromosome",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.chromosome",
       "min": 0,
@@ -337,7 +407,9 @@
       "name": "genomeBuild",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.genomeBuild",
       "min": 0,
@@ -351,7 +423,9 @@
       "name": "orientation",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.orientation",
       "min": 0,
@@ -365,7 +439,10 @@
       "name": "referenceSeqId",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.referenceSeqId",
       "min": 0,
@@ -379,10 +456,16 @@
       "name": "referenceSeqPointer",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MolecularSequence"
+        {
+          "datatype": "MolecularSequence",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.referenceSeqPointer",
       "min": 0,
@@ -396,7 +479,9 @@
       "name": "referenceSeqString",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.referenceSeqString",
       "min": 0,
@@ -410,7 +495,9 @@
       "name": "strand",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.strand",
       "min": 0,
@@ -424,7 +511,9 @@
       "name": "windowStart",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.windowStart",
       "min": 0,
@@ -438,7 +527,9 @@
       "name": "windowEnd",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.referenceSeq.windowEnd",
       "min": 0,
@@ -452,7 +543,9 @@
       "name": "variant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.variant",
       "min": 0,
@@ -466,7 +559,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.variant.id",
       "min": 0,
@@ -481,7 +576,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.variant.extension",
       "min": 0,
@@ -496,7 +594,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.variant.modifierExtension",
       "min": 0,
@@ -511,7 +612,9 @@
       "name": "start",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.variant.start",
       "min": 0,
@@ -525,7 +628,9 @@
       "name": "end",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.variant.end",
       "min": 0,
@@ -539,7 +644,9 @@
       "name": "observedAllele",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.variant.observedAllele",
       "min": 0,
@@ -553,7 +660,9 @@
       "name": "referenceAllele",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.variant.referenceAllele",
       "min": 0,
@@ -567,7 +676,9 @@
       "name": "cigar",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.variant.cigar",
       "min": 0,
@@ -581,10 +692,16 @@
       "name": "variantPointer",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Observation"
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.variant.variantPointer",
       "min": 0,
@@ -598,7 +715,9 @@
       "name": "observedSeq",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.observedSeq",
       "min": 0,
@@ -612,7 +731,9 @@
       "name": "quality",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.quality",
       "min": 0,
@@ -626,7 +747,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.quality.id",
       "min": 0,
@@ -641,7 +764,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.extension",
       "min": 0,
@@ -656,7 +782,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.modifierExtension",
       "min": 0,
@@ -671,7 +800,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.quality.type",
       "min": 1,
@@ -685,7 +816,10 @@
       "name": "standardSequence",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.standardSequence",
       "min": 0,
@@ -699,7 +833,9 @@
       "name": "start",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.start",
       "min": 0,
@@ -713,7 +849,9 @@
       "name": "end",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.end",
       "min": 0,
@@ -727,7 +865,10 @@
       "name": "score",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.score",
       "min": 0,
@@ -741,7 +882,10 @@
       "name": "method",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.method",
       "min": 0,
@@ -755,7 +899,9 @@
       "name": "truthTP",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.truthTP",
       "min": 0,
@@ -769,7 +915,9 @@
       "name": "queryTP",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.queryTP",
       "min": 0,
@@ -783,7 +931,9 @@
       "name": "truthFN",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.truthFN",
       "min": 0,
@@ -797,7 +947,9 @@
       "name": "queryFP",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.queryFP",
       "min": 0,
@@ -811,7 +963,9 @@
       "name": "gtFP",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.gtFP",
       "min": 0,
@@ -825,7 +979,9 @@
       "name": "precision",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.precision",
       "min": 0,
@@ -839,7 +995,9 @@
       "name": "recall",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.recall",
       "min": 0,
@@ -853,7 +1011,9 @@
       "name": "fScore",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.fScore",
       "min": 0,
@@ -867,7 +1027,9 @@
       "name": "roc",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.quality.roc",
       "min": 0,
@@ -881,7 +1043,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.quality.roc.id",
       "min": 0,
@@ -896,7 +1060,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.roc.extension",
       "min": 0,
@@ -911,7 +1078,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.quality.roc.modifierExtension",
       "min": 0,
@@ -926,7 +1096,9 @@
       "name": "score",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.roc.score",
       "min": 0,
@@ -940,7 +1112,9 @@
       "name": "numTP",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.roc.numTP",
       "min": 0,
@@ -954,7 +1128,9 @@
       "name": "numFP",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.roc.numFP",
       "min": 0,
@@ -968,7 +1144,9 @@
       "name": "numFN",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.quality.roc.numFN",
       "min": 0,
@@ -982,7 +1160,9 @@
       "name": "precision",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.roc.precision",
       "min": 0,
@@ -996,7 +1176,9 @@
       "name": "sensitivity",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.roc.sensitivity",
       "min": 0,
@@ -1010,7 +1192,9 @@
       "name": "fMeasure",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "MolecularSequence.quality.roc.fMeasure",
       "min": 0,
@@ -1024,7 +1208,9 @@
       "name": "readCoverage",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.readCoverage",
       "min": 0,
@@ -1038,7 +1224,9 @@
       "name": "repository",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.repository",
       "min": 0,
@@ -1052,7 +1240,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.repository.id",
       "min": 0,
@@ -1067,7 +1257,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.repository.extension",
       "min": 0,
@@ -1082,7 +1275,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.repository.modifierExtension",
       "min": 0,
@@ -1097,7 +1293,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MolecularSequence.repository.type",
       "min": 1,
@@ -1111,7 +1309,9 @@
       "name": "url",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MolecularSequence.repository.url",
       "min": 0,
@@ -1125,7 +1325,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.repository.name",
       "min": 0,
@@ -1139,7 +1341,9 @@
       "name": "datasetId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.repository.datasetId",
       "min": 0,
@@ -1153,7 +1357,9 @@
       "name": "variantsetId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.repository.variantsetId",
       "min": 0,
@@ -1167,7 +1373,9 @@
       "name": "readsetId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.repository.readsetId",
       "min": 0,
@@ -1181,10 +1389,16 @@
       "name": "pointer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MolecularSequence"
+        {
+          "datatype": "MolecularSequence",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MolecularSequence.pointer",
       "min": 0,
@@ -1198,7 +1412,9 @@
       "name": "structureVariant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.structureVariant",
       "min": 0,
@@ -1212,7 +1428,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.structureVariant.id",
       "min": 0,
@@ -1227,7 +1445,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.extension",
       "min": 0,
@@ -1242,7 +1463,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.modifierExtension",
       "min": 0,
@@ -1257,7 +1481,10 @@
       "name": "variantType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.variantType",
       "min": 0,
@@ -1271,7 +1498,9 @@
       "name": "exact",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "MolecularSequence.structureVariant.exact",
       "min": 0,
@@ -1285,7 +1514,9 @@
       "name": "length",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.structureVariant.length",
       "min": 0,
@@ -1299,7 +1530,9 @@
       "name": "outer",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer",
       "min": 0,
@@ -1313,7 +1546,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer.id",
       "min": 0,
@@ -1328,7 +1563,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer.extension",
       "min": 0,
@@ -1343,7 +1581,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer.modifierExtension",
       "min": 0,
@@ -1358,7 +1599,9 @@
       "name": "start",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer.start",
       "min": 0,
@@ -1372,7 +1615,9 @@
       "name": "end",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.structureVariant.outer.end",
       "min": 0,
@@ -1386,7 +1631,9 @@
       "name": "inner",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner",
       "min": 0,
@@ -1400,7 +1647,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner.id",
       "min": 0,
@@ -1415,7 +1664,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner.extension",
       "min": 0,
@@ -1430,7 +1682,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner.modifierExtension",
       "min": 0,
@@ -1445,7 +1700,9 @@
       "name": "start",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner.start",
       "min": 0,
@@ -1459,7 +1716,9 @@
       "name": "end",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MolecularSequence.structureVariant.inner.end",
       "min": 0,

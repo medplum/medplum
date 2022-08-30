@@ -1,12 +1,15 @@
 {
-  "resourceName": "ImmunizationEvaluation",
+  "name": "ImmunizationEvaluation",
+  "location": "resource",
   "description": "Describes a comparison of an immunization event against published recommendations to determine if the administration is \"valid\" in relation to those  recommendations.",
   "properties": [
     {
       "name": "ImmunizationEvaluation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ImmunizationEvaluation",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationEvaluation.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ImmunizationEvaluation.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImmunizationEvaluation.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImmunizationEvaluation.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImmunizationEvaluation.status",
       "min": 1,
@@ -168,10 +196,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationEvaluation.patient",
       "min": 1,
@@ -185,7 +219,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImmunizationEvaluation.date",
       "min": 0,
@@ -199,10 +235,16 @@
       "name": "authority",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationEvaluation.authority",
       "min": 0,
@@ -216,7 +258,10 @@
       "name": "targetDisease",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.targetDisease",
       "min": 1,
@@ -230,10 +275,16 @@
       "name": "immunizationEvent",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Immunization"
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationEvaluation.immunizationEvent",
       "min": 1,
@@ -247,7 +298,10 @@
       "name": "doseStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.doseStatus",
       "min": 1,
@@ -261,7 +315,10 @@
       "name": "doseStatusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationEvaluation.doseStatusReason",
       "min": 0,
@@ -275,7 +332,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationEvaluation.description",
       "min": 0,
@@ -289,7 +348,9 @@
       "name": "series",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationEvaluation.series",
       "min": 0,
@@ -303,8 +364,12 @@
       "name": "doseNumber[x]",
       "depth": 1,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationEvaluation.doseNumber[x]",
       "min": 0,
@@ -318,8 +383,12 @@
       "name": "seriesDoses[x]",
       "depth": 1,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationEvaluation.seriesDoses[x]",
       "min": 0,

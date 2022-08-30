@@ -1,12 +1,15 @@
 {
-  "resourceName": "StructureDefinition",
+  "name": "StructureDefinition",
+  "location": "resource",
   "description": "A definition of a FHIR structure. This resource is used to describe the underlying resources, data types defined in FHIR, and also for describing extensions and constraints on resources and data types.",
   "properties": [
     {
       "name": "StructureDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "StructureDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "StructureDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureDefinition.url",
       "min": 1,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.name",
       "min": 1,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "StructureDefinition.experimental",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "StructureDefinition.date",
       "min": 0,
@@ -252,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.publisher",
       "min": 0,
@@ -266,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.contact",
       "min": 0,
@@ -280,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureDefinition.description",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.useContext",
       "min": 0,
@@ -308,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.jurisdiction",
       "min": 0,
@@ -322,7 +375,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureDefinition.purpose",
       "min": 0,
@@ -336,7 +391,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureDefinition.copyright",
       "min": 0,
@@ -350,7 +407,10 @@
       "name": "keyword",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.keyword",
       "min": 0,
@@ -364,7 +424,9 @@
       "name": "fhirVersion",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.fhirVersion",
       "min": 0,
@@ -378,7 +440,9 @@
       "name": "mapping",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureDefinition.mapping",
       "min": 0,
@@ -392,7 +456,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.mapping.id",
       "min": 0,
@@ -407,7 +473,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.mapping.extension",
       "min": 0,
@@ -422,7 +491,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.mapping.modifierExtension",
       "min": 0,
@@ -437,7 +509,9 @@
       "name": "identity",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureDefinition.mapping.identity",
       "min": 1,
@@ -451,7 +525,9 @@
       "name": "uri",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureDefinition.mapping.uri",
       "min": 0,
@@ -465,7 +541,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.mapping.name",
       "min": 0,
@@ -479,7 +557,9 @@
       "name": "comment",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.mapping.comment",
       "min": 0,
@@ -493,7 +573,9 @@
       "name": "kind",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.kind",
       "min": 1,
@@ -507,7 +589,9 @@
       "name": "abstract",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "StructureDefinition.abstract",
       "min": 1,
@@ -521,7 +605,9 @@
       "name": "context",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureDefinition.context",
       "min": 0,
@@ -535,7 +621,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.context.id",
       "min": 0,
@@ -550,7 +638,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.context.extension",
       "min": 0,
@@ -565,7 +656,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.context.modifierExtension",
       "min": 0,
@@ -580,7 +674,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.context.type",
       "min": 1,
@@ -594,7 +690,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.context.expression",
       "min": 1,
@@ -608,7 +706,9 @@
       "name": "contextInvariant",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.contextInvariant",
       "min": 0,
@@ -622,7 +722,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureDefinition.type",
       "min": 1,
@@ -636,7 +738,9 @@
       "name": "baseDefinition",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "StructureDefinition.baseDefinition",
       "min": 0,
@@ -650,7 +754,9 @@
       "name": "derivation",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureDefinition.derivation",
       "min": 0,
@@ -664,7 +770,9 @@
       "name": "snapshot",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureDefinition.snapshot",
       "min": 0,
@@ -678,7 +786,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.snapshot.id",
       "min": 0,
@@ -693,7 +803,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.snapshot.extension",
       "min": 0,
@@ -708,7 +821,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.snapshot.modifierExtension",
       "min": 0,
@@ -723,7 +839,10 @@
       "name": "element",
       "depth": 2,
       "types": [
-        "ElementDefinition"
+        {
+          "datatype": "ElementDefinition",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.snapshot.element",
       "min": 1,
@@ -737,7 +856,9 @@
       "name": "differential",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureDefinition.differential",
       "min": 0,
@@ -751,7 +872,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureDefinition.differential.id",
       "min": 0,
@@ -766,7 +889,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.differential.extension",
       "min": 0,
@@ -781,7 +907,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.differential.modifierExtension",
       "min": 0,
@@ -796,7 +925,10 @@
       "name": "element",
       "depth": 2,
       "types": [
-        "ElementDefinition"
+        {
+          "datatype": "ElementDefinition",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureDefinition.differential.element",
       "min": 1,

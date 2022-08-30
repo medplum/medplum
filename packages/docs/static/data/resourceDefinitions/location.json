@@ -1,12 +1,15 @@
 {
-  "resourceName": "Location",
+  "name": "Location",
+  "location": "resource",
   "description": "Details and position information for a physical place where services are provided and resources and participants may be stored, found, contained, or accommodated.",
   "properties": [
     {
       "name": "Location",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Location",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Location.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Location.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Location.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Location.status",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "operationalStatus",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.operationalStatus",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.name",
       "min": 0,
@@ -196,7 +229,9 @@
       "name": "alias",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.alias",
       "min": 0,
@@ -210,7 +245,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.description",
       "min": 0,
@@ -224,7 +261,9 @@
       "name": "mode",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Location.mode",
       "min": 0,
@@ -238,7 +277,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.type",
       "min": 0,
@@ -252,7 +294,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.telecom",
       "min": 0,
@@ -266,7 +311,10 @@
       "name": "address",
       "depth": 1,
       "types": [
-        "Address"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.address",
       "min": 0,
@@ -280,7 +328,10 @@
       "name": "physicalType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.physicalType",
       "min": 0,
@@ -294,7 +345,9 @@
       "name": "position",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Location.position",
       "min": 0,
@@ -308,7 +361,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.position.id",
       "min": 0,
@@ -323,7 +378,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.position.extension",
       "min": 0,
@@ -338,7 +396,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.position.modifierExtension",
       "min": 0,
@@ -353,7 +414,9 @@
       "name": "longitude",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Location.position.longitude",
       "min": 1,
@@ -367,7 +430,9 @@
       "name": "latitude",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Location.position.latitude",
       "min": 1,
@@ -381,7 +446,9 @@
       "name": "altitude",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Location.position.altitude",
       "min": 0,
@@ -395,10 +462,16 @@
       "name": "managingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Location.managingOrganization",
       "min": 0,
@@ -412,10 +485,16 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Location.partOf",
       "min": 0,
@@ -429,7 +508,9 @@
       "name": "hoursOfOperation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Location.hoursOfOperation",
       "min": 0,
@@ -443,7 +524,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.hoursOfOperation.id",
       "min": 0,
@@ -458,7 +541,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.hoursOfOperation.extension",
       "min": 0,
@@ -473,7 +559,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Location.hoursOfOperation.modifierExtension",
       "min": 0,
@@ -488,7 +577,9 @@
       "name": "daysOfWeek",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Location.hoursOfOperation.daysOfWeek",
       "min": 0,
@@ -502,7 +593,9 @@
       "name": "allDay",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Location.hoursOfOperation.allDay",
       "min": 0,
@@ -516,7 +609,9 @@
       "name": "openingTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "Location.hoursOfOperation.openingTime",
       "min": 0,
@@ -530,7 +625,9 @@
       "name": "closingTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "Location.hoursOfOperation.closingTime",
       "min": 0,
@@ -544,7 +641,9 @@
       "name": "availabilityExceptions",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Location.availabilityExceptions",
       "min": 0,
@@ -558,10 +657,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Location.endpoint",
       "min": 0,

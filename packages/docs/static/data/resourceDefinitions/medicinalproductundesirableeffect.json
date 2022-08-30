@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductUndesirableEffect",
+  "name": "MedicinalProductUndesirableEffect",
+  "location": "resource",
   "description": "Describe the undesirable effects of the medicinal product.",
   "properties": [
     {
       "name": "MedicinalProductUndesirableEffect",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductUndesirableEffect",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.modifierExtension",
       "min": 0,
@@ -140,11 +163,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "Medication"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.subject",
       "min": 0,
@@ -158,7 +190,10 @@
       "name": "symptomConditionEffect",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.symptomConditionEffect",
       "min": 0,
@@ -172,7 +207,10 @@
       "name": "classification",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.classification",
       "min": 0,
@@ -186,7 +224,10 @@
       "name": "frequencyOfOccurrence",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.frequencyOfOccurrence",
       "min": 0,
@@ -200,7 +241,10 @@
       "name": "population",
       "depth": 1,
       "types": [
-        "Population"
+        {
+          "datatype": "Population",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductUndesirableEffect.population",
       "min": 0,

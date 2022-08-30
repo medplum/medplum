@@ -3,7 +3,12 @@ import React from 'react';
 import styles from './ResourceTables.module.css';
 import { buildTypeName } from '@medplum/core';
 
-import { PropertyDocInfo, SearchParamDocInfo } from '../types/documentationTypes';
+import {
+  PropertyDocInfo,
+  PropertyTypeDocInfo,
+  SearchParamDocInfo,
+  DocumentationLocation,
+} from '../types/documentationTypes';
 
 export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }): JSX.Element {
   let { properties } = props;
@@ -84,25 +89,25 @@ export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] })
 
 function renderPropertyTypes(property: PropertyDocInfo): JSX.Element {
   const types = property.types;
-  if (types?.[0] === 'BackboneElement') {
+  if (types?.[0].datatype === 'BackboneElement') {
     return <>{buildTypeName(property.path.split('.'))}</>;
   }
 
   return (
-    <span style={{ whiteSpace: 'pre-wrap' }}>
+    <span key={`row-${property.path}`} style={{ whiteSpace: 'pre-wrap' }}>
       {property.types
-        .map((t) => (t === 'Reference' ? renderReferenceType(property.referenceTypes || []) : t))
-        .map((type, i, allType) => (
-          <>
+        .map((t) => (t.datatype === 'Reference' ? renderReferenceType(property.referenceTypes || []) : getTypeLink(t)))
+        .map((type, i, allTypes) => (
+          <span key={`${property.path}-type-${i}`}>
             {type}
-            {i < allType.length - 1 ? ', ' : ''}
-          </>
+            {i < allTypes.length - 1 ? ', ' : ''}
+          </span>
         ))}
     </span>
   );
 }
 
-function renderReferenceType(referenceTypes: string[]): JSX.Element {
+function renderReferenceType(referenceTypes: PropertyTypeDocInfo[]): JSX.Element {
   const verticalizeLinks = referenceTypes.length > 2;
   const separator = (i: number): string => {
     if (i < referenceTypes.length - 1) {
@@ -118,18 +123,33 @@ function renderReferenceType(referenceTypes: string[]): JSX.Element {
       <span>Reference&lt;</span>
       {referenceTypes?.map((refType, i) => (
         <>
-          {refType !== 'Resource' ? (
-            <a href={`./${refType.toLowerCase()}`}>
-              {i === 0 && verticalizeLinks ? '\n  ' : ''}
-              {refType}
-            </a>
-          ) : (
-            <em>Resource</em>
-          )}
-          <span>{separator(i)}</span>
+          {getTypeLink(refType, `${i === 0 && verticalizeLinks ? '\n  ' : ''}${refType.datatype}`)}
+          <span key={`reference-separator-${refType.datatype}`}>{separator(i)}</span>
         </>
       ))}
       <span>&gt;</span>
     </>
   );
+}
+
+function getTypeLink(type: PropertyTypeDocInfo, linkText?: string): JSX.Element {
+  linkText = linkText || type.datatype;
+  if (type.documentLocation) {
+    return (
+      <a
+        key={type.datatype}
+        href={`../${pluralize(type.documentLocation).toLowerCase()}/${type.datatype.toLowerCase()}`}
+      >
+        {linkText}
+      </a>
+    );
+  }
+  return <>{linkText}</>;
+}
+
+function pluralize(location: DocumentationLocation): string {
+  if (location !== 'medplum' && location.endsWith('e')) {
+    return `${location}s`;
+  }
+  return location;
 }

@@ -1,0 +1,18 @@
+---
+title: Duration
+sidebar_position: 13
+---
+
+import definition from '@site/static/data/datatypeDefinitions/duration.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Duration
+
+Base StructureDefinition for Duration Type: A length of time.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

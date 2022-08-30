@@ -1,0 +1,18 @@
+---
+title: HumanName
+sidebar_position: 17
+---
+
+import definition from '@site/static/data/datatypeDefinitions/humanname.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# HumanName
+
+Base StructureDefinition for HumanName Type: A human's name with the ability to identify parts and usage.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

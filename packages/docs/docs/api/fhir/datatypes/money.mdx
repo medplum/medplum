@@ -1,0 +1,18 @@
+---
+title: Money
+sidebar_position: 21
+---
+
+import definition from '@site/static/data/datatypeDefinitions/money.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Money
+
+Base StructureDefinition for Money Type: An amount of economic utility in some recognized currency.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

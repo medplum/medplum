@@ -1,12 +1,15 @@
 {
-  "resourceName": "ChargeItemDefinition",
+  "name": "ChargeItemDefinition",
+  "location": "resource",
   "description": "The ChargeItemDefinition resource provides the properties that apply to the (billing) codes necessary to calculate costs and prices. The properties may differ largely depending on type and realm, therefore this resource gives only a rough structure and requires profiling for each type of billing code system.",
   "properties": [
     {
       "name": "ChargeItemDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ChargeItemDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ChargeItemDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ChargeItemDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ChargeItemDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ChargeItemDefinition.url",
       "min": 1,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.title",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "derivedFromUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ChargeItemDefinition.derivedFromUri",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ChargeItemDefinition.partOf",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "replaces",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ChargeItemDefinition.replaces",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ChargeItemDefinition.status",
       "min": 1,
@@ -252,7 +292,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ChargeItemDefinition.experimental",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ChargeItemDefinition.date",
       "min": 0,
@@ -280,7 +324,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.publisher",
       "min": 0,
@@ -294,7 +340,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.contact",
       "min": 0,
@@ -308,7 +357,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ChargeItemDefinition.description",
       "min": 0,
@@ -322,7 +373,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.useContext",
       "min": 0,
@@ -336,7 +390,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.jurisdiction",
       "min": 0,
@@ -350,7 +407,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ChargeItemDefinition.copyright",
       "min": 0,
@@ -364,7 +423,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ChargeItemDefinition.approvalDate",
       "min": 0,
@@ -378,7 +439,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ChargeItemDefinition.lastReviewDate",
       "min": 0,
@@ -392,7 +455,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.effectivePeriod",
       "min": 0,
@@ -406,7 +472,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.code",
       "min": 0,
@@ -420,12 +489,24 @@
       "name": "instance",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication",
-        "Substance",
-        "Device"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ChargeItemDefinition.instance",
       "min": 0,
@@ -439,7 +520,9 @@
       "name": "applicability",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ChargeItemDefinition.applicability",
       "min": 0,
@@ -453,7 +536,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.id",
       "min": 0,
@@ -468,7 +553,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.extension",
       "min": 0,
@@ -483,7 +571,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.modifierExtension",
       "min": 0,
@@ -498,7 +589,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.description",
       "min": 0,
@@ -512,7 +605,9 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.language",
       "min": 0,
@@ -526,7 +621,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.applicability.expression",
       "min": 0,
@@ -540,7 +637,9 @@
       "name": "propertyGroup",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup",
       "min": 0,
@@ -554,7 +653,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.id",
       "min": 0,
@@ -569,7 +670,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.extension",
       "min": 0,
@@ -584,7 +688,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.modifierExtension",
       "min": 0,
@@ -599,7 +706,9 @@
       "name": "applicability",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.applicability",
       "min": 0,
@@ -613,7 +722,9 @@
       "name": "priceComponent",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent",
       "min": 0,
@@ -627,7 +738,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.id",
       "min": 0,
@@ -642,7 +755,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.extension",
       "min": 0,
@@ -657,7 +773,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.modifierExtension",
       "min": 0,
@@ -672,7 +791,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.type",
       "min": 1,
@@ -686,7 +807,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.code",
       "min": 0,
@@ -700,7 +824,9 @@
       "name": "factor",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.factor",
       "min": 0,
@@ -714,7 +840,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ChargeItemDefinition.propertyGroup.priceComponent.amount",
       "min": 0,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "EpisodeOfCare",
+  "name": "EpisodeOfCare",
+  "location": "resource",
   "description": "An association between a patient and an organization / healthcare provider(s) during which time encounters may occur. The managing organization assumes a level of responsibility for the patient during this time.",
   "properties": [
     {
       "name": "EpisodeOfCare",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "EpisodeOfCare",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EpisodeOfCare.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "EpisodeOfCare.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EpisodeOfCare.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "EpisodeOfCare.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EpisodeOfCare.status",
       "min": 1,
@@ -168,7 +196,9 @@
       "name": "statusHistory",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory.id",
       "min": 0,
@@ -197,7 +229,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory.extension",
       "min": 0,
@@ -212,7 +247,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory.modifierExtension",
       "min": 0,
@@ -227,7 +265,9 @@
       "name": "status",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory.status",
       "min": 1,
@@ -241,7 +281,10 @@
       "name": "period",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.statusHistory.period",
       "min": 1,
@@ -255,7 +298,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.type",
       "min": 0,
@@ -269,7 +315,9 @@
       "name": "diagnosis",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis",
       "min": 0,
@@ -283,7 +331,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.id",
       "min": 0,
@@ -298,7 +348,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.extension",
       "min": 0,
@@ -313,7 +366,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.modifierExtension",
       "min": 0,
@@ -328,10 +384,16 @@
       "name": "condition",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.condition",
       "min": 1,
@@ -345,7 +407,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.role",
       "min": 0,
@@ -359,7 +424,9 @@
       "name": "rank",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "EpisodeOfCare.diagnosis.rank",
       "min": 0,
@@ -373,10 +440,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.patient",
       "min": 1,
@@ -390,10 +463,16 @@
       "name": "managingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.managingOrganization",
       "min": 0,
@@ -407,7 +486,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EpisodeOfCare.period",
       "min": 0,
@@ -421,10 +503,16 @@
       "name": "referralRequest",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.referralRequest",
       "min": 0,
@@ -438,11 +526,20 @@
       "name": "careManager",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.careManager",
       "min": 0,
@@ -456,10 +553,16 @@
       "name": "team",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CareTeam"
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.team",
       "min": 0,
@@ -473,10 +576,16 @@
       "name": "account",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Account"
+        {
+          "datatype": "Account",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EpisodeOfCare.account",
       "min": 0,

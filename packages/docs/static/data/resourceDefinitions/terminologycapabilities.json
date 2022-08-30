@@ -1,12 +1,15 @@
 {
-  "resourceName": "TerminologyCapabilities",
+  "name": "TerminologyCapabilities",
+  "location": "resource",
   "description": "A TerminologyCapabilities resource documents a set of capabilities (behaviors) of a FHIR Terminology Server that may be used as a statement of actual server functionality or a statement of required or desired server implementation.",
   "properties": [
     {
       "name": "TerminologyCapabilities",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TerminologyCapabilities",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TerminologyCapabilities.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "TerminologyCapabilities.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TerminologyCapabilities.url",
       "min": 0,
@@ -154,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.version",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.name",
       "min": 0,
@@ -182,7 +211,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.title",
       "min": 0,
@@ -196,7 +227,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.status",
       "min": 1,
@@ -210,7 +243,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.experimental",
       "min": 0,
@@ -224,7 +259,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "TerminologyCapabilities.date",
       "min": 1,
@@ -238,7 +275,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.publisher",
       "min": 0,
@@ -252,7 +291,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.contact",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TerminologyCapabilities.description",
       "min": 0,
@@ -280,7 +324,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.useContext",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.jurisdiction",
       "min": 0,
@@ -308,7 +358,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TerminologyCapabilities.purpose",
       "min": 0,
@@ -322,7 +374,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TerminologyCapabilities.copyright",
       "min": 0,
@@ -336,7 +390,9 @@
       "name": "kind",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.kind",
       "min": 1,
@@ -350,7 +406,9 @@
       "name": "software",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.software",
       "min": 0,
@@ -364,7 +422,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.software.id",
       "min": 0,
@@ -379,7 +439,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.software.extension",
       "min": 0,
@@ -394,7 +457,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.software.modifierExtension",
       "min": 0,
@@ -409,7 +475,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.software.name",
       "min": 1,
@@ -423,7 +491,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.software.version",
       "min": 0,
@@ -437,7 +507,9 @@
       "name": "implementation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.implementation",
       "min": 0,
@@ -451,7 +523,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.implementation.id",
       "min": 0,
@@ -466,7 +540,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.implementation.extension",
       "min": 0,
@@ -481,7 +558,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.implementation.modifierExtension",
       "min": 0,
@@ -496,7 +576,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.implementation.description",
       "min": 1,
@@ -510,7 +592,9 @@
       "name": "url",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "TerminologyCapabilities.implementation.url",
       "min": 0,
@@ -524,7 +608,9 @@
       "name": "lockedDate",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.lockedDate",
       "min": 0,
@@ -538,7 +624,9 @@
       "name": "codeSystem",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem",
       "min": 0,
@@ -552,7 +640,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.id",
       "min": 0,
@@ -567,7 +657,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.extension",
       "min": 0,
@@ -582,7 +675,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.modifierExtension",
       "min": 0,
@@ -597,7 +693,9 @@
       "name": "uri",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.uri",
       "min": 0,
@@ -611,7 +709,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version",
       "min": 0,
@@ -625,7 +725,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.id",
       "min": 0,
@@ -640,7 +742,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.extension",
       "min": 0,
@@ -655,7 +760,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.modifierExtension",
       "min": 0,
@@ -670,7 +778,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.code",
       "min": 0,
@@ -684,7 +794,9 @@
       "name": "isDefault",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.isDefault",
       "min": 0,
@@ -698,7 +810,9 @@
       "name": "compositional",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.compositional",
       "min": 0,
@@ -712,7 +826,9 @@
       "name": "language",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.language",
       "min": 0,
@@ -726,7 +842,9 @@
       "name": "filter",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter",
       "min": 0,
@@ -740,7 +858,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter.id",
       "min": 0,
@@ -755,7 +875,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter.extension",
       "min": 0,
@@ -770,7 +893,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter.modifierExtension",
       "min": 0,
@@ -785,7 +911,9 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter.code",
       "min": 1,
@@ -799,7 +927,9 @@
       "name": "op",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.filter.op",
       "min": 1,
@@ -813,7 +943,9 @@
       "name": "property",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.version.property",
       "min": 0,
@@ -827,7 +959,9 @@
       "name": "subsumption",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.codeSystem.subsumption",
       "min": 0,
@@ -841,7 +975,9 @@
       "name": "expansion",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.expansion",
       "min": 0,
@@ -855,7 +991,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.id",
       "min": 0,
@@ -870,7 +1008,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.extension",
       "min": 0,
@@ -885,7 +1026,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.modifierExtension",
       "min": 0,
@@ -900,7 +1044,9 @@
       "name": "hierarchical",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.hierarchical",
       "min": 0,
@@ -914,7 +1060,9 @@
       "name": "paging",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.paging",
       "min": 0,
@@ -928,7 +1076,9 @@
       "name": "incomplete",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.incomplete",
       "min": 0,
@@ -942,7 +1092,9 @@
       "name": "parameter",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter",
       "min": 0,
@@ -956,7 +1108,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter.id",
       "min": 0,
@@ -971,7 +1125,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter.extension",
       "min": 0,
@@ -986,7 +1143,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter.modifierExtension",
       "min": 0,
@@ -1001,7 +1161,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter.name",
       "min": 1,
@@ -1015,7 +1177,9 @@
       "name": "documentation",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.parameter.documentation",
       "min": 0,
@@ -1029,7 +1193,9 @@
       "name": "textFilter",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TerminologyCapabilities.expansion.textFilter",
       "min": 0,
@@ -1043,7 +1209,9 @@
       "name": "codeSearch",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TerminologyCapabilities.codeSearch",
       "min": 0,
@@ -1057,7 +1225,9 @@
       "name": "validateCode",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.validateCode",
       "min": 0,
@@ -1071,7 +1241,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.validateCode.id",
       "min": 0,
@@ -1086,7 +1258,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.validateCode.extension",
       "min": 0,
@@ -1101,7 +1276,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.validateCode.modifierExtension",
       "min": 0,
@@ -1116,7 +1294,9 @@
       "name": "translations",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.validateCode.translations",
       "min": 1,
@@ -1130,7 +1310,9 @@
       "name": "translation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.translation",
       "min": 0,
@@ -1144,7 +1326,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.translation.id",
       "min": 0,
@@ -1159,7 +1343,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.translation.extension",
       "min": 0,
@@ -1174,7 +1361,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.translation.modifierExtension",
       "min": 0,
@@ -1189,7 +1379,9 @@
       "name": "needsMap",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.translation.needsMap",
       "min": 1,
@@ -1203,7 +1395,9 @@
       "name": "closure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TerminologyCapabilities.closure",
       "min": 0,
@@ -1217,7 +1411,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TerminologyCapabilities.closure.id",
       "min": 0,
@@ -1232,7 +1428,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.closure.extension",
       "min": 0,
@@ -1247,7 +1446,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TerminologyCapabilities.closure.modifierExtension",
       "min": 0,
@@ -1262,7 +1464,9 @@
       "name": "translation",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TerminologyCapabilities.closure.translation",
       "min": 0,

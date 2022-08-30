@@ -1,12 +1,15 @@
 {
-  "resourceName": "ServiceRequest",
+  "name": "ServiceRequest",
+  "location": "resource",
   "description": "A record of a request for service such as diagnostic investigations, treatments, or operations to be performed.",
   "properties": [
     {
       "name": "ServiceRequest",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ServiceRequest",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ServiceRequest.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ServiceRequest.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ServiceRequest.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ServiceRequest.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ServiceRequest.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ServiceRequest.instantiatesUri",
       "min": 0,
@@ -182,12 +212,24 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "ServiceRequest",
-        "MedicationRequest"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.basedOn",
       "min": 0,
@@ -201,10 +243,16 @@
       "name": "replaces",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.replaces",
       "min": 0,
@@ -218,7 +266,10 @@
       "name": "requisition",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.requisition",
       "min": 0,
@@ -232,7 +283,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ServiceRequest.status",
       "min": 1,
@@ -246,7 +299,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ServiceRequest.intent",
       "min": 1,
@@ -260,7 +315,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.category",
       "min": 0,
@@ -274,7 +332,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ServiceRequest.priority",
       "min": 0,
@@ -288,7 +348,9 @@
       "name": "doNotPerform",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ServiceRequest.doNotPerform",
       "min": 0,
@@ -302,7 +364,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.code",
       "min": 0,
@@ -316,7 +381,10 @@
       "name": "orderDetail",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.orderDetail",
       "min": 0,
@@ -330,9 +398,18 @@
       "name": "quantity[x]",
       "depth": 1,
       "types": [
-        "Quantity",
-        "Ratio",
-        "Range"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.quantity[x]",
       "min": 0,
@@ -346,13 +423,28 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group",
-        "Location",
-        "Device"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.subject",
       "min": 1,
@@ -366,10 +458,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.encounter",
       "min": 0,
@@ -383,9 +481,17 @@
       "name": "occurrence[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.occurrence[x]",
       "min": 0,
@@ -399,8 +505,13 @@
       "name": "asNeeded[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "CodeableConcept"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.asNeeded[x]",
       "min": 0,
@@ -414,7 +525,9 @@
       "name": "authoredOn",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ServiceRequest.authoredOn",
       "min": 0,
@@ -428,15 +541,36 @@
       "name": "requester",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.requester",
       "min": 0,
@@ -450,7 +584,10 @@
       "name": "performerType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.performerType",
       "min": 0,
@@ -464,17 +601,44 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "CareTeam",
-        "HealthcareService",
-        "Patient",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.performer",
       "min": 0,
@@ -488,7 +652,10 @@
       "name": "locationCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.locationCode",
       "min": 0,
@@ -502,10 +669,16 @@
       "name": "locationReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.locationReference",
       "min": 0,
@@ -519,7 +692,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.reasonCode",
       "min": 0,
@@ -533,13 +709,28 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.reasonReference",
       "min": 0,
@@ -553,11 +744,20 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage",
-        "ClaimResponse"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.insurance",
       "min": 0,
@@ -571,10 +771,15 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ServiceRequest.supportingInfo",
       "min": 0,
@@ -588,10 +793,16 @@
       "name": "specimen",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Specimen"
+        {
+          "datatype": "Specimen",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.specimen",
       "min": 0,
@@ -605,7 +816,10 @@
       "name": "bodySite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.bodySite",
       "min": 0,
@@ -619,7 +833,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ServiceRequest.note",
       "min": 0,
@@ -633,7 +850,9 @@
       "name": "patientInstruction",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ServiceRequest.patientInstruction",
       "min": 0,
@@ -647,10 +866,16 @@
       "name": "relevantHistory",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Provenance"
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ServiceRequest.relevantHistory",
       "min": 0,

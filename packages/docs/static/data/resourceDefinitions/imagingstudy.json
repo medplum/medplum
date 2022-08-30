@@ -1,12 +1,15 @@
 {
-  "resourceName": "ImagingStudy",
+  "name": "ImagingStudy",
+  "location": "resource",
   "description": "Representation of the content produced in a DICOM imaging study. A study comprises a set of series, each of which includes a set of Service-Object Pair Instances (SOP Instances - images or other data) acquired or produced in a common context.  A series is of only one modality (e.g. X-ray, CT, MR, ultrasound), but a study may have multiple series of different modalities.",
   "properties": [
     {
       "name": "ImagingStudy",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ImagingStudy",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ImagingStudy.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImagingStudy.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImagingStudy.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImagingStudy.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "modality",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.modality",
       "min": 0,
@@ -182,12 +213,24 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Device",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.subject",
       "min": 1,
@@ -201,10 +244,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.encounter",
       "min": 0,
@@ -218,7 +267,9 @@
       "name": "started",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImagingStudy.started",
       "min": 0,
@@ -232,14 +283,32 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "ServiceRequest",
-        "Appointment",
-        "AppointmentResponse",
-        "Task"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Appointment",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "AppointmentResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Task",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.basedOn",
       "min": 0,
@@ -253,11 +322,20 @@
       "name": "referrer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.referrer",
       "min": 0,
@@ -271,11 +349,20 @@
       "name": "interpreter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.interpreter",
       "min": 0,
@@ -289,10 +376,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.endpoint",
       "min": 0,
@@ -306,7 +399,9 @@
       "name": "numberOfSeries",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ImagingStudy.numberOfSeries",
       "min": 0,
@@ -320,7 +415,9 @@
       "name": "numberOfInstances",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ImagingStudy.numberOfInstances",
       "min": 0,
@@ -334,10 +431,16 @@
       "name": "procedureReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Procedure"
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.procedureReference",
       "min": 0,
@@ -351,7 +454,10 @@
       "name": "procedureCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.procedureCode",
       "min": 0,
@@ -365,10 +471,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.location",
       "min": 0,
@@ -382,7 +494,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.reasonCode",
       "min": 0,
@@ -396,14 +511,32 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "Media",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.reasonReference",
       "min": 0,
@@ -417,7 +550,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.note",
       "min": 0,
@@ -431,7 +567,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.description",
       "min": 0,
@@ -445,7 +583,9 @@
       "name": "series",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImagingStudy.series",
       "min": 0,
@@ -459,7 +599,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.series.id",
       "min": 0,
@@ -474,7 +616,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.extension",
       "min": 0,
@@ -489,7 +634,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.modifierExtension",
       "min": 0,
@@ -504,7 +652,9 @@
       "name": "uid",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ImagingStudy.series.uid",
       "min": 1,
@@ -518,7 +668,9 @@
       "name": "number",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ImagingStudy.series.number",
       "min": 0,
@@ -532,7 +684,10 @@
       "name": "modality",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.modality",
       "min": 1,
@@ -546,7 +701,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.series.description",
       "min": 0,
@@ -560,7 +717,9 @@
       "name": "numberOfInstances",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ImagingStudy.series.numberOfInstances",
       "min": 0,
@@ -574,10 +733,16 @@
       "name": "endpoint",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.series.endpoint",
       "min": 0,
@@ -591,7 +756,10 @@
       "name": "bodySite",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.bodySite",
       "min": 0,
@@ -605,7 +773,10 @@
       "name": "laterality",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.laterality",
       "min": 0,
@@ -619,10 +790,16 @@
       "name": "specimen",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Specimen"
+        {
+          "datatype": "Specimen",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.series.specimen",
       "min": 0,
@@ -636,7 +813,9 @@
       "name": "started",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImagingStudy.series.started",
       "min": 0,
@@ -650,7 +829,9 @@
       "name": "performer",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImagingStudy.series.performer",
       "min": 0,
@@ -664,7 +845,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.series.performer.id",
       "min": 0,
@@ -679,7 +862,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.performer.extension",
       "min": 0,
@@ -694,7 +880,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.performer.modifierExtension",
       "min": 0,
@@ -709,7 +898,10 @@
       "name": "function",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.performer.function",
       "min": 0,
@@ -723,16 +915,40 @@
       "name": "actor",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "CareTeam",
-        "Patient",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImagingStudy.series.performer.actor",
       "min": 1,
@@ -746,7 +962,9 @@
       "name": "instance",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImagingStudy.series.instance",
       "min": 0,
@@ -760,7 +978,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.series.instance.id",
       "min": 0,
@@ -775,7 +995,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.instance.extension",
       "min": 0,
@@ -790,7 +1013,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.instance.modifierExtension",
       "min": 0,
@@ -805,7 +1031,9 @@
       "name": "uid",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ImagingStudy.series.instance.uid",
       "min": 1,
@@ -819,7 +1047,10 @@
       "name": "sopClass",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImagingStudy.series.instance.sopClass",
       "min": 1,
@@ -833,7 +1064,9 @@
       "name": "number",
       "depth": 3,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ImagingStudy.series.instance.number",
       "min": 0,
@@ -847,7 +1080,9 @@
       "name": "title",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImagingStudy.series.instance.title",
       "min": 0,

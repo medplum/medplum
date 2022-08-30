@@ -1,12 +1,15 @@
 {
-  "resourceName": "Measure",
+  "name": "Measure",
+  "location": "resource",
   "description": "The Measure resource provides the definition of a quality measure.",
   "properties": [
     {
       "name": "Measure",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Measure",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Measure.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Measure.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Measure.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Measure.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.subtitle",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Measure.status",
       "min": 1,
@@ -238,7 +276,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Measure.experimental",
       "min": 0,
@@ -252,11 +292,20 @@
       "name": "subject[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Measure.subject[x]",
       "min": 0,
@@ -270,7 +319,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Measure.date",
       "min": 0,
@@ -284,7 +335,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.publisher",
       "min": 0,
@@ -298,7 +351,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.contact",
       "min": 0,
@@ -312,7 +368,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.description",
       "min": 0,
@@ -326,7 +384,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.useContext",
       "min": 0,
@@ -340,7 +401,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.jurisdiction",
       "min": 0,
@@ -354,7 +418,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.purpose",
       "min": 0,
@@ -368,7 +434,9 @@
       "name": "usage",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.usage",
       "min": 0,
@@ -382,7 +450,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.copyright",
       "min": 0,
@@ -396,7 +466,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Measure.approvalDate",
       "min": 0,
@@ -410,7 +482,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Measure.lastReviewDate",
       "min": 0,
@@ -424,7 +498,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.effectivePeriod",
       "min": 0,
@@ -438,7 +515,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.topic",
       "min": 0,
@@ -452,7 +532,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.author",
       "min": 0,
@@ -466,7 +549,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.editor",
       "min": 0,
@@ -480,7 +566,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.reviewer",
       "min": 0,
@@ -494,7 +583,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.endorser",
       "min": 0,
@@ -508,7 +600,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.relatedArtifact",
       "min": 0,
@@ -522,7 +617,9 @@
       "name": "library",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Measure.library",
       "min": 0,
@@ -536,7 +633,9 @@
       "name": "disclaimer",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.disclaimer",
       "min": 0,
@@ -550,7 +649,10 @@
       "name": "scoring",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.scoring",
       "min": 0,
@@ -564,7 +666,10 @@
       "name": "compositeScoring",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.compositeScoring",
       "min": 0,
@@ -578,7 +683,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.type",
       "min": 0,
@@ -592,7 +700,9 @@
       "name": "riskAdjustment",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.riskAdjustment",
       "min": 0,
@@ -606,7 +716,9 @@
       "name": "rateAggregation",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.rateAggregation",
       "min": 0,
@@ -620,7 +732,9 @@
       "name": "rationale",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.rationale",
       "min": 0,
@@ -634,7 +748,9 @@
       "name": "clinicalRecommendationStatement",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.clinicalRecommendationStatement",
       "min": 0,
@@ -648,7 +764,10 @@
       "name": "improvementNotation",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.improvementNotation",
       "min": 0,
@@ -662,7 +781,9 @@
       "name": "definition",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.definition",
       "min": 0,
@@ -676,7 +797,9 @@
       "name": "guidance",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Measure.guidance",
       "min": 0,
@@ -690,7 +813,9 @@
       "name": "group",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Measure.group",
       "min": 0,
@@ -704,7 +829,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.id",
       "min": 0,
@@ -719,7 +846,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.extension",
       "min": 0,
@@ -734,7 +864,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.modifierExtension",
       "min": 0,
@@ -749,7 +882,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.code",
       "min": 0,
@@ -763,7 +899,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.description",
       "min": 0,
@@ -777,7 +915,9 @@
       "name": "population",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Measure.group.population",
       "min": 0,
@@ -791,7 +931,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.population.id",
       "min": 0,
@@ -806,7 +948,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.population.extension",
       "min": 0,
@@ -821,7 +966,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.population.modifierExtension",
       "min": 0,
@@ -836,7 +984,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.population.code",
       "min": 0,
@@ -850,7 +1001,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.population.description",
       "min": 0,
@@ -864,7 +1017,10 @@
       "name": "criteria",
       "depth": 3,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.population.criteria",
       "min": 1,
@@ -878,7 +1034,9 @@
       "name": "stratifier",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Measure.group.stratifier",
       "min": 0,
@@ -892,7 +1050,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.stratifier.id",
       "min": 0,
@@ -907,7 +1067,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.extension",
       "min": 0,
@@ -922,7 +1085,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.modifierExtension",
       "min": 0,
@@ -937,7 +1103,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.code",
       "min": 0,
@@ -951,7 +1120,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.stratifier.description",
       "min": 0,
@@ -965,7 +1136,10 @@
       "name": "criteria",
       "depth": 3,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.criteria",
       "min": 0,
@@ -979,7 +1153,9 @@
       "name": "component",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Measure.group.stratifier.component",
       "min": 0,
@@ -993,7 +1169,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.stratifier.component.id",
       "min": 0,
@@ -1008,7 +1186,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.component.extension",
       "min": 0,
@@ -1023,7 +1204,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.component.modifierExtension",
       "min": 0,
@@ -1038,7 +1222,10 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.component.code",
       "min": 0,
@@ -1052,7 +1239,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.group.stratifier.component.description",
       "min": 0,
@@ -1066,7 +1255,10 @@
       "name": "criteria",
       "depth": 4,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.group.stratifier.component.criteria",
       "min": 1,
@@ -1080,7 +1272,9 @@
       "name": "supplementalData",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Measure.supplementalData",
       "min": 0,
@@ -1094,7 +1288,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.supplementalData.id",
       "min": 0,
@@ -1109,7 +1305,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.supplementalData.extension",
       "min": 0,
@@ -1124,7 +1323,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.supplementalData.modifierExtension",
       "min": 0,
@@ -1139,7 +1341,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.supplementalData.code",
       "min": 0,
@@ -1153,7 +1358,10 @@
       "name": "usage",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.supplementalData.usage",
       "min": 0,
@@ -1167,7 +1375,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Measure.supplementalData.description",
       "min": 0,
@@ -1181,7 +1391,10 @@
       "name": "criteria",
       "depth": 2,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Measure.supplementalData.criteria",
       "min": 1,

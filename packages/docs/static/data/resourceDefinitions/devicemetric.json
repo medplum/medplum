@@ -1,12 +1,15 @@
 {
-  "resourceName": "DeviceMetric",
+  "name": "DeviceMetric",
+  "location": "resource",
   "description": "Describes a measurement, calculation or setting capability of a medical device.",
   "properties": [
     {
       "name": "DeviceMetric",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "DeviceMetric",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceMetric.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceMetric.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "DeviceMetric.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.type",
       "min": 1,
@@ -168,7 +197,10 @@
       "name": "unit",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.unit",
       "min": 0,
@@ -182,10 +214,16 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DeviceMetric.source",
       "min": 0,
@@ -199,10 +237,16 @@
       "name": "parent",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DeviceMetric.parent",
       "min": 0,
@@ -216,7 +260,9 @@
       "name": "operationalStatus",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.operationalStatus",
       "min": 0,
@@ -230,7 +276,9 @@
       "name": "color",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.color",
       "min": 0,
@@ -244,7 +292,9 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.category",
       "min": 1,
@@ -258,7 +308,10 @@
       "name": "measurementPeriod",
       "depth": 1,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.measurementPeriod",
       "min": 0,
@@ -272,7 +325,9 @@
       "name": "calibration",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceMetric.calibration",
       "min": 0,
@@ -286,7 +341,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceMetric.calibration.id",
       "min": 0,
@@ -301,7 +358,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.calibration.extension",
       "min": 0,
@@ -316,7 +376,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceMetric.calibration.modifierExtension",
       "min": 0,
@@ -331,7 +394,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.calibration.type",
       "min": 0,
@@ -345,7 +410,9 @@
       "name": "state",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceMetric.calibration.state",
       "min": 0,
@@ -359,7 +426,9 @@
       "name": "time",
       "depth": 2,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "DeviceMetric.calibration.time",
       "min": 0,

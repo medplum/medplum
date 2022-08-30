@@ -1,12 +1,15 @@
 {
-  "resourceName": "EvidenceVariable",
+  "name": "EvidenceVariable",
+  "location": "resource",
   "description": "The EvidenceVariable resource describes a \"PICO\" element that knowledge (evidence, assertion, recommendation) is about.",
   "properties": [
     {
       "name": "EvidenceVariable",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "EvidenceVariable",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "EvidenceVariable.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EvidenceVariable.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "EvidenceVariable.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "EvidenceVariable.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "shortTitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.shortTitle",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.subtitle",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EvidenceVariable.status",
       "min": 1,
@@ -252,7 +292,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "EvidenceVariable.date",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.publisher",
       "min": 0,
@@ -280,7 +324,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.contact",
       "min": 0,
@@ -294,7 +341,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "EvidenceVariable.description",
       "min": 0,
@@ -308,7 +357,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.note",
       "min": 0,
@@ -322,7 +374,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.useContext",
       "min": 0,
@@ -336,7 +391,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.jurisdiction",
       "min": 0,
@@ -350,7 +408,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "EvidenceVariable.copyright",
       "min": 0,
@@ -364,7 +424,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "EvidenceVariable.approvalDate",
       "min": 0,
@@ -378,7 +440,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "EvidenceVariable.lastReviewDate",
       "min": 0,
@@ -392,7 +456,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.effectivePeriod",
       "min": 0,
@@ -406,7 +473,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.topic",
       "min": 0,
@@ -420,7 +490,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.author",
       "min": 0,
@@ -434,7 +507,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.editor",
       "min": 0,
@@ -448,7 +524,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.reviewer",
       "min": 0,
@@ -462,7 +541,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.endorser",
       "min": 0,
@@ -476,7 +558,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.relatedArtifact",
       "min": 0,
@@ -490,7 +575,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EvidenceVariable.type",
       "min": 0,
@@ -504,7 +591,9 @@
       "name": "characteristic",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EvidenceVariable.characteristic",
       "min": 1,
@@ -518,7 +607,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.characteristic.id",
       "min": 0,
@@ -533,7 +624,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.characteristic.extension",
       "min": 0,
@@ -548,7 +642,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.characteristic.modifierExtension",
       "min": 0,
@@ -563,7 +660,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EvidenceVariable.characteristic.description",
       "min": 0,
@@ -577,15 +676,35 @@
       "name": "definition[x]",
       "depth": 2,
       "types": [
-        "Reference",
-        "canonical",
-        "CodeableConcept",
-        "Expression",
-        "DataRequirement",
-        "TriggerDefinition"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EvidenceVariable.characteristic.definition[x]",
       "min": 1,
@@ -599,7 +718,10 @@
       "name": "usageContext",
       "depth": 2,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.characteristic.usageContext",
       "min": 0,
@@ -613,7 +735,9 @@
       "name": "exclude",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "EvidenceVariable.characteristic.exclude",
       "min": 0,
@@ -627,10 +751,21 @@
       "name": "participantEffective[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period",
-        "Duration",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.characteristic.participantEffective[x]",
       "min": 0,
@@ -644,7 +779,10 @@
       "name": "timeFromStart",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EvidenceVariable.characteristic.timeFromStart",
       "min": 0,
@@ -658,7 +796,9 @@
       "name": "groupMeasure",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EvidenceVariable.characteristic.groupMeasure",
       "min": 0,

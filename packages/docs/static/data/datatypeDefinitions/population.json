@@ -1,0 +1,148 @@
+{
+  "name": "Population",
+  "location": "datatype",
+  "description": "Base StructureDefinition for Population Type: A populatioof people with some set of grouping criteria.",
+  "properties": [
+    {
+      "name": "Population",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Population",
+      "min": 0,
+      "max": "*",
+      "short": "A definition of a set of people that apply to some clinically related context, for example people contraindicated for a certain medication",
+      "definition": "A populatioof people with some set of grouping criteria.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Population.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "age[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.age[x]",
+      "min": 0,
+      "max": "1",
+      "short": "The age of the specific population",
+      "definition": "The age of the specific population.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "gender",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.gender",
+      "min": 0,
+      "max": "1",
+      "short": "The gender of the specific population",
+      "definition": "The gender of the specific population.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "race",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.race",
+      "min": 0,
+      "max": "1",
+      "short": "Race of the specific population",
+      "definition": "Race of the specific population.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "physiologicalCondition",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Population.physiologicalCondition",
+      "min": 0,
+      "max": "1",
+      "short": "The existing physiological conditions of the specific population to which this applies",
+      "definition": "The existing physiological conditions of the specific population to which this applies.",
+      "comment": "",
+      "inherited": false
+    }
+  ]
+}

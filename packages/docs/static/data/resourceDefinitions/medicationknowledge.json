@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicationKnowledge",
+  "name": "MedicationKnowledge",
+  "location": "resource",
   "description": "Information about a medication that is used to support knowledge.",
   "properties": [
     {
       "name": "MedicationKnowledge",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicationKnowledge",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicationKnowledge.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationKnowledge.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicationKnowledge.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.code",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicationKnowledge.status",
       "min": 0,
@@ -168,10 +196,16 @@
       "name": "manufacturer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.manufacturer",
       "min": 0,
@@ -185,7 +219,10 @@
       "name": "doseForm",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.doseForm",
       "min": 0,
@@ -199,7 +236,10 @@
       "name": "amount",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.amount",
       "min": 0,
@@ -213,7 +253,9 @@
       "name": "synonym",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.synonym",
       "min": 0,
@@ -227,7 +269,9 @@
       "name": "relatedMedicationKnowledge",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge",
       "min": 0,
@@ -241,7 +285,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.id",
       "min": 0,
@@ -256,7 +302,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.extension",
       "min": 0,
@@ -271,7 +320,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.modifierExtension",
       "min": 0,
@@ -286,7 +338,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.type",
       "min": 1,
@@ -300,10 +355,16 @@
       "name": "reference",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicationKnowledge"
+        {
+          "datatype": "MedicationKnowledge",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.relatedMedicationKnowledge.reference",
       "min": 1,
@@ -317,10 +378,16 @@
       "name": "associatedMedication",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.associatedMedication",
       "min": 0,
@@ -334,7 +401,10 @@
       "name": "productType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.productType",
       "min": 0,
@@ -348,7 +418,9 @@
       "name": "monograph",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.monograph",
       "min": 0,
@@ -362,7 +434,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.monograph.id",
       "min": 0,
@@ -377,7 +451,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monograph.extension",
       "min": 0,
@@ -392,7 +469,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monograph.modifierExtension",
       "min": 0,
@@ -407,7 +487,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monograph.type",
       "min": 0,
@@ -421,11 +504,20 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference",
-        "Media"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.monograph.source",
       "min": 0,
@@ -439,7 +531,9 @@
       "name": "ingredient",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.ingredient",
       "min": 0,
@@ -453,7 +547,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.id",
       "min": 0,
@@ -468,7 +564,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.extension",
       "min": 0,
@@ -483,7 +582,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.modifierExtension",
       "min": 0,
@@ -498,11 +600,20 @@
       "name": "item[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Substance"
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.item[x]",
       "min": 1,
@@ -516,7 +627,9 @@
       "name": "isActive",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.isActive",
       "min": 0,
@@ -530,7 +643,10 @@
       "name": "strength",
       "depth": 2,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.ingredient.strength",
       "min": 0,
@@ -544,7 +660,9 @@
       "name": "preparationInstruction",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "MedicationKnowledge.preparationInstruction",
       "min": 0,
@@ -558,7 +676,10 @@
       "name": "intendedRoute",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.intendedRoute",
       "min": 0,
@@ -572,7 +693,9 @@
       "name": "cost",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.cost",
       "min": 0,
@@ -586,7 +709,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.cost.id",
       "min": 0,
@@ -601,7 +726,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.cost.extension",
       "min": 0,
@@ -616,7 +744,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.cost.modifierExtension",
       "min": 0,
@@ -631,7 +762,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.cost.type",
       "min": 1,
@@ -645,7 +779,9 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.cost.source",
       "min": 0,
@@ -659,7 +795,10 @@
       "name": "cost",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.cost.cost",
       "min": 1,
@@ -673,7 +812,9 @@
       "name": "monitoringProgram",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram",
       "min": 0,
@@ -687,7 +828,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram.id",
       "min": 0,
@@ -702,7 +845,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram.extension",
       "min": 0,
@@ -717,7 +863,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram.modifierExtension",
       "min": 0,
@@ -732,7 +881,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram.type",
       "min": 0,
@@ -746,7 +898,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.monitoringProgram.name",
       "min": 0,
@@ -760,7 +914,9 @@
       "name": "administrationGuidelines",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines",
       "min": 0,
@@ -774,7 +930,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.id",
       "min": 0,
@@ -789,7 +947,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.extension",
       "min": 0,
@@ -804,7 +965,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.modifierExtension",
       "min": 0,
@@ -819,7 +983,9 @@
       "name": "dosage",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage",
       "min": 0,
@@ -833,7 +999,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage.id",
       "min": 0,
@@ -848,7 +1016,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage.extension",
       "min": 0,
@@ -863,7 +1034,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage.modifierExtension",
       "min": 0,
@@ -878,7 +1052,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage.type",
       "min": 1,
@@ -892,7 +1069,10 @@
       "name": "dosage",
       "depth": 3,
       "types": [
-        "Dosage"
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.dosage.dosage",
       "min": 1,
@@ -906,11 +1086,20 @@
       "name": "indication[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ObservationDefinition"
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.indication[x]",
       "min": 0,
@@ -924,7 +1113,9 @@
       "name": "patientCharacteristics",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics",
       "min": 0,
@@ -938,7 +1129,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.id",
       "min": 0,
@@ -953,7 +1146,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.extension",
       "min": 0,
@@ -968,7 +1164,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.modifierExtension",
       "min": 0,
@@ -983,8 +1182,14 @@
       "name": "characteristic[x]",
       "depth": 3,
       "types": [
-        "CodeableConcept",
-        "Quantity"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.characteristic[x]",
       "min": 1,
@@ -998,7 +1203,9 @@
       "name": "value",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.value",
       "min": 0,
@@ -1012,7 +1219,9 @@
       "name": "medicineClassification",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification",
       "min": 0,
@@ -1026,7 +1235,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification.id",
       "min": 0,
@@ -1041,7 +1252,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification.extension",
       "min": 0,
@@ -1056,7 +1270,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification.modifierExtension",
       "min": 0,
@@ -1071,7 +1288,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification.type",
       "min": 1,
@@ -1085,7 +1305,10 @@
       "name": "classification",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.medicineClassification.classification",
       "min": 0,
@@ -1099,7 +1322,9 @@
       "name": "packaging",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.packaging",
       "min": 0,
@@ -1113,7 +1338,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.packaging.id",
       "min": 0,
@@ -1128,7 +1355,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.packaging.extension",
       "min": 0,
@@ -1143,7 +1373,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.packaging.modifierExtension",
       "min": 0,
@@ -1158,7 +1391,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.packaging.type",
       "min": 0,
@@ -1172,7 +1408,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.packaging.quantity",
       "min": 0,
@@ -1186,7 +1425,9 @@
       "name": "drugCharacteristic",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic",
       "min": 0,
@@ -1200,7 +1441,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic.id",
       "min": 0,
@@ -1215,7 +1458,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic.extension",
       "min": 0,
@@ -1230,7 +1476,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic.modifierExtension",
       "min": 0,
@@ -1245,7 +1494,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic.type",
       "min": 0,
@@ -1259,10 +1511,20 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "string",
-        "Quantity",
-        "base64Binary"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "MedicationKnowledge.drugCharacteristic.value[x]",
       "min": 0,
@@ -1276,10 +1538,16 @@
       "name": "contraindication",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DetectedIssue"
+        {
+          "datatype": "DetectedIssue",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.contraindication",
       "min": 0,
@@ -1293,7 +1561,9 @@
       "name": "regulatory",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.regulatory",
       "min": 0,
@@ -1307,7 +1577,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.id",
       "min": 0,
@@ -1322,7 +1594,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.extension",
       "min": 0,
@@ -1337,7 +1612,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.modifierExtension",
       "min": 0,
@@ -1352,10 +1630,16 @@
       "name": "regulatoryAuthority",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.regulatoryAuthority",
       "min": 1,
@@ -1369,7 +1653,9 @@
       "name": "substitution",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution",
       "min": 0,
@@ -1383,7 +1669,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution.id",
       "min": 0,
@@ -1398,7 +1686,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution.extension",
       "min": 0,
@@ -1413,7 +1704,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution.modifierExtension",
       "min": 0,
@@ -1428,7 +1722,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution.type",
       "min": 1,
@@ -1442,7 +1739,9 @@
       "name": "allowed",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.substitution.allowed",
       "min": 1,
@@ -1456,7 +1755,9 @@
       "name": "schedule",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.schedule",
       "min": 0,
@@ -1470,7 +1771,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.schedule.id",
       "min": 0,
@@ -1485,7 +1788,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.schedule.extension",
       "min": 0,
@@ -1500,7 +1806,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.schedule.modifierExtension",
       "min": 0,
@@ -1515,7 +1824,10 @@
       "name": "schedule",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.schedule.schedule",
       "min": 1,
@@ -1529,7 +1841,9 @@
       "name": "maxDispense",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense",
       "min": 0,
@@ -1543,7 +1857,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense.id",
       "min": 0,
@@ -1558,7 +1874,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense.extension",
       "min": 0,
@@ -1573,7 +1892,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense.modifierExtension",
       "min": 0,
@@ -1588,7 +1910,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense.quantity",
       "min": 1,
@@ -1602,7 +1927,10 @@
       "name": "period",
       "depth": 3,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.regulatory.maxDispense.period",
       "min": 0,
@@ -1616,7 +1944,9 @@
       "name": "kinetics",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicationKnowledge.kinetics",
       "min": 0,
@@ -1630,7 +1960,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.id",
       "min": 0,
@@ -1645,7 +1977,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.extension",
       "min": 0,
@@ -1660,7 +1995,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.modifierExtension",
       "min": 0,
@@ -1675,7 +2013,10 @@
       "name": "areaUnderCurve",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.areaUnderCurve",
       "min": 0,
@@ -1689,7 +2030,10 @@
       "name": "lethalDose50",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.lethalDose50",
       "min": 0,
@@ -1703,7 +2047,10 @@
       "name": "halfLifePeriod",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicationKnowledge.kinetics.halfLifePeriod",
       "min": 0,

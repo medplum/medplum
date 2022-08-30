@@ -1,12 +1,15 @@
 {
-  "resourceName": "Procedure",
+  "name": "Procedure",
+  "location": "resource",
   "description": "An action that is or was performed on or for a patient. This can be a physical intervention like an operation, or less invasive like long term services, counseling, or hypnotherapy.",
   "properties": [
     {
       "name": "Procedure",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Procedure",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Procedure.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Procedure.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Procedure.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Procedure.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Procedure.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Procedure.instantiatesUri",
       "min": 0,
@@ -182,11 +212,20 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "ServiceRequest"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.basedOn",
       "min": 0,
@@ -200,12 +239,24 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Procedure",
-        "Observation",
-        "MedicationAdministration"
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationAdministration",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.partOf",
       "min": 0,
@@ -219,7 +270,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Procedure.status",
       "min": 1,
@@ -233,7 +286,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.statusReason",
       "min": 0,
@@ -247,7 +303,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.category",
       "min": 0,
@@ -261,7 +320,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.code",
       "min": 0,
@@ -275,11 +337,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.subject",
       "min": 1,
@@ -293,10 +364,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.encounter",
       "min": 0,
@@ -310,11 +387,24 @@
       "name": "performed[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period",
-        "string",
-        "Age",
-        "Range"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.performed[x]",
       "min": 0,
@@ -328,13 +418,28 @@
       "name": "recorder",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.recorder",
       "min": 0,
@@ -348,13 +453,28 @@
       "name": "asserter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.asserter",
       "min": 0,
@@ -368,7 +488,9 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Procedure.performer",
       "min": 0,
@@ -382,7 +504,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Procedure.performer.id",
       "min": 0,
@@ -397,7 +521,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.performer.extension",
       "min": 0,
@@ -412,7 +539,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.performer.modifierExtension",
       "min": 0,
@@ -427,7 +557,10 @@
       "name": "function",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.performer.function",
       "min": 0,
@@ -441,15 +574,36 @@
       "name": "actor",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.performer.actor",
       "min": 1,
@@ -463,10 +617,16 @@
       "name": "onBehalfOf",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.performer.onBehalfOf",
       "min": 0,
@@ -480,10 +640,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.location",
       "min": 0,
@@ -497,7 +663,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.reasonCode",
       "min": 0,
@@ -511,14 +680,32 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "Procedure",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.reasonReference",
       "min": 0,
@@ -532,7 +719,10 @@
       "name": "bodySite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.bodySite",
       "min": 0,
@@ -546,7 +736,10 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.outcome",
       "min": 0,
@@ -560,12 +753,24 @@
       "name": "report",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DiagnosticReport",
-        "DocumentReference",
-        "Composition"
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Composition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.report",
       "min": 0,
@@ -579,7 +784,10 @@
       "name": "complication",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.complication",
       "min": 0,
@@ -593,10 +801,16 @@
       "name": "complicationDetail",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.complicationDetail",
       "min": 0,
@@ -610,7 +824,10 @@
       "name": "followUp",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.followUp",
       "min": 0,
@@ -624,7 +841,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.note",
       "min": 0,
@@ -638,7 +858,9 @@
       "name": "focalDevice",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Procedure.focalDevice",
       "min": 0,
@@ -652,7 +874,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Procedure.focalDevice.id",
       "min": 0,
@@ -667,7 +891,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.focalDevice.extension",
       "min": 0,
@@ -682,7 +909,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.focalDevice.modifierExtension",
       "min": 0,
@@ -697,7 +927,10 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.focalDevice.action",
       "min": 0,
@@ -711,10 +944,16 @@
       "name": "manipulated",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.focalDevice.manipulated",
       "min": 1,
@@ -728,12 +967,24 @@
       "name": "usedReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Medication",
-        "Substance"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Procedure.usedReference",
       "min": 0,
@@ -747,7 +998,10 @@
       "name": "usedCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Procedure.usedCode",
       "min": 0,

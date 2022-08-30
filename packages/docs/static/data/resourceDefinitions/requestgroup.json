@@ -1,12 +1,15 @@
 {
-  "resourceName": "RequestGroup",
+  "name": "RequestGroup",
+  "location": "resource",
   "description": "A group of related requests that can be used to capture intended activities that have inter-dependencies such as \"give this medication after that one\".",
   "properties": [
     {
       "name": "RequestGroup",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RequestGroup",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RequestGroup.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RequestGroup.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "RequestGroup.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RequestGroup.instantiatesUri",
       "min": 0,
@@ -182,10 +212,15 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RequestGroup.basedOn",
       "min": 0,
@@ -199,10 +234,15 @@
       "name": "replaces",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RequestGroup.replaces",
       "min": 0,
@@ -216,7 +256,10 @@
       "name": "groupIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.groupIdentifier",
       "min": 0,
@@ -230,7 +273,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.status",
       "min": 1,
@@ -244,7 +289,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.intent",
       "min": 1,
@@ -258,7 +305,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.priority",
       "min": 0,
@@ -272,7 +321,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.code",
       "min": 0,
@@ -286,11 +338,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RequestGroup.subject",
       "min": 0,
@@ -304,10 +365,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RequestGroup.encounter",
       "min": 0,
@@ -321,7 +388,9 @@
       "name": "authoredOn",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "RequestGroup.authoredOn",
       "min": 0,
@@ -335,12 +404,24 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RequestGroup.author",
       "min": 0,
@@ -354,7 +435,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.reasonCode",
       "min": 0,
@@ -368,13 +452,28 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RequestGroup.reasonReference",
       "min": 0,
@@ -388,7 +487,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.note",
       "min": 0,
@@ -402,7 +504,9 @@
       "name": "action",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RequestGroup.action",
       "min": 0,
@@ -416,7 +520,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.id",
       "min": 0,
@@ -431,7 +537,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.extension",
       "min": 0,
@@ -446,7 +555,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.modifierExtension",
       "min": 0,
@@ -461,7 +573,9 @@
       "name": "prefix",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.prefix",
       "min": 0,
@@ -475,7 +589,9 @@
       "name": "title",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.title",
       "min": 0,
@@ -489,7 +605,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.description",
       "min": 0,
@@ -503,7 +621,9 @@
       "name": "textEquivalent",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.textEquivalent",
       "min": 0,
@@ -517,7 +637,9 @@
       "name": "priority",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.priority",
       "min": 0,
@@ -531,7 +653,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.code",
       "min": 0,
@@ -545,7 +670,10 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.documentation",
       "min": 0,
@@ -559,7 +687,9 @@
       "name": "condition",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RequestGroup.action.condition",
       "min": 0,
@@ -573,7 +703,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.condition.id",
       "min": 0,
@@ -588,7 +720,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.condition.extension",
       "min": 0,
@@ -603,7 +738,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.condition.modifierExtension",
       "min": 0,
@@ -618,7 +756,9 @@
       "name": "kind",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.condition.kind",
       "min": 1,
@@ -632,7 +772,10 @@
       "name": "expression",
       "depth": 3,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.condition.expression",
       "min": 0,
@@ -646,7 +789,9 @@
       "name": "relatedAction",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RequestGroup.action.relatedAction",
       "min": 0,
@@ -660,7 +805,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.id",
       "min": 0,
@@ -675,7 +822,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.extension",
       "min": 0,
@@ -690,7 +840,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.modifierExtension",
       "min": 0,
@@ -705,7 +858,9 @@
       "name": "actionId",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.actionId",
       "min": 1,
@@ -719,7 +874,9 @@
       "name": "relationship",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.relationship",
       "min": 1,
@@ -733,8 +890,14 @@
       "name": "offset[x]",
       "depth": 3,
       "types": [
-        "Duration",
-        "Range"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.relatedAction.offset[x]",
       "min": 0,
@@ -748,12 +911,29 @@
       "name": "timing[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Age",
-        "Period",
-        "Duration",
-        "Range",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.timing[x]",
       "min": 0,
@@ -767,14 +947,32 @@
       "name": "participant",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson",
-        "Device"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RequestGroup.action.participant",
       "min": 0,
@@ -788,7 +986,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RequestGroup.action.type",
       "min": 0,
@@ -802,7 +1003,9 @@
       "name": "groupingBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.groupingBehavior",
       "min": 0,
@@ -816,7 +1019,9 @@
       "name": "selectionBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.selectionBehavior",
       "min": 0,
@@ -830,7 +1035,9 @@
       "name": "requiredBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.requiredBehavior",
       "min": 0,
@@ -844,7 +1051,9 @@
       "name": "precheckBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.precheckBehavior",
       "min": 0,
@@ -858,7 +1067,9 @@
       "name": "cardinalityBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RequestGroup.action.cardinalityBehavior",
       "min": 0,
@@ -872,10 +1083,15 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RequestGroup.action.resource",
       "min": 0,
@@ -889,7 +1105,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RequestGroup.action.action",
       "min": 0,

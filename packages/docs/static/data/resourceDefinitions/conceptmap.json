@@ -1,12 +1,15 @@
 {
-  "resourceName": "ConceptMap",
+  "name": "ConceptMap",
+  "location": "resource",
   "description": "A statement of relationships from one set of concepts to one or more other concepts - either concepts in code systems, or data element/data element concepts, or classes in class models.",
   "properties": [
     {
       "name": "ConceptMap",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ConceptMap",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ConceptMap.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ConceptMap.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ConceptMap.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ConceptMap.experimental",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ConceptMap.date",
       "min": 0,
@@ -252,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.publisher",
       "min": 0,
@@ -266,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.contact",
       "min": 0,
@@ -280,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ConceptMap.description",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.useContext",
       "min": 0,
@@ -308,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.jurisdiction",
       "min": 0,
@@ -322,7 +375,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ConceptMap.purpose",
       "min": 0,
@@ -336,7 +391,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ConceptMap.copyright",
       "min": 0,
@@ -350,8 +407,12 @@
       "name": "source[x]",
       "depth": 1,
       "types": [
-        "uri",
-        "canonical"
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ConceptMap.source[x]",
       "min": 0,
@@ -365,8 +426,12 @@
       "name": "target[x]",
       "depth": 1,
       "types": [
-        "uri",
-        "canonical"
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ConceptMap.target[x]",
       "min": 0,
@@ -380,7 +445,9 @@
       "name": "group",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ConceptMap.group",
       "min": 0,
@@ -394,7 +461,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.id",
       "min": 0,
@@ -409,7 +478,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.extension",
       "min": 0,
@@ -424,7 +496,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.modifierExtension",
       "min": 0,
@@ -439,7 +514,9 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ConceptMap.group.source",
       "min": 0,
@@ -453,7 +530,9 @@
       "name": "sourceVersion",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.sourceVersion",
       "min": 0,
@@ -467,7 +546,9 @@
       "name": "target",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ConceptMap.group.target",
       "min": 0,
@@ -481,7 +562,9 @@
       "name": "targetVersion",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.targetVersion",
       "min": 0,
@@ -495,7 +578,9 @@
       "name": "element",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ConceptMap.group.element",
       "min": 1,
@@ -509,7 +594,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.id",
       "min": 0,
@@ -524,7 +611,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.extension",
       "min": 0,
@@ -539,7 +629,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.modifierExtension",
       "min": 0,
@@ -554,7 +647,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.group.element.code",
       "min": 0,
@@ -568,7 +663,9 @@
       "name": "display",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.display",
       "min": 0,
@@ -582,7 +679,9 @@
       "name": "target",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ConceptMap.group.element.target",
       "min": 0,
@@ -596,7 +695,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.id",
       "min": 0,
@@ -611,7 +712,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.target.extension",
       "min": 0,
@@ -626,7 +730,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.target.modifierExtension",
       "min": 0,
@@ -641,7 +748,9 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.group.element.target.code",
       "min": 0,
@@ -655,7 +764,9 @@
       "name": "display",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.display",
       "min": 0,
@@ -669,7 +780,9 @@
       "name": "equivalence",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.group.element.target.equivalence",
       "min": 1,
@@ -683,7 +796,9 @@
       "name": "comment",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.comment",
       "min": 0,
@@ -697,7 +812,9 @@
       "name": "dependsOn",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn",
       "min": 0,
@@ -711,7 +828,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.id",
       "min": 0,
@@ -726,7 +845,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.extension",
       "min": 0,
@@ -741,7 +863,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.modifierExtension",
       "min": 0,
@@ -756,7 +881,9 @@
       "name": "property",
       "depth": 5,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.property",
       "min": 1,
@@ -770,7 +897,9 @@
       "name": "system",
       "depth": 5,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.system",
       "min": 0,
@@ -784,7 +913,9 @@
       "name": "value",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.value",
       "min": 1,
@@ -798,7 +929,9 @@
       "name": "display",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.element.target.dependsOn.display",
       "min": 0,
@@ -812,7 +945,9 @@
       "name": "product",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ConceptMap.group.element.target.product",
       "min": 0,
@@ -826,7 +961,9 @@
       "name": "unmapped",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ConceptMap.group.unmapped",
       "min": 0,
@@ -840,7 +977,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.unmapped.id",
       "min": 0,
@@ -855,7 +994,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.unmapped.extension",
       "min": 0,
@@ -870,7 +1012,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ConceptMap.group.unmapped.modifierExtension",
       "min": 0,
@@ -885,7 +1030,9 @@
       "name": "mode",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.group.unmapped.mode",
       "min": 1,
@@ -899,7 +1046,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ConceptMap.group.unmapped.code",
       "min": 0,
@@ -913,7 +1062,9 @@
       "name": "display",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ConceptMap.group.unmapped.display",
       "min": 0,
@@ -927,7 +1078,9 @@
       "name": "url",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ConceptMap.group.unmapped.url",
       "min": 0,

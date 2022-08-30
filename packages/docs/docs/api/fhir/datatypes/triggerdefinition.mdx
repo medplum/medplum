@@ -1,0 +1,18 @@
+---
+title: TriggerDefinition
+sidebar_position: 37
+---
+
+import definition from '@site/static/data/datatypeDefinitions/triggerdefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# TriggerDefinition
+
+Base StructureDefinition for TriggerDefinition Type: A description of a triggering event. Triggering events can be named events, data events, or periodic, as determined by the type element.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

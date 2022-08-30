@@ -1,12 +1,15 @@
 {
-  "resourceName": "OrganizationAffiliation",
+  "name": "OrganizationAffiliation",
+  "location": "resource",
   "description": "Defines an affiliation/assotiation/relationship between 2 distinct oganizations, that is not a part-of relationship/sub-division relationship.",
   "properties": [
     {
       "name": "OrganizationAffiliation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "OrganizationAffiliation",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OrganizationAffiliation.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "OrganizationAffiliation.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OrganizationAffiliation.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "OrganizationAffiliation.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "active",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OrganizationAffiliation.active",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.period",
       "min": 0,
@@ -182,10 +213,16 @@
       "name": "organization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.organization",
       "min": 0,
@@ -199,10 +236,16 @@
       "name": "participatingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.participatingOrganization",
       "min": 0,
@@ -216,10 +259,16 @@
       "name": "network",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.network",
       "min": 0,
@@ -233,7 +282,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.code",
       "min": 0,
@@ -247,7 +299,10 @@
       "name": "specialty",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.specialty",
       "min": 0,
@@ -261,10 +316,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.location",
       "min": 0,
@@ -278,10 +339,16 @@
       "name": "healthcareService",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "HealthcareService"
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.healthcareService",
       "min": 0,
@@ -295,7 +362,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OrganizationAffiliation.telecom",
       "min": 0,
@@ -309,10 +379,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "OrganizationAffiliation.endpoint",
       "min": 0,

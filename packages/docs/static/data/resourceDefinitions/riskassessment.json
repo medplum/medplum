@@ -1,12 +1,15 @@
 {
-  "resourceName": "RiskAssessment",
+  "name": "RiskAssessment",
+  "location": "resource",
   "description": "An assessment of the likely outcome(s) for a patient or other subject as well as the likelihood of each outcome.",
   "properties": [
     {
       "name": "RiskAssessment",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RiskAssessment",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskAssessment.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RiskAssessment.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RiskAssessment.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RiskAssessment.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.identifier",
       "min": 0,
@@ -154,10 +180,15 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RiskAssessment.basedOn",
       "min": 0,
@@ -171,10 +202,15 @@
       "name": "parent",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RiskAssessment.parent",
       "min": 0,
@@ -188,7 +224,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RiskAssessment.status",
       "min": 1,
@@ -202,7 +240,10 @@
       "name": "method",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.method",
       "min": 0,
@@ -216,7 +257,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.code",
       "min": 0,
@@ -230,11 +274,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskAssessment.subject",
       "min": 1,
@@ -248,10 +301,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskAssessment.encounter",
       "min": 0,
@@ -265,8 +324,13 @@
       "name": "occurrence[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.occurrence[x]",
       "min": 0,
@@ -280,10 +344,16 @@
       "name": "condition",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskAssessment.condition",
       "min": 0,
@@ -297,12 +367,24 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskAssessment.performer",
       "min": 0,
@@ -316,7 +398,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.reasonCode",
       "min": 0,
@@ -330,13 +415,28 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskAssessment.reasonReference",
       "min": 0,
@@ -350,10 +450,15 @@
       "name": "basis",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RiskAssessment.basis",
       "min": 0,
@@ -367,7 +472,9 @@
       "name": "prediction",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskAssessment.prediction",
       "min": 0,
@@ -381,7 +488,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskAssessment.prediction.id",
       "min": 0,
@@ -396,7 +505,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.extension",
       "min": 0,
@@ -411,7 +523,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.modifierExtension",
       "min": 0,
@@ -426,7 +541,10 @@
       "name": "outcome",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.outcome",
       "min": 0,
@@ -440,8 +558,13 @@
       "name": "probability[x]",
       "depth": 2,
       "types": [
-        "decimal",
-        "Range"
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.probability[x]",
       "min": 0,
@@ -455,7 +578,10 @@
       "name": "qualitativeRisk",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.qualitativeRisk",
       "min": 0,
@@ -469,7 +595,9 @@
       "name": "relativeRisk",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "RiskAssessment.prediction.relativeRisk",
       "min": 0,
@@ -483,8 +611,14 @@
       "name": "when[x]",
       "depth": 2,
       "types": [
-        "Period",
-        "Range"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.prediction.when[x]",
       "min": 0,
@@ -498,7 +632,9 @@
       "name": "rationale",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskAssessment.prediction.rationale",
       "min": 0,
@@ -512,7 +648,9 @@
       "name": "mitigation",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskAssessment.mitigation",
       "min": 0,
@@ -526,7 +664,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskAssessment.note",
       "min": 0,

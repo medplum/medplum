@@ -1,12 +1,15 @@
 {
-  "resourceName": "PaymentReconciliation",
+  "name": "PaymentReconciliation",
+  "location": "resource",
   "description": "This resource provides the details including amount of a payment and allocates the payment items being paid.",
   "properties": [
     {
       "name": "PaymentReconciliation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "PaymentReconciliation",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PaymentReconciliation.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "PaymentReconciliation.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PaymentReconciliation.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "PaymentReconciliation.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PaymentReconciliation.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.period",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "PaymentReconciliation.created",
       "min": 1,
@@ -196,10 +229,16 @@
       "name": "paymentIssuer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.paymentIssuer",
       "min": 0,
@@ -213,10 +252,16 @@
       "name": "request",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Task"
+        {
+          "datatype": "Task",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.request",
       "min": 0,
@@ -230,12 +275,24 @@
       "name": "requestor",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.requestor",
       "min": 0,
@@ -249,7 +306,9 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PaymentReconciliation.outcome",
       "min": 0,
@@ -263,7 +322,9 @@
       "name": "disposition",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PaymentReconciliation.disposition",
       "min": 0,
@@ -277,7 +338,9 @@
       "name": "paymentDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "PaymentReconciliation.paymentDate",
       "min": 1,
@@ -291,7 +354,10 @@
       "name": "paymentAmount",
       "depth": 1,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.paymentAmount",
       "min": 1,
@@ -305,7 +371,10 @@
       "name": "paymentIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.paymentIdentifier",
       "min": 0,
@@ -319,7 +388,9 @@
       "name": "detail",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PaymentReconciliation.detail",
       "min": 0,
@@ -333,7 +404,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PaymentReconciliation.detail.id",
       "min": 0,
@@ -348,7 +421,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.extension",
       "min": 0,
@@ -363,7 +439,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.modifierExtension",
       "min": 0,
@@ -378,7 +457,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.identifier",
       "min": 0,
@@ -392,7 +474,10 @@
       "name": "predecessor",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.predecessor",
       "min": 0,
@@ -406,7 +491,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.type",
       "min": 1,
@@ -420,10 +508,15 @@
       "name": "request",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "PaymentReconciliation.detail.request",
       "min": 0,
@@ -437,12 +530,24 @@
       "name": "submitter",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.detail.submitter",
       "min": 0,
@@ -456,10 +561,15 @@
       "name": "response",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "PaymentReconciliation.detail.response",
       "min": 0,
@@ -473,7 +583,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "PaymentReconciliation.detail.date",
       "min": 0,
@@ -487,10 +599,16 @@
       "name": "responsible",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "PractitionerRole"
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.detail.responsible",
       "min": 0,
@@ -504,12 +622,24 @@
       "name": "payee",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PaymentReconciliation.detail.payee",
       "min": 0,
@@ -523,7 +653,10 @@
       "name": "amount",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.detail.amount",
       "min": 0,
@@ -537,7 +670,10 @@
       "name": "formCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.formCode",
       "min": 0,
@@ -551,7 +687,9 @@
       "name": "processNote",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PaymentReconciliation.processNote",
       "min": 0,
@@ -565,7 +703,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PaymentReconciliation.processNote.id",
       "min": 0,
@@ -580,7 +720,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.processNote.extension",
       "min": 0,
@@ -595,7 +738,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PaymentReconciliation.processNote.modifierExtension",
       "min": 0,
@@ -610,7 +756,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PaymentReconciliation.processNote.type",
       "min": 0,
@@ -624,7 +772,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PaymentReconciliation.processNote.text",
       "min": 0,

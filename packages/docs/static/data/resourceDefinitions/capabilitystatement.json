@@ -1,12 +1,15 @@
 {
-  "resourceName": "CapabilityStatement",
+  "name": "CapabilityStatement",
+  "location": "resource",
   "description": "A Capability Statement documents a set of capabilities (behaviors) of a FHIR Server for a particular version of FHIR that may be used as a statement of actual server functionality or a statement of required or desired server implementation.",
   "properties": [
     {
       "name": "CapabilityStatement",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CapabilityStatement",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CapabilityStatement.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CapabilityStatement.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CapabilityStatement.url",
       "min": 0,
@@ -154,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.version",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.name",
       "min": 0,
@@ -182,7 +211,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.title",
       "min": 0,
@@ -196,7 +227,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.status",
       "min": 1,
@@ -210,7 +243,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.experimental",
       "min": 0,
@@ -224,7 +259,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CapabilityStatement.date",
       "min": 1,
@@ -238,7 +275,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.publisher",
       "min": 0,
@@ -252,7 +291,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.contact",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.description",
       "min": 0,
@@ -280,7 +324,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.useContext",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.jurisdiction",
       "min": 0,
@@ -308,7 +358,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.purpose",
       "min": 0,
@@ -322,7 +374,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.copyright",
       "min": 0,
@@ -336,7 +390,9 @@
       "name": "kind",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.kind",
       "min": 1,
@@ -350,7 +406,9 @@
       "name": "instantiates",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.instantiates",
       "min": 0,
@@ -364,7 +422,9 @@
       "name": "imports",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.imports",
       "min": 0,
@@ -378,7 +438,9 @@
       "name": "software",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.software",
       "min": 0,
@@ -392,7 +454,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.software.id",
       "min": 0,
@@ -407,7 +471,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.software.extension",
       "min": 0,
@@ -422,7 +489,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.software.modifierExtension",
       "min": 0,
@@ -437,7 +507,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.software.name",
       "min": 1,
@@ -451,7 +523,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.software.version",
       "min": 0,
@@ -465,7 +539,9 @@
       "name": "releaseDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CapabilityStatement.software.releaseDate",
       "min": 0,
@@ -479,7 +555,9 @@
       "name": "implementation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.implementation",
       "min": 0,
@@ -493,7 +571,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.implementation.id",
       "min": 0,
@@ -508,7 +588,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.implementation.extension",
       "min": 0,
@@ -523,7 +606,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.implementation.modifierExtension",
       "min": 0,
@@ -538,7 +624,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.implementation.description",
       "min": 1,
@@ -552,7 +640,9 @@
       "name": "url",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "CapabilityStatement.implementation.url",
       "min": 0,
@@ -566,10 +656,16 @@
       "name": "custodian",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CapabilityStatement.implementation.custodian",
       "min": 0,
@@ -583,7 +679,9 @@
       "name": "fhirVersion",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.fhirVersion",
       "min": 1,
@@ -597,7 +695,9 @@
       "name": "format",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.format",
       "min": 1,
@@ -611,7 +711,9 @@
       "name": "patchFormat",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.patchFormat",
       "min": 0,
@@ -625,7 +727,9 @@
       "name": "implementationGuide",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.implementationGuide",
       "min": 0,
@@ -639,7 +743,9 @@
       "name": "rest",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest",
       "min": 0,
@@ -653,7 +759,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.id",
       "min": 0,
@@ -668,7 +776,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.extension",
       "min": 0,
@@ -683,7 +794,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.modifierExtension",
       "min": 0,
@@ -698,7 +812,9 @@
       "name": "mode",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.mode",
       "min": 1,
@@ -712,7 +828,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.documentation",
       "min": 0,
@@ -726,7 +844,9 @@
       "name": "security",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.security",
       "min": 0,
@@ -740,7 +860,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.security.id",
       "min": 0,
@@ -755,7 +877,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.security.extension",
       "min": 0,
@@ -770,7 +895,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.security.modifierExtension",
       "min": 0,
@@ -785,7 +913,9 @@
       "name": "cors",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.rest.security.cors",
       "min": 0,
@@ -799,7 +929,10 @@
       "name": "service",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.security.service",
       "min": 0,
@@ -813,7 +946,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.security.description",
       "min": 0,
@@ -827,7 +962,9 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.resource",
       "min": 0,
@@ -841,7 +978,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.id",
       "min": 0,
@@ -856,7 +995,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.extension",
       "min": 0,
@@ -871,7 +1013,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.modifierExtension",
       "min": 0,
@@ -886,7 +1031,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.type",
       "min": 1,
@@ -900,7 +1047,9 @@
       "name": "profile",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.profile",
       "min": 0,
@@ -914,7 +1063,9 @@
       "name": "supportedProfile",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.supportedProfile",
       "min": 0,
@@ -928,7 +1079,9 @@
       "name": "documentation",
       "depth": 3,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.documentation",
       "min": 0,
@@ -942,7 +1095,9 @@
       "name": "interaction",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction",
       "min": 0,
@@ -956,7 +1111,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction.id",
       "min": 0,
@@ -971,7 +1128,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction.extension",
       "min": 0,
@@ -986,7 +1146,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction.modifierExtension",
       "min": 0,
@@ -1001,7 +1164,9 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction.code",
       "min": 1,
@@ -1015,7 +1180,9 @@
       "name": "documentation",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.interaction.documentation",
       "min": 0,
@@ -1029,7 +1196,9 @@
       "name": "versioning",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.versioning",
       "min": 0,
@@ -1043,7 +1212,9 @@
       "name": "readHistory",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.readHistory",
       "min": 0,
@@ -1057,7 +1228,9 @@
       "name": "updateCreate",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.updateCreate",
       "min": 0,
@@ -1071,7 +1244,9 @@
       "name": "conditionalCreate",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.conditionalCreate",
       "min": 0,
@@ -1085,7 +1260,9 @@
       "name": "conditionalRead",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.conditionalRead",
       "min": 0,
@@ -1099,7 +1276,9 @@
       "name": "conditionalUpdate",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.conditionalUpdate",
       "min": 0,
@@ -1113,7 +1292,9 @@
       "name": "conditionalDelete",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.conditionalDelete",
       "min": 0,
@@ -1127,7 +1308,9 @@
       "name": "referencePolicy",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.referencePolicy",
       "min": 0,
@@ -1141,7 +1324,9 @@
       "name": "searchInclude",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchInclude",
       "min": 0,
@@ -1155,7 +1340,9 @@
       "name": "searchRevInclude",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchRevInclude",
       "min": 0,
@@ -1169,7 +1356,9 @@
       "name": "searchParam",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam",
       "min": 0,
@@ -1183,7 +1372,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.id",
       "min": 0,
@@ -1198,7 +1389,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.extension",
       "min": 0,
@@ -1213,7 +1407,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.modifierExtension",
       "min": 0,
@@ -1228,7 +1425,9 @@
       "name": "name",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.name",
       "min": 1,
@@ -1242,7 +1441,9 @@
       "name": "definition",
       "depth": 4,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.definition",
       "min": 0,
@@ -1256,7 +1457,9 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.type",
       "min": 1,
@@ -1270,7 +1473,9 @@
       "name": "documentation",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.searchParam.documentation",
       "min": 0,
@@ -1284,7 +1489,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation",
       "min": 0,
@@ -1298,7 +1505,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.id",
       "min": 0,
@@ -1313,7 +1522,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.extension",
       "min": 0,
@@ -1328,7 +1540,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.modifierExtension",
       "min": 0,
@@ -1343,7 +1558,9 @@
       "name": "name",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.name",
       "min": 1,
@@ -1357,7 +1574,9 @@
       "name": "definition",
       "depth": 4,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.definition",
       "min": 1,
@@ -1371,7 +1590,9 @@
       "name": "documentation",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.resource.operation.documentation",
       "min": 0,
@@ -1385,7 +1606,9 @@
       "name": "interaction",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction",
       "min": 0,
@@ -1399,7 +1622,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction.id",
       "min": 0,
@@ -1414,7 +1639,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction.extension",
       "min": 0,
@@ -1429,7 +1657,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction.modifierExtension",
       "min": 0,
@@ -1444,7 +1675,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction.code",
       "min": 1,
@@ -1458,7 +1691,9 @@
       "name": "documentation",
       "depth": 3,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.rest.interaction.documentation",
       "min": 0,
@@ -1472,7 +1707,9 @@
       "name": "searchParam",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CapabilityStatement.rest.searchParam",
       "min": 0,
@@ -1486,7 +1723,9 @@
       "name": "operation",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CapabilityStatement.rest.operation",
       "min": 0,
@@ -1500,7 +1739,9 @@
       "name": "compartment",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.rest.compartment",
       "min": 0,
@@ -1514,7 +1755,9 @@
       "name": "messaging",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.messaging",
       "min": 0,
@@ -1528,7 +1771,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.messaging.id",
       "min": 0,
@@ -1543,7 +1788,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.extension",
       "min": 0,
@@ -1558,7 +1806,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.modifierExtension",
       "min": 0,
@@ -1573,7 +1824,9 @@
       "name": "endpoint",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint",
       "min": 0,
@@ -1587,7 +1840,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint.id",
       "min": 0,
@@ -1602,7 +1857,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint.extension",
       "min": 0,
@@ -1617,7 +1875,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint.modifierExtension",
       "min": 0,
@@ -1632,7 +1893,10 @@
       "name": "protocol",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint.protocol",
       "min": 1,
@@ -1646,7 +1910,9 @@
       "name": "address",
       "depth": 3,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "CapabilityStatement.messaging.endpoint.address",
       "min": 1,
@@ -1660,7 +1926,9 @@
       "name": "reliableCache",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "CapabilityStatement.messaging.reliableCache",
       "min": 0,
@@ -1674,7 +1942,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.messaging.documentation",
       "min": 0,
@@ -1688,7 +1958,9 @@
       "name": "supportedMessage",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage",
       "min": 0,
@@ -1702,7 +1974,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage.id",
       "min": 0,
@@ -1717,7 +1991,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage.extension",
       "min": 0,
@@ -1732,7 +2009,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage.modifierExtension",
       "min": 0,
@@ -1747,7 +2027,9 @@
       "name": "mode",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage.mode",
       "min": 1,
@@ -1761,7 +2043,9 @@
       "name": "definition",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.messaging.supportedMessage.definition",
       "min": 1,
@@ -1775,7 +2059,9 @@
       "name": "document",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CapabilityStatement.document",
       "min": 0,
@@ -1789,7 +2075,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CapabilityStatement.document.id",
       "min": 0,
@@ -1804,7 +2092,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.document.extension",
       "min": 0,
@@ -1819,7 +2110,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CapabilityStatement.document.modifierExtension",
       "min": 0,
@@ -1834,7 +2128,9 @@
       "name": "mode",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CapabilityStatement.document.mode",
       "min": 1,
@@ -1848,7 +2144,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CapabilityStatement.document.documentation",
       "min": 0,
@@ -1862,7 +2160,9 @@
       "name": "profile",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CapabilityStatement.document.profile",
       "min": 1,

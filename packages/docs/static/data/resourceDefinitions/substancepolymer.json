@@ -1,12 +1,15 @@
 {
-  "resourceName": "SubstancePolymer",
+  "name": "SubstancePolymer",
+  "location": "resource",
   "description": "Todo.",
   "properties": [
     {
       "name": "SubstancePolymer",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstancePolymer",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstancePolymer.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstancePolymer.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstancePolymer.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "class",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.class",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "geometry",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.geometry",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "copolymerConnectivity",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.copolymerConnectivity",
       "min": 0,
@@ -182,7 +214,9 @@
       "name": "modification",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.modification",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "monomerSet",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.monomerSet",
       "min": 0,
@@ -210,7 +246,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.id",
       "min": 0,
@@ -225,7 +263,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.extension",
       "min": 0,
@@ -240,7 +281,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.modifierExtension",
       "min": 0,
@@ -255,7 +299,10 @@
       "name": "ratioType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.ratioType",
       "min": 0,
@@ -269,7 +316,9 @@
       "name": "startingMaterial",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial",
       "min": 0,
@@ -283,7 +332,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.id",
       "min": 0,
@@ -298,7 +349,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.extension",
       "min": 0,
@@ -313,7 +367,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.modifierExtension",
       "min": 0,
@@ -328,7 +385,10 @@
       "name": "material",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.material",
       "min": 0,
@@ -342,7 +402,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.type",
       "min": 0,
@@ -356,7 +419,9 @@
       "name": "isDefining",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.isDefining",
       "min": 0,
@@ -370,7 +435,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "SubstanceAmount"
+        {
+          "datatype": "SubstanceAmount",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.monomerSet.startingMaterial.amount",
       "min": 0,
@@ -384,7 +452,9 @@
       "name": "repeat",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.repeat",
       "min": 0,
@@ -398,7 +468,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.id",
       "min": 0,
@@ -413,7 +485,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.extension",
       "min": 0,
@@ -428,7 +503,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.modifierExtension",
       "min": 0,
@@ -443,7 +521,9 @@
       "name": "numberOfUnits",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstancePolymer.repeat.numberOfUnits",
       "min": 0,
@@ -457,7 +537,9 @@
       "name": "averageMolecularFormula",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.averageMolecularFormula",
       "min": 0,
@@ -471,7 +553,10 @@
       "name": "repeatUnitAmountType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnitAmountType",
       "min": 0,
@@ -485,7 +570,9 @@
       "name": "repeatUnit",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit",
       "min": 0,
@@ -499,7 +586,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.id",
       "min": 0,
@@ -514,7 +603,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.extension",
       "min": 0,
@@ -529,7 +621,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.modifierExtension",
       "min": 0,
@@ -544,7 +639,10 @@
       "name": "orientationOfPolymerisation",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.orientationOfPolymerisation",
       "min": 0,
@@ -558,7 +656,9 @@
       "name": "repeatUnit",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.repeatUnit",
       "min": 0,
@@ -572,7 +672,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "SubstanceAmount"
+        {
+          "datatype": "SubstanceAmount",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.amount",
       "min": 0,
@@ -586,7 +689,9 @@
       "name": "degreeOfPolymerisation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation",
       "min": 0,
@@ -600,7 +705,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation.id",
       "min": 0,
@@ -615,7 +722,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation.extension",
       "min": 0,
@@ -630,7 +740,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation.modifierExtension",
       "min": 0,
@@ -645,7 +758,10 @@
       "name": "degree",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation.degree",
       "min": 0,
@@ -659,7 +775,10 @@
       "name": "amount",
       "depth": 4,
       "types": [
-        "SubstanceAmount"
+        {
+          "datatype": "SubstanceAmount",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.degreeOfPolymerisation.amount",
       "min": 0,
@@ -673,7 +792,9 @@
       "name": "structuralRepresentation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation",
       "min": 0,
@@ -687,7 +808,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.id",
       "min": 0,
@@ -702,7 +825,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.extension",
       "min": 0,
@@ -717,7 +843,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.modifierExtension",
       "min": 0,
@@ -732,7 +861,10 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.type",
       "min": 0,
@@ -746,7 +878,9 @@
       "name": "representation",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.representation",
       "min": 0,
@@ -760,7 +894,10 @@
       "name": "attachment",
       "depth": 4,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstancePolymer.repeat.repeatUnit.structuralRepresentation.attachment",
       "min": 0,
@@ -770,6 +907,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

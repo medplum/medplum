@@ -1,12 +1,15 @@
 {
-  "resourceName": "PractitionerRole",
+  "name": "PractitionerRole",
+  "location": "resource",
   "description": "A specific set of Roles/Locations/specialties/services that a practitioner may perform at an organization for a period of time.",
   "properties": [
     {
       "name": "PractitionerRole",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "PractitionerRole",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PractitionerRole.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "PractitionerRole.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PractitionerRole.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "PractitionerRole.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "active",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "PractitionerRole.active",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.period",
       "min": 0,
@@ -182,10 +213,16 @@
       "name": "practitioner",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PractitionerRole.practitioner",
       "min": 0,
@@ -199,10 +236,16 @@
       "name": "organization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PractitionerRole.organization",
       "min": 0,
@@ -216,7 +259,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.code",
       "min": 0,
@@ -230,7 +276,10 @@
       "name": "specialty",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.specialty",
       "min": 0,
@@ -244,10 +293,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PractitionerRole.location",
       "min": 0,
@@ -261,10 +316,16 @@
       "name": "healthcareService",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "HealthcareService"
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PractitionerRole.healthcareService",
       "min": 0,
@@ -278,7 +339,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.telecom",
       "min": 0,
@@ -292,7 +356,9 @@
       "name": "availableTime",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PractitionerRole.availableTime",
       "min": 0,
@@ -306,7 +372,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PractitionerRole.availableTime.id",
       "min": 0,
@@ -321,7 +389,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.availableTime.extension",
       "min": 0,
@@ -336,7 +407,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.availableTime.modifierExtension",
       "min": 0,
@@ -351,7 +425,9 @@
       "name": "daysOfWeek",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PractitionerRole.availableTime.daysOfWeek",
       "min": 0,
@@ -365,7 +441,9 @@
       "name": "allDay",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "PractitionerRole.availableTime.allDay",
       "min": 0,
@@ -379,7 +457,9 @@
       "name": "availableStartTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "PractitionerRole.availableTime.availableStartTime",
       "min": 0,
@@ -393,7 +473,9 @@
       "name": "availableEndTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "PractitionerRole.availableTime.availableEndTime",
       "min": 0,
@@ -407,7 +489,9 @@
       "name": "notAvailable",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PractitionerRole.notAvailable",
       "min": 0,
@@ -421,7 +505,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PractitionerRole.notAvailable.id",
       "min": 0,
@@ -436,7 +522,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.notAvailable.extension",
       "min": 0,
@@ -451,7 +540,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.notAvailable.modifierExtension",
       "min": 0,
@@ -466,7 +558,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PractitionerRole.notAvailable.description",
       "min": 1,
@@ -480,7 +574,10 @@
       "name": "during",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PractitionerRole.notAvailable.during",
       "min": 0,
@@ -494,7 +591,9 @@
       "name": "availabilityExceptions",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PractitionerRole.availabilityExceptions",
       "min": 0,
@@ -508,10 +607,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PractitionerRole.endpoint",
       "min": 0,

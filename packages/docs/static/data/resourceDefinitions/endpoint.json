@@ -1,12 +1,15 @@
 {
-  "resourceName": "Endpoint",
+  "name": "Endpoint",
+  "location": "resource",
   "description": "The technical details of an endpoint that can be used for electronic services, such as for web services providing XDS.b or a REST endpoint for another FHIR server. This may include any security context information.",
   "properties": [
     {
       "name": "Endpoint",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Endpoint",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Endpoint.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Endpoint.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Endpoint.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Endpoint.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Endpoint.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "connectionType",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.connectionType",
       "min": 1,
@@ -182,7 +213,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Endpoint.name",
       "min": 0,
@@ -196,10 +229,16 @@
       "name": "managingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Endpoint.managingOrganization",
       "min": 0,
@@ -213,7 +252,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.contact",
       "min": 0,
@@ -227,7 +269,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.period",
       "min": 0,
@@ -241,7 +286,10 @@
       "name": "payloadType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Endpoint.payloadType",
       "min": 1,
@@ -255,7 +303,9 @@
       "name": "payloadMimeType",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Endpoint.payloadMimeType",
       "min": 0,
@@ -269,7 +319,9 @@
       "name": "address",
       "depth": 1,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "Endpoint.address",
       "min": 1,
@@ -283,7 +335,9 @@
       "name": "header",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Endpoint.header",
       "min": 0,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "Binary",
+  "name": "Binary",
+  "location": "resource",
   "description": "A resource that represents the data of a single raw artifact as digital content accessible in its native format.  A Binary resource can contain any content, whether text, image, pdf, zip archive, etc.",
   "properties": [
     {
       "name": "Binary",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Binary",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Binary.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Binary.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Binary.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Binary.language",
       "min": 0,
@@ -80,7 +92,9 @@
       "name": "contentType",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Binary.contentType",
       "min": 1,
@@ -94,10 +108,15 @@
       "name": "securityContext",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Binary.securityContext",
       "min": 0,
@@ -111,7 +130,9 @@
       "name": "data",
       "depth": 1,
       "types": [
-        "base64Binary"
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "Binary.data",
       "min": 0,
@@ -125,7 +146,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "Binary.url",
       "min": 0,
@@ -135,6 +158,5 @@
       "comment": "If both data and url are provided, the url SHALL point to the same content as the data contains. Urls may be relative references or may reference transient locations such as a wrapping envelope using cid: though this has ramifications for using signatures. Relative URLs are interpreted relative to the service url, like a resource reference, rather than relative to the resource itself. If a URL is provided, it SHALL resolve to actual data.",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

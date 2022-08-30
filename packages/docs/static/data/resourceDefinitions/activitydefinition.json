@@ -1,12 +1,15 @@
 {
-  "resourceName": "ActivityDefinition",
+  "name": "ActivityDefinition",
+  "location": "resource",
   "description": "This resource allows for the definition of some activity to be performed, independent of a particular patient, practitioner, or other performance context.",
   "properties": [
     {
       "name": "ActivityDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ActivityDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ActivityDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ActivityDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ActivityDefinition.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.subtitle",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.status",
       "min": 1,
@@ -238,7 +276,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ActivityDefinition.experimental",
       "min": 0,
@@ -252,11 +292,20 @@
       "name": "subject[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.subject[x]",
       "min": 0,
@@ -270,7 +319,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ActivityDefinition.date",
       "min": 0,
@@ -284,7 +335,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.publisher",
       "min": 0,
@@ -298,7 +351,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.contact",
       "min": 0,
@@ -312,7 +368,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ActivityDefinition.description",
       "min": 0,
@@ -326,7 +384,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.useContext",
       "min": 0,
@@ -340,7 +401,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.jurisdiction",
       "min": 0,
@@ -354,7 +418,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ActivityDefinition.purpose",
       "min": 0,
@@ -368,7 +434,9 @@
       "name": "usage",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.usage",
       "min": 0,
@@ -382,7 +450,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ActivityDefinition.copyright",
       "min": 0,
@@ -396,7 +466,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ActivityDefinition.approvalDate",
       "min": 0,
@@ -410,7 +482,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ActivityDefinition.lastReviewDate",
       "min": 0,
@@ -424,7 +498,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.effectivePeriod",
       "min": 0,
@@ -438,7 +515,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.topic",
       "min": 0,
@@ -452,7 +532,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.author",
       "min": 0,
@@ -466,7 +549,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.editor",
       "min": 0,
@@ -480,7 +566,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.reviewer",
       "min": 0,
@@ -494,7 +583,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.endorser",
       "min": 0,
@@ -508,7 +600,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.relatedArtifact",
       "min": 0,
@@ -522,7 +617,9 @@
       "name": "library",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ActivityDefinition.library",
       "min": 0,
@@ -536,7 +633,9 @@
       "name": "kind",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.kind",
       "min": 0,
@@ -550,7 +649,9 @@
       "name": "profile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ActivityDefinition.profile",
       "min": 0,
@@ -564,7 +665,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.code",
       "min": 0,
@@ -578,7 +682,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.intent",
       "min": 0,
@@ -592,7 +698,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.priority",
       "min": 0,
@@ -606,7 +714,9 @@
       "name": "doNotPerform",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ActivityDefinition.doNotPerform",
       "min": 0,
@@ -620,12 +730,29 @@
       "name": "timing[x]",
       "depth": 1,
       "types": [
-        "Timing",
-        "dateTime",
-        "Age",
-        "Period",
-        "Range",
-        "Duration"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.timing[x]",
       "min": 0,
@@ -639,10 +766,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.location",
       "min": 0,
@@ -656,7 +789,9 @@
       "name": "participant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ActivityDefinition.participant",
       "min": 0,
@@ -670,7 +805,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.participant.id",
       "min": 0,
@@ -685,7 +822,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.participant.extension",
       "min": 0,
@@ -700,7 +840,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.participant.modifierExtension",
       "min": 0,
@@ -715,7 +858,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ActivityDefinition.participant.type",
       "min": 1,
@@ -729,7 +874,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.participant.role",
       "min": 0,
@@ -743,12 +891,24 @@
       "name": "product[x]",
       "depth": 1,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication",
-        "Substance"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.product[x]",
       "min": 0,
@@ -762,7 +922,10 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.quantity",
       "min": 0,
@@ -776,7 +939,10 @@
       "name": "dosage",
       "depth": 1,
       "types": [
-        "Dosage"
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.dosage",
       "min": 0,
@@ -790,7 +956,10 @@
       "name": "bodySite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.bodySite",
       "min": 0,
@@ -804,10 +973,16 @@
       "name": "specimenRequirement",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SpecimenDefinition"
+        {
+          "datatype": "SpecimenDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.specimenRequirement",
       "min": 0,
@@ -821,10 +996,16 @@
       "name": "observationRequirement",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ObservationDefinition"
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.observationRequirement",
       "min": 0,
@@ -838,10 +1019,16 @@
       "name": "observationResultRequirement",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ObservationDefinition"
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ActivityDefinition.observationResultRequirement",
       "min": 0,
@@ -855,7 +1042,9 @@
       "name": "transform",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ActivityDefinition.transform",
       "min": 0,
@@ -869,7 +1058,9 @@
       "name": "dynamicValue",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue",
       "min": 0,
@@ -883,7 +1074,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue.id",
       "min": 0,
@@ -898,7 +1091,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue.extension",
       "min": 0,
@@ -913,7 +1109,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue.modifierExtension",
       "min": 0,
@@ -928,7 +1127,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue.path",
       "min": 1,
@@ -942,7 +1143,10 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ActivityDefinition.dynamicValue.expression",
       "min": 1,

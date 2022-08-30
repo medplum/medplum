@@ -1,12 +1,15 @@
 {
-  "resourceName": "SearchParameter",
+  "name": "SearchParameter",
+  "location": "resource",
   "description": "A search parameter that defines a named search item that can be used to search/filter on a resource.",
   "properties": [
     {
       "name": "SearchParameter",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SearchParameter",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SearchParameter.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SearchParameter.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SearchParameter.url",
       "min": 1,
@@ -154,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.version",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.name",
       "min": 1,
@@ -182,7 +211,9 @@
       "name": "derivedFrom",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "SearchParameter.derivedFrom",
       "min": 0,
@@ -196,7 +227,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.status",
       "min": 1,
@@ -210,7 +243,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SearchParameter.experimental",
       "min": 0,
@@ -224,7 +259,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "SearchParameter.date",
       "min": 0,
@@ -238,7 +275,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.publisher",
       "min": 0,
@@ -252,7 +291,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.contact",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "SearchParameter.description",
       "min": 1,
@@ -280,7 +324,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.useContext",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.jurisdiction",
       "min": 0,
@@ -308,7 +358,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "SearchParameter.purpose",
       "min": 0,
@@ -322,7 +374,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.code",
       "min": 1,
@@ -336,7 +390,9 @@
       "name": "base",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.base",
       "min": 1,
@@ -350,7 +406,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.type",
       "min": 1,
@@ -364,7 +422,9 @@
       "name": "expression",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.expression",
       "min": 0,
@@ -378,7 +438,9 @@
       "name": "xpath",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.xpath",
       "min": 0,
@@ -392,7 +454,9 @@
       "name": "xpathUsage",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.xpathUsage",
       "min": 0,
@@ -406,7 +470,9 @@
       "name": "target",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.target",
       "min": 0,
@@ -420,7 +486,9 @@
       "name": "multipleOr",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SearchParameter.multipleOr",
       "min": 0,
@@ -434,7 +502,9 @@
       "name": "multipleAnd",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SearchParameter.multipleAnd",
       "min": 0,
@@ -448,7 +518,9 @@
       "name": "comparator",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.comparator",
       "min": 0,
@@ -462,7 +534,9 @@
       "name": "modifier",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SearchParameter.modifier",
       "min": 0,
@@ -476,7 +550,9 @@
       "name": "chain",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.chain",
       "min": 0,
@@ -490,7 +566,9 @@
       "name": "component",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SearchParameter.component",
       "min": 0,
@@ -504,7 +582,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.component.id",
       "min": 0,
@@ -519,7 +599,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.component.extension",
       "min": 0,
@@ -534,7 +617,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SearchParameter.component.modifierExtension",
       "min": 0,
@@ -549,7 +635,9 @@
       "name": "definition",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "SearchParameter.component.definition",
       "min": 1,
@@ -563,7 +651,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SearchParameter.component.expression",
       "min": 1,

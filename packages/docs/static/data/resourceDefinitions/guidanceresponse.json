@@ -1,12 +1,15 @@
 {
-  "resourceName": "GuidanceResponse",
+  "name": "GuidanceResponse",
+  "location": "resource",
   "description": "A guidance response is the formal response to a guidance request, including any output parameters returned by the evaluation, as well as the description of any proposed actions to be taken.",
   "properties": [
     {
       "name": "GuidanceResponse",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "GuidanceResponse",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GuidanceResponse.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "GuidanceResponse.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GuidanceResponse.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "GuidanceResponse.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "requestIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.requestIdentifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.identifier",
       "min": 0,
@@ -168,9 +197,16 @@
       "name": "module[x]",
       "depth": 1,
       "types": [
-        "uri",
-        "canonical",
-        "CodeableConcept"
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.module[x]",
       "min": 1,
@@ -184,7 +220,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GuidanceResponse.status",
       "min": 1,
@@ -198,11 +236,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.subject",
       "min": 0,
@@ -216,10 +263,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.encounter",
       "min": 0,
@@ -233,7 +286,9 @@
       "name": "occurrenceDateTime",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "GuidanceResponse.occurrenceDateTime",
       "min": 0,
@@ -247,10 +302,16 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.performer",
       "min": 0,
@@ -264,7 +325,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.reasonCode",
       "min": 0,
@@ -278,13 +342,28 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.reasonReference",
       "min": 0,
@@ -298,7 +377,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.note",
       "min": 0,
@@ -312,10 +394,16 @@
       "name": "evaluationMessage",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "OperationOutcome"
+        {
+          "datatype": "OperationOutcome",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.evaluationMessage",
       "min": 0,
@@ -329,10 +417,16 @@
       "name": "outputParameters",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Parameters"
+        {
+          "datatype": "Parameters",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.outputParameters",
       "min": 0,
@@ -346,11 +440,20 @@
       "name": "result",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "RequestGroup"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RequestGroup",
+          "documentLocation": "resource"
+        }
       ],
       "path": "GuidanceResponse.result",
       "min": 0,
@@ -364,7 +467,10 @@
       "name": "dataRequirement",
       "depth": 1,
       "types": [
-        "DataRequirement"
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GuidanceResponse.dataRequirement",
       "min": 0,

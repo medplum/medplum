@@ -1,12 +1,15 @@
 {
-  "resourceName": "Task",
+  "name": "Task",
+  "location": "resource",
   "description": "A task to be performed.",
   "properties": [
     {
       "name": "Task",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Task",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Task.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Task.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Task.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Task.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Task.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Task.instantiatesUri",
       "min": 0,
@@ -182,10 +212,15 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Task.basedOn",
       "min": 0,
@@ -199,7 +234,10 @@
       "name": "groupIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.groupIdentifier",
       "min": 0,
@@ -213,10 +251,16 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Task"
+        {
+          "datatype": "Task",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.partOf",
       "min": 0,
@@ -230,7 +274,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Task.status",
       "min": 1,
@@ -244,7 +290,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.statusReason",
       "min": 0,
@@ -258,7 +307,10 @@
       "name": "businessStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.businessStatus",
       "min": 0,
@@ -272,7 +324,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Task.intent",
       "min": 1,
@@ -286,7 +340,9 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Task.priority",
       "min": 0,
@@ -300,7 +356,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.code",
       "min": 0,
@@ -314,7 +373,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Task.description",
       "min": 0,
@@ -328,10 +389,15 @@
       "name": "focus",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Task.focus",
       "min": 0,
@@ -345,10 +411,15 @@
       "name": "for",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Task.for",
       "min": 0,
@@ -362,10 +433,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.encounter",
       "min": 0,
@@ -379,7 +456,10 @@
       "name": "executionPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.executionPeriod",
       "min": 0,
@@ -393,7 +473,9 @@
       "name": "authoredOn",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Task.authoredOn",
       "min": 0,
@@ -407,7 +489,9 @@
       "name": "lastModified",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Task.lastModified",
       "min": 0,
@@ -421,15 +505,36 @@
       "name": "requester",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.requester",
       "min": 0,
@@ -443,7 +548,10 @@
       "name": "performerType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.performerType",
       "min": 0,
@@ -457,17 +565,44 @@
       "name": "owner",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "CareTeam",
-        "HealthcareService",
-        "Patient",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.owner",
       "min": 0,
@@ -481,10 +616,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.location",
       "min": 0,
@@ -498,7 +639,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.reasonCode",
       "min": 0,
@@ -512,10 +656,15 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Task.reasonReference",
       "min": 0,
@@ -529,11 +678,20 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage",
-        "ClaimResponse"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.insurance",
       "min": 0,
@@ -547,7 +705,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.note",
       "min": 0,
@@ -561,10 +722,16 @@
       "name": "relevantHistory",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Provenance"
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.relevantHistory",
       "min": 0,
@@ -578,7 +745,9 @@
       "name": "restriction",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Task.restriction",
       "min": 0,
@@ -592,7 +761,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Task.restriction.id",
       "min": 0,
@@ -607,7 +778,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.restriction.extension",
       "min": 0,
@@ -622,7 +796,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.restriction.modifierExtension",
       "min": 0,
@@ -637,7 +814,9 @@
       "name": "repetitions",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Task.restriction.repetitions",
       "min": 0,
@@ -651,7 +830,10 @@
       "name": "period",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.restriction.period",
       "min": 0,
@@ -665,15 +847,36 @@
       "name": "recipient",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson",
-        "Group",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Task.restriction.recipient",
       "min": 0,
@@ -687,7 +890,9 @@
       "name": "input",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Task.input",
       "min": 0,
@@ -701,7 +906,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Task.input.id",
       "min": 0,
@@ -716,7 +923,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.input.extension",
       "min": 0,
@@ -731,7 +941,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.input.modifierExtension",
       "min": 0,
@@ -746,7 +959,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.input.type",
       "min": 1,
@@ -760,56 +976,187 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "Task.input.value[x]",
@@ -824,7 +1171,9 @@
       "name": "output",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Task.output",
       "min": 0,
@@ -838,7 +1187,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Task.output.id",
       "min": 0,
@@ -853,7 +1204,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.output.extension",
       "min": 0,
@@ -868,7 +1222,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.output.modifierExtension",
       "min": 0,
@@ -883,7 +1240,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Task.output.type",
       "min": 1,
@@ -897,56 +1257,187 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "Task.output.value[x]",

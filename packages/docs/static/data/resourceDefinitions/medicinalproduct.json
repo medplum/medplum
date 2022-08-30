@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProduct",
+  "name": "MedicinalProduct",
+  "location": "resource",
   "description": "Detailed definition of a medicinal product, typically for uses other than direct patient care (e.g. regulatory use).",
   "properties": [
     {
       "name": "MedicinalProduct",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProduct",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProduct.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProduct.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProduct.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.type",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "domain",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.domain",
       "min": 0,
@@ -182,7 +214,10 @@
       "name": "combinedPharmaceuticalDoseForm",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.combinedPharmaceuticalDoseForm",
       "min": 0,
@@ -196,7 +231,10 @@
       "name": "legalStatusOfSupply",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.legalStatusOfSupply",
       "min": 0,
@@ -210,7 +248,10 @@
       "name": "additionalMonitoringIndicator",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.additionalMonitoringIndicator",
       "min": 0,
@@ -224,7 +265,9 @@
       "name": "specialMeasures",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.specialMeasures",
       "min": 0,
@@ -238,7 +281,10 @@
       "name": "paediatricUseIndicator",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.paediatricUseIndicator",
       "min": 0,
@@ -252,7 +298,10 @@
       "name": "productClassification",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.productClassification",
       "min": 0,
@@ -266,7 +315,10 @@
       "name": "marketingStatus",
       "depth": 1,
       "types": [
-        "MarketingStatus"
+        {
+          "datatype": "MarketingStatus",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.marketingStatus",
       "min": 0,
@@ -280,10 +332,16 @@
       "name": "pharmaceuticalProduct",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProductPharmaceutical"
+        {
+          "datatype": "MedicinalProductPharmaceutical",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.pharmaceuticalProduct",
       "min": 0,
@@ -297,10 +355,16 @@
       "name": "packagedMedicinalProduct",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProductPackaged"
+        {
+          "datatype": "MedicinalProductPackaged",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.packagedMedicinalProduct",
       "min": 0,
@@ -314,10 +378,16 @@
       "name": "attachedDocument",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.attachedDocument",
       "min": 0,
@@ -331,10 +401,16 @@
       "name": "masterFile",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.masterFile",
       "min": 0,
@@ -348,11 +424,20 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "PractitionerRole"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.contact",
       "min": 0,
@@ -366,10 +451,16 @@
       "name": "clinicalTrial",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ResearchStudy"
+        {
+          "datatype": "ResearchStudy",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.clinicalTrial",
       "min": 0,
@@ -383,7 +474,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProduct.name",
       "min": 1,
@@ -397,7 +490,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.name.id",
       "min": 0,
@@ -412,7 +507,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.extension",
       "min": 0,
@@ -427,7 +525,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.modifierExtension",
       "min": 0,
@@ -442,7 +543,9 @@
       "name": "productName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.name.productName",
       "min": 1,
@@ -456,7 +559,9 @@
       "name": "namePart",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProduct.name.namePart",
       "min": 0,
@@ -470,7 +575,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.name.namePart.id",
       "min": 0,
@@ -485,7 +592,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.namePart.extension",
       "min": 0,
@@ -500,7 +610,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.namePart.modifierExtension",
       "min": 0,
@@ -515,7 +628,9 @@
       "name": "part",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.name.namePart.part",
       "min": 1,
@@ -529,7 +644,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.namePart.type",
       "min": 1,
@@ -543,7 +661,9 @@
       "name": "countryLanguage",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage",
       "min": 0,
@@ -557,7 +677,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.id",
       "min": 0,
@@ -572,7 +694,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.extension",
       "min": 0,
@@ -587,7 +712,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.modifierExtension",
       "min": 0,
@@ -602,7 +730,10 @@
       "name": "country",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.country",
       "min": 1,
@@ -616,7 +747,10 @@
       "name": "jurisdiction",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.jurisdiction",
       "min": 0,
@@ -630,7 +764,10 @@
       "name": "language",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.name.countryLanguage.language",
       "min": 1,
@@ -644,7 +781,10 @@
       "name": "crossReference",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.crossReference",
       "min": 0,
@@ -658,7 +798,9 @@
       "name": "manufacturingBusinessOperation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation",
       "min": 0,
@@ -672,7 +814,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.id",
       "min": 0,
@@ -687,7 +831,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.extension",
       "min": 0,
@@ -702,7 +849,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.modifierExtension",
       "min": 0,
@@ -717,7 +867,10 @@
       "name": "operationType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.operationType",
       "min": 0,
@@ -731,7 +884,10 @@
       "name": "authorisationReferenceNumber",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.authorisationReferenceNumber",
       "min": 0,
@@ -745,7 +901,9 @@
       "name": "effectiveDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.effectiveDate",
       "min": 0,
@@ -759,7 +917,10 @@
       "name": "confidentialityIndicator",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.confidentialityIndicator",
       "min": 0,
@@ -773,10 +934,16 @@
       "name": "manufacturer",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.manufacturer",
       "min": 0,
@@ -790,10 +957,16 @@
       "name": "regulator",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.manufacturingBusinessOperation.regulator",
       "min": 0,
@@ -807,7 +980,9 @@
       "name": "specialDesignation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation",
       "min": 0,
@@ -821,7 +996,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.id",
       "min": 0,
@@ -836,7 +1013,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.extension",
       "min": 0,
@@ -851,7 +1031,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.modifierExtension",
       "min": 0,
@@ -866,7 +1049,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.identifier",
       "min": 0,
@@ -880,7 +1066,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.type",
       "min": 0,
@@ -894,7 +1083,10 @@
       "name": "intendedUse",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.intendedUse",
       "min": 0,
@@ -908,11 +1100,20 @@
       "name": "indication[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProductIndication"
+        {
+          "datatype": "MedicinalProductIndication",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.indication[x]",
       "min": 0,
@@ -926,7 +1127,10 @@
       "name": "status",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.status",
       "min": 0,
@@ -940,7 +1144,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.date",
       "min": 0,
@@ -954,7 +1160,10 @@
       "name": "species",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProduct.specialDesignation.species",
       "min": 0,

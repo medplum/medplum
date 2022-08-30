@@ -1,12 +1,15 @@
 {
-  "resourceName": "Specimen",
+  "name": "Specimen",
+  "location": "resource",
   "description": "A sample to be used for analysis.",
   "properties": [
     {
       "name": "Specimen",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Specimen",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Specimen.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Specimen.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Specimen.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "accessionIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.accessionIdentifier",
       "min": 0,
@@ -168,7 +197,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Specimen.status",
       "min": 0,
@@ -182,7 +213,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.type",
       "min": 0,
@@ -196,14 +230,32 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group",
-        "Device",
-        "Substance",
-        "Location"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.subject",
       "min": 0,
@@ -217,7 +269,9 @@
       "name": "receivedTime",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Specimen.receivedTime",
       "min": 0,
@@ -231,10 +285,16 @@
       "name": "parent",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Specimen"
+        {
+          "datatype": "Specimen",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.parent",
       "min": 0,
@@ -248,10 +308,16 @@
       "name": "request",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.request",
       "min": 0,
@@ -265,7 +331,9 @@
       "name": "collection",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Specimen.collection",
       "min": 0,
@@ -279,7 +347,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.collection.id",
       "min": 0,
@@ -294,7 +364,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.extension",
       "min": 0,
@@ -309,7 +382,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.modifierExtension",
       "min": 0,
@@ -324,11 +400,20 @@
       "name": "collector",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.collection.collector",
       "min": 0,
@@ -342,8 +427,13 @@
       "name": "collected[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.collected[x]",
       "min": 0,
@@ -357,7 +447,10 @@
       "name": "duration",
       "depth": 2,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.duration",
       "min": 0,
@@ -371,7 +464,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.quantity",
       "min": 0,
@@ -385,7 +481,10 @@
       "name": "method",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.method",
       "min": 0,
@@ -399,7 +498,10 @@
       "name": "bodySite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.bodySite",
       "min": 0,
@@ -413,8 +515,14 @@
       "name": "fastingStatus[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Duration"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.collection.fastingStatus[x]",
       "min": 0,
@@ -428,7 +536,9 @@
       "name": "processing",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Specimen.processing",
       "min": 0,
@@ -442,7 +552,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.processing.id",
       "min": 0,
@@ -457,7 +569,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.processing.extension",
       "min": 0,
@@ -472,7 +587,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.processing.modifierExtension",
       "min": 0,
@@ -487,7 +605,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.processing.description",
       "min": 0,
@@ -501,7 +621,10 @@
       "name": "procedure",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.processing.procedure",
       "min": 0,
@@ -515,10 +638,16 @@
       "name": "additive",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Substance"
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.processing.additive",
       "min": 0,
@@ -532,8 +661,13 @@
       "name": "time[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.processing.time[x]",
       "min": 0,
@@ -547,7 +681,9 @@
       "name": "container",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Specimen.container",
       "min": 0,
@@ -561,7 +697,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.container.id",
       "min": 0,
@@ -576,7 +714,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.extension",
       "min": 0,
@@ -591,7 +732,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.modifierExtension",
       "min": 0,
@@ -606,7 +750,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.identifier",
       "min": 0,
@@ -620,7 +767,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Specimen.container.description",
       "min": 0,
@@ -634,7 +783,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.type",
       "min": 0,
@@ -648,7 +800,10 @@
       "name": "capacity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.capacity",
       "min": 0,
@@ -662,7 +817,10 @@
       "name": "specimenQuantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.container.specimenQuantity",
       "min": 0,
@@ -676,11 +834,20 @@
       "name": "additive[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Substance"
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Specimen.container.additive[x]",
       "min": 0,
@@ -694,7 +861,10 @@
       "name": "condition",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.condition",
       "min": 0,
@@ -708,7 +878,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Specimen.note",
       "min": 0,

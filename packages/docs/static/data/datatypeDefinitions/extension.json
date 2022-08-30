@@ -1,0 +1,269 @@
+{
+  "name": "Extension",
+  "location": "datatype",
+  "description": "Base StructureDefinition for Extension Type: Optional Extension Element - found in all resources.",
+  "properties": [
+    {
+      "name": "Extension",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Extension",
+      "min": 0,
+      "max": "*",
+      "short": "Optional Extensions Element",
+      "definition": "Optional Extension Element - found in all resources.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Extension.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Extension.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "url",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Extension.url",
+      "min": 1,
+      "max": "1",
+      "short": "identifies the meaning of the extension",
+      "definition": "Source of the definition for the extension code - a logical name or a URL.",
+      "comment": "The definition may point directly to a computable or human-readable definition of the extensibility codes, or it may be a logical URI as declared in some other specification. The definition SHALL be a URI for the Structure Definition defining the extension.",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Extension.value[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Value of extension",
+      "definition": "Value of extension - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+      "comment": "",
+      "inherited": false
+    }
+  ]
+}

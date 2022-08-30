@@ -1,12 +1,15 @@
 {
-  "resourceName": "Patient",
+  "name": "Patient",
+  "location": "resource",
   "description": "Demographics and other administrative information about an individual or animal receiving care or other health-related services.",
   "properties": [
     {
       "name": "Patient",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Patient",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Patient.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Patient.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Patient.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Patient.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "active",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Patient.active",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "HumanName"
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.name",
       "min": 0,
@@ -182,7 +213,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.telecom",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "gender",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Patient.gender",
       "min": 0,
@@ -210,7 +246,9 @@
       "name": "birthDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Patient.birthDate",
       "min": 0,
@@ -224,8 +262,12 @@
       "name": "deceased[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "dateTime"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Patient.deceased[x]",
       "min": 0,
@@ -239,7 +281,10 @@
       "name": "address",
       "depth": 1,
       "types": [
-        "Address"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.address",
       "min": 0,
@@ -253,7 +298,10 @@
       "name": "maritalStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.maritalStatus",
       "min": 0,
@@ -267,8 +315,12 @@
       "name": "multipleBirth[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "integer"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "Patient.multipleBirth[x]",
       "min": 0,
@@ -282,7 +334,10 @@
       "name": "photo",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.photo",
       "min": 0,
@@ -296,7 +351,9 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Patient.contact",
       "min": 0,
@@ -310,7 +367,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Patient.contact.id",
       "min": 0,
@@ -325,7 +384,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.extension",
       "min": 0,
@@ -340,7 +402,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.modifierExtension",
       "min": 0,
@@ -355,7 +420,10 @@
       "name": "relationship",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.relationship",
       "min": 0,
@@ -369,7 +437,10 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "HumanName"
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.name",
       "min": 0,
@@ -383,7 +454,10 @@
       "name": "telecom",
       "depth": 2,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.telecom",
       "min": 0,
@@ -397,7 +471,10 @@
       "name": "address",
       "depth": 2,
       "types": [
-        "Address"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.address",
       "min": 0,
@@ -411,7 +488,9 @@
       "name": "gender",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Patient.contact.gender",
       "min": 0,
@@ -425,10 +504,16 @@
       "name": "organization",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Patient.contact.organization",
       "min": 0,
@@ -442,7 +527,10 @@
       "name": "period",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.contact.period",
       "min": 0,
@@ -456,7 +544,9 @@
       "name": "communication",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Patient.communication",
       "min": 0,
@@ -470,7 +560,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Patient.communication.id",
       "min": 0,
@@ -485,7 +577,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.communication.extension",
       "min": 0,
@@ -500,7 +595,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.communication.modifierExtension",
       "min": 0,
@@ -515,7 +613,10 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.communication.language",
       "min": 1,
@@ -529,7 +630,9 @@
       "name": "preferred",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Patient.communication.preferred",
       "min": 0,
@@ -543,12 +646,24 @@
       "name": "generalPractitioner",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Patient.generalPractitioner",
       "min": 0,
@@ -562,10 +677,16 @@
       "name": "managingOrganization",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Patient.managingOrganization",
       "min": 0,
@@ -579,7 +700,9 @@
       "name": "link",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Patient.link",
       "min": 0,
@@ -593,7 +716,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Patient.link.id",
       "min": 0,
@@ -608,7 +733,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.link.extension",
       "min": 0,
@@ -623,7 +751,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Patient.link.modifierExtension",
       "min": 0,
@@ -638,11 +769,20 @@
       "name": "other",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Patient.link.other",
       "min": 1,
@@ -656,7 +796,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Patient.link.type",
       "min": 1,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductIndication",
+  "name": "MedicinalProductIndication",
+  "location": "resource",
   "description": "Indication for the Medicinal Product.",
   "properties": [
     {
       "name": "MedicinalProductIndication",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductIndication",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIndication.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductIndication.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductIndication.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductIndication.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.modifierExtension",
       "min": 0,
@@ -140,11 +163,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "Medication"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductIndication.subject",
       "min": 0,
@@ -158,7 +190,10 @@
       "name": "diseaseSymptomProcedure",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.diseaseSymptomProcedure",
       "min": 0,
@@ -172,7 +207,10 @@
       "name": "diseaseStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.diseaseStatus",
       "min": 0,
@@ -186,7 +224,10 @@
       "name": "comorbidity",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.comorbidity",
       "min": 0,
@@ -200,7 +241,10 @@
       "name": "intendedEffect",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.intendedEffect",
       "min": 0,
@@ -214,7 +258,10 @@
       "name": "duration",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.duration",
       "min": 0,
@@ -228,7 +275,9 @@
       "name": "otherTherapy",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy",
       "min": 0,
@@ -242,7 +291,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy.id",
       "min": 0,
@@ -257,7 +308,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy.extension",
       "min": 0,
@@ -272,7 +326,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy.modifierExtension",
       "min": 0,
@@ -287,7 +344,10 @@
       "name": "therapyRelationshipType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy.therapyRelationshipType",
       "min": 1,
@@ -301,14 +361,32 @@
       "name": "medication[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "Medication",
-        "Substance",
-        "SubstanceSpecification"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "SubstanceSpecification",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductIndication.otherTherapy.medication[x]",
       "min": 1,
@@ -322,10 +400,16 @@
       "name": "undesirableEffect",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProductUndesirableEffect"
+        {
+          "datatype": "MedicinalProductUndesirableEffect",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductIndication.undesirableEffect",
       "min": 0,
@@ -339,7 +423,10 @@
       "name": "population",
       "depth": 1,
       "types": [
-        "Population"
+        {
+          "datatype": "Population",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIndication.population",
       "min": 0,

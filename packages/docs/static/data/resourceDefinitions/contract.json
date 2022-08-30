@@ -1,12 +1,15 @@
 {
-  "resourceName": "Contract",
+  "name": "Contract",
+  "location": "resource",
   "description": "Legally enforceable, formally recorded unilateral or bilateral directive i.e., a policy or agreement.",
   "properties": [
     {
       "name": "Contract",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Contract",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Contract.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Contract.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Contract.url",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Contract.status",
       "min": 0,
@@ -196,7 +228,10 @@
       "name": "legalState",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.legalState",
       "min": 0,
@@ -210,10 +245,16 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Contract"
+        {
+          "datatype": "Contract",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.instantiatesCanonical",
       "min": 0,
@@ -227,7 +268,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Contract.instantiatesUri",
       "min": 0,
@@ -241,7 +284,10 @@
       "name": "contentDerivative",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.contentDerivative",
       "min": 0,
@@ -255,7 +301,9 @@
       "name": "issued",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Contract.issued",
       "min": 0,
@@ -269,7 +317,10 @@
       "name": "applies",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.applies",
       "min": 0,
@@ -283,7 +334,10 @@
       "name": "expirationType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.expirationType",
       "min": 0,
@@ -297,10 +351,15 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.subject",
       "min": 0,
@@ -314,10 +373,16 @@
       "name": "authority",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.authority",
       "min": 0,
@@ -331,10 +396,16 @@
       "name": "domain",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.domain",
       "min": 0,
@@ -348,10 +419,16 @@
       "name": "site",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.site",
       "min": 0,
@@ -365,7 +442,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.name",
       "min": 0,
@@ -379,7 +458,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.title",
       "min": 0,
@@ -393,7 +474,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.subtitle",
       "min": 0,
@@ -407,7 +490,9 @@
       "name": "alias",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.alias",
       "min": 0,
@@ -421,13 +506,28 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.author",
       "min": 0,
@@ -441,7 +541,10 @@
       "name": "scope",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.scope",
       "min": 0,
@@ -455,11 +558,19 @@
       "name": "topic[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.topic[x]",
       "min": 0,
@@ -473,7 +584,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.type",
       "min": 0,
@@ -487,7 +601,10 @@
       "name": "subType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.subType",
       "min": 0,
@@ -501,7 +618,9 @@
       "name": "contentDefinition",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.contentDefinition",
       "min": 0,
@@ -515,7 +634,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.contentDefinition.id",
       "min": 0,
@@ -530,7 +651,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.contentDefinition.extension",
       "min": 0,
@@ -545,7 +669,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.contentDefinition.modifierExtension",
       "min": 0,
@@ -560,7 +687,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.contentDefinition.type",
       "min": 1,
@@ -574,7 +704,10 @@
       "name": "subType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.contentDefinition.subType",
       "min": 0,
@@ -588,12 +721,24 @@
       "name": "publisher",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.contentDefinition.publisher",
       "min": 0,
@@ -607,7 +752,9 @@
       "name": "publicationDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Contract.contentDefinition.publicationDate",
       "min": 0,
@@ -621,7 +768,9 @@
       "name": "publicationStatus",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Contract.contentDefinition.publicationStatus",
       "min": 1,
@@ -635,7 +784,9 @@
       "name": "copyright",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Contract.contentDefinition.copyright",
       "min": 0,
@@ -649,7 +800,9 @@
       "name": "term",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term",
       "min": 0,
@@ -663,7 +816,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.id",
       "min": 0,
@@ -678,7 +833,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.extension",
       "min": 0,
@@ -693,7 +851,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.modifierExtension",
       "min": 0,
@@ -708,7 +869,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.identifier",
       "min": 0,
@@ -722,7 +886,9 @@
       "name": "issued",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Contract.term.issued",
       "min": 0,
@@ -736,7 +902,10 @@
       "name": "applies",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.applies",
       "min": 0,
@@ -750,11 +919,19 @@
       "name": "topic[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.topic[x]",
       "min": 0,
@@ -768,7 +945,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.type",
       "min": 0,
@@ -782,7 +962,10 @@
       "name": "subType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.subType",
       "min": 0,
@@ -796,7 +979,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.text",
       "min": 0,
@@ -810,7 +995,9 @@
       "name": "securityLabel",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.securityLabel",
       "min": 0,
@@ -824,7 +1011,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.securityLabel.id",
       "min": 0,
@@ -839,7 +1028,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.securityLabel.extension",
       "min": 0,
@@ -854,7 +1046,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.securityLabel.modifierExtension",
       "min": 0,
@@ -869,7 +1064,9 @@
       "name": "number",
       "depth": 3,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Contract.term.securityLabel.number",
       "min": 0,
@@ -883,7 +1080,10 @@
       "name": "classification",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.securityLabel.classification",
       "min": 1,
@@ -897,7 +1097,10 @@
       "name": "category",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.securityLabel.category",
       "min": 0,
@@ -911,7 +1114,10 @@
       "name": "control",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.securityLabel.control",
       "min": 0,
@@ -925,7 +1131,9 @@
       "name": "offer",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.offer",
       "min": 1,
@@ -939,7 +1147,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.offer.id",
       "min": 0,
@@ -954,7 +1164,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.extension",
       "min": 0,
@@ -969,7 +1182,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.modifierExtension",
       "min": 0,
@@ -984,7 +1200,10 @@
       "name": "identifier",
       "depth": 3,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.identifier",
       "min": 0,
@@ -998,7 +1217,9 @@
       "name": "party",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.offer.party",
       "min": 0,
@@ -1012,7 +1233,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.offer.party.id",
       "min": 0,
@@ -1027,7 +1250,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.party.extension",
       "min": 0,
@@ -1042,7 +1268,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.party.modifierExtension",
       "min": 0,
@@ -1057,16 +1286,40 @@
       "name": "reference",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole",
-        "Device",
-        "Group",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.offer.party.reference",
       "min": 1,
@@ -1080,7 +1333,10 @@
       "name": "role",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.party.role",
       "min": 1,
@@ -1094,10 +1350,15 @@
       "name": "topic",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.offer.topic",
       "min": 0,
@@ -1111,7 +1372,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.type",
       "min": 0,
@@ -1125,7 +1389,10 @@
       "name": "decision",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.decision",
       "min": 0,
@@ -1139,7 +1406,10 @@
       "name": "decisionMode",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.decisionMode",
       "min": 0,
@@ -1153,7 +1423,9 @@
       "name": "answer",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.offer.answer",
       "min": 0,
@@ -1167,7 +1439,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.offer.answer.id",
       "min": 0,
@@ -1182,7 +1456,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.answer.extension",
       "min": 0,
@@ -1197,7 +1474,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.offer.answer.modifierExtension",
       "min": 0,
@@ -1212,21 +1492,51 @@
       "name": "value[x]",
       "depth": 4,
       "types": [
-        "boolean",
-        "decimal",
-        "integer",
-        "date",
-        "dateTime",
-        "time",
-        "string",
-        "uri",
-        "Attachment",
-        "Coding",
-        "Quantity",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.offer.answer.value[x]",
       "min": 1,
@@ -1240,7 +1550,9 @@
       "name": "text",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.offer.text",
       "min": 0,
@@ -1254,7 +1566,9 @@
       "name": "linkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.offer.linkId",
       "min": 0,
@@ -1268,7 +1582,9 @@
       "name": "securityLabelNumber",
       "depth": 3,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Contract.term.offer.securityLabelNumber",
       "min": 0,
@@ -1282,7 +1598,9 @@
       "name": "asset",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.asset",
       "min": 0,
@@ -1296,7 +1614,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.id",
       "min": 0,
@@ -1311,7 +1631,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.extension",
       "min": 0,
@@ -1326,7 +1649,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.modifierExtension",
       "min": 0,
@@ -1341,7 +1667,10 @@
       "name": "scope",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.scope",
       "min": 0,
@@ -1355,7 +1684,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.type",
       "min": 0,
@@ -1369,10 +1701,15 @@
       "name": "typeReference",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.asset.typeReference",
       "min": 0,
@@ -1386,7 +1723,10 @@
       "name": "subtype",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.subtype",
       "min": 0,
@@ -1400,7 +1740,10 @@
       "name": "relationship",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.relationship",
       "min": 0,
@@ -1414,7 +1757,9 @@
       "name": "context",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.asset.context",
       "min": 0,
@@ -1428,7 +1773,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.context.id",
       "min": 0,
@@ -1443,7 +1790,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.context.extension",
       "min": 0,
@@ -1458,7 +1808,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.context.modifierExtension",
       "min": 0,
@@ -1473,10 +1826,15 @@
       "name": "reference",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.asset.context.reference",
       "min": 0,
@@ -1490,7 +1848,10 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.context.code",
       "min": 0,
@@ -1504,7 +1865,9 @@
       "name": "text",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.context.text",
       "min": 0,
@@ -1518,7 +1881,9 @@
       "name": "condition",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.condition",
       "min": 0,
@@ -1532,7 +1897,10 @@
       "name": "periodType",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.periodType",
       "min": 0,
@@ -1546,7 +1914,10 @@
       "name": "period",
       "depth": 3,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.period",
       "min": 0,
@@ -1560,7 +1931,10 @@
       "name": "usePeriod",
       "depth": 3,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.usePeriod",
       "min": 0,
@@ -1574,7 +1948,9 @@
       "name": "text",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.text",
       "min": 0,
@@ -1588,7 +1964,9 @@
       "name": "linkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.linkId",
       "min": 0,
@@ -1602,7 +1980,9 @@
       "name": "answer",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Contract.term.asset.answer",
       "min": 0,
@@ -1616,7 +1996,9 @@
       "name": "securityLabelNumber",
       "depth": 3,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Contract.term.asset.securityLabelNumber",
       "min": 0,
@@ -1630,7 +2012,9 @@
       "name": "valuedItem",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.asset.valuedItem",
       "min": 0,
@@ -1644,7 +2028,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.id",
       "min": 0,
@@ -1659,7 +2045,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.extension",
       "min": 0,
@@ -1674,7 +2063,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.modifierExtension",
       "min": 0,
@@ -1689,11 +2081,19 @@
       "name": "entity[x]",
       "depth": 4,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.entity[x]",
       "min": 0,
@@ -1707,7 +2107,10 @@
       "name": "identifier",
       "depth": 4,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.identifier",
       "min": 0,
@@ -1721,7 +2124,9 @@
       "name": "effectiveTime",
       "depth": 4,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.effectiveTime",
       "min": 0,
@@ -1735,7 +2140,10 @@
       "name": "quantity",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.quantity",
       "min": 0,
@@ -1749,7 +2157,10 @@
       "name": "unitPrice",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.unitPrice",
       "min": 0,
@@ -1763,7 +2174,9 @@
       "name": "factor",
       "depth": 4,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.factor",
       "min": 0,
@@ -1777,7 +2190,9 @@
       "name": "points",
       "depth": 4,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.points",
       "min": 0,
@@ -1791,7 +2206,10 @@
       "name": "net",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.net",
       "min": 0,
@@ -1805,7 +2223,9 @@
       "name": "payment",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.payment",
       "min": 0,
@@ -1819,7 +2239,9 @@
       "name": "paymentDate",
       "depth": 4,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.paymentDate",
       "min": 0,
@@ -1833,14 +2255,32 @@
       "name": "responsible",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.responsible",
       "min": 0,
@@ -1854,14 +2294,32 @@
       "name": "recipient",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.recipient",
       "min": 0,
@@ -1875,7 +2333,9 @@
       "name": "linkId",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.linkId",
       "min": 0,
@@ -1889,7 +2349,9 @@
       "name": "securityLabelNumber",
       "depth": 4,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Contract.term.asset.valuedItem.securityLabelNumber",
       "min": 0,
@@ -1903,7 +2365,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.action",
       "min": 0,
@@ -1917,7 +2381,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.id",
       "min": 0,
@@ -1932,7 +2398,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.extension",
       "min": 0,
@@ -1947,7 +2416,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.modifierExtension",
       "min": 0,
@@ -1962,7 +2434,9 @@
       "name": "doNotPerform",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Contract.term.action.doNotPerform",
       "min": 0,
@@ -1976,7 +2450,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.type",
       "min": 1,
@@ -1990,7 +2467,9 @@
       "name": "subject",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.term.action.subject",
       "min": 0,
@@ -2004,7 +2483,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.subject.id",
       "min": 0,
@@ -2019,7 +2500,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.subject.extension",
       "min": 0,
@@ -2034,7 +2518,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.subject.modifierExtension",
       "min": 0,
@@ -2049,16 +2536,40 @@
       "name": "reference",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole",
-        "Device",
-        "Group",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.action.subject.reference",
       "min": 1,
@@ -2072,7 +2583,10 @@
       "name": "role",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.subject.role",
       "min": 0,
@@ -2086,7 +2600,10 @@
       "name": "intent",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.intent",
       "min": 1,
@@ -2100,7 +2617,9 @@
       "name": "linkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.linkId",
       "min": 0,
@@ -2114,7 +2633,10 @@
       "name": "status",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.status",
       "min": 1,
@@ -2128,11 +2650,20 @@
       "name": "context",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter",
-        "EpisodeOfCare"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "EpisodeOfCare",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.action.context",
       "min": 0,
@@ -2146,7 +2677,9 @@
       "name": "contextLinkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.contextLinkId",
       "min": 0,
@@ -2160,9 +2693,17 @@
       "name": "occurrence[x]",
       "depth": 3,
       "types": [
-        "dateTime",
-        "Period",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.occurrence[x]",
       "min": 0,
@@ -2176,16 +2717,40 @@
       "name": "requester",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole",
-        "Device",
-        "Group",
-        "Organization"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.action.requester",
       "min": 0,
@@ -2199,7 +2764,9 @@
       "name": "requesterLinkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.requesterLinkId",
       "min": 0,
@@ -2213,7 +2780,10 @@
       "name": "performerType",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.performerType",
       "min": 0,
@@ -2227,7 +2797,10 @@
       "name": "performerRole",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.performerRole",
       "min": 0,
@@ -2241,18 +2814,48 @@
       "name": "performer",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "RelatedPerson",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "CareTeam",
-        "Device",
-        "Substance",
-        "Organization",
-        "Location"
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.action.performer",
       "min": 0,
@@ -2266,7 +2869,9 @@
       "name": "performerLinkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.performerLinkId",
       "min": 0,
@@ -2280,7 +2885,10 @@
       "name": "reasonCode",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.reasonCode",
       "min": 0,
@@ -2294,15 +2902,36 @@
       "name": "reasonReference",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference",
-        "Questionnaire",
-        "QuestionnaireResponse"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Questionnaire",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.term.action.reasonReference",
       "min": 0,
@@ -2316,7 +2945,9 @@
       "name": "reason",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.reason",
       "min": 0,
@@ -2330,7 +2961,9 @@
       "name": "reasonLinkId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.term.action.reasonLinkId",
       "min": 0,
@@ -2344,7 +2977,10 @@
       "name": "note",
       "depth": 3,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.term.action.note",
       "min": 0,
@@ -2358,7 +2994,9 @@
       "name": "securityLabelNumber",
       "depth": 3,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Contract.term.action.securityLabelNumber",
       "min": 0,
@@ -2372,7 +3010,9 @@
       "name": "group",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Contract.term.group",
       "min": 0,
@@ -2386,10 +3026,15 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Contract.supportingInfo",
       "min": 0,
@@ -2403,10 +3048,16 @@
       "name": "relevantHistory",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Provenance"
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.relevantHistory",
       "min": 0,
@@ -2420,7 +3071,9 @@
       "name": "signer",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.signer",
       "min": 0,
@@ -2434,7 +3087,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.signer.id",
       "min": 0,
@@ -2449,7 +3104,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.signer.extension",
       "min": 0,
@@ -2464,7 +3122,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.signer.modifierExtension",
       "min": 0,
@@ -2479,7 +3140,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.signer.type",
       "min": 1,
@@ -2493,14 +3157,32 @@
       "name": "party",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.signer.party",
       "min": 1,
@@ -2514,7 +3196,10 @@
       "name": "signature",
       "depth": 2,
       "types": [
-        "Signature"
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.signer.signature",
       "min": 1,
@@ -2528,7 +3213,9 @@
       "name": "friendly",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.friendly",
       "min": 0,
@@ -2542,7 +3229,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.friendly.id",
       "min": 0,
@@ -2557,7 +3246,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.friendly.extension",
       "min": 0,
@@ -2572,7 +3264,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.friendly.modifierExtension",
       "min": 0,
@@ -2587,13 +3282,28 @@
       "name": "content[x]",
       "depth": 2,
       "types": [
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Composition",
-        "DocumentReference",
-        "QuestionnaireResponse"
+        {
+          "datatype": "Composition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.friendly.content[x]",
       "min": 1,
@@ -2607,7 +3317,9 @@
       "name": "legal",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.legal",
       "min": 0,
@@ -2621,7 +3333,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.legal.id",
       "min": 0,
@@ -2636,7 +3350,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.legal.extension",
       "min": 0,
@@ -2651,7 +3368,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.legal.modifierExtension",
       "min": 0,
@@ -2666,13 +3386,28 @@
       "name": "content[x]",
       "depth": 2,
       "types": [
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Composition",
-        "DocumentReference",
-        "QuestionnaireResponse"
+        {
+          "datatype": "Composition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.legal.content[x]",
       "min": 1,
@@ -2686,7 +3421,9 @@
       "name": "rule",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Contract.rule",
       "min": 0,
@@ -2700,7 +3437,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Contract.rule.id",
       "min": 0,
@@ -2715,7 +3454,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.rule.extension",
       "min": 0,
@@ -2730,7 +3472,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Contract.rule.modifierExtension",
       "min": 0,
@@ -2745,11 +3490,20 @@
       "name": "content[x]",
       "depth": 2,
       "types": [
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.rule.content[x]",
       "min": 1,
@@ -2763,14 +3517,32 @@
       "name": "legallyBinding[x]",
       "depth": 1,
       "types": [
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Composition",
-        "DocumentReference",
-        "QuestionnaireResponse",
-        "Contract"
+        {
+          "datatype": "Composition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Contract",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Contract.legallyBinding[x]",
       "min": 0,

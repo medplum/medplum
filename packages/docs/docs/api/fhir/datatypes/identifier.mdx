@@ -1,0 +1,18 @@
+---
+title: Identifier
+sidebar_position: 18
+---
+
+import definition from '@site/static/data/datatypeDefinitions/identifier.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Identifier
+
+Base StructureDefinition for Identifier Type: An identifier - identifies some entity uniquely and unambiguously. Typically this is used for business identifiers.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

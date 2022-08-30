@@ -1,12 +1,15 @@
 {
-  "resourceName": "EffectEvidenceSynthesis",
+  "name": "EffectEvidenceSynthesis",
+  "location": "resource",
   "description": "The EffectEvidenceSynthesis resource describes the difference in an outcome between exposures states in a population where the effect estimate is derived from a combination of research studies.",
   "properties": [
     {
       "name": "EffectEvidenceSynthesis",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "EffectEvidenceSynthesis",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "EffectEvidenceSynthesis.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EffectEvidenceSynthesis.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "EffectEvidenceSynthesis.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EffectEvidenceSynthesis.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "EffectEvidenceSynthesis.date",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.publisher",
       "min": 0,
@@ -252,7 +292,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.contact",
       "min": 0,
@@ -266,7 +309,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "EffectEvidenceSynthesis.description",
       "min": 0,
@@ -280,7 +325,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.note",
       "min": 0,
@@ -294,7 +342,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.useContext",
       "min": 0,
@@ -308,7 +359,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.jurisdiction",
       "min": 0,
@@ -322,7 +376,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "EffectEvidenceSynthesis.copyright",
       "min": 0,
@@ -336,7 +392,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "EffectEvidenceSynthesis.approvalDate",
       "min": 0,
@@ -350,7 +408,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "EffectEvidenceSynthesis.lastReviewDate",
       "min": 0,
@@ -364,7 +424,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectivePeriod",
       "min": 0,
@@ -378,7 +441,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.topic",
       "min": 0,
@@ -392,7 +458,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.author",
       "min": 0,
@@ -406,7 +475,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.editor",
       "min": 0,
@@ -420,7 +492,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.reviewer",
       "min": 0,
@@ -434,7 +509,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.endorser",
       "min": 0,
@@ -448,7 +526,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.relatedArtifact",
       "min": 0,
@@ -462,7 +543,10 @@
       "name": "synthesisType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.synthesisType",
       "min": 0,
@@ -476,7 +560,10 @@
       "name": "studyType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.studyType",
       "min": 0,
@@ -490,10 +577,16 @@
       "name": "population",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.population",
       "min": 1,
@@ -507,10 +600,16 @@
       "name": "exposure",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.exposure",
       "min": 1,
@@ -524,10 +623,16 @@
       "name": "exposureAlternative",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.exposureAlternative",
       "min": 1,
@@ -541,10 +646,16 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.outcome",
       "min": 1,
@@ -558,7 +669,9 @@
       "name": "sampleSize",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize",
       "min": 0,
@@ -572,7 +685,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.id",
       "min": 0,
@@ -587,7 +702,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.extension",
       "min": 0,
@@ -602,7 +720,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.modifierExtension",
       "min": 0,
@@ -617,7 +738,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.description",
       "min": 0,
@@ -631,7 +754,9 @@
       "name": "numberOfStudies",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.numberOfStudies",
       "min": 0,
@@ -645,7 +770,9 @@
       "name": "numberOfParticipants",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "EffectEvidenceSynthesis.sampleSize.numberOfParticipants",
       "min": 0,
@@ -659,7 +786,9 @@
       "name": "resultsByExposure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure",
       "min": 0,
@@ -673,7 +802,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.id",
       "min": 0,
@@ -688,7 +819,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.extension",
       "min": 0,
@@ -703,7 +837,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.modifierExtension",
       "min": 0,
@@ -718,7 +855,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.description",
       "min": 0,
@@ -732,7 +871,9 @@
       "name": "exposureState",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.exposureState",
       "min": 0,
@@ -746,7 +887,10 @@
       "name": "variantState",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.variantState",
       "min": 0,
@@ -760,10 +904,16 @@
       "name": "riskEvidenceSynthesis",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "RiskEvidenceSynthesis"
+        {
+          "datatype": "RiskEvidenceSynthesis",
+          "documentLocation": "resource"
+        }
       ],
       "path": "EffectEvidenceSynthesis.resultsByExposure.riskEvidenceSynthesis",
       "min": 1,
@@ -777,7 +927,9 @@
       "name": "effectEstimate",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate",
       "min": 0,
@@ -791,7 +943,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.id",
       "min": 0,
@@ -806,7 +960,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.extension",
       "min": 0,
@@ -821,7 +978,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.modifierExtension",
       "min": 0,
@@ -836,7 +996,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.description",
       "min": 0,
@@ -850,7 +1012,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.type",
       "min": 0,
@@ -864,7 +1029,10 @@
       "name": "variantState",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.variantState",
       "min": 0,
@@ -878,7 +1046,9 @@
       "name": "value",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.value",
       "min": 0,
@@ -892,7 +1062,10 @@
       "name": "unitOfMeasure",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.unitOfMeasure",
       "min": 0,
@@ -906,7 +1079,9 @@
       "name": "precisionEstimate",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate",
       "min": 0,
@@ -920,7 +1095,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.id",
       "min": 0,
@@ -935,7 +1112,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.extension",
       "min": 0,
@@ -950,7 +1130,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.modifierExtension",
       "min": 0,
@@ -965,7 +1148,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.type",
       "min": 0,
@@ -979,7 +1165,9 @@
       "name": "level",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.level",
       "min": 0,
@@ -993,7 +1181,9 @@
       "name": "from",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.from",
       "min": 0,
@@ -1007,7 +1197,9 @@
       "name": "to",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "EffectEvidenceSynthesis.effectEstimate.precisionEstimate.to",
       "min": 0,
@@ -1021,7 +1213,9 @@
       "name": "certainty",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty",
       "min": 0,
@@ -1035,7 +1229,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.id",
       "min": 0,
@@ -1050,7 +1246,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.extension",
       "min": 0,
@@ -1065,7 +1264,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.modifierExtension",
       "min": 0,
@@ -1080,7 +1282,10 @@
       "name": "rating",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.rating",
       "min": 0,
@@ -1094,7 +1299,10 @@
       "name": "note",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.note",
       "min": 0,
@@ -1108,7 +1316,9 @@
       "name": "certaintySubcomponent",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent",
       "min": 0,
@@ -1122,7 +1332,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.id",
       "min": 0,
@@ -1137,7 +1349,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.extension",
       "min": 0,
@@ -1152,7 +1367,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.modifierExtension",
       "min": 0,
@@ -1167,7 +1385,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.type",
       "min": 0,
@@ -1181,7 +1402,10 @@
       "name": "rating",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.rating",
       "min": 0,
@@ -1195,7 +1419,10 @@
       "name": "note",
       "depth": 3,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "EffectEvidenceSynthesis.certainty.certaintySubcomponent.note",
       "min": 0,

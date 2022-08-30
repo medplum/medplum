@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductInteraction",
+  "name": "MedicinalProductInteraction",
+  "location": "resource",
   "description": "The interactions of the medicinal product with other medicinal products, or other forms of interactions.",
   "properties": [
     {
       "name": "MedicinalProductInteraction",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductInteraction",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductInteraction.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductInteraction.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductInteraction.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductInteraction.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.modifierExtension",
       "min": 0,
@@ -140,12 +163,24 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "Medication",
-        "Substance"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductInteraction.subject",
       "min": 0,
@@ -159,7 +194,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductInteraction.description",
       "min": 0,
@@ -173,7 +210,9 @@
       "name": "interactant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductInteraction.interactant",
       "min": 0,
@@ -187,7 +226,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductInteraction.interactant.id",
       "min": 0,
@@ -202,7 +243,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.interactant.extension",
       "min": 0,
@@ -217,7 +261,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.interactant.modifierExtension",
       "min": 0,
@@ -232,14 +279,32 @@
       "name": "item[x]",
       "depth": 2,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "Medication",
-        "Substance",
-        "ObservationDefinition"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductInteraction.interactant.item[x]",
       "min": 1,
@@ -253,7 +318,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.type",
       "min": 0,
@@ -267,7 +335,10 @@
       "name": "effect",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.effect",
       "min": 0,
@@ -281,7 +352,10 @@
       "name": "incidence",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.incidence",
       "min": 0,
@@ -295,7 +369,10 @@
       "name": "management",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductInteraction.management",
       "min": 0,

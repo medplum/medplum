@@ -1,12 +1,15 @@
 {
-  "resourceName": "SubstanceSourceMaterial",
+  "name": "SubstanceSourceMaterial",
+  "location": "resource",
   "description": "Source material shall capture information on the taxonomic and anatomical origins as well as the fraction of a material that can result in or can be modified to form a substance. This set of data elements shall be used to define polymer substances isolated from biological matrices. Taxonomic and anatomical origins shall be described using a controlled vocabulary as required. This information is captured for naturally derived polymers ( . starch) and structurally diverse substances. For Organisms belonging to the Kingdom Plantae the Substance level defines the fresh material of a single species or infraspecies, the Herbal Drug and the Herbal preparation. For Herbal preparations, the fraction information will be captured at the Substance information level and additional information for herbal extracts will be captured at the Specified Substance Group 1 information level. See for further explanation the Substance Class: Structurally Diverse and the herbal annex.",
   "properties": [
     {
       "name": "SubstanceSourceMaterial",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSourceMaterial",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstanceSourceMaterial.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstanceSourceMaterial.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstanceSourceMaterial.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "sourceMaterialClass",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.sourceMaterialClass",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "sourceMaterialType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.sourceMaterialType",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "sourceMaterialState",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.sourceMaterialState",
       "min": 0,
@@ -182,7 +214,10 @@
       "name": "organismId",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organismId",
       "min": 0,
@@ -196,7 +231,9 @@
       "name": "organismName",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organismName",
       "min": 0,
@@ -210,7 +247,10 @@
       "name": "parentSubstanceId",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.parentSubstanceId",
       "min": 0,
@@ -224,7 +264,9 @@
       "name": "parentSubstanceName",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.parentSubstanceName",
       "min": 0,
@@ -238,7 +280,10 @@
       "name": "countryOfOrigin",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.countryOfOrigin",
       "min": 0,
@@ -252,7 +297,9 @@
       "name": "geographicalLocation",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.geographicalLocation",
       "min": 0,
@@ -266,7 +313,10 @@
       "name": "developmentStage",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.developmentStage",
       "min": 0,
@@ -280,7 +330,9 @@
       "name": "fractionDescription",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription",
       "min": 0,
@@ -294,7 +346,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription.id",
       "min": 0,
@@ -309,7 +363,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription.extension",
       "min": 0,
@@ -324,7 +381,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription.modifierExtension",
       "min": 0,
@@ -339,7 +399,9 @@
       "name": "fraction",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription.fraction",
       "min": 0,
@@ -353,7 +415,10 @@
       "name": "materialType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.fractionDescription.materialType",
       "min": 0,
@@ -367,7 +432,9 @@
       "name": "organism",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism",
       "min": 0,
@@ -381,7 +448,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.id",
       "min": 0,
@@ -396,7 +465,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.extension",
       "min": 0,
@@ -411,7 +483,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.modifierExtension",
       "min": 0,
@@ -426,7 +501,10 @@
       "name": "family",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.family",
       "min": 0,
@@ -440,7 +518,10 @@
       "name": "genus",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.genus",
       "min": 0,
@@ -454,7 +535,10 @@
       "name": "species",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.species",
       "min": 0,
@@ -468,7 +552,10 @@
       "name": "intraspecificType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.intraspecificType",
       "min": 0,
@@ -482,7 +569,9 @@
       "name": "intraspecificDescription",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.intraspecificDescription",
       "min": 0,
@@ -496,7 +585,9 @@
       "name": "author",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author",
       "min": 0,
@@ -510,7 +601,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author.id",
       "min": 0,
@@ -525,7 +618,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author.extension",
       "min": 0,
@@ -540,7 +636,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author.modifierExtension",
       "min": 0,
@@ -555,7 +654,10 @@
       "name": "authorType",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author.authorType",
       "min": 0,
@@ -569,7 +671,9 @@
       "name": "authorDescription",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.author.authorDescription",
       "min": 0,
@@ -583,7 +687,9 @@
       "name": "hybrid",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid",
       "min": 0,
@@ -597,7 +703,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.id",
       "min": 0,
@@ -612,7 +720,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.extension",
       "min": 0,
@@ -627,7 +738,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.modifierExtension",
       "min": 0,
@@ -642,7 +756,9 @@
       "name": "maternalOrganismId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.maternalOrganismId",
       "min": 0,
@@ -656,7 +772,9 @@
       "name": "maternalOrganismName",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.maternalOrganismName",
       "min": 0,
@@ -670,7 +788,9 @@
       "name": "paternalOrganismId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.paternalOrganismId",
       "min": 0,
@@ -684,7 +804,9 @@
       "name": "paternalOrganismName",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.paternalOrganismName",
       "min": 0,
@@ -698,7 +820,10 @@
       "name": "hybridType",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.hybrid.hybridType",
       "min": 0,
@@ -712,7 +837,9 @@
       "name": "organismGeneral",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral",
       "min": 0,
@@ -726,7 +853,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.id",
       "min": 0,
@@ -741,7 +870,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.extension",
       "min": 0,
@@ -756,7 +888,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.modifierExtension",
       "min": 0,
@@ -771,7 +906,10 @@
       "name": "kingdom",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.kingdom",
       "min": 0,
@@ -785,7 +923,10 @@
       "name": "phylum",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.phylum",
       "min": 0,
@@ -799,7 +940,10 @@
       "name": "class",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.class",
       "min": 0,
@@ -813,7 +957,10 @@
       "name": "order",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.organism.organismGeneral.order",
       "min": 0,
@@ -827,7 +974,9 @@
       "name": "partDescription",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription",
       "min": 0,
@@ -841,7 +990,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription.id",
       "min": 0,
@@ -856,7 +1007,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription.extension",
       "min": 0,
@@ -871,7 +1025,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription.modifierExtension",
       "min": 0,
@@ -886,7 +1043,10 @@
       "name": "part",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription.part",
       "min": 0,
@@ -900,7 +1060,10 @@
       "name": "partLocation",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSourceMaterial.partDescription.partLocation",
       "min": 0,
@@ -910,6 +1073,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

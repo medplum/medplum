@@ -1,12 +1,15 @@
 {
-  "resourceName": "ClinicalImpression",
+  "name": "ClinicalImpression",
+  "location": "resource",
   "description": "A record of a clinical assessment performed to determine what problem(s) may affect the patient and before planning the treatments or management strategies that are best to manage a patient's condition. Assessments are often 1:1 with a clinical consultation / encounter,  but this varies greatly depending on the clinical workflow. This resource is called \"ClinicalImpression\" rather than \"ClinicalAssessment\" to avoid confusion with the recording of assessment tools such as Apgar score.",
   "properties": [
     {
       "name": "ClinicalImpression",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ClinicalImpression",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ClinicalImpression.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ClinicalImpression.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ClinicalImpression.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ClinicalImpression.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.statusReason",
       "min": 0,
@@ -182,7 +213,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.code",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.description",
       "min": 0,
@@ -210,11 +246,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.subject",
       "min": 1,
@@ -228,10 +273,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.encounter",
       "min": 0,
@@ -245,8 +296,13 @@
       "name": "effective[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.effective[x]",
       "min": 0,
@@ -260,7 +316,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ClinicalImpression.date",
       "min": 0,
@@ -274,11 +332,20 @@
       "name": "assessor",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.assessor",
       "min": 0,
@@ -292,10 +359,16 @@
       "name": "previous",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ClinicalImpression"
+        {
+          "datatype": "ClinicalImpression",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.previous",
       "min": 0,
@@ -309,11 +382,20 @@
       "name": "problem",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "AllergyIntolerance"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "AllergyIntolerance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.problem",
       "min": 0,
@@ -327,7 +409,9 @@
       "name": "investigation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ClinicalImpression.investigation",
       "min": 0,
@@ -341,7 +425,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.investigation.id",
       "min": 0,
@@ -356,7 +442,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.investigation.extension",
       "min": 0,
@@ -371,7 +460,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.investigation.modifierExtension",
       "min": 0,
@@ -386,7 +478,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.investigation.code",
       "min": 1,
@@ -400,16 +495,40 @@
       "name": "item",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Observation",
-        "QuestionnaireResponse",
-        "FamilyMemberHistory",
-        "DiagnosticReport",
-        "RiskAssessment",
-        "ImagingStudy",
-        "Media"
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "FamilyMemberHistory",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RiskAssessment",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImagingStudy",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.investigation.item",
       "min": 0,
@@ -423,7 +542,9 @@
       "name": "protocol",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ClinicalImpression.protocol",
       "min": 0,
@@ -437,7 +558,9 @@
       "name": "summary",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.summary",
       "min": 0,
@@ -451,7 +574,9 @@
       "name": "finding",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ClinicalImpression.finding",
       "min": 0,
@@ -465,7 +590,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.finding.id",
       "min": 0,
@@ -480,7 +607,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.finding.extension",
       "min": 0,
@@ -495,7 +625,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.finding.modifierExtension",
       "min": 0,
@@ -510,7 +643,10 @@
       "name": "itemCodeableConcept",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.finding.itemCodeableConcept",
       "min": 0,
@@ -524,12 +660,24 @@
       "name": "itemReference",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "Media"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.finding.itemReference",
       "min": 0,
@@ -543,7 +691,9 @@
       "name": "basis",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ClinicalImpression.finding.basis",
       "min": 0,
@@ -557,7 +707,10 @@
       "name": "prognosisCodeableConcept",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.prognosisCodeableConcept",
       "min": 0,
@@ -571,10 +724,16 @@
       "name": "prognosisReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "RiskAssessment"
+        {
+          "datatype": "RiskAssessment",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ClinicalImpression.prognosisReference",
       "min": 0,
@@ -588,10 +747,15 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ClinicalImpression.supportingInfo",
       "min": 0,
@@ -605,7 +769,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ClinicalImpression.note",
       "min": 0,

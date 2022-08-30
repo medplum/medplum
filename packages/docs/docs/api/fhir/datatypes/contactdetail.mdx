@@ -1,0 +1,18 @@
+---
+title: ContactDetail
+sidebar_position: 6
+---
+
+import definition from '@site/static/data/datatypeDefinitions/contactdetail.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ContactDetail
+
+Base StructureDefinition for ContactDetail Type: Specifies contact information for a person or organization.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

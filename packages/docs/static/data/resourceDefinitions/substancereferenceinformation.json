@@ -1,12 +1,15 @@
 {
-  "resourceName": "SubstanceReferenceInformation",
+  "name": "SubstanceReferenceInformation",
+  "location": "resource",
   "description": "Todo.",
   "properties": [
     {
       "name": "SubstanceReferenceInformation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceReferenceInformation",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstanceReferenceInformation.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstanceReferenceInformation.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstanceReferenceInformation.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.comment",
       "min": 0,
@@ -154,7 +179,9 @@
       "name": "gene",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.id",
       "min": 0,
@@ -183,7 +212,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.extension",
       "min": 0,
@@ -198,7 +230,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.modifierExtension",
       "min": 0,
@@ -213,7 +248,10 @@
       "name": "geneSequenceOrigin",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.geneSequenceOrigin",
       "min": 0,
@@ -227,7 +265,10 @@
       "name": "gene",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.gene",
       "min": 0,
@@ -241,10 +282,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceReferenceInformation.gene.source",
       "min": 0,
@@ -258,7 +305,9 @@
       "name": "geneElement",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement",
       "min": 0,
@@ -272,7 +321,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.id",
       "min": 0,
@@ -287,7 +338,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.extension",
       "min": 0,
@@ -302,7 +356,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.modifierExtension",
       "min": 0,
@@ -317,7 +374,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.type",
       "min": 0,
@@ -331,7 +391,10 @@
       "name": "element",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.element",
       "min": 0,
@@ -345,10 +408,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceReferenceInformation.geneElement.source",
       "min": 0,
@@ -362,7 +431,9 @@
       "name": "classification",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification",
       "min": 0,
@@ -376,7 +447,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.id",
       "min": 0,
@@ -391,7 +464,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.extension",
       "min": 0,
@@ -406,7 +482,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.modifierExtension",
       "min": 0,
@@ -421,7 +500,10 @@
       "name": "domain",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.domain",
       "min": 0,
@@ -435,7 +517,10 @@
       "name": "classification",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.classification",
       "min": 0,
@@ -449,7 +534,10 @@
       "name": "subtype",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.subtype",
       "min": 0,
@@ -463,10 +551,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceReferenceInformation.classification.source",
       "min": 0,
@@ -480,7 +574,9 @@
       "name": "target",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceReferenceInformation.target",
       "min": 0,
@@ -494,7 +590,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.id",
       "min": 0,
@@ -509,7 +607,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.extension",
       "min": 0,
@@ -524,7 +625,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.modifierExtension",
       "min": 0,
@@ -539,7 +643,10 @@
       "name": "target",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.target",
       "min": 0,
@@ -553,7 +660,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.type",
       "min": 0,
@@ -567,7 +677,10 @@
       "name": "interaction",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.interaction",
       "min": 0,
@@ -581,7 +694,10 @@
       "name": "organism",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.organism",
       "min": 0,
@@ -595,7 +711,10 @@
       "name": "organismType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.organismType",
       "min": 0,
@@ -609,9 +728,17 @@
       "name": "amount[x]",
       "depth": 2,
       "types": [
-        "Quantity",
-        "Range",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.amount[x]",
       "min": 0,
@@ -625,7 +752,10 @@
       "name": "amountType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.amountType",
       "min": 0,
@@ -639,10 +769,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceReferenceInformation.target.source",
       "min": 0,
@@ -652,6 +788,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

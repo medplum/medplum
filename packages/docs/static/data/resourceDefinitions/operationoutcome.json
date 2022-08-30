@@ -1,12 +1,15 @@
 {
-  "resourceName": "OperationOutcome",
+  "name": "OperationOutcome",
+  "location": "resource",
   "description": "A collection of error, warning, or information messages that result from a system action.",
   "properties": [
     {
       "name": "OperationOutcome",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "OperationOutcome",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationOutcome.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "OperationOutcome.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationOutcome.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "OperationOutcome.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "issue",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "OperationOutcome.issue",
       "min": 1,
@@ -154,7 +179,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationOutcome.issue.id",
       "min": 0,
@@ -169,7 +196,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.issue.extension",
       "min": 0,
@@ -184,7 +214,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.issue.modifierExtension",
       "min": 0,
@@ -199,7 +232,9 @@
       "name": "severity",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationOutcome.issue.severity",
       "min": 1,
@@ -213,7 +248,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationOutcome.issue.code",
       "min": 1,
@@ -227,7 +264,10 @@
       "name": "details",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationOutcome.issue.details",
       "min": 0,
@@ -241,7 +281,9 @@
       "name": "diagnostics",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationOutcome.issue.diagnostics",
       "min": 0,
@@ -255,7 +297,9 @@
       "name": "location",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationOutcome.issue.location",
       "min": 0,
@@ -269,7 +313,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationOutcome.issue.expression",
       "min": 0,
@@ -279,6 +325,5 @@
       "comment": "The root of the FHIRPath is the resource or bundle that generated OperationOutcome.  Each FHIRPath SHALL resolve to a single node.",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

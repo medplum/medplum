@@ -1,0 +1,18 @@
+---
+title: Attachment
+sidebar_position: 3
+---
+
+import definition from '@site/static/data/datatypeDefinitions/attachment.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Attachment
+
+Base StructureDefinition for Attachment Type: For referring to data content defined in other formats.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

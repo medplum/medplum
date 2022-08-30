@@ -1,12 +1,15 @@
 {
-  "resourceName": "ValueSet",
+  "name": "ValueSet",
+  "location": "resource",
   "description": "A ValueSet resource instance specifies a set of codes drawn from one or more code systems, intended for use in a particular context. Value sets link between [[[CodeSystem]]] definitions and their use in [coded elements](terminologies.html).",
   "properties": [
     {
       "name": "ValueSet",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ValueSet",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ValueSet.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ValueSet.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ValueSet.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ValueSet.experimental",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ValueSet.date",
       "min": 0,
@@ -252,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.publisher",
       "min": 0,
@@ -266,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.contact",
       "min": 0,
@@ -280,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ValueSet.description",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.useContext",
       "min": 0,
@@ -308,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.jurisdiction",
       "min": 0,
@@ -322,7 +375,9 @@
       "name": "immutable",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ValueSet.immutable",
       "min": 0,
@@ -336,7 +391,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ValueSet.purpose",
       "min": 0,
@@ -350,7 +407,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ValueSet.copyright",
       "min": 0,
@@ -364,7 +423,9 @@
       "name": "compose",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.compose",
       "min": 0,
@@ -378,7 +439,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.id",
       "min": 0,
@@ -393,7 +456,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.extension",
       "min": 0,
@@ -408,7 +474,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.modifierExtension",
       "min": 0,
@@ -423,7 +492,9 @@
       "name": "lockedDate",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ValueSet.compose.lockedDate",
       "min": 0,
@@ -437,7 +508,9 @@
       "name": "inactive",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ValueSet.compose.inactive",
       "min": 0,
@@ -451,7 +524,9 @@
       "name": "include",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.compose.include",
       "min": 1,
@@ -465,7 +540,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.id",
       "min": 0,
@@ -480,7 +557,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.extension",
       "min": 0,
@@ -495,7 +575,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.modifierExtension",
       "min": 0,
@@ -510,7 +593,9 @@
       "name": "system",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ValueSet.compose.include.system",
       "min": 0,
@@ -524,7 +609,9 @@
       "name": "version",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.version",
       "min": 0,
@@ -538,7 +625,9 @@
       "name": "concept",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.compose.include.concept",
       "min": 0,
@@ -552,7 +641,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.concept.id",
       "min": 0,
@@ -567,7 +658,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.concept.extension",
       "min": 0,
@@ -582,7 +676,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.concept.modifierExtension",
       "min": 0,
@@ -597,7 +694,9 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.compose.include.concept.code",
       "min": 1,
@@ -611,7 +710,9 @@
       "name": "display",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.concept.display",
       "min": 0,
@@ -625,7 +726,9 @@
       "name": "designation",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation",
       "min": 0,
@@ -639,7 +742,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.id",
       "min": 0,
@@ -654,7 +759,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.extension",
       "min": 0,
@@ -669,7 +777,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.modifierExtension",
       "min": 0,
@@ -684,7 +795,9 @@
       "name": "language",
       "depth": 5,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.language",
       "min": 0,
@@ -698,7 +811,10 @@
       "name": "use",
       "depth": 5,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.use",
       "min": 0,
@@ -712,7 +828,9 @@
       "name": "value",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.concept.designation.value",
       "min": 1,
@@ -726,7 +844,9 @@
       "name": "filter",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.compose.include.filter",
       "min": 0,
@@ -740,7 +860,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.filter.id",
       "min": 0,
@@ -755,7 +877,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.filter.extension",
       "min": 0,
@@ -770,7 +895,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.compose.include.filter.modifierExtension",
       "min": 0,
@@ -785,7 +913,9 @@
       "name": "property",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.compose.include.filter.property",
       "min": 1,
@@ -799,7 +929,9 @@
       "name": "op",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.compose.include.filter.op",
       "min": 1,
@@ -813,7 +945,9 @@
       "name": "value",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.compose.include.filter.value",
       "min": 1,
@@ -827,7 +961,9 @@
       "name": "valueSet",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ValueSet.compose.include.valueSet",
       "min": 0,
@@ -841,7 +977,9 @@
       "name": "exclude",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ValueSet.compose.exclude",
       "min": 0,
@@ -855,7 +993,9 @@
       "name": "expansion",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.expansion",
       "min": 0,
@@ -869,7 +1009,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.id",
       "min": 0,
@@ -884,7 +1026,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.extension",
       "min": 0,
@@ -899,7 +1044,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.modifierExtension",
       "min": 0,
@@ -914,7 +1062,9 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ValueSet.expansion.identifier",
       "min": 0,
@@ -928,7 +1078,9 @@
       "name": "timestamp",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ValueSet.expansion.timestamp",
       "min": 1,
@@ -942,7 +1094,9 @@
       "name": "total",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "ValueSet.expansion.total",
       "min": 0,
@@ -956,7 +1110,9 @@
       "name": "offset",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "ValueSet.expansion.offset",
       "min": 0,
@@ -970,7 +1126,9 @@
       "name": "parameter",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.expansion.parameter",
       "min": 0,
@@ -984,7 +1142,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.parameter.id",
       "min": 0,
@@ -999,7 +1159,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.parameter.extension",
       "min": 0,
@@ -1014,7 +1177,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.parameter.modifierExtension",
       "min": 0,
@@ -1029,7 +1195,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.parameter.name",
       "min": 1,
@@ -1043,13 +1211,27 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "string",
-        "boolean",
-        "integer",
-        "decimal",
-        "uri",
-        "code",
-        "dateTime"
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ValueSet.expansion.parameter.value[x]",
       "min": 0,
@@ -1063,7 +1245,9 @@
       "name": "contains",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ValueSet.expansion.contains",
       "min": 0,
@@ -1077,7 +1261,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.contains.id",
       "min": 0,
@@ -1092,7 +1278,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.contains.extension",
       "min": 0,
@@ -1107,7 +1296,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ValueSet.expansion.contains.modifierExtension",
       "min": 0,
@@ -1122,7 +1314,9 @@
       "name": "system",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ValueSet.expansion.contains.system",
       "min": 0,
@@ -1136,7 +1330,9 @@
       "name": "abstract",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ValueSet.expansion.contains.abstract",
       "min": 0,
@@ -1150,7 +1346,9 @@
       "name": "inactive",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ValueSet.expansion.contains.inactive",
       "min": 0,
@@ -1164,7 +1362,9 @@
       "name": "version",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.contains.version",
       "min": 0,
@@ -1178,7 +1378,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ValueSet.expansion.contains.code",
       "min": 0,
@@ -1192,7 +1394,9 @@
       "name": "display",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ValueSet.expansion.contains.display",
       "min": 0,
@@ -1206,7 +1410,9 @@
       "name": "designation",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ValueSet.expansion.contains.designation",
       "min": 0,
@@ -1220,7 +1426,9 @@
       "name": "contains",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ValueSet.expansion.contains.contains",
       "min": 0,

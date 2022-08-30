@@ -1,0 +1,157 @@
+{
+  "name": "TriggerDefinition",
+  "location": "datatype",
+  "description": "Base StructureDefinition for TriggerDefinition Type: A description of a triggering event. Triggering events can be named events, data events, or periodic, as determined by the type element.",
+  "properties": [
+    {
+      "name": "TriggerDefinition",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "TriggerDefinition",
+      "min": 0,
+      "max": "*",
+      "short": "Defines an expected trigger for a module",
+      "definition": "A description of a triggering event. Triggering events can be named events, data events, or periodic, as determined by the type element.",
+      "comment": "If an event is a named-event, it means the event is completely pre-coordinated, and no other information can be specified for the event. If the event is one of the data- events, the data and condition elements specify the triggering criteria. The data element specifies the structured component, and the condition element provides additional optional refinement of that structured component. If the event is periodic, the timing element defines when the event is triggered. For both data- and periodic events, a name can be provided as a shorthand for the formal semantics provided by the other elements.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "TriggerDefinition.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "TriggerDefinition.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "TriggerDefinition.type",
+      "min": 1,
+      "max": "1",
+      "short": "named-event | periodic | data-changed | data-added | data-modified | data-removed | data-accessed | data-access-ended",
+      "definition": "The type of triggering event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "TriggerDefinition.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name or URI that identifies the event",
+      "definition": "A formal name for the event. This may be an absolute URI that identifies the event formally (e.g. from a trigger registry), or a simple relative URI that identifies the event in a local context.",
+      "comment": "An event name can be provided for all event types, but is required for named events. If a name is provided for a type other than named events, it is considered to be a shorthand for the semantics described by the formal description of the event.",
+      "inherited": false
+    },
+    {
+      "name": "timing[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Schedule",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "TriggerDefinition.timing[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Timing of the event",
+      "definition": "The timing of the event (if this is a periodic trigger).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "data",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "TriggerDefinition.data",
+      "min": 0,
+      "max": "*",
+      "short": "Triggering data of the event (multiple = 'and')",
+      "definition": "The triggering data of the event (if this is a data trigger). If more than one data is requirement is specified, then all the data requirements must be true.",
+      "comment": "This element shall be present for any data type trigger.",
+      "inherited": false
+    },
+    {
+      "name": "condition",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "TriggerDefinition.condition",
+      "min": 0,
+      "max": "1",
+      "short": "Whether the event triggers (boolean expression)",
+      "definition": "A boolean-valued expression that is evaluated in the context of the container of the trigger definition and returns whether or not the trigger fires.",
+      "comment": "This element can be only be specified for data type triggers and provides additional semantics for the trigger. The context available within the condition is based on the type of data event. For all events, the current resource will be available as context. In addition, for modification events, the previous resource will also be available. The expression may be inlined, or may be a simple absolute URI, which is a reference to a named expression within a logic library referenced by a library element or extension within the containing resource. If the expression is a FHIR Path expression, it evaluates in the context of a resource of one of the type identified in the data requirement, and may also refer to the variable %previous for delta comparisons on events of type data-changed, data-modified, and data-deleted which will always have the same type.",
+      "inherited": false
+    }
+  ]
+}

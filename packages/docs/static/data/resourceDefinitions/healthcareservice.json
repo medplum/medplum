@@ -1,12 +1,15 @@
 {
-  "resourceName": "HealthcareService",
+  "name": "HealthcareService",
+  "location": "resource",
   "description": "The details of a healthcare service available at a location.",
   "properties": [
     {
       "name": "HealthcareService",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "HealthcareService",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "HealthcareService.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "HealthcareService.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "HealthcareService.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "active",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "HealthcareService.active",
       "min": 0,
@@ -168,10 +196,16 @@
       "name": "providedBy",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "HealthcareService.providedBy",
       "min": 0,
@@ -185,7 +219,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.category",
       "min": 0,
@@ -199,7 +236,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.type",
       "min": 0,
@@ -213,7 +253,10 @@
       "name": "specialty",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.specialty",
       "min": 0,
@@ -227,10 +270,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "HealthcareService.location",
       "min": 0,
@@ -244,7 +293,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.name",
       "min": 0,
@@ -258,7 +309,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.comment",
       "min": 0,
@@ -272,7 +325,9 @@
       "name": "extraDetails",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "HealthcareService.extraDetails",
       "min": 0,
@@ -286,7 +341,10 @@
       "name": "photo",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.photo",
       "min": 0,
@@ -300,7 +358,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.telecom",
       "min": 0,
@@ -314,10 +375,16 @@
       "name": "coverageArea",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "HealthcareService.coverageArea",
       "min": 0,
@@ -331,7 +398,10 @@
       "name": "serviceProvisionCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.serviceProvisionCode",
       "min": 0,
@@ -345,7 +415,9 @@
       "name": "eligibility",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "HealthcareService.eligibility",
       "min": 0,
@@ -359,7 +431,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.eligibility.id",
       "min": 0,
@@ -374,7 +448,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.eligibility.extension",
       "min": 0,
@@ -389,7 +466,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.eligibility.modifierExtension",
       "min": 0,
@@ -404,7 +484,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.eligibility.code",
       "min": 0,
@@ -418,7 +501,9 @@
       "name": "comment",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "HealthcareService.eligibility.comment",
       "min": 0,
@@ -432,7 +517,10 @@
       "name": "program",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.program",
       "min": 0,
@@ -446,7 +534,10 @@
       "name": "characteristic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.characteristic",
       "min": 0,
@@ -460,7 +551,10 @@
       "name": "communication",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.communication",
       "min": 0,
@@ -474,7 +568,10 @@
       "name": "referralMethod",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.referralMethod",
       "min": 0,
@@ -488,7 +585,9 @@
       "name": "appointmentRequired",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "HealthcareService.appointmentRequired",
       "min": 0,
@@ -502,7 +601,9 @@
       "name": "availableTime",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "HealthcareService.availableTime",
       "min": 0,
@@ -516,7 +617,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.availableTime.id",
       "min": 0,
@@ -531,7 +634,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.availableTime.extension",
       "min": 0,
@@ -546,7 +652,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.availableTime.modifierExtension",
       "min": 0,
@@ -561,7 +670,9 @@
       "name": "daysOfWeek",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "HealthcareService.availableTime.daysOfWeek",
       "min": 0,
@@ -575,7 +686,9 @@
       "name": "allDay",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "HealthcareService.availableTime.allDay",
       "min": 0,
@@ -589,7 +702,9 @@
       "name": "availableStartTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "HealthcareService.availableTime.availableStartTime",
       "min": 0,
@@ -603,7 +718,9 @@
       "name": "availableEndTime",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "HealthcareService.availableTime.availableEndTime",
       "min": 0,
@@ -617,7 +734,9 @@
       "name": "notAvailable",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "HealthcareService.notAvailable",
       "min": 0,
@@ -631,7 +750,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.notAvailable.id",
       "min": 0,
@@ -646,7 +767,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.notAvailable.extension",
       "min": 0,
@@ -661,7 +785,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.notAvailable.modifierExtension",
       "min": 0,
@@ -676,7 +803,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.notAvailable.description",
       "min": 1,
@@ -690,7 +819,10 @@
       "name": "during",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HealthcareService.notAvailable.during",
       "min": 0,
@@ -704,7 +836,9 @@
       "name": "availabilityExceptions",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HealthcareService.availabilityExceptions",
       "min": 0,
@@ -718,10 +852,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "HealthcareService.endpoint",
       "min": 0,

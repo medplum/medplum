@@ -1,12 +1,15 @@
 {
-  "resourceName": "Subscription",
+  "name": "Subscription",
+  "location": "resource",
   "description": "The subscription resource is used to define a push-based subscription from a server to another system. Once a subscription is registered with the server, the server checks every resource that is created or updated, and if the resource matches the given criteria, it sends a message on the defined \"channel\" so that another system can take an appropriate action.",
   "properties": [
     {
       "name": "Subscription",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Subscription",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Subscription.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Subscription.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Subscription.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Subscription.status",
       "min": 1,
@@ -154,7 +179,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.contact",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "end",
       "depth": 1,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Subscription.end",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "reason",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.reason",
       "min": 1,
@@ -196,7 +228,9 @@
       "name": "criteria",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.criteria",
       "min": 1,
@@ -210,7 +244,9 @@
       "name": "error",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.error",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "channel",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Subscription.channel",
       "min": 1,
@@ -238,7 +276,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.channel.id",
       "min": 0,
@@ -253,7 +293,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.channel.extension",
       "min": 0,
@@ -268,7 +311,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Subscription.channel.modifierExtension",
       "min": 0,
@@ -283,7 +329,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Subscription.channel.type",
       "min": 1,
@@ -297,7 +345,9 @@
       "name": "endpoint",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "Subscription.channel.endpoint",
       "min": 0,
@@ -311,7 +361,9 @@
       "name": "payload",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Subscription.channel.payload",
       "min": 0,
@@ -325,7 +377,9 @@
       "name": "header",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Subscription.channel.header",
       "min": 0,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "Questionnaire",
+  "name": "Questionnaire",
+  "location": "resource",
   "description": "A structured set of questions intended to guide the collection of answers from end-users. Questionnaires provide detailed control over order, presentation, phraseology and grouping to allow coherent, consistent data collection.",
   "properties": [
     {
       "name": "Questionnaire",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Questionnaire",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Questionnaire.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Questionnaire.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Questionnaire.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "derivedFrom",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Questionnaire.derivedFrom",
       "min": 0,
@@ -224,7 +260,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.status",
       "min": 1,
@@ -238,7 +276,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Questionnaire.experimental",
       "min": 0,
@@ -252,7 +292,9 @@
       "name": "subjectType",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.subjectType",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Questionnaire.date",
       "min": 0,
@@ -280,7 +324,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.publisher",
       "min": 0,
@@ -294,7 +340,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.contact",
       "min": 0,
@@ -308,7 +357,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Questionnaire.description",
       "min": 0,
@@ -322,7 +373,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.useContext",
       "min": 0,
@@ -336,7 +390,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.jurisdiction",
       "min": 0,
@@ -350,7 +407,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Questionnaire.purpose",
       "min": 0,
@@ -364,7 +423,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Questionnaire.copyright",
       "min": 0,
@@ -378,7 +439,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Questionnaire.approvalDate",
       "min": 0,
@@ -392,7 +455,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Questionnaire.lastReviewDate",
       "min": 0,
@@ -406,7 +471,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.effectivePeriod",
       "min": 0,
@@ -420,7 +488,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.code",
       "min": 0,
@@ -434,7 +505,9 @@
       "name": "item",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Questionnaire.item",
       "min": 0,
@@ -448,7 +521,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.id",
       "min": 0,
@@ -463,7 +538,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.extension",
       "min": 0,
@@ -478,7 +556,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.modifierExtension",
       "min": 0,
@@ -493,7 +574,9 @@
       "name": "linkId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.linkId",
       "min": 1,
@@ -507,7 +590,9 @@
       "name": "definition",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Questionnaire.item.definition",
       "min": 0,
@@ -521,7 +606,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.code",
       "min": 0,
@@ -535,7 +623,9 @@
       "name": "prefix",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.prefix",
       "min": 0,
@@ -549,7 +639,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.text",
       "min": 0,
@@ -563,7 +655,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.item.type",
       "min": 1,
@@ -577,7 +671,9 @@
       "name": "enableWhen",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Questionnaire.item.enableWhen",
       "min": 0,
@@ -591,7 +687,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.id",
       "min": 0,
@@ -606,7 +704,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.extension",
       "min": 0,
@@ -621,7 +722,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.modifierExtension",
       "min": 0,
@@ -636,7 +740,9 @@
       "name": "question",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.question",
       "min": 1,
@@ -650,7 +756,9 @@
       "name": "operator",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.operator",
       "min": 1,
@@ -664,19 +772,44 @@
       "name": "answer[x]",
       "depth": 3,
       "types": [
-        "boolean",
-        "decimal",
-        "integer",
-        "date",
-        "dateTime",
-        "time",
-        "string",
-        "Coding",
-        "Quantity",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Questionnaire.item.enableWhen.answer[x]",
       "min": 1,
@@ -690,7 +823,9 @@
       "name": "enableBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Questionnaire.item.enableBehavior",
       "min": 0,
@@ -704,7 +839,9 @@
       "name": "required",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Questionnaire.item.required",
       "min": 0,
@@ -718,7 +855,9 @@
       "name": "repeats",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Questionnaire.item.repeats",
       "min": 0,
@@ -732,7 +871,9 @@
       "name": "readOnly",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Questionnaire.item.readOnly",
       "min": 0,
@@ -746,7 +887,9 @@
       "name": "maxLength",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "Questionnaire.item.maxLength",
       "min": 0,
@@ -760,7 +903,9 @@
       "name": "answerValueSet",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Questionnaire.item.answerValueSet",
       "min": 0,
@@ -774,7 +919,9 @@
       "name": "answerOption",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Questionnaire.item.answerOption",
       "min": 0,
@@ -788,7 +935,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.answerOption.id",
       "min": 0,
@@ -803,7 +952,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.answerOption.extension",
       "min": 0,
@@ -818,7 +970,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.answerOption.modifierExtension",
       "min": 0,
@@ -833,15 +988,31 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "integer",
-        "date",
-        "time",
-        "string",
-        "Coding",
-        "Reference"
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Questionnaire.item.answerOption.value[x]",
       "min": 1,
@@ -855,7 +1026,9 @@
       "name": "initialSelected",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Questionnaire.item.answerOption.initialSelected",
       "min": 0,
@@ -869,7 +1042,9 @@
       "name": "initial",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Questionnaire.item.initial",
       "min": 0,
@@ -883,7 +1058,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Questionnaire.item.initial.id",
       "min": 0,
@@ -898,7 +1075,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.initial.extension",
       "min": 0,
@@ -913,7 +1093,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Questionnaire.item.initial.modifierExtension",
       "min": 0,
@@ -928,21 +1111,51 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "boolean",
-        "decimal",
-        "integer",
-        "date",
-        "dateTime",
-        "time",
-        "string",
-        "uri",
-        "Attachment",
-        "Coding",
-        "Quantity",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Questionnaire.item.initial.value[x]",
       "min": 1,
@@ -956,7 +1169,9 @@
       "name": "item",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Questionnaire.item.item",
       "min": 0,

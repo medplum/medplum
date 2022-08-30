@@ -1,12 +1,15 @@
 {
-  "resourceName": "CodeSystem",
+  "name": "CodeSystem",
+  "location": "resource",
   "description": "The CodeSystem resource is used to declare the existence of and describe a code system or code system supplement and its key properties, and optionally define a part or all of its content.",
   "properties": [
     {
       "name": "CodeSystem",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CodeSystem",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CodeSystem.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CodeSystem.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CodeSystem.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CodeSystem.experimental",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CodeSystem.date",
       "min": 0,
@@ -252,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.publisher",
       "min": 0,
@@ -266,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.contact",
       "min": 0,
@@ -280,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CodeSystem.description",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.useContext",
       "min": 0,
@@ -308,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.jurisdiction",
       "min": 0,
@@ -322,7 +375,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CodeSystem.purpose",
       "min": 0,
@@ -336,7 +391,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "CodeSystem.copyright",
       "min": 0,
@@ -350,7 +407,9 @@
       "name": "caseSensitive",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CodeSystem.caseSensitive",
       "min": 0,
@@ -364,7 +423,9 @@
       "name": "valueSet",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CodeSystem.valueSet",
       "min": 0,
@@ -378,7 +439,9 @@
       "name": "hierarchyMeaning",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.hierarchyMeaning",
       "min": 0,
@@ -392,7 +455,9 @@
       "name": "compositional",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CodeSystem.compositional",
       "min": 0,
@@ -406,7 +471,9 @@
       "name": "versionNeeded",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CodeSystem.versionNeeded",
       "min": 0,
@@ -420,7 +487,9 @@
       "name": "content",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.content",
       "min": 1,
@@ -434,7 +503,9 @@
       "name": "supplements",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CodeSystem.supplements",
       "min": 0,
@@ -448,7 +519,9 @@
       "name": "count",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "CodeSystem.count",
       "min": 0,
@@ -462,7 +535,9 @@
       "name": "filter",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CodeSystem.filter",
       "min": 0,
@@ -476,7 +551,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.filter.id",
       "min": 0,
@@ -491,7 +568,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.filter.extension",
       "min": 0,
@@ -506,7 +586,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.filter.modifierExtension",
       "min": 0,
@@ -521,7 +604,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.filter.code",
       "min": 1,
@@ -535,7 +620,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.filter.description",
       "min": 0,
@@ -549,7 +636,9 @@
       "name": "operator",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.filter.operator",
       "min": 1,
@@ -563,7 +652,9 @@
       "name": "value",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.filter.value",
       "min": 1,
@@ -577,7 +668,9 @@
       "name": "property",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CodeSystem.property",
       "min": 0,
@@ -591,7 +684,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.property.id",
       "min": 0,
@@ -606,7 +701,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.property.extension",
       "min": 0,
@@ -621,7 +719,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.property.modifierExtension",
       "min": 0,
@@ -636,7 +737,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.property.code",
       "min": 1,
@@ -650,7 +753,9 @@
       "name": "uri",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CodeSystem.property.uri",
       "min": 0,
@@ -664,7 +769,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.property.description",
       "min": 0,
@@ -678,7 +785,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.property.type",
       "min": 1,
@@ -692,7 +801,9 @@
       "name": "concept",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CodeSystem.concept",
       "min": 0,
@@ -706,7 +817,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.id",
       "min": 0,
@@ -721,7 +834,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.extension",
       "min": 0,
@@ -736,7 +852,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.modifierExtension",
       "min": 0,
@@ -751,7 +870,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.concept.code",
       "min": 1,
@@ -765,7 +886,9 @@
       "name": "display",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.display",
       "min": 0,
@@ -779,7 +902,9 @@
       "name": "definition",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.definition",
       "min": 0,
@@ -793,7 +918,9 @@
       "name": "designation",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CodeSystem.concept.designation",
       "min": 0,
@@ -807,7 +934,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.designation.id",
       "min": 0,
@@ -822,7 +951,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.designation.extension",
       "min": 0,
@@ -837,7 +969,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.designation.modifierExtension",
       "min": 0,
@@ -852,7 +987,9 @@
       "name": "language",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.concept.designation.language",
       "min": 0,
@@ -866,7 +1003,10 @@
       "name": "use",
       "depth": 3,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.designation.use",
       "min": 0,
@@ -880,7 +1020,9 @@
       "name": "value",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.designation.value",
       "min": 1,
@@ -894,7 +1036,9 @@
       "name": "property",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CodeSystem.concept.property",
       "min": 0,
@@ -908,7 +1052,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeSystem.concept.property.id",
       "min": 0,
@@ -923,7 +1069,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.property.extension",
       "min": 0,
@@ -938,7 +1087,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeSystem.concept.property.modifierExtension",
       "min": 0,
@@ -953,7 +1105,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CodeSystem.concept.property.code",
       "min": 1,
@@ -967,13 +1121,28 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "code",
-        "Coding",
-        "string",
-        "integer",
-        "boolean",
-        "dateTime",
-        "decimal"
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "CodeSystem.concept.property.value[x]",
       "min": 1,
@@ -987,7 +1156,9 @@
       "name": "concept",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CodeSystem.concept.concept",
       "min": 0,

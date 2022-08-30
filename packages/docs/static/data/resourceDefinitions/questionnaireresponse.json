@@ -1,12 +1,15 @@
 {
-  "resourceName": "QuestionnaireResponse",
+  "name": "QuestionnaireResponse",
+  "location": "resource",
   "description": "A structured set of questions and their answers. The questions are ordered and grouped into coherent subsets, corresponding to the structure of the grouping of the questionnaire being responded to.",
   "properties": [
     {
       "name": "QuestionnaireResponse",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "QuestionnaireResponse",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "QuestionnaireResponse.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "QuestionnaireResponse.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "QuestionnaireResponse.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "QuestionnaireResponse.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.identifier",
       "min": 0,
@@ -154,11 +180,20 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "ServiceRequest"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "QuestionnaireResponse.basedOn",
       "min": 0,
@@ -172,11 +207,20 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Observation",
-        "Procedure"
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        }
       ],
       "path": "QuestionnaireResponse.partOf",
       "min": 0,
@@ -190,7 +234,9 @@
       "name": "questionnaire",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "QuestionnaireResponse.questionnaire",
       "min": 0,
@@ -204,7 +250,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "QuestionnaireResponse.status",
       "min": 1,
@@ -218,10 +266,15 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "QuestionnaireResponse.subject",
       "min": 0,
@@ -235,10 +288,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "QuestionnaireResponse.encounter",
       "min": 0,
@@ -252,7 +311,9 @@
       "name": "authored",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "QuestionnaireResponse.authored",
       "min": 0,
@@ -266,15 +327,36 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "Practitioner",
-        "PractitionerRole",
-        "Patient",
-        "RelatedPerson",
-        "Organization"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "QuestionnaireResponse.author",
       "min": 0,
@@ -288,13 +370,28 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "RelatedPerson"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "QuestionnaireResponse.source",
       "min": 0,
@@ -308,7 +405,9 @@
       "name": "item",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "QuestionnaireResponse.item",
       "min": 0,
@@ -322,7 +421,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "QuestionnaireResponse.item.id",
       "min": 0,
@@ -337,7 +438,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.item.extension",
       "min": 0,
@@ -352,7 +456,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.item.modifierExtension",
       "min": 0,
@@ -367,7 +474,9 @@
       "name": "linkId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "QuestionnaireResponse.item.linkId",
       "min": 1,
@@ -381,7 +490,9 @@
       "name": "definition",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "QuestionnaireResponse.item.definition",
       "min": 0,
@@ -395,7 +506,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "QuestionnaireResponse.item.text",
       "min": 0,
@@ -409,7 +522,9 @@
       "name": "answer",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "QuestionnaireResponse.item.answer",
       "min": 0,
@@ -423,7 +538,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "QuestionnaireResponse.item.answer.id",
       "min": 0,
@@ -438,7 +555,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.item.answer.extension",
       "min": 0,
@@ -453,7 +573,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "QuestionnaireResponse.item.answer.modifierExtension",
       "min": 0,
@@ -468,21 +591,51 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "boolean",
-        "decimal",
-        "integer",
-        "date",
-        "dateTime",
-        "time",
-        "string",
-        "uri",
-        "Attachment",
-        "Coding",
-        "Quantity",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "QuestionnaireResponse.item.answer.value[x]",
       "min": 0,
@@ -496,7 +649,9 @@
       "name": "item",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "QuestionnaireResponse.item.answer.item",
       "min": 0,
@@ -510,7 +665,9 @@
       "name": "item",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "QuestionnaireResponse.item.item",
       "min": 0,

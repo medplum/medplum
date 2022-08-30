@@ -1,12 +1,15 @@
 {
-  "resourceName": "Invoice",
+  "name": "Invoice",
+  "location": "resource",
   "description": "Invoice containing collected ChargeItems from an Account with calculated individual and total price for Billing purpose.",
   "properties": [
     {
       "name": "Invoice",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Invoice",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Invoice.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Invoice.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Invoice.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Invoice.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Invoice.status",
       "min": 1,
@@ -168,7 +196,9 @@
       "name": "cancelledReason",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Invoice.cancelledReason",
       "min": 0,
@@ -182,7 +212,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.type",
       "min": 0,
@@ -196,11 +229,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.subject",
       "min": 0,
@@ -214,12 +256,24 @@
       "name": "recipient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.recipient",
       "min": 0,
@@ -233,7 +287,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Invoice.date",
       "min": 0,
@@ -247,7 +303,9 @@
       "name": "participant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Invoice.participant",
       "min": 0,
@@ -261,7 +319,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Invoice.participant.id",
       "min": 0,
@@ -276,7 +336,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.participant.extension",
       "min": 0,
@@ -291,7 +354,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.participant.modifierExtension",
       "min": 0,
@@ -306,7 +372,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.participant.role",
       "min": 0,
@@ -320,15 +389,36 @@
       "name": "actor",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "Organization",
-        "Patient",
-        "PractitionerRole",
-        "Device",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.participant.actor",
       "min": 1,
@@ -342,10 +432,16 @@
       "name": "issuer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.issuer",
       "min": 0,
@@ -359,10 +455,16 @@
       "name": "account",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Account"
+        {
+          "datatype": "Account",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.account",
       "min": 0,
@@ -376,7 +478,9 @@
       "name": "lineItem",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Invoice.lineItem",
       "min": 0,
@@ -390,7 +494,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Invoice.lineItem.id",
       "min": 0,
@@ -405,7 +511,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.extension",
       "min": 0,
@@ -420,7 +529,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.modifierExtension",
       "min": 0,
@@ -435,7 +547,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Invoice.lineItem.sequence",
       "min": 0,
@@ -449,11 +563,20 @@
       "name": "chargeItem[x]",
       "depth": 2,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ChargeItem"
+        {
+          "datatype": "ChargeItem",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Invoice.lineItem.chargeItem[x]",
       "min": 1,
@@ -467,7 +590,9 @@
       "name": "priceComponent",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent",
       "min": 0,
@@ -481,7 +606,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.id",
       "min": 0,
@@ -496,7 +623,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.extension",
       "min": 0,
@@ -511,7 +641,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.modifierExtension",
       "min": 0,
@@ -526,7 +659,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.type",
       "min": 1,
@@ -540,7 +675,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.code",
       "min": 0,
@@ -554,7 +692,9 @@
       "name": "factor",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.factor",
       "min": 0,
@@ -568,7 +708,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.lineItem.priceComponent.amount",
       "min": 0,
@@ -582,7 +725,9 @@
       "name": "totalPriceComponent",
       "depth": 1,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Invoice.totalPriceComponent",
       "min": 0,
@@ -596,7 +741,10 @@
       "name": "totalNet",
       "depth": 1,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.totalNet",
       "min": 0,
@@ -610,7 +758,10 @@
       "name": "totalGross",
       "depth": 1,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.totalGross",
       "min": 0,
@@ -624,7 +775,9 @@
       "name": "paymentTerms",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Invoice.paymentTerms",
       "min": 0,
@@ -638,7 +791,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Invoice.note",
       "min": 0,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "Observation",
+  "name": "Observation",
+  "location": "resource",
   "description": "Measurements and simple assertions made about a patient, device or other subject.",
   "properties": [
     {
       "name": "Observation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Observation",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Observation.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Observation.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Observation.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Observation.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.identifier",
       "min": 0,
@@ -154,15 +180,36 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan",
-        "DeviceRequest",
-        "ImmunizationRecommendation",
-        "MedicationRequest",
-        "NutritionOrder",
-        "ServiceRequest"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DeviceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImmunizationRecommendation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "NutritionOrder",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.basedOn",
       "min": 0,
@@ -176,15 +223,36 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicationAdministration",
-        "MedicationDispense",
-        "MedicationStatement",
-        "Procedure",
-        "Immunization",
-        "ImagingStudy"
+        {
+          "datatype": "MedicationAdministration",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationDispense",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationStatement",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImagingStudy",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.partOf",
       "min": 0,
@@ -198,7 +266,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Observation.status",
       "min": 1,
@@ -212,7 +282,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.category",
       "min": 0,
@@ -226,7 +299,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.code",
       "min": 1,
@@ -240,13 +316,28 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group",
-        "Device",
-        "Location"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.subject",
       "min": 0,
@@ -260,10 +351,15 @@
       "name": "focus",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Observation.focus",
       "min": 0,
@@ -277,10 +373,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.encounter",
       "min": 0,
@@ -294,10 +396,20 @@
       "name": "effective[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Period",
-        "Timing",
-        "instant"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Observation.effective[x]",
       "min": 0,
@@ -311,7 +423,9 @@
       "name": "issued",
       "depth": 1,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Observation.issued",
       "min": 0,
@@ -325,15 +439,36 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "CareTeam",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.performer",
       "min": 0,
@@ -347,17 +482,45 @@
       "name": "value[x]",
       "depth": 1,
       "types": [
-        "Quantity",
-        "CodeableConcept",
-        "string",
-        "boolean",
-        "integer",
-        "Range",
-        "Ratio",
-        "SampledData",
-        "time",
-        "dateTime",
-        "Period"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.value[x]",
       "min": 0,
@@ -371,7 +534,10 @@
       "name": "dataAbsentReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.dataAbsentReason",
       "min": 0,
@@ -385,7 +551,10 @@
       "name": "interpretation",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.interpretation",
       "min": 0,
@@ -399,7 +568,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.note",
       "min": 0,
@@ -413,7 +585,10 @@
       "name": "bodySite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.bodySite",
       "min": 0,
@@ -427,7 +602,10 @@
       "name": "method",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.method",
       "min": 0,
@@ -441,10 +619,16 @@
       "name": "specimen",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Specimen"
+        {
+          "datatype": "Specimen",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.specimen",
       "min": 0,
@@ -458,11 +642,20 @@
       "name": "device",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device",
-        "DeviceMetric"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DeviceMetric",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.device",
       "min": 0,
@@ -476,7 +669,9 @@
       "name": "referenceRange",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Observation.referenceRange",
       "min": 0,
@@ -490,7 +685,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Observation.referenceRange.id",
       "min": 0,
@@ -505,7 +702,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.extension",
       "min": 0,
@@ -520,7 +720,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.modifierExtension",
       "min": 0,
@@ -535,7 +738,10 @@
       "name": "low",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.low",
       "min": 0,
@@ -549,7 +755,10 @@
       "name": "high",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.high",
       "min": 0,
@@ -563,7 +772,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.type",
       "min": 0,
@@ -577,7 +789,10 @@
       "name": "appliesTo",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.appliesTo",
       "min": 0,
@@ -591,7 +806,10 @@
       "name": "age",
       "depth": 2,
       "types": [
-        "Range"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.referenceRange.age",
       "min": 0,
@@ -605,7 +823,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Observation.referenceRange.text",
       "min": 0,
@@ -619,12 +839,24 @@
       "name": "hasMember",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Observation",
-        "QuestionnaireResponse",
-        "MolecularSequence"
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MolecularSequence",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.hasMember",
       "min": 0,
@@ -638,15 +870,36 @@
       "name": "derivedFrom",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference",
-        "ImagingStudy",
-        "Media",
-        "QuestionnaireResponse",
-        "Observation",
-        "MolecularSequence"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImagingStudy",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "QuestionnaireResponse",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MolecularSequence",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Observation.derivedFrom",
       "min": 0,
@@ -660,7 +913,9 @@
       "name": "component",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Observation.component",
       "min": 0,
@@ -674,7 +929,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Observation.component.id",
       "min": 0,
@@ -689,7 +946,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.extension",
       "min": 0,
@@ -704,7 +964,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.modifierExtension",
       "min": 0,
@@ -719,7 +982,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.code",
       "min": 1,
@@ -733,17 +999,45 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "Quantity",
-        "CodeableConcept",
-        "string",
-        "boolean",
-        "integer",
-        "Range",
-        "Ratio",
-        "SampledData",
-        "time",
-        "dateTime",
-        "Period"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.value[x]",
       "min": 0,
@@ -757,7 +1051,10 @@
       "name": "dataAbsentReason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.dataAbsentReason",
       "min": 0,
@@ -771,7 +1068,10 @@
       "name": "interpretation",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Observation.component.interpretation",
       "min": 0,
@@ -785,7 +1085,9 @@
       "name": "referenceRange",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Observation.component.referenceRange",
       "min": 0,

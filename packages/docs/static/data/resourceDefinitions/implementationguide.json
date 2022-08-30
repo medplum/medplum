@@ -1,12 +1,15 @@
 {
-  "resourceName": "ImplementationGuide",
+  "name": "ImplementationGuide",
+  "location": "resource",
   "description": "A set of rules of how a particular interoperability or standards problem is solved - typically through the use of FHIR resources. This resource is used to gather all the parts of an implementation guide into a logical whole and to publish a computable definition of all the parts.",
   "properties": [
     {
       "name": "ImplementationGuide",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ImplementationGuide",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ImplementationGuide.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImplementationGuide.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ImplementationGuide.url",
       "min": 1,
@@ -154,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.version",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.name",
       "min": 1,
@@ -182,7 +211,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.title",
       "min": 0,
@@ -196,7 +227,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.status",
       "min": 1,
@@ -210,7 +243,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ImplementationGuide.experimental",
       "min": 0,
@@ -224,7 +259,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImplementationGuide.date",
       "min": 0,
@@ -238,7 +275,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.publisher",
       "min": 0,
@@ -252,7 +291,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.contact",
       "min": 0,
@@ -266,7 +308,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ImplementationGuide.description",
       "min": 0,
@@ -280,7 +324,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.useContext",
       "min": 0,
@@ -294,7 +341,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.jurisdiction",
       "min": 0,
@@ -308,7 +358,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ImplementationGuide.copyright",
       "min": 0,
@@ -322,7 +374,9 @@
       "name": "packageId",
       "depth": 1,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ImplementationGuide.packageId",
       "min": 1,
@@ -336,7 +390,9 @@
       "name": "license",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.license",
       "min": 0,
@@ -350,7 +406,9 @@
       "name": "fhirVersion",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.fhirVersion",
       "min": 1,
@@ -364,7 +422,9 @@
       "name": "dependsOn",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.dependsOn",
       "min": 0,
@@ -378,7 +438,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.id",
       "min": 0,
@@ -393,7 +455,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.extension",
       "min": 0,
@@ -408,7 +473,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.modifierExtension",
       "min": 0,
@@ -423,7 +491,9 @@
       "name": "uri",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.uri",
       "min": 1,
@@ -437,7 +507,9 @@
       "name": "packageId",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.packageId",
       "min": 0,
@@ -451,7 +523,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.dependsOn.version",
       "min": 0,
@@ -465,7 +539,9 @@
       "name": "global",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.global",
       "min": 0,
@@ -479,7 +555,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.global.id",
       "min": 0,
@@ -494,7 +572,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.global.extension",
       "min": 0,
@@ -509,7 +590,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.global.modifierExtension",
       "min": 0,
@@ -524,7 +608,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.global.type",
       "min": 1,
@@ -538,7 +624,9 @@
       "name": "profile",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ImplementationGuide.global.profile",
       "min": 1,
@@ -552,7 +640,9 @@
       "name": "definition",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition",
       "min": 0,
@@ -566,7 +656,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.id",
       "min": 0,
@@ -581,7 +673,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.extension",
       "min": 0,
@@ -596,7 +691,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.modifierExtension",
       "min": 0,
@@ -611,7 +709,9 @@
       "name": "grouping",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping",
       "min": 0,
@@ -625,7 +725,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping.id",
       "min": 0,
@@ -640,7 +742,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping.extension",
       "min": 0,
@@ -655,7 +760,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping.modifierExtension",
       "min": 0,
@@ -670,7 +778,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping.name",
       "min": 1,
@@ -684,7 +794,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.grouping.description",
       "min": 0,
@@ -698,7 +810,9 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition.resource",
       "min": 1,
@@ -712,7 +826,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.id",
       "min": 0,
@@ -727,7 +843,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.extension",
       "min": 0,
@@ -742,7 +861,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.modifierExtension",
       "min": 0,
@@ -757,10 +879,15 @@
       "name": "reference",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.reference",
       "min": 1,
@@ -774,7 +901,9 @@
       "name": "fhirVersion",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.fhirVersion",
       "min": 0,
@@ -788,7 +917,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.name",
       "min": 0,
@@ -802,7 +933,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.description",
       "min": 0,
@@ -816,8 +949,12 @@
       "name": "example[x]",
       "depth": 3,
       "types": [
-        "boolean",
-        "canonical"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.example[x]",
       "min": 0,
@@ -831,7 +968,9 @@
       "name": "groupingId",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ImplementationGuide.definition.resource.groupingId",
       "min": 0,
@@ -845,7 +984,9 @@
       "name": "page",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition.page",
       "min": 0,
@@ -859,7 +1000,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.page.id",
       "min": 0,
@@ -874,7 +1017,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.page.extension",
       "min": 0,
@@ -889,7 +1035,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.page.modifierExtension",
       "min": 0,
@@ -904,11 +1053,19 @@
       "name": "name[x]",
       "depth": 3,
       "types": [
-        "url",
-        "Reference"
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Binary"
+        {
+          "datatype": "Binary",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImplementationGuide.definition.page.name[x]",
       "min": 1,
@@ -922,7 +1079,9 @@
       "name": "title",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.page.title",
       "min": 1,
@@ -936,7 +1095,9 @@
       "name": "generation",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.definition.page.generation",
       "min": 1,
@@ -950,7 +1111,9 @@
       "name": "page",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ImplementationGuide.definition.page.page",
       "min": 0,
@@ -964,7 +1127,9 @@
       "name": "parameter",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter",
       "min": 0,
@@ -978,7 +1143,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter.id",
       "min": 0,
@@ -993,7 +1160,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter.extension",
       "min": 0,
@@ -1008,7 +1178,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter.modifierExtension",
       "min": 0,
@@ -1023,7 +1196,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter.code",
       "min": 1,
@@ -1037,7 +1212,9 @@
       "name": "value",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.parameter.value",
       "min": 1,
@@ -1051,7 +1228,9 @@
       "name": "template",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.definition.template",
       "min": 0,
@@ -1065,7 +1244,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.template.id",
       "min": 0,
@@ -1080,7 +1261,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.template.extension",
       "min": 0,
@@ -1095,7 +1279,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.definition.template.modifierExtension",
       "min": 0,
@@ -1110,7 +1297,9 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImplementationGuide.definition.template.code",
       "min": 1,
@@ -1124,7 +1313,9 @@
       "name": "source",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.template.source",
       "min": 1,
@@ -1138,7 +1329,9 @@
       "name": "scope",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.definition.template.scope",
       "min": 0,
@@ -1152,7 +1345,9 @@
       "name": "manifest",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.manifest",
       "min": 0,
@@ -1166,7 +1361,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.id",
       "min": 0,
@@ -1181,7 +1378,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.extension",
       "min": 0,
@@ -1196,7 +1396,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.modifierExtension",
       "min": 0,
@@ -1211,7 +1414,9 @@
       "name": "rendering",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "ImplementationGuide.manifest.rendering",
       "min": 0,
@@ -1225,7 +1430,9 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource",
       "min": 1,
@@ -1239,7 +1446,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.id",
       "min": 0,
@@ -1254,7 +1463,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.extension",
       "min": 0,
@@ -1269,7 +1481,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.modifierExtension",
       "min": 0,
@@ -1284,10 +1499,15 @@
       "name": "reference",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.reference",
       "min": 1,
@@ -1301,8 +1521,12 @@
       "name": "example[x]",
       "depth": 3,
       "types": [
-        "boolean",
-        "canonical"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.example[x]",
       "min": 0,
@@ -1316,7 +1540,9 @@
       "name": "relativePath",
       "depth": 3,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "ImplementationGuide.manifest.resource.relativePath",
       "min": 0,
@@ -1330,7 +1556,9 @@
       "name": "page",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImplementationGuide.manifest.page",
       "min": 0,
@@ -1344,7 +1572,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.id",
       "min": 0,
@@ -1359,7 +1589,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.extension",
       "min": 0,
@@ -1374,7 +1607,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.modifierExtension",
       "min": 0,
@@ -1389,7 +1625,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.name",
       "min": 1,
@@ -1403,7 +1641,9 @@
       "name": "title",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.title",
       "min": 0,
@@ -1417,7 +1657,9 @@
       "name": "anchor",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.page.anchor",
       "min": 0,
@@ -1431,7 +1673,9 @@
       "name": "image",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.image",
       "min": 0,
@@ -1445,7 +1689,9 @@
       "name": "other",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImplementationGuide.manifest.other",
       "min": 0,

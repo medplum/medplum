@@ -1,12 +1,15 @@
 {
-  "resourceName": "MessageHeader",
+  "name": "MessageHeader",
+  "location": "resource",
   "description": "The header for a message exchange that is either requesting or responding to an action.  The reference(s) that are the subject of the action as well as other information related to the action are typically transmitted in a bundle in which the MessageHeader resource instance is the first resource in the bundle.",
   "properties": [
     {
       "name": "MessageHeader",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MessageHeader",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MessageHeader.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MessageHeader.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MessageHeader.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.modifierExtension",
       "min": 0,
@@ -140,8 +163,13 @@
       "name": "event[x]",
       "depth": 1,
       "types": [
-        "Coding",
-        "uri"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MessageHeader.event[x]",
       "min": 1,
@@ -155,7 +183,9 @@
       "name": "destination",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MessageHeader.destination",
       "min": 0,
@@ -169,7 +199,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.destination.id",
       "min": 0,
@@ -184,7 +216,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.destination.extension",
       "min": 0,
@@ -199,7 +234,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.destination.modifierExtension",
       "min": 0,
@@ -214,7 +252,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.destination.name",
       "min": 0,
@@ -228,10 +268,16 @@
       "name": "target",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.destination.target",
       "min": 0,
@@ -245,7 +291,9 @@
       "name": "endpoint",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "MessageHeader.destination.endpoint",
       "min": 1,
@@ -259,12 +307,24 @@
       "name": "receiver",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.destination.receiver",
       "min": 0,
@@ -278,12 +338,24 @@
       "name": "sender",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.sender",
       "min": 0,
@@ -297,11 +369,20 @@
       "name": "enterer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.enterer",
       "min": 0,
@@ -315,11 +396,20 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.author",
       "min": 0,
@@ -333,7 +423,9 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MessageHeader.source",
       "min": 1,
@@ -347,7 +439,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.source.id",
       "min": 0,
@@ -362,7 +456,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.source.extension",
       "min": 0,
@@ -377,7 +474,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.source.modifierExtension",
       "min": 0,
@@ -392,7 +492,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.source.name",
       "min": 0,
@@ -406,7 +508,9 @@
       "name": "software",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.source.software",
       "min": 0,
@@ -420,7 +524,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.source.version",
       "min": 0,
@@ -434,7 +540,10 @@
       "name": "contact",
       "depth": 2,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.source.contact",
       "min": 0,
@@ -448,7 +557,9 @@
       "name": "endpoint",
       "depth": 2,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "MessageHeader.source.endpoint",
       "min": 1,
@@ -462,12 +573,24 @@
       "name": "responsible",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.responsible",
       "min": 0,
@@ -481,7 +604,10 @@
       "name": "reason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.reason",
       "min": 0,
@@ -495,7 +621,9 @@
       "name": "response",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MessageHeader.response",
       "min": 0,
@@ -509,7 +637,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MessageHeader.response.id",
       "min": 0,
@@ -524,7 +654,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.response.extension",
       "min": 0,
@@ -539,7 +672,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MessageHeader.response.modifierExtension",
       "min": 0,
@@ -554,7 +690,9 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "MessageHeader.response.identifier",
       "min": 1,
@@ -568,7 +706,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MessageHeader.response.code",
       "min": 1,
@@ -582,10 +722,16 @@
       "name": "details",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "OperationOutcome"
+        {
+          "datatype": "OperationOutcome",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MessageHeader.response.details",
       "min": 0,
@@ -599,10 +745,15 @@
       "name": "focus",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MessageHeader.focus",
       "min": 0,
@@ -616,7 +767,9 @@
       "name": "definition",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "MessageHeader.definition",
       "min": 0,

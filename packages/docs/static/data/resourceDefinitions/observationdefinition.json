@@ -1,12 +1,15 @@
 {
-  "resourceName": "ObservationDefinition",
+  "name": "ObservationDefinition",
+  "location": "resource",
   "description": "Set of definitional characteristics for a kind of observation or measurement produced or consumed by an orderable health care service.",
   "properties": [
     {
       "name": "ObservationDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ObservationDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ObservationDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ObservationDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ObservationDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ObservationDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.modifierExtension",
       "min": 0,
@@ -140,12 +163,24 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ObservationDefinition.publisher",
       "min": 0,
@@ -159,7 +194,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.category",
       "min": 0,
@@ -173,7 +211,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.code",
       "min": 1,
@@ -187,7 +228,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.identifier",
       "min": 0,
@@ -201,7 +245,9 @@
       "name": "permittedDataType",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ObservationDefinition.permittedDataType",
       "min": 0,
@@ -215,7 +261,9 @@
       "name": "multipleResultsAllowed",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ObservationDefinition.multipleResultsAllowed",
       "min": 0,
@@ -229,7 +277,10 @@
       "name": "method",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.method",
       "min": 0,
@@ -243,7 +294,9 @@
       "name": "preferredReportName",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ObservationDefinition.preferredReportName",
       "min": 0,
@@ -257,7 +310,9 @@
       "name": "quantitativeDetails",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails",
       "min": 0,
@@ -271,7 +326,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.id",
       "min": 0,
@@ -286,7 +343,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.extension",
       "min": 0,
@@ -301,7 +361,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.modifierExtension",
       "min": 0,
@@ -316,7 +379,10 @@
       "name": "customaryUnit",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.customaryUnit",
       "min": 0,
@@ -330,7 +396,10 @@
       "name": "unit",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.unit",
       "min": 0,
@@ -344,7 +413,9 @@
       "name": "conversionFactor",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.conversionFactor",
       "min": 0,
@@ -358,7 +429,9 @@
       "name": "decimalPrecision",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "ObservationDefinition.quantitativeDetails.decimalPrecision",
       "min": 0,
@@ -372,7 +445,9 @@
       "name": "qualifiedInterval",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval",
       "min": 0,
@@ -386,7 +461,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.id",
       "min": 0,
@@ -401,7 +478,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.extension",
       "min": 0,
@@ -416,7 +496,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.modifierExtension",
       "min": 0,
@@ -431,7 +514,9 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.category",
       "min": 0,
@@ -445,7 +530,10 @@
       "name": "range",
       "depth": 2,
       "types": [
-        "Range"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.range",
       "min": 0,
@@ -459,7 +547,10 @@
       "name": "context",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.context",
       "min": 0,
@@ -473,7 +564,10 @@
       "name": "appliesTo",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.appliesTo",
       "min": 0,
@@ -487,7 +581,9 @@
       "name": "gender",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.gender",
       "min": 0,
@@ -501,7 +597,10 @@
       "name": "age",
       "depth": 2,
       "types": [
-        "Range"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.age",
       "min": 0,
@@ -515,7 +614,10 @@
       "name": "gestationalAge",
       "depth": 2,
       "types": [
-        "Range"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.gestationalAge",
       "min": 0,
@@ -529,7 +631,9 @@
       "name": "condition",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ObservationDefinition.qualifiedInterval.condition",
       "min": 0,
@@ -543,10 +647,16 @@
       "name": "validCodedValueSet",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ValueSet"
+        {
+          "datatype": "ValueSet",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ObservationDefinition.validCodedValueSet",
       "min": 0,
@@ -560,10 +670,16 @@
       "name": "normalCodedValueSet",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ValueSet"
+        {
+          "datatype": "ValueSet",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ObservationDefinition.normalCodedValueSet",
       "min": 0,
@@ -577,10 +693,16 @@
       "name": "abnormalCodedValueSet",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ValueSet"
+        {
+          "datatype": "ValueSet",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ObservationDefinition.abnormalCodedValueSet",
       "min": 0,
@@ -594,10 +716,16 @@
       "name": "criticalCodedValueSet",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ValueSet"
+        {
+          "datatype": "ValueSet",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ObservationDefinition.criticalCodedValueSet",
       "min": 0,
@@ -607,6 +735,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

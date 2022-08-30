@@ -1,12 +1,15 @@
 {
-  "resourceName": "SubstanceProtein",
+  "name": "SubstanceProtein",
+  "location": "resource",
   "description": "A SubstanceProtein is defined as a single unit of a linear amino acid sequence, or a combination of subunits that are either covalently linked or have a defined invariant stoichiometric relationship. This includes all synthetic, recombinant and purified SubstanceProteins of defined sequence, whether the use is therapeutic or prophylactic. This set of elements will be used to describe albumins, coagulation factors, cytokines, growth factors, peptide/SubstanceProtein hormones, enzymes, toxins, toxoids, recombinant vaccines, and immunomodulators.",
   "properties": [
     {
       "name": "SubstanceProtein",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceProtein",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstanceProtein.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstanceProtein.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstanceProtein.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "sequenceType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.sequenceType",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "numberOfSubunits",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceProtein.numberOfSubunits",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "disulfideLinkage",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.disulfideLinkage",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "subunit",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceProtein.subunit",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.subunit.id",
       "min": 0,
@@ -211,7 +245,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.subunit.extension",
       "min": 0,
@@ -226,7 +263,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.subunit.modifierExtension",
       "min": 0,
@@ -241,7 +281,9 @@
       "name": "subunit",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceProtein.subunit.subunit",
       "min": 0,
@@ -255,7 +297,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.subunit.sequence",
       "min": 0,
@@ -269,7 +313,9 @@
       "name": "length",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "SubstanceProtein.subunit.length",
       "min": 0,
@@ -283,7 +329,10 @@
       "name": "sequenceAttachment",
       "depth": 2,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.subunit.sequenceAttachment",
       "min": 0,
@@ -297,7 +346,10 @@
       "name": "nTerminalModificationId",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.subunit.nTerminalModificationId",
       "min": 0,
@@ -311,7 +363,9 @@
       "name": "nTerminalModification",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.subunit.nTerminalModification",
       "min": 0,
@@ -325,7 +379,10 @@
       "name": "cTerminalModificationId",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceProtein.subunit.cTerminalModificationId",
       "min": 0,
@@ -339,7 +396,9 @@
       "name": "cTerminalModification",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceProtein.subunit.cTerminalModification",
       "min": 0,
@@ -349,6 +408,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

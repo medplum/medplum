@@ -1,12 +1,15 @@
 {
-  "resourceName": "CarePlan",
+  "name": "CarePlan",
+  "location": "resource",
   "description": "Describes the intention of how one or more practitioners intend to deliver care for a particular patient, group or community for a period of time, possibly limited to care for a specific condition or set of conditions.",
   "properties": [
     {
       "name": "CarePlan",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CarePlan",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CarePlan.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CarePlan.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CarePlan.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CarePlan.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CarePlan.instantiatesUri",
       "min": 0,
@@ -182,10 +212,16 @@
       "name": "basedOn",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.basedOn",
       "min": 0,
@@ -199,10 +235,16 @@
       "name": "replaces",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.replaces",
       "min": 0,
@@ -216,10 +258,16 @@
       "name": "partOf",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CarePlan"
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.partOf",
       "min": 0,
@@ -233,7 +281,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CarePlan.status",
       "min": 1,
@@ -247,7 +297,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CarePlan.intent",
       "min": 1,
@@ -261,7 +313,10 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.category",
       "min": 0,
@@ -275,7 +330,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.title",
       "min": 0,
@@ -289,7 +346,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.description",
       "min": 0,
@@ -303,11 +362,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.subject",
       "min": 1,
@@ -321,10 +389,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.encounter",
       "min": 0,
@@ -338,7 +412,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.period",
       "min": 0,
@@ -352,7 +429,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CarePlan.created",
       "min": 0,
@@ -366,16 +445,40 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "Device",
-        "RelatedPerson",
-        "Organization",
-        "CareTeam"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.author",
       "min": 0,
@@ -389,16 +492,40 @@
       "name": "contributor",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "Device",
-        "RelatedPerson",
-        "Organization",
-        "CareTeam"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.contributor",
       "min": 0,
@@ -412,10 +539,16 @@
       "name": "careTeam",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CareTeam"
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.careTeam",
       "min": 0,
@@ -429,10 +562,16 @@
       "name": "addresses",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.addresses",
       "min": 0,
@@ -446,10 +585,15 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CarePlan.supportingInfo",
       "min": 0,
@@ -463,10 +607,16 @@
       "name": "goal",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Goal"
+        {
+          "datatype": "Goal",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.goal",
       "min": 0,
@@ -480,7 +630,9 @@
       "name": "activity",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CarePlan.activity",
       "min": 0,
@@ -494,7 +646,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.activity.id",
       "min": 0,
@@ -509,7 +663,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.extension",
       "min": 0,
@@ -524,7 +681,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.modifierExtension",
       "min": 0,
@@ -539,7 +699,10 @@
       "name": "outcomeCodeableConcept",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.outcomeCodeableConcept",
       "min": 0,
@@ -553,10 +716,15 @@
       "name": "outcomeReference",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CarePlan.activity.outcomeReference",
       "min": 0,
@@ -570,7 +738,10 @@
       "name": "progress",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.progress",
       "min": 0,
@@ -584,18 +755,48 @@
       "name": "reference",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Appointment",
-        "CommunicationRequest",
-        "DeviceRequest",
-        "MedicationRequest",
-        "NutritionOrder",
-        "Task",
-        "ServiceRequest",
-        "VisionPrescription",
-        "RequestGroup"
+        {
+          "datatype": "Appointment",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CommunicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DeviceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "NutritionOrder",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Task",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "VisionPrescription",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RequestGroup",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.reference",
       "min": 0,
@@ -609,7 +810,9 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CarePlan.activity.detail",
       "min": 0,
@@ -623,7 +826,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.activity.detail.id",
       "min": 0,
@@ -638,7 +843,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.extension",
       "min": 0,
@@ -653,7 +861,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.modifierExtension",
       "min": 0,
@@ -668,7 +879,9 @@
       "name": "kind",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CarePlan.activity.detail.kind",
       "min": 0,
@@ -682,7 +895,9 @@
       "name": "instantiatesCanonical",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "CarePlan.activity.detail.instantiatesCanonical",
       "min": 0,
@@ -696,7 +911,9 @@
       "name": "instantiatesUri",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CarePlan.activity.detail.instantiatesUri",
       "min": 0,
@@ -710,7 +927,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.code",
       "min": 0,
@@ -724,7 +944,10 @@
       "name": "reasonCode",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.reasonCode",
       "min": 0,
@@ -738,13 +961,28 @@
       "name": "reasonReference",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport",
-        "DocumentReference"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.detail.reasonReference",
       "min": 0,
@@ -758,10 +996,16 @@
       "name": "goal",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Goal"
+        {
+          "datatype": "Goal",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.detail.goal",
       "min": 0,
@@ -775,7 +1019,9 @@
       "name": "status",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CarePlan.activity.detail.status",
       "min": 1,
@@ -789,7 +1035,10 @@
       "name": "statusReason",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.statusReason",
       "min": 0,
@@ -803,7 +1052,9 @@
       "name": "doNotPerform",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CarePlan.activity.detail.doNotPerform",
       "min": 0,
@@ -817,9 +1068,17 @@
       "name": "scheduled[x]",
       "depth": 3,
       "types": [
-        "Timing",
-        "Period",
-        "string"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.activity.detail.scheduled[x]",
       "min": 0,
@@ -833,10 +1092,16 @@
       "name": "location",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.detail.location",
       "min": 0,
@@ -850,17 +1115,44 @@
       "name": "performer",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "RelatedPerson",
-        "Patient",
-        "CareTeam",
-        "HealthcareService",
-        "Device"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.detail.performer",
       "min": 0,
@@ -874,12 +1166,24 @@
       "name": "product[x]",
       "depth": 3,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication",
-        "Substance"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CarePlan.activity.detail.product[x]",
       "min": 0,
@@ -893,7 +1197,10 @@
       "name": "dailyAmount",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.dailyAmount",
       "min": 0,
@@ -907,7 +1214,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.activity.detail.quantity",
       "min": 0,
@@ -921,7 +1231,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CarePlan.activity.detail.description",
       "min": 0,
@@ -935,7 +1247,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CarePlan.note",
       "min": 0,

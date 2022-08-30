@@ -1,12 +1,15 @@
 {
-  "resourceName": "Bundle",
+  "name": "Bundle",
+  "location": "resource",
   "description": "A container for a collection of resources.",
   "properties": [
     {
       "name": "Bundle",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Bundle",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Bundle.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Bundle.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.identifier",
       "min": 0,
@@ -94,7 +109,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Bundle.type",
       "min": 1,
@@ -108,7 +125,9 @@
       "name": "timestamp",
       "depth": 1,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Bundle.timestamp",
       "min": 0,
@@ -122,7 +141,9 @@
       "name": "total",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Bundle.total",
       "min": 0,
@@ -136,7 +157,9 @@
       "name": "link",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Bundle.link",
       "min": 0,
@@ -150,7 +173,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.link.id",
       "min": 0,
@@ -165,7 +190,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.link.extension",
       "min": 0,
@@ -180,7 +208,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.link.modifierExtension",
       "min": 0,
@@ -195,7 +226,9 @@
       "name": "relation",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.link.relation",
       "min": 1,
@@ -209,7 +242,9 @@
       "name": "url",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Bundle.link.url",
       "min": 1,
@@ -223,7 +258,9 @@
       "name": "entry",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Bundle.entry",
       "min": 0,
@@ -237,7 +274,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.id",
       "min": 0,
@@ -252,7 +291,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.extension",
       "min": 0,
@@ -267,7 +309,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.modifierExtension",
       "min": 0,
@@ -282,7 +327,9 @@
       "name": "link",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Bundle.entry.link",
       "min": 0,
@@ -296,7 +343,9 @@
       "name": "fullUrl",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Bundle.entry.fullUrl",
       "min": 0,
@@ -310,7 +359,9 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Bundle.entry.resource",
       "min": 0,
@@ -324,7 +375,9 @@
       "name": "search",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Bundle.entry.search",
       "min": 0,
@@ -338,7 +391,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.search.id",
       "min": 0,
@@ -353,7 +408,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.search.extension",
       "min": 0,
@@ -368,7 +426,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.search.modifierExtension",
       "min": 0,
@@ -383,7 +444,9 @@
       "name": "mode",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Bundle.entry.search.mode",
       "min": 0,
@@ -397,7 +460,9 @@
       "name": "score",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Bundle.entry.search.score",
       "min": 0,
@@ -411,7 +476,9 @@
       "name": "request",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Bundle.entry.request",
       "min": 0,
@@ -425,7 +492,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.request.id",
       "min": 0,
@@ -440,7 +509,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.request.extension",
       "min": 0,
@@ -455,7 +527,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.request.modifierExtension",
       "min": 0,
@@ -470,7 +545,9 @@
       "name": "method",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Bundle.entry.request.method",
       "min": 1,
@@ -484,7 +561,9 @@
       "name": "url",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Bundle.entry.request.url",
       "min": 1,
@@ -498,7 +577,9 @@
       "name": "ifNoneMatch",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.request.ifNoneMatch",
       "min": 0,
@@ -512,7 +593,9 @@
       "name": "ifModifiedSince",
       "depth": 3,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Bundle.entry.request.ifModifiedSince",
       "min": 0,
@@ -526,7 +609,9 @@
       "name": "ifMatch",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.request.ifMatch",
       "min": 0,
@@ -540,7 +625,9 @@
       "name": "ifNoneExist",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.request.ifNoneExist",
       "min": 0,
@@ -554,7 +641,9 @@
       "name": "response",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Bundle.entry.response",
       "min": 0,
@@ -568,7 +657,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.response.id",
       "min": 0,
@@ -583,7 +674,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.response.extension",
       "min": 0,
@@ -598,7 +692,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.entry.response.modifierExtension",
       "min": 0,
@@ -613,7 +710,9 @@
       "name": "status",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.response.status",
       "min": 1,
@@ -627,7 +726,9 @@
       "name": "location",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Bundle.entry.response.location",
       "min": 0,
@@ -641,7 +742,9 @@
       "name": "etag",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Bundle.entry.response.etag",
       "min": 0,
@@ -655,7 +758,9 @@
       "name": "lastModified",
       "depth": 3,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Bundle.entry.response.lastModified",
       "min": 0,
@@ -669,7 +774,9 @@
       "name": "outcome",
       "depth": 3,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Bundle.entry.response.outcome",
       "min": 0,
@@ -683,7 +790,10 @@
       "name": "signature",
       "depth": 1,
       "types": [
-        "Signature"
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Bundle.signature",
       "min": 0,

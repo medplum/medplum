@@ -1,12 +1,15 @@
 {
-  "resourceName": "TestReport",
+  "name": "TestReport",
+  "location": "resource",
   "description": "A summary of information based on the results of executing a TestScript.",
   "properties": [
     {
       "name": "TestReport",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestReport",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestReport.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "TestReport.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.name",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.status",
       "min": 1,
@@ -182,10 +212,16 @@
       "name": "testScript",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "TestScript"
+        {
+          "datatype": "TestScript",
+          "documentLocation": "resource"
+        }
       ],
       "path": "TestReport.testScript",
       "min": 1,
@@ -199,7 +235,9 @@
       "name": "result",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.result",
       "min": 1,
@@ -213,7 +251,9 @@
       "name": "score",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "TestReport.score",
       "min": 0,
@@ -227,7 +267,9 @@
       "name": "tester",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.tester",
       "min": 0,
@@ -241,7 +283,9 @@
       "name": "issued",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "TestReport.issued",
       "min": 0,
@@ -255,7 +299,9 @@
       "name": "participant",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.participant",
       "min": 0,
@@ -269,7 +315,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.participant.id",
       "min": 0,
@@ -284,7 +332,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.participant.extension",
       "min": 0,
@@ -299,7 +350,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.participant.modifierExtension",
       "min": 0,
@@ -314,7 +368,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.participant.type",
       "min": 1,
@@ -328,7 +384,9 @@
       "name": "uri",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestReport.participant.uri",
       "min": 1,
@@ -342,7 +400,9 @@
       "name": "display",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.participant.display",
       "min": 0,
@@ -356,7 +416,9 @@
       "name": "setup",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.setup",
       "min": 0,
@@ -370,7 +432,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.setup.id",
       "min": 0,
@@ -385,7 +449,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.extension",
       "min": 0,
@@ -400,7 +467,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.modifierExtension",
       "min": 0,
@@ -415,7 +485,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.setup.action",
       "min": 1,
@@ -429,7 +501,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.setup.action.id",
       "min": 0,
@@ -444,7 +518,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.extension",
       "min": 0,
@@ -459,7 +536,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.modifierExtension",
       "min": 0,
@@ -474,7 +554,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.setup.action.operation",
       "min": 0,
@@ -488,7 +570,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.setup.action.operation.id",
       "min": 0,
@@ -503,7 +587,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.operation.extension",
       "min": 0,
@@ -518,7 +605,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.operation.modifierExtension",
       "min": 0,
@@ -533,7 +623,9 @@
       "name": "result",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.setup.action.operation.result",
       "min": 1,
@@ -547,7 +639,9 @@
       "name": "message",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TestReport.setup.action.operation.message",
       "min": 0,
@@ -561,7 +655,9 @@
       "name": "detail",
       "depth": 4,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestReport.setup.action.operation.detail",
       "min": 0,
@@ -575,7 +671,9 @@
       "name": "assert",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.setup.action.assert",
       "min": 0,
@@ -589,7 +687,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.setup.action.assert.id",
       "min": 0,
@@ -604,7 +704,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.assert.extension",
       "min": 0,
@@ -619,7 +722,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.setup.action.assert.modifierExtension",
       "min": 0,
@@ -634,7 +740,9 @@
       "name": "result",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestReport.setup.action.assert.result",
       "min": 1,
@@ -648,7 +756,9 @@
       "name": "message",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TestReport.setup.action.assert.message",
       "min": 0,
@@ -662,7 +772,9 @@
       "name": "detail",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.setup.action.assert.detail",
       "min": 0,
@@ -676,7 +788,9 @@
       "name": "test",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.test",
       "min": 0,
@@ -690,7 +804,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.test.id",
       "min": 0,
@@ -705,7 +821,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.test.extension",
       "min": 0,
@@ -720,7 +839,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.test.modifierExtension",
       "min": 0,
@@ -735,7 +857,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.test.name",
       "min": 0,
@@ -749,7 +873,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.test.description",
       "min": 0,
@@ -763,7 +889,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.test.action",
       "min": 1,
@@ -777,7 +905,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.test.action.id",
       "min": 0,
@@ -792,7 +922,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.test.action.extension",
       "min": 0,
@@ -807,7 +940,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.test.action.modifierExtension",
       "min": 0,
@@ -822,7 +958,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestReport.test.action.operation",
       "min": 0,
@@ -836,7 +974,9 @@
       "name": "assert",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestReport.test.action.assert",
       "min": 0,
@@ -850,7 +990,9 @@
       "name": "teardown",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.teardown",
       "min": 0,
@@ -864,7 +1006,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.teardown.id",
       "min": 0,
@@ -879,7 +1023,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.teardown.extension",
       "min": 0,
@@ -894,7 +1041,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.teardown.modifierExtension",
       "min": 0,
@@ -909,7 +1059,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestReport.teardown.action",
       "min": 1,
@@ -923,7 +1075,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestReport.teardown.action.id",
       "min": 0,
@@ -938,7 +1092,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.teardown.action.extension",
       "min": 0,
@@ -953,7 +1110,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestReport.teardown.action.modifierExtension",
       "min": 0,
@@ -968,7 +1128,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestReport.teardown.action.operation",
       "min": 1,

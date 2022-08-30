@@ -1,12 +1,15 @@
 {
-  "resourceName": "InsurancePlan",
+  "name": "InsurancePlan",
+  "location": "resource",
   "description": "Details of a Health Insurance product/plan provided by an organization.",
   "properties": [
     {
       "name": "InsurancePlan",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "InsurancePlan",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "InsurancePlan.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "InsurancePlan.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "InsurancePlan.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "InsurancePlan.status",
       "min": 0,
@@ -168,7 +196,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.type",
       "min": 0,
@@ -182,7 +213,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.name",
       "min": 0,
@@ -196,7 +229,9 @@
       "name": "alias",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.alias",
       "min": 0,
@@ -210,7 +245,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.period",
       "min": 0,
@@ -224,10 +262,16 @@
       "name": "ownedBy",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.ownedBy",
       "min": 0,
@@ -241,10 +285,16 @@
       "name": "administeredBy",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.administeredBy",
       "min": 0,
@@ -258,10 +308,16 @@
       "name": "coverageArea",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.coverageArea",
       "min": 0,
@@ -275,7 +331,9 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.contact",
       "min": 0,
@@ -289,7 +347,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.contact.id",
       "min": 0,
@@ -304,7 +364,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.extension",
       "min": 0,
@@ -319,7 +382,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.modifierExtension",
       "min": 0,
@@ -334,7 +400,10 @@
       "name": "purpose",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.purpose",
       "min": 0,
@@ -348,7 +417,10 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "HumanName"
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.name",
       "min": 0,
@@ -362,7 +434,10 @@
       "name": "telecom",
       "depth": 2,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.telecom",
       "min": 0,
@@ -376,7 +451,10 @@
       "name": "address",
       "depth": 2,
       "types": [
-        "Address"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.contact.address",
       "min": 0,
@@ -390,10 +468,16 @@
       "name": "endpoint",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Endpoint"
+        {
+          "datatype": "Endpoint",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.endpoint",
       "min": 0,
@@ -407,10 +491,16 @@
       "name": "network",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.network",
       "min": 0,
@@ -424,7 +514,9 @@
       "name": "coverage",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.coverage",
       "min": 0,
@@ -438,7 +530,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.coverage.id",
       "min": 0,
@@ -453,7 +547,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.extension",
       "min": 0,
@@ -468,7 +565,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.modifierExtension",
       "min": 0,
@@ -483,7 +583,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.type",
       "min": 1,
@@ -497,10 +600,16 @@
       "name": "network",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.coverage.network",
       "min": 0,
@@ -514,7 +623,9 @@
       "name": "benefit",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit",
       "min": 1,
@@ -528,7 +639,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.id",
       "min": 0,
@@ -543,7 +656,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.extension",
       "min": 0,
@@ -558,7 +674,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.modifierExtension",
       "min": 0,
@@ -573,7 +692,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.type",
       "min": 1,
@@ -587,7 +709,9 @@
       "name": "requirement",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.requirement",
       "min": 0,
@@ -601,7 +725,9 @@
       "name": "limit",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit",
       "min": 0,
@@ -615,7 +741,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit.id",
       "min": 0,
@@ -630,7 +758,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit.extension",
       "min": 0,
@@ -645,7 +776,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit.modifierExtension",
       "min": 0,
@@ -660,7 +794,10 @@
       "name": "value",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit.value",
       "min": 0,
@@ -674,7 +811,10 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.coverage.benefit.limit.code",
       "min": 0,
@@ -688,7 +828,9 @@
       "name": "plan",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.plan",
       "min": 0,
@@ -702,7 +844,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.id",
       "min": 0,
@@ -717,7 +861,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.extension",
       "min": 0,
@@ -732,7 +879,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.modifierExtension",
       "min": 0,
@@ -747,7 +897,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.identifier",
       "min": 0,
@@ -761,7 +914,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.type",
       "min": 0,
@@ -775,10 +931,16 @@
       "name": "coverageArea",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.plan.coverageArea",
       "min": 0,
@@ -792,10 +954,16 @@
       "name": "network",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "InsurancePlan.plan.network",
       "min": 0,
@@ -809,7 +977,9 @@
       "name": "generalCost",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost",
       "min": 0,
@@ -823,7 +993,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.id",
       "min": 0,
@@ -838,7 +1010,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.extension",
       "min": 0,
@@ -853,7 +1028,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.modifierExtension",
       "min": 0,
@@ -868,7 +1046,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.type",
       "min": 0,
@@ -882,7 +1063,9 @@
       "name": "groupSize",
       "depth": 3,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.groupSize",
       "min": 0,
@@ -896,7 +1079,10 @@
       "name": "cost",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.cost",
       "min": 0,
@@ -910,7 +1096,9 @@
       "name": "comment",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.generalCost.comment",
       "min": 0,
@@ -924,7 +1112,9 @@
       "name": "specificCost",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost",
       "min": 0,
@@ -938,7 +1128,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.id",
       "min": 0,
@@ -953,7 +1145,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.extension",
       "min": 0,
@@ -968,7 +1163,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.modifierExtension",
       "min": 0,
@@ -983,7 +1181,10 @@
       "name": "category",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.category",
       "min": 1,
@@ -997,7 +1198,9 @@
       "name": "benefit",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit",
       "min": 0,
@@ -1011,7 +1214,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.id",
       "min": 0,
@@ -1026,7 +1231,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.extension",
       "min": 0,
@@ -1041,7 +1249,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.modifierExtension",
       "min": 0,
@@ -1056,7 +1267,10 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.type",
       "min": 1,
@@ -1070,7 +1284,9 @@
       "name": "cost",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost",
       "min": 0,
@@ -1084,7 +1300,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.id",
       "min": 0,
@@ -1099,7 +1317,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.extension",
       "min": 0,
@@ -1114,7 +1335,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.modifierExtension",
       "min": 0,
@@ -1129,7 +1353,10 @@
       "name": "type",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.type",
       "min": 1,
@@ -1143,7 +1370,10 @@
       "name": "applicability",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.applicability",
       "min": 0,
@@ -1157,7 +1387,10 @@
       "name": "qualifiers",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.qualifiers",
       "min": 0,
@@ -1171,7 +1404,10 @@
       "name": "value",
       "depth": 5,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "InsurancePlan.plan.specificCost.benefit.cost.value",
       "min": 0,

@@ -1,0 +1,18 @@
+---
+title: Reference
+sidebar_position: 31
+---
+
+import definition from '@site/static/data/datatypeDefinitions/reference.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Reference
+
+Base StructureDefinition for Reference Type: A reference from one resource to another.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

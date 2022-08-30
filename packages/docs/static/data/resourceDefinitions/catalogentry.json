@@ -1,12 +1,15 @@
 {
-  "resourceName": "CatalogEntry",
+  "name": "CatalogEntry",
+  "location": "resource",
   "description": "Catalog entries are wrappers that contextualize items included in a catalog.",
   "properties": [
     {
       "name": "CatalogEntry",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CatalogEntry",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CatalogEntry.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CatalogEntry.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CatalogEntry.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CatalogEntry.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.type",
       "min": 0,
@@ -168,7 +197,9 @@
       "name": "orderable",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CatalogEntry.orderable",
       "min": 1,
@@ -182,20 +213,56 @@
       "name": "referencedItem",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Medication",
-        "Device",
-        "Organization",
-        "Practitioner",
-        "PractitionerRole",
-        "HealthcareService",
-        "ActivityDefinition",
-        "PlanDefinition",
-        "SpecimenDefinition",
-        "ObservationDefinition",
-        "Binary"
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ActivityDefinition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PlanDefinition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "SpecimenDefinition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Binary",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CatalogEntry.referencedItem",
       "min": 1,
@@ -209,7 +276,10 @@
       "name": "additionalIdentifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.additionalIdentifier",
       "min": 0,
@@ -223,7 +293,10 @@
       "name": "classification",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.classification",
       "min": 0,
@@ -237,7 +310,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CatalogEntry.status",
       "min": 0,
@@ -251,7 +326,10 @@
       "name": "validityPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.validityPeriod",
       "min": 0,
@@ -265,7 +343,9 @@
       "name": "validTo",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CatalogEntry.validTo",
       "min": 0,
@@ -279,7 +359,9 @@
       "name": "lastUpdated",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CatalogEntry.lastUpdated",
       "min": 0,
@@ -293,7 +375,10 @@
       "name": "additionalCharacteristic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.additionalCharacteristic",
       "min": 0,
@@ -307,7 +392,10 @@
       "name": "additionalClassification",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.additionalClassification",
       "min": 0,
@@ -321,7 +409,9 @@
       "name": "relatedEntry",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CatalogEntry.relatedEntry",
       "min": 0,
@@ -335,7 +425,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CatalogEntry.relatedEntry.id",
       "min": 0,
@@ -350,7 +442,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.relatedEntry.extension",
       "min": 0,
@@ -365,7 +460,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CatalogEntry.relatedEntry.modifierExtension",
       "min": 0,
@@ -380,7 +478,9 @@
       "name": "relationtype",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CatalogEntry.relatedEntry.relationtype",
       "min": 1,
@@ -394,10 +494,16 @@
       "name": "item",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "CatalogEntry"
+        {
+          "datatype": "CatalogEntry",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CatalogEntry.relatedEntry.item",
       "min": 1,
@@ -407,6 +513,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

@@ -1,12 +1,15 @@
 {
-  "resourceName": "ExplanationOfBenefit",
+  "name": "ExplanationOfBenefit",
+  "location": "resource",
   "description": "This resource provides: the claim details; adjudication details from the processing of a Claim; and optionally account balance information, for informing the subscriber of the benefits provided.",
   "properties": [
     {
       "name": "ExplanationOfBenefit",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ExplanationOfBenefit.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExplanationOfBenefit.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ExplanationOfBenefit.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExplanationOfBenefit.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.type",
       "min": 1,
@@ -182,7 +213,10 @@
       "name": "subType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.subType",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExplanationOfBenefit.use",
       "min": 1,
@@ -210,10 +246,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.patient",
       "min": 1,
@@ -227,7 +269,10 @@
       "name": "billablePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.billablePeriod",
       "min": 0,
@@ -241,7 +286,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ExplanationOfBenefit.created",
       "min": 1,
@@ -255,11 +302,20 @@
       "name": "enterer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.enterer",
       "min": 0,
@@ -273,10 +329,16 @@
       "name": "insurer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.insurer",
       "min": 1,
@@ -290,12 +352,24 @@
       "name": "provider",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.provider",
       "min": 1,
@@ -309,7 +383,10 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.priority",
       "min": 0,
@@ -323,7 +400,10 @@
       "name": "fundsReserveRequested",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.fundsReserveRequested",
       "min": 0,
@@ -337,7 +417,10 @@
       "name": "fundsReserve",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.fundsReserve",
       "min": 0,
@@ -351,7 +434,9 @@
       "name": "related",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.related",
       "min": 0,
@@ -365,7 +450,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.related.id",
       "min": 0,
@@ -380,7 +467,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.related.extension",
       "min": 0,
@@ -395,7 +485,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.related.modifierExtension",
       "min": 0,
@@ -410,10 +503,16 @@
       "name": "claim",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Claim"
+        {
+          "datatype": "Claim",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.related.claim",
       "min": 0,
@@ -427,7 +526,10 @@
       "name": "relationship",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.related.relationship",
       "min": 0,
@@ -441,7 +543,10 @@
       "name": "reference",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.related.reference",
       "min": 0,
@@ -455,11 +560,20 @@
       "name": "prescription",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicationRequest",
-        "VisionPrescription"
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "VisionPrescription",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.prescription",
       "min": 0,
@@ -473,10 +587,16 @@
       "name": "originalPrescription",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicationRequest"
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.originalPrescription",
       "min": 0,
@@ -490,7 +610,9 @@
       "name": "payee",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.payee",
       "min": 0,
@@ -504,7 +626,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.payee.id",
       "min": 0,
@@ -519,7 +643,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payee.extension",
       "min": 0,
@@ -534,7 +661,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payee.modifierExtension",
       "min": 0,
@@ -549,7 +679,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payee.type",
       "min": 0,
@@ -563,14 +696,32 @@
       "name": "party",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.payee.party",
       "min": 0,
@@ -584,10 +735,16 @@
       "name": "referral",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.referral",
       "min": 0,
@@ -601,10 +758,16 @@
       "name": "facility",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.facility",
       "min": 0,
@@ -618,10 +781,16 @@
       "name": "claim",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Claim"
+        {
+          "datatype": "Claim",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.claim",
       "min": 0,
@@ -635,10 +804,16 @@
       "name": "claimResponse",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ClaimResponse"
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.claimResponse",
       "min": 0,
@@ -652,7 +827,9 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExplanationOfBenefit.outcome",
       "min": 1,
@@ -666,7 +843,9 @@
       "name": "disposition",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.disposition",
       "min": 0,
@@ -680,7 +859,9 @@
       "name": "preAuthRef",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.preAuthRef",
       "min": 0,
@@ -694,7 +875,10 @@
       "name": "preAuthRefPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.preAuthRefPeriod",
       "min": 0,
@@ -708,7 +892,9 @@
       "name": "careTeam",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam",
       "min": 0,
@@ -722,7 +908,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.id",
       "min": 0,
@@ -737,7 +925,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.extension",
       "min": 0,
@@ -752,7 +943,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.modifierExtension",
       "min": 0,
@@ -767,7 +961,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.sequence",
       "min": 1,
@@ -781,12 +977,24 @@
       "name": "provider",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.provider",
       "min": 1,
@@ -800,7 +1008,9 @@
       "name": "responsible",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.responsible",
       "min": 0,
@@ -814,7 +1024,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.role",
       "min": 0,
@@ -828,7 +1041,10 @@
       "name": "qualification",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.careTeam.qualification",
       "min": 0,
@@ -842,7 +1058,9 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo",
       "min": 0,
@@ -856,7 +1074,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.id",
       "min": 0,
@@ -871,7 +1091,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.extension",
       "min": 0,
@@ -886,7 +1109,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.modifierExtension",
       "min": 0,
@@ -901,7 +1127,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.sequence",
       "min": 1,
@@ -915,7 +1143,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.category",
       "min": 1,
@@ -929,7 +1160,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.code",
       "min": 0,
@@ -943,8 +1177,13 @@
       "name": "timing[x]",
       "depth": 2,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.timing[x]",
       "min": 0,
@@ -958,14 +1197,29 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "boolean",
-        "string",
-        "Quantity",
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.value[x]",
       "min": 0,
@@ -979,7 +1233,10 @@
       "name": "reason",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.supportingInfo.reason",
       "min": 0,
@@ -993,7 +1250,9 @@
       "name": "diagnosis",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis",
       "min": 0,
@@ -1007,7 +1266,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.id",
       "min": 0,
@@ -1022,7 +1283,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.extension",
       "min": 0,
@@ -1037,7 +1301,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.modifierExtension",
       "min": 0,
@@ -1052,7 +1319,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.sequence",
       "min": 1,
@@ -1066,11 +1335,20 @@
       "name": "diagnosis[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.diagnosis[x]",
       "min": 1,
@@ -1084,7 +1362,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.type",
       "min": 0,
@@ -1098,7 +1379,10 @@
       "name": "onAdmission",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.onAdmission",
       "min": 0,
@@ -1112,7 +1396,10 @@
       "name": "packageCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.diagnosis.packageCode",
       "min": 0,
@@ -1126,7 +1413,9 @@
       "name": "procedure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure",
       "min": 0,
@@ -1140,7 +1429,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.id",
       "min": 0,
@@ -1155,7 +1446,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.extension",
       "min": 0,
@@ -1170,7 +1464,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.modifierExtension",
       "min": 0,
@@ -1185,7 +1482,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.sequence",
       "min": 1,
@@ -1199,7 +1498,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.type",
       "min": 0,
@@ -1213,7 +1515,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.date",
       "min": 0,
@@ -1227,11 +1531,20 @@
       "name": "procedure[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Procedure"
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.procedure[x]",
       "min": 1,
@@ -1245,10 +1558,16 @@
       "name": "udi",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.procedure.udi",
       "min": 0,
@@ -1262,7 +1581,9 @@
       "name": "precedence",
       "depth": 1,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.precedence",
       "min": 0,
@@ -1276,7 +1597,9 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance",
       "min": 1,
@@ -1290,7 +1613,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.id",
       "min": 0,
@@ -1305,7 +1630,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.extension",
       "min": 0,
@@ -1320,7 +1648,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.modifierExtension",
       "min": 0,
@@ -1335,7 +1666,9 @@
       "name": "focal",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.focal",
       "min": 1,
@@ -1349,10 +1682,16 @@
       "name": "coverage",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.coverage",
       "min": 1,
@@ -1366,7 +1705,9 @@
       "name": "preAuthRef",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.insurance.preAuthRef",
       "min": 0,
@@ -1380,7 +1721,9 @@
       "name": "accident",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.accident",
       "min": 0,
@@ -1394,7 +1737,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.id",
       "min": 0,
@@ -1409,7 +1754,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.extension",
       "min": 0,
@@ -1424,7 +1772,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.modifierExtension",
       "min": 0,
@@ -1439,7 +1790,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.date",
       "min": 0,
@@ -1453,7 +1806,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.type",
       "min": 0,
@@ -1467,11 +1823,20 @@
       "name": "location[x]",
       "depth": 2,
       "types": [
-        "Address",
-        "Reference"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.accident.location[x]",
       "min": 0,
@@ -1485,7 +1850,9 @@
       "name": "item",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.item",
       "min": 0,
@@ -1499,7 +1866,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.item.id",
       "min": 0,
@@ -1514,7 +1883,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.extension",
       "min": 0,
@@ -1529,7 +1901,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.modifierExtension",
       "min": 0,
@@ -1544,7 +1919,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.sequence",
       "min": 1,
@@ -1558,7 +1935,9 @@
       "name": "careTeamSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.careTeamSequence",
       "min": 0,
@@ -1572,7 +1951,9 @@
       "name": "diagnosisSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.diagnosisSequence",
       "min": 0,
@@ -1586,7 +1967,9 @@
       "name": "procedureSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.procedureSequence",
       "min": 0,
@@ -1600,7 +1983,9 @@
       "name": "informationSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.informationSequence",
       "min": 0,
@@ -1614,7 +1999,10 @@
       "name": "revenue",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.revenue",
       "min": 0,
@@ -1628,7 +2016,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.category",
       "min": 0,
@@ -1642,7 +2033,10 @@
       "name": "productOrService",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.productOrService",
       "min": 1,
@@ -1656,7 +2050,10 @@
       "name": "modifier",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.modifier",
       "min": 0,
@@ -1670,7 +2067,10 @@
       "name": "programCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.programCode",
       "min": 0,
@@ -1684,8 +2084,13 @@
       "name": "serviced[x]",
       "depth": 2,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.serviced[x]",
       "min": 0,
@@ -1699,12 +2104,24 @@
       "name": "location[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Address",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.item.location[x]",
       "min": 0,
@@ -1718,7 +2135,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.quantity",
       "min": 0,
@@ -1732,7 +2152,10 @@
       "name": "unitPrice",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.unitPrice",
       "min": 0,
@@ -1746,7 +2169,9 @@
       "name": "factor",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.item.factor",
       "min": 0,
@@ -1760,7 +2185,10 @@
       "name": "net",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.net",
       "min": 0,
@@ -1774,10 +2202,16 @@
       "name": "udi",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.item.udi",
       "min": 0,
@@ -1791,7 +2225,10 @@
       "name": "bodySite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.bodySite",
       "min": 0,
@@ -1805,7 +2242,10 @@
       "name": "subSite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.subSite",
       "min": 0,
@@ -1819,10 +2259,16 @@
       "name": "encounter",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.item.encounter",
       "min": 0,
@@ -1836,7 +2282,9 @@
       "name": "noteNumber",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.noteNumber",
       "min": 0,
@@ -1850,7 +2298,9 @@
       "name": "adjudication",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication",
       "min": 0,
@@ -1864,7 +2314,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.id",
       "min": 0,
@@ -1879,7 +2331,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.extension",
       "min": 0,
@@ -1894,7 +2349,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.modifierExtension",
       "min": 0,
@@ -1909,7 +2367,10 @@
       "name": "category",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.category",
       "min": 1,
@@ -1923,7 +2384,10 @@
       "name": "reason",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.reason",
       "min": 0,
@@ -1937,7 +2401,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.amount",
       "min": 0,
@@ -1951,7 +2418,9 @@
       "name": "value",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.item.adjudication.value",
       "min": 0,
@@ -1965,7 +2434,9 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail",
       "min": 0,
@@ -1979,7 +2450,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.id",
       "min": 0,
@@ -1994,7 +2467,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.extension",
       "min": 0,
@@ -2009,7 +2485,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.modifierExtension",
       "min": 0,
@@ -2024,7 +2503,9 @@
       "name": "sequence",
       "depth": 3,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.sequence",
       "min": 1,
@@ -2038,7 +2519,10 @@
       "name": "revenue",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.revenue",
       "min": 0,
@@ -2052,7 +2536,10 @@
       "name": "category",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.category",
       "min": 0,
@@ -2066,7 +2553,10 @@
       "name": "productOrService",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.productOrService",
       "min": 1,
@@ -2080,7 +2570,10 @@
       "name": "modifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.modifier",
       "min": 0,
@@ -2094,7 +2587,10 @@
       "name": "programCode",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.programCode",
       "min": 0,
@@ -2108,7 +2604,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.quantity",
       "min": 0,
@@ -2122,7 +2621,10 @@
       "name": "unitPrice",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.unitPrice",
       "min": 0,
@@ -2136,7 +2638,9 @@
       "name": "factor",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.factor",
       "min": 0,
@@ -2150,7 +2654,10 @@
       "name": "net",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.net",
       "min": 0,
@@ -2164,10 +2671,16 @@
       "name": "udi",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.udi",
       "min": 0,
@@ -2181,7 +2694,9 @@
       "name": "noteNumber",
       "depth": 3,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.noteNumber",
       "min": 0,
@@ -2195,7 +2710,9 @@
       "name": "adjudication",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.adjudication",
       "min": 0,
@@ -2209,7 +2726,9 @@
       "name": "subDetail",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail",
       "min": 0,
@@ -2223,7 +2742,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.id",
       "min": 0,
@@ -2238,7 +2759,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.extension",
       "min": 0,
@@ -2253,7 +2777,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.modifierExtension",
       "min": 0,
@@ -2268,7 +2795,9 @@
       "name": "sequence",
       "depth": 4,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.sequence",
       "min": 1,
@@ -2282,7 +2811,10 @@
       "name": "revenue",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.revenue",
       "min": 0,
@@ -2296,7 +2828,10 @@
       "name": "category",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.category",
       "min": 0,
@@ -2310,7 +2845,10 @@
       "name": "productOrService",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.productOrService",
       "min": 1,
@@ -2324,7 +2862,10 @@
       "name": "modifier",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.modifier",
       "min": 0,
@@ -2338,7 +2879,10 @@
       "name": "programCode",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.programCode",
       "min": 0,
@@ -2352,7 +2896,10 @@
       "name": "quantity",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.quantity",
       "min": 0,
@@ -2366,7 +2913,10 @@
       "name": "unitPrice",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.unitPrice",
       "min": 0,
@@ -2380,7 +2930,9 @@
       "name": "factor",
       "depth": 4,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.factor",
       "min": 0,
@@ -2394,7 +2946,10 @@
       "name": "net",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.net",
       "min": 0,
@@ -2408,10 +2963,16 @@
       "name": "udi",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.udi",
       "min": 0,
@@ -2425,7 +2986,9 @@
       "name": "noteNumber",
       "depth": 4,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.noteNumber",
       "min": 0,
@@ -2439,7 +3002,9 @@
       "name": "adjudication",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.item.detail.subDetail.adjudication",
       "min": 0,
@@ -2453,7 +3018,9 @@
       "name": "addItem",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem",
       "min": 0,
@@ -2467,7 +3034,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.id",
       "min": 0,
@@ -2482,7 +3051,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.extension",
       "min": 0,
@@ -2497,7 +3069,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.modifierExtension",
       "min": 0,
@@ -2512,7 +3087,9 @@
       "name": "itemSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.itemSequence",
       "min": 0,
@@ -2526,7 +3103,9 @@
       "name": "detailSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detailSequence",
       "min": 0,
@@ -2540,7 +3119,9 @@
       "name": "subDetailSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.subDetailSequence",
       "min": 0,
@@ -2554,12 +3135,24 @@
       "name": "provider",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.provider",
       "min": 0,
@@ -2573,7 +3166,10 @@
       "name": "productOrService",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.productOrService",
       "min": 1,
@@ -2587,7 +3183,10 @@
       "name": "modifier",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.modifier",
       "min": 0,
@@ -2601,7 +3200,10 @@
       "name": "programCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.programCode",
       "min": 0,
@@ -2615,8 +3217,13 @@
       "name": "serviced[x]",
       "depth": 2,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.serviced[x]",
       "min": 0,
@@ -2630,12 +3237,24 @@
       "name": "location[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Address",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.location[x]",
       "min": 0,
@@ -2649,7 +3268,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.quantity",
       "min": 0,
@@ -2663,7 +3285,10 @@
       "name": "unitPrice",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.unitPrice",
       "min": 0,
@@ -2677,7 +3302,9 @@
       "name": "factor",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.factor",
       "min": 0,
@@ -2691,7 +3318,10 @@
       "name": "net",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.net",
       "min": 0,
@@ -2705,7 +3335,10 @@
       "name": "bodySite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.bodySite",
       "min": 0,
@@ -2719,7 +3352,10 @@
       "name": "subSite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.subSite",
       "min": 0,
@@ -2733,7 +3369,9 @@
       "name": "noteNumber",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.noteNumber",
       "min": 0,
@@ -2747,7 +3385,9 @@
       "name": "adjudication",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.adjudication",
       "min": 0,
@@ -2761,7 +3401,9 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail",
       "min": 0,
@@ -2775,7 +3417,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.id",
       "min": 0,
@@ -2790,7 +3434,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.extension",
       "min": 0,
@@ -2805,7 +3452,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.modifierExtension",
       "min": 0,
@@ -2820,7 +3470,10 @@
       "name": "productOrService",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.productOrService",
       "min": 1,
@@ -2834,7 +3487,10 @@
       "name": "modifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.modifier",
       "min": 0,
@@ -2848,7 +3504,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.quantity",
       "min": 0,
@@ -2862,7 +3521,10 @@
       "name": "unitPrice",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.unitPrice",
       "min": 0,
@@ -2876,7 +3538,9 @@
       "name": "factor",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.factor",
       "min": 0,
@@ -2890,7 +3554,10 @@
       "name": "net",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.net",
       "min": 0,
@@ -2904,7 +3571,9 @@
       "name": "noteNumber",
       "depth": 3,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.noteNumber",
       "min": 0,
@@ -2918,7 +3587,9 @@
       "name": "adjudication",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.adjudication",
       "min": 0,
@@ -2932,7 +3603,9 @@
       "name": "subDetail",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail",
       "min": 0,
@@ -2946,7 +3619,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.id",
       "min": 0,
@@ -2961,7 +3636,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.extension",
       "min": 0,
@@ -2976,7 +3654,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.modifierExtension",
       "min": 0,
@@ -2991,7 +3672,10 @@
       "name": "productOrService",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.productOrService",
       "min": 1,
@@ -3005,7 +3689,10 @@
       "name": "modifier",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.modifier",
       "min": 0,
@@ -3019,7 +3706,10 @@
       "name": "quantity",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.quantity",
       "min": 0,
@@ -3033,7 +3723,10 @@
       "name": "unitPrice",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.unitPrice",
       "min": 0,
@@ -3047,7 +3740,9 @@
       "name": "factor",
       "depth": 4,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.factor",
       "min": 0,
@@ -3061,7 +3756,10 @@
       "name": "net",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.net",
       "min": 0,
@@ -3075,7 +3773,9 @@
       "name": "noteNumber",
       "depth": 4,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.noteNumber",
       "min": 0,
@@ -3089,7 +3789,9 @@
       "name": "adjudication",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.addItem.detail.subDetail.adjudication",
       "min": 0,
@@ -3103,7 +3805,9 @@
       "name": "adjudication",
       "depth": 1,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExplanationOfBenefit.adjudication",
       "min": 0,
@@ -3117,7 +3821,9 @@
       "name": "total",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.total",
       "min": 0,
@@ -3131,7 +3837,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.total.id",
       "min": 0,
@@ -3146,7 +3854,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.total.extension",
       "min": 0,
@@ -3161,7 +3872,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.total.modifierExtension",
       "min": 0,
@@ -3176,7 +3890,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.total.category",
       "min": 1,
@@ -3190,7 +3907,10 @@
       "name": "amount",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.total.amount",
       "min": 1,
@@ -3204,7 +3924,9 @@
       "name": "payment",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.payment",
       "min": 0,
@@ -3218,7 +3940,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.id",
       "min": 0,
@@ -3233,7 +3957,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.extension",
       "min": 0,
@@ -3248,7 +3975,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.modifierExtension",
       "min": 0,
@@ -3263,7 +3993,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.type",
       "min": 0,
@@ -3277,7 +4010,10 @@
       "name": "adjustment",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.adjustment",
       "min": 0,
@@ -3291,7 +4027,10 @@
       "name": "adjustmentReason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.adjustmentReason",
       "min": 0,
@@ -3305,7 +4044,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.date",
       "min": 0,
@@ -3319,7 +4060,10 @@
       "name": "amount",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.amount",
       "min": 0,
@@ -3333,7 +4077,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.payment.identifier",
       "min": 0,
@@ -3347,7 +4094,10 @@
       "name": "formCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.formCode",
       "min": 0,
@@ -3361,7 +4111,10 @@
       "name": "form",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.form",
       "min": 0,
@@ -3375,7 +4128,9 @@
       "name": "processNote",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote",
       "min": 0,
@@ -3389,7 +4144,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.id",
       "min": 0,
@@ -3404,7 +4161,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.extension",
       "min": 0,
@@ -3419,7 +4179,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.modifierExtension",
       "min": 0,
@@ -3434,7 +4197,9 @@
       "name": "number",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.number",
       "min": 0,
@@ -3448,7 +4213,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.type",
       "min": 0,
@@ -3462,7 +4229,9 @@
       "name": "text",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.text",
       "min": 0,
@@ -3476,7 +4245,10 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.processNote.language",
       "min": 0,
@@ -3490,7 +4262,10 @@
       "name": "benefitPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitPeriod",
       "min": 0,
@@ -3504,7 +4279,9 @@
       "name": "benefitBalance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance",
       "min": 0,
@@ -3518,7 +4295,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.id",
       "min": 0,
@@ -3533,7 +4312,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.extension",
       "min": 0,
@@ -3548,7 +4330,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.modifierExtension",
       "min": 0,
@@ -3563,7 +4348,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.category",
       "min": 1,
@@ -3577,7 +4365,9 @@
       "name": "excluded",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.excluded",
       "min": 0,
@@ -3591,7 +4381,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.name",
       "min": 0,
@@ -3605,7 +4397,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.description",
       "min": 0,
@@ -3619,7 +4413,10 @@
       "name": "network",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.network",
       "min": 0,
@@ -3633,7 +4430,10 @@
       "name": "unit",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.unit",
       "min": 0,
@@ -3647,7 +4447,10 @@
       "name": "term",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.term",
       "min": 0,
@@ -3661,7 +4464,9 @@
       "name": "financial",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial",
       "min": 0,
@@ -3675,7 +4480,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.id",
       "min": 0,
@@ -3690,7 +4497,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.extension",
       "min": 0,
@@ -3705,7 +4515,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.modifierExtension",
       "min": 0,
@@ -3720,7 +4533,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.type",
       "min": 1,
@@ -3734,9 +4550,16 @@
       "name": "allowed[x]",
       "depth": 3,
       "types": [
-        "unsignedInt",
-        "string",
-        "Money"
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.allowed[x]",
       "min": 0,
@@ -3750,8 +4573,13 @@
       "name": "used[x]",
       "depth": 3,
       "types": [
-        "unsignedInt",
-        "Money"
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExplanationOfBenefit.benefitBalance.financial.used[x]",
       "min": 0,

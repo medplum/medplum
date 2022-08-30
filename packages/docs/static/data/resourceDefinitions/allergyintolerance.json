@@ -1,12 +1,15 @@
 {
-  "resourceName": "AllergyIntolerance",
+  "name": "AllergyIntolerance",
+  "location": "resource",
   "description": "Risk of harmful or undesirable, physiological response which is unique to an individual and associated with exposure to a substance.",
   "properties": [
     {
       "name": "AllergyIntolerance",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "AllergyIntolerance",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AllergyIntolerance.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "AllergyIntolerance.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AllergyIntolerance.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "AllergyIntolerance.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "clinicalStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.clinicalStatus",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "verificationStatus",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.verificationStatus",
       "min": 0,
@@ -182,7 +214,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AllergyIntolerance.type",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "category",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AllergyIntolerance.category",
       "min": 0,
@@ -210,7 +246,9 @@
       "name": "criticality",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AllergyIntolerance.criticality",
       "min": 0,
@@ -224,7 +262,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.code",
       "min": 0,
@@ -238,10 +279,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AllergyIntolerance.patient",
       "min": 1,
@@ -255,10 +302,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AllergyIntolerance.encounter",
       "min": 0,
@@ -272,11 +325,24 @@
       "name": "onset[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "Age",
-        "Period",
-        "Range",
-        "string"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AllergyIntolerance.onset[x]",
       "min": 0,
@@ -290,7 +356,9 @@
       "name": "recordedDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "AllergyIntolerance.recordedDate",
       "min": 0,
@@ -304,13 +372,28 @@
       "name": "recorder",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AllergyIntolerance.recorder",
       "min": 0,
@@ -324,13 +407,28 @@
       "name": "asserter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "RelatedPerson",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AllergyIntolerance.asserter",
       "min": 0,
@@ -344,7 +442,9 @@
       "name": "lastOccurrence",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "AllergyIntolerance.lastOccurrence",
       "min": 0,
@@ -358,7 +458,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.note",
       "min": 0,
@@ -372,7 +475,9 @@
       "name": "reaction",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AllergyIntolerance.reaction",
       "min": 0,
@@ -386,7 +491,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AllergyIntolerance.reaction.id",
       "min": 0,
@@ -401,7 +508,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.extension",
       "min": 0,
@@ -416,7 +526,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.modifierExtension",
       "min": 0,
@@ -431,7 +544,10 @@
       "name": "substance",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.substance",
       "min": 0,
@@ -445,7 +561,10 @@
       "name": "manifestation",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.manifestation",
       "min": 1,
@@ -459,7 +578,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AllergyIntolerance.reaction.description",
       "min": 0,
@@ -473,7 +594,9 @@
       "name": "onset",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "AllergyIntolerance.reaction.onset",
       "min": 0,
@@ -487,7 +610,9 @@
       "name": "severity",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AllergyIntolerance.reaction.severity",
       "min": 0,
@@ -501,7 +626,10 @@
       "name": "exposureRoute",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.exposureRoute",
       "min": 0,
@@ -515,7 +643,10 @@
       "name": "note",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AllergyIntolerance.reaction.note",
       "min": 0,

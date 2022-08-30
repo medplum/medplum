@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductIngredient",
+  "name": "MedicinalProductIngredient",
+  "location": "resource",
   "description": "An ingredient of a manufactured item or pharmaceutical product.",
   "properties": [
     {
       "name": "MedicinalProductIngredient",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductIngredient",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductIngredient.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductIngredient.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductIngredient.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.identifier",
       "min": 0,
@@ -154,7 +180,10 @@
       "name": "role",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.role",
       "min": 1,
@@ -168,7 +197,9 @@
       "name": "allergenicIndicator",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "MedicinalProductIngredient.allergenicIndicator",
       "min": 0,
@@ -182,10 +213,16 @@
       "name": "manufacturer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductIngredient.manufacturer",
       "min": 0,
@@ -199,7 +236,9 @@
       "name": "specifiedSubstance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance",
       "min": 0,
@@ -213,7 +252,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.id",
       "min": 0,
@@ -228,7 +269,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.extension",
       "min": 0,
@@ -243,7 +287,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.modifierExtension",
       "min": 0,
@@ -258,7 +305,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.code",
       "min": 1,
@@ -272,7 +322,10 @@
       "name": "group",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.group",
       "min": 1,
@@ -286,7 +339,10 @@
       "name": "confidentiality",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.confidentiality",
       "min": 0,
@@ -300,7 +356,9 @@
       "name": "strength",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength",
       "min": 0,
@@ -314,7 +372,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.id",
       "min": 0,
@@ -329,7 +389,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.extension",
       "min": 0,
@@ -344,7 +407,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.modifierExtension",
       "min": 0,
@@ -359,7 +425,10 @@
       "name": "presentation",
       "depth": 3,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.presentation",
       "min": 1,
@@ -373,7 +442,10 @@
       "name": "presentationLowLimit",
       "depth": 3,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.presentationLowLimit",
       "min": 0,
@@ -387,7 +459,10 @@
       "name": "concentration",
       "depth": 3,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.concentration",
       "min": 0,
@@ -401,7 +476,10 @@
       "name": "concentrationLowLimit",
       "depth": 3,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.concentrationLowLimit",
       "min": 0,
@@ -415,7 +493,9 @@
       "name": "measurementPoint",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.measurementPoint",
       "min": 0,
@@ -429,7 +509,10 @@
       "name": "country",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.country",
       "min": 0,
@@ -443,7 +526,9 @@
       "name": "referenceStrength",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength",
       "min": 0,
@@ -457,7 +542,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.id",
       "min": 0,
@@ -472,7 +559,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.extension",
       "min": 0,
@@ -487,7 +577,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.modifierExtension",
       "min": 0,
@@ -502,7 +595,10 @@
       "name": "substance",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.substance",
       "min": 0,
@@ -516,7 +612,10 @@
       "name": "strength",
       "depth": 4,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.strength",
       "min": 1,
@@ -530,7 +629,10 @@
       "name": "strengthLowLimit",
       "depth": 4,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.strengthLowLimit",
       "min": 0,
@@ -544,7 +646,9 @@
       "name": "measurementPoint",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.measurementPoint",
       "min": 0,
@@ -558,7 +662,10 @@
       "name": "country",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.specifiedSubstance.strength.referenceStrength.country",
       "min": 0,
@@ -572,7 +679,9 @@
       "name": "substance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductIngredient.substance",
       "min": 0,
@@ -586,7 +695,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductIngredient.substance.id",
       "min": 0,
@@ -601,7 +712,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.substance.extension",
       "min": 0,
@@ -616,7 +730,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.substance.modifierExtension",
       "min": 0,
@@ -631,7 +748,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductIngredient.substance.code",
       "min": 1,
@@ -645,7 +765,9 @@
       "name": "strength",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductIngredient.substance.strength",
       "min": 0,
@@ -655,6 +777,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

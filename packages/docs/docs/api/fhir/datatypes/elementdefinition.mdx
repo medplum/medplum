@@ -1,0 +1,18 @@
+---
+title: ElementDefinition
+sidebar_position: 14
+---
+
+import definition from '@site/static/data/datatypeDefinitions/elementdefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ElementDefinition
+
+Base StructureDefinition for ElementDefinition Type: Captures constraints on each element within the resource, profile, or extension.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

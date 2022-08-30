@@ -1,12 +1,15 @@
 {
-  "resourceName": "MeasureReport",
+  "name": "MeasureReport",
+  "location": "resource",
   "description": "The MeasureReport resource contains the results of the calculation of a measure; and optionally a reference to the resources involved in that calculation.",
   "properties": [
     {
       "name": "MeasureReport",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MeasureReport",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MeasureReport.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MeasureReport.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MeasureReport.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MeasureReport.status",
       "min": 1,
@@ -168,7 +196,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MeasureReport.type",
       "min": 1,
@@ -182,7 +212,9 @@
       "name": "measure",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "MeasureReport.measure",
       "min": 1,
@@ -196,16 +228,40 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient",
-        "Practitioner",
-        "PractitionerRole",
-        "Location",
-        "Device",
-        "RelatedPerson",
-        "Group"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MeasureReport.subject",
       "min": 0,
@@ -219,7 +275,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MeasureReport.date",
       "min": 0,
@@ -233,13 +291,28 @@
       "name": "reporter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Location",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MeasureReport.reporter",
       "min": 0,
@@ -253,7 +326,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.period",
       "min": 1,
@@ -267,7 +343,10 @@
       "name": "improvementNotation",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.improvementNotation",
       "min": 0,
@@ -281,7 +360,9 @@
       "name": "group",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group",
       "min": 0,
@@ -295,7 +376,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.id",
       "min": 0,
@@ -310,7 +393,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.extension",
       "min": 0,
@@ -325,7 +411,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.modifierExtension",
       "min": 0,
@@ -340,7 +429,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.code",
       "min": 0,
@@ -354,7 +446,9 @@
       "name": "population",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group.population",
       "min": 0,
@@ -368,7 +462,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.population.id",
       "min": 0,
@@ -383,7 +479,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.population.extension",
       "min": 0,
@@ -398,7 +497,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.population.modifierExtension",
       "min": 0,
@@ -413,7 +515,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.population.code",
       "min": 0,
@@ -427,7 +532,9 @@
       "name": "count",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MeasureReport.group.population.count",
       "min": 0,
@@ -441,10 +548,16 @@
       "name": "subjectResults",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "List"
+        {
+          "datatype": "List",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MeasureReport.group.population.subjectResults",
       "min": 0,
@@ -458,7 +571,10 @@
       "name": "measureScore",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.measureScore",
       "min": 0,
@@ -472,7 +588,9 @@
       "name": "stratifier",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group.stratifier",
       "min": 0,
@@ -486,7 +604,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.stratifier.id",
       "min": 0,
@@ -501,7 +621,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.extension",
       "min": 0,
@@ -516,7 +639,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.modifierExtension",
       "min": 0,
@@ -531,7 +657,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.code",
       "min": 0,
@@ -545,7 +674,9 @@
       "name": "stratum",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum",
       "min": 0,
@@ -559,7 +690,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.id",
       "min": 0,
@@ -574,7 +707,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.extension",
       "min": 0,
@@ -589,7 +725,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.modifierExtension",
       "min": 0,
@@ -604,7 +743,10 @@
       "name": "value",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.value",
       "min": 0,
@@ -618,7 +760,9 @@
       "name": "component",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component",
       "min": 0,
@@ -632,7 +776,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component.id",
       "min": 0,
@@ -647,7 +793,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component.extension",
       "min": 0,
@@ -662,7 +811,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component.modifierExtension",
       "min": 0,
@@ -677,7 +829,10 @@
       "name": "code",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component.code",
       "min": 1,
@@ -691,7 +846,10 @@
       "name": "value",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.component.value",
       "min": 1,
@@ -705,7 +863,9 @@
       "name": "population",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population",
       "min": 0,
@@ -719,7 +879,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.id",
       "min": 0,
@@ -734,7 +896,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.extension",
       "min": 0,
@@ -749,7 +914,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.modifierExtension",
       "min": 0,
@@ -764,7 +932,10 @@
       "name": "code",
       "depth": 5,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.code",
       "min": 0,
@@ -778,7 +949,9 @@
       "name": "count",
       "depth": 5,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.count",
       "min": 0,
@@ -792,10 +965,16 @@
       "name": "subjectResults",
       "depth": 5,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "List"
+        {
+          "datatype": "List",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.population.subjectResults",
       "min": 0,
@@ -809,7 +988,10 @@
       "name": "measureScore",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MeasureReport.group.stratifier.stratum.measureScore",
       "min": 0,
@@ -823,10 +1005,15 @@
       "name": "evaluatedResource",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MeasureReport.evaluatedResource",
       "min": 0,

@@ -1,12 +1,15 @@
 {
-  "resourceName": "RelatedPerson",
+  "name": "RelatedPerson",
+  "location": "resource",
   "description": "Information about a person that is involved in the care for a patient, but who is not the target of healthcare, nor has a formal responsibility in the care process.",
   "properties": [
     {
       "name": "RelatedPerson",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RelatedPerson",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RelatedPerson.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RelatedPerson.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RelatedPerson.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RelatedPerson.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "active",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "RelatedPerson.active",
       "min": 0,
@@ -168,10 +196,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RelatedPerson.patient",
       "min": 1,
@@ -185,7 +219,10 @@
       "name": "relationship",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.relationship",
       "min": 0,
@@ -199,7 +236,10 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "HumanName"
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.name",
       "min": 0,
@@ -213,7 +253,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.telecom",
       "min": 0,
@@ -227,7 +270,9 @@
       "name": "gender",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RelatedPerson.gender",
       "min": 0,
@@ -241,7 +286,9 @@
       "name": "birthDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "RelatedPerson.birthDate",
       "min": 0,
@@ -255,7 +302,10 @@
       "name": "address",
       "depth": 1,
       "types": [
-        "Address"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.address",
       "min": 0,
@@ -269,7 +319,10 @@
       "name": "photo",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.photo",
       "min": 0,
@@ -283,7 +336,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.period",
       "min": 0,
@@ -297,7 +353,9 @@
       "name": "communication",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RelatedPerson.communication",
       "min": 0,
@@ -311,7 +369,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RelatedPerson.communication.id",
       "min": 0,
@@ -326,7 +386,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.communication.extension",
       "min": 0,
@@ -341,7 +404,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.communication.modifierExtension",
       "min": 0,
@@ -356,7 +422,10 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedPerson.communication.language",
       "min": 1,
@@ -370,7 +439,9 @@
       "name": "preferred",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "RelatedPerson.communication.preferred",
       "min": 0,

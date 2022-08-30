@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductAuthorization",
+  "name": "MedicinalProductAuthorization",
+  "location": "resource",
   "description": "The regulatory authorization of a medicinal product.",
   "properties": [
     {
       "name": "MedicinalProductAuthorization",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductAuthorization",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductAuthorization.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductAuthorization.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductAuthorization.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductAuthorization.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.identifier",
       "min": 0,
@@ -154,11 +180,20 @@
       "name": "subject",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProduct",
-        "MedicinalProductPackaged"
+        {
+          "datatype": "MedicinalProduct",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicinalProductPackaged",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductAuthorization.subject",
       "min": 0,
@@ -172,7 +207,10 @@
       "name": "country",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.country",
       "min": 0,
@@ -186,7 +224,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdiction",
       "min": 0,
@@ -200,7 +241,10 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.status",
       "min": 0,
@@ -214,7 +258,9 @@
       "name": "statusDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProductAuthorization.statusDate",
       "min": 0,
@@ -228,7 +274,9 @@
       "name": "restoreDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProductAuthorization.restoreDate",
       "min": 0,
@@ -242,7 +290,10 @@
       "name": "validityPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.validityPeriod",
       "min": 0,
@@ -256,7 +307,10 @@
       "name": "dataExclusivityPeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.dataExclusivityPeriod",
       "min": 0,
@@ -270,7 +324,9 @@
       "name": "dateOfFirstAuthorization",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProductAuthorization.dateOfFirstAuthorization",
       "min": 0,
@@ -284,7 +340,9 @@
       "name": "internationalBirthDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProductAuthorization.internationalBirthDate",
       "min": 0,
@@ -298,7 +356,10 @@
       "name": "legalBasis",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.legalBasis",
       "min": 0,
@@ -312,7 +373,9 @@
       "name": "jurisdictionalAuthorization",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization",
       "min": 0,
@@ -326,7 +389,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.id",
       "min": 0,
@@ -341,7 +406,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.extension",
       "min": 0,
@@ -356,7 +424,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.modifierExtension",
       "min": 0,
@@ -371,7 +442,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.identifier",
       "min": 0,
@@ -385,7 +459,10 @@
       "name": "country",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.country",
       "min": 0,
@@ -399,7 +476,10 @@
       "name": "jurisdiction",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.jurisdiction",
       "min": 0,
@@ -413,7 +493,10 @@
       "name": "legalStatusOfSupply",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.legalStatusOfSupply",
       "min": 0,
@@ -427,7 +510,10 @@
       "name": "validityPeriod",
       "depth": 2,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.jurisdictionalAuthorization.validityPeriod",
       "min": 0,
@@ -441,10 +527,16 @@
       "name": "holder",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductAuthorization.holder",
       "min": 0,
@@ -458,10 +550,16 @@
       "name": "regulator",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductAuthorization.regulator",
       "min": 0,
@@ -475,7 +573,9 @@
       "name": "procedure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure",
       "min": 0,
@@ -489,7 +589,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.id",
       "min": 0,
@@ -504,7 +606,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.extension",
       "min": 0,
@@ -519,7 +624,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.modifierExtension",
       "min": 0,
@@ -534,7 +642,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.identifier",
       "min": 0,
@@ -548,7 +659,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.type",
       "min": 1,
@@ -562,8 +676,13 @@
       "name": "date[x]",
       "depth": 2,
       "types": [
-        "Period",
-        "dateTime"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.date[x]",
       "min": 0,
@@ -577,7 +696,9 @@
       "name": "application",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductAuthorization.procedure.application",
       "min": 0,

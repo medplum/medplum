@@ -1,0 +1,18 @@
+---
+title: Period
+sidebar_position: 24
+---
+
+import definition from '@site/static/data/datatypeDefinitions/period.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Period
+
+Base StructureDefinition for Period Type: A time period defined by a start and end date and optionally time.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

@@ -1,12 +1,15 @@
 {
-  "resourceName": "RiskEvidenceSynthesis",
+  "name": "RiskEvidenceSynthesis",
+  "location": "resource",
   "description": "The RiskEvidenceSynthesis resource describes the likelihood of an outcome in a population plus exposure state where the risk estimate is derived from a combination of research studies.",
   "properties": [
     {
       "name": "RiskEvidenceSynthesis",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RiskEvidenceSynthesis",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RiskEvidenceSynthesis.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RiskEvidenceSynthesis.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "RiskEvidenceSynthesis.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "RiskEvidenceSynthesis.url",
       "min": 0,
@@ -154,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.identifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.version",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.name",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.title",
       "min": 0,
@@ -210,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RiskEvidenceSynthesis.status",
       "min": 1,
@@ -224,7 +260,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "RiskEvidenceSynthesis.date",
       "min": 0,
@@ -238,7 +276,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.publisher",
       "min": 0,
@@ -252,7 +292,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.contact",
       "min": 0,
@@ -266,7 +309,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "RiskEvidenceSynthesis.description",
       "min": 0,
@@ -280,7 +325,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.note",
       "min": 0,
@@ -294,7 +342,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.useContext",
       "min": 0,
@@ -308,7 +359,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.jurisdiction",
       "min": 0,
@@ -322,7 +376,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "RiskEvidenceSynthesis.copyright",
       "min": 0,
@@ -336,7 +392,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "RiskEvidenceSynthesis.approvalDate",
       "min": 0,
@@ -350,7 +408,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "RiskEvidenceSynthesis.lastReviewDate",
       "min": 0,
@@ -364,7 +424,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.effectivePeriod",
       "min": 0,
@@ -378,7 +441,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.topic",
       "min": 0,
@@ -392,7 +458,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.author",
       "min": 0,
@@ -406,7 +475,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.editor",
       "min": 0,
@@ -420,7 +492,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.reviewer",
       "min": 0,
@@ -434,7 +509,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.endorser",
       "min": 0,
@@ -448,7 +526,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.relatedArtifact",
       "min": 0,
@@ -462,7 +543,10 @@
       "name": "synthesisType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.synthesisType",
       "min": 0,
@@ -476,7 +560,10 @@
       "name": "studyType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.studyType",
       "min": 0,
@@ -490,10 +577,16 @@
       "name": "population",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskEvidenceSynthesis.population",
       "min": 1,
@@ -507,10 +600,16 @@
       "name": "exposure",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskEvidenceSynthesis.exposure",
       "min": 0,
@@ -524,10 +623,16 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "EvidenceVariable"
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
       ],
       "path": "RiskEvidenceSynthesis.outcome",
       "min": 1,
@@ -541,7 +646,9 @@
       "name": "sampleSize",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize",
       "min": 0,
@@ -555,7 +662,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.id",
       "min": 0,
@@ -570,7 +679,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.extension",
       "min": 0,
@@ -585,7 +697,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.modifierExtension",
       "min": 0,
@@ -600,7 +715,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.description",
       "min": 0,
@@ -614,7 +731,9 @@
       "name": "numberOfStudies",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.numberOfStudies",
       "min": 0,
@@ -628,7 +747,9 @@
       "name": "numberOfParticipants",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "RiskEvidenceSynthesis.sampleSize.numberOfParticipants",
       "min": 0,
@@ -642,7 +763,9 @@
       "name": "riskEstimate",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate",
       "min": 0,
@@ -656,7 +779,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.id",
       "min": 0,
@@ -671,7 +796,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.extension",
       "min": 0,
@@ -686,7 +814,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.modifierExtension",
       "min": 0,
@@ -701,7 +832,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.description",
       "min": 0,
@@ -715,7 +848,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.type",
       "min": 0,
@@ -729,7 +865,9 @@
       "name": "value",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.value",
       "min": 0,
@@ -743,7 +881,10 @@
       "name": "unitOfMeasure",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.unitOfMeasure",
       "min": 0,
@@ -757,7 +898,9 @@
       "name": "denominatorCount",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.denominatorCount",
       "min": 0,
@@ -771,7 +914,9 @@
       "name": "numeratorCount",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.numeratorCount",
       "min": 0,
@@ -785,7 +930,9 @@
       "name": "precisionEstimate",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate",
       "min": 0,
@@ -799,7 +946,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.id",
       "min": 0,
@@ -814,7 +963,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.extension",
       "min": 0,
@@ -829,7 +981,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.modifierExtension",
       "min": 0,
@@ -844,7 +999,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.type",
       "min": 0,
@@ -858,7 +1016,9 @@
       "name": "level",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.level",
       "min": 0,
@@ -872,7 +1032,9 @@
       "name": "from",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.from",
       "min": 0,
@@ -886,7 +1048,9 @@
       "name": "to",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "RiskEvidenceSynthesis.riskEstimate.precisionEstimate.to",
       "min": 0,
@@ -900,7 +1064,9 @@
       "name": "certainty",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty",
       "min": 0,
@@ -914,7 +1080,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.id",
       "min": 0,
@@ -929,7 +1097,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.extension",
       "min": 0,
@@ -944,7 +1115,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.modifierExtension",
       "min": 0,
@@ -959,7 +1133,10 @@
       "name": "rating",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.rating",
       "min": 0,
@@ -973,7 +1150,10 @@
       "name": "note",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.note",
       "min": 0,
@@ -987,7 +1167,9 @@
       "name": "certaintySubcomponent",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent",
       "min": 0,
@@ -1001,7 +1183,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.id",
       "min": 0,
@@ -1016,7 +1200,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.extension",
       "min": 0,
@@ -1031,7 +1218,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.modifierExtension",
       "min": 0,
@@ -1046,7 +1236,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.type",
       "min": 0,
@@ -1060,7 +1253,10 @@
       "name": "rating",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.rating",
       "min": 0,
@@ -1074,7 +1270,10 @@
       "name": "note",
       "depth": 3,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RiskEvidenceSynthesis.certainty.certaintySubcomponent.note",
       "min": 0,

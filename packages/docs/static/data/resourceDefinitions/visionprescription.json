@@ -1,12 +1,15 @@
 {
-  "resourceName": "VisionPrescription",
+  "name": "VisionPrescription",
+  "location": "resource",
   "description": "An authorization for the provision of glasses and/or contact lenses to a patient.",
   "properties": [
     {
       "name": "VisionPrescription",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "VisionPrescription",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VisionPrescription.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "VisionPrescription.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VisionPrescription.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "VisionPrescription.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VisionPrescription.status",
       "min": 1,
@@ -168,7 +196,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "VisionPrescription.created",
       "min": 1,
@@ -182,10 +212,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VisionPrescription.patient",
       "min": 1,
@@ -199,10 +235,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VisionPrescription.encounter",
       "min": 0,
@@ -216,7 +258,9 @@
       "name": "dateWritten",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "VisionPrescription.dateWritten",
       "min": 1,
@@ -230,11 +274,20 @@
       "name": "prescriber",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VisionPrescription.prescriber",
       "min": 1,
@@ -248,7 +301,9 @@
       "name": "lensSpecification",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "VisionPrescription.lensSpecification",
       "min": 1,
@@ -262,7 +317,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.id",
       "min": 0,
@@ -277,7 +334,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.extension",
       "min": 0,
@@ -292,7 +352,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.modifierExtension",
       "min": 0,
@@ -307,7 +370,10 @@
       "name": "product",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.product",
       "min": 1,
@@ -321,7 +387,9 @@
       "name": "eye",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.eye",
       "min": 1,
@@ -335,7 +403,9 @@
       "name": "sphere",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.sphere",
       "min": 0,
@@ -349,7 +419,9 @@
       "name": "cylinder",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.cylinder",
       "min": 0,
@@ -363,7 +435,9 @@
       "name": "axis",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.axis",
       "min": 0,
@@ -377,7 +451,9 @@
       "name": "prism",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism",
       "min": 0,
@@ -391,7 +467,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism.id",
       "min": 0,
@@ -406,7 +484,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism.extension",
       "min": 0,
@@ -421,7 +502,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism.modifierExtension",
       "min": 0,
@@ -436,7 +520,9 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism.amount",
       "min": 1,
@@ -450,7 +536,9 @@
       "name": "base",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.prism.base",
       "min": 1,
@@ -464,7 +552,9 @@
       "name": "add",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.add",
       "min": 0,
@@ -478,7 +568,9 @@
       "name": "power",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.power",
       "min": 0,
@@ -492,7 +584,9 @@
       "name": "backCurve",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.backCurve",
       "min": 0,
@@ -506,7 +600,9 @@
       "name": "diameter",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.diameter",
       "min": 0,
@@ -520,7 +616,10 @@
       "name": "duration",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.duration",
       "min": 0,
@@ -534,7 +633,9 @@
       "name": "color",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.color",
       "min": 0,
@@ -548,7 +649,9 @@
       "name": "brand",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.brand",
       "min": 0,
@@ -562,7 +665,10 @@
       "name": "note",
       "depth": 2,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VisionPrescription.lensSpecification.note",
       "min": 0,

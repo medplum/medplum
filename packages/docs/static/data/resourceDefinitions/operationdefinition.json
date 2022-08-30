@@ -1,12 +1,15 @@
 {
-  "resourceName": "OperationDefinition",
+  "name": "OperationDefinition",
+  "location": "resource",
   "description": "A formal computable definition of an operation (on the RESTful interface) or a named query (using the search interaction).",
   "properties": [
     {
       "name": "OperationDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "OperationDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "OperationDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "OperationDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "OperationDefinition.url",
       "min": 0,
@@ -154,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.version",
       "min": 0,
@@ -168,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.name",
       "min": 1,
@@ -182,7 +211,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.title",
       "min": 0,
@@ -196,7 +227,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.status",
       "min": 1,
@@ -210,7 +243,9 @@
       "name": "kind",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.kind",
       "min": 1,
@@ -224,7 +259,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OperationDefinition.experimental",
       "min": 0,
@@ -238,7 +275,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "OperationDefinition.date",
       "min": 0,
@@ -252,7 +291,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.publisher",
       "min": 0,
@@ -266,7 +307,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.contact",
       "min": 0,
@@ -280,7 +324,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "OperationDefinition.description",
       "min": 0,
@@ -294,7 +340,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.useContext",
       "min": 0,
@@ -308,7 +357,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.jurisdiction",
       "min": 0,
@@ -322,7 +374,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "OperationDefinition.purpose",
       "min": 0,
@@ -336,7 +390,9 @@
       "name": "affectsState",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OperationDefinition.affectsState",
       "min": 0,
@@ -350,7 +406,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.code",
       "min": 1,
@@ -364,7 +422,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "OperationDefinition.comment",
       "min": 0,
@@ -378,7 +438,9 @@
       "name": "base",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "OperationDefinition.base",
       "min": 0,
@@ -392,7 +454,9 @@
       "name": "resource",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.resource",
       "min": 0,
@@ -406,7 +470,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OperationDefinition.system",
       "min": 1,
@@ -420,7 +486,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OperationDefinition.type",
       "min": 1,
@@ -434,7 +502,9 @@
       "name": "instance",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "OperationDefinition.instance",
       "min": 1,
@@ -448,7 +518,9 @@
       "name": "inputProfile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "OperationDefinition.inputProfile",
       "min": 0,
@@ -462,7 +534,9 @@
       "name": "outputProfile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "OperationDefinition.outputProfile",
       "min": 0,
@@ -476,7 +550,9 @@
       "name": "parameter",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "OperationDefinition.parameter",
       "min": 0,
@@ -490,7 +566,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.id",
       "min": 0,
@@ -505,7 +583,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.extension",
       "min": 0,
@@ -520,7 +601,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.modifierExtension",
       "min": 0,
@@ -535,7 +619,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.parameter.name",
       "min": 1,
@@ -549,7 +635,9 @@
       "name": "use",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.parameter.use",
       "min": 1,
@@ -563,7 +651,9 @@
       "name": "min",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "OperationDefinition.parameter.min",
       "min": 1,
@@ -577,7 +667,9 @@
       "name": "max",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.max",
       "min": 1,
@@ -591,7 +683,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.documentation",
       "min": 0,
@@ -605,7 +699,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.parameter.type",
       "min": 0,
@@ -619,7 +715,9 @@
       "name": "targetProfile",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "OperationDefinition.parameter.targetProfile",
       "min": 0,
@@ -633,7 +731,9 @@
       "name": "searchType",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.parameter.searchType",
       "min": 0,
@@ -647,7 +747,9 @@
       "name": "binding",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "OperationDefinition.parameter.binding",
       "min": 0,
@@ -661,7 +763,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.binding.id",
       "min": 0,
@@ -676,7 +780,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.binding.extension",
       "min": 0,
@@ -691,7 +798,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.binding.modifierExtension",
       "min": 0,
@@ -706,7 +816,9 @@
       "name": "strength",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "OperationDefinition.parameter.binding.strength",
       "min": 1,
@@ -720,7 +832,9 @@
       "name": "valueSet",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "OperationDefinition.parameter.binding.valueSet",
       "min": 1,
@@ -734,7 +848,9 @@
       "name": "referencedFrom",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom",
       "min": 0,
@@ -748,7 +864,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom.id",
       "min": 0,
@@ -763,7 +881,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom.extension",
       "min": 0,
@@ -778,7 +899,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom.modifierExtension",
       "min": 0,
@@ -793,7 +917,9 @@
       "name": "source",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom.source",
       "min": 1,
@@ -807,7 +933,9 @@
       "name": "sourceId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.parameter.referencedFrom.sourceId",
       "min": 0,
@@ -821,7 +949,9 @@
       "name": "part",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "OperationDefinition.parameter.part",
       "min": 0,
@@ -835,7 +965,9 @@
       "name": "overload",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "OperationDefinition.overload",
       "min": 0,
@@ -849,7 +981,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.overload.id",
       "min": 0,
@@ -864,7 +998,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.overload.extension",
       "min": 0,
@@ -879,7 +1016,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "OperationDefinition.overload.modifierExtension",
       "min": 0,
@@ -894,7 +1034,9 @@
       "name": "parameterName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.overload.parameterName",
       "min": 0,
@@ -908,7 +1050,9 @@
       "name": "comment",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "OperationDefinition.overload.comment",
       "min": 0,

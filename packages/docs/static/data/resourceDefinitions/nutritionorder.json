@@ -1,12 +1,15 @@
 {
-  "resourceName": "NutritionOrder",
+  "name": "NutritionOrder",
+  "location": "resource",
   "description": "A request to supply a diet, formula feeding (enteral) or oral nutritional supplement to a patient/resident.",
   "properties": [
     {
       "name": "NutritionOrder",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "NutritionOrder",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "NutritionOrder.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "NutritionOrder.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "NutritionOrder.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "instantiatesCanonical",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "NutritionOrder.instantiatesCanonical",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "instantiatesUri",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "NutritionOrder.instantiatesUri",
       "min": 0,
@@ -182,7 +212,9 @@
       "name": "instantiates",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "NutritionOrder.instantiates",
       "min": 0,
@@ -196,7 +228,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "NutritionOrder.status",
       "min": 1,
@@ -210,7 +244,9 @@
       "name": "intent",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "NutritionOrder.intent",
       "min": 1,
@@ -224,10 +260,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "NutritionOrder.patient",
       "min": 1,
@@ -241,10 +283,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "NutritionOrder.encounter",
       "min": 0,
@@ -258,7 +306,9 @@
       "name": "dateTime",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "NutritionOrder.dateTime",
       "min": 1,
@@ -272,11 +322,20 @@
       "name": "orderer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "NutritionOrder.orderer",
       "min": 0,
@@ -290,10 +349,16 @@
       "name": "allergyIntolerance",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "AllergyIntolerance"
+        {
+          "datatype": "AllergyIntolerance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "NutritionOrder.allergyIntolerance",
       "min": 0,
@@ -307,7 +372,10 @@
       "name": "foodPreferenceModifier",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.foodPreferenceModifier",
       "min": 0,
@@ -321,7 +389,10 @@
       "name": "excludeFoodModifier",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.excludeFoodModifier",
       "min": 0,
@@ -335,7 +406,9 @@
       "name": "oralDiet",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.oralDiet",
       "min": 0,
@@ -349,7 +422,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.oralDiet.id",
       "min": 0,
@@ -364,7 +439,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.extension",
       "min": 0,
@@ -379,7 +457,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.modifierExtension",
       "min": 0,
@@ -394,7 +475,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.type",
       "min": 0,
@@ -408,7 +492,10 @@
       "name": "schedule",
       "depth": 2,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.schedule",
       "min": 0,
@@ -422,7 +509,9 @@
       "name": "nutrient",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient",
       "min": 0,
@@ -436,7 +525,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient.id",
       "min": 0,
@@ -451,7 +542,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient.extension",
       "min": 0,
@@ -466,7 +560,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient.modifierExtension",
       "min": 0,
@@ -481,7 +578,10 @@
       "name": "modifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient.modifier",
       "min": 0,
@@ -495,7 +595,10 @@
       "name": "amount",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.nutrient.amount",
       "min": 0,
@@ -509,7 +612,9 @@
       "name": "texture",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture",
       "min": 0,
@@ -523,7 +628,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture.id",
       "min": 0,
@@ -538,7 +645,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture.extension",
       "min": 0,
@@ -553,7 +663,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture.modifierExtension",
       "min": 0,
@@ -568,7 +681,10 @@
       "name": "modifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture.modifier",
       "min": 0,
@@ -582,7 +698,10 @@
       "name": "foodType",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.texture.foodType",
       "min": 0,
@@ -596,7 +715,10 @@
       "name": "fluidConsistencyType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.oralDiet.fluidConsistencyType",
       "min": 0,
@@ -610,7 +732,9 @@
       "name": "instruction",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.oralDiet.instruction",
       "min": 0,
@@ -624,7 +748,9 @@
       "name": "supplement",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.supplement",
       "min": 0,
@@ -638,7 +764,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.supplement.id",
       "min": 0,
@@ -653,7 +781,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.supplement.extension",
       "min": 0,
@@ -668,7 +799,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.supplement.modifierExtension",
       "min": 0,
@@ -683,7 +817,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.supplement.type",
       "min": 0,
@@ -697,7 +834,9 @@
       "name": "productName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.supplement.productName",
       "min": 0,
@@ -711,7 +850,10 @@
       "name": "schedule",
       "depth": 2,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.supplement.schedule",
       "min": 0,
@@ -725,7 +867,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.supplement.quantity",
       "min": 0,
@@ -739,7 +884,9 @@
       "name": "instruction",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.supplement.instruction",
       "min": 0,
@@ -753,7 +900,9 @@
       "name": "enteralFormula",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.enteralFormula",
       "min": 0,
@@ -767,7 +916,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.id",
       "min": 0,
@@ -782,7 +933,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.extension",
       "min": 0,
@@ -797,7 +951,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.modifierExtension",
       "min": 0,
@@ -812,7 +969,10 @@
       "name": "baseFormulaType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.baseFormulaType",
       "min": 0,
@@ -826,7 +986,9 @@
       "name": "baseFormulaProductName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.baseFormulaProductName",
       "min": 0,
@@ -840,7 +1002,10 @@
       "name": "additiveType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.additiveType",
       "min": 0,
@@ -854,7 +1019,9 @@
       "name": "additiveProductName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.additiveProductName",
       "min": 0,
@@ -868,7 +1035,10 @@
       "name": "caloricDensity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.caloricDensity",
       "min": 0,
@@ -882,7 +1052,10 @@
       "name": "routeofAdministration",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.routeofAdministration",
       "min": 0,
@@ -896,7 +1069,9 @@
       "name": "administration",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration",
       "min": 0,
@@ -910,7 +1085,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.id",
       "min": 0,
@@ -925,7 +1102,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.extension",
       "min": 0,
@@ -940,7 +1120,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.modifierExtension",
       "min": 0,
@@ -955,7 +1138,10 @@
       "name": "schedule",
       "depth": 3,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.schedule",
       "min": 0,
@@ -969,7 +1155,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.quantity",
       "min": 0,
@@ -983,8 +1172,14 @@
       "name": "rate[x]",
       "depth": 3,
       "types": [
-        "Quantity",
-        "Ratio"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administration.rate[x]",
       "min": 0,
@@ -998,7 +1193,10 @@
       "name": "maxVolumeToDeliver",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.maxVolumeToDeliver",
       "min": 0,
@@ -1012,7 +1210,9 @@
       "name": "administrationInstruction",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "NutritionOrder.enteralFormula.administrationInstruction",
       "min": 0,
@@ -1026,7 +1226,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "NutritionOrder.note",
       "min": 0,

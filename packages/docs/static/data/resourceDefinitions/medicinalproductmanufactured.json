@@ -1,12 +1,15 @@
 {
-  "resourceName": "MedicinalProductManufactured",
+  "name": "MedicinalProductManufactured",
+  "location": "resource",
   "description": "The manufactured item as contained in the packaged medicinal product.",
   "properties": [
     {
       "name": "MedicinalProductManufactured",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MedicinalProductManufactured",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MedicinalProductManufactured.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "MedicinalProductManufactured.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "MedicinalProductManufactured.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "MedicinalProductManufactured.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "manufacturedDoseForm",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.manufacturedDoseForm",
       "min": 1,
@@ -154,7 +180,10 @@
       "name": "unitOfPresentation",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.unitOfPresentation",
       "min": 0,
@@ -168,7 +197,10 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.quantity",
       "min": 1,
@@ -182,10 +214,16 @@
       "name": "manufacturer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductManufactured.manufacturer",
       "min": 0,
@@ -199,10 +237,16 @@
       "name": "ingredient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "MedicinalProductIngredient"
+        {
+          "datatype": "MedicinalProductIngredient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "MedicinalProductManufactured.ingredient",
       "min": 0,
@@ -216,7 +260,10 @@
       "name": "physicalCharacteristics",
       "depth": 1,
       "types": [
-        "ProdCharacteristic"
+        {
+          "datatype": "ProdCharacteristic",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.physicalCharacteristics",
       "min": 0,
@@ -230,7 +277,10 @@
       "name": "otherCharacteristics",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MedicinalProductManufactured.otherCharacteristics",
       "min": 0,
@@ -240,6 +290,5 @@
       "comment": "",
       "inherited": false
     }
-  ],
-  "searchParameters": []
+  ]
 }

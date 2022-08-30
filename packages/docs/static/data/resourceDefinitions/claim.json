@@ -1,12 +1,15 @@
 {
-  "resourceName": "Claim",
+  "name": "Claim",
+  "location": "resource",
   "description": "A provider issued list of professional services and products which have been provided, or are to be provided, to a patient which is sent to an insurer for reimbursement.",
   "properties": [
     {
       "name": "Claim",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Claim",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Claim.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Claim.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Claim.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Claim.status",
       "min": 1,
@@ -168,7 +196,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.type",
       "min": 1,
@@ -182,7 +213,10 @@
       "name": "subType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.subType",
       "min": 0,
@@ -196,7 +230,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Claim.use",
       "min": 1,
@@ -210,10 +246,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.patient",
       "min": 1,
@@ -227,7 +269,10 @@
       "name": "billablePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.billablePeriod",
       "min": 0,
@@ -241,7 +286,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Claim.created",
       "min": 1,
@@ -255,11 +302,20 @@
       "name": "enterer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.enterer",
       "min": 0,
@@ -273,10 +329,16 @@
       "name": "insurer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.insurer",
       "min": 0,
@@ -290,12 +352,24 @@
       "name": "provider",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.provider",
       "min": 1,
@@ -309,7 +383,10 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.priority",
       "min": 1,
@@ -323,7 +400,10 @@
       "name": "fundsReserve",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.fundsReserve",
       "min": 0,
@@ -337,7 +417,9 @@
       "name": "related",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.related",
       "min": 0,
@@ -351,7 +433,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.related.id",
       "min": 0,
@@ -366,7 +450,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.related.extension",
       "min": 0,
@@ -381,7 +468,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.related.modifierExtension",
       "min": 0,
@@ -396,10 +486,16 @@
       "name": "claim",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Claim"
+        {
+          "datatype": "Claim",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.related.claim",
       "min": 0,
@@ -413,7 +509,10 @@
       "name": "relationship",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.related.relationship",
       "min": 0,
@@ -427,7 +526,10 @@
       "name": "reference",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.related.reference",
       "min": 0,
@@ -441,12 +543,24 @@
       "name": "prescription",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DeviceRequest",
-        "MedicationRequest",
-        "VisionPrescription"
+        {
+          "datatype": "DeviceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "VisionPrescription",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.prescription",
       "min": 0,
@@ -460,12 +574,24 @@
       "name": "originalPrescription",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DeviceRequest",
-        "MedicationRequest",
-        "VisionPrescription"
+        {
+          "datatype": "DeviceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "VisionPrescription",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.originalPrescription",
       "min": 0,
@@ -479,7 +605,9 @@
       "name": "payee",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.payee",
       "min": 0,
@@ -493,7 +621,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.payee.id",
       "min": 0,
@@ -508,7 +638,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.payee.extension",
       "min": 0,
@@ -523,7 +656,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.payee.modifierExtension",
       "min": 0,
@@ -538,7 +674,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.payee.type",
       "min": 1,
@@ -552,14 +691,32 @@
       "name": "party",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.payee.party",
       "min": 0,
@@ -573,10 +730,16 @@
       "name": "referral",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ServiceRequest"
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.referral",
       "min": 0,
@@ -590,10 +753,16 @@
       "name": "facility",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.facility",
       "min": 0,
@@ -607,7 +776,9 @@
       "name": "careTeam",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.careTeam",
       "min": 0,
@@ -621,7 +792,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.careTeam.id",
       "min": 0,
@@ -636,7 +809,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.careTeam.extension",
       "min": 0,
@@ -651,7 +827,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.careTeam.modifierExtension",
       "min": 0,
@@ -666,7 +845,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.careTeam.sequence",
       "min": 1,
@@ -680,12 +861,24 @@
       "name": "provider",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.careTeam.provider",
       "min": 1,
@@ -699,7 +892,9 @@
       "name": "responsible",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Claim.careTeam.responsible",
       "min": 0,
@@ -713,7 +908,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.careTeam.role",
       "min": 0,
@@ -727,7 +925,10 @@
       "name": "qualification",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.careTeam.qualification",
       "min": 0,
@@ -741,7 +942,9 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.supportingInfo",
       "min": 0,
@@ -755,7 +958,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.supportingInfo.id",
       "min": 0,
@@ -770,7 +975,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.extension",
       "min": 0,
@@ -785,7 +993,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.modifierExtension",
       "min": 0,
@@ -800,7 +1011,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.supportingInfo.sequence",
       "min": 1,
@@ -814,7 +1027,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.category",
       "min": 1,
@@ -828,7 +1044,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.code",
       "min": 0,
@@ -842,8 +1061,13 @@
       "name": "timing[x]",
       "depth": 2,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.timing[x]",
       "min": 0,
@@ -857,14 +1081,29 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "boolean",
-        "string",
-        "Quantity",
-        "Attachment",
-        "Reference"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Claim.supportingInfo.value[x]",
       "min": 0,
@@ -878,7 +1117,10 @@
       "name": "reason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.supportingInfo.reason",
       "min": 0,
@@ -892,7 +1134,9 @@
       "name": "diagnosis",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.diagnosis",
       "min": 0,
@@ -906,7 +1150,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.diagnosis.id",
       "min": 0,
@@ -921,7 +1167,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.diagnosis.extension",
       "min": 0,
@@ -936,7 +1185,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.diagnosis.modifierExtension",
       "min": 0,
@@ -951,7 +1203,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.diagnosis.sequence",
       "min": 1,
@@ -965,11 +1219,20 @@
       "name": "diagnosis[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.diagnosis.diagnosis[x]",
       "min": 1,
@@ -983,7 +1246,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.diagnosis.type",
       "min": 0,
@@ -997,7 +1263,10 @@
       "name": "onAdmission",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.diagnosis.onAdmission",
       "min": 0,
@@ -1011,7 +1280,10 @@
       "name": "packageCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.diagnosis.packageCode",
       "min": 0,
@@ -1025,7 +1297,9 @@
       "name": "procedure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.procedure",
       "min": 0,
@@ -1039,7 +1313,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.procedure.id",
       "min": 0,
@@ -1054,7 +1330,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.procedure.extension",
       "min": 0,
@@ -1069,7 +1348,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.procedure.modifierExtension",
       "min": 0,
@@ -1084,7 +1366,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.procedure.sequence",
       "min": 1,
@@ -1098,7 +1382,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.procedure.type",
       "min": 0,
@@ -1112,7 +1399,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Claim.procedure.date",
       "min": 0,
@@ -1126,11 +1415,20 @@
       "name": "procedure[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Procedure"
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.procedure.procedure[x]",
       "min": 1,
@@ -1144,10 +1442,16 @@
       "name": "udi",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.procedure.udi",
       "min": 0,
@@ -1161,7 +1465,9 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.insurance",
       "min": 1,
@@ -1175,7 +1481,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.insurance.id",
       "min": 0,
@@ -1190,7 +1498,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.insurance.extension",
       "min": 0,
@@ -1205,7 +1516,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.insurance.modifierExtension",
       "min": 0,
@@ -1220,7 +1534,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.insurance.sequence",
       "min": 1,
@@ -1234,7 +1550,9 @@
       "name": "focal",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Claim.insurance.focal",
       "min": 1,
@@ -1248,7 +1566,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.insurance.identifier",
       "min": 0,
@@ -1262,10 +1583,16 @@
       "name": "coverage",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.insurance.coverage",
       "min": 1,
@@ -1279,7 +1606,9 @@
       "name": "businessArrangement",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.insurance.businessArrangement",
       "min": 0,
@@ -1293,7 +1622,9 @@
       "name": "preAuthRef",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.insurance.preAuthRef",
       "min": 0,
@@ -1307,10 +1638,16 @@
       "name": "claimResponse",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ClaimResponse"
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.insurance.claimResponse",
       "min": 0,
@@ -1324,7 +1661,9 @@
       "name": "accident",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.accident",
       "min": 0,
@@ -1338,7 +1677,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.accident.id",
       "min": 0,
@@ -1353,7 +1694,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.accident.extension",
       "min": 0,
@@ -1368,7 +1712,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.accident.modifierExtension",
       "min": 0,
@@ -1383,7 +1730,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Claim.accident.date",
       "min": 1,
@@ -1397,7 +1746,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.accident.type",
       "min": 0,
@@ -1411,11 +1763,20 @@
       "name": "location[x]",
       "depth": 2,
       "types": [
-        "Address",
-        "Reference"
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.accident.location[x]",
       "min": 0,
@@ -1429,7 +1790,9 @@
       "name": "item",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.item",
       "min": 0,
@@ -1443,7 +1806,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.item.id",
       "min": 0,
@@ -1458,7 +1823,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.extension",
       "min": 0,
@@ -1473,7 +1841,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.modifierExtension",
       "min": 0,
@@ -1488,7 +1859,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.sequence",
       "min": 1,
@@ -1502,7 +1875,9 @@
       "name": "careTeamSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.careTeamSequence",
       "min": 0,
@@ -1516,7 +1891,9 @@
       "name": "diagnosisSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.diagnosisSequence",
       "min": 0,
@@ -1530,7 +1907,9 @@
       "name": "procedureSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.procedureSequence",
       "min": 0,
@@ -1544,7 +1923,9 @@
       "name": "informationSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.informationSequence",
       "min": 0,
@@ -1558,7 +1939,10 @@
       "name": "revenue",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.revenue",
       "min": 0,
@@ -1572,7 +1956,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.category",
       "min": 0,
@@ -1586,7 +1973,10 @@
       "name": "productOrService",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.productOrService",
       "min": 1,
@@ -1600,7 +1990,10 @@
       "name": "modifier",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.modifier",
       "min": 0,
@@ -1614,7 +2007,10 @@
       "name": "programCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.programCode",
       "min": 0,
@@ -1628,8 +2024,13 @@
       "name": "serviced[x]",
       "depth": 2,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.serviced[x]",
       "min": 0,
@@ -1643,12 +2044,24 @@
       "name": "location[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Address",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.item.location[x]",
       "min": 0,
@@ -1662,7 +2075,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.quantity",
       "min": 0,
@@ -1676,7 +2092,10 @@
       "name": "unitPrice",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.unitPrice",
       "min": 0,
@@ -1690,7 +2109,9 @@
       "name": "factor",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Claim.item.factor",
       "min": 0,
@@ -1704,7 +2125,10 @@
       "name": "net",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.net",
       "min": 0,
@@ -1718,10 +2142,16 @@
       "name": "udi",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.item.udi",
       "min": 0,
@@ -1735,7 +2165,10 @@
       "name": "bodySite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.bodySite",
       "min": 0,
@@ -1749,7 +2182,10 @@
       "name": "subSite",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.subSite",
       "min": 0,
@@ -1763,10 +2199,16 @@
       "name": "encounter",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.item.encounter",
       "min": 0,
@@ -1780,7 +2222,9 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.item.detail",
       "min": 0,
@@ -1794,7 +2238,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.item.detail.id",
       "min": 0,
@@ -1809,7 +2255,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.extension",
       "min": 0,
@@ -1824,7 +2273,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.modifierExtension",
       "min": 0,
@@ -1839,7 +2291,9 @@
       "name": "sequence",
       "depth": 3,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.detail.sequence",
       "min": 1,
@@ -1853,7 +2307,10 @@
       "name": "revenue",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.revenue",
       "min": 0,
@@ -1867,7 +2324,10 @@
       "name": "category",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.category",
       "min": 0,
@@ -1881,7 +2341,10 @@
       "name": "productOrService",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.productOrService",
       "min": 1,
@@ -1895,7 +2358,10 @@
       "name": "modifier",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.modifier",
       "min": 0,
@@ -1909,7 +2375,10 @@
       "name": "programCode",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.programCode",
       "min": 0,
@@ -1923,7 +2392,10 @@
       "name": "quantity",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.quantity",
       "min": 0,
@@ -1937,7 +2409,10 @@
       "name": "unitPrice",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.unitPrice",
       "min": 0,
@@ -1951,7 +2426,9 @@
       "name": "factor",
       "depth": 3,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Claim.item.detail.factor",
       "min": 0,
@@ -1965,7 +2442,10 @@
       "name": "net",
       "depth": 3,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.net",
       "min": 0,
@@ -1979,10 +2459,16 @@
       "name": "udi",
       "depth": 3,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.item.detail.udi",
       "min": 0,
@@ -1996,7 +2482,9 @@
       "name": "subDetail",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Claim.item.detail.subDetail",
       "min": 0,
@@ -2010,7 +2498,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Claim.item.detail.subDetail.id",
       "min": 0,
@@ -2025,7 +2515,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.extension",
       "min": 0,
@@ -2040,7 +2533,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.modifierExtension",
       "min": 0,
@@ -2055,7 +2551,9 @@
       "name": "sequence",
       "depth": 4,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Claim.item.detail.subDetail.sequence",
       "min": 1,
@@ -2069,7 +2567,10 @@
       "name": "revenue",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.revenue",
       "min": 0,
@@ -2083,7 +2584,10 @@
       "name": "category",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.category",
       "min": 0,
@@ -2097,7 +2601,10 @@
       "name": "productOrService",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.productOrService",
       "min": 1,
@@ -2111,7 +2618,10 @@
       "name": "modifier",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.modifier",
       "min": 0,
@@ -2125,7 +2635,10 @@
       "name": "programCode",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.programCode",
       "min": 0,
@@ -2139,7 +2652,10 @@
       "name": "quantity",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.quantity",
       "min": 0,
@@ -2153,7 +2669,10 @@
       "name": "unitPrice",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.unitPrice",
       "min": 0,
@@ -2167,7 +2686,9 @@
       "name": "factor",
       "depth": 4,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Claim.item.detail.subDetail.factor",
       "min": 0,
@@ -2181,7 +2702,10 @@
       "name": "net",
       "depth": 4,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.item.detail.subDetail.net",
       "min": 0,
@@ -2195,10 +2719,16 @@
       "name": "udi",
       "depth": 4,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Device"
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Claim.item.detail.subDetail.udi",
       "min": 0,
@@ -2212,7 +2742,10 @@
       "name": "total",
       "depth": 1,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Claim.total",
       "min": 0,

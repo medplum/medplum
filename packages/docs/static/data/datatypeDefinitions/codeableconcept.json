@@ -1,0 +1,91 @@
+{
+  "name": "CodeableConcept",
+  "location": "datatype",
+  "description": "Base StructureDefinition for CodeableConcept Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.",
+  "properties": [
+    {
+      "name": "CodeableConcept",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "CodeableConcept",
+      "min": 0,
+      "max": "*",
+      "short": "Concept - reference to a terminology or just  text",
+      "definition": "A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.",
+      "comment": "Not all terminology uses fit this general pattern. In some cases, models should not use CodeableConcept and use Coding directly and provide their own structure for managing text, codings, translations and the relationship between elements and pre- and post-coordination.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "CodeableConcept.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "CodeableConcept.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "coding",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "CodeableConcept.coding",
+      "min": 0,
+      "max": "*",
+      "short": "Code defined by a terminology system",
+      "definition": "A reference to a code defined by a terminology system.",
+      "comment": "Codes may be defined very casually in enumerations, or code lists, up to very formal definitions such as SNOMED CT - see the HL7 v3 Core Principles for more information.  Ordering of codings is undefined and SHALL NOT be used to infer meaning. Generally, at most only one of the coding values will be labeled as UserSelected = true.",
+      "inherited": false
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "CodeableConcept.text",
+      "min": 0,
+      "max": "1",
+      "short": "Plain text representation of the concept",
+      "definition": "A human language representation of the concept as seen/selected/uttered by the user who entered the data and/or which represents the intended meaning of the user.",
+      "comment": "Very often the text is the same as a displayName of one of the codings.",
+      "inherited": false
+    }
+  ]
+}

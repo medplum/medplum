@@ -1,12 +1,15 @@
 {
-  "resourceName": "DeviceDefinition",
+  "name": "DeviceDefinition",
+  "location": "resource",
   "description": "The characteristics, operational status and capabilities of a medical-related component of a medical device.",
   "properties": [
     {
       "name": "DeviceDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "DeviceDefinition",
       "min": 0,
@@ -20,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.id",
       "min": 0,
@@ -35,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.meta",
       "min": 0,
@@ -50,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceDefinition.implicitRules",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceDefinition.language",
       "min": 0,
@@ -80,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.text",
       "min": 0,
@@ -95,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "DeviceDefinition.contained",
       "min": 0,
@@ -110,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.extension",
       "min": 0,
@@ -125,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.modifierExtension",
       "min": 0,
@@ -140,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.identifier",
       "min": 0,
@@ -154,7 +180,9 @@
       "name": "udiDeviceIdentifier",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier",
       "min": 0,
@@ -168,7 +196,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.id",
       "min": 0,
@@ -183,7 +213,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.extension",
       "min": 0,
@@ -198,7 +231,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.modifierExtension",
       "min": 0,
@@ -213,7 +249,9 @@
       "name": "deviceIdentifier",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.deviceIdentifier",
       "min": 1,
@@ -227,7 +265,9 @@
       "name": "issuer",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.issuer",
       "min": 1,
@@ -241,7 +281,9 @@
       "name": "jurisdiction",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceDefinition.udiDeviceIdentifier.jurisdiction",
       "min": 1,
@@ -255,11 +297,19 @@
       "name": "manufacturer[x]",
       "depth": 1,
       "types": [
-        "string",
-        "Reference"
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DeviceDefinition.manufacturer[x]",
       "min": 0,
@@ -273,7 +323,9 @@
       "name": "deviceName",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.deviceName",
       "min": 0,
@@ -287,7 +339,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.deviceName.id",
       "min": 0,
@@ -302,7 +356,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.deviceName.extension",
       "min": 0,
@@ -317,7 +374,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.deviceName.modifierExtension",
       "min": 0,
@@ -332,7 +392,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.deviceName.name",
       "min": 1,
@@ -346,7 +408,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DeviceDefinition.deviceName.type",
       "min": 1,
@@ -360,7 +424,9 @@
       "name": "modelNumber",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.modelNumber",
       "min": 0,
@@ -374,7 +440,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.type",
       "min": 0,
@@ -388,7 +457,9 @@
       "name": "specialization",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.specialization",
       "min": 0,
@@ -402,7 +473,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.specialization.id",
       "min": 0,
@@ -417,7 +490,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.specialization.extension",
       "min": 0,
@@ -432,7 +508,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.specialization.modifierExtension",
       "min": 0,
@@ -447,7 +526,9 @@
       "name": "systemType",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.specialization.systemType",
       "min": 1,
@@ -461,7 +542,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.specialization.version",
       "min": 0,
@@ -475,7 +558,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.version",
       "min": 0,
@@ -489,7 +574,10 @@
       "name": "safety",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.safety",
       "min": 0,
@@ -503,7 +591,10 @@
       "name": "shelfLifeStorage",
       "depth": 1,
       "types": [
-        "ProductShelfLife"
+        {
+          "datatype": "ProductShelfLife",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.shelfLifeStorage",
       "min": 0,
@@ -517,7 +608,10 @@
       "name": "physicalCharacteristics",
       "depth": 1,
       "types": [
-        "ProdCharacteristic"
+        {
+          "datatype": "ProdCharacteristic",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.physicalCharacteristics",
       "min": 0,
@@ -531,7 +625,10 @@
       "name": "languageCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.languageCode",
       "min": 0,
@@ -545,7 +642,9 @@
       "name": "capability",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.capability",
       "min": 0,
@@ -559,7 +658,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.capability.id",
       "min": 0,
@@ -574,7 +675,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.capability.extension",
       "min": 0,
@@ -589,7 +693,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.capability.modifierExtension",
       "min": 0,
@@ -604,7 +711,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.capability.type",
       "min": 1,
@@ -618,7 +728,10 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.capability.description",
       "min": 0,
@@ -632,7 +745,9 @@
       "name": "property",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.property",
       "min": 0,
@@ -646,7 +761,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.property.id",
       "min": 0,
@@ -661,7 +778,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.property.extension",
       "min": 0,
@@ -676,7 +796,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.property.modifierExtension",
       "min": 0,
@@ -691,7 +814,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.property.type",
       "min": 1,
@@ -705,7 +831,10 @@
       "name": "valueQuantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.property.valueQuantity",
       "min": 0,
@@ -719,7 +848,10 @@
       "name": "valueCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.property.valueCode",
       "min": 0,
@@ -733,10 +865,16 @@
       "name": "owner",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DeviceDefinition.owner",
       "min": 0,
@@ -750,7 +888,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.contact",
       "min": 0,
@@ -764,7 +905,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceDefinition.url",
       "min": 0,
@@ -778,7 +921,9 @@
       "name": "onlineInformation",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "DeviceDefinition.onlineInformation",
       "min": 0,
@@ -792,7 +937,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.note",
       "min": 0,
@@ -806,7 +954,10 @@
       "name": "quantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.quantity",
       "min": 0,
@@ -820,10 +971,16 @@
       "name": "parentDevice",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DeviceDefinition"
+        {
+          "datatype": "DeviceDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DeviceDefinition.parentDevice",
       "min": 0,
@@ -837,7 +994,9 @@
       "name": "material",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.material",
       "min": 0,
@@ -851,7 +1010,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.material.id",
       "min": 0,
@@ -866,7 +1027,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.material.extension",
       "min": 0,
@@ -881,7 +1045,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.material.modifierExtension",
       "min": 0,
@@ -896,7 +1063,10 @@
       "name": "substance",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.material.substance",
       "min": 1,
@@ -910,7 +1080,9 @@
       "name": "alternate",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "DeviceDefinition.material.alternate",
       "min": 0,
@@ -924,7 +1096,9 @@
       "name": "allergenicIndicator",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "DeviceDefinition.material.allergenicIndicator",
       "min": 0,
@@ -938,7 +1112,9 @@
       "name": "classification",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "DeviceDefinition.classification",
       "min": 0,
@@ -952,7 +1128,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DeviceDefinition.classification.id",
       "min": 0,
@@ -967,7 +1145,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.classification.extension",
       "min": 0,
@@ -982,7 +1163,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.classification.modifierExtension",
       "min": 0,
@@ -997,7 +1181,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.classification.type",
       "min": 1,
@@ -1011,7 +1198,10 @@
       "name": "justification",
       "depth": 2,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.classification.justification",
       "min": 0,
@@ -1025,7 +1215,10 @@
       "name": "bodySite",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DeviceDefinition.bodySite",
       "min": 0,
