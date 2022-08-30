@@ -1,8 +1,6 @@
 import { formatAddress, stringify } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import { InsertQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -90,8 +88,6 @@ export class AddressTable extends LookupTable<Address> {
     const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(addresses, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
@@ -114,7 +110,7 @@ export class AddressTable extends LookupTable<Address> {
         });
       }
 
-      await new InsertQuery('Address', values).execute(client);
+      await this.insertValuesForResource(values);
     }
   }
 
