@@ -136,6 +136,16 @@ describe('ResourceHeader', () => {
     expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
   });
 
+  test('Renders code without display', async () => {
+    await setup({
+      resourceType: 'ServiceRequest',
+      id: '123',
+      code: { coding: [{ code: 'TEST_CODE' }] },
+    });
+
+    expect(screen.getByText('TEST_CODE')).toBeInTheDocument();
+  });
+
   test('Renders compound code', async () => {
     await setup({
       resourceType: 'ServiceRequest',
