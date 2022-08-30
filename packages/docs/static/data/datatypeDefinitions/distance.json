@@ -1,13 +1,15 @@
 {
   "name": "Distance",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Distance Type: A length - a value with a unit that is a physical distance.",
   "properties": [
     {
       "name": "Distance",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Distance",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Distance.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Distance.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Distance.value",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "comparator",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Distance.comparator",
       "min": 0,
@@ -81,7 +92,9 @@
       "name": "unit",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Distance.unit",
       "min": 0,
@@ -96,7 +109,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Distance.system",
       "min": 0,
@@ -111,7 +126,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Distance.code",
       "min": 0,

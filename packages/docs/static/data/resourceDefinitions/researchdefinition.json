@@ -1,13 +1,15 @@
 {
   "name": "ResearchDefinition",
-  "type": "resource",
+  "location": "resource",
   "description": "The ResearchDefinition resource describes the conditional state (population and any exposures being compared within the population) and outcome (if specified) that the knowledge (evidence, assertion, recommendation) is about.",
   "properties": [
     {
       "name": "ResearchDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ResearchDefinition",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ResearchDefinition.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ResearchDefinition.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ResearchDefinition.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ResearchDefinition.url",
       "min": 0,
@@ -155,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.identifier",
       "min": 0,
@@ -169,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.version",
       "min": 0,
@@ -183,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.name",
       "min": 0,
@@ -197,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.title",
       "min": 0,
@@ -211,7 +244,9 @@
       "name": "shortTitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.shortTitle",
       "min": 0,
@@ -225,7 +260,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.subtitle",
       "min": 0,
@@ -239,7 +276,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ResearchDefinition.status",
       "min": 1,
@@ -253,7 +292,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ResearchDefinition.experimental",
       "min": 0,
@@ -267,11 +308,20 @@
       "name": "subject[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ResearchDefinition.subject[x]",
       "min": 0,
@@ -285,7 +335,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ResearchDefinition.date",
       "min": 0,
@@ -299,7 +351,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.publisher",
       "min": 0,
@@ -313,7 +367,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.contact",
       "min": 0,
@@ -327,7 +384,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ResearchDefinition.description",
       "min": 0,
@@ -341,7 +400,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.comment",
       "min": 0,
@@ -355,7 +416,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.useContext",
       "min": 0,
@@ -369,7 +433,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.jurisdiction",
       "min": 0,
@@ -383,7 +450,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ResearchDefinition.purpose",
       "min": 0,
@@ -397,7 +466,9 @@
       "name": "usage",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ResearchDefinition.usage",
       "min": 0,
@@ -411,7 +482,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ResearchDefinition.copyright",
       "min": 0,
@@ -425,7 +498,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ResearchDefinition.approvalDate",
       "min": 0,
@@ -439,7 +514,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "ResearchDefinition.lastReviewDate",
       "min": 0,
@@ -453,7 +530,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.effectivePeriod",
       "min": 0,
@@ -467,7 +547,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.topic",
       "min": 0,
@@ -481,7 +564,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.author",
       "min": 0,
@@ -495,7 +581,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.editor",
       "min": 0,
@@ -509,7 +598,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.reviewer",
       "min": 0,
@@ -523,7 +615,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.endorser",
       "min": 0,
@@ -537,7 +632,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ResearchDefinition.relatedArtifact",
       "min": 0,
@@ -551,7 +649,9 @@
       "name": "library",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ResearchDefinition.library",
       "min": 0,
@@ -565,10 +665,16 @@
       "name": "population",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ResearchElementDefinition"
+        {
+          "datatype": "ResearchElementDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ResearchDefinition.population",
       "min": 1,
@@ -582,10 +688,16 @@
       "name": "exposure",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ResearchElementDefinition"
+        {
+          "datatype": "ResearchElementDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ResearchDefinition.exposure",
       "min": 0,
@@ -599,10 +711,16 @@
       "name": "exposureAlternative",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ResearchElementDefinition"
+        {
+          "datatype": "ResearchElementDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ResearchDefinition.exposureAlternative",
       "min": 0,
@@ -616,10 +734,16 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "ResearchElementDefinition"
+        {
+          "datatype": "ResearchElementDefinition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ResearchDefinition.outcome",
       "min": 0,

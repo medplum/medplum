@@ -1,13 +1,15 @@
 {
   "name": "Identifier",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Identifier Type: An identifier - identifies some entity uniquely and unambiguously. Typically this is used for business identifiers.",
   "properties": [
     {
       "name": "Identifier",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Identifier",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Identifier.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Identifier.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Identifier.use",
       "min": 0,
@@ -65,7 +74,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Identifier.type",
       "min": 0,
@@ -79,7 +91,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Identifier.system",
       "min": 0,
@@ -93,7 +107,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Identifier.value",
       "min": 0,
@@ -107,7 +123,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Identifier.period",
       "min": 0,
@@ -121,10 +140,16 @@
       "name": "assigner",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Identifier.assigner",
       "min": 0,

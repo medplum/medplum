@@ -1,13 +1,15 @@
 {
   "name": "TestScript",
-  "type": "resource",
+  "location": "resource",
   "description": "A structured set of tests against a FHIR server or client implementation to determine compliance against the FHIR specification.",
   "properties": [
     {
       "name": "TestScript",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestScript",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestScript.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "TestScript.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestScript.url",
       "min": 1,
@@ -155,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.identifier",
       "min": 0,
@@ -169,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.version",
       "min": 0,
@@ -183,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.name",
       "min": 1,
@@ -197,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.title",
       "min": 0,
@@ -211,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.status",
       "min": 1,
@@ -225,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.experimental",
       "min": 0,
@@ -239,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "TestScript.date",
       "min": 0,
@@ -253,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.publisher",
       "min": 0,
@@ -267,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.contact",
       "min": 0,
@@ -281,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TestScript.description",
       "min": 0,
@@ -295,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.useContext",
       "min": 0,
@@ -309,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.jurisdiction",
       "min": 0,
@@ -323,7 +375,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TestScript.purpose",
       "min": 0,
@@ -337,7 +391,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "TestScript.copyright",
       "min": 0,
@@ -351,7 +407,9 @@
       "name": "origin",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.origin",
       "min": 0,
@@ -365,7 +423,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.origin.id",
       "min": 0,
@@ -380,7 +440,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.origin.extension",
       "min": 0,
@@ -395,7 +458,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.origin.modifierExtension",
       "min": 0,
@@ -410,7 +476,9 @@
       "name": "index",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.origin.index",
       "min": 1,
@@ -424,7 +492,10 @@
       "name": "profile",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.origin.profile",
       "min": 1,
@@ -438,7 +509,9 @@
       "name": "destination",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.destination",
       "min": 0,
@@ -452,7 +525,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.destination.id",
       "min": 0,
@@ -467,7 +542,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.destination.extension",
       "min": 0,
@@ -482,7 +560,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.destination.modifierExtension",
       "min": 0,
@@ -497,7 +578,9 @@
       "name": "index",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.destination.index",
       "min": 1,
@@ -511,7 +594,10 @@
       "name": "profile",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.destination.profile",
       "min": 1,
@@ -525,7 +611,9 @@
       "name": "metadata",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.metadata",
       "min": 0,
@@ -539,7 +627,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.metadata.id",
       "min": 0,
@@ -554,7 +644,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.extension",
       "min": 0,
@@ -569,7 +662,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.modifierExtension",
       "min": 0,
@@ -584,7 +680,9 @@
       "name": "link",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.metadata.link",
       "min": 0,
@@ -598,7 +696,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.metadata.link.id",
       "min": 0,
@@ -613,7 +713,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.link.extension",
       "min": 0,
@@ -628,7 +731,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.link.modifierExtension",
       "min": 0,
@@ -643,7 +749,9 @@
       "name": "url",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestScript.metadata.link.url",
       "min": 1,
@@ -657,7 +765,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.metadata.link.description",
       "min": 0,
@@ -671,7 +781,9 @@
       "name": "capability",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.metadata.capability",
       "min": 1,
@@ -685,7 +797,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.metadata.capability.id",
       "min": 0,
@@ -700,7 +814,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.capability.extension",
       "min": 0,
@@ -715,7 +832,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.metadata.capability.modifierExtension",
       "min": 0,
@@ -730,7 +850,9 @@
       "name": "required",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.metadata.capability.required",
       "min": 1,
@@ -744,7 +866,9 @@
       "name": "validated",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.metadata.capability.validated",
       "min": 1,
@@ -758,7 +882,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.metadata.capability.description",
       "min": 0,
@@ -772,7 +898,9 @@
       "name": "origin",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.metadata.capability.origin",
       "min": 0,
@@ -786,7 +914,9 @@
       "name": "destination",
       "depth": 3,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.metadata.capability.destination",
       "min": 0,
@@ -800,7 +930,9 @@
       "name": "link",
       "depth": 3,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "TestScript.metadata.capability.link",
       "min": 0,
@@ -814,7 +946,9 @@
       "name": "capabilities",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "TestScript.metadata.capability.capabilities",
       "min": 1,
@@ -828,7 +962,9 @@
       "name": "fixture",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.fixture",
       "min": 0,
@@ -842,7 +978,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.fixture.id",
       "min": 0,
@@ -857,7 +995,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.fixture.extension",
       "min": 0,
@@ -872,7 +1013,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.fixture.modifierExtension",
       "min": 0,
@@ -887,7 +1031,9 @@
       "name": "autocreate",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.fixture.autocreate",
       "min": 1,
@@ -901,7 +1047,9 @@
       "name": "autodelete",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.fixture.autodelete",
       "min": 1,
@@ -915,10 +1063,15 @@
       "name": "resource",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "TestScript.fixture.resource",
       "min": 0,
@@ -932,10 +1085,15 @@
       "name": "profile",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "TestScript.profile",
       "min": 0,
@@ -949,7 +1107,9 @@
       "name": "variable",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.variable",
       "min": 0,
@@ -963,7 +1123,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.id",
       "min": 0,
@@ -978,7 +1140,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.variable.extension",
       "min": 0,
@@ -993,7 +1158,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.variable.modifierExtension",
       "min": 0,
@@ -1008,7 +1176,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.name",
       "min": 1,
@@ -1022,7 +1192,9 @@
       "name": "defaultValue",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.defaultValue",
       "min": 0,
@@ -1036,7 +1208,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.description",
       "min": 0,
@@ -1050,7 +1224,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.expression",
       "min": 0,
@@ -1064,7 +1240,9 @@
       "name": "headerField",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.headerField",
       "min": 0,
@@ -1078,7 +1256,9 @@
       "name": "hint",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.hint",
       "min": 0,
@@ -1092,7 +1272,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.variable.path",
       "min": 0,
@@ -1106,7 +1288,9 @@
       "name": "sourceId",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.variable.sourceId",
       "min": 0,
@@ -1120,7 +1304,9 @@
       "name": "setup",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.setup",
       "min": 0,
@@ -1134,7 +1320,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.id",
       "min": 0,
@@ -1149,7 +1337,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.extension",
       "min": 0,
@@ -1164,7 +1355,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.modifierExtension",
       "min": 0,
@@ -1179,7 +1373,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.setup.action",
       "min": 1,
@@ -1193,7 +1389,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.id",
       "min": 0,
@@ -1208,7 +1406,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.extension",
       "min": 0,
@@ -1223,7 +1424,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.modifierExtension",
       "min": 0,
@@ -1238,7 +1442,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.setup.action.operation",
       "min": 0,
@@ -1252,7 +1458,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.id",
       "min": 0,
@@ -1267,7 +1475,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.operation.extension",
       "min": 0,
@@ -1282,7 +1493,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.operation.modifierExtension",
       "min": 0,
@@ -1297,7 +1511,10 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.operation.type",
       "min": 0,
@@ -1311,7 +1528,9 @@
       "name": "resource",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.operation.resource",
       "min": 0,
@@ -1325,7 +1544,9 @@
       "name": "label",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.label",
       "min": 0,
@@ -1339,7 +1560,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.description",
       "min": 0,
@@ -1353,7 +1576,9 @@
       "name": "accept",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.operation.accept",
       "min": 0,
@@ -1367,7 +1592,9 @@
       "name": "contentType",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.operation.contentType",
       "min": 0,
@@ -1381,7 +1608,9 @@
       "name": "destination",
       "depth": 4,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.setup.action.operation.destination",
       "min": 0,
@@ -1395,7 +1624,9 @@
       "name": "encodeRequestUrl",
       "depth": 4,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.setup.action.operation.encodeRequestUrl",
       "min": 1,
@@ -1409,7 +1640,9 @@
       "name": "method",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.operation.method",
       "min": 0,
@@ -1423,7 +1656,9 @@
       "name": "origin",
       "depth": 4,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "TestScript.setup.action.operation.origin",
       "min": 0,
@@ -1437,7 +1672,9 @@
       "name": "params",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.params",
       "min": 0,
@@ -1451,7 +1688,9 @@
       "name": "requestHeader",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader",
       "min": 0,
@@ -1465,7 +1704,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader.id",
       "min": 0,
@@ -1480,7 +1721,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader.extension",
       "min": 0,
@@ -1495,7 +1739,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader.modifierExtension",
       "min": 0,
@@ -1510,7 +1757,9 @@
       "name": "field",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader.field",
       "min": 1,
@@ -1524,7 +1773,9 @@
       "name": "value",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestHeader.value",
       "min": 1,
@@ -1538,7 +1789,9 @@
       "name": "requestId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.operation.requestId",
       "min": 0,
@@ -1552,7 +1805,9 @@
       "name": "responseId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.operation.responseId",
       "min": 0,
@@ -1566,7 +1821,9 @@
       "name": "sourceId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.operation.sourceId",
       "min": 0,
@@ -1580,7 +1837,9 @@
       "name": "targetId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.operation.targetId",
       "min": 0,
@@ -1594,7 +1853,9 @@
       "name": "url",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.operation.url",
       "min": 0,
@@ -1608,7 +1869,9 @@
       "name": "assert",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.setup.action.assert",
       "min": 0,
@@ -1622,7 +1885,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.id",
       "min": 0,
@@ -1637,7 +1902,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.assert.extension",
       "min": 0,
@@ -1652,7 +1920,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.setup.action.assert.modifierExtension",
       "min": 0,
@@ -1667,7 +1938,9 @@
       "name": "label",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.label",
       "min": 0,
@@ -1681,7 +1954,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.description",
       "min": 0,
@@ -1695,7 +1970,9 @@
       "name": "direction",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.direction",
       "min": 0,
@@ -1709,7 +1986,9 @@
       "name": "compareToSourceId",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.compareToSourceId",
       "min": 0,
@@ -1723,7 +2002,9 @@
       "name": "compareToSourceExpression",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.compareToSourceExpression",
       "min": 0,
@@ -1737,7 +2018,9 @@
       "name": "compareToSourcePath",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.compareToSourcePath",
       "min": 0,
@@ -1751,7 +2034,9 @@
       "name": "contentType",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.contentType",
       "min": 0,
@@ -1765,7 +2050,9 @@
       "name": "expression",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.expression",
       "min": 0,
@@ -1779,7 +2066,9 @@
       "name": "headerField",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.headerField",
       "min": 0,
@@ -1793,7 +2082,9 @@
       "name": "minimumId",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.minimumId",
       "min": 0,
@@ -1807,7 +2098,9 @@
       "name": "navigationLinks",
       "depth": 4,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.setup.action.assert.navigationLinks",
       "min": 0,
@@ -1821,7 +2114,9 @@
       "name": "operator",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.operator",
       "min": 0,
@@ -1835,7 +2130,9 @@
       "name": "path",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.path",
       "min": 0,
@@ -1849,7 +2146,9 @@
       "name": "requestMethod",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.requestMethod",
       "min": 0,
@@ -1863,7 +2162,9 @@
       "name": "requestURL",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.requestURL",
       "min": 0,
@@ -1877,7 +2178,9 @@
       "name": "resource",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.resource",
       "min": 0,
@@ -1891,7 +2194,9 @@
       "name": "response",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TestScript.setup.action.assert.response",
       "min": 0,
@@ -1905,7 +2210,9 @@
       "name": "responseCode",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.responseCode",
       "min": 0,
@@ -1919,7 +2226,9 @@
       "name": "sourceId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.assert.sourceId",
       "min": 0,
@@ -1933,7 +2242,9 @@
       "name": "validateProfileId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "TestScript.setup.action.assert.validateProfileId",
       "min": 0,
@@ -1947,7 +2258,9 @@
       "name": "value",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.setup.action.assert.value",
       "min": 0,
@@ -1961,7 +2274,9 @@
       "name": "warningOnly",
       "depth": 4,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "TestScript.setup.action.assert.warningOnly",
       "min": 1,
@@ -1975,7 +2290,9 @@
       "name": "test",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.test",
       "min": 0,
@@ -1989,7 +2306,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.test.id",
       "min": 0,
@@ -2004,7 +2323,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.test.extension",
       "min": 0,
@@ -2019,7 +2341,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.test.modifierExtension",
       "min": 0,
@@ -2034,7 +2359,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.test.name",
       "min": 0,
@@ -2048,7 +2375,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.test.description",
       "min": 0,
@@ -2062,7 +2391,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.test.action",
       "min": 1,
@@ -2076,7 +2407,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.test.action.id",
       "min": 0,
@@ -2091,7 +2424,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.test.action.extension",
       "min": 0,
@@ -2106,7 +2442,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.test.action.modifierExtension",
       "min": 0,
@@ -2121,7 +2460,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestScript.test.action.operation",
       "min": 0,
@@ -2135,7 +2476,9 @@
       "name": "assert",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestScript.test.action.assert",
       "min": 0,
@@ -2149,7 +2492,9 @@
       "name": "teardown",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.teardown",
       "min": 0,
@@ -2163,7 +2508,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.teardown.id",
       "min": 0,
@@ -2178,7 +2525,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.teardown.extension",
       "min": 0,
@@ -2193,7 +2543,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.teardown.modifierExtension",
       "min": 0,
@@ -2208,7 +2561,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "TestScript.teardown.action",
       "min": 1,
@@ -2222,7 +2577,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TestScript.teardown.action.id",
       "min": 0,
@@ -2237,7 +2594,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.teardown.action.extension",
       "min": 0,
@@ -2252,7 +2612,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TestScript.teardown.action.modifierExtension",
       "min": 0,
@@ -2267,7 +2630,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TestScript.teardown.action.operation",
       "min": 1,

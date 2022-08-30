@@ -1,13 +1,15 @@
 {
   "name": "MarketingStatus",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for MarketingStatus Type: The marketing status describes the date when a medicinal product is actually put on the market or the date as of which it is no longer available.",
   "properties": [
     {
       "name": "MarketingStatus",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "MarketingStatus",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "MarketingStatus.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.modifierExtension",
       "min": 0,
@@ -66,7 +76,10 @@
       "name": "country",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.country",
       "min": 1,
@@ -80,7 +93,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.jurisdiction",
       "min": 0,
@@ -94,7 +110,10 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.status",
       "min": 1,
@@ -108,7 +127,10 @@
       "name": "dateRange",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "MarketingStatus.dateRange",
       "min": 1,
@@ -122,7 +144,9 @@
       "name": "restoreDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "MarketingStatus.restoreDate",
       "min": 0,

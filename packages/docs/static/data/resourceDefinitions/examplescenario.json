@@ -1,13 +1,15 @@
 {
   "name": "ExampleScenario",
-  "type": "resource",
+  "location": "resource",
   "description": "Example of workflow instance.",
   "properties": [
     {
       "name": "ExampleScenario",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExampleScenario",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ExampleScenario.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExampleScenario.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ExampleScenario.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ExampleScenario.url",
       "min": 0,
@@ -155,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.identifier",
       "min": 0,
@@ -169,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.version",
       "min": 0,
@@ -183,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.name",
       "min": 0,
@@ -197,7 +228,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExampleScenario.status",
       "min": 1,
@@ -211,7 +244,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExampleScenario.experimental",
       "min": 0,
@@ -225,7 +260,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ExampleScenario.date",
       "min": 0,
@@ -239,7 +276,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.publisher",
       "min": 0,
@@ -253,7 +292,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.contact",
       "min": 0,
@@ -267,7 +309,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.useContext",
       "min": 0,
@@ -281,7 +326,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.jurisdiction",
       "min": 0,
@@ -295,7 +343,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.copyright",
       "min": 0,
@@ -309,7 +359,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.purpose",
       "min": 0,
@@ -323,7 +375,9 @@
       "name": "actor",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.actor",
       "min": 0,
@@ -337,7 +391,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.actor.id",
       "min": 0,
@@ -352,7 +408,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.actor.extension",
       "min": 0,
@@ -367,7 +426,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.actor.modifierExtension",
       "min": 0,
@@ -382,7 +444,9 @@
       "name": "actorId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.actor.actorId",
       "min": 1,
@@ -396,7 +460,9 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExampleScenario.actor.type",
       "min": 1,
@@ -410,7 +476,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.actor.name",
       "min": 0,
@@ -424,7 +492,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.actor.description",
       "min": 0,
@@ -438,7 +508,9 @@
       "name": "instance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.instance",
       "min": 0,
@@ -452,7 +524,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.id",
       "min": 0,
@@ -467,7 +541,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.extension",
       "min": 0,
@@ -482,7 +559,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.modifierExtension",
       "min": 0,
@@ -497,7 +577,9 @@
       "name": "resourceId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.resourceId",
       "min": 1,
@@ -511,7 +593,9 @@
       "name": "resourceType",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ExampleScenario.instance.resourceType",
       "min": 1,
@@ -525,7 +609,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.name",
       "min": 0,
@@ -539,7 +625,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.instance.description",
       "min": 0,
@@ -553,7 +641,9 @@
       "name": "version",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.instance.version",
       "min": 0,
@@ -567,7 +657,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.version.id",
       "min": 0,
@@ -582,7 +674,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.version.extension",
       "min": 0,
@@ -597,7 +692,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.version.modifierExtension",
       "min": 0,
@@ -612,7 +710,9 @@
       "name": "versionId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.version.versionId",
       "min": 1,
@@ -626,7 +726,9 @@
       "name": "description",
       "depth": 3,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.instance.version.description",
       "min": 1,
@@ -640,7 +742,9 @@
       "name": "containedInstance",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance",
       "min": 0,
@@ -654,7 +758,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance.id",
       "min": 0,
@@ -669,7 +775,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance.extension",
       "min": 0,
@@ -684,7 +793,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance.modifierExtension",
       "min": 0,
@@ -699,7 +811,9 @@
       "name": "resourceId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance.resourceId",
       "min": 1,
@@ -713,7 +827,9 @@
       "name": "versionId",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.instance.containedInstance.versionId",
       "min": 0,
@@ -727,7 +843,9 @@
       "name": "process",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.process",
       "min": 0,
@@ -741,7 +859,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.id",
       "min": 0,
@@ -756,7 +876,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.extension",
       "min": 0,
@@ -771,7 +894,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.modifierExtension",
       "min": 0,
@@ -786,7 +912,9 @@
       "name": "title",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.title",
       "min": 1,
@@ -800,7 +928,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.process.description",
       "min": 0,
@@ -814,7 +944,9 @@
       "name": "preConditions",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.process.preConditions",
       "min": 0,
@@ -828,7 +960,9 @@
       "name": "postConditions",
       "depth": 2,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.process.postConditions",
       "min": 0,
@@ -842,7 +976,9 @@
       "name": "step",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.process.step",
       "min": 0,
@@ -856,7 +992,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.id",
       "min": 0,
@@ -871,7 +1009,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.extension",
       "min": 0,
@@ -886,7 +1027,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.modifierExtension",
       "min": 0,
@@ -901,7 +1045,9 @@
       "name": "process",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExampleScenario.process.step.process",
       "min": 0,
@@ -915,7 +1061,9 @@
       "name": "pause",
       "depth": 3,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExampleScenario.process.step.pause",
       "min": 0,
@@ -929,7 +1077,9 @@
       "name": "operation",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.process.step.operation",
       "min": 0,
@@ -943,7 +1093,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.id",
       "min": 0,
@@ -958,7 +1110,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.extension",
       "min": 0,
@@ -973,7 +1128,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.modifierExtension",
       "min": 0,
@@ -988,7 +1146,9 @@
       "name": "number",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.number",
       "min": 1,
@@ -1002,7 +1162,9 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.type",
       "min": 0,
@@ -1016,7 +1178,9 @@
       "name": "name",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.name",
       "min": 0,
@@ -1030,7 +1194,9 @@
       "name": "initiator",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.initiator",
       "min": 0,
@@ -1044,7 +1210,9 @@
       "name": "receiver",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.receiver",
       "min": 0,
@@ -1058,7 +1226,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.description",
       "min": 0,
@@ -1072,7 +1242,9 @@
       "name": "initiatorActive",
       "depth": 4,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.initiatorActive",
       "min": 0,
@@ -1086,7 +1258,9 @@
       "name": "receiverActive",
       "depth": 4,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ExampleScenario.process.step.operation.receiverActive",
       "min": 0,
@@ -1100,7 +1274,9 @@
       "name": "request",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExampleScenario.process.step.operation.request",
       "min": 0,
@@ -1114,7 +1290,9 @@
       "name": "response",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExampleScenario.process.step.operation.response",
       "min": 0,
@@ -1128,7 +1306,9 @@
       "name": "alternative",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative",
       "min": 0,
@@ -1142,7 +1322,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.id",
       "min": 0,
@@ -1157,7 +1339,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.extension",
       "min": 0,
@@ -1172,7 +1357,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.modifierExtension",
       "min": 0,
@@ -1187,7 +1375,9 @@
       "name": "title",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.title",
       "min": 1,
@@ -1201,7 +1391,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.description",
       "min": 0,
@@ -1215,7 +1407,9 @@
       "name": "step",
       "depth": 4,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ExampleScenario.process.step.alternative.step",
       "min": 0,
@@ -1229,7 +1423,9 @@
       "name": "workflow",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ExampleScenario.workflow",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "Address",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Address Type: An address expressed using postal conventions (as opposed to GPS or other location definition formats).  This data type may be used to convey addresses for use in delivering mail as well as for visiting locations which might not be valid for mail delivery.  There are a variety of postal address formats defined around the world.",
   "properties": [
     {
       "name": "Address",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Address",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Address.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Address.use",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Address.type",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.text",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "line",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.line",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "city",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.city",
       "min": 0,
@@ -121,7 +138,9 @@
       "name": "district",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.district",
       "min": 0,
@@ -135,7 +154,9 @@
       "name": "state",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.state",
       "min": 0,
@@ -149,7 +170,9 @@
       "name": "postalCode",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.postalCode",
       "min": 0,
@@ -163,7 +186,9 @@
       "name": "country",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Address.country",
       "min": 0,
@@ -177,7 +202,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Address.period",
       "min": 0,

@@ -1,0 +1,18 @@
+---
+title: Bot
+sidebar_position: 4
+---
+
+import definition from '@site/static/data/medplumDefinitions/bot.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Bot
+
+Bot account for automated actions.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

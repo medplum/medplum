@@ -1,13 +1,15 @@
 {
   "name": "Expression",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Expression Type: A expression that is evaluated in a specified context and returns a value. The context of use of the expression must specify the context in which the expression is evaluated, and how the result of the expression is used.",
   "properties": [
     {
       "name": "Expression",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Expression",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Expression.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Expression.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Expression.description",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "Expression.name",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Expression.language",
       "min": 1,
@@ -93,7 +106,9 @@
       "name": "expression",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Expression.expression",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "reference",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Expression.reference",
       "min": 0,

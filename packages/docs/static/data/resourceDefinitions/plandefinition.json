@@ -1,13 +1,15 @@
 {
   "name": "PlanDefinition",
-  "type": "resource",
+  "location": "resource",
   "description": "This resource allows for the definition of various types of plans as a sharable, consumable, and executable artifact. The resource is general enough to support the description of a broad range of clinical artifacts such as clinical decision support rules, order sets and protocols.",
   "properties": [
     {
       "name": "PlanDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "PlanDefinition",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "PlanDefinition.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "PlanDefinition.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "PlanDefinition.url",
       "min": 0,
@@ -155,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.identifier",
       "min": 0,
@@ -169,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.version",
       "min": 0,
@@ -183,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.name",
       "min": 0,
@@ -197,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.title",
       "min": 0,
@@ -211,7 +244,9 @@
       "name": "subtitle",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.subtitle",
       "min": 0,
@@ -225,7 +260,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.type",
       "min": 0,
@@ -239,7 +277,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.status",
       "min": 1,
@@ -253,7 +293,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "PlanDefinition.experimental",
       "min": 0,
@@ -267,11 +309,20 @@
       "name": "subject[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PlanDefinition.subject[x]",
       "min": 0,
@@ -285,7 +336,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "PlanDefinition.date",
       "min": 0,
@@ -299,7 +352,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.publisher",
       "min": 0,
@@ -313,7 +368,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.contact",
       "min": 0,
@@ -327,7 +385,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "PlanDefinition.description",
       "min": 0,
@@ -341,7 +401,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.useContext",
       "min": 0,
@@ -355,7 +418,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.jurisdiction",
       "min": 0,
@@ -369,7 +435,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "PlanDefinition.purpose",
       "min": 0,
@@ -383,7 +451,9 @@
       "name": "usage",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.usage",
       "min": 0,
@@ -397,7 +467,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "PlanDefinition.copyright",
       "min": 0,
@@ -411,7 +483,9 @@
       "name": "approvalDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "PlanDefinition.approvalDate",
       "min": 0,
@@ -425,7 +499,9 @@
       "name": "lastReviewDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "PlanDefinition.lastReviewDate",
       "min": 0,
@@ -439,7 +515,10 @@
       "name": "effectivePeriod",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.effectivePeriod",
       "min": 0,
@@ -453,7 +532,10 @@
       "name": "topic",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.topic",
       "min": 0,
@@ -467,7 +549,10 @@
       "name": "author",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.author",
       "min": 0,
@@ -481,7 +566,10 @@
       "name": "editor",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.editor",
       "min": 0,
@@ -495,7 +583,10 @@
       "name": "reviewer",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.reviewer",
       "min": 0,
@@ -509,7 +600,10 @@
       "name": "endorser",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.endorser",
       "min": 0,
@@ -523,7 +617,10 @@
       "name": "relatedArtifact",
       "depth": 1,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.relatedArtifact",
       "min": 0,
@@ -537,7 +634,9 @@
       "name": "library",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "PlanDefinition.library",
       "min": 0,
@@ -551,7 +650,9 @@
       "name": "goal",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.goal",
       "min": 0,
@@ -565,7 +666,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.goal.id",
       "min": 0,
@@ -580,7 +683,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.extension",
       "min": 0,
@@ -595,7 +701,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.modifierExtension",
       "min": 0,
@@ -610,7 +719,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.category",
       "min": 0,
@@ -624,7 +736,10 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.description",
       "min": 1,
@@ -638,7 +753,10 @@
       "name": "priority",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.priority",
       "min": 0,
@@ -652,7 +770,10 @@
       "name": "start",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.start",
       "min": 0,
@@ -666,7 +787,10 @@
       "name": "addresses",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.addresses",
       "min": 0,
@@ -680,7 +804,10 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.documentation",
       "min": 0,
@@ -694,7 +821,9 @@
       "name": "target",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.goal.target",
       "min": 0,
@@ -708,7 +837,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.goal.target.id",
       "min": 0,
@@ -723,7 +854,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.target.extension",
       "min": 0,
@@ -738,7 +872,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.target.modifierExtension",
       "min": 0,
@@ -753,7 +890,10 @@
       "name": "measure",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.target.measure",
       "min": 0,
@@ -767,9 +907,18 @@
       "name": "detail[x]",
       "depth": 3,
       "types": [
-        "Quantity",
-        "Range",
-        "CodeableConcept"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.target.detail[x]",
       "min": 0,
@@ -783,7 +932,10 @@
       "name": "due",
       "depth": 3,
       "types": [
-        "Duration"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.goal.target.due",
       "min": 0,
@@ -797,7 +949,9 @@
       "name": "action",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.action",
       "min": 0,
@@ -811,7 +965,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.id",
       "min": 0,
@@ -826,7 +982,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.extension",
       "min": 0,
@@ -841,7 +1000,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.modifierExtension",
       "min": 0,
@@ -856,7 +1018,9 @@
       "name": "prefix",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.prefix",
       "min": 0,
@@ -870,7 +1034,9 @@
       "name": "title",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.title",
       "min": 0,
@@ -884,7 +1050,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.description",
       "min": 0,
@@ -898,7 +1066,9 @@
       "name": "textEquivalent",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.textEquivalent",
       "min": 0,
@@ -912,7 +1082,9 @@
       "name": "priority",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.priority",
       "min": 0,
@@ -926,7 +1098,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.code",
       "min": 0,
@@ -940,7 +1115,10 @@
       "name": "reason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.reason",
       "min": 0,
@@ -954,7 +1132,10 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "RelatedArtifact"
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.documentation",
       "min": 0,
@@ -968,7 +1149,9 @@
       "name": "goalId",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "PlanDefinition.action.goalId",
       "min": 0,
@@ -982,11 +1165,20 @@
       "name": "subject[x]",
       "depth": 2,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "PlanDefinition.action.subject[x]",
       "min": 0,
@@ -1000,7 +1192,10 @@
       "name": "trigger",
       "depth": 2,
       "types": [
-        "TriggerDefinition"
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.trigger",
       "min": 0,
@@ -1014,7 +1209,9 @@
       "name": "condition",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.action.condition",
       "min": 0,
@@ -1028,7 +1225,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.condition.id",
       "min": 0,
@@ -1043,7 +1242,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.condition.extension",
       "min": 0,
@@ -1058,7 +1260,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.condition.modifierExtension",
       "min": 0,
@@ -1073,7 +1278,9 @@
       "name": "kind",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.condition.kind",
       "min": 1,
@@ -1087,7 +1294,10 @@
       "name": "expression",
       "depth": 3,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.condition.expression",
       "min": 0,
@@ -1101,7 +1311,10 @@
       "name": "input",
       "depth": 2,
       "types": [
-        "DataRequirement"
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.input",
       "min": 0,
@@ -1115,7 +1328,10 @@
       "name": "output",
       "depth": 2,
       "types": [
-        "DataRequirement"
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.output",
       "min": 0,
@@ -1129,7 +1345,9 @@
       "name": "relatedAction",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction",
       "min": 0,
@@ -1143,7 +1361,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.id",
       "min": 0,
@@ -1158,7 +1378,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.extension",
       "min": 0,
@@ -1173,7 +1396,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.modifierExtension",
       "min": 0,
@@ -1188,7 +1414,9 @@
       "name": "actionId",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.actionId",
       "min": 1,
@@ -1202,7 +1430,9 @@
       "name": "relationship",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.relationship",
       "min": 1,
@@ -1216,8 +1446,14 @@
       "name": "offset[x]",
       "depth": 3,
       "types": [
-        "Duration",
-        "Range"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.relatedAction.offset[x]",
       "min": 0,
@@ -1231,12 +1467,29 @@
       "name": "timing[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Age",
-        "Period",
-        "Duration",
-        "Range",
-        "Timing"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.timing[x]",
       "min": 0,
@@ -1250,7 +1503,9 @@
       "name": "participant",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.action.participant",
       "min": 0,
@@ -1264,7 +1519,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.participant.id",
       "min": 0,
@@ -1279,7 +1536,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.participant.extension",
       "min": 0,
@@ -1294,7 +1554,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.participant.modifierExtension",
       "min": 0,
@@ -1309,7 +1572,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.participant.type",
       "min": 1,
@@ -1323,7 +1588,10 @@
       "name": "role",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.participant.role",
       "min": 0,
@@ -1337,7 +1605,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.type",
       "min": 0,
@@ -1351,7 +1622,9 @@
       "name": "groupingBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.groupingBehavior",
       "min": 0,
@@ -1365,7 +1638,9 @@
       "name": "selectionBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.selectionBehavior",
       "min": 0,
@@ -1379,7 +1654,9 @@
       "name": "requiredBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.requiredBehavior",
       "min": 0,
@@ -1393,7 +1670,9 @@
       "name": "precheckBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.precheckBehavior",
       "min": 0,
@@ -1407,7 +1686,9 @@
       "name": "cardinalityBehavior",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "PlanDefinition.action.cardinalityBehavior",
       "min": 0,
@@ -1421,8 +1702,12 @@
       "name": "definition[x]",
       "depth": 2,
       "types": [
-        "canonical",
-        "uri"
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "PlanDefinition.action.definition[x]",
       "min": 0,
@@ -1436,7 +1721,9 @@
       "name": "transform",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "PlanDefinition.action.transform",
       "min": 0,
@@ -1450,7 +1737,9 @@
       "name": "dynamicValue",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue",
       "min": 0,
@@ -1464,7 +1753,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue.id",
       "min": 0,
@@ -1479,7 +1770,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue.extension",
       "min": 0,
@@ -1494,7 +1788,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue.modifierExtension",
       "min": 0,
@@ -1509,7 +1806,9 @@
       "name": "path",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue.path",
       "min": 0,
@@ -1523,7 +1822,10 @@
       "name": "expression",
       "depth": 3,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "PlanDefinition.action.dynamicValue.expression",
       "min": 0,
@@ -1537,7 +1839,9 @@
       "name": "action",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "PlanDefinition.action.action",
       "min": 0,

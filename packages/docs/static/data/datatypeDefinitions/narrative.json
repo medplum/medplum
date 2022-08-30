@@ -1,13 +1,15 @@
 {
   "name": "Narrative",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Narrative Type: A human-readable summary of the resource conveying the essential clinical and business information for the resource.",
   "properties": [
     {
       "name": "Narrative",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Narrative",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Narrative.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Narrative.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Narrative.status",
       "min": 1,
@@ -65,7 +74,9 @@
       "name": "div",
       "depth": 1,
       "types": [
-        "xhtml"
+        {
+          "datatype": "xhtml"
+        }
       ],
       "path": "Narrative.div",
       "min": 1,

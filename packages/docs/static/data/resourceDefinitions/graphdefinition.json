@@ -1,13 +1,15 @@
 {
   "name": "GraphDefinition",
-  "type": "resource",
+  "location": "resource",
   "description": "A formal computable definition of a graph of resources - that is, a coherent set of resources that form a graph by following references. The Graph Definition resource defines a set and makes rules about the set.",
   "properties": [
     {
       "name": "GraphDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "GraphDefinition",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "GraphDefinition.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "GraphDefinition.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "GraphDefinition.url",
       "min": 0,
@@ -155,7 +179,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.version",
       "min": 0,
@@ -169,7 +195,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.name",
       "min": 1,
@@ -183,7 +211,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.status",
       "min": 1,
@@ -197,7 +227,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "GraphDefinition.experimental",
       "min": 0,
@@ -211,7 +243,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "GraphDefinition.date",
       "min": 0,
@@ -225,7 +259,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.publisher",
       "min": 0,
@@ -239,7 +275,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.contact",
       "min": 0,
@@ -253,7 +292,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "GraphDefinition.description",
       "min": 0,
@@ -267,7 +308,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.useContext",
       "min": 0,
@@ -281,7 +325,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.jurisdiction",
       "min": 0,
@@ -295,7 +342,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "GraphDefinition.purpose",
       "min": 0,
@@ -309,7 +358,9 @@
       "name": "start",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.start",
       "min": 1,
@@ -323,7 +374,9 @@
       "name": "profile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "GraphDefinition.profile",
       "min": 0,
@@ -337,7 +390,9 @@
       "name": "link",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "GraphDefinition.link",
       "min": 0,
@@ -351,7 +406,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.id",
       "min": 0,
@@ -366,7 +423,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.extension",
       "min": 0,
@@ -381,7 +441,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.modifierExtension",
       "min": 0,
@@ -396,7 +459,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.path",
       "min": 0,
@@ -410,7 +475,9 @@
       "name": "sliceName",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.sliceName",
       "min": 0,
@@ -424,7 +491,9 @@
       "name": "min",
       "depth": 2,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "GraphDefinition.link.min",
       "min": 0,
@@ -438,7 +507,9 @@
       "name": "max",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.max",
       "min": 0,
@@ -452,7 +523,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.description",
       "min": 0,
@@ -466,7 +539,9 @@
       "name": "target",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "GraphDefinition.link.target",
       "min": 0,
@@ -480,7 +555,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.target.id",
       "min": 0,
@@ -495,7 +572,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.target.extension",
       "min": 0,
@@ -510,7 +590,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.target.modifierExtension",
       "min": 0,
@@ -525,7 +608,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.link.target.type",
       "min": 1,
@@ -539,7 +624,9 @@
       "name": "params",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.target.params",
       "min": 0,
@@ -553,7 +640,9 @@
       "name": "profile",
       "depth": 3,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "GraphDefinition.link.target.profile",
       "min": 0,
@@ -567,7 +656,9 @@
       "name": "compartment",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment",
       "min": 0,
@@ -581,7 +672,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.id",
       "min": 0,
@@ -596,7 +689,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.extension",
       "min": 0,
@@ -611,7 +707,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.modifierExtension",
       "min": 0,
@@ -626,7 +725,9 @@
       "name": "use",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.use",
       "min": 1,
@@ -640,7 +741,9 @@
       "name": "code",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.code",
       "min": 1,
@@ -654,7 +757,9 @@
       "name": "rule",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.rule",
       "min": 1,
@@ -668,7 +773,9 @@
       "name": "expression",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.expression",
       "min": 0,
@@ -682,7 +789,9 @@
       "name": "description",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "GraphDefinition.link.target.compartment.description",
       "min": 0,
@@ -696,7 +805,9 @@
       "name": "link",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "GraphDefinition.link.target.link",
       "min": 0,

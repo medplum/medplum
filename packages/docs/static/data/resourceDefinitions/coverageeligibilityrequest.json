@@ -1,13 +1,15 @@
 {
   "name": "CoverageEligibilityRequest",
-  "type": "resource",
+  "location": "resource",
   "description": "The CoverageEligibilityRequest provides patient and insurance coverage information to an insurer for them to respond, in the form of an CoverageEligibilityResponse, with information regarding whether the stated coverage is valid and in-force and optionally to provide the insurance details of the policy.",
   "properties": [
     {
       "name": "CoverageEligibilityRequest",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CoverageEligibilityRequest",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "CoverageEligibilityRequest.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CoverageEligibilityRequest.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.modifierExtension",
       "min": 0,
@@ -141,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.identifier",
       "min": 0,
@@ -155,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CoverageEligibilityRequest.status",
       "min": 1,
@@ -169,7 +196,10 @@
       "name": "priority",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.priority",
       "min": 0,
@@ -183,7 +213,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "CoverageEligibilityRequest.purpose",
       "min": 1,
@@ -197,10 +229,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.patient",
       "min": 1,
@@ -214,8 +252,13 @@
       "name": "serviced[x]",
       "depth": 1,
       "types": [
-        "date",
-        "Period"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.serviced[x]",
       "min": 0,
@@ -229,7 +272,9 @@
       "name": "created",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "CoverageEligibilityRequest.created",
       "min": 1,
@@ -243,11 +288,20 @@
       "name": "enterer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.enterer",
       "min": 0,
@@ -261,12 +315,24 @@
       "name": "provider",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.provider",
       "min": 0,
@@ -280,10 +346,16 @@
       "name": "insurer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurer",
       "min": 1,
@@ -297,10 +369,16 @@
       "name": "facility",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.facility",
       "min": 0,
@@ -314,7 +392,9 @@
       "name": "supportingInfo",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo",
       "min": 0,
@@ -328,7 +408,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.id",
       "min": 0,
@@ -343,7 +425,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.extension",
       "min": 0,
@@ -358,7 +443,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.modifierExtension",
       "min": 0,
@@ -373,7 +461,9 @@
       "name": "sequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.sequence",
       "min": 1,
@@ -387,10 +477,15 @@
       "name": "information",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.information",
       "min": 1,
@@ -404,7 +499,9 @@
       "name": "appliesToAll",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CoverageEligibilityRequest.supportingInfo.appliesToAll",
       "min": 0,
@@ -418,7 +515,9 @@
       "name": "insurance",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance",
       "min": 0,
@@ -432,7 +531,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.id",
       "min": 0,
@@ -447,7 +548,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.extension",
       "min": 0,
@@ -462,7 +566,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.modifierExtension",
       "min": 0,
@@ -477,7 +584,9 @@
       "name": "focal",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.focal",
       "min": 0,
@@ -491,10 +600,16 @@
       "name": "coverage",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Coverage"
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.coverage",
       "min": 1,
@@ -508,7 +623,9 @@
       "name": "businessArrangement",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.insurance.businessArrangement",
       "min": 0,
@@ -522,7 +639,9 @@
       "name": "item",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CoverageEligibilityRequest.item",
       "min": 0,
@@ -536,7 +655,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.id",
       "min": 0,
@@ -551,7 +672,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.extension",
       "min": 0,
@@ -566,7 +690,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.modifierExtension",
       "min": 0,
@@ -581,7 +708,9 @@
       "name": "supportingInfoSequence",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.supportingInfoSequence",
       "min": 0,
@@ -595,7 +724,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.category",
       "min": 0,
@@ -609,7 +741,10 @@
       "name": "productOrService",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.productOrService",
       "min": 0,
@@ -623,7 +758,10 @@
       "name": "modifier",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.modifier",
       "min": 0,
@@ -637,11 +775,20 @@
       "name": "provider",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.provider",
       "min": 0,
@@ -655,7 +802,10 @@
       "name": "quantity",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.quantity",
       "min": 0,
@@ -669,7 +819,10 @@
       "name": "unitPrice",
       "depth": 2,
       "types": [
-        "Money"
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.unitPrice",
       "min": 0,
@@ -683,11 +836,20 @@
       "name": "facility",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location",
-        "Organization"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.facility",
       "min": 0,
@@ -701,7 +863,9 @@
       "name": "diagnosis",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.diagnosis",
       "min": 0,
@@ -715,7 +879,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.diagnosis.id",
       "min": 0,
@@ -730,7 +896,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.diagnosis.extension",
       "min": 0,
@@ -745,7 +914,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.diagnosis.modifierExtension",
       "min": 0,
@@ -760,11 +932,20 @@
       "name": "diagnosis[x]",
       "depth": 3,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.diagnosis.diagnosis[x]",
       "min": 0,
@@ -778,10 +959,15 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "CoverageEligibilityRequest.item.detail",
       "min": 0,

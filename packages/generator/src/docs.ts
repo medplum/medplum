@@ -3,18 +3,43 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path/posix';
-import { PropertyDocInfo, ResourceDocsProps } from '../../docs/src/types/documentationTypes';
+import {
+  DocumentationLocation,
+  PropertyDocInfo,
+  PropertyTypeDocInfo,
+  ResourceDocsProps,
+} from '../../docs/src/types/documentationTypes';
 
 const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
 
-type DocsType = ResourceDocsProps['type'];
+let documentedTypes: Record<string, DocumentationLocation>;
 
 export function main(): void {
   const indexedSearchParams = indexSearchParameters(searchParams);
-  const resourceDefinitions = buildDocsDefinitions('profiles-resources.json', 'resource', indexedSearchParams);
-  writeDocs(resourceDefinitions, 'resource');
-  const dataTypeDefinitions = buildDocsDefinitions('profiles-types.json', 'datatype');
-  writeDocs(dataTypeDefinitions, 'datatype');
+  // Definitions for FHIR Spec resources
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`));
+  // Medplum-defined resources
+  const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
+  // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
+  const fhirDatatypes = filterDefinitions(readJson(`fhir/r4/profiles-types.json`));
+
+  // Map from resource/datatype name -> documented location
+  documentedTypes = {
+    ...Object.fromEntries(
+      fhirCoreDefinitions.map((def): [string, DocumentationLocation] => [def.name || '', 'resource'])
+    ),
+    ...Object.fromEntries(fhirDatatypes.map((def): [string, DocumentationLocation] => [def.name || '', 'datatype'])),
+    ...Object.fromEntries(
+      medplumResourceDefinitions.map((def): [string, DocumentationLocation] => [def.name || '', 'medplum'])
+    ),
+  };
+
+  const fhirResourceDocs = buildDocsDefinitions(fhirCoreDefinitions, 'resource', indexedSearchParams);
+  const medplumResourceDocs = buildDocsDefinitions(medplumResourceDefinitions, 'medplum', indexedSearchParams);
+  const fhirDatatypeDocs = buildDocsDefinitions(fhirDatatypes, 'datatype');
+  writeDocs(fhirResourceDocs, 'resource');
+  writeDocs(fhirDatatypeDocs, 'datatype');
+  writeDocs(medplumResourceDocs, 'medplum');
 }
 
 /**
@@ -38,14 +63,13 @@ function indexSearchParameters(searchParams: Bundle): Record<string, SearchParam
 }
 
 function buildDocsDefinitions(
-  fileName: string,
-  docsType: DocsType,
+  definitions: StructureDefinition[],
+  location: DocumentationLocation,
   indexedSearchParams?: Record<string, SearchParameter[]>
 ): ResourceDocsProps[] {
   const results = [];
-  const definitions = filterDefinitions(readJson(`fhir/r4/${fileName}`), docsType);
   for (const definition of definitions) {
-    results.push(buildDocsDefinition(definition, docsType, indexedSearchParams?.[definition.name as string]));
+    results.push(buildDocsDefinition(definition, location, indexedSearchParams?.[definition.name as string]));
   }
 
   return results;
@@ -53,12 +77,12 @@ function buildDocsDefinitions(
 
 function buildDocsDefinition(
   resourceDefinition: StructureDefinition,
-  docType: DocsType,
+  location: DocumentationLocation,
   searchParameters?: SearchParameter[]
 ): ResourceDocsProps {
   const result = {
     name: resourceDefinition.name as string,
-    type: docType,
+    location,
     description: resourceDefinition.description || '',
     properties: [] as PropertyDocInfo[],
   } as ResourceDocsProps;
@@ -101,7 +125,7 @@ title: ${resourceName}
 sidebar_position: ${position}
 ---
 
-import definition from '@site/static/data/${definition.type}Definitions/${resourceName.toLowerCase()}.json';
+import definition from '@site/static/data/${definition.location}Definitions/${resourceName.toLowerCase()}.json';
 import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
 
 # ${resourceName}
@@ -113,7 +137,7 @@ ${description}
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ${
-  definition.type === 'resource'
+  definition.location === 'resource'
     ? `## Search Parameters
 
 <SearchParamsTable searchParams={definition.searchParameters} />
@@ -128,46 +152,37 @@ ${
 `;
 }
 
-function writeDocs(definitions: ResourceDocsProps[], definitionType: string): void {
+function writeDocs(definitions: ResourceDocsProps[], location: DocumentationLocation): void {
   definitions.forEach((definition, i) => {
     const resourceName = definition.name.toLowerCase();
     writeFileSync(
-      resolve(__dirname, `../../docs/static/data/${definitionType}Definitions/${resourceName}.json`),
+      resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceName}.json`),
       JSON.stringify(definition, null, 2),
       // JSON.stringify(definition),
       'utf8'
     );
     writeFileSync(
-      resolve(__dirname, `../../docs/docs/api/fhir/${definitionType}s/${resourceName}.mdx`),
+      resolve(__dirname, `../../docs/docs/api/fhir/${pluralize(location)}/${resourceName}.mdx`),
       buildDocsMarkdown(i, definition),
       'utf8'
     );
   });
 }
 
-function filterDefinitions(bundle: Bundle, docsType: DocsType): StructureDefinition[] {
+function filterDefinitions(bundle: Bundle): StructureDefinition[] {
   const definitions: StructureDefinition[] =
     bundle.entry
       ?.map((e) => e.resource as StructureDefinition)
       .filter((definition) => definition.resourceType === 'StructureDefinition') || [];
 
-  switch (docsType) {
-    case 'resource':
-      return definitions.filter(
-        (definition) =>
-          definition.kind === 'resource' &&
-          definition.name &&
-          !['Resource', 'BackboneElement', 'DomainResource', 'MetadataResource'].includes(definition.name) &&
-          !isLowerCase(definition.name?.[0])
-      );
-    case 'datatype':
-      return definitions.filter(
-        (definition) =>
-          definition.kind === 'complex-type' &&
-          definition.name &&
-          !['Element', 'BackboneElement'].includes(definition.name)
-      );
-  }
+  return definitions.filter(
+    (definition) =>
+      definition.kind &&
+      ['resource', 'complex-type'].includes(definition.kind) &&
+      definition.name &&
+      !['Resource', 'BackboneElement', 'DomainResource', 'MetadataResource', 'Element'].includes(definition.name) &&
+      !isLowerCase(definition.name?.[0])
+  );
 }
 
 function getSearchParamDescription(searchParam: SearchParameter, resourceType: string): string {
@@ -190,19 +205,26 @@ function getSearchParamDescription(searchParam: SearchParameter, resourceType: s
 function getPropertyTypes(property: ElementDefinition | undefined): Pick<PropertyDocInfo, 'types' | 'referenceTypes'> {
   const type = property?.type;
   if (!type) {
-    return { types: [''] };
+    return { types: [{ datatype: '', documentLocation: undefined }] };
   }
 
-  const types = type
+  const types: PropertyTypeDocInfo[] = type
     .map((t) => t.code || '')
-    .map((code) => (code === 'http://hl7.org/fhirpath/System.String' ? 'string' : code));
+    .map((code) =>
+      code === 'http://hl7.org/fhirpath/System.String'
+        ? { datatype: 'string', documentLocation: undefined }
+        : { datatype: code, documentLocation: documentedTypes[code] }
+    );
 
-  const referenceIndex = types.indexOf('Reference');
+  const referenceIndex = types.findIndex((t) => t.datatype === 'Reference');
   if (referenceIndex >= 0) {
     const referenceTypes =
       type[referenceIndex].targetProfile
-        ?.filter((target) => target.startsWith('http://hl7.org/fhir/StructureDefinition/'))
-        .map((target) => target.split('/').pop() || '') || [];
+        ?.filter((target) => target.includes('/fhir/StructureDefinition/'))
+        .map((target) => {
+          const datatype = target.split('/').pop() || '';
+          return { datatype, documentLocation: documentedTypes[datatype] };
+        }) || [];
     return { types, referenceTypes };
   }
   return { types };
@@ -210,7 +232,7 @@ function getPropertyTypes(property: ElementDefinition | undefined): Pick<Propert
 
 function getInheritance(property: ElementDefinition): { inherited: boolean; base?: string } {
   const inheritanceBase = property.base?.path?.split('.')[0];
-  const inherited = property.path?.split('.')[0] !== inheritanceBase;
+  const inherited = !!inheritanceBase && property.path?.split('.')[0] !== inheritanceBase;
   if (!inherited) {
     return { inherited };
   }
@@ -229,6 +251,13 @@ function rewriteLinks(description: string): string {
   }
 
   return description;
+}
+
+function pluralize(location: DocumentationLocation): string {
+  if (location !== 'medplum' && location.endsWith('e')) {
+    return `${location}s`;
+  }
+  return location;
 }
 
 if (process.argv[1].endsWith('docs.ts')) {

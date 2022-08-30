@@ -1,13 +1,15 @@
 {
   "name": "ProdCharacteristic",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for ProdCharacteristic Type: The marketing status describes the date when a medicinal product is actually put on the market or the date as of which it is no longer available.",
   "properties": [
     {
       "name": "ProdCharacteristic",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ProdCharacteristic",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ProdCharacteristic.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.modifierExtension",
       "min": 0,
@@ -66,7 +76,10 @@
       "name": "height",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.height",
       "min": 0,
@@ -80,7 +93,10 @@
       "name": "width",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.width",
       "min": 0,
@@ -94,7 +110,10 @@
       "name": "depth",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.depth",
       "min": 0,
@@ -108,7 +127,10 @@
       "name": "weight",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.weight",
       "min": 0,
@@ -122,7 +144,10 @@
       "name": "nominalVolume",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.nominalVolume",
       "min": 0,
@@ -136,7 +161,10 @@
       "name": "externalDiameter",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.externalDiameter",
       "min": 0,
@@ -150,7 +178,9 @@
       "name": "shape",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ProdCharacteristic.shape",
       "min": 0,
@@ -164,7 +194,9 @@
       "name": "color",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ProdCharacteristic.color",
       "min": 0,
@@ -178,7 +210,9 @@
       "name": "imprint",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ProdCharacteristic.imprint",
       "min": 0,
@@ -192,7 +226,10 @@
       "name": "image",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.image",
       "min": 0,
@@ -206,7 +243,10 @@
       "name": "scoring",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ProdCharacteristic.scoring",
       "min": 0,

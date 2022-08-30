@@ -1,13 +1,15 @@
 {
   "name": "TriggerDefinition",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for TriggerDefinition Type: A description of a triggering event. Triggering events can be named events, data events, or periodic, as determined by the type element.",
   "properties": [
     {
       "name": "TriggerDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "TriggerDefinition",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TriggerDefinition.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TriggerDefinition.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "TriggerDefinition.type",
       "min": 1,
@@ -65,7 +74,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "TriggerDefinition.name",
       "min": 0,
@@ -79,13 +90,26 @@
       "name": "timing[x]",
       "depth": 1,
       "types": [
-        "Timing",
-        "Reference",
-        "date",
-        "dateTime"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        }
       ],
       "referenceTypes": [
-        "Schedule"
+        {
+          "datatype": "Schedule",
+          "documentLocation": "resource"
+        }
       ],
       "path": "TriggerDefinition.timing[x]",
       "min": 0,
@@ -99,7 +123,10 @@
       "name": "data",
       "depth": 1,
       "types": [
-        "DataRequirement"
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TriggerDefinition.data",
       "min": 0,
@@ -113,7 +140,10 @@
       "name": "condition",
       "depth": 1,
       "types": [
-        "Expression"
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "TriggerDefinition.condition",
       "min": 0,

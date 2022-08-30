@@ -1,0 +1,18 @@
+---
+title: AccessPolicy
+sidebar_position: 8
+---
+
+import definition from '@site/static/data/medplumDefinitions/accesspolicy.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# AccessPolicy
+
+Access Policy for user or user group that defines how entities can or cannot access resources.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

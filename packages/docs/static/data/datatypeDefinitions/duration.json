@@ -1,13 +1,15 @@
 {
   "name": "Duration",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Duration Type: A length of time.",
   "properties": [
     {
       "name": "Duration",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Duration",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Duration.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Duration.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Duration.value",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "comparator",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Duration.comparator",
       "min": 0,
@@ -81,7 +92,9 @@
       "name": "unit",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Duration.unit",
       "min": 0,
@@ -96,7 +109,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Duration.system",
       "min": 0,
@@ -111,7 +126,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Duration.code",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "HumanName",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for HumanName Type: A human's name with the ability to identify parts and usage.",
   "properties": [
     {
       "name": "HumanName",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "HumanName",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HumanName.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "HumanName.use",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.text",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "family",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.family",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "given",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.given",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "prefix",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.prefix",
       "min": 0,
@@ -121,7 +138,9 @@
       "name": "suffix",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "HumanName.suffix",
       "min": 0,
@@ -135,7 +154,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "HumanName.period",
       "min": 0,

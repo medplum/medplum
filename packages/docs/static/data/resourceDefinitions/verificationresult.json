@@ -1,13 +1,15 @@
 {
   "name": "VerificationResult",
-  "type": "resource",
+  "location": "resource",
   "description": "Describes validation requirements, source(s), status and dates for one or more elements.",
   "properties": [
     {
       "name": "VerificationResult",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "VerificationResult",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "VerificationResult.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VerificationResult.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "VerificationResult.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.modifierExtension",
       "min": 0,
@@ -141,10 +163,15 @@
       "name": "target",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "VerificationResult.target",
       "min": 0,
@@ -158,7 +185,9 @@
       "name": "targetLocation",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.targetLocation",
       "min": 0,
@@ -172,7 +201,10 @@
       "name": "need",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.need",
       "min": 0,
@@ -186,7 +218,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "VerificationResult.status",
       "min": 1,
@@ -200,7 +234,9 @@
       "name": "statusDate",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "VerificationResult.statusDate",
       "min": 0,
@@ -214,7 +250,10 @@
       "name": "validationType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.validationType",
       "min": 0,
@@ -228,7 +267,10 @@
       "name": "validationProcess",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.validationProcess",
       "min": 0,
@@ -242,7 +284,10 @@
       "name": "frequency",
       "depth": 1,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.frequency",
       "min": 0,
@@ -256,7 +301,9 @@
       "name": "lastPerformed",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "VerificationResult.lastPerformed",
       "min": 0,
@@ -270,7 +317,9 @@
       "name": "nextScheduled",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "VerificationResult.nextScheduled",
       "min": 0,
@@ -284,7 +333,10 @@
       "name": "failureAction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.failureAction",
       "min": 0,
@@ -298,7 +350,9 @@
       "name": "primarySource",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "VerificationResult.primarySource",
       "min": 0,
@@ -312,7 +366,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.primarySource.id",
       "min": 0,
@@ -327,7 +383,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.extension",
       "min": 0,
@@ -342,7 +401,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.modifierExtension",
       "min": 0,
@@ -357,12 +419,24 @@
       "name": "who",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VerificationResult.primarySource.who",
       "min": 0,
@@ -376,7 +450,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.type",
       "min": 0,
@@ -390,7 +467,10 @@
       "name": "communicationMethod",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.communicationMethod",
       "min": 0,
@@ -404,7 +484,10 @@
       "name": "validationStatus",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.validationStatus",
       "min": 0,
@@ -418,7 +501,9 @@
       "name": "validationDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "VerificationResult.primarySource.validationDate",
       "min": 0,
@@ -432,7 +517,10 @@
       "name": "canPushUpdates",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.canPushUpdates",
       "min": 0,
@@ -446,7 +534,10 @@
       "name": "pushTypeAvailable",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.primarySource.pushTypeAvailable",
       "min": 0,
@@ -460,7 +551,9 @@
       "name": "attestation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "VerificationResult.attestation",
       "min": 0,
@@ -474,7 +567,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.attestation.id",
       "min": 0,
@@ -489,7 +584,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.attestation.extension",
       "min": 0,
@@ -504,7 +602,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.attestation.modifierExtension",
       "min": 0,
@@ -519,12 +620,24 @@
       "name": "who",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VerificationResult.attestation.who",
       "min": 0,
@@ -538,12 +651,24 @@
       "name": "onBehalfOf",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization",
-        "Practitioner",
-        "PractitionerRole"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VerificationResult.attestation.onBehalfOf",
       "min": 0,
@@ -557,7 +682,10 @@
       "name": "communicationMethod",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.attestation.communicationMethod",
       "min": 0,
@@ -571,7 +699,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "VerificationResult.attestation.date",
       "min": 0,
@@ -585,7 +715,9 @@
       "name": "sourceIdentityCertificate",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.attestation.sourceIdentityCertificate",
       "min": 0,
@@ -599,7 +731,9 @@
       "name": "proxyIdentityCertificate",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.attestation.proxyIdentityCertificate",
       "min": 0,
@@ -613,7 +747,10 @@
       "name": "proxySignature",
       "depth": 2,
       "types": [
-        "Signature"
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.attestation.proxySignature",
       "min": 0,
@@ -627,7 +764,10 @@
       "name": "sourceSignature",
       "depth": 2,
       "types": [
-        "Signature"
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.attestation.sourceSignature",
       "min": 0,
@@ -641,7 +781,9 @@
       "name": "validator",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "VerificationResult.validator",
       "min": 0,
@@ -655,7 +797,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.validator.id",
       "min": 0,
@@ -670,7 +814,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.validator.extension",
       "min": 0,
@@ -685,7 +832,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.validator.modifierExtension",
       "min": 0,
@@ -700,10 +850,16 @@
       "name": "organization",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "VerificationResult.validator.organization",
       "min": 1,
@@ -717,7 +873,9 @@
       "name": "identityCertificate",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "VerificationResult.validator.identityCertificate",
       "min": 0,
@@ -731,7 +889,10 @@
       "name": "attestationSignature",
       "depth": 2,
       "types": [
-        "Signature"
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "VerificationResult.validator.attestationSignature",
       "min": 0,

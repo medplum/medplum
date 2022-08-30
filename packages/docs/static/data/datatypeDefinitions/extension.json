@@ -1,13 +1,15 @@
 {
   "name": "Extension",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Extension Type: Optional Extension Element - found in all resources.",
   "properties": [
     {
       "name": "Extension",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Extension",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Extension.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Extension.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Extension.url",
       "min": 1,
@@ -65,56 +74,187 @@
       "name": "value[x]",
       "depth": 1,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "Extension.value[x]",

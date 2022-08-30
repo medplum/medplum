@@ -1,13 +1,15 @@
 {
   "name": "ContactPoint",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for ContactPoint Type: Details for all kinds of technology mediated contact points for a person or organization, including telephone, email, etc.",
   "properties": [
     {
       "name": "ContactPoint",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ContactPoint",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ContactPoint.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ContactPoint.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ContactPoint.system",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ContactPoint.value",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "use",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ContactPoint.use",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "rank",
       "depth": 1,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "ContactPoint.rank",
       "min": 0,
@@ -107,7 +122,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ContactPoint.period",
       "min": 0,

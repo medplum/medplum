@@ -1,13 +1,15 @@
 {
   "name": "Quantity",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Quantity Type: A measured amount (or an amount that can potentially be measured). Note that measured amounts include amounts that are not precisely quantified, including amounts involving arbitrary units and floating currencies.",
   "properties": [
     {
       "name": "Quantity",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Quantity",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Quantity.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Quantity.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Quantity.value",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "comparator",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Quantity.comparator",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "unit",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Quantity.unit",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Quantity.system",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Quantity.code",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "ContactDetail",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for ContactDetail Type: Specifies contact information for a person or organization.",
   "properties": [
     {
       "name": "ContactDetail",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ContactDetail",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ContactDetail.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ContactDetail.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ContactDetail.name",
       "min": 0,
@@ -65,7 +74,10 @@
       "name": "telecom",
       "depth": 1,
       "types": [
-        "ContactPoint"
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ContactDetail.telecom",
       "min": 0,

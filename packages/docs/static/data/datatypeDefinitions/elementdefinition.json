@@ -1,13 +1,15 @@
 {
   "name": "ElementDefinition",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for ElementDefinition Type: Captures constraints on each element within the resource, profile, or extension.",
   "properties": [
     {
       "name": "ElementDefinition",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ElementDefinition",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.modifierExtension",
       "min": 0,
@@ -66,7 +76,9 @@
       "name": "path",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.path",
       "min": 1,
@@ -80,7 +92,9 @@
       "name": "representation",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.representation",
       "min": 0,
@@ -94,7 +108,9 @@
       "name": "sliceName",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.sliceName",
       "min": 0,
@@ -108,7 +124,9 @@
       "name": "sliceIsConstraining",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ElementDefinition.sliceIsConstraining",
       "min": 0,
@@ -122,7 +140,9 @@
       "name": "label",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.label",
       "min": 0,
@@ -136,7 +156,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.code",
       "min": 0,
@@ -150,7 +173,9 @@
       "name": "slicing",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.slicing",
       "min": 0,
@@ -164,7 +189,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.slicing.id",
       "min": 0,
@@ -179,7 +206,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.slicing.extension",
       "min": 0,
@@ -194,7 +224,9 @@
       "name": "discriminator",
       "depth": 2,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.slicing.discriminator",
       "min": 0,
@@ -208,7 +240,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.slicing.discriminator.id",
       "min": 0,
@@ -223,7 +257,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.slicing.discriminator.extension",
       "min": 0,
@@ -238,7 +275,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.slicing.discriminator.type",
       "min": 1,
@@ -252,7 +291,9 @@
       "name": "path",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.slicing.discriminator.path",
       "min": 1,
@@ -266,7 +307,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.slicing.description",
       "min": 0,
@@ -280,7 +323,9 @@
       "name": "ordered",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ElementDefinition.slicing.ordered",
       "min": 0,
@@ -294,7 +339,9 @@
       "name": "rules",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.slicing.rules",
       "min": 1,
@@ -308,7 +355,9 @@
       "name": "short",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.short",
       "min": 0,
@@ -322,7 +371,9 @@
       "name": "definition",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ElementDefinition.definition",
       "min": 0,
@@ -336,7 +387,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ElementDefinition.comment",
       "min": 0,
@@ -350,7 +403,9 @@
       "name": "requirements",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ElementDefinition.requirements",
       "min": 0,
@@ -364,7 +419,9 @@
       "name": "alias",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.alias",
       "min": 0,
@@ -378,7 +435,9 @@
       "name": "min",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ElementDefinition.min",
       "min": 0,
@@ -392,7 +451,9 @@
       "name": "max",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.max",
       "min": 0,
@@ -406,7 +467,9 @@
       "name": "base",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.base",
       "min": 0,
@@ -420,7 +483,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.base.id",
       "min": 0,
@@ -435,7 +500,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.base.extension",
       "min": 0,
@@ -450,7 +518,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.base.path",
       "min": 1,
@@ -464,7 +534,9 @@
       "name": "min",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "ElementDefinition.base.min",
       "min": 1,
@@ -478,7 +550,9 @@
       "name": "max",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.base.max",
       "min": 1,
@@ -492,7 +566,9 @@
       "name": "contentReference",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ElementDefinition.contentReference",
       "min": 0,
@@ -506,7 +582,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.type",
       "min": 0,
@@ -520,7 +598,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.type.id",
       "min": 0,
@@ -535,7 +615,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.type.extension",
       "min": 0,
@@ -550,7 +633,9 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ElementDefinition.type.code",
       "min": 1,
@@ -564,7 +649,9 @@
       "name": "profile",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ElementDefinition.type.profile",
       "min": 0,
@@ -578,7 +665,9 @@
       "name": "targetProfile",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ElementDefinition.type.targetProfile",
       "min": 0,
@@ -592,7 +681,9 @@
       "name": "aggregation",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.type.aggregation",
       "min": 0,
@@ -606,7 +697,9 @@
       "name": "versioning",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.type.versioning",
       "min": 0,
@@ -620,56 +713,187 @@
       "name": "defaultValue[x]",
       "depth": 1,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "ElementDefinition.defaultValue[x]",
@@ -684,7 +908,9 @@
       "name": "meaningWhenMissing",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "ElementDefinition.meaningWhenMissing",
       "min": 0,
@@ -698,7 +924,9 @@
       "name": "orderMeaning",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.orderMeaning",
       "min": 0,
@@ -712,56 +940,187 @@
       "name": "fixed[x]",
       "depth": 1,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "ElementDefinition.fixed[x]",
@@ -776,56 +1135,187 @@
       "name": "pattern[x]",
       "depth": 1,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "ElementDefinition.pattern[x]",
@@ -840,7 +1330,9 @@
       "name": "example",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.example",
       "min": 0,
@@ -854,7 +1346,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.example.id",
       "min": 0,
@@ -869,7 +1363,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.example.extension",
       "min": 0,
@@ -884,7 +1381,9 @@
       "name": "label",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.example.label",
       "min": 1,
@@ -898,56 +1397,187 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "ElementDefinition.example.value[x]",
@@ -962,15 +1592,34 @@
       "name": "minValue[x]",
       "depth": 1,
       "types": [
-        "date",
-        "dateTime",
-        "instant",
-        "time",
-        "decimal",
-        "integer",
-        "positiveInt",
-        "unsignedInt",
-        "Quantity"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.minValue[x]",
       "min": 0,
@@ -984,15 +1633,34 @@
       "name": "maxValue[x]",
       "depth": 1,
       "types": [
-        "date",
-        "dateTime",
-        "instant",
-        "time",
-        "decimal",
-        "integer",
-        "positiveInt",
-        "unsignedInt",
-        "Quantity"
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.maxValue[x]",
       "min": 0,
@@ -1006,7 +1674,9 @@
       "name": "maxLength",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "ElementDefinition.maxLength",
       "min": 0,
@@ -1020,7 +1690,9 @@
       "name": "condition",
       "depth": 1,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ElementDefinition.condition",
       "min": 0,
@@ -1034,7 +1706,9 @@
       "name": "constraint",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.constraint",
       "min": 0,
@@ -1048,7 +1722,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.constraint.id",
       "min": 0,
@@ -1063,7 +1739,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.constraint.extension",
       "min": 0,
@@ -1078,7 +1757,9 @@
       "name": "key",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ElementDefinition.constraint.key",
       "min": 1,
@@ -1092,7 +1773,9 @@
       "name": "requirements",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.constraint.requirements",
       "min": 0,
@@ -1106,7 +1789,9 @@
       "name": "severity",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.constraint.severity",
       "min": 1,
@@ -1120,7 +1805,9 @@
       "name": "human",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.constraint.human",
       "min": 1,
@@ -1134,7 +1821,9 @@
       "name": "expression",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.constraint.expression",
       "min": 0,
@@ -1148,7 +1837,9 @@
       "name": "xpath",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.constraint.xpath",
       "min": 0,
@@ -1162,7 +1853,9 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ElementDefinition.constraint.source",
       "min": 0,
@@ -1176,7 +1869,9 @@
       "name": "mustSupport",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ElementDefinition.mustSupport",
       "min": 0,
@@ -1190,7 +1885,9 @@
       "name": "isModifier",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ElementDefinition.isModifier",
       "min": 0,
@@ -1204,7 +1901,9 @@
       "name": "isModifierReason",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.isModifierReason",
       "min": 0,
@@ -1218,7 +1917,9 @@
       "name": "isSummary",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "ElementDefinition.isSummary",
       "min": 0,
@@ -1232,7 +1933,9 @@
       "name": "binding",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.binding",
       "min": 0,
@@ -1246,7 +1949,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.binding.id",
       "min": 0,
@@ -1261,7 +1966,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.binding.extension",
       "min": 0,
@@ -1276,7 +1984,9 @@
       "name": "strength",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.binding.strength",
       "min": 1,
@@ -1290,7 +2000,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.binding.description",
       "min": 0,
@@ -1304,7 +2016,9 @@
       "name": "valueSet",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "ElementDefinition.binding.valueSet",
       "min": 0,
@@ -1318,7 +2032,9 @@
       "name": "mapping",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "ElementDefinition.mapping",
       "min": 0,
@@ -1332,7 +2048,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.mapping.id",
       "min": 0,
@@ -1347,7 +2065,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ElementDefinition.mapping.extension",
       "min": 0,
@@ -1362,7 +2083,9 @@
       "name": "identity",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "ElementDefinition.mapping.identity",
       "min": 1,
@@ -1376,7 +2099,9 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ElementDefinition.mapping.language",
       "min": 0,
@@ -1390,7 +2115,9 @@
       "name": "map",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.mapping.map",
       "min": 1,
@@ -1404,7 +2131,9 @@
       "name": "comment",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ElementDefinition.mapping.comment",
       "min": 0,

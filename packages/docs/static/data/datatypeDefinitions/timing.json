@@ -1,13 +1,15 @@
 {
   "name": "Timing",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Timing Type: Specifies an event that may occur multiple times. Timing schedules are used to record when things are planned, expected or requested to occur. The most common usage is in dosage instructions for medications. They are also used when planning care of various kinds, and may be used for reporting the schedule to which past regular activities were carried out.",
   "properties": [
     {
       "name": "Timing",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Timing",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Timing.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Timing.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Timing.modifierExtension",
       "min": 0,
@@ -66,7 +76,9 @@
       "name": "event",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Timing.event",
       "min": 0,
@@ -80,7 +92,9 @@
       "name": "repeat",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "Timing.repeat",
       "min": 0,
@@ -94,7 +108,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Timing.repeat.id",
       "min": 0,
@@ -109,7 +125,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Timing.repeat.extension",
       "min": 0,
@@ -124,9 +143,18 @@
       "name": "bounds[x]",
       "depth": 2,
       "types": [
-        "Duration",
-        "Range",
-        "Period"
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Timing.repeat.bounds[x]",
       "min": 0,
@@ -140,7 +168,9 @@
       "name": "count",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Timing.repeat.count",
       "min": 0,
@@ -154,7 +184,9 @@
       "name": "countMax",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Timing.repeat.countMax",
       "min": 0,
@@ -168,7 +200,9 @@
       "name": "duration",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Timing.repeat.duration",
       "min": 0,
@@ -182,7 +216,9 @@
       "name": "durationMax",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Timing.repeat.durationMax",
       "min": 0,
@@ -196,7 +232,9 @@
       "name": "durationUnit",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Timing.repeat.durationUnit",
       "min": 0,
@@ -210,7 +248,9 @@
       "name": "frequency",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Timing.repeat.frequency",
       "min": 0,
@@ -224,7 +264,9 @@
       "name": "frequencyMax",
       "depth": 2,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "Timing.repeat.frequencyMax",
       "min": 0,
@@ -238,7 +280,9 @@
       "name": "period",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Timing.repeat.period",
       "min": 0,
@@ -252,7 +296,9 @@
       "name": "periodMax",
       "depth": 2,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Timing.repeat.periodMax",
       "min": 0,
@@ -266,7 +312,9 @@
       "name": "periodUnit",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Timing.repeat.periodUnit",
       "min": 0,
@@ -280,7 +328,9 @@
       "name": "dayOfWeek",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Timing.repeat.dayOfWeek",
       "min": 0,
@@ -294,7 +344,9 @@
       "name": "timeOfDay",
       "depth": 2,
       "types": [
-        "time"
+        {
+          "datatype": "time"
+        }
       ],
       "path": "Timing.repeat.timeOfDay",
       "min": 0,
@@ -308,7 +360,9 @@
       "name": "when",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Timing.repeat.when",
       "min": 0,
@@ -322,7 +376,9 @@
       "name": "offset",
       "depth": 2,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Timing.repeat.offset",
       "min": 0,
@@ -336,7 +392,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Timing.code",
       "min": 0,

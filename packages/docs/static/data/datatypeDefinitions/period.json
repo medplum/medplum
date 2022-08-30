@@ -1,13 +1,15 @@
 {
   "name": "Period",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Period Type: A time period defined by a start and end date and optionally time.",
   "properties": [
     {
       "name": "Period",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Period",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Period.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Period.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "start",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Period.start",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "end",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Period.end",
       "min": 0,

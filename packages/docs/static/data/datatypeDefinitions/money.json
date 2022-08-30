@@ -1,13 +1,15 @@
 {
   "name": "Money",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Money Type: An amount of economic utility in some recognized currency.",
   "properties": [
     {
       "name": "Money",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Money",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Money.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Money.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "value",
       "depth": 1,
       "types": [
-        "decimal"
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "Money.value",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "currency",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Money.currency",
       "min": 0,

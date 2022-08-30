@@ -1,13 +1,15 @@
 {
   "name": "Immunization",
-  "type": "resource",
+  "location": "resource",
   "description": "Describes the event of a patient being administered a vaccine or a record of an immunization as reported by a patient, a clinician or another party.",
   "properties": [
     {
       "name": "Immunization",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Immunization",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Immunization.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Immunization.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "Immunization.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.modifierExtension",
       "min": 0,
@@ -141,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.identifier",
       "min": 0,
@@ -155,7 +180,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Immunization.status",
       "min": 1,
@@ -169,7 +196,10 @@
       "name": "statusReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.statusReason",
       "min": 0,
@@ -183,7 +213,10 @@
       "name": "vaccineCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.vaccineCode",
       "min": 1,
@@ -197,10 +230,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.patient",
       "min": 1,
@@ -214,10 +253,16 @@
       "name": "encounter",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Encounter"
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.encounter",
       "min": 0,
@@ -231,8 +276,12 @@
       "name": "occurrence[x]",
       "depth": 1,
       "types": [
-        "dateTime",
-        "string"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.occurrence[x]",
       "min": 1,
@@ -246,7 +295,9 @@
       "name": "recorded",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Immunization.recorded",
       "min": 0,
@@ -260,7 +311,9 @@
       "name": "primarySource",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Immunization.primarySource",
       "min": 0,
@@ -274,7 +327,10 @@
       "name": "reportOrigin",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.reportOrigin",
       "min": 0,
@@ -288,10 +344,16 @@
       "name": "location",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.location",
       "min": 0,
@@ -305,10 +367,16 @@
       "name": "manufacturer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.manufacturer",
       "min": 0,
@@ -322,7 +390,9 @@
       "name": "lotNumber",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.lotNumber",
       "min": 0,
@@ -336,7 +406,9 @@
       "name": "expirationDate",
       "depth": 1,
       "types": [
-        "date"
+        {
+          "datatype": "date"
+        }
       ],
       "path": "Immunization.expirationDate",
       "min": 0,
@@ -350,7 +422,10 @@
       "name": "site",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.site",
       "min": 0,
@@ -364,7 +439,10 @@
       "name": "route",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.route",
       "min": 0,
@@ -378,7 +456,10 @@
       "name": "doseQuantity",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.doseQuantity",
       "min": 0,
@@ -392,7 +473,9 @@
       "name": "performer",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Immunization.performer",
       "min": 0,
@@ -406,7 +489,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.performer.id",
       "min": 0,
@@ -421,7 +506,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.performer.extension",
       "min": 0,
@@ -436,7 +524,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.performer.modifierExtension",
       "min": 0,
@@ -451,7 +542,10 @@
       "name": "function",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.performer.function",
       "min": 0,
@@ -465,12 +559,24 @@
       "name": "actor",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "PractitionerRole",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.performer.actor",
       "min": 1,
@@ -484,7 +590,10 @@
       "name": "note",
       "depth": 1,
       "types": [
-        "Annotation"
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.note",
       "min": 0,
@@ -498,7 +607,10 @@
       "name": "reasonCode",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.reasonCode",
       "min": 0,
@@ -512,12 +624,24 @@
       "name": "reasonReference",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Condition",
-        "Observation",
-        "DiagnosticReport"
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.reasonReference",
       "min": 0,
@@ -531,7 +655,9 @@
       "name": "isSubpotent",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Immunization.isSubpotent",
       "min": 0,
@@ -545,7 +671,10 @@
       "name": "subpotentReason",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.subpotentReason",
       "min": 0,
@@ -559,7 +688,9 @@
       "name": "education",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Immunization.education",
       "min": 0,
@@ -573,7 +704,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.education.id",
       "min": 0,
@@ -588,7 +721,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.education.extension",
       "min": 0,
@@ -603,7 +739,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.education.modifierExtension",
       "min": 0,
@@ -618,7 +757,9 @@
       "name": "documentType",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.education.documentType",
       "min": 0,
@@ -632,7 +773,9 @@
       "name": "reference",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Immunization.education.reference",
       "min": 0,
@@ -646,7 +789,9 @@
       "name": "publicationDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Immunization.education.publicationDate",
       "min": 0,
@@ -660,7 +805,9 @@
       "name": "presentationDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Immunization.education.presentationDate",
       "min": 0,
@@ -674,7 +821,10 @@
       "name": "programEligibility",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.programEligibility",
       "min": 0,
@@ -688,7 +838,10 @@
       "name": "fundingSource",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.fundingSource",
       "min": 0,
@@ -702,7 +855,9 @@
       "name": "reaction",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Immunization.reaction",
       "min": 0,
@@ -716,7 +871,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.reaction.id",
       "min": 0,
@@ -731,7 +888,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.reaction.extension",
       "min": 0,
@@ -746,7 +906,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.reaction.modifierExtension",
       "min": 0,
@@ -761,7 +924,9 @@
       "name": "date",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Immunization.reaction.date",
       "min": 0,
@@ -775,10 +940,16 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Observation"
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.reaction.detail",
       "min": 0,
@@ -792,7 +963,9 @@
       "name": "reported",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Immunization.reaction.reported",
       "min": 0,
@@ -806,7 +979,9 @@
       "name": "protocolApplied",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "Immunization.protocolApplied",
       "min": 0,
@@ -820,7 +995,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.protocolApplied.id",
       "min": 0,
@@ -835,7 +1012,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.protocolApplied.extension",
       "min": 0,
@@ -850,7 +1030,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.protocolApplied.modifierExtension",
       "min": 0,
@@ -865,7 +1048,9 @@
       "name": "series",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.protocolApplied.series",
       "min": 0,
@@ -879,10 +1064,16 @@
       "name": "authority",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Immunization.protocolApplied.authority",
       "min": 0,
@@ -896,7 +1087,10 @@
       "name": "targetDisease",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Immunization.protocolApplied.targetDisease",
       "min": 0,
@@ -910,8 +1104,12 @@
       "name": "doseNumber[x]",
       "depth": 2,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.protocolApplied.doseNumber[x]",
       "min": 1,
@@ -925,8 +1123,12 @@
       "name": "seriesDoses[x]",
       "depth": 2,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Immunization.protocolApplied.seriesDoses[x]",
       "min": 0,

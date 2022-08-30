@@ -1,13 +1,15 @@
 {
   "name": "StructureMap",
-  "type": "resource",
+  "location": "resource",
   "description": "A Map of relationships between 2 structures that can be used to transform data.",
   "properties": [
     {
       "name": "StructureMap",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "StructureMap",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureMap.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "StructureMap.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.modifierExtension",
       "min": 0,
@@ -141,7 +163,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "StructureMap.url",
       "min": 1,
@@ -155,7 +179,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.identifier",
       "min": 0,
@@ -169,7 +196,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.version",
       "min": 0,
@@ -183,7 +212,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.name",
       "min": 1,
@@ -197,7 +228,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.title",
       "min": 0,
@@ -211,7 +244,9 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.status",
       "min": 1,
@@ -225,7 +260,9 @@
       "name": "experimental",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "StructureMap.experimental",
       "min": 0,
@@ -239,7 +276,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "StructureMap.date",
       "min": 0,
@@ -253,7 +292,9 @@
       "name": "publisher",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.publisher",
       "min": 0,
@@ -267,7 +308,10 @@
       "name": "contact",
       "depth": 1,
       "types": [
-        "ContactDetail"
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.contact",
       "min": 0,
@@ -281,7 +325,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureMap.description",
       "min": 0,
@@ -295,7 +341,10 @@
       "name": "useContext",
       "depth": 1,
       "types": [
-        "UsageContext"
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.useContext",
       "min": 0,
@@ -309,7 +358,10 @@
       "name": "jurisdiction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.jurisdiction",
       "min": 0,
@@ -323,7 +375,9 @@
       "name": "purpose",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureMap.purpose",
       "min": 0,
@@ -337,7 +391,9 @@
       "name": "copyright",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "StructureMap.copyright",
       "min": 0,
@@ -351,7 +407,9 @@
       "name": "structure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.structure",
       "min": 0,
@@ -365,7 +423,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.structure.id",
       "min": 0,
@@ -380,7 +440,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.structure.extension",
       "min": 0,
@@ -395,7 +458,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.structure.modifierExtension",
       "min": 0,
@@ -410,7 +476,9 @@
       "name": "url",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "StructureMap.structure.url",
       "min": 1,
@@ -424,7 +492,9 @@
       "name": "mode",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.structure.mode",
       "min": 1,
@@ -438,7 +508,9 @@
       "name": "alias",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.structure.alias",
       "min": 0,
@@ -452,7 +524,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.structure.documentation",
       "min": 0,
@@ -466,7 +540,9 @@
       "name": "import",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "StructureMap.import",
       "min": 0,
@@ -480,7 +556,9 @@
       "name": "group",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group",
       "min": 1,
@@ -494,7 +572,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.id",
       "min": 0,
@@ -509,7 +589,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.extension",
       "min": 0,
@@ -524,7 +607,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.modifierExtension",
       "min": 0,
@@ -539,7 +625,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.name",
       "min": 1,
@@ -553,7 +641,9 @@
       "name": "extends",
       "depth": 2,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.extends",
       "min": 0,
@@ -567,7 +657,9 @@
       "name": "typeMode",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.typeMode",
       "min": 1,
@@ -581,7 +673,9 @@
       "name": "documentation",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.documentation",
       "min": 0,
@@ -595,7 +689,9 @@
       "name": "input",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.input",
       "min": 1,
@@ -609,7 +705,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.input.id",
       "min": 0,
@@ -624,7 +722,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.input.extension",
       "min": 0,
@@ -639,7 +740,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.input.modifierExtension",
       "min": 0,
@@ -654,7 +758,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.input.name",
       "min": 1,
@@ -668,7 +774,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.input.type",
       "min": 0,
@@ -682,7 +790,9 @@
       "name": "mode",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.input.mode",
       "min": 1,
@@ -696,7 +806,9 @@
       "name": "documentation",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.input.documentation",
       "min": 0,
@@ -710,7 +822,9 @@
       "name": "rule",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.rule",
       "min": 1,
@@ -724,7 +838,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.id",
       "min": 0,
@@ -739,7 +855,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.extension",
       "min": 0,
@@ -754,7 +873,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.modifierExtension",
       "min": 0,
@@ -769,7 +891,9 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.name",
       "min": 1,
@@ -783,7 +907,9 @@
       "name": "source",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.rule.source",
       "min": 1,
@@ -797,7 +923,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.id",
       "min": 0,
@@ -812,7 +940,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.source.extension",
       "min": 0,
@@ -827,7 +958,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.source.modifierExtension",
       "min": 0,
@@ -842,7 +976,9 @@
       "name": "context",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.source.context",
       "min": 1,
@@ -856,7 +992,9 @@
       "name": "min",
       "depth": 4,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "StructureMap.group.rule.source.min",
       "min": 0,
@@ -870,7 +1008,9 @@
       "name": "max",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.max",
       "min": 0,
@@ -884,7 +1024,9 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.type",
       "min": 0,
@@ -898,56 +1040,187 @@
       "name": "defaultValue[x]",
       "depth": 4,
       "types": [
-        "base64Binary",
-        "boolean",
-        "canonical",
-        "code",
-        "date",
-        "dateTime",
-        "decimal",
-        "id",
-        "instant",
-        "integer",
-        "markdown",
-        "oid",
-        "positiveInt",
-        "string",
-        "time",
-        "unsignedInt",
-        "uri",
-        "url",
-        "uuid",
-        "Address",
-        "Age",
-        "Annotation",
-        "Attachment",
-        "CodeableConcept",
-        "Coding",
-        "ContactPoint",
-        "Count",
-        "Distance",
-        "Duration",
-        "HumanName",
-        "Identifier",
-        "Money",
-        "Period",
-        "Quantity",
-        "Range",
-        "Ratio",
-        "Reference",
-        "SampledData",
-        "Signature",
-        "Timing",
-        "ContactDetail",
-        "Contributor",
-        "DataRequirement",
-        "Expression",
-        "ParameterDefinition",
-        "RelatedArtifact",
-        "TriggerDefinition",
-        "UsageContext",
-        "Dosage",
-        "Meta"
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "StructureMap.group.rule.source.defaultValue[x]",
@@ -962,7 +1235,9 @@
       "name": "element",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.element",
       "min": 0,
@@ -976,7 +1251,9 @@
       "name": "listMode",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.rule.source.listMode",
       "min": 0,
@@ -990,7 +1267,9 @@
       "name": "variable",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.source.variable",
       "min": 0,
@@ -1004,7 +1283,9 @@
       "name": "condition",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.condition",
       "min": 0,
@@ -1018,7 +1299,9 @@
       "name": "check",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.check",
       "min": 0,
@@ -1032,7 +1315,9 @@
       "name": "logMessage",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.source.logMessage",
       "min": 0,
@@ -1046,7 +1331,9 @@
       "name": "target",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.rule.target",
       "min": 0,
@@ -1060,7 +1347,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.target.id",
       "min": 0,
@@ -1075,7 +1364,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.target.extension",
       "min": 0,
@@ -1090,7 +1382,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.target.modifierExtension",
       "min": 0,
@@ -1105,7 +1400,9 @@
       "name": "context",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.target.context",
       "min": 0,
@@ -1119,7 +1416,9 @@
       "name": "contextType",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.rule.target.contextType",
       "min": 0,
@@ -1133,7 +1432,9 @@
       "name": "element",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.target.element",
       "min": 0,
@@ -1147,7 +1448,9 @@
       "name": "variable",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.target.variable",
       "min": 0,
@@ -1161,7 +1464,9 @@
       "name": "listMode",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.rule.target.listMode",
       "min": 0,
@@ -1175,7 +1480,9 @@
       "name": "listRuleId",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.target.listRuleId",
       "min": 0,
@@ -1189,7 +1496,9 @@
       "name": "transform",
       "depth": 4,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "StructureMap.group.rule.target.transform",
       "min": 0,
@@ -1203,7 +1512,9 @@
       "name": "parameter",
       "depth": 4,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.rule.target.parameter",
       "min": 0,
@@ -1217,7 +1528,9 @@
       "name": "id",
       "depth": 5,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.target.parameter.id",
       "min": 0,
@@ -1232,7 +1545,10 @@
       "name": "extension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.target.parameter.extension",
       "min": 0,
@@ -1247,7 +1563,10 @@
       "name": "modifierExtension",
       "depth": 5,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.target.parameter.modifierExtension",
       "min": 0,
@@ -1262,11 +1581,21 @@
       "name": "value[x]",
       "depth": 5,
       "types": [
-        "id",
-        "string",
-        "boolean",
-        "integer",
-        "decimal"
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "decimal"
+        }
       ],
       "path": "StructureMap.group.rule.target.parameter.value[x]",
       "min": 1,
@@ -1280,7 +1609,9 @@
       "name": "rule",
       "depth": 3,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "StructureMap.group.rule.rule",
       "min": 0,
@@ -1294,7 +1625,9 @@
       "name": "dependent",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "StructureMap.group.rule.dependent",
       "min": 0,
@@ -1308,7 +1641,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.dependent.id",
       "min": 0,
@@ -1323,7 +1658,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.dependent.extension",
       "min": 0,
@@ -1338,7 +1676,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "StructureMap.group.rule.dependent.modifierExtension",
       "min": 0,
@@ -1353,7 +1694,9 @@
       "name": "name",
       "depth": 4,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "StructureMap.group.rule.dependent.name",
       "min": 1,
@@ -1367,7 +1710,9 @@
       "name": "variable",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.dependent.variable",
       "min": 1,
@@ -1381,7 +1726,9 @@
       "name": "documentation",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "StructureMap.group.rule.documentation",
       "min": 0,

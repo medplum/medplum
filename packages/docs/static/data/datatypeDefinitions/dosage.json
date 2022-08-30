@@ -1,13 +1,15 @@
 {
   "name": "Dosage",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Dosage Type: Indicates how the medication is/was taken or should be taken by the patient.",
   "properties": [
     {
       "name": "Dosage",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Dosage",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Dosage.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.modifierExtension",
       "min": 0,
@@ -66,7 +76,9 @@
       "name": "sequence",
       "depth": 1,
       "types": [
-        "integer"
+        {
+          "datatype": "integer"
+        }
       ],
       "path": "Dosage.sequence",
       "min": 0,
@@ -80,7 +92,9 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Dosage.text",
       "min": 0,
@@ -94,7 +108,10 @@
       "name": "additionalInstruction",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.additionalInstruction",
       "min": 0,
@@ -108,7 +125,9 @@
       "name": "patientInstruction",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Dosage.patientInstruction",
       "min": 0,
@@ -122,7 +141,10 @@
       "name": "timing",
       "depth": 1,
       "types": [
-        "Timing"
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.timing",
       "min": 0,
@@ -136,8 +158,13 @@
       "name": "asNeeded[x]",
       "depth": 1,
       "types": [
-        "boolean",
-        "CodeableConcept"
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.asNeeded[x]",
       "min": 0,
@@ -151,7 +178,10 @@
       "name": "site",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.site",
       "min": 0,
@@ -165,7 +195,10 @@
       "name": "route",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.route",
       "min": 0,
@@ -179,7 +212,10 @@
       "name": "method",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.method",
       "min": 0,
@@ -193,7 +229,9 @@
       "name": "doseAndRate",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "Dosage.doseAndRate",
       "min": 0,
@@ -207,7 +245,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Dosage.doseAndRate.id",
       "min": 0,
@@ -222,7 +262,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.doseAndRate.extension",
       "min": 0,
@@ -237,7 +280,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.doseAndRate.type",
       "min": 0,
@@ -251,8 +297,14 @@
       "name": "dose[x]",
       "depth": 2,
       "types": [
-        "Range",
-        "Quantity"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.doseAndRate.dose[x]",
       "min": 0,
@@ -266,9 +318,18 @@
       "name": "rate[x]",
       "depth": 2,
       "types": [
-        "Ratio",
-        "Range",
-        "Quantity"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.doseAndRate.rate[x]",
       "min": 0,
@@ -282,7 +343,10 @@
       "name": "maxDosePerPeriod",
       "depth": 1,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.maxDosePerPeriod",
       "min": 0,
@@ -296,7 +360,10 @@
       "name": "maxDosePerAdministration",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.maxDosePerAdministration",
       "min": 0,
@@ -310,7 +377,10 @@
       "name": "maxDosePerLifetime",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Dosage.maxDosePerLifetime",
       "min": 0,

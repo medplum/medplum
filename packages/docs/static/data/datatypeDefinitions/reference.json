@@ -1,13 +1,15 @@
 {
   "name": "Reference",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Reference Type: A reference from one resource to another.",
   "properties": [
     {
       "name": "Reference",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Reference",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Reference.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Reference.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "reference",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Reference.reference",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Reference.type",
       "min": 0,
@@ -79,7 +90,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Reference.identifier",
       "min": 0,
@@ -93,7 +107,9 @@
       "name": "display",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Reference.display",
       "min": 0,

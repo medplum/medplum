@@ -1,13 +1,15 @@
 {
   "name": "Population",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Population Type: A populatioof people with some set of grouping criteria.",
   "properties": [
     {
       "name": "Population",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Population",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Population.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.modifierExtension",
       "min": 0,
@@ -66,8 +76,14 @@
       "name": "age[x]",
       "depth": 1,
       "types": [
-        "Range",
-        "CodeableConcept"
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.age[x]",
       "min": 0,
@@ -81,7 +97,10 @@
       "name": "gender",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.gender",
       "min": 0,
@@ -95,7 +114,10 @@
       "name": "race",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.race",
       "min": 0,
@@ -109,7 +131,10 @@
       "name": "physiologicalCondition",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Population.physiologicalCondition",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "Attachment",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Attachment Type: For referring to data content defined in other formats.",
   "properties": [
     {
       "name": "Attachment",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Attachment",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Attachment.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Attachment.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "contentType",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Attachment.contentType",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Attachment.language",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "data",
       "depth": 1,
       "types": [
-        "base64Binary"
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "Attachment.data",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "Attachment.url",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "size",
       "depth": 1,
       "types": [
-        "unsignedInt"
+        {
+          "datatype": "unsignedInt"
+        }
       ],
       "path": "Attachment.size",
       "min": 0,
@@ -121,7 +138,9 @@
       "name": "hash",
       "depth": 1,
       "types": [
-        "base64Binary"
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "Attachment.hash",
       "min": 0,
@@ -135,7 +154,9 @@
       "name": "title",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Attachment.title",
       "min": 0,
@@ -149,7 +170,9 @@
       "name": "creation",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Attachment.creation",
       "min": 0,

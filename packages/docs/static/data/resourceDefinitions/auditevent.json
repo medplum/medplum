@@ -1,13 +1,15 @@
 {
   "name": "AuditEvent",
-  "type": "resource",
+  "location": "resource",
   "description": "A record of an event made for purposes of maintaining a security log. Typical uses include detection of intrusion attempts and monitoring for inappropriate usage.",
   "properties": [
     {
       "name": "AuditEvent",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "AuditEvent",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "AuditEvent.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AuditEvent.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "AuditEvent.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.modifierExtension",
       "min": 0,
@@ -141,7 +163,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.type",
       "min": 1,
@@ -155,7 +180,10 @@
       "name": "subtype",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.subtype",
       "min": 0,
@@ -169,7 +197,9 @@
       "name": "action",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AuditEvent.action",
       "min": 0,
@@ -183,7 +213,10 @@
       "name": "period",
       "depth": 1,
       "types": [
-        "Period"
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.period",
       "min": 0,
@@ -197,7 +230,9 @@
       "name": "recorded",
       "depth": 1,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "AuditEvent.recorded",
       "min": 1,
@@ -211,7 +246,9 @@
       "name": "outcome",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AuditEvent.outcome",
       "min": 0,
@@ -225,7 +262,9 @@
       "name": "outcomeDesc",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.outcomeDesc",
       "min": 0,
@@ -239,7 +278,10 @@
       "name": "purposeOfEvent",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.purposeOfEvent",
       "min": 0,
@@ -253,7 +295,9 @@
       "name": "agent",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AuditEvent.agent",
       "min": 1,
@@ -267,7 +311,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.agent.id",
       "min": 0,
@@ -282,7 +328,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.extension",
       "min": 0,
@@ -297,7 +346,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.modifierExtension",
       "min": 0,
@@ -312,7 +364,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.type",
       "min": 0,
@@ -326,7 +381,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.role",
       "min": 0,
@@ -340,15 +398,36 @@
       "name": "who",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "PractitionerRole",
-        "Practitioner",
-        "Organization",
-        "Device",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AuditEvent.agent.who",
       "min": 0,
@@ -362,7 +441,9 @@
       "name": "altId",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.agent.altId",
       "min": 0,
@@ -376,7 +457,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.agent.name",
       "min": 0,
@@ -390,7 +473,9 @@
       "name": "requestor",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "AuditEvent.agent.requestor",
       "min": 1,
@@ -404,10 +489,16 @@
       "name": "location",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Location"
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AuditEvent.agent.location",
       "min": 0,
@@ -421,7 +512,9 @@
       "name": "policy",
       "depth": 2,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "AuditEvent.agent.policy",
       "min": 0,
@@ -435,7 +528,10 @@
       "name": "media",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.media",
       "min": 0,
@@ -449,7 +545,9 @@
       "name": "network",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AuditEvent.agent.network",
       "min": 0,
@@ -463,7 +561,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.agent.network.id",
       "min": 0,
@@ -478,7 +578,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.network.extension",
       "min": 0,
@@ -493,7 +596,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.network.modifierExtension",
       "min": 0,
@@ -508,7 +614,9 @@
       "name": "address",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.agent.network.address",
       "min": 0,
@@ -522,7 +630,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "AuditEvent.agent.network.type",
       "min": 0,
@@ -536,7 +646,10 @@
       "name": "purposeOfUse",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.agent.purposeOfUse",
       "min": 0,
@@ -550,7 +663,9 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AuditEvent.source",
       "min": 1,
@@ -564,7 +679,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.source.id",
       "min": 0,
@@ -579,7 +696,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.source.extension",
       "min": 0,
@@ -594,7 +714,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.source.modifierExtension",
       "min": 0,
@@ -609,7 +732,9 @@
       "name": "site",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.source.site",
       "min": 0,
@@ -623,15 +748,36 @@
       "name": "observer",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "PractitionerRole",
-        "Practitioner",
-        "Organization",
-        "Device",
-        "Patient",
-        "RelatedPerson"
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
       ],
       "path": "AuditEvent.source.observer",
       "min": 1,
@@ -645,7 +791,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.source.type",
       "min": 0,
@@ -659,7 +808,9 @@
       "name": "entity",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AuditEvent.entity",
       "min": 0,
@@ -673,7 +824,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.entity.id",
       "min": 0,
@@ -688,7 +841,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.extension",
       "min": 0,
@@ -703,7 +859,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.modifierExtension",
       "min": 0,
@@ -718,10 +877,15 @@
       "name": "what",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "AuditEvent.entity.what",
       "min": 0,
@@ -735,7 +899,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.type",
       "min": 0,
@@ -749,7 +916,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.role",
       "min": 0,
@@ -763,7 +933,10 @@
       "name": "lifecycle",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.lifecycle",
       "min": 0,
@@ -777,7 +950,10 @@
       "name": "securityLabel",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.securityLabel",
       "min": 0,
@@ -791,7 +967,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.entity.name",
       "min": 0,
@@ -805,7 +983,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.entity.description",
       "min": 0,
@@ -819,7 +999,9 @@
       "name": "query",
       "depth": 2,
       "types": [
-        "base64Binary"
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "AuditEvent.entity.query",
       "min": 0,
@@ -833,7 +1015,9 @@
       "name": "detail",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "AuditEvent.entity.detail",
       "min": 0,
@@ -847,7 +1031,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.entity.detail.id",
       "min": 0,
@@ -862,7 +1048,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.detail.extension",
       "min": 0,
@@ -877,7 +1066,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "AuditEvent.entity.detail.modifierExtension",
       "min": 0,
@@ -892,7 +1084,9 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "AuditEvent.entity.detail.type",
       "min": 1,
@@ -906,8 +1100,12 @@
       "name": "value[x]",
       "depth": 3,
       "types": [
-        "string",
-        "base64Binary"
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "base64Binary"
+        }
       ],
       "path": "AuditEvent.entity.detail.value[x]",
       "min": 1,

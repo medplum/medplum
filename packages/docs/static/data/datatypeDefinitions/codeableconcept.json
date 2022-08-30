@@ -1,13 +1,15 @@
 {
   "name": "CodeableConcept",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for CodeableConcept Type: A concept that may be defined by a formal reference to a terminology or ontology or may be provided by text.",
   "properties": [
     {
       "name": "CodeableConcept",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "CodeableConcept",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeableConcept.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeableConcept.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "coding",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "CodeableConcept.coding",
       "min": 0,
@@ -65,7 +75,9 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "CodeableConcept.text",
       "min": 0,

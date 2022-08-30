@@ -1,13 +1,15 @@
 {
   "name": "UsageContext",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for UsageContext Type: Specifies clinical/business/etc. metadata that can be used to retrieve, index and/or categorize an artifact. This metadata can either be specific to the applicable population (e.g., age category, DRG) or the specific context of care (e.g., venue, care setting, provider of care).",
   "properties": [
     {
       "name": "UsageContext",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "UsageContext",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "UsageContext.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "UsageContext.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "UsageContext.code",
       "min": 1,
@@ -65,19 +75,52 @@
       "name": "value[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Quantity",
-        "Range",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "PlanDefinition",
-        "ResearchStudy",
-        "InsurancePlan",
-        "HealthcareService",
-        "Group",
-        "Location",
-        "Organization"
+        {
+          "datatype": "PlanDefinition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ResearchStudy",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "InsurancePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "UsageContext.value[x]",
       "min": 1,

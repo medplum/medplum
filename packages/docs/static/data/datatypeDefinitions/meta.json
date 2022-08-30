@@ -1,13 +1,15 @@
 {
   "name": "Meta",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Meta Type: The metadata about a resource. This is content in the resource that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
   "properties": [
     {
       "name": "Meta",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Meta",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Meta.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Meta.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "versionId",
       "depth": 1,
       "types": [
-        "id"
+        {
+          "datatype": "id"
+        }
       ],
       "path": "Meta.versionId",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "lastUpdated",
       "depth": 1,
       "types": [
-        "instant"
+        {
+          "datatype": "instant"
+        }
       ],
       "path": "Meta.lastUpdated",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Meta.source",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "profile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "Meta.profile",
       "min": 0,
@@ -107,7 +122,10 @@
       "name": "security",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Meta.security",
       "min": 0,
@@ -121,7 +139,10 @@
       "name": "tag",
       "depth": 1,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Meta.tag",
       "min": 0,
@@ -135,7 +156,9 @@
       "name": "project",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Meta.project",
       "min": 0,
@@ -143,13 +166,16 @@
       "short": "The project that contains this resource.",
       "definition": "The project that contains this resource.",
       "comment": "The project that contains this resource.",
-      "inherited": true
+      "inherited": false
     },
     {
       "name": "author",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "Meta.author",
@@ -158,13 +184,16 @@
       "short": "The individual, device or organization who initiated the last change.",
       "definition": "The individual, device or organization who initiated the last change.",
       "comment": "The individual, device or organization who initiated the last change.",
-      "inherited": true
+      "inherited": false
     },
     {
       "name": "account",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [],
       "path": "Meta.account",
@@ -173,7 +202,7 @@
       "short": "Optional account reference that can be used for sub-project compartments.",
       "definition": "Optional account reference that can be used for sub-project compartments.",
       "comment": "Optional account reference that can be used for sub-project compartments.",
-      "inherited": true
+      "inherited": false
     }
   ]
 }

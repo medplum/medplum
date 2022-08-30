@@ -1,13 +1,15 @@
 {
   "name": "SubstanceAmount",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for SubstanceAmount Type: Chemical substances are a single substance type whose primary defining element is the molecular structure. Chemical substances shall be defined on the basis of their complete covalent molecular structure; the presence of a salt (counter-ion) and/or solvates (water, alcohols) is also captured. Purity, grade, physical form or particle size are not taken into account in the definition of a chemical substance or in the assignment of a Substance ID.",
   "properties": [
     {
       "name": "SubstanceAmount",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceAmount",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceAmount.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.modifierExtension",
       "min": 0,
@@ -66,9 +76,17 @@
       "name": "amount[x]",
       "depth": 1,
       "types": [
-        "Quantity",
-        "Range",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceAmount.amount[x]",
       "min": 0,
@@ -82,7 +100,10 @@
       "name": "amountType",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.amountType",
       "min": 0,
@@ -96,7 +117,9 @@
       "name": "amountText",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceAmount.amountText",
       "min": 0,
@@ -110,7 +133,9 @@
       "name": "referenceRange",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "SubstanceAmount.referenceRange",
       "min": 0,
@@ -124,7 +149,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceAmount.referenceRange.id",
       "min": 0,
@@ -139,7 +166,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.referenceRange.extension",
       "min": 0,
@@ -154,7 +184,10 @@
       "name": "lowLimit",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.referenceRange.lowLimit",
       "min": 0,
@@ -168,7 +201,10 @@
       "name": "highLimit",
       "depth": 2,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceAmount.referenceRange.highLimit",
       "min": 0,

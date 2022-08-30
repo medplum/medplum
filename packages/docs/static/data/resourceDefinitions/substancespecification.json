@@ -1,13 +1,15 @@
 {
   "name": "SubstanceSpecification",
-  "type": "resource",
+  "location": "resource",
   "description": "The detailed description of a substance, typically at a level beyond what is used for prescribing.",
   "properties": [
     {
       "name": "SubstanceSpecification",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSpecification",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "SubstanceSpecification.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "SubstanceSpecification.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "SubstanceSpecification.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.modifierExtension",
       "min": 0,
@@ -141,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.identifier",
       "min": 0,
@@ -155,7 +180,10 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.type",
       "min": 0,
@@ -169,7 +197,10 @@
       "name": "status",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.status",
       "min": 0,
@@ -183,7 +214,10 @@
       "name": "domain",
       "depth": 1,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.domain",
       "min": 0,
@@ -197,7 +231,9 @@
       "name": "description",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.description",
       "min": 0,
@@ -211,10 +247,16 @@
       "name": "source",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.source",
       "min": 0,
@@ -228,7 +270,9 @@
       "name": "comment",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.comment",
       "min": 0,
@@ -242,7 +286,9 @@
       "name": "moiety",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.moiety",
       "min": 0,
@@ -256,7 +302,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.moiety.id",
       "min": 0,
@@ -271,7 +319,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.extension",
       "min": 0,
@@ -286,7 +337,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.modifierExtension",
       "min": 0,
@@ -301,7 +355,10 @@
       "name": "role",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.role",
       "min": 0,
@@ -315,7 +372,10 @@
       "name": "identifier",
       "depth": 2,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.identifier",
       "min": 0,
@@ -329,7 +389,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.moiety.name",
       "min": 0,
@@ -343,7 +405,10 @@
       "name": "stereochemistry",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.stereochemistry",
       "min": 0,
@@ -357,7 +422,10 @@
       "name": "opticalActivity",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.moiety.opticalActivity",
       "min": 0,
@@ -371,7 +439,9 @@
       "name": "molecularFormula",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.moiety.molecularFormula",
       "min": 0,
@@ -385,8 +455,13 @@
       "name": "amount[x]",
       "depth": 2,
       "types": [
-        "Quantity",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.moiety.amount[x]",
       "min": 0,
@@ -400,7 +475,9 @@
       "name": "property",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.property",
       "min": 0,
@@ -414,7 +491,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.property.id",
       "min": 0,
@@ -429,7 +508,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.property.extension",
       "min": 0,
@@ -444,7 +526,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.property.modifierExtension",
       "min": 0,
@@ -459,7 +544,10 @@
       "name": "category",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.property.category",
       "min": 0,
@@ -473,7 +561,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.property.code",
       "min": 0,
@@ -487,7 +578,9 @@
       "name": "parameters",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.property.parameters",
       "min": 0,
@@ -501,12 +594,24 @@
       "name": "definingSubstance[x]",
       "depth": 2,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceSpecification",
-        "Substance"
+        {
+          "datatype": "SubstanceSpecification",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.property.definingSubstance[x]",
       "min": 0,
@@ -520,8 +625,13 @@
       "name": "amount[x]",
       "depth": 2,
       "types": [
-        "Quantity",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.property.amount[x]",
       "min": 0,
@@ -535,10 +645,16 @@
       "name": "referenceInformation",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceReferenceInformation"
+        {
+          "datatype": "SubstanceReferenceInformation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.referenceInformation",
       "min": 0,
@@ -552,7 +668,9 @@
       "name": "structure",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.structure",
       "min": 0,
@@ -566,7 +684,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.id",
       "min": 0,
@@ -581,7 +701,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.extension",
       "min": 0,
@@ -596,7 +719,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.modifierExtension",
       "min": 0,
@@ -611,7 +737,10 @@
       "name": "stereochemistry",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.stereochemistry",
       "min": 0,
@@ -625,7 +754,10 @@
       "name": "opticalActivity",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.opticalActivity",
       "min": 0,
@@ -639,7 +771,9 @@
       "name": "molecularFormula",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.molecularFormula",
       "min": 0,
@@ -653,7 +787,9 @@
       "name": "molecularFormulaByMoiety",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.molecularFormulaByMoiety",
       "min": 0,
@@ -667,7 +803,9 @@
       "name": "isotope",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope",
       "min": 0,
@@ -681,7 +819,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.id",
       "min": 0,
@@ -696,7 +836,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.extension",
       "min": 0,
@@ -711,7 +854,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.modifierExtension",
       "min": 0,
@@ -726,7 +872,10 @@
       "name": "identifier",
       "depth": 3,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.identifier",
       "min": 0,
@@ -740,7 +889,10 @@
       "name": "name",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.name",
       "min": 0,
@@ -754,7 +906,10 @@
       "name": "substitution",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.substitution",
       "min": 0,
@@ -768,7 +923,10 @@
       "name": "halfLife",
       "depth": 3,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.halfLife",
       "min": 0,
@@ -782,7 +940,9 @@
       "name": "molecularWeight",
       "depth": 3,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight",
       "min": 0,
@@ -796,7 +956,9 @@
       "name": "id",
       "depth": 4,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.id",
       "min": 0,
@@ -811,7 +973,10 @@
       "name": "extension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.extension",
       "min": 0,
@@ -826,7 +991,10 @@
       "name": "modifierExtension",
       "depth": 4,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.modifierExtension",
       "min": 0,
@@ -841,7 +1009,10 @@
       "name": "method",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.method",
       "min": 0,
@@ -855,7 +1026,10 @@
       "name": "type",
       "depth": 4,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.type",
       "min": 0,
@@ -869,7 +1043,10 @@
       "name": "amount",
       "depth": 4,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.isotope.molecularWeight.amount",
       "min": 0,
@@ -883,7 +1060,9 @@
       "name": "molecularWeight",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSpecification.structure.molecularWeight",
       "min": 0,
@@ -897,10 +1076,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.structure.source",
       "min": 0,
@@ -914,7 +1099,9 @@
       "name": "representation",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation",
       "min": 0,
@@ -928,7 +1115,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.id",
       "min": 0,
@@ -943,7 +1132,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.extension",
       "min": 0,
@@ -958,7 +1150,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.modifierExtension",
       "min": 0,
@@ -973,7 +1168,10 @@
       "name": "type",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.type",
       "min": 0,
@@ -987,7 +1185,9 @@
       "name": "representation",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.representation",
       "min": 0,
@@ -1001,7 +1201,10 @@
       "name": "attachment",
       "depth": 3,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.structure.representation.attachment",
       "min": 0,
@@ -1015,7 +1218,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.code",
       "min": 0,
@@ -1029,7 +1234,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.code.id",
       "min": 0,
@@ -1044,7 +1251,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.code.extension",
       "min": 0,
@@ -1059,7 +1269,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.code.modifierExtension",
       "min": 0,
@@ -1074,7 +1287,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.code.code",
       "min": 0,
@@ -1088,7 +1304,10 @@
       "name": "status",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.code.status",
       "min": 0,
@@ -1102,7 +1321,9 @@
       "name": "statusDate",
       "depth": 2,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "SubstanceSpecification.code.statusDate",
       "min": 0,
@@ -1116,7 +1337,9 @@
       "name": "comment",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.code.comment",
       "min": 0,
@@ -1130,10 +1353,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.code.source",
       "min": 0,
@@ -1147,7 +1376,9 @@
       "name": "name",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.name",
       "min": 0,
@@ -1161,7 +1392,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.name.id",
       "min": 0,
@@ -1176,7 +1409,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.extension",
       "min": 0,
@@ -1191,7 +1427,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.modifierExtension",
       "min": 0,
@@ -1206,7 +1445,9 @@
       "name": "name",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.name.name",
       "min": 1,
@@ -1220,7 +1461,10 @@
       "name": "type",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.type",
       "min": 0,
@@ -1234,7 +1478,10 @@
       "name": "status",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.status",
       "min": 0,
@@ -1248,7 +1495,9 @@
       "name": "preferred",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SubstanceSpecification.name.preferred",
       "min": 0,
@@ -1262,7 +1511,10 @@
       "name": "language",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.language",
       "min": 0,
@@ -1276,7 +1528,10 @@
       "name": "domain",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.domain",
       "min": 0,
@@ -1290,7 +1545,10 @@
       "name": "jurisdiction",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.jurisdiction",
       "min": 0,
@@ -1304,7 +1562,9 @@
       "name": "synonym",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSpecification.name.synonym",
       "min": 0,
@@ -1318,7 +1578,9 @@
       "name": "translation",
       "depth": 2,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSpecification.name.translation",
       "min": 0,
@@ -1332,7 +1594,9 @@
       "name": "official",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.name.official",
       "min": 0,
@@ -1346,7 +1610,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.name.official.id",
       "min": 0,
@@ -1361,7 +1627,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.official.extension",
       "min": 0,
@@ -1376,7 +1645,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.official.modifierExtension",
       "min": 0,
@@ -1391,7 +1663,10 @@
       "name": "authority",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.official.authority",
       "min": 0,
@@ -1405,7 +1680,10 @@
       "name": "status",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.name.official.status",
       "min": 0,
@@ -1419,7 +1697,9 @@
       "name": "date",
       "depth": 3,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "SubstanceSpecification.name.official.date",
       "min": 0,
@@ -1433,10 +1713,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.name.source",
       "min": 0,
@@ -1450,7 +1736,9 @@
       "name": "molecularWeight",
       "depth": 1,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "SubstanceSpecification.molecularWeight",
       "min": 0,
@@ -1464,7 +1752,9 @@
       "name": "relationship",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "SubstanceSpecification.relationship",
       "min": 0,
@@ -1478,7 +1768,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.relationship.id",
       "min": 0,
@@ -1493,7 +1785,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.relationship.extension",
       "min": 0,
@@ -1508,7 +1803,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.relationship.modifierExtension",
       "min": 0,
@@ -1523,11 +1821,20 @@
       "name": "substance[x]",
       "depth": 2,
       "types": [
-        "Reference",
-        "CodeableConcept"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceSpecification"
+        {
+          "datatype": "SubstanceSpecification",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.relationship.substance[x]",
       "min": 0,
@@ -1541,7 +1848,10 @@
       "name": "relationship",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.relationship.relationship",
       "min": 0,
@@ -1555,7 +1865,9 @@
       "name": "isDefining",
       "depth": 2,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "SubstanceSpecification.relationship.isDefining",
       "min": 0,
@@ -1569,10 +1881,21 @@
       "name": "amount[x]",
       "depth": 2,
       "types": [
-        "Quantity",
-        "Range",
-        "Ratio",
-        "string"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "SubstanceSpecification.relationship.amount[x]",
       "min": 0,
@@ -1586,7 +1909,10 @@
       "name": "amountRatioLowLimit",
       "depth": 2,
       "types": [
-        "Ratio"
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.relationship.amountRatioLowLimit",
       "min": 0,
@@ -1600,7 +1926,10 @@
       "name": "amountType",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "SubstanceSpecification.relationship.amountType",
       "min": 0,
@@ -1614,10 +1943,16 @@
       "name": "source",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "DocumentReference"
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.relationship.source",
       "min": 0,
@@ -1631,10 +1966,16 @@
       "name": "nucleicAcid",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceNucleicAcid"
+        {
+          "datatype": "SubstanceNucleicAcid",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.nucleicAcid",
       "min": 0,
@@ -1648,10 +1989,16 @@
       "name": "polymer",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstancePolymer"
+        {
+          "datatype": "SubstancePolymer",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.polymer",
       "min": 0,
@@ -1665,10 +2012,16 @@
       "name": "protein",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceProtein"
+        {
+          "datatype": "SubstanceProtein",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.protein",
       "min": 0,
@@ -1682,10 +2035,16 @@
       "name": "sourceMaterial",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "SubstanceSourceMaterial"
+        {
+          "datatype": "SubstanceSourceMaterial",
+          "documentLocation": "resource"
+        }
       ],
       "path": "SubstanceSpecification.sourceMaterial",
       "min": 0,

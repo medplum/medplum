@@ -1,13 +1,15 @@
 {
   "name": "RelatedArtifact",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for RelatedArtifact Type: Related artifacts such as additional documentation, justification, or bibliographic references.",
   "properties": [
     {
       "name": "RelatedArtifact",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "RelatedArtifact",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RelatedArtifact.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedArtifact.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "RelatedArtifact.type",
       "min": 1,
@@ -65,7 +74,9 @@
       "name": "label",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RelatedArtifact.label",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "display",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "RelatedArtifact.display",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "citation",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "RelatedArtifact.citation",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "url",
       "depth": 1,
       "types": [
-        "url"
+        {
+          "datatype": "url"
+        }
       ],
       "path": "RelatedArtifact.url",
       "min": 0,
@@ -121,7 +138,10 @@
       "name": "document",
       "depth": 1,
       "types": [
-        "Attachment"
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "RelatedArtifact.document",
       "min": 0,
@@ -135,7 +155,9 @@
       "name": "resource",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "RelatedArtifact.resource",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "Range",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Range Type: A set of ordered Quantities defined by a low and high limit.",
   "properties": [
     {
       "name": "Range",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Range",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Range.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Range.extension",
       "min": 0,
@@ -51,7 +58,10 @@
       "name": "low",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Range.low",
       "min": 0,
@@ -65,7 +75,10 @@
       "name": "high",
       "depth": 1,
       "types": [
-        "Quantity"
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Range.high",
       "min": 0,

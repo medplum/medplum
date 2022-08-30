@@ -1,0 +1,18 @@
+---
+title: Project
+sidebar_position: 0
+---
+
+import definition from '@site/static/data/medplumDefinitions/project.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Project
+
+
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

@@ -1,13 +1,15 @@
 {
   "name": "Coding",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Coding Type: A reference to a code defined by a terminology system.",
   "properties": [
     {
       "name": "Coding",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Coding",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Coding.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Coding.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "system",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "Coding.system",
       "min": 0,
@@ -65,7 +74,9 @@
       "name": "version",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Coding.version",
       "min": 0,
@@ -79,7 +90,9 @@
       "name": "code",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "Coding.code",
       "min": 0,
@@ -93,7 +106,9 @@
       "name": "display",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Coding.display",
       "min": 0,
@@ -107,7 +122,9 @@
       "name": "userSelected",
       "depth": 1,
       "types": [
-        "boolean"
+        {
+          "datatype": "boolean"
+        }
       ],
       "path": "Coding.userSelected",
       "min": 0,

@@ -1,13 +1,15 @@
 {
   "name": "DataRequirement",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for DataRequirement Type: Describes a required data item for evaluation in terms of the type of data, and optional code or date-based filters of the data.",
   "properties": [
     {
       "name": "DataRequirement",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "DataRequirement",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.extension",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "type",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DataRequirement.type",
       "min": 1,
@@ -65,7 +74,9 @@
       "name": "profile",
       "depth": 1,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "DataRequirement.profile",
       "min": 0,
@@ -79,11 +90,20 @@
       "name": "subject[x]",
       "depth": 1,
       "types": [
-        "CodeableConcept",
-        "Reference"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Group"
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
       ],
       "path": "DataRequirement.subject[x]",
       "min": 0,
@@ -97,7 +117,9 @@
       "name": "mustSupport",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.mustSupport",
       "min": 0,
@@ -111,7 +133,9 @@
       "name": "codeFilter",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "DataRequirement.codeFilter",
       "min": 0,
@@ -125,7 +149,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.codeFilter.id",
       "min": 0,
@@ -140,7 +166,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.codeFilter.extension",
       "min": 0,
@@ -155,7 +184,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.codeFilter.path",
       "min": 0,
@@ -169,7 +200,9 @@
       "name": "searchParam",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.codeFilter.searchParam",
       "min": 0,
@@ -183,7 +216,9 @@
       "name": "valueSet",
       "depth": 2,
       "types": [
-        "canonical"
+        {
+          "datatype": "canonical"
+        }
       ],
       "path": "DataRequirement.codeFilter.valueSet",
       "min": 0,
@@ -197,7 +232,10 @@
       "name": "code",
       "depth": 2,
       "types": [
-        "Coding"
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.codeFilter.code",
       "min": 0,
@@ -211,7 +249,9 @@
       "name": "dateFilter",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "DataRequirement.dateFilter",
       "min": 0,
@@ -225,7 +265,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.dateFilter.id",
       "min": 0,
@@ -240,7 +282,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.dateFilter.extension",
       "min": 0,
@@ -255,7 +300,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.dateFilter.path",
       "min": 0,
@@ -269,7 +316,9 @@
       "name": "searchParam",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.dateFilter.searchParam",
       "min": 0,
@@ -283,9 +332,17 @@
       "name": "value[x]",
       "depth": 2,
       "types": [
-        "dateTime",
-        "Period",
-        "Duration"
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.dateFilter.value[x]",
       "min": 0,
@@ -299,7 +356,9 @@
       "name": "limit",
       "depth": 1,
       "types": [
-        "positiveInt"
+        {
+          "datatype": "positiveInt"
+        }
       ],
       "path": "DataRequirement.limit",
       "min": 0,
@@ -313,7 +372,9 @@
       "name": "sort",
       "depth": 1,
       "types": [
-        "Element"
+        {
+          "datatype": "Element"
+        }
       ],
       "path": "DataRequirement.sort",
       "min": 0,
@@ -327,7 +388,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.sort.id",
       "min": 0,
@@ -342,7 +405,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "DataRequirement.sort.extension",
       "min": 0,
@@ -357,7 +423,9 @@
       "name": "path",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "DataRequirement.sort.path",
       "min": 1,
@@ -371,7 +439,9 @@
       "name": "direction",
       "depth": 2,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "DataRequirement.sort.direction",
       "min": 1,

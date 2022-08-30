@@ -1,13 +1,15 @@
 {
   "name": "ImmunizationRecommendation",
-  "type": "resource",
+  "location": "resource",
   "description": "A patient's point-in-time set of recommendations (i.e. forecasting) according to a published schedule with optional supporting justification.",
   "properties": [
     {
       "name": "ImmunizationRecommendation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "ImmunizationRecommendation",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "meta",
       "depth": 1,
       "types": [
-        "Meta"
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.meta",
       "min": 0,
@@ -51,7 +58,9 @@
       "name": "implicitRules",
       "depth": 1,
       "types": [
-        "uri"
+        {
+          "datatype": "uri"
+        }
       ],
       "path": "ImmunizationRecommendation.implicitRules",
       "min": 0,
@@ -66,7 +75,9 @@
       "name": "language",
       "depth": 1,
       "types": [
-        "code"
+        {
+          "datatype": "code"
+        }
       ],
       "path": "ImmunizationRecommendation.language",
       "min": 0,
@@ -81,7 +92,10 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "Narrative"
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.text",
       "min": 0,
@@ -96,7 +110,9 @@
       "name": "contained",
       "depth": 1,
       "types": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImmunizationRecommendation.contained",
       "min": 0,
@@ -111,7 +127,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.extension",
       "min": 0,
@@ -126,7 +145,10 @@
       "name": "modifierExtension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.modifierExtension",
       "min": 0,
@@ -141,7 +163,10 @@
       "name": "identifier",
       "depth": 1,
       "types": [
-        "Identifier"
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.identifier",
       "min": 0,
@@ -155,10 +180,16 @@
       "name": "patient",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Patient"
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationRecommendation.patient",
       "min": 1,
@@ -172,7 +203,9 @@
       "name": "date",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImmunizationRecommendation.date",
       "min": 1,
@@ -186,10 +219,16 @@
       "name": "authority",
       "depth": 1,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Organization"
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationRecommendation.authority",
       "min": 0,
@@ -203,7 +242,9 @@
       "name": "recommendation",
       "depth": 1,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation",
       "min": 1,
@@ -217,7 +258,9 @@
       "name": "id",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.id",
       "min": 0,
@@ -232,7 +275,10 @@
       "name": "extension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.extension",
       "min": 0,
@@ -247,7 +293,10 @@
       "name": "modifierExtension",
       "depth": 2,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.modifierExtension",
       "min": 0,
@@ -262,7 +311,10 @@
       "name": "vaccineCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.vaccineCode",
       "min": 0,
@@ -276,7 +328,10 @@
       "name": "targetDisease",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.targetDisease",
       "min": 0,
@@ -290,7 +345,10 @@
       "name": "contraindicatedVaccineCode",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.contraindicatedVaccineCode",
       "min": 0,
@@ -304,7 +362,10 @@
       "name": "forecastStatus",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.forecastStatus",
       "min": 1,
@@ -318,7 +379,10 @@
       "name": "forecastReason",
       "depth": 2,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.forecastReason",
       "min": 0,
@@ -332,7 +396,9 @@
       "name": "dateCriterion",
       "depth": 2,
       "types": [
-        "BackboneElement"
+        {
+          "datatype": "BackboneElement"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion",
       "min": 0,
@@ -346,7 +412,9 @@
       "name": "id",
       "depth": 3,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion.id",
       "min": 0,
@@ -361,7 +429,10 @@
       "name": "extension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion.extension",
       "min": 0,
@@ -376,7 +447,10 @@
       "name": "modifierExtension",
       "depth": 3,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion.modifierExtension",
       "min": 0,
@@ -391,7 +465,10 @@
       "name": "code",
       "depth": 3,
       "types": [
-        "CodeableConcept"
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion.code",
       "min": 1,
@@ -405,7 +482,9 @@
       "name": "value",
       "depth": 3,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.dateCriterion.value",
       "min": 1,
@@ -419,7 +498,9 @@
       "name": "description",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.description",
       "min": 0,
@@ -433,7 +514,9 @@
       "name": "series",
       "depth": 2,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.series",
       "min": 0,
@@ -447,8 +530,12 @@
       "name": "doseNumber[x]",
       "depth": 2,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.doseNumber[x]",
       "min": 0,
@@ -462,8 +549,12 @@
       "name": "seriesDoses[x]",
       "depth": 2,
       "types": [
-        "positiveInt",
-        "string"
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.seriesDoses[x]",
       "min": 0,
@@ -477,11 +568,20 @@
       "name": "supportingImmunization",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Immunization",
-        "ImmunizationEvaluation"
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImmunizationEvaluation",
+          "documentLocation": "resource"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.supportingImmunization",
       "min": 0,
@@ -495,10 +595,15 @@
       "name": "supportingPatientInformation",
       "depth": 2,
       "types": [
-        "Reference"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
       ],
       "referenceTypes": [
-        "Resource"
+        {
+          "datatype": "Resource"
+        }
       ],
       "path": "ImmunizationRecommendation.recommendation.supportingPatientInformation",
       "min": 0,

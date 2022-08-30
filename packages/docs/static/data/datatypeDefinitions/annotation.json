@@ -1,13 +1,15 @@
 {
   "name": "Annotation",
-  "type": "datatype",
+  "location": "datatype",
   "description": "Base StructureDefinition for Annotation Type: A  text note which also  contains information about who made the statement and when.",
   "properties": [
     {
       "name": "Annotation",
       "depth": 0,
       "types": [
-        ""
+        {
+          "datatype": ""
+        }
       ],
       "path": "Annotation",
       "min": 0,
@@ -21,7 +23,9 @@
       "name": "id",
       "depth": 1,
       "types": [
-        "string"
+        {
+          "datatype": "string"
+        }
       ],
       "path": "Annotation.id",
       "min": 0,
@@ -36,7 +40,10 @@
       "name": "extension",
       "depth": 1,
       "types": [
-        "Extension"
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
       ],
       "path": "Annotation.extension",
       "min": 0,
@@ -51,14 +58,31 @@
       "name": "author[x]",
       "depth": 1,
       "types": [
-        "Reference",
-        "string"
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
       ],
       "referenceTypes": [
-        "Practitioner",
-        "Patient",
-        "RelatedPerson",
-        "Organization"
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
       ],
       "path": "Annotation.author[x]",
       "min": 0,
@@ -72,7 +96,9 @@
       "name": "time",
       "depth": 1,
       "types": [
-        "dateTime"
+        {
+          "datatype": "dateTime"
+        }
       ],
       "path": "Annotation.time",
       "min": 0,
@@ -86,7 +112,9 @@
       "name": "text",
       "depth": 1,
       "types": [
-        "markdown"
+        {
+          "datatype": "markdown"
+        }
       ],
       "path": "Annotation.text",
       "min": 1,
