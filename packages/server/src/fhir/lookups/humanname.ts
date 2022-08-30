@@ -76,9 +76,11 @@ export class HumanNameTable extends LookupTable<HumanName> {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        await new InsertQuery('HumanName', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
@@ -86,8 +88,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name),
-        }).execute(client);
+        });
       }
+
+      await new InsertQuery('HumanName', values).execute(client);
     }
   }
 }

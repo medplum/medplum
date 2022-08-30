@@ -66,17 +66,21 @@ export class IdentifierTable extends LookupTable<Identifier> {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < identifiers.length; i++) {
         const identifier = identifiers[i];
-        await new InsertQuery(IDENTIFIER_TABLE_NAME, {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
           content: stringify(identifier),
           system: identifier.system?.trim(),
           value: identifier.value?.trim(),
-        }).execute(client);
+        });
       }
+
+      await new InsertQuery(IDENTIFIER_TABLE_NAME, values).execute(client);
     }
   }
 

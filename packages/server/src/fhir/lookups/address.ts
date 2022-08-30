@@ -96,9 +96,11 @@ export class AddressTable extends LookupTable<Address> {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < addresses.length; i++) {
         const address = addresses[i];
-        await new InsertQuery('Address', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
@@ -109,8 +111,10 @@ export class AddressTable extends LookupTable<Address> {
           postalCode: address.postalCode?.trim(),
           state: address.state?.trim(),
           use: address.use?.trim(),
-        }).execute(client);
+        });
       }
+
+      await new InsertQuery('Address', values).execute(client);
     }
   }
 

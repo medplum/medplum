@@ -157,11 +157,13 @@ class ValueSystemImporter {
   }
 
   async #insertValueSetElement(system: string, code: string, display: string): Promise<void> {
-    await new InsertQuery('ValueSetElement', {
-      id: randomUUID(),
-      system,
-      code,
-      display,
-    }).execute(this.client);
+    await new InsertQuery('ValueSetElement', [
+      {
+        id: randomUUID(),
+        system,
+        code,
+        display,
+      },
+    ]).execute(this.client);
   }
 }

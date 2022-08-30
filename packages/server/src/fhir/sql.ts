@@ -366,10 +366,10 @@ export class SelectQuery extends BaseQuery {
 }
 
 export class InsertQuery extends BaseQuery {
-  readonly #values: Record<string, any>;
+  readonly #values: Record<string, any>[];
   #merge?: boolean;
 
-  constructor(tableName: string, values: Record<string, any>) {
+  constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
     this.#values = values;
   }
@@ -383,49 +383,71 @@ export class InsertQuery extends BaseQuery {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
+    const columnNames = Object.keys(this.#values[0]);
+    this.appendColumns(sql, columnNames);
+    this.appendAllValues(sql, columnNames);
+    this.appendMerge(sql);
+    return sql.execute(conn);
+  }
+
+  private appendColumns(sql: SqlBuilder, columnNames: string[]): void {
     sql.append(' (');
-
-    const entries = Object.entries(this.#values);
-
     let first = true;
-    for (const [columnName] of entries) {
+    for (const columnName of columnNames) {
       if (!first) {
         sql.append(', ');
       }
       sql.appendIdentifier(columnName);
       first = false;
     }
+    sql.append(')');
+  }
 
-    sql.append(') VALUES (');
-
-    for (let i = 0; i < entries.length; i++) {
-      if (i > 0) {
+  private appendAllValues(sql: SqlBuilder, columnNames: string[]): void {
+    for (let i = 0; i < this.#values.length; i++) {
+      if (i === 0) {
+        sql.append(' VALUES ');
+      } else {
         sql.append(', ');
       }
-      sql.param(entries[i][1]);
+      this.appendValues(sql, columnNames, this.#values[i]);
     }
+  }
 
-    sql.append(')');
-
-    if (this.#merge) {
-      sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
-
-      first = true;
-      for (const [columnName, value] of entries) {
-        if (columnName === 'id') {
-          continue;
-        }
-        if (!first) {
-          sql.append(', ');
-        }
-        sql.appendIdentifier(columnName);
-        sql.append('=');
-        sql.param(value);
-        first = false;
+  private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
+    sql.append(' (');
+    let first = true;
+    for (const columnName of columnNames) {
+      if (!first) {
+        sql.append(', ');
       }
+      sql.param(values[columnName]);
+      first = false;
+    }
+    sql.append(')');
+  }
+
+  private appendMerge(sql: SqlBuilder): void {
+    if (!this.#merge) {
+      return;
     }
 
-    return sql.execute(conn);
+    sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
+
+    const entries = Object.entries(this.#values[0]);
+    let first = true;
+    for (const [columnName, value] of entries) {
+      if (columnName === 'id') {
+        continue;
+      }
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.appendIdentifier(columnName);
+      sql.append('=');
+      sql.param(value);
+      first = false;
+    }
   }
 }
 

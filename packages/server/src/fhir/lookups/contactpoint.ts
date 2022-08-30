@@ -75,17 +75,21 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < contactPoints.length; i++) {
         const contactPoint = contactPoints[i];
-        await new InsertQuery('ContactPoint', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
           content: stringify(contactPoint),
           system: contactPoint.system?.trim(),
           value: contactPoint.value?.trim(),
-        }).execute(client);
+        });
       }
+
+      await new InsertQuery('ContactPoint', values).execute(client);
     }
   }
 
