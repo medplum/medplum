@@ -1,6 +1,5 @@
 import {
   aws_ec2 as ec2,
-  aws_ecr as ecr,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
   aws_elasticloadbalancingv2 as elbv2,
@@ -160,12 +159,9 @@ export class BackEnd extends Construct {
       streamPrefix: 'Medplum',
     });
 
-    // Amazon ECR Repositories
-    const serviceRepo = ecr.Repository.fromRepositoryName(this, 'MedplumRepo', 'medplum-server');
-
     // Task Containers
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: ecs.ContainerImage.fromEcrRepository(serviceRepo, config.serverImageTag),
+      image: ecs.ContainerImage.fromRegistry(config.serverImage),
       command: [`aws:/medplum/${name}/`],
       logging: logDriver,
     });

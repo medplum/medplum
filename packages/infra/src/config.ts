@@ -16,7 +16,7 @@ export interface MedplumInfraConfig {
   readonly maxAzs: number;
   readonly rdsInstances: number;
   readonly desiredServerCount: number;
-  readonly serverImageTag: string;
+  readonly serverImage: string;
   readonly serverMemory: number;
   readonly serverCpu: number;
   readonly loadBalancerLoggingBucket: string;
