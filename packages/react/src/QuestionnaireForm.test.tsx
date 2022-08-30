@@ -7,7 +7,7 @@ import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { isQuestionEnabled, QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 const medplum = new MockClient();
@@ -705,5 +705,99 @@ describe('QuestionnaireForm', () => {
 
     // Now the hidden text should be visible
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
+
+  test('isQuestionEnabled', () => {
+    // enableBehavior=any, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
+
+    // enableBehavior=any, no match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'No' },
+        }
+      )
+    ).toBe(false);
+
+    // enableBehavior=all, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'all',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'Yes' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
+
+    // enableBehavior=all, no match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'all',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'Yes' },
+          q2: { valueString: 'No' },
+        }
+      )
+    ).toBe(false);
   });
 });

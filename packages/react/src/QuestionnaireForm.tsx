@@ -484,15 +484,40 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
   );
 }
 
-function isQuestionEnabled(item: QuestionnaireItem, answers: Record<string, QuestionnaireResponseItemAnswer>): boolean {
+export function isQuestionEnabled(
+  item: QuestionnaireItem,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): boolean {
   if (!item.enableWhen) {
     return true;
   }
-  const expectedAnswer = getTypedPropertyValue(
-    { type: 'QuestionnaireItemEnableWhen', value: item.enableWhen[0] },
-    'answer[x]'
-  );
-  const answer = answers[item.enableWhen[0].question as string];
-  const actualAnswer = getTypedPropertyValue({ type: 'QuestionnaireResponseItemAnswer', value: answer }, 'value[x]');
-  return deepEquals(expectedAnswer, actualAnswer);
+  const enableBehavior = item.enableBehavior || 'any';
+  for (const enableWhen of item.enableWhen) {
+    const expectedAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireItemEnableWhen',
+        value: enableWhen,
+      },
+      'answer[x]'
+    );
+    const actualAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireResponseItemAnswer',
+        value: answers[enableWhen.question as string],
+      },
+      'value[x]'
+    );
+    const match = deepEquals(expectedAnswer, actualAnswer);
+    if (enableBehavior === 'any' && match) {
+      return true;
+    }
+    if (enableBehavior === 'all' && !match) {
+      return false;
+    }
+  }
+  if (enableBehavior === 'any') {
+    return false;
+  } else {
+    return true;
+  }
 }
