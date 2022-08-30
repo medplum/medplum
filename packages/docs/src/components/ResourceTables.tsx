@@ -136,7 +136,10 @@ function getTypeLink(type: PropertyTypeDocInfo, linkText?: string): JSX.Element 
   linkText = linkText || type.datatype;
   if (type.documentLocation) {
     return (
-      <a key={type.datatype} href={`../${pluralize(type.documentLocation)}/${type.datatype}`}>
+      <a
+        key={type.datatype}
+        href={`../${pluralize(type.documentLocation).toLowerCase()}/${type.datatype.toLowerCase()}`}
+      >
         {linkText}
       </a>
     );

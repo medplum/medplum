@@ -137,7 +137,7 @@ ${description}
 <ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
 
 ${
-  definition.location === 'resource'
+  definition.location === 'resource' || definition.location === 'medplum'
     ? `## Search Parameters
 
 <SearchParamsTable searchParams={definition.searchParameters} />
@@ -243,6 +243,18 @@ function rewriteLinks(description: string): string {
   description = description
     .replace('(operations.html)', '(/api/fhir/operations)')
     .replace('(terminologies.html)', '(https://www.hl7.org/fhir/terminologies.html)');
+
+  // Replace datatype internal links
+  const datatypeLinkPattern = /datatypes.html#([a-zA-Z-]+)/g;
+  const dtMatches = description.matchAll(datatypeLinkPattern);
+
+  for (const match of dtMatches) {
+    if (match[1] in documentedTypes) {
+      description = description.replace(match[0], `/api/fhir/datatypes/${match[1].toLowerCase()}`);
+    } else {
+      description = description.replace(match[0], `https://www.hl7.org/fhir/datatypes.html#${match[1]}`);
+    }
+  }
 
   // Replace all the links of [[[Type]]] with internal links
   const typeLinks = Array.from(description.matchAll(/\[\[\[([A-Z][a-z]*)*\]\]\]/gi));
