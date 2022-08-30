@@ -1,6 +1,8 @@
 import {
   capitalize,
   createReference,
+  deepEquals,
+  getQuestionnaireAnswers,
   getReferenceString,
   getTypedPropertyValue,
   globalSchema,
@@ -51,9 +53,14 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
+  const [answers, setAnswers] = useState<Record<string, QuestionnaireResponseItemAnswer>>({});
 
   useEffect(() => {
-    medplum.requestSchema('Questionnaire').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('Questionnaire')
+      .then(() => medplum.requestSchema('QuestionnaireResponse'))
+      .then(setSchema)
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
@@ -61,10 +68,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   }, [questionnaire]);
 
   function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
-    setResponse({
+    const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
       item: newResponseItems,
-    });
+    };
+    setResponse(newResponse);
+    setAnswers(getQuestionnaireAnswers(newResponse));
   }
 
   if (!schema || !questionnaire) {
@@ -87,7 +96,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }}
     >
       {questionnaire.title && <h1>{questionnaire.title}</h1>}
-      {questionnaire.item && <QuestionnaireFormItemArray items={questionnaire.item} onChange={setItems} />}
+      {questionnaire.item && (
+        <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
+      )}
       <Button type="submit" size="large">
         {props.submitButtonText || 'OK'}
       </Button>
@@ -97,6 +108,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
 interface QuestionnaireFormItemArrayProps {
   items: QuestionnaireItem[];
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
   onChange: (newResponseItems: QuestionnaireResponseItem[]) => void;
 }
 
@@ -115,6 +127,9 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
   return (
     <>
       {props.items.map((item, index) => {
+        if (!isQuestionEnabled(item, props.answers)) {
+          return null;
+        }
         if (item.type === QuestionnaireItemType.display) {
           return <p key={item.linkId}>{item.text}</p>;
         }
@@ -123,6 +138,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             <QuestionnaireFormItem
               key={item.linkId}
               item={item}
+              answers={props.answers}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
           );
@@ -149,6 +165,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
             <QuestionnaireFormItem
               item={item}
+              answers={props.answers}
               onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
             />
           </FormSection>
@@ -160,6 +177,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
 
 export interface QuestionnaireFormItemProps {
   item: QuestionnaireItem;
+  answers: Record<string, QuestionnaireResponseItemAnswer>;
   onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
 
@@ -199,7 +217,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <div>
           <h3>{item.text}</h3>
-          {item.item && <QuestionnaireFormItemArray items={item.item} onChange={onChangeItem} />}
+          {item.item && (
+            <QuestionnaireFormItemArray items={item.item} answers={props.answers} onChange={onChangeItem} />
+          )}
         </div>
       );
     case QuestionnaireItemType.boolean:
@@ -462,4 +482,42 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
       e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
   );
+}
+
+export function isQuestionEnabled(
+  item: QuestionnaireItem,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): boolean {
+  if (!item.enableWhen) {
+    return true;
+  }
+  const enableBehavior = item.enableBehavior || 'any';
+  for (const enableWhen of item.enableWhen) {
+    const expectedAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireItemEnableWhen',
+        value: enableWhen,
+      },
+      'answer[x]'
+    );
+    const actualAnswer = getTypedPropertyValue(
+      {
+        type: 'QuestionnaireResponseItemAnswer',
+        value: answers[enableWhen.question as string],
+      },
+      'value[x]'
+    );
+    const match = deepEquals(expectedAnswer, actualAnswer);
+    if (enableBehavior === 'any' && match) {
+      return true;
+    }
+    if (enableBehavior === 'all' && !match) {
+      return false;
+    }
+  }
+  if (enableBehavior === 'any') {
+    return false;
+  } else {
+    return true;
+  }
 }

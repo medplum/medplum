@@ -13,6 +13,7 @@ const resourceTypes = [
   'Observation',
   'PlanDefinition',
   'Questionnaire',
+  'QuestionnaireResponse',
   'ServiceRequest',
   'Specimen',
   'Bot',

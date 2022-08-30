@@ -7,7 +7,7 @@ import each from 'jest-each';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
-import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
+import { isQuestionEnabled, QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 
 const medplum = new MockClient();
@@ -645,5 +645,159 @@ describe('QuestionnaireForm', () => {
     expect(dropDown).toBeInTheDocument();
     expect(dropDown).toBeInstanceOf(HTMLSelectElement);
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
+  });
+
+  test('Conditional question', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        id: 'enable-when',
+        title: 'Enable When Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: 'display',
+            text: 'Hidden Text',
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    // The form should render
+    expect(screen.getByText('Question 1')).toBeInTheDocument();
+
+    // The hidden text should be hidden
+    expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument();
+
+    // Click on "No"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('No'));
+    });
+
+    // The hidden text should still be hidden
+    expect(screen.queryByText('Hidden Text')).not.toBeInTheDocument();
+
+    // Click on "Yes"
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Yes'));
+    });
+
+    // Now the hidden text should be visible
+    expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
+  });
+
+  test('isQuestionEnabled', () => {
+    // enableBehavior=any, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
+
+    // enableBehavior=any, no match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'any',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'No' },
+          q2: { valueString: 'No' },
+        }
+      )
+    ).toBe(false);
+
+    // enableBehavior=all, match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'all',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'Yes' },
+          q2: { valueString: 'Yes' },
+        }
+      )
+    ).toBe(true);
+
+    // enableBehavior=all, no match
+    expect(
+      isQuestionEnabled(
+        {
+          enableBehavior: 'all',
+          enableWhen: [
+            {
+              question: 'q1',
+              answerString: 'Yes',
+            },
+            {
+              question: 'q2',
+              answerString: 'Yes',
+            },
+          ],
+        },
+        {
+          q1: { valueString: 'Yes' },
+          q2: { valueString: 'No' },
+        }
+      )
+    ).toBe(false);
   });
 });

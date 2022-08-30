@@ -119,6 +119,48 @@ export const MultipleChoice = (): JSX.Element => (
   </Document>
 );
 
+export const EnableWhen = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'enable-when',
+        title: 'Enable When Example',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Question 1',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: 'display',
+            text: 'Displayed!',
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const KitchenSink = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
