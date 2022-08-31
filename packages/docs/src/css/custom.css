@@ -9,49 +9,86 @@
   --ifm-font-size-base: 16px;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'Poppins', sans-serif;
-  --ifm-color-primary: #946AF9;
-  --ifm-color-primary-dark: #8762DD;
-  --ifm-color-primary-darker: #7857C5;
+  --ifm-color-primary: #946af9;
+  --ifm-color-primary-dark: #8762dd;
+  --ifm-color-primary-darker: #7857c5;
   --ifm-color-primary-darkest: #684bab;
-  --ifm-color-primary-light: #AB8AF8;
-  --ifm-color-primary-lighter: #CAB6FA;
-  --ifm-color-primary-lightest: #F4F0FE;
+  --ifm-color-primary-light: #ab8af8;
+  --ifm-color-primary-lighter: #cab6fa;
+  --ifm-color-primary-lightest: #f4f0fe;
   --ifm-heading-color: #000000;
-  --code-block-shadow:  rgba(0, 0, 0, 0.15) 0 5px 15px;
-  --img-block-shadow:  rgba(0, 0, 0, 0.15) 0 5px 15px;
+  --code-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
+  --img-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
 }
 
-[data-theme='dark']  {
-  --ifm-color-primary: #966DF6;
-  --ifm-color-primary-dark: #6646AF;
-  --ifm-color-primary-darker: #402C6E;
-  --ifm-color-primary-darkest: #19122C;
+[data-theme='dark'] {
+  --ifm-color-primary: #966df6;
+  --ifm-color-primary-dark: #6646af;
+  --ifm-color-primary-darker: #402c6e;
+  --ifm-color-primary-darkest: #19122c;
   --ifm-color-primary-light: #ba9ff9;
   --ifm-color-primary-lighter: #ba9ff9;
   --ifm-color-primary-lightest: #ded1fc;
-  --ifm-heading-color: #FFFFFF;
-  --code-block-shadow:  rgba(0, 0, 0, 0.35) 0 5px 15px;
-  --img-block-shadow:  rgba(0, 0, 0, 0.95) 0 5px 15px;
+  --ifm-heading-color: #ffffff;
+  --code-block-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
+  --img-block-shadow: rgba(0, 0, 0, 0.95) 0 5px 15px;
 }
 
-/* @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap'); */
+@font-face {
+  font-family: 'Poppins';
+  font-style: italic;
+  font-weight: 400;
+  src: url(/fonts/Poppins-Italic-400.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 200;
+  src: url(/fonts/Poppins-200.woff2) format('woff2');
+}
 
 @font-face {
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 300;
-  font-display: swap;
-  src: url(/fonts/Poppins-Regular.ttf);
+  src: url(/fonts/Poppins-300.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  src: url(/fonts/Poppins-400.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  src: url(/fonts/Poppins-500.woff2) format('woff2');
 }
 
 @font-face {
   font-family: 'Poppins';
   font-style: normal;
   font-weight: 600;
-  font-display: swap;
-  src: url(/fonts/Poppins-SemiBold.ttf);
+  src: url(/fonts/Poppins-600.woff2) format('woff2');
 }
 
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  src: url(/fonts/Poppins-700.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 800;
+  src: url(/fonts/Poppins-800.woff2) format('woff2');
+}
 
 .docusaurus-highlight-code-line {
   background-color: rgba(0, 0, 0, 0.1);
@@ -75,7 +112,6 @@ h1 {
   font-size: 44px;
   line-height: 130%;
 }
-
 
 .markdown {
   margin-left: 2rem;
