@@ -19,7 +19,7 @@ In this guide, we will show you how to:
 
 To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Medplum Bots ship with the npm [`form-data`](https://www.npmjs.com/package/form-data) package to make it easier to create form data.
 
-Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF tutorial](./creating-a-pdf.md) for more details)
+Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF tutorial](./creating-a-pdf) for more details)
 
 ```ts
 const binary = await medplum.createPdf({
@@ -28,7 +28,7 @@ const binary = await medplum.createPdf({
 console.log('Binary result', JSON.stringify(binary, null, 2));
 ```
 
-[`medplum.createPdf()`](/docs/sdk/classes/MedplumClient.md#createpdf) creates a [`Binary`](/docs/api/fhir/resources/binary.mdx) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
+[`medplum.createPdf()`](../../sdk/classes/MedplumClient#createpdf) creates a [`Binary`](../../api/fhir/resources/binary) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
 
 ```ts
 // Download the PDF
