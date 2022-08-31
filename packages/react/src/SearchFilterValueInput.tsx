@@ -1,4 +1,4 @@
-import { getSearchParameterDetails, IndexedStructureDefinition, SearchParameterType } from '@medplum/core';
+import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { Checkbox } from './Checkbox';
@@ -8,7 +8,6 @@ import { QuantityInput } from './QuantityInput';
 import { ReferenceInput } from './ReferenceInput';
 
 export interface SearchFilterValueInputProps {
-  schema: IndexedStructureDefinition;
   resourceType: string;
   searchParam: SearchParameter;
   defaultValue?: string;
@@ -17,7 +16,7 @@ export interface SearchFilterValueInputProps {
 }
 
 export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.Element | null {
-  const details = getSearchParameterDetails(props.schema, props.resourceType, props.searchParam);
+  const details = getSearchParameterDetails(props.resourceType, props.searchParam);
   const name = 'filter-value';
 
   switch (details.type) {

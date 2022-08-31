@@ -63,7 +63,7 @@ import {
   Operator,
   SelectQuery,
 } from './sql';
-import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
+import { getSearchParameter, getSearchParameters } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -801,7 +801,7 @@ export class Repository {
       return;
     }
 
-    const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
+    const details = getSearchParameterDetails(resourceType, param);
     if (filter.operator === FhirOperator.MISSING) {
       predicate.where(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
     } else if (param.type === 'string') {
@@ -941,7 +941,7 @@ export class Repository {
       return;
     }
 
-    const details = getSearchParameterDetails(getStructureDefinitions(), resourceType, param);
+    const details = getSearchParameterDetails(resourceType, param);
     builder.orderBy(details.columnName, !!sortRule.descending);
   }
 
@@ -1035,7 +1035,7 @@ export class Repository {
       return;
     }
 
-    const details = getSearchParameterDetails(getStructureDefinitions(), resource.resourceType, searchParam);
+    const details = getSearchParameterDetails(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
 
     if (values.length > 0) {

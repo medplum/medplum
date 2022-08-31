@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Operator, SearchRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -6,7 +6,6 @@ import { MedplumProvider } from './MedplumProvider';
 import { SearchFilterEditor } from './SearchFilterEditor';
 
 const medplum = new MockClient();
-let schema: IndexedStructureDefinition;
 
 async function setup(child: React.ReactNode): Promise<void> {
   await act(async () => {
@@ -16,7 +15,7 @@ async function setup(child: React.ReactNode): Promise<void> {
 
 describe('SearchFilterEditor', () => {
   beforeAll(async () => {
-    schema = await medplum.requestSchema('Patient');
+    await medplum.requestSchema('Patient');
   });
 
   beforeEach(() => {
@@ -32,13 +31,7 @@ describe('SearchFilterEditor', () => {
 
   test('Not visible', async () => {
     await setup(
-      <SearchFilterEditor
-        schema={schema}
-        search={{ resourceType: 'Patient' }}
-        visible={false}
-        onOk={jest.fn()}
-        onCancel={jest.fn()}
-      />
+      <SearchFilterEditor search={{ resourceType: 'Patient' }} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />
     );
 
     expect(screen.queryByTestId('filter-field')).toBeNull();
@@ -55,7 +48,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -112,7 +104,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -182,7 +173,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -215,7 +205,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -257,7 +246,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -303,7 +291,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -335,7 +322,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -370,7 +356,6 @@ describe('SearchFilterEditor', () => {
 
     await setup(
       <SearchFilterEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}

@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { IndexedStructureDefinition, PropertyType } from './types';
+import { globalSchema, PropertyType } from './types';
 import { capitalize } from './utils';
 
 export enum SearchParameterType {
@@ -30,21 +30,34 @@ export interface SearchParameterDetails {
  *   2) The "token" type includes enums and booleans.
  *   3) Arrays/multiple values are not reflected at all.
  *
- * @param structureDefinitions Collection of StructureDefinition resources indexed by name.
  * @param resourceType The root resource type.
  * @param searchParam The search parameter.
  * @returns The search parameter type details.
  */
-export function getSearchParameterDetails(
-  structureDefinitions: IndexedStructureDefinition,
-  resourceType: string,
-  searchParam: SearchParameter
-): SearchParameterDetails {
+export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
+  let result: SearchParameterDetails | undefined =
+    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
+  if (!result) {
+    result = buildSearchParamterDetails(resourceType, searchParam);
+  }
+  return result;
+}
+
+function setSearchParamterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
+  const typeSchema = globalSchema.types[resourceType];
+  if (!typeSchema.searchParamsDetails) {
+    typeSchema.searchParamsDetails = {};
+  }
+  typeSchema.searchParamsDetails[code] = details;
+}
+
+function buildSearchParamterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   if (searchParam.code === '_lastUpdated') {
     return { columnName: 'lastUpdated', type: SearchParameterType.DATETIME };
   }
 
-  const columnName = convertCodeToColumnName(searchParam.code as string);
+  const code = searchParam.code as string;
+  const columnName = convertCodeToColumnName(code);
   const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
   if (!expression) {
     // This happens on compound types
@@ -61,8 +74,8 @@ export function getSearchParameterDetails(
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
     elementDefinition =
-      structureDefinitions.types[baseType]?.properties?.[propertyName] ??
-      structureDefinitions.types[baseType]?.properties?.[propertyName + '[x]'];
+      globalSchema.types[baseType]?.properties?.[propertyName] ??
+      globalSchema.types[baseType]?.properties?.[propertyName + '[x]'];
     if (!elementDefinition) {
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
@@ -88,7 +101,9 @@ export function getSearchParameterDetails(
   }
 
   const type = getSearchParameterType(searchParam, propertyType as PropertyType);
-  return { columnName, type, elementDefinition, array };
+  const result = { columnName, type, elementDefinition, array };
+  setSearchParamterDetails(resourceType, code, result);
+  return result;
 }
 
 /**

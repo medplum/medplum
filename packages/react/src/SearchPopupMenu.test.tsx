@@ -1,6 +1,6 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import { MockClient, PatientSearchParameters } from '@medplum/mock';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -8,91 +8,15 @@ import { MedplumProvider } from './MedplumProvider';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
-const schema: IndexedStructureDefinition = {
-  types: {
-    Patient: {
-      display: 'Patient',
-      properties: {
-        name: {
-          id: 'Patient.name',
-          path: 'Patient.name',
-          type: [
-            {
-              code: 'HumanName',
-            },
-          ],
-        },
-        birthDate: {
-          id: 'Patient.birthDate',
-          path: 'Patient.birthDate',
-          type: [
-            {
-              code: 'date',
-            },
-          ],
-        },
-        managingOrganization: {
-          id: 'Patient.managingOrganization',
-          path: 'Patient.managingOrganization',
-          type: [
-            {
-              code: 'reference',
-            },
-          ],
-        },
-      },
-      searchParams: Object.fromEntries(PatientSearchParameters.map((p) => [p.code, p])),
-    },
-    Observation: {
-      display: 'Observation',
-      properties: {
-        subject: {
-          id: 'Observation.subject',
-          path: 'Observation.subject',
-          type: [{ code: 'reference' }],
-        },
-        'value[x]': {
-          id: 'Observation.value[x]',
-          path: 'Observation.value[x]',
-          type: [{ code: 'integer' }, { code: 'quantity' }, { code: 'string' }],
-        },
-      },
-      searchParams: {
-        patient: {
-          resourceType: 'SearchParameter',
-          code: 'patient',
-          type: 'reference',
-          expression: 'Observation.patient',
-        },
-        subject: {
-          resourceType: 'SearchParameter',
-          code: 'patient',
-          type: 'reference',
-          expression: 'Observation.patient',
-        },
-        'value-quantity': {
-          resourceType: 'SearchParameter',
-          code: 'value-quantity',
-          type: 'quantity',
-          expression: 'Observation.value',
-        },
-        'value-string': {
-          resourceType: 'SearchParameter',
-          code: 'value-string',
-          type: 'string',
-          expression: 'Observation.value',
-        },
-      },
-    },
-  },
-};
-
 const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
+  beforeAll(async () => {
+    await new MockClient().requestSchema('Patient');
+  });
+
   function setup(partialProps: Partial<SearchPopupMenuProps>): void {
     const props = {
-      schema,
       visible: true,
       x: 0,
       y: 0,
@@ -130,7 +54,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -154,7 +78,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Date submenu prompt', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -195,7 +119,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -227,7 +151,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -262,7 +186,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -274,7 +198,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity sort', async () => {
-    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
@@ -306,7 +230,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity submenu prompt', async () => {
-    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -342,7 +266,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity missing', async () => {
-    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Observation',
@@ -372,7 +296,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity clear filters', async () => {
-    const searchParam = schema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Observation',
@@ -412,7 +336,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -424,7 +348,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Reference submenu prompt', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -456,7 +380,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Reference missing', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
@@ -492,7 +416,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -529,7 +453,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [schema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -541,7 +465,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text submenu prompt', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -575,7 +499,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text missing', async () => {
-    const searchParam = schema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
@@ -610,7 +534,7 @@ describe('SearchPopupMenu', () => {
       fields: ['meta.versionId'],
     };
 
-    const fields = getFieldDefinitions(schema, search);
+    const fields = getFieldDefinitions(search);
 
     setup({
       search,
@@ -626,7 +550,7 @@ describe('SearchPopupMenu', () => {
       fields: ['_lastUpdated'],
     };
 
-    const fields = getFieldDefinitions(schema, search);
+    const fields = getFieldDefinitions(search);
 
     setup({
       search: {
@@ -645,7 +569,7 @@ describe('SearchPopupMenu', () => {
       fields: ['value[x]'],
     };
 
-    const fields = getFieldDefinitions(schema, search);
+    const fields = getFieldDefinitions(search);
 
     setup({
       search: {
@@ -659,12 +583,21 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Only one search parameter on exact match', () => {
+    globalSchema.types['Observation'].searchParams = {
+      subject: {
+        resourceType: 'SearchParameter',
+        code: 'patient',
+        type: 'reference',
+        expression: 'Observation.patient',
+      },
+    };
+
     const search = {
       resourceType: 'Observation',
       fields: ['subject'],
     };
 
-    const fields = getFieldDefinitions(schema, search);
+    const fields = getFieldDefinitions(search);
 
     setup({
       search: {

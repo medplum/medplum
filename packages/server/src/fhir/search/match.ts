@@ -7,7 +7,7 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { getSearchParameter, getStructureDefinitions } from '../structure';
+import { getSearchParameter } from '../structure';
 
 /**
  * Determines if the resource matches the search request.
@@ -83,7 +83,7 @@ function matchesStringFilter(resource: Resource, filter: Filter, searchParam: Se
 }
 
 function matchesTokenFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const details = getSearchParameterDetails(getStructureDefinitions(), resource.resourceType, searchParam);
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
   if (details.type === SearchParameterType.BOOLEAN) {
     return matchesBooleanFilter(resource, filter, searchParam);
   } else {

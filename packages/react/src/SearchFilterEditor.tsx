@@ -1,4 +1,4 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchRequest, stringify } from '@medplum/core';
+import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
@@ -17,7 +17,6 @@ import { Select } from './Select';
 import './SearchFilterEditor.css';
 
 export interface SearchFilterEditorProps {
-  schema: IndexedStructureDefinition;
   visible: boolean;
   search: SearchRequest;
   onOk: (search: SearchRequest) => void;
@@ -43,9 +42,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
     return null;
   }
 
-  const schema = props.schema;
   const resourceType = props.search.resourceType;
-  const searchParams = schema.types[resourceType].searchParams as Record<string, SearchParameter>;
+  const searchParams = globalSchema.types[resourceType].searchParams as Record<string, SearchParameter>;
   const filters = search.filters || [];
 
   return (
@@ -77,7 +75,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                 return (
                   <FilterRowInput
                     key={`filter-${index}-${filters.length}-input`}
-                    schema={schema}
                     resourceType={resourceType}
                     searchParams={searchParams}
                     defaultValue={filter}
@@ -104,13 +101,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
                 );
               }
             })}
-            <FilterRowInput
-              schema={schema}
-              resourceType={resourceType}
-              searchParams={searchParams}
-              okText="Add"
-              onOk={onAddFilter}
-            />
+            <FilterRowInput resourceType={resourceType} searchParams={searchParams} okText="Add" onOk={onAddFilter} />
           </tbody>
         </table>
       </div>
@@ -148,7 +139,6 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
 }
 
 interface FilterRowInputProps {
-  schema: IndexedStructureDefinition;
   resourceType: string;
   searchParams: Record<string, SearchParameter>;
   defaultValue?: Filter;
@@ -208,7 +198,6 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {searchParam && value.operator && (
           <SearchFilterValueInput
-            schema={props.schema}
             resourceType={props.resourceType}
             searchParam={searchParam}
             defaultValue={value.value}

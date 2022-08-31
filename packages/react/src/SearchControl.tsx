@@ -2,7 +2,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
-  IndexedStructureDefinition,
+  globalSchema,
   parseSearchDefinition,
   SearchRequest,
 } from '@medplum/core';
@@ -18,7 +18,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import './SearchControl.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
 import { SearchFilterEditor } from './SearchFilterEditor';
@@ -29,6 +28,7 @@ import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } f
 import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { isCheckboxCell, killEvent } from './utils/dom';
+import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -97,7 +97,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -226,21 +226,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   useEffect(() => {
     medplum
       .requestSchema(props.search.resourceType as ResourceType)
-      .then((newSchema) => {
-        // The schema could have the same object identity,
-        // so need to use the spread operator to kick React re-render.
-        setSchema({ ...newSchema });
-      })
+      .then(() => setSchemaLoaded(true))
       .catch(console.log);
   }, [medplum, props.search.resourceType]);
 
-  const typeSchema = schema?.types?.[props.search.resourceType];
+  const typeSchema = schemaLoaded && globalSchema?.types?.[props.search.resourceType];
   if (!typeSchema) {
     return <Loading />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = getFieldDefinitions(schema, search);
+  const fields = getFieldDefinitions(search);
   const resourceType = search.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
@@ -410,7 +406,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </div>
       )}
       <SearchPopupMenu
-        schema={schema}
         search={props.search}
         visible={state.popupVisible}
         x={state.popupX}
@@ -442,7 +437,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFieldEditor
-        schema={schema}
         search={props.search}
         visible={stateRef.current.fieldEditorVisible}
         onOk={(result) => {
@@ -460,7 +454,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterEditor
-        schema={schema}
         search={props.search}
         visible={stateRef.current.filterEditorVisible}
         onOk={(result) => {
@@ -480,7 +473,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchFilterValueDialog
         visible={stateRef.current.filterDialogVisible}
         title={'Input'}
-        schema={schema}
         resourceType={resourceType}
         searchParam={state.filterDialogSearchParam}
         filter={state.filterDialogFilter}

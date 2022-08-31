@@ -1,4 +1,4 @@
-import { Filter, IndexedStructureDefinition, Operator, SearchRequest } from '@medplum/core';
+import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
 import { MenuItem } from './MenuItem';
@@ -20,7 +20,6 @@ import {
 import { SubMenu } from './SubMenu';
 
 export interface SearchPopupMenuProps {
-  schema: IndexedStructureDefinition;
   search: SearchRequest;
   visible: boolean;
   x: number;
