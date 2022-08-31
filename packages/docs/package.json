@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "0.9.33",
+  "version": "0.9.34",
   "description": "Medplum Docs",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -27,8 +27,8 @@
     "@docusaurus/core": "2.0.1",
     "@docusaurus/module-type-aliases": "2.0.1",
     "@docusaurus/preset-classic": "2.0.1",
-    "@medplum/core": "0.9.33",
-    "@medplum/fhirtypes": "0.9.33",
+    "@medplum/core": "0.9.34",
+    "@medplum/fhirtypes": "0.9.34",
     "@svgr/webpack": "6.3.1",
     "@tsconfig/docusaurus": "1.0.6",
     "clsx": "1.2.1",
