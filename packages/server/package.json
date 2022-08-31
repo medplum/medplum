@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "0.9.33",
+  "version": "0.9.34",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -25,8 +25,8 @@
     "@aws-sdk/client-ssm": "3.159.0",
     "@aws-sdk/client-secrets-manager": "3.159.0",
     "@aws-sdk/lib-storage": "3.159.0",
-    "@medplum/core": "0.9.33",
-    "@medplum/definitions": "0.9.33",
+    "@medplum/core": "0.9.34",
+    "@medplum/definitions": "0.9.34",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.0",
     "bullmq": "1.89.2",
@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.0.1",
-    "@medplum/fhirtypes": "0.9.33",
+    "@medplum/fhirtypes": "0.9.34",
     "@types/bcryptjs": "2.4.2",
     "@types/body-parser": "1.19.2",
     "@types/cors": "2.8.12",
