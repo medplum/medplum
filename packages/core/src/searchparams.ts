@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { globalSchema, PropertyType, TypeSchema } from './types';
+import { globalSchema, PropertyType } from './types';
 import { capitalize } from './utils';
 
 export enum SearchParameterType {
