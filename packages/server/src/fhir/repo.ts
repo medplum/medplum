@@ -523,14 +523,16 @@ export class Repository {
       content,
     };
 
-    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
+    await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
 
-    await new InsertQuery(resourceType + '_History', {
-      id,
-      versionId: randomUUID(),
-      lastUpdated,
-      content,
-    }).execute(client);
+    await new InsertQuery(resourceType + '_History', [
+      {
+        id,
+        versionId: randomUUID(),
+        lastUpdated,
+        content,
+      },
+    ]).execute(client);
 
     await this.#deleteFromLookupTables(resource);
   }
@@ -970,7 +972,7 @@ export class Repository {
       }
     }
 
-    await new InsertQuery(resourceType, columns).mergeOnConflict(true).execute(client);
+    await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
   }
 
   /**
@@ -983,12 +985,14 @@ export class Repository {
     const meta = resource.meta as Meta;
     const content = stringify(resource);
 
-    await new InsertQuery(resourceType + '_History', {
-      id: resource.id,
-      versionId: meta.versionId,
-      lastUpdated: meta.lastUpdated,
-      content,
-    }).execute(client);
+    await new InsertQuery(resourceType + '_History', [
+      {
+        id: resource.id,
+        versionId: meta.versionId,
+        lastUpdated: meta.lastUpdated,
+        content,
+      },
+    ]).execute(client);
   }
 
   /**

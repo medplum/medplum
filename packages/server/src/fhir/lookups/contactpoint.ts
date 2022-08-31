@@ -1,8 +1,7 @@
 import { Filter, stringify } from '@medplum/core';
 import { ContactPoint, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import { Column, Condition, Conjunction, InsertQuery, Operator, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -69,23 +68,25 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
     const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(contactPoints, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < contactPoints.length; i++) {
         const contactPoint = contactPoints[i];
-        await new InsertQuery('ContactPoint', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
           content: stringify(contactPoint),
           system: contactPoint.system?.trim(),
           value: contactPoint.value?.trim(),
-        }).execute(client);
+        });
       }
+
+      await this.insertValuesForResource(values);
     }
   }
 

@@ -1,18 +1,7 @@
 import { Filter, Operator as FhirOperator, stringify } from '@medplum/core';
 import { Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import {
-  Column,
-  Condition,
-  Conjunction,
-  Disjunction,
-  Expression,
-  InsertQuery,
-  Negation,
-  Operator,
-  SelectQuery,
-} from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, Negation, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -60,23 +49,25 @@ export class IdentifierTable extends LookupTable<Identifier> {
     const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(identifiers, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < identifiers.length; i++) {
         const identifier = identifiers[i];
-        await new InsertQuery(IDENTIFIER_TABLE_NAME, {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
           content: stringify(identifier),
           system: identifier.system?.trim(),
           value: identifier.value?.trim(),
-        }).execute(client);
+        });
       }
+
+      await this.insertValuesForResource(values);
     }
   }
 

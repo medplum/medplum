@@ -1,8 +1,6 @@
 import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@medplum/core';
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import { InsertQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -70,15 +68,15 @@ export class HumanNameTable extends LookupTable<HumanName> {
     const existing = await this.getExistingValues(resourceId);
 
     if (!compareArrays(names, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        await new InsertQuery('HumanName', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
@@ -86,8 +84,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name),
-        }).execute(client);
+        });
       }
+
+      await this.insertValuesForResource(values);
     }
   }
 }

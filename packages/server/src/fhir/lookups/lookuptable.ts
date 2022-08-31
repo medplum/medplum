@@ -1,7 +1,7 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { getClient } from '../../database';
-import { Column, Condition, Conjunction, DeleteQuery, Disjunction, Operator, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -97,6 +97,19 @@ export abstract class LookupTable<T> {
       .orderBy('index')
       .execute(getClient())
       .then((result) => result.map((row) => JSON.parse(row.content) as T));
+  }
+
+  /**
+   * Inserts values into the lookup table for a resource.
+   * @param values The values to insert.
+   */
+  async insertValuesForResource(values: Record<string, any>[]): Promise<void> {
+    if (values.length === 0) {
+      return;
+    }
+    const tableName = this.getTableName();
+    const client = getClient();
+    await new InsertQuery(tableName, values).execute(client);
   }
 
   /**
