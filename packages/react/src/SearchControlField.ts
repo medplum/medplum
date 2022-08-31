@@ -1,4 +1,4 @@
-import { getSearchParameterDetails, IndexedStructureDefinition, SearchRequest } from '@medplum/core';
+import { getSearchParameterDetails, globalSchema, SearchRequest } from '@medplum/core';
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
 
 /**
@@ -36,16 +36,15 @@ export interface SearchControlField {
 
 /**
  * Returns the collection of field definitions for the search request.
- * @param typeSchema The schema for the resource type
  * @param search The search request definition.
  * @returns An array of field definitions.
  */
-export function getFieldDefinitions(schema: IndexedStructureDefinition, search: SearchRequest): SearchControlField[] {
+export function getFieldDefinitions(search: SearchRequest): SearchControlField[] {
   const resourceType = search.resourceType;
   const fields = [] as SearchControlField[];
 
   for (const name of search.fields || ['id', '_lastUpdated']) {
-    fields.push(getFieldDefinition(schema, resourceType, name));
+    fields.push(getFieldDefinition(resourceType, name));
   }
   return fields;
 }
@@ -53,16 +52,11 @@ export function getFieldDefinitions(schema: IndexedStructureDefinition, search: 
 /**
  * Return the field definition for a given field name.
  * Field names can be either property names or search parameter codes.
- * @param typeSchema The schema for the resource type
  * @param resourceType The resource type.
  * @param name The search field name (either property name or search parameter code).
  * @returns The field definition.
  */
-function getFieldDefinition(
-  schema: IndexedStructureDefinition,
-  resourceType: string,
-  name: string
-): SearchControlField {
+function getFieldDefinition(resourceType: string, name: string): SearchControlField {
   if (name === '_lastUpdated') {
     return {
       name: '_lastUpdated',
@@ -95,7 +89,7 @@ function getFieldDefinition(
     };
   }
 
-  const typeSchema = schema.types[resourceType];
+  const typeSchema = globalSchema.types[resourceType];
   const exactElementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
   const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name.toLowerCase()];
 
@@ -129,7 +123,7 @@ function getFieldDefinition(
   // Patient.email is a search parameter for the Patient.telecom element.
   // So we need to walk backwards to find the element definition.
   if (exactSearchParam) {
-    const details = getSearchParameterDetails(schema, resourceType, exactSearchParam);
+    const details = getSearchParameterDetails(resourceType, exactSearchParam);
     return { name, elementDefinition: details.elementDefinition, searchParams: [exactSearchParam] };
   }
 

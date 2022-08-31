@@ -1,60 +1,21 @@
-import { IndexedStructureDefinition, SearchRequest } from '@medplum/core';
+import { SearchRequest } from '@medplum/core';
+import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { SearchFieldEditor } from './SearchFieldEditor';
 
-const schema: IndexedStructureDefinition = {
-  types: {
-    Patient: {
-      display: 'Patient',
-      properties: {
-        name: {
-          id: 'Patient.name',
-          path: 'Patient.name',
-          type: [
-            {
-              code: 'HumanName',
-            },
-          ],
-        },
-        birthDate: {
-          id: 'Patient.birthDate',
-          path: 'Patient.birthDate',
-          type: [
-            {
-              code: 'date',
-            },
-          ],
-        },
-      },
-    },
-    Observation: {
-      display: 'Observation',
-      properties: {
-        valueInteger: {
-          id: 'Observation.value[x]',
-          path: 'Observation.value[x]',
-          type: [
-            {
-              code: 'integer',
-            },
-          ],
-        },
-      },
-    },
-  },
-};
-
 describe('SearchFieldEditor', () => {
+  beforeAll(async () => {
+    await new MockClient().requestSchema('Patient');
+  });
+
   test('Render not visible', () => {
     const currSearch: SearchRequest = {
       resourceType: 'Patient',
       fields: ['name'],
     };
 
-    render(
-      <SearchFieldEditor schema={schema} search={currSearch} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />
-    );
+    render(<SearchFieldEditor search={currSearch} visible={false} onOk={jest.fn()} onCancel={jest.fn()} />);
 
     expect(screen.queryByText('OK')).toBeNull();
   });
@@ -67,7 +28,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -98,7 +58,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -132,7 +91,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -163,7 +121,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -194,7 +151,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -225,7 +181,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -259,7 +214,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}
@@ -290,7 +244,6 @@ describe('SearchFieldEditor', () => {
 
     render(
       <SearchFieldEditor
-        schema={schema}
         search={currSearch}
         visible={true}
         onOk={(e) => (currSearch = e)}

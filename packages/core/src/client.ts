@@ -1042,11 +1042,11 @@ export class MedplumClient extends EventTarget {
     const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
     for (const structureDefinition of response.data.StructureDefinitionList) {
-      indexStructureDefinition(globalSchema, structureDefinition);
+      indexStructureDefinition(structureDefinition);
     }
 
     for (const searchParameter of response.data.SearchParameterList) {
-      indexSearchParameter(globalSchema, searchParameter);
+      indexSearchParameter(searchParameter);
     }
 
     return globalSchema;

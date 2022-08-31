@@ -7,6 +7,7 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import baseSchema from './base-schema.json';
+import { SearchParameterDetails } from './searchparams';
 import { capitalize } from './utils';
 
 /**
@@ -119,6 +120,7 @@ export interface TypeSchema {
   display: string;
   properties: { [name: string]: ElementDefinition };
   searchParams?: { [code: string]: SearchParameter };
+  searchParamsDetails?: { [code: string]: SearchParameterDetails };
   description?: string;
   parentType?: string;
 }
@@ -154,7 +156,7 @@ export function indexStructureDefinitionBundle(bundle: Bundle): void {
   for (const entry of bundle.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
     if (resource.resourceType === 'StructureDefinition') {
-      indexStructureDefinition(globalSchema, resource);
+      indexStructureDefinition(resource);
     }
   }
 }
@@ -162,13 +164,9 @@ export function indexStructureDefinitionBundle(bundle: Bundle): void {
 /**
  * Indexes a StructureDefinition for fast lookup.
  * See comments on IndexedStructureDefinition for more details.
- * @param schema The output IndexedStructureDefinition.
  * @param structureDefinition The original StructureDefinition.
  */
-export function indexStructureDefinition(
-  schema: IndexedStructureDefinition,
-  structureDefinition: StructureDefinition
-): void {
+export function indexStructureDefinition(structureDefinition: StructureDefinition): void {
   const typeName = structureDefinition.name;
   if (!typeName) {
     return;
@@ -177,10 +175,10 @@ export function indexStructureDefinition(
   const elements = structureDefinition.snapshot?.element;
   if (elements) {
     // First pass, build types
-    elements.forEach((element) => indexType(schema, structureDefinition, element));
+    elements.forEach((element) => indexType(structureDefinition, element));
 
     // Second pass, build properties
-    elements.forEach((element) => indexProperty(schema, element));
+    elements.forEach((element) => indexProperty(element));
   }
 }
 
@@ -191,11 +189,7 @@ export function indexStructureDefinition(
  * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
-function indexType(
-  schema: IndexedStructureDefinition,
-  structureDefinition: StructureDefinition,
-  elementDefinition: ElementDefinition
-): void {
+function indexType(structureDefinition: StructureDefinition, elementDefinition: ElementDefinition): void {
   const path = elementDefinition.path as string;
   const typeCode = elementDefinition.type?.[0]?.code;
   if (typeCode !== undefined && typeCode !== 'Element' && typeCode !== 'BackboneElement') {
@@ -203,8 +197,8 @@ function indexType(
   }
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
-  schema.types[typeName] = createTypeSchema(typeName, structureDefinition, elementDefinition);
-  schema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
+  globalSchema.types[typeName] = createTypeSchema(typeName, structureDefinition, elementDefinition);
+  globalSchema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
 }
 
 /**
@@ -212,14 +206,14 @@ function indexType(
  * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
-function indexProperty(schema: IndexedStructureDefinition, element: ElementDefinition): void {
+function indexProperty(element: ElementDefinition): void {
   const path = element.path as string;
   const parts = path.split('.');
   if (parts.length === 1) {
     return;
   }
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
-  const typeSchema = schema.types[typeName];
+  const typeSchema = globalSchema.types[typeName];
   if (!typeSchema) {
     return;
   }
@@ -233,13 +227,13 @@ function indexProperty(schema: IndexedStructureDefinition, element: ElementDefin
  * @param schema The output IndexedStructureDefinition.
  * @param searchParam The SearchParameter resource.
  */
-export function indexSearchParameter(schema: IndexedStructureDefinition, searchParam: SearchParameter): void {
+export function indexSearchParameter(searchParam: SearchParameter): void {
   if (!searchParam.base) {
     return;
   }
 
   for (const resourceType of searchParam.base) {
-    const typeSchema = schema.types[resourceType];
+    const typeSchema = globalSchema.types[resourceType];
     if (!typeSchema) {
       continue;
     }

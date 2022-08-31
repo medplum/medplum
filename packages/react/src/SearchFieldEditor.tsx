@@ -1,11 +1,10 @@
-import { IndexedStructureDefinition, SearchRequest, stringify, TypeSchema } from '@medplum/core';
+import { globalSchema, SearchRequest, stringify, TypeSchema } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from './Button';
 import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
 
 interface SearchFieldEditorProps {
-  schema: IndexedStructureDefinition;
   visible: boolean;
   search: SearchRequest;
   onOk: (search: SearchRequest) => void;
@@ -160,7 +159,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   }
 
   const resourceType = props.search.resourceType;
-  const typeDef = props.schema.types[resourceType];
+  const typeDef = globalSchema.types[resourceType];
 
   const selected = state.search.fields ?? [];
   const available = getFieldsList(typeDef)

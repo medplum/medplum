@@ -31,6 +31,6 @@ export function getSearchParameter(resourceType: string, code: string): SearchPa
 function buildSearchParameters(): void {
   const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
   for (const entry of searchParams.entry as BundleEntry<SearchParameter>[]) {
-    indexSearchParameter(globalSchema, entry.resource as SearchParameter);
+    indexSearchParameter(entry.resource as SearchParameter);
   }
 }
