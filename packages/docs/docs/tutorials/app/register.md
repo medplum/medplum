@@ -18,6 +18,6 @@ Congrats, you now have a Medplum account!
 
 Let's explore your account.
 
-First, you can find your [Practitioner](/api/fhir/resources/practitioner) resource by clicking on the top-right icon, and choosing "Manage your account".  This takes you to the Practitioner resource page, where you can fill in more details such as contact info, qualifications, communication preferences, and profile picture.
+First, you can find your [Practitioner](../../api/fhir/resources/practitioner) resource by clicking on the top-right icon, and choosing "Manage your account".  This takes you to the Practitioner resource page, where you can fill in more details such as contact info, qualifications, communication preferences, and profile picture.
 
 Second, you can find your project details by clicking on the top-left icon, and choosing "Project". This takes you to the project administration page, where you can manage users and invite new users to your project.

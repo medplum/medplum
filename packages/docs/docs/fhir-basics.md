@@ -17,15 +17,15 @@ While FHIR is quite powerful, it can have a bit of a learning curve. The page wi
 
 ## Resources
 
-A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](/api/fhir/resources), similar to **classes**, that have been built for healthcare applications.
+A core data object in FHIR is called a [**Resource**](https://www.hl7.org/fhir/resource.html). You can think of Resources as **objects** in object oriented languages. The FHIR standard defines a set of [**Resource Types**](./api/fhir/resources), similar to **classes**, that have been built for healthcare applications.
 
-Resources can represent a broad range of healthcare ideas, from very **concrete healthcare items** (e.g. [Patient](/api/fhir/resources/patient), [Medication](/api/fhir/resources/medication), [Device](/api/fhir/resources/device)) or more **abstract concepts** (e.g. [Procedure](/api/fhir/resources/procedure), [Care Plan](/api/fhir/resources/careplan), [Encounter](/api/fhir/resources/encounter)).
+Resources can represent a broad range of healthcare ideas, from very **concrete healthcare items** (e.g. [Patient](./api/fhir/resources/patient), [Medication](./api/fhir/resources/medication), [Device](./api/fhir/resources/device)) or more **abstract concepts** (e.g. [Procedure](./api/fhir/resources/procedure), [Care Plan](./api/fhir/resources/careplan), [Encounter](./api/fhir/resources/encounter)).
 
 A `Resource` is composed of multiple fields, called `Elements`, each of which can be a **primitive type** (e.g. strings, numbers, dates) or a **complex type** (e.g. JSON objects).
 
 ### Example
 
-The example below shows an example **[Patient](/api/fhir/resources/patient) resource**, represented as JSON. Here we can see that the `Patient` contains multiple `Elements`, including: `name`, `telecom`, and `address`.
+The example below shows an example **[Patient](./api/fhir/resources/patient) resource**, represented as JSON. Here we can see that the `Patient` contains multiple `Elements`, including: `name`, `telecom`, and `address`.
 
 ```javascript
 {
@@ -91,7 +91,7 @@ In Medplum, we will typically only use the `reference` and `display` fields.
 
 ### Example
 
-The example below shows a [MedicationRequest](/api/fhir/resources/medicationrequest) resource two references: **`subject` (i.e. the patient)** and **`requester` (i.e. physician)**.
+The example below shows a [MedicationRequest](./api/fhir/resources/medicationrequest) resource two references: **`subject` (i.e. the patient)** and **`requester` (i.e. physician)**.
 
 ```javascript
 {
@@ -176,11 +176,11 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 
 There are many caeses in which a client would like to query resources that fulfill certain criteria. **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification **defines specific search parameters for each resource** that can be used for queries.
 
-You can find the search parameters on the [reference page](/api/fhir/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
+You can find the search parameters on the [reference page](./api/fhir/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
 
 ### Example
 
-For example the [Medication resource](/api/fhir/resources/medication#search-parameters) defines the following search parameters:
+For example the [Medication resource](./api/fhir/resources/medication#search-parameters) defines the following search parameters:
 
 - Identifier
 - Code
@@ -196,12 +196,12 @@ For example the [Medication resource](/api/fhir/resources/medication#search-para
 
 ## Subscriptions: Listening for changes
 
-**FHIR has a built-in [Subscription](/api/fhir/resources/subscription) resource** that is used to define a push-based subscription to resources in the system, analogous to web-hooks. A `Subscription` has two primary elements:
+**FHIR has a built-in [Subscription](./api/fhir/resources/subscription) resource** that is used to define a push-based subscription to resources in the system, analogous to web-hooks. A `Subscription` has two primary elements:
 
 - **criteria**: This is a string expression that defines _which_ resources to listen to, specified in [FHIRPath](https://hl7.org/fhirpath/) format. This subscription is invoked whenever a resource that matches the criteria is created or updated.
 - **channel**: this describes the kind of action that the `Subscription` will take when it sees a matching resource. Currently, the possible values are `rest-hook`, `websocket`, `email`, and `message`.
 
-In Medplum, a powerful feature is to to **use a [Medplum Bot](/tutorials/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](/tutorials/bots/bot-for-questionnaire-response) for more information.
+In Medplum, a powerful feature is to to **use a [Medplum Bot](./tutorials/bots)** as the endpoint of the `rest-hook` channel. This allows you to run an arbitrary piece of code in response to data changes and automate your medical workflows. See our [Bot-Subscription tutorial](./tutorials/bots/bot-for-questionnaire-response) for more information.
 
 <br/>
 

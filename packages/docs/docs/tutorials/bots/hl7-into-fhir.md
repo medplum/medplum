@@ -121,7 +121,7 @@ curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
 
 ### Creating a subscription
 
-If you want to receive a notification whenever a Patient (or other FHIR resource) is created, you can do so by creating a [Subscription](/tutorials/bots/bots-basics#executing-automatically-using-a-subscription).
+If you want to receive a notification whenever a Patient (or other FHIR resource) is created, you can do so by creating a [Subscription](./bots-basics#executing-automatically-using-a-subscription).
 
 Subscriptions have a concept of `Criteria` which indicates when they should be triggered. Link them to the FHIR resource of choice.
 

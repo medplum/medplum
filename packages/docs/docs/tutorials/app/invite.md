@@ -14,7 +14,7 @@ Click on the "Invite" link.
 
 Fill in the user details such as first name, last name, and email address.
 
-For advanced security features, you can configure an [AccessPolicy](/tutorials/security/access-control). An AccessPolicy allows you to specify which resource types users can read and write.
+For advanced security features, you can configure an [AccessPolicy](../security/access-control). An AccessPolicy allows you to specify which resource types users can read and write.
 
 Click "Invite" when the user details are ready.
 
