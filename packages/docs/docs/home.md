@@ -26,7 +26,7 @@ Medplum is a **developer platform** that enables **flexible and rapid developmen
 
 ## Getting Started
 
-- Get started right away, you can [register here](https://app.medplum.com/register). If needed, Medplum also supports [self-hosting](self_hosting), get the [source code](https://github.com/medplum/medplum) on Github.
+- Get started right away, you can [register here](https://app.medplum.com/register). If needed, Medplum also supports [self-hosting](/tutorials/self-hosting), get the [source code](https://github.com/medplum/medplum) on Github.
 - The [Basic Concepts](/fhir-basics) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
 - If you're ready to start coding, use our [Quickstart Guide](/tutorials/api-basics/create-fhir-data) to get up and running
 - Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [support@medplum.com](mailto:support@medplum.com)
