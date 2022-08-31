@@ -97,6 +97,7 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
+  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -223,10 +224,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
-    medplum.requestSchema(props.search.resourceType as ResourceType).catch(console.log);
+    medplum
+      .requestSchema(props.search.resourceType as ResourceType)
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum, props.search.resourceType]);
 
-  const typeSchema = globalSchema?.types?.[props.search.resourceType];
+  const typeSchema = schemaLoaded && globalSchema?.types?.[props.search.resourceType];
   if (!typeSchema) {
     return <Loading />;
   }
