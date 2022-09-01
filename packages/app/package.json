@@ -16,6 +16,7 @@
     "dev": "webpack serve --mode development",
     "build": "npm run clean && tsc && cross-env NODE_ENV=production webpack --mode production",
     "debug": "webpack --mode development",
+    "start": "http-server dist --port 3000 --proxy http://localhost:3000?",
     "test": "jest",
     "source-map-explorer": "source-map-explorer *.js --gzip"
   },
@@ -31,16 +32,20 @@
     "@types/react-dom": "18.0.6",
     "@types/react-router-dom": "5.3.3",
     "babel-loader": "8.2.5",
+    "copy-webpack-plugin": "11.0.0",
     "css-loader": "6.7.1",
     "dotenv-webpack": "8.0.1",
     "html-webpack-plugin": "5.5.0",
+    "http-server": "14.1.1",
     "identity-obj-proxy": "3.0.0",
     "mini-css-extract-plugin": "2.6.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.3.0",
     "react-toastify": "9.0.8",
-    "webpack-subresource-integrity": "5.1.0"
+    "webpack-manifest-plugin": "5.0.0",
+    "webpack-subresource-integrity": "5.1.0",
+    "workbox-webpack-plugin": "6.5.4"
   },
   "browserslist": [
     "last 1 Chrome versions"
