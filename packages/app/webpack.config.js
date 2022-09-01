@@ -34,7 +34,7 @@ export default (env, argv) => ({
     new WebpackManifestPlugin({
       fileName: 'manifest.webmanifest',
       seed: {
-        name: 'Mepdlum',
+        name: 'Medplum',
         short_name: 'Medplum',
         start_url: '/',
         display: 'standalone',
