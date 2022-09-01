@@ -1,0 +1,17 @@
+fieldset.medplum-form-section > label.medplum-inline-label {
+  display: flex;
+  align-items: center;
+}
+
+.medplum-inline-icon {
+  font-size: 10px;
+  margin-left: 4px;
+  text-decoration: none;
+  line-height: 16px;
+  color: transparent;
+  text-shadow: 0 0 0 var(--medplum-gray-500);
+}
+
+.medplum-inline-icon:hover {
+  text-decoration: none;
+}
