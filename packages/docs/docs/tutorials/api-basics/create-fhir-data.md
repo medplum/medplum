@@ -60,7 +60,7 @@ Creating a Patient if one does not exist uses the **conditional create** logic i
  */
 async function createServiceRequest() {
   // Generate the patient URN.
-  // The "urn:uuid:" prefis is special in a FHIR bundle.
+  // The "urn:uuid:" prefix is special in a FHIR bundle.
   // It means "this is a local ID", so any references to the local ID will be
   // updated to the final ID once it has been assigned.
   const patientUrn = 'urn:uuid:' + randomUUID();
