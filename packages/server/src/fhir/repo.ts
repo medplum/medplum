@@ -1,4 +1,5 @@
 import {
+  allOk,
   badRequest,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
@@ -250,6 +251,8 @@ export class Repository {
 
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
+      .column('versionId')
+      .column('id')
       .column('content')
       .where('id', Operator.EQUALS, id)
       .orderBy('lastUpdated', true)
@@ -259,18 +262,20 @@ export class Repository {
     const entries: BundleEntry<T>[] = [];
 
     for (const row of rows) {
-      if (row.content) {
-        entries.push({
-          resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-        });
-      } else {
-        entries.push({
-          response: {
-            status: getStatus(gone).toString(),
-            outcome: gone,
-          },
-        });
-      }
+      const resource = row.content && this.#removeHiddenFields(JSON.parse(row.content as string));
+      const outcome = row.content ? allOk : gone;
+      entries.push({
+        fullUrl: this.#getFullUrl(resourceType, row.id),
+        request: {
+          method: 'GET',
+          url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+        },
+        response: {
+          status: getStatus(outcome).toString(),
+          outcome,
+        },
+        resource,
+      });
     }
 
     return {
@@ -582,7 +587,7 @@ export class Repository {
 
     return {
       resourceType: 'Bundle',
-      type: 'searchest',
+      type: 'searchset',
       entry,
       total,
       link: this.#getSearchLinks(searchRequest, hasMore),
@@ -615,6 +620,7 @@ export class Repository {
     const rows = await builder.execute(client);
     return {
       entry: rows.slice(0, count).map((row) => ({
+        fullUrl: this.#getFullUrl(resourceType, row.id),
         resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
       })),
       hasMore: rows.length > count,
@@ -662,6 +668,10 @@ export class Repository {
     }
 
     return result;
+  }
+
+  #getFullUrl(resourceType: string, id: string): string {
+    return `${getConfig().baseUrl}fhir/R4/${resourceType}/${id}`;
   }
 
   #getSearchUrl(searchRequest: SearchRequest): string {

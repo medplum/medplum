@@ -771,7 +771,7 @@ export class MedplumClient extends EventTarget {
    * ```json
    * {
    *    "resourceType": "Bundle",
-   *    "type": "searchest",
+   *    "type": "searchset",
    *    "total": 1,
    *    "entry": [
    *       {

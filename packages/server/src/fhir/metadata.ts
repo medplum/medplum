@@ -1,6 +1,104 @@
-import { readJson } from '@medplum/definitions';
-import { CapabilityStatement } from '@medplum/fhirtypes';
-import { getConfig } from '../config';
+import { TypeSchema } from '@medplum/core';
+import {
+  CapabilityStatement,
+  CapabilityStatementRest,
+  CapabilityStatementRestResource,
+  CapabilityStatementRestResourceSearchParam,
+  CapabilityStatementRestSecurity,
+} from '@medplum/fhirtypes';
+import { getConfig, MedplumServerConfig } from '../config';
+import { isResourceType } from './schema';
+import { getStructureDefinitions } from './structure';
+
+/**
+ * The base CapabilityStatement that seeds the server generated statement.
+ */
+const baseStmt: CapabilityStatement = {
+  resourceType: 'CapabilityStatement',
+  id: 'medplum-server',
+  url: 'http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server',
+  version: '0.9.34',
+  name: 'MedplumCapabilityStatement',
+  title: 'Medplum Capability Statement',
+  status: 'active',
+  date: '2022-09-02',
+  publisher: 'Medplum',
+  contact: [
+    {
+      telecom: [
+        {
+          system: 'url',
+          value: 'https://www.medplum.com',
+        },
+      ],
+    },
+  ],
+  description: 'Medplum FHIR Capability Statement',
+  jurisdiction: [
+    {
+      coding: [
+        {
+          system: 'urn:iso:std:iso:3166',
+          code: 'US',
+          display: 'United States of America',
+        },
+      ],
+    },
+  ],
+  kind: 'instance',
+  fhirVersion: '4.0.1',
+  format: ['json'],
+  patchFormat: ['application/json-patch+json'],
+};
+
+/**
+ * A list of profiles that represent different use cases supported by the system.
+ *
+ * For a server, "supported by the system" means the system hosts/produces a set of resources that are conformant to a
+ * particular profile, and allows clients that use its services to search using this profile and to find appropriate
+ * data. For a client, it means the system will search by this profile and process data according to the guidance
+ * implicit in the profile.
+ *
+ * See: https://www.hl7.org/fhir/capabilitystatement-definitions.html#CapabilityStatement.rest.resource.supportedProfile
+ */
+const supportedProfiles: Record<string, string[]> = {
+  AllergyIntolerance: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance'],
+  CarePlan: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-careplan'],
+  CareTeam: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-careteam'],
+  Condition: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition'],
+  Device: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-implantable-device'],
+  DiagnosticReport: [
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-note',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-lab',
+  ],
+  DocumentReference: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-documentreference'],
+  Encounter: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter'],
+  Goal: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-goal'],
+  Immunization: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization'],
+  Location: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-location'],
+  Medication: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication'],
+  MedicationRequest: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest'],
+  Observation: [
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus',
+    'http://hl7.org/fhir/us/core/StructureDefinition/pediatric-weight-for-height',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab',
+    'http://hl7.org/fhir/us/core/StructureDefinition/pediatric-bmi-for-age',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-pulse-oximetry',
+    'http://hl7.org/fhir/us/core/StructureDefinition/head-occipital-frontal-circumference-percentile',
+    'http://hl7.org/fhir/StructureDefinition/heartrate',
+    'http://hl7.org/fhir/StructureDefinition/bodyheight',
+    'http://hl7.org/fhir/StructureDefinition/bp',
+    'http://hl7.org/fhir/StructureDefinition/bodyweight',
+    'http://hl7.org/fhir/StructureDefinition/bodytemp',
+    'http://hl7.org/fhir/StructureDefinition/resprate',
+  ],
+  Organization: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization'],
+  Patient: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+  Practitioner: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner'],
+  PractitionerRole: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole'],
+  Procedure: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-procedure'],
+  Provenance: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-provenance'],
+};
 
 let capabilityStatement: CapabilityStatement | undefined = undefined;
 
@@ -12,7 +110,6 @@ export function getCapabilityStatement(): CapabilityStatement {
 }
 
 function buildCapabilityStatement(): CapabilityStatement {
-  const baseStmt = readJson('fhir/r4/capability-statement.json') as CapabilityStatement;
   const name = 'medplum';
   const version = baseStmt.version;
   const config = getConfig();
@@ -31,27 +128,85 @@ function buildCapabilityStatement(): CapabilityStatement {
       description: name,
       url: fhirBaseUrl,
     },
-    rest: [
+    rest: buildRest(config),
+  };
+}
+
+function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
+  return [
+    {
+      mode: 'server',
+      security: buildSecurity(config),
+      resource: buildResourceTypes(),
+      interaction: [{ code: 'transaction' }, { code: 'batch' }],
+    },
+  ];
+}
+
+function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecurity {
+  return {
+    extension: [
       {
-        ...baseStmt.rest?.[0],
-        security: {
-          extension: [
-            {
-              url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
-              extension: [
-                {
-                  url: 'authorize',
-                  valueUri: config.authorizeUrl,
-                },
-                {
-                  url: 'token',
-                  valueUri: config.tokenUrl,
-                },
-              ],
-            },
-          ],
-        },
+        url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
+        extension: [
+          {
+            url: 'authorize',
+            valueUri: config.authorizeUrl,
+          },
+          {
+            url: 'token',
+            valueUri: config.tokenUrl,
+          },
+        ],
       },
     ],
   };
+}
+
+function buildResourceTypes(): CapabilityStatementRestResource[] {
+  const schema = getStructureDefinitions();
+  return Object.entries(schema.types)
+    .filter(
+      ([resourceType, typeSchema]) =>
+        isResourceType(resourceType) &&
+        typeSchema.structureDefinition.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
+    )
+    .map(([resourceType, typeSchema]) => ({
+      type: resourceType,
+      profile: typeSchema.structureDefinition.url,
+      supportedProfile: supportedProfiles[resourceType] || undefined,
+      interaction: [
+        { code: 'read' }, // Read the current state of the resource.
+        { code: 'vread' }, // Read the state of a specific version of the resource.
+        { code: 'update' }, // Update an existing resource by its id.
+        { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
+        { code: 'delete' }, // Delete a resource.
+        { code: 'history-instance' }, // Retrieve the change history for a particular resource.
+        { code: 'create' }, // Create a new resource with a server assigned id.
+        { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
+      ],
+      versioning: 'versioned',
+      readHistory: true,
+      updateCreate: false,
+      conditionalCreate: false,
+      conditionalRead: 'not-supported',
+      conditionalDelete: 'not-supported',
+      referencePolicy: ['literal', 'logical', 'local'],
+      searchParam: buildSearchParameters(typeSchema),
+    }));
+}
+
+function buildSearchParameters(typeSchema: TypeSchema): CapabilityStatementRestResourceSearchParam[] | undefined {
+  if (!typeSchema.searchParams) {
+    return undefined;
+  }
+  const entries = Object.values(typeSchema.searchParams);
+  if (entries.length === 0) {
+    return undefined;
+  }
+  return entries.map((param: any) => ({
+    name: param.code,
+    definition: param.url,
+    type: param.type,
+  }));
 }
