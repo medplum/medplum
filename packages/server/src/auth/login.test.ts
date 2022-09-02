@@ -65,9 +65,7 @@ describe('Login', () => {
       password,
       scope: 'openid',
     });
-    expect(res.status).toBe(400);
-    expect(res.body.issue).toBeDefined();
-    expect(res.body.issue[0].details.text).toBe('Invalid UUID');
+    expect(res.status).toBe(404);
   });
 
   test('Invalid client ID', async () => {
