@@ -1,12 +1,8 @@
 {
   "resourceType": "CapabilityStatement",
   "id": "medplum-server",
-  "text": {
-    "status": "generated",
-    "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"></div>"
-  },
   "url": "http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server",
-  "version": "0.0.1",
+  "version": "0.9.34",
   "name": "MedplumCapabilityStatement",
   "title": "Medplum Capability Statement",
   "status": "active",

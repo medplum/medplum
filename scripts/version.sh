@@ -37,5 +37,8 @@ set_version "packages/mock/package.json"
 set_version "packages/server/package.json"
 set_version "packages/react/package.json"
 
+# Update the base CapabilityStatement
+set_version "packages/definitions/dist/fhir/r4/capability-statement.json"
+
 # Update sonar-project.properties
 sed -i "s/sonar.projectVersion=$OLD_VERSION/sonar.projectVersion=$NEW_VERSION/g" "sonar-project.properties"

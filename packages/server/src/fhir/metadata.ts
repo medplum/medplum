@@ -14,7 +14,7 @@ export function getCapabilityStatement(): CapabilityStatement {
 function buildCapabilityStatement(): CapabilityStatement {
   const baseStmt = readJson('fhir/r4/capability-statement.json') as CapabilityStatement;
   const name = 'medplum';
-  const version = process.env.npm_package_version;
+  const version = baseStmt.version;
   const config = getConfig();
   const baseUrl = config.baseUrl;
   const fhirBaseUrl = baseUrl + 'fhir/R4/';
