@@ -6,11 +6,9 @@ sidebar_position: 1
 
 Bots are an advanced Medplum feature that enable complex workflows.
 
-One of the most powerful combos is "Bots" + "Questionnaires".
+One of the most powerful uses is to combine Bots with [Questionnaires](../../api/fhir/resources/questionnaire)
 
 A FHIR [Questionnaire](../../api/fhir/resources/questionnaire) is a customizable form. You can add custom questions, question types, multiple choice options, etc. You can think of a FHIR Questionnaire as a healthcare-specific Google Forms or Survey Monkey.
-
-A Medplum [Bot](./) is a snippet of JavaScript code that can run on any resource change (create or update). This JavaScript code has access to a FHIR client, which itself can invoke FHIR operations.
 
 Connecting a Bot to a Questionnaire enables custom workflows that you control top to bottom.
 
@@ -33,6 +31,24 @@ Let's create 3 resources to demonstrate how this works.
 - Questionnaire - the form with a few example inputs for patient registration
 - Bot - the logic that processes Questionnaire responses
 - Subscription - the link that connects the Questionnaire and the Bot together
+
+### 1. Create the Questionnaire
+
+Our first step will be to create the questionnaire in the Medplum App
+
+1. Log into app.medplum.com
+2. Click "Questionnaire" on the left sidebar or
+   :::warning screenshot
+
+   :::
+
+3. Click "new"
+4. This brings you to the default Resource editor for the Questionnaire. However, we are going to use an alternate method to author the Questionnaire. For now, just enter a title and click "Ok"
+5. Next, bring
+
+### 2. Write the Bot
+
+### 3. Create the Subscription
 
 We can create all 3 resources using the "Batch Import" feature. Click on the top-left menu. Click on "Batch". Then copy/paste the following bundle:
 
