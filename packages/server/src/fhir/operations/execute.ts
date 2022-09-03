@@ -39,7 +39,12 @@ export interface BotExecutionResult {
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const bot = await repo.readResource<Bot>('Bot', id);
+
+  // First read the bot as the user to verify access
+  await repo.readResource<Bot>('Bot', id);
+
+  // Then read the bot as system user to load extended metadata
+  const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   const result = await executeBot({

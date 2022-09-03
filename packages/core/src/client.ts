@@ -1744,6 +1744,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const headers = options.headers as Record<string, string>;
+    headers['X-Medplum'] = 'extended';
+
     if (!headers['Content-Type']) {
       headers['Content-Type'] = FHIR_CONTENT_TYPE;
     }

@@ -16,7 +16,7 @@ import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+import { Repository, systemRepo } from '../repo';
 import { isBotEnabled } from './execute';
 
 const LAMBDA_RUNTIME = 'nodejs16.x';
@@ -94,7 +94,12 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const bot = await repo.readResource<Bot>('Bot', id);
+
+  // First read the bot as the user to verify access
+  await repo.readResource<Bot>('Bot', id);
+
+  // Then read the bot as system user to load extended metadata
+  const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   if (!(await isBotEnabled(bot))) {
     sendOutcome(res, badRequest('Bots not enabled'));

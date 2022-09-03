@@ -30,6 +30,7 @@ describe('Subscription Worker', () => {
     });
 
     repo = new Repository({
+      extendedMode: true,
       project: testProject.id,
       author: {
         reference: 'ClientApplication/' + randomUUID(),
@@ -39,6 +40,7 @@ describe('Subscription Worker', () => {
     // Create another project, this one with bots enabled
     const botProjectDetails = await createTestProject();
     botRepo = new Repository({
+      extendedMode: true,
       project: botProjectDetails.project.id,
       author: createReference(botProjectDetails.client),
     });

@@ -262,6 +262,7 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       project: randomUUID(),
+      extendedMode: true,
       author: {
         reference: author,
       },
@@ -310,6 +311,7 @@ describe('FHIR Repo', () => {
     const clientApp = 'ClientApplication/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: clientApp,
       },
@@ -327,6 +329,7 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },
@@ -345,6 +348,7 @@ describe('FHIR Repo', () => {
     const fakeAuthor = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },
@@ -374,6 +378,7 @@ describe('FHIR Repo', () => {
     // This user does not have an access policy
     // So they can optionally set an account
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },

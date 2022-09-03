@@ -178,6 +178,7 @@ describe('AccessPolicy', () => {
     };
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -221,6 +222,7 @@ describe('AccessPolicy', () => {
     };
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -280,6 +282,7 @@ describe('AccessPolicy', () => {
     };
 
     const repo1 = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -287,6 +290,7 @@ describe('AccessPolicy', () => {
     });
 
     const repo2 = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -369,6 +373,7 @@ describe('AccessPolicy', () => {
     };
 
     const repo1 = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -376,6 +381,7 @@ describe('AccessPolicy', () => {
     });
 
     const repo2 = new Repository({
+      extendedMode: true,
       author: {
         reference: 'Practitioner/123',
       },
@@ -491,7 +497,8 @@ describe('AccessPolicy', () => {
     expect(patient).toBeDefined();
 
     // The Patient should have the account value set
-    expect(patient?.meta?.account?.reference).toEqual(account);
+    const patientCheck = await systemRepo.readResource('Patient', patient?.id as string);
+    expect(patientCheck?.meta?.account?.reference).toEqual(account);
 
     // Create an Observation using the ClientApplication
     const observation = await clientRepo.createResource<Observation>({
@@ -506,7 +513,8 @@ describe('AccessPolicy', () => {
     expect(observation).toBeDefined();
 
     // The Observation should have the account value set
-    expect(observation?.meta?.account?.reference).toEqual(account);
+    const observationCheck = await systemRepo.readResource('Observation', observation?.id as string);
+    expect(observationCheck?.meta?.account?.reference).toEqual(account);
 
     // Create a Patient outside of the account
     const patient2 = await systemRepo.createResource<Patient>({
