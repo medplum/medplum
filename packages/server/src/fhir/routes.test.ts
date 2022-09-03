@@ -418,6 +418,14 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Search invalid search parameter', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ServiceRequest?basedOn=ServiceRequest/123`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
+  });
+
   test('Validate create success', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/$validate`)

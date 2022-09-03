@@ -1,4 +1,4 @@
-import { Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
+import { badRequest, Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { getSearchParameter } from '../structure';
@@ -158,9 +158,10 @@ class SearchParser implements SearchRequest {
 
       default: {
         const param = getSearchParameter(this.resourceType, code);
-        if (param) {
-          this.#parseParameter(param, modifier, value);
+        if (!param) {
+          throw badRequest('Unknown search parameter: ' + code);
         }
+        this.#parseParameter(param, modifier, value);
       }
     }
   }
