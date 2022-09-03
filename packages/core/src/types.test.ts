@@ -59,6 +59,10 @@ describe('Type Utils', () => {
     });
     expect(globalSchema.types['Patient'].searchParams?.['name']).toBeDefined();
 
+    // Expect base search parameters to be indexed
+    expect(globalSchema.types['Patient'].searchParams?.['_id']).toBeDefined();
+    expect(globalSchema.types['Patient'].searchParams?.['_lastUpdated']).toBeDefined();
+
     // Index again and silently ignore
     indexSearchParameter({
       resourceType: 'SearchParameter',
