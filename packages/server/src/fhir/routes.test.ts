@@ -151,7 +151,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource invalid resource type', async () => {
@@ -188,7 +188,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123/_history`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource history invalid resource type', async () => {
@@ -209,14 +209,14 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123/_history/${patientVersionId}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource version invalid version UUID', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}/_history/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource version invalid resource type', async () => {
@@ -346,7 +346,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .delete(`/fhir/R4/Patient/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Delete resource invalid resource type', async () => {

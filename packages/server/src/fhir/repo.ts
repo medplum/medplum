@@ -178,7 +178,7 @@ export class Repository {
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!id || !validator.isUUID(id)) {
-      throw badRequest('Invalid UUID');
+      throw notFound;
     }
 
     validateResourceType(resourceType);
@@ -287,7 +287,7 @@ export class Repository {
 
   async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
     if (!validator.isUUID(vid)) {
-      throw badRequest('Invalid UUID');
+      throw notFound;
     }
 
     await this.readResource<T>(resourceType, id);
