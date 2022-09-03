@@ -1,5 +1,5 @@
 import { allOk, badRequest, created, getStatus } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
@@ -291,7 +291,13 @@ export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is('application/json') || req.is('application/fhir+json'));
 }
 
-export async function sendResponse(res: Response, outcome: OperationOutcome, body: any): Promise<void> {
+export async function sendResponse(res: Response, outcome: OperationOutcome, body: Resource): Promise<void> {
   const repo = res.locals.repo as Repository;
+  if (body.meta?.versionId) {
+    res.set('ETag', `"${body.meta.versionId}"`);
+  }
+  if (body.meta?.lastUpdated) {
+    res.set('Last-Modified', new Date(body.meta.lastUpdated).toUTCString());
+  }
   res.status(getStatus(outcome)).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, body));
 }

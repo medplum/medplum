@@ -15,7 +15,7 @@ export const allOk: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'All OK',
       },
@@ -29,7 +29,7 @@ export const created: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'Created',
       },
@@ -43,7 +43,7 @@ export const notModified: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'Not Modified',
       },

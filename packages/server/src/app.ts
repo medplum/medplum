@@ -106,6 +106,7 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<Express> {
   await initAppServices(config);
 
+  app.set('etag', false);
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
