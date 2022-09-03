@@ -240,6 +240,12 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 
     if (!typeSchema.searchParams) {
       typeSchema.searchParams = {
+        _id: {
+          base: [resourceType],
+          code: '_id',
+          type: 'token',
+          expression: resourceType + '.id',
+        } as SearchParameter,
         _lastUpdated: {
           base: [resourceType],
           code: '_lastUpdated',
