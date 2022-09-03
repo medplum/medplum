@@ -516,9 +516,8 @@ export class Repository {
       throw forbidden;
     }
 
-    const resource = await this.readResource<T>(resourceType, id);
+    const resource = await this.#readResourceImpl<T>(resourceType, id);
     await addSubscriptionJobs(resource);
-    this.#removeHiddenFields(resource);
     return resource as T;
   }
 
