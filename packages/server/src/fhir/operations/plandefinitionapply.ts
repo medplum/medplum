@@ -146,6 +146,9 @@ async function createQuestionnaireTask(
     owner: createReference(params.subject),
     input: [
       {
+        type: {
+          text: 'Questionnaire',
+        },
         valueReference: {
           display: action.title,
           reference: action.definitionCanonical,

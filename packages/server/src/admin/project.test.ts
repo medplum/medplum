@@ -375,6 +375,7 @@ describe('Project Admin routes', () => {
       .send([
         {
           name: 'test_site',
+          domain: ['example.com'],
         },
       ]);
     expect(res2.status).toBe(200);

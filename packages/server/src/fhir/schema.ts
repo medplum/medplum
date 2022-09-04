@@ -41,6 +41,7 @@ const fhirTypeToJsType: Record<string, string> = {
   uri: 'string',
   url: 'string',
   uuid: 'string',
+  xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string',
 };
 
@@ -88,7 +89,10 @@ export class FhirSchemaValidator<T extends Resource> {
       throw validationError('Missing resource type');
     }
 
-    this.#validateObject(toTypedValue(resource), '');
+    // Check for "null" once for the entire object hierarchy
+    checkForNull(resource, '', this.#issues);
+
+    this.#validateObject(toTypedValue(resource), resourceType);
 
     if (this.#issues.length > 0) {
       throw new OperationOutcomeError({
@@ -105,22 +109,18 @@ export class FhirSchemaValidator<T extends Resource> {
       throw validationError('Unknown type: ' + typedValue.type);
     }
 
-    const object = typedValue.value as Record<string, unknown>;
     const propertyDefinitions = definition.properties;
-
-    checkForNull(object, path, this.#issues);
-    this.#checkProperties(propertyDefinitions, typedValue);
-    this.#checkAdditionalProperties(object, propertyDefinitions);
+    this.#checkProperties(path, propertyDefinitions, typedValue);
+    this.#checkAdditionalProperties(path, typedValue, propertyDefinitions);
   }
 
-  #checkProperties(propertyDefinitions: Record<string, ElementDefinition>, typedValue: TypedValue): void {
-    for (const elementDefinition of Object.values(propertyDefinitions)) {
-      this.#checkProperty(elementDefinition, typedValue);
+  #checkProperties(path: string, propertyDefinitions: Record<string, ElementDefinition>, typedValue: TypedValue): void {
+    for (const [key, elementDefinition] of Object.entries(propertyDefinitions)) {
+      this.#checkProperty(path + '.' + key, elementDefinition, typedValue);
     }
   }
 
-  #checkProperty(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
-    const path = elementDefinition.path as string;
+  #checkProperty(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     const propertyName = path.split('.').pop() as string;
     const value = getTypedPropertyValue(typedValue, propertyName);
 
@@ -137,21 +137,33 @@ export class FhirSchemaValidator<T extends Resource> {
         return;
       }
       for (const item of value) {
-        this.#checkPropertyValue(elementDefinition, item);
+        this.#checkPropertyValue(path, elementDefinition, item);
       }
     } else {
-      this.#checkPropertyValue(elementDefinition, value as TypedValue);
+      this.#checkPropertyValue(path, elementDefinition, value as TypedValue);
     }
   }
 
-  #checkPropertyValue(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+  #checkPropertyValue(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+    if (typedValue.value === null) {
+      // Null handled separately
+      return;
+    }
+
     if (isLowerCase(typedValue.type.charAt(0))) {
       this.#validatePrimitiveType(elementDefinition, typedValue);
+    } else {
+      this.#validateObject(typedValue, path);
     }
   }
 
   #validatePrimitiveType(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     const { type, value } = typedValue;
+
+    if (value === null) {
+      // Null handled separately
+      return;
+    }
 
     // First, make sure the value is the correct JS type
     const expectedType = fhirTypeToJsType[typedValue.type];
@@ -206,9 +218,11 @@ export class FhirSchemaValidator<T extends Resource> {
   }
 
   #checkAdditionalProperties(
-    object: Record<string, unknown>,
+    path: string,
+    typedValue: TypedValue,
     propertyDefinitions: Record<string, ElementDefinition>
   ): void {
+    const object = typedValue.value as Record<string, unknown>;
     for (const key of Object.keys(object)) {
       if (key === 'resourceType' || key === 'id' || key === 'meta' || key === '_baseDefinition') {
         continue;
@@ -218,7 +232,8 @@ export class FhirSchemaValidator<T extends Resource> {
         // TODO: Consolidate this logic with FHIRPath lookup
         const choiceOfTypeKey = key.replace(/[A-Z].+/, '[x]');
         if (!(choiceOfTypeKey in propertyDefinitions)) {
-          this.#issues.push(createStructureIssue(key, `Invalid additional property "${key}"`));
+          const expression = `${path}.${key}`;
+          this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
         }
       }
     }

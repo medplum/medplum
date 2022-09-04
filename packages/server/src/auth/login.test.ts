@@ -337,7 +337,7 @@ describe('Login', () => {
           coding: [
             {
               system: 'http://loinc.org',
-              value: '1',
+              code: '1',
             },
           ],
         },
