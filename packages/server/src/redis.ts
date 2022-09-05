@@ -1,7 +1,7 @@
 import Redis from 'ioredis';
 import { MedplumRedisConfig } from './config';
 
-let redis: Redis.Redis | undefined = undefined;
+let redis: Redis | undefined = undefined;
 
 export function initRedis(config: MedplumRedisConfig): void {
   redis = new Redis(config);
@@ -14,7 +14,7 @@ export function closeRedis(): void {
   }
 }
 
-export function getRedis(): Redis.Redis {
+export function getRedis(): Redis {
   if (!redis) {
     throw new Error('Redis not initialized');
   }
