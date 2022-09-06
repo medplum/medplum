@@ -4,7 +4,7 @@ The Medplum React Component Library provides many helpful components to quickly 
 
 The Medplum SDK can be used with any compliant FHIR server. However, some advanced features are only available when paired with a Medplum server.
 
-Check out a live demo: [https://docs.medplum.com/storybook/index.html](https://docs.medplum.com/storybook/index.html)
+Check out a live demo: <https://storybook.medplum.com/>
 
 ## Key Features
 

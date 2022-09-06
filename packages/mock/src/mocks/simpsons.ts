@@ -37,7 +37,7 @@ export const HomerSimpson: Patient = {
   photo: [
     {
       contentType: 'image/png',
-      url: 'https://docs.medplum.com/img/homer-simpson.png',
+      url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
   telecom: [
@@ -82,7 +82,7 @@ export const HomerSimpsonPreviousVersion: Patient = {
   photo: [
     {
       contentType: 'image/png',
-      url: 'https://docs.medplum.com/img/homer-simpson.png',
+      url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
 };

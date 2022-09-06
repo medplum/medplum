@@ -73,7 +73,7 @@ export default function IndexPage(): JSX.Element {
                   Store your data in standard-compliant format to <strong>simplify integration</strong> with healthcare
                   partners.
                 </p>
-                <a href="https://docs.medplum.com/fhir-basics" target="_blank" className={styles.cardButton}>
+                <a href="https://www.medplum.com/docs/fhir-basics" target="_blank" className={styles.cardButton}>
                   <div>Learn more</div>
                   <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" />
                 </a>
