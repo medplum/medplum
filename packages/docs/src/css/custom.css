@@ -97,34 +97,6 @@
   padding: 0 var(--ifm-pre-padding);
 }
 
-html[data-theme='dark'] .docusaurus-highlight-code-line {
-  background-color: rgba(0, 0, 0, 0.3);
-}
-
-.page .navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background-color: transparent;
-  box-shadow: none;
-  transition: all 200ms ease;
-}
-
-.page .navbar.onScroll {
-  background-color: var(--ifm-navbar-background-color);
-  box-shadow: var(--ifm-navbar-shadow);
-}
-
-.page .navbar .DocSearch-Button {
-  background-color: transparent !important;
-  transition: all 200ms ease;
-}
-
-.page .navbar.onScroll .DocSearch-Button {
-  background-color: var(--docsearch-searchbox-background) !important;
-}
-
 h1 {
   font-style: normal;
   font-weight: 600;
