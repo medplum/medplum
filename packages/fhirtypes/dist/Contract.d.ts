@@ -1134,6 +1134,12 @@ export interface ContractTermAsset {
 }
 
 /**
+ * Response to assets.
+ */
+export interface ContractTermAssetAnswer {
+}
+
+/**
  * Circumstance of the asset.
  */
 export interface ContractTermAssetContext {
@@ -1321,6 +1327,12 @@ export interface ContractTermAssetValuedItem {
    * this condition.
    */
   securityLabelNumber?: number[];
+}
+
+/**
+ * Nested group of Contract Provisions.
+ */
+export interface ContractTermGroup {
 }
 
 /**

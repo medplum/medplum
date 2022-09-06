@@ -389,3 +389,10 @@ export interface MedicinalProductIngredientSubstance {
    */
   strength?: MedicinalProductIngredientSpecifiedSubstanceStrength[];
 }
+
+/**
+ * Quantity of the substance or specified substance present in the
+ * manufactured item or pharmaceutical product.
+ */
+export interface MedicinalProductIngredientSubstanceStrength {
+}

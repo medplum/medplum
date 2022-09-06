@@ -6,8 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Age Type: A duration of time during which
- * an organism (or a process) has existed.
+ * A duration of time during which an organism (or a process) has
+ * existed.
  */
 export interface Age {
 

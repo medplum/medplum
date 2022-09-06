@@ -6,9 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Narrative Type: A human-readable summary
- * of the resource conveying the essential clinical and business
- * information for the resource.
+ * A human-readable summary of the resource conveying the essential
+ * clinical and business information for the resource.
  */
 export interface Narrative {
 

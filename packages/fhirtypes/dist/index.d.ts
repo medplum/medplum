@@ -15,6 +15,7 @@ export * from './Appointment';
 export * from './AppointmentResponse';
 export * from './Attachment';
 export * from './AuditEvent';
+export * from './BackboneElement';
 export * from './Basic';
 export * from './Binary';
 export * from './BiologicallyDerivedProduct';

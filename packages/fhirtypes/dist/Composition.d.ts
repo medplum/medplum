@@ -492,3 +492,9 @@ export interface CompositionSection {
    */
   section?: CompositionSection[];
 }
+
+/**
+ * A nested sub-section within this section.
+ */
+export interface CompositionSectionSection {
+}

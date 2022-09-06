@@ -729,6 +729,13 @@ export interface CapabilityStatementRestInteraction {
 }
 
 /**
+ * Definition of an operation or a named query together with its
+ * parameters and their meaning and type.
+ */
+export interface CapabilityStatementRestOperation {
+}
+
+/**
  * A specification of the restful capabilities of the solution for a
  * specific resource type.
  */
@@ -1074,6 +1081,15 @@ export interface CapabilityStatementRestResourceSearchParam {
    * search parameter is used.  For example, text matching algorithms.
    */
   documentation?: string;
+}
+
+/**
+ * Search parameters that are supported for searching all resources for
+ * implementations to support and/or make use of - either references to
+ * ones defined in the specification, or additional ones defined for/by
+ * the implementation.
+ */
+export interface CapabilityStatementRestSearchParam {
 }
 
 /**

@@ -6,8 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Attachment Type: For referring to data
- * content defined in other formats.
+ * For referring to data content defined in other formats.
  */
 export interface Attachment {
 

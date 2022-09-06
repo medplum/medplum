@@ -363,3 +363,15 @@ export interface QuestionnaireResponseItemAnswer {
    */
   item?: QuestionnaireResponseItem[];
 }
+
+/**
+ * Nested groups and/or questions found within this particular answer.
+ */
+export interface QuestionnaireResponseItemAnswerItem {
+}
+
+/**
+ * Questions or sub-groups nested beneath a question or group.
+ */
+export interface QuestionnaireResponseItemItem {
+}

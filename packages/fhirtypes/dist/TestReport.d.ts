@@ -522,6 +522,12 @@ export interface TestReportTeardownAction {
 }
 
 /**
+ * An operation would involve a REST request to a server.
+ */
+export interface TestReportTeardownActionOperation {
+}
+
+/**
  * A test executed from the test script.
  */
 export interface TestReportTest {
@@ -628,4 +634,16 @@ export interface TestReportTestAction {
    * The results of the assertion performed on the previous operations.
    */
   assert?: TestReportSetupActionAssert;
+}
+
+/**
+ * The results of the assertion performed on the previous operations.
+ */
+export interface TestReportTestActionAssert {
+}
+
+/**
+ * An operation would involve a REST request to a server.
+ */
+export interface TestReportTestActionOperation {
 }

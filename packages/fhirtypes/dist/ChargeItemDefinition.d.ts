@@ -391,6 +391,13 @@ export interface ChargeItemDefinitionPropertyGroup {
 }
 
 /**
+ * Expressions that describe applicability criteria for the
+ * priceComponent.
+ */
+export interface ChargeItemDefinitionPropertyGroupApplicability {
+}
+
+/**
  * The price for a ChargeItem may be calculated as a base price with
  * surcharges/deductions that apply in certain conditions. A
  * ChargeItemDefinition resource that defines the prices, factors and

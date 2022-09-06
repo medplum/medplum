@@ -567,6 +567,15 @@ export interface PlanDefinitionAction {
 }
 
 /**
+ * Sub actions that are contained within the action. The behavior of this
+ * action determines the functionality of the sub-actions. For example, a
+ * selection behavior of at-most-one indicates that of the sub-actions,
+ * at most one may be chosen as part of realizing the action definition.
+ */
+export interface PlanDefinitionActionAction {
+}
+
+/**
  * An expression that describes applicability criteria or start/stop
  * conditions for the action.
  */

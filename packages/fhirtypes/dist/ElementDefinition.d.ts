@@ -37,8 +37,7 @@ import { TriggerDefinition } from './TriggerDefinition';
 import { UsageContext } from './UsageContext';
 
 /**
- * Base StructureDefinition for ElementDefinition Type: Captures
- * constraints on each element within the resource, profile, or
+ * Captures constraints on each element within the resource, profile, or
  * extension.
  */
 export interface ElementDefinition {

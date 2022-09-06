@@ -16,8 +16,8 @@ import { UsageContext } from './UsageContext';
 /**
  * A ValueSet resource instance specifies a set of codes drawn from one
  * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * sets link between [CodeSystem](codesystem.html) definitions and their
+ * use in [coded elements](terminologies.html).
  */
 export interface ValueSet {
 
@@ -302,6 +302,13 @@ export interface ValueSetCompose {
    * filters and/or other value sets.
    */
   exclude?: ValueSetComposeInclude[];
+}
+
+/**
+ * Exclude one or more codes from the value set based on code system
+ * filters and/or other value sets.
+ */
+export interface ValueSetComposeExclude {
 }
 
 /**
@@ -741,6 +748,21 @@ export interface ValueSetExpansionContains {
    * Other codes and entries contained under this entry in the hierarchy.
    */
   contains?: ValueSetExpansionContains[];
+}
+
+/**
+ * Other codes and entries contained under this entry in the hierarchy.
+ */
+export interface ValueSetExpansionContainsContains {
+}
+
+/**
+ * Additional representations for this item - other languages, aliases,
+ * specialized purposes, used for particular purposes, etc. These are
+ * relevant when the conditions of the expansion do not fix to a single
+ * correct representation.
+ */
+export interface ValueSetExpansionContainsDesignation {
 }
 
 /**

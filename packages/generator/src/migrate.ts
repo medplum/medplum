@@ -1,6 +1,6 @@
 import {
   getSearchParameterDetails,
-  IndexedStructureDefinition,
+  globalSchema,
   indexStructureDefinition,
   isLowerCase,
   SearchParameterDetails,
@@ -13,7 +13,6 @@ import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder } from './filebuilder';
 
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const searchParams = readJson('fhir/r4/search-parameters.json');
 const builder = new FileBuilder();
 
@@ -37,7 +36,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      indexStructureDefinition(resource);
     }
   }
 }
@@ -60,7 +59,7 @@ function buildMigrationUp(b: FileBuilder): void {
   builder.append('export async function run(client: PoolClient): Promise<void> {');
   builder.indentCount++;
 
-  for (const [resourceType, typeSchema] of Object.entries(structureDefinitions.types)) {
+  for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
     buildCreateTables(b, resourceType, typeSchema);
   }
 
@@ -149,7 +148,7 @@ function buildSearchColumns(resourceType: string): string[] {
       continue;
     }
 
-    const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
+    const details = getSearchParameterDetails(resourceType, searchParam);
     const columnName = details.columnName;
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);

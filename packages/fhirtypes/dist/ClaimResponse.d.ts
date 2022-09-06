@@ -427,6 +427,12 @@ export interface ClaimResponseAddItem {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ClaimResponseAddItemAdjudication {
+}
+
+/**
  * The second-tier service adjudications for payor added services.
  */
 export interface ClaimResponseAddItemDetail {
@@ -523,6 +529,12 @@ export interface ClaimResponseAddItemDetail {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ClaimResponseAddItemDetailAdjudication {
+}
+
+/**
  * The third-tier service adjudications for payor added services.
  */
 export interface ClaimResponseAddItemDetailSubDetail {
@@ -611,6 +623,19 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * The adjudication results.
    */
   adjudication?: ClaimResponseItemAdjudication[];
+}
+
+/**
+ * The adjudication results.
+ */
+export interface ClaimResponseAddItemDetailSubDetailAdjudication {
+}
+
+/**
+ * The adjudication results which are presented at the header level
+ * rather than at the line-item or add-item levels.
+ */
+export interface ClaimResponseAdjudication {
 }
 
 /**
@@ -955,6 +980,12 @@ export interface ClaimResponseItemDetail {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ClaimResponseItemDetailAdjudication {
+}
+
+/**
  * A sub-detail adjudication of a simple product or service.
  */
 export interface ClaimResponseItemDetailSubDetail {
@@ -1009,6 +1040,12 @@ export interface ClaimResponseItemDetailSubDetail {
    * The adjudication results.
    */
   adjudication?: ClaimResponseItemAdjudication[];
+}
+
+/**
+ * The adjudication results.
+ */
+export interface ClaimResponseItemDetailSubDetailAdjudication {
 }
 
 /**

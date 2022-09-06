@@ -11,8 +11,8 @@ import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 
 /**
- * Base StructureDefinition for Annotation Type: A  text note which also
- * contains information about who made the statement and when.
+ * A  text note which also  contains information about who made the
+ * statement and when.
  */
 export interface Annotation {
 

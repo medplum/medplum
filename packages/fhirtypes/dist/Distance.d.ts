@@ -6,8 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Distance Type: A length - a value with a
- * unit that is a physical distance.
+ * A length - a value with a unit that is a physical distance.
  */
 export interface Distance {
 

@@ -596,6 +596,12 @@ export interface ExplanationOfBenefitAddItem {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ExplanationOfBenefitAddItemAdjudication {
+}
+
+/**
  * The second-tier service adjudications for payor added services.
  */
 export interface ExplanationOfBenefitAddItemDetail {
@@ -692,6 +698,12 @@ export interface ExplanationOfBenefitAddItemDetail {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ExplanationOfBenefitAddItemDetailAdjudication {
+}
+
+/**
  * The third-tier service adjudications for payor added services.
  */
 export interface ExplanationOfBenefitAddItemDetailSubDetail {
@@ -780,6 +792,19 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * The adjudication results.
    */
   adjudication?: ExplanationOfBenefitItemAdjudication[];
+}
+
+/**
+ * The adjudication results.
+ */
+export interface ExplanationOfBenefitAddItemDetailSubDetailAdjudication {
+}
+
+/**
+ * The adjudication results which are presented at the header level
+ * rather than at the line-item or add-item levels.
+ */
+export interface ExplanationOfBenefitAdjudication {
 }
 
 /**
@@ -1533,6 +1558,12 @@ export interface ExplanationOfBenefitItemDetail {
 }
 
 /**
+ * The adjudication results.
+ */
+export interface ExplanationOfBenefitItemDetailAdjudication {
+}
+
+/**
  * Third-tier of goods and services.
  */
 export interface ExplanationOfBenefitItemDetailSubDetail {
@@ -1649,6 +1680,12 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * The adjudication results.
    */
   adjudication?: ExplanationOfBenefitItemAdjudication[];
+}
+
+/**
+ * The adjudication results.
+ */
+export interface ExplanationOfBenefitItemDetailSubDetailAdjudication {
 }
 
 /**

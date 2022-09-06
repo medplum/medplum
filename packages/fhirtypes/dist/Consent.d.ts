@@ -470,6 +470,12 @@ export interface ConsentProvisionData {
 }
 
 /**
+ * Rules which provide exceptions to the base rule or subrules.
+ */
+export interface ConsentProvisionProvision {
+}
+
+/**
  * Whether a treatment instruction (e.g. artificial respiration yes or
  * no) was verified with the patient, his/her family or another
  * authorized person.

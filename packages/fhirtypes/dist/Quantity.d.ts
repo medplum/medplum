@@ -6,10 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Quantity Type: A measured amount (or an
- * amount that can potentially be measured). Note that measured amounts
- * include amounts that are not precisely quantified, including amounts
- * involving arbitrary units and floating currencies.
+ * The comparator is not used on a SimpleQuantity
  */
 export interface Quantity {
 

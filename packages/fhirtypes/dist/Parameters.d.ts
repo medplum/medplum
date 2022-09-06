@@ -386,3 +386,9 @@ export interface ParametersParameter {
    */
   part?: ParametersParameter[];
 }
+
+/**
+ * A named part of a multi-part parameter.
+ */
+export interface ParametersParameterPart {
+}

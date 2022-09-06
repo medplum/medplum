@@ -512,6 +512,13 @@ export interface ObservationComponent {
 
 /**
  * Guidance on how to interpret the value by comparison to a normal or
+ * recommended range.
+ */
+export interface ObservationComponentReferenceRange {
+}
+
+/**
+ * Guidance on how to interpret the value by comparison to a normal or
  * recommended range.  Multiple reference ranges are interpreted as an
  * &quot;OR&quot;.   In other words, to represent two distinct target populations,
  * two `referenceRange` elements would be used.

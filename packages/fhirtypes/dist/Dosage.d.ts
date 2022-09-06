@@ -11,8 +11,8 @@ import { Ratio } from './Ratio';
 import { Timing } from './Timing';
 
 /**
- * Base StructureDefinition for Dosage Type: Indicates how the medication
- * is/was taken or should be taken by the patient.
+ * Indicates how the medication is/was taken or should be taken by the
+ * patient.
  */
 export interface Dosage {
 

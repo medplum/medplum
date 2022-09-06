@@ -6,8 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Period Type: A time period defined by a
- * start and end date and optionally time.
+ * A time period defined by a start and end date and optionally time.
  */
 export interface Period {
 

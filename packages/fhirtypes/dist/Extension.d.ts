@@ -36,8 +36,7 @@ import { TriggerDefinition } from './TriggerDefinition';
 import { UsageContext } from './UsageContext';
 
 /**
- * Base StructureDefinition for Extension Type: Optional Extension
- * Element - found in all resources.
+ * Optional Extension Element - found in all resources.
  */
 export interface Extension {
 

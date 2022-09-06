@@ -524,6 +524,16 @@ export interface ConceptMapGroupElementTargetDependsOn {
 }
 
 /**
+ * A set of additional outcomes from this mapping to other elements. To
+ * properly execute this mapping, the specified element must be mapped to
+ * some data element or source that is in context. The mapping may still
+ * be useful without a place for the additional data elements, but the
+ * equivalence cannot be relied on.
+ */
+export interface ConceptMapGroupElementTargetProduct {
+}
+
+/**
  * What to do when there is no mapping for the source concept. &quot;Unmapped&quot;
  * does not include codes that are unmatched, and the unmapped element is
  * ignored in a code is specified to have equivalence = unmatched.
