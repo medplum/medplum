@@ -11,6 +11,7 @@ echo "$FILES_CHANGED"
 
 DEPLOY_APP=false
 DEPLOY_BOT_LAYER=false
+DEPLOY_DOCS=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
 DEPLOY_STORYBOOK=false
@@ -29,6 +30,7 @@ fi
 
 if [[ "$FILES_CHANGED" =~ package-lock.json ]]; then
   DEPLOY_APP=true
+  DEPLOY_DOCS=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
   DEPLOY_STORYBOOK=true
@@ -50,6 +52,10 @@ fi
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/docs ]]; then
+  DEPLOY_DOCS=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/fhirtypes ]]; then
@@ -77,6 +83,11 @@ fi
 if [[ "$DEPLOY_APP" = true ]]; then
   echo "Deploy app"
   source ./scripts/deploy-app.sh
+fi
+
+if [[ "$DEPLOY_DOCS" = true ]]; then
+  echo "Deploy docs"
+  source ./scripts/deploy-docs.sh
 fi
 
 if [[ "$DEPLOY_GRAPHIQL" = true ]]; then
