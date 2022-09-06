@@ -65,7 +65,7 @@ Full [bot source code](https://github.com/medplum/medplum-demo-bots/blob/main/sr
   - Then, clone [demo bot repo](https://github.com/medplum/medplum-demo-bots), create a .env file in the root directory and put the ClientId and ClientSecret in the .env file.
   - Add your Opkit public key to the `eligibility-check-opkit.ts` bot.
   - Follow the deployment instructions in the [demo bot repo](https://github.com/medplum/medplum-demo-bots) README.
-- Create a `Subscription` that invokes the bot when a `Coverage` object is created. (Here's the guide on [Setting up Subscriptions](./bots-basics#executing-automatically-using-a-subscription))
+- Create a `Subscription` that invokes the bot when a `Coverage` object is created. (Here's the guide on [Setting up Subscriptions](./bot-basics#executing-automatically-using-a-subscription))
 - When a new Coverage object is created, your bot will trigger. Go to the [Subscription](https://app.medplum.com/Subscription) page that you created to view events and logs.
 
 ### Testing your Bot
