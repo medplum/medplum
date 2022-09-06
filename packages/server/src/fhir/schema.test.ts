@@ -1,8 +1,10 @@
 import { OperationOutcomeError } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
   Binary,
+  Bundle,
   Condition,
   ImplementationGuide,
   Media,
@@ -63,7 +65,7 @@ describe('FHIR schema', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('fakeProperty');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.fakeProperty');
     }
   });
 
@@ -149,14 +151,23 @@ describe('FHIR schema', () => {
     try {
       validateResource({
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
+            linkId: '1',
+            type: 'group',
             item: [
               {
+                linkId: '1.1',
+                type: 'group',
                 item: [
                   {
+                    linkId: '1.1.1',
+                    type: 'group',
                     item: [
                       {
+                        linkId: '1.1.1.1',
+                        type: 'group',
                         item: null,
                       },
                     ],
@@ -170,7 +181,9 @@ describe('FHIR schema', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toEqual(1);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('item[0].item[0].item[0].item[0].item');
     }
   });
@@ -387,6 +400,33 @@ describe('FHIR schema', () => {
 
     appt.priority = 10;
     expect(() => validateResource(appt)).not.toThrow();
+  });
+
+  test('BackboneElement', () => {
+    try {
+      validateResource({
+        resourceType: 'Appointment',
+        status: 'booked',
+        participant: [{ type: [{ text: 'x' }] }], // "status" is required
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue).toHaveLength(1);
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
+      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment.participant.status');
+    }
+  });
+
+  test('StructureDefinition', () => {
+    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    try {
+      validateResource(structureDefinition);
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+    }
   });
 });
 

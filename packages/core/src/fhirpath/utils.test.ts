@@ -1,4 +1,7 @@
-import { PropertyType } from '../types';
+import { readJson } from '@medplum/definitions';
+import { Bundle, Questionnaire } from '@medplum/fhirtypes';
+import { indexStructureDefinitionBundle, PropertyType } from '../types';
+import { TypedValue } from './atoms';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -16,6 +19,11 @@ const TYPED_1 = { type: PropertyType.integer, value: 1 };
 const TYPED_2 = { type: PropertyType.integer, value: 2 };
 
 describe('FHIRPath utils', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  });
+
   test('toJsBoolean', () => {
     expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: undefined }])).toEqual(false);
     expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: null }])).toEqual(false);
@@ -116,5 +124,83 @@ describe('FHIRPath utils', () => {
       getTypedPropertyValue(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
     ).toBeUndefined();
     expect(getTypedPropertyValue({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
+  });
+
+  test('Bundle entries', () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ value: 'foo' }],
+          },
+        },
+      ],
+    };
+
+    const result1 = getTypedPropertyValue(toTypedValue(bundle), 'entry') as TypedValue[];
+    expect(result1).toHaveLength(1);
+
+    const bundleEntry = result1[0];
+    expect(bundleEntry).toMatchObject({
+      type: 'BundleEntry',
+      value: {
+        resource: {
+          resourceType: 'Patient',
+        },
+      },
+    });
+
+    const patient = getTypedPropertyValue(bundleEntry, 'resource') as TypedValue;
+    expect(patient).toMatchObject({
+      type: 'Patient',
+      value: {
+        resourceType: 'Patient',
+      },
+    });
+  });
+
+  test('Content references', () => {
+    const questionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      item: [
+        {
+          linkId: '1',
+          type: 'group',
+          item: [
+            {
+              linkId: '1.1',
+              type: 'display',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result1 = getTypedPropertyValue(toTypedValue(questionnaire), 'item') as TypedValue[];
+    expect(result1).toHaveLength(1);
+
+    const item1 = result1[0];
+    expect(item1).toMatchObject({
+      type: 'QuestionnaireItem',
+      value: {
+        linkId: '1',
+        type: 'group',
+      },
+    });
+
+    const result2 = getTypedPropertyValue(item1, 'item') as TypedValue[];
+    expect(result2).toHaveLength(1);
+
+    const item2 = result2[0];
+    expect(item2).toMatchObject({
+      type: 'QuestionnaireItem',
+      value: {
+        linkId: '1.1',
+        type: 'display',
+      },
+    });
   });
 });

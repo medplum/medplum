@@ -47,6 +47,7 @@ describe('Resource $graph', () => {
     // 1. Create a GraphDefinition
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'ServiceRequest',
       link: [{ path: 'ServiceRequest.subject', target: [{ type: 'Patient' }] }],
@@ -61,6 +62,8 @@ describe('Resource $graph', () => {
     // 3. Create a Service Request
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
     } as ServiceRequest);
 
@@ -85,7 +88,13 @@ describe('Resource $graph', () => {
 
     test('Missing Resource', async () => {
       const graphName = 'test-missing-resource';
-      await createResource<GraphDefinition>({ resourceType: 'GraphDefinition', name: graphName, link: [] });
+      await createResource<GraphDefinition>({
+        resourceType: 'GraphDefinition',
+        status: 'active',
+        name: graphName,
+        start: 'ServiceRequest',
+        link: [],
+      });
 
       await getResourceGraph(undefined, graphName, 404);
     });
@@ -99,6 +108,7 @@ describe('Resource $graph', () => {
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
+        status: 'active',
         name: graphName,
         start: 'Patient',
         link: [
@@ -122,6 +132,7 @@ describe('Resource $graph', () => {
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
+        status: 'active',
         name: graphName,
         start: 'Patient',
         link: [
@@ -144,8 +155,8 @@ describe('Resource $graph', () => {
 
       await createResource<GraphDefinition>({
         resourceType: 'GraphDefinition',
+        status: 'active',
         name: graphName,
-
         link: [
           {
             path: 'Patient.generalPractitioner',
@@ -164,6 +175,7 @@ describe('Resource $graph', () => {
 
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'PlanDefinition',
       link: [{ path: 'PlanDefinition.action.definition', target: [{ type: 'Questionnaire' }] }],
@@ -171,6 +183,7 @@ describe('Resource $graph', () => {
 
     const q1 = await createResource({
       resourceType: 'Questionnaire',
+      status: 'active',
       name: 'Patient Registration',
       title: 'Patient Registration',
       url: 'http://example.com/PatientRegistration',
@@ -178,6 +191,7 @@ describe('Resource $graph', () => {
 
     const q2 = await createResource({
       resourceType: 'Questionnaire',
+      status: 'active',
       name: 'Medical History',
       title: 'Medical History',
       url: 'http://example.com/MedicalHistory',
@@ -186,6 +200,7 @@ describe('Resource $graph', () => {
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
+      status: 'active',
       action: [
         { definitionCanonical: 'http://example.com/PatientRegistration' },
         { definitionCanonical: 'http://example.com/MedicalHistory' },
@@ -206,6 +221,7 @@ describe('Resource $graph', () => {
     const graphName = 'example-two-levels';
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'PlanDefinition',
       link: [
@@ -234,6 +250,7 @@ describe('Resource $graph', () => {
 
     const a1 = await createResource({
       resourceType: 'ActivityDefinition',
+      status: 'active',
       name: 'ACT Test',
       title: 'ACT Test',
       url: 'http://example.com/ActTest',
@@ -242,6 +259,7 @@ describe('Resource $graph', () => {
 
     const a2 = await createResource({
       resourceType: 'ActivityDefinition',
+      status: 'active',
       name: 'BUN Panel',
       title: 'BUN Panel',
       url: 'http://example.com/BunPanel',
@@ -251,6 +269,7 @@ describe('Resource $graph', () => {
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
+      status: 'active',
       action: [
         { definitionCanonical: 'http://example.com/ActTest' },
         { definitionCanonical: 'http://example.com/BunPanel' },
@@ -271,6 +290,7 @@ describe('Resource $graph', () => {
     const graphName = 'example-parallel-link';
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'PlanDefinition',
       link: [
@@ -314,6 +334,7 @@ describe('Resource $graph', () => {
 
     const a1 = await createResource({
       resourceType: 'ActivityDefinition',
+      status: 'active',
       name: 'ACT Test',
       title: 'ACT Test',
       url: 'http://example.com/ActTest-Parallel',
@@ -323,6 +344,7 @@ describe('Resource $graph', () => {
 
     const a2 = await createResource({
       resourceType: 'ActivityDefinition',
+      status: 'active',
       name: 'BUN Panel',
       title: 'BUN Panel',
       url: 'http://example.com/BunPanel-Parallel',
@@ -333,6 +355,7 @@ describe('Resource $graph', () => {
     // 3. Create a PlanDefinition
     const planDefinition = await createResource({
       resourceType: 'PlanDefinition',
+      status: 'active',
       action: [{ definitionCanonical: a1.url }, { definitionCanonical: a2.url }],
     } as PlanDefinition);
 
@@ -353,6 +376,7 @@ describe('Resource $graph', () => {
     // 1. Create a GraphDefinition
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'ServiceRequest',
       link: [{ target: [{ type: 'DiagnosticReport', params: 'based-on={ref}' }] }],
@@ -365,12 +389,15 @@ describe('Resource $graph', () => {
 
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
     } as ServiceRequest);
 
     // 2. Create a DiagnosticReport
     const report = await createResource({
       resourceType: 'DiagnosticReport',
+      status: 'final',
       code: { text: 'foo' },
       basedOn: [createReference(serviceRequest)],
     } as DiagnosticReport);
@@ -389,6 +416,7 @@ describe('Resource $graph', () => {
     // 1. Create a GraphDefinition
     await createResource({
       resourceType: 'GraphDefinition',
+      status: 'active',
       name: graphName,
       start: 'ServiceRequest',
       link: [
@@ -411,6 +439,8 @@ describe('Resource $graph', () => {
 
     const serviceRequest = await createResource({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
     } as ServiceRequest);
 
@@ -423,6 +453,7 @@ describe('Resource $graph', () => {
       ['AAA', 'BBB', 'CCC'].map((code) =>
         createResource<Observation>({
           resourceType: 'Observation',
+          status: 'final',
           code: { text: code },
           performer: [createReference(performer)],
           basedOn: [createReference(serviceRequest)],
@@ -468,10 +499,6 @@ async function createResource<T extends Resource>(resource: T, token?: string): 
     .set('Authorization', 'Bearer ' + currentToken)
     .set('Content-Type', 'application/fhir+json')
     .send(resource);
-  if (!res.ok) {
-    console.error(JSON.stringify(res.body, null, 2));
-  }
-
   expect(res.status).toBe(201);
   return res.body;
 }

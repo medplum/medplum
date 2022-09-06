@@ -292,6 +292,36 @@ export function getPropertyDisplayName(path: string): string {
 }
 
 /**
+ * Returns an element definition by type and property name.
+ * Handles content references.
+ * @param typeName The type name.
+ * @param propertyName The property name.
+ * @returns The element definition if found.
+ */
+export function getElementDefinition(typeName: string, propertyName: string): ElementDefinition | undefined {
+  const typeSchema = globalSchema.types[typeName];
+  if (!typeSchema) {
+    return undefined;
+  }
+
+  const property = typeSchema.properties[propertyName] ?? typeSchema.properties[propertyName + '[x]'];
+  if (!property) {
+    return undefined;
+  }
+
+  if (property.contentReference) {
+    // Content references start with a "#"
+    // Remove the "#" character
+    const contentReference = property.contentReference.substring(1).split('.');
+    const referencePropertyName = contentReference.pop() as string;
+    const referenceTypeName = buildTypeName(contentReference);
+    return getElementDefinition(referenceTypeName, referencePropertyName);
+  }
+
+  return property;
+}
+
+/**
  * Global schema singleton.
  */
 export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;

@@ -1,5 +1,5 @@
-import { Period, Quantity, Resource } from '@medplum/fhirtypes';
-import { buildTypeName, globalSchema, PropertyType, TypeSchema } from '../types';
+import { ElementDefinition, Period, Quantity, Resource } from '@medplum/fhirtypes';
+import { buildTypeName, getElementDefinition, PropertyType } from '../types';
 import { capitalize, isEmpty } from '../utils';
 import { TypedValue } from './atoms';
 
@@ -63,9 +63,9 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
     return undefined;
   }
 
-  const typeSchema = globalSchema.types[input.type];
-  if (typeSchema) {
-    const typedResult = getTypedPropertyValueWithSchema(input, path, typeSchema);
+  const elementDefinition = getElementDefinition(input.type, path);
+  if (elementDefinition) {
+    const typedResult = getTypedPropertyValueWithSchema(input, path, elementDefinition);
     if (typedResult) {
       return typedResult;
     }
@@ -78,37 +78,29 @@ export function getTypedPropertyValue(input: TypedValue, path: string): TypedVal
  * Returns the value of the property and the property type using a type schema.
  * @param input The base context (FHIR resource or backbone element).
  * @param path The property path.
- * @param typeSchema The input type schema.
+ * @param property The property element definition.
  * @returns The value of the property and the property type.
  */
 function getTypedPropertyValueWithSchema(
   input: TypedValue,
   path: string,
-  typeSchema: TypeSchema
+  property: ElementDefinition
 ): TypedValue[] | TypedValue | undefined {
-  const property = typeSchema.properties[path] ?? typeSchema.properties[path + '[x]'];
-  if (!property) {
-    return undefined;
-  }
-
   const types = property.type;
   if (!types || types.length === 0) {
     return undefined;
   }
 
-  let propertyName: string | undefined = undefined;
   let resultValue: any = undefined;
   let resultType = 'undefined';
 
   if (types.length === 1) {
-    propertyName = path;
     resultValue = input.value[path];
     resultType = types[0].code as string;
   } else {
     for (const type of types) {
       const path2 = path.replace('[x]', '') + capitalize(type.code as string);
       if (path2 in input.value) {
-        propertyName = path2;
         resultValue = input.value[path2];
         resultType = type.code as string;
         break;
@@ -120,15 +112,22 @@ function getTypedPropertyValueWithSchema(
     return undefined;
   }
 
-  if (resultType === 'BackboneElement') {
-    resultType = buildTypeName([input.type, propertyName as string]);
+  if (resultType === 'Element' || resultType === 'BackboneElement') {
+    resultType = buildTypeName(property.path?.split('.') as string[]);
   }
 
   if (Array.isArray(resultValue)) {
-    return resultValue.map((element) => ({ value: element, type: resultType }));
+    return resultValue.map((element) => toTypedValueWithType(element, resultType));
   } else {
-    return { value: resultValue, type: resultType };
+    return toTypedValueWithType(resultValue, resultType);
   }
+}
+
+function toTypedValueWithType(value: any, type: string): TypedValue {
+  if (type === 'Resource' && typeof value === 'object' && 'resourceType' in value) {
+    type = value.resourceType;
+  }
+  return { type, value };
 }
 
 /**
