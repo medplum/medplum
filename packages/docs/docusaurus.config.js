@@ -166,7 +166,7 @@ const config = {
               },
               {
                 label: 'Storybook',
-                to: 'https://docs.medplum.com/storybook/index.html',
+                to: 'https://storybook.medplum.com/',
               },
               {
                 label: 'GitHub',
