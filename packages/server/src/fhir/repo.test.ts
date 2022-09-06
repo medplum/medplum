@@ -2005,4 +2005,22 @@ describe('FHIR Repo', () => {
     });
     expect(searchResult.entry).toHaveLength(2);
   });
+
+  test('Error on invalid search parameter', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'ServiceRequest',
+        filters: [
+          {
+            code: 'basedOn', // should be "based-on"
+            operator: Operator.EQUALS,
+            value: 'ServiceRequest/123',
+          },
+        ],
+      });
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
+    }
+  });
 });

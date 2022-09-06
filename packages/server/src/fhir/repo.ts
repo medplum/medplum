@@ -815,7 +815,7 @@ export class Repository {
 
     const param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
-      return;
+      throw badRequest(`Unknown search parameter: ${filter.code}`);
     }
 
     const lookupTable = this.#getLookupTable(param);

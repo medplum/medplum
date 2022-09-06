@@ -118,7 +118,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   useEffect(() => {
     setOutcome(undefined);
     medplum
-      .search(search.resourceType as ResourceType, formatSearchQuery({ ...search, total: 'accurate' }))
+      .search(
+        search.resourceType as ResourceType,
+        formatSearchQuery({ ...search, total: 'accurate', fields: undefined })
+      )
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
         if (onLoad) {
