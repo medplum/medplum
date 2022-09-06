@@ -85,7 +85,7 @@ medplum/
 
 ### First time setup
 
-See developer setup documentation: https://docs.medplum.com/contributing
+See developer setup documentation: https://www.medplum.com/docs/contributing
 
 ## License
 

@@ -33,7 +33,7 @@ export const Basic = (): JSX.Element => (
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
       }}
     >
-      <img src="https://docs.medplum.com/img/wikimedia-papercut.jpg" alt="Papercut" title="Papercut" />
+      <img src="https://www.medplum.com/img/wikimedia-papercut.jpg" alt="Papercut" title="Papercut" />
     </TimelineItem>
     <TimelineItem
       profile={author}
@@ -43,7 +43,7 @@ export const Basic = (): JSX.Element => (
         meta: { lastUpdated: '2021-01-01T12:00:00Z' },
       }}
     >
-      <video src="https://docs.medplum.com/img/beat-boxing-mri.mp4" controls autoPlay muted></video>
+      <video src="https://www.medplum.com/img/beat-boxing-mri.mp4" controls autoPlay muted></video>
     </TimelineItem>
   </Timeline>
 );
