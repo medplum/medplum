@@ -20,6 +20,18 @@ aws s3 cp dist/ s3://app.medplum.com/ \
   --exclude "*" \
   --include "*.webmanifest"
 
+aws s3 cp dist/service-worker.js s3://app.medplum.com/ \
+  --region us-east-1 \
+  --recursive \
+  --content-type "application/javascript" \
+  --cache-control "no-cache"
+
+aws s3 cp dist/service-worker.js.map s3://app.medplum.com/ \
+  --region us-east-1 \
+  --recursive \
+  --content-type "application/json" \
+  --cache-control "no-cache"
+
 # Cache forever
 
 aws s3 cp dist/ s3://app.medplum.com/ \
@@ -36,7 +48,8 @@ aws s3 cp dist/ s3://app.medplum.com/ \
   --content-type "application/javascript" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
-  --include "*.js"
+  --include "*.js" \
+  --exclude "*/service-worker.js" \
 
 aws s3 cp dist/ s3://app.medplum.com/ \
   --region us-east-1 \
@@ -45,7 +58,8 @@ aws s3 cp dist/ s3://app.medplum.com/ \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.css.map" \
-  --include "*.js.map"
+  --include "*.js.map" \
+  --exclude "*/service-worker.js.map" \
 
 aws s3 cp dist/ s3://app.medplum.com/ \
   --region us-east-1 \
