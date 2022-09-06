@@ -1,5 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /graphiql
-Disallow: /storybook
-Sitemap: https://docs.medplum.com/sitemap.xml
+Sitemap: https://www.medplum.com/sitemap.xml
