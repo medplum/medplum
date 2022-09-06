@@ -7,8 +7,7 @@ import { Extension } from './Extension';
 import { Quantity } from './Quantity';
 
 /**
- * Base StructureDefinition for Range Type: A set of ordered Quantities
- * defined by a low and high limit.
+ * A set of ordered Quantities defined by a low and high limit.
  */
 export interface Range {
 

@@ -10,9 +10,8 @@ import { Period } from './Period';
 import { Reference } from './Reference';
 
 /**
- * Base StructureDefinition for Identifier Type: An identifier -
- * identifies some entity uniquely and unambiguously. Typically this is
- * used for business identifiers.
+ * An identifier - identifies some entity uniquely and unambiguously.
+ * Typically this is used for business identifiers.
  */
 export interface Identifier {
 

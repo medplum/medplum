@@ -18,11 +18,11 @@ import { Reference } from './Reference';
 import { ResearchStudy } from './ResearchStudy';
 
 /**
- * Base StructureDefinition for UsageContext Type: Specifies
- * clinical/business/etc. metadata that can be used to retrieve, index
- * and/or categorize an artifact. This metadata can either be specific to
- * the applicable population (e.g., age category, DRG) or the specific
- * context of care (e.g., venue, care setting, provider of care).
+ * Specifies clinical/business/etc. metadata that can be used to
+ * retrieve, index and/or categorize an artifact. This metadata can
+ * either be specific to the applicable population (e.g., age category,
+ * DRG) or the specific context of care (e.g., venue, care setting,
+ * provider of care).
  */
 export interface UsageContext {
 

@@ -10,12 +10,12 @@ import { Period } from './Period';
 import { Range } from './Range';
 
 /**
- * Base StructureDefinition for Timing Type: Specifies an event that may
- * occur multiple times. Timing schedules are used to record when things
- * are planned, expected or requested to occur. The most common usage is
- * in dosage instructions for medications. They are also used when
- * planning care of various kinds, and may be used for reporting the
- * schedule to which past regular activities were carried out.
+ * Specifies an event that may occur multiple times. Timing schedules are
+ * used to record when things are planned, expected or requested to
+ * occur. The most common usage is in dosage instructions for
+ * medications. They are also used when planning care of various kinds,
+ * and may be used for reporting the schedule to which past regular
+ * activities were carried out.
  */
 export interface Timing {
 

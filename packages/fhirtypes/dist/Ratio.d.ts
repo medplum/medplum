@@ -7,8 +7,8 @@ import { Extension } from './Extension';
 import { Quantity } from './Quantity';
 
 /**
- * Base StructureDefinition for Ratio Type: A relationship of two
- * Quantity values - expressed as a numerator and a denominator.
+ * A relationship of two Quantity values - expressed as a numerator and a
+ * denominator.
  */
 export interface Ratio {
 

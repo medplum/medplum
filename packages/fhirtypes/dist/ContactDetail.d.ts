@@ -7,8 +7,7 @@ import { ContactPoint } from './ContactPoint';
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for ContactDetail Type: Specifies contact
- * information for a person or organization.
+ * Specifies contact information for a person or organization.
  */
 export interface ContactDetail {
 

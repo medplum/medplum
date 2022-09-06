@@ -11,7 +11,7 @@ import { Reference } from './Reference';
 import { User } from './User';
 
 /**
- * OAuth login.
+ * Login event and session details.
  */
 export interface Login {
 

@@ -8,6 +8,9 @@ import { Meta } from './Meta';
 import { Reference } from './Reference';
 import { User } from './User';
 
+/**
+ * Encapsulation of resources for a specific project or organization.
+ */
 export interface Project {
 
   /**

@@ -7,9 +7,8 @@ import { Extension } from './Extension';
 import { Quantity } from './Quantity';
 
 /**
- * Base StructureDefinition for SampledData Type: A series of
- * measurements taken by a device, with upper and lower limits. There may
- * be more than one dimension in the data.
+ * A series of measurements taken by a device, with upper and lower
+ * limits. There may be more than one dimension in the data.
  */
 export interface SampledData {
 

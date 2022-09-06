@@ -8,7 +8,7 @@ import { Project } from './Project';
 import { Reference } from './Reference';
 
 /**
- * OAuth user.
+ * Representation of a human user of the system.
  */
 export interface User {
 

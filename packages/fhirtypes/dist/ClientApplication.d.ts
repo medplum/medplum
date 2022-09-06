@@ -5,6 +5,9 @@
 
 import { Meta } from './Meta';
 
+/**
+ * Medplum client application for automated access.
+ */
 export interface ClientApplication {
 
   /**

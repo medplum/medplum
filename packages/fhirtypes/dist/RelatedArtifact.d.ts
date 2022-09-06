@@ -7,9 +7,8 @@ import { Attachment } from './Attachment';
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for RelatedArtifact Type: Related artifacts
- * such as additional documentation, justification, or bibliographic
- * references.
+ * Related artifacts such as additional documentation, justification, or
+ * bibliographic references.
  */
 export interface RelatedArtifact {
 

@@ -12,9 +12,8 @@ import { Period } from './Period';
 import { Reference } from './Reference';
 
 /**
- * Base StructureDefinition for DataRequirement Type: Describes a
- * required data item for evaluation in terms of the type of data, and
- * optional code or date-based filters of the data.
+ * Describes a required data item for evaluation in terms of the type of
+ * data, and optional code or date-based filters of the data.
  */
 export interface DataRequirement {
 

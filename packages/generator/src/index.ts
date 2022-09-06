@@ -1,4 +1,4 @@
-import { capitalize, IndexedStructureDefinition, indexStructureDefinition, TypeSchema } from '@medplum/core';
+import { capitalize, globalSchema, indexStructureDefinition, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, ElementDefinitionType, Resource } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
@@ -24,7 +24,6 @@ interface FhirType {
 
 const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
 
@@ -33,7 +32,7 @@ export function main(): void {
   buildStructureDefinitions('profiles-resources.json');
   buildStructureDefinitions('profiles-medplum.json');
 
-  for (const [resourceType, definition] of Object.entries(structureDefinitions.types)) {
+  for (const [resourceType, definition] of Object.entries(globalSchema.types)) {
     const fhirType = buildType(resourceType, definition);
     if (fhirType) {
       fhirTypes.push(fhirType);
@@ -78,7 +77,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      indexStructureDefinition(resource);
     }
   }
 }
@@ -168,6 +167,10 @@ function writeInterfaceFile(fhirType: FhirType): void {
 }
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
+  if (!fhirType.properties || fhirType.properties.length === 0) {
+    return;
+  }
+
   const resourceType = fhirType.outputName;
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';

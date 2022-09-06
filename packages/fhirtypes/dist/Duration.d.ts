@@ -6,7 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Duration Type: A length of time.
+ * A length of time.
  */
 export interface Duration {
 

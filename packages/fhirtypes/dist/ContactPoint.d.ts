@@ -7,9 +7,8 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * Base StructureDefinition for ContactPoint Type: Details for all kinds
- * of technology mediated contact points for a person or organization,
- * including telephone, email, etc.
+ * Details for all kinds of technology mediated contact points for a
+ * person or organization, including telephone, email, etc.
  */
 export interface ContactPoint {
 
