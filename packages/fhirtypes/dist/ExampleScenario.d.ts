@@ -637,12 +637,6 @@ export interface ExampleScenarioProcessStepAlternative {
 }
 
 /**
- * What happens in each alternative option.
- */
-export interface ExampleScenarioProcessStepAlternativeStep {
-}
-
-/**
  * Each interaction or action.
  */
 export interface ExampleScenarioProcessStepOperation {
@@ -731,22 +725,4 @@ export interface ExampleScenarioProcessStepOperation {
    * Each resource instance used by the responder.
    */
   response?: ExampleScenarioInstanceContainedInstance;
-}
-
-/**
- * Each resource instance used by the initiator.
- */
-export interface ExampleScenarioProcessStepOperationRequest {
-}
-
-/**
- * Each resource instance used by the responder.
- */
-export interface ExampleScenarioProcessStepOperationResponse {
-}
-
-/**
- * Nested process.
- */
-export interface ExampleScenarioProcessStepProcess {
 }

@@ -352,13 +352,6 @@ export interface SubstanceSpecificationMoiety {
 }
 
 /**
- * The molecular weight or weight range (for proteins, polymers or
- * nucleic acids).
- */
-export interface SubstanceSpecificationMolecularWeight {
-}
-
-/**
  * Names applicable to this substance.
  */
 export interface SubstanceSpecificationName {
@@ -509,18 +502,6 @@ export interface SubstanceSpecificationNameOfficial {
    * Date of official name change.
    */
   date?: string;
-}
-
-/**
- * A synonym of this name.
- */
-export interface SubstanceSpecificationNameSynonym {
-}
-
-/**
- * A translation for this name.
- */
-export interface SubstanceSpecificationNameTranslation {
 }
 
 /**
@@ -924,13 +905,6 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
    * captured in this field.
    */
   amount?: Quantity;
-}
-
-/**
- * The molecular weight or weight range (for proteins, polymers or
- * nucleic acids).
- */
-export interface SubstanceSpecificationStructureMolecularWeight {
 }
 
 /**

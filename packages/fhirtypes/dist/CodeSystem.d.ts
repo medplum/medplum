@@ -357,14 +357,6 @@ export interface CodeSystemConcept {
 }
 
 /**
- * Defines children of a concept to produce a hierarchy of concepts. The
- * nature of the relationships is variable (is-a/contains/categorizes) -
- * see hierarchyMeaning.
- */
-export interface CodeSystemConceptConcept {
-}
-
-/**
  * Additional representations for the concept - other languages, aliases,
  * specialized purposes, used for particular purposes, etc.
  */

@@ -1164,12 +1164,6 @@ export interface TestScriptTeardownAction {
 }
 
 /**
- * An operation would involve a REST request to a server.
- */
-export interface TestScriptTeardownActionOperation {
-}
-
-/**
  * A test in this script.
  */
 export interface TestScriptTest {
@@ -1277,19 +1271,6 @@ export interface TestScriptTestAction {
    * server under test behaves appropriately.
    */
   assert?: TestScriptSetupActionAssert;
-}
-
-/**
- * Evaluates the results of previous operations to determine if the
- * server under test behaves appropriately.
- */
-export interface TestScriptTestActionAssert {
-}
-
-/**
- * An operation would involve a REST request to a server.
- */
-export interface TestScriptTestActionOperation {
 }
 
 /**

@@ -318,9 +318,3 @@ export interface MedicinalProductAuthorizationProcedure {
    */
   application?: MedicinalProductAuthorizationProcedure[];
 }
-
-/**
- * Applcations submitted to obtain a marketing authorization.
- */
-export interface MedicinalProductAuthorizationProcedureApplication {
-}

@@ -392,12 +392,6 @@ export interface RequestGroupAction {
 }
 
 /**
- * Sub actions.
- */
-export interface RequestGroupActionAction {
-}
-
-/**
  * An expression that describes applicability criteria, or start/stop
  * conditions for the action.
  */

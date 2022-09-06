@@ -397,13 +397,3 @@ export interface InvoiceParticipant {
    */
   actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
 }
-
-/**
- * The total amount for the Invoice may be calculated as the sum of the
- * line items with surcharges/deductions that apply in certain
- * conditions.  The priceComponent element can be used to offer
- * transparency to the recipient of the Invoice of how the total price
- * was calculated.
- */
-export interface InvoiceTotalPriceComponent {
-}

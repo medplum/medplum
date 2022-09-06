@@ -406,9 +406,3 @@ export interface GraphDefinitionLinkTargetCompartment {
    */
   description?: string;
 }
-
-/**
- * Additional links from target resource.
- */
-export interface GraphDefinitionLinkTargetLink {
-}

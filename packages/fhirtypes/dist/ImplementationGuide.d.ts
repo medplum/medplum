@@ -438,12 +438,6 @@ export interface ImplementationGuideDefinitionPage {
 }
 
 /**
- * Nested Pages/Sections under this page.
- */
-export interface ImplementationGuideDefinitionPagePage {
-}
-
-/**
  * Defines how IG is built by tools.
  */
 export interface ImplementationGuideDefinitionParameter {

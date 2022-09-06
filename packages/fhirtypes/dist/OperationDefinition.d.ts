@@ -487,12 +487,6 @@ export interface OperationDefinitionParameterBinding {
 }
 
 /**
- * The parts of a nested Parameter.
- */
-export interface OperationDefinitionParameterPart {
-}
-
-/**
  * Identifies other resource parameters within the operation invocation
  * that are expected to resolve to this resource.
  */

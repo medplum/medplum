@@ -303,9 +303,3 @@ export interface MedicinalProductPackagedPackageItem {
    */
   manufacturer?: Reference<Organization>[];
 }
-
-/**
- * Allows containers within containers.
- */
-export interface MedicinalProductPackagedPackageItemPackageItem {
-}

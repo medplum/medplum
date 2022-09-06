@@ -701,10 +701,3 @@ export interface QuestionnaireItemInitial {
    */
   valueReference?: Reference<Resource>;
 }
-
-/**
- * Text, questions and other groups to be nested beneath a question or
- * group.
- */
-export interface QuestionnaireItemItem {
-}

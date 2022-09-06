@@ -507,12 +507,6 @@ export interface StructureMapGroupRuleDependent {
 }
 
 /**
- * Rules contained in this rule.
- */
-export interface StructureMapGroupRuleRule {
-}
-
-/**
  * Source inputs to the mapping.
  */
 export interface StructureMapGroupRuleSource {

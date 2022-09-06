@@ -167,6 +167,10 @@ function writeInterfaceFile(fhirType: FhirType): void {
 }
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
+  if (!fhirType.properties || fhirType.properties.length === 0) {
+    return;
+  }
+
   const resourceType = fhirType.outputName;
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';

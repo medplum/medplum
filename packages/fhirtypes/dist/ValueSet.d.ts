@@ -305,13 +305,6 @@ export interface ValueSetCompose {
 }
 
 /**
- * Exclude one or more codes from the value set based on code system
- * filters and/or other value sets.
- */
-export interface ValueSetComposeExclude {
-}
-
-/**
  * Include one or more codes from a code system or other value set(s).
  */
 export interface ValueSetComposeInclude {
@@ -748,21 +741,6 @@ export interface ValueSetExpansionContains {
    * Other codes and entries contained under this entry in the hierarchy.
    */
   contains?: ValueSetExpansionContains[];
-}
-
-/**
- * Other codes and entries contained under this entry in the hierarchy.
- */
-export interface ValueSetExpansionContainsContains {
-}
-
-/**
- * Additional representations for this item - other languages, aliases,
- * specialized purposes, used for particular purposes, etc. These are
- * relevant when the conditions of the expansion do not fix to a single
- * correct representation.
- */
-export interface ValueSetExpansionContainsDesignation {
 }
 
 /**
