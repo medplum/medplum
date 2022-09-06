@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'Medplum',
   tagline: 'Fast and easy healthcare dev',
-  url: 'https://docs.medplum.com',
+  url: 'https://www.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
   onBrokenLinks: 'throw',
@@ -24,7 +24,6 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
-          routeBasePath: '/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             // Example: return an hardcoded list of static sidebar items
             let items = await defaultSidebarItemsGenerator(args);
@@ -90,20 +89,20 @@ const config = {
             type: 'doc',
             docId: 'home',
             position: 'left',
-            label: 'Home',
+            label: 'Docs',
           },
           {
-            to: '/tutorials',
+            to: '/docs/tutorials',
             label: 'Tutorials',
             position: 'left',
           },
           {
-            to: '/api',
+            to: '/docs/api',
             label: 'API',
             position: 'left',
           },
           {
-            to: '/contributing',
+            to: '/docs/contributing',
             label: 'Contributing',
             position: 'left',
           },
@@ -142,15 +141,15 @@ const config = {
             items: [
               {
                 label: 'Getting started',
-                to: '/tutorials/api-basics/create-fhir-data',
+                to: '/docs/tutorials/api-basics/create-fhir-data',
               },
               {
                 label: 'Playing with Medplum',
-                to: '/tutorials',
+                to: '/docs/tutorials',
               },
               {
                 label: 'Documentation',
-                to: '/',
+                to: '/docs',
               },
             ],
           },
@@ -180,11 +179,11 @@ const config = {
             items: [
               {
                 label: 'About us',
-                to: 'https://www.medplum.com/about',
+                to: '/about',
               },
               {
                 label: 'Services',
-                to: 'https://www.medplum.com/services',
+                to: '/services',
               },
               {
                 label: 'Security',
