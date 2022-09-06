@@ -265,4 +265,4 @@ You can configure your project to support open registration for patients, theref
 
 ### Related Resources
 
-- [Registration React Component](https://docs.medplum.com/storybook/index.html?path=/story/medplum-registerform--basic)
+- [Registration React Component](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic)
