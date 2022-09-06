@@ -41,39 +41,39 @@ const config = {
     ],
   ],
 
-  plugins: [
-    [
-      'docusaurus-plugin-typedoc',
-      {
-        // Plugin Options
-        id: 'sdk',
-        out: 'sdk',
+  // plugins: [
+  //   [
+  //     'docusaurus-plugin-typedoc',
+  //     {
+  //       // Plugin Options
+  //       id: 'sdk',
+  //       out: 'sdk',
 
-        // TypeDoc options
-        entryPoints: ['../core/src/index.ts'],
-        tsconfig: '../core/tsconfig.json',
-        excludePrivate: true,
-        excludeProtected: true,
-        externalPattern: '**/fhirpath/*.ts',
-        excludeExternals: true,
-        sort: 'source-order',
-        categorizeByGroup: false,
-        categoryOrder: [
-          'Read',
-          'Write',
-          'Create',
-          'Delete',
-          'Media',
-          'Authentication',
-          'Search',
-          'Caching',
-          'Batch',
-          '*',
-          'Other',
-        ],
-      },
-    ],
-  ],
+  //       // TypeDoc options
+  //       entryPoints: ['../core/src/index.ts'],
+  //       tsconfig: '../core/tsconfig.json',
+  //       excludePrivate: true,
+  //       excludeProtected: true,
+  //       externalPattern: '**/fhirpath/*.ts',
+  //       excludeExternals: true,
+  //       sort: 'source-order',
+  //       categorizeByGroup: false,
+  //       categoryOrder: [
+  //         'Read',
+  //         'Write',
+  //         'Create',
+  //         'Delete',
+  //         'Media',
+  //         'Authentication',
+  //         'Search',
+  //         'Caching',
+  //         'Batch',
+  //         '*',
+  //         'Other',
+  //       ],
+  //     },
+  //   ],
+  // ],
 
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
