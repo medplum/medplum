@@ -17,15 +17,15 @@ export async function authenticateTokenImpl(req: Request, res: Response): Promis
   }
 
   if (tokenType === 'Bearer') {
-    await authenticateBearerToken(res, token);
+    await authenticateBearerToken(req, res, token);
   } else if (tokenType === 'Basic') {
-    await authenticateBasicAuth(res, token);
+    await authenticateBasicAuth(req, res, token);
   } else {
     throw unauthorized;
   }
 }
 
-async function authenticateBearerToken(res: Response, token: string): Promise<void> {
+async function authenticateBearerToken(req: Request, res: Response, token: string): Promise<void> {
   try {
     const verifyResult = await verifyJwt(token);
     const claims = verifyResult.payload as MedplumAccessTokenClaims;
@@ -48,14 +48,14 @@ async function authenticateBearerToken(res: Response, token: string): Promise<vo
     res.locals.user = claims.username;
     res.locals.profile = claims.profile;
     res.locals.scope = claims.scope;
-    res.locals.repo = await getRepoForLogin(login, membership);
+    res.locals.repo = await getRepoForLogin(login, membership, isExtendedMode(req));
   } catch (err) {
     logger.error('verify error', err);
     throw unauthorized;
   }
 }
 
-async function authenticateBasicAuth(res: Response, token: string): Promise<void> {
+async function authenticateBasicAuth(req: Request, res: Response, token: string): Promise<void> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
@@ -95,5 +95,9 @@ async function authenticateBasicAuth(res: Response, token: string): Promise<void
   res.locals.user = client.id;
   res.locals.profile = getReferenceString(client);
   res.locals.scope = 'openid';
-  res.locals.repo = await getRepoForLogin(login, membership);
+  res.locals.repo = await getRepoForLogin(login, membership, isExtendedMode(req));
+}
+
+function isExtendedMode(req: Request): boolean {
+  return req.headers['x-medplum'] === 'extended';
 }

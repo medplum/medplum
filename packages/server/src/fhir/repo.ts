@@ -109,6 +109,15 @@ export interface RepositoryContext {
    * significantly more relaxed.
    */
   strictMode?: boolean;
+
+  /**
+   * Optional flag to include Medplum extended meta fields.
+   * Medplum tracks additional metadata for each resource, such as:
+   * 1) "author" - Reference to the last user who modified the resource.
+   * 2) "project" - Reference to the project that owns the resource.
+   * 3) "account" - Optional reference to a subaccount that owns the resource.
+   */
+  extendedMode?: boolean;
 }
 
 export interface CacheEntry<T extends Resource> {
@@ -177,6 +186,10 @@ export class Repository {
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
+    return this.#removeHiddenFields(await this.#readResourceImpl<T>(resourceType, id));
+  }
+
+  async #readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!id || !validator.isUUID(id)) {
       throw notFound;
     }
@@ -198,7 +211,7 @@ export class Repository {
         ) {
           throw notFound;
         }
-        return this.#removeHiddenFields(cacheRecord.resource);
+        return cacheRecord.resource;
       }
     }
 
@@ -218,7 +231,7 @@ export class Repository {
 
     const resource = JSON.parse(rows[0].content as string) as T;
     await setCacheEntry(resource);
-    return this.#removeHiddenFields(resource);
+    return resource;
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
@@ -242,7 +255,7 @@ export class Repository {
    */
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     try {
-      await this.readResource<T>(resourceType, id);
+      await this.#readResourceImpl<T>(resourceType, id);
     } catch (err) {
       if (!isGone(err as OperationOutcome)) {
         throw err;
@@ -290,7 +303,7 @@ export class Repository {
       throw notFound;
     }
 
-    await this.readResource<T>(resourceType, id);
+    await this.#readResourceImpl<T>(resourceType, id);
 
     const client = getClient();
     const rows = await new SelectQuery(resourceType + '_History')
@@ -390,7 +403,7 @@ export class Repository {
     create: boolean
   ): Promise<T | undefined> {
     try {
-      return await this.readResource<T>(resourceType, id);
+      return await this.#readResourceImpl<T>(resourceType, id);
     } catch (err) {
       if (!err || typeof err !== 'object' || !('resourceType' in err)) {
         throw err;
@@ -485,7 +498,7 @@ export class Repository {
       throw forbidden;
     }
 
-    const resource = await this.readResource<T>(resourceType, id);
+    const resource = await this.#readResourceImpl<T>(resourceType, id);
     await this.#writeResource(resource as T);
     await this.#writeLookupTables(resource as T);
     return resource as T;
@@ -503,13 +516,13 @@ export class Repository {
       throw forbidden;
     }
 
-    const resource = await this.readResource<T>(resourceType, id);
+    const resource = await this.#readResourceImpl<T>(resourceType, id);
     await addSubscriptionJobs(resource);
     return resource as T;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
-    const resource = await this.readResource(resourceType, id);
+    const resource = await this.#readResourceImpl(resourceType, id);
 
     if (!this.#canWriteResourceType(resourceType)) {
       throw forbidden;
@@ -543,7 +556,7 @@ export class Repository {
   }
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
-    const resource = await this.readResource(resourceType, id);
+    const resource = await this.#readResourceImpl(resourceType, id);
 
     let patchResult;
     try {
@@ -1455,6 +1468,12 @@ export class Repository {
         this.#removeField(input, field);
       }
     }
+    if (!this.#context.extendedMode) {
+      const meta = input.meta as Meta;
+      meta.author = undefined;
+      meta.project = undefined;
+      meta.account = undefined;
+    }
     return input;
   }
 
@@ -1594,9 +1613,14 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * This method ensures that the repository is setup correctly.
  * @param login The user login.
  * @param membership The active project membership.
+ * @param extendedMode Optional flag to enable extended mode for custom Medplum properties.
  * @returns A repository configured for the login details.
  */
-export async function getRepoForLogin(login: Login, membership: ProjectMembership): Promise<Repository> {
+export async function getRepoForLogin(
+  login: Login,
+  membership: ProjectMembership,
+  extendedMode?: boolean
+): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (membership.accessPolicy) {
@@ -1608,12 +1632,14 @@ export async function getRepoForLogin(login: Login, membership: ProjectMembershi
     author: membership.profile as Reference,
     superAdmin: login.admin || login.superAdmin,
     accessPolicy,
+    extendedMode,
   });
 }
 
 export const systemRepo = new Repository({
   superAdmin: true,
   strictMode: true,
+  extendedMode: true,
   author: {
     reference: 'system',
   },

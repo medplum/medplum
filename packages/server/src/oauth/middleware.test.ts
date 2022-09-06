@@ -148,6 +148,26 @@ describe('Auth middleware', () => {
       });
     expect(res.status).toBe(201);
     expect(res.body.meta).toBeDefined();
+    expect(res.body.meta.project).toBeUndefined();
+  });
+
+  test('Basic auth project with extended mode', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Given'],
+            family: 'Family',
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeDefined();
   });
 
