@@ -138,3 +138,28 @@ h1 {
 div.theme-code-block {
   margin-bottom: 5ch;
 }
+
+
+/* Sidebar styles */
+.theme-doc-sidebar-item-category-level-1
+{
+  font-size: 1rem;
+}
+.theme-doc-sidebar-item-link-level-1
+{
+  font-size: 1rem;
+}
+
+.theme-doc-sidebar-item-category-level-2
+{
+  font-size: calc(var(--ifm-font-size-base) / 1.125)
+}
+
+.theme-doc-sidebar-item-link-level-2 {
+  font-size: calc(var(--ifm-font-size-base) / 1.125);
+}
+
+.theme-doc-sidebar-item-link-level-3 {
+  /* font-size: 12px; */
+  font-size: calc(var(--ifm-font-size-base) / 1.125 / 1.125);
+}
