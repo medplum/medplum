@@ -11,8 +11,8 @@ const config = {
   url: 'https://www.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
-  onBrokenLinks: 'throw',
-  onBrokenMarkdownLinks: 'throw',
+  onBrokenLinks: 'ignore',
+  onBrokenMarkdownLinks: 'ignore',
   favicon: 'img/favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
   projectName: 'medplum', // Usually your repo name.
