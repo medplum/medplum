@@ -19,7 +19,7 @@ export default function IndexPage(): JSX.Element {
 
   return (
     <Layout title="Medplum">
-      <div className={styles.heroSection}>
+      <div>
         <div className={styles.pagePadding}>
           <div className={styles.section}>
             <div className={styles.heroContent}>
