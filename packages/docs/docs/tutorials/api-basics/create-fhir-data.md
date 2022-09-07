@@ -139,6 +139,7 @@ const observationData: Observation[] = [
     resourceType: 'Observation',
     basedOn: [createReference(serviceRequest)], // Connect this Observation to the ServiceRequest
     subject: createReference(patient), // Connect this Observation to the Patient
+    status: 'preliminary',
     code: {
       coding: [
         {
@@ -159,6 +160,7 @@ const observationData: Observation[] = [
     resourceType: 'Observation',
     basedOn: [createReference(serviceRequest)], // Connect this Observation to the ServiceRequest
     subject: createReference(patient), // Connect this Observation to the Patient
+    status: 'preliminary',
     code: {
       coding: [
         {
@@ -193,7 +195,8 @@ import { DiagnosticReport } from '@medplum/fhirtypes';
 const reportData: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   basedOn: [createReference(serviceRequest)], // Connect this DiagnosticReport to the ServiceRequest
-  subject: createReference(patient), // Connect this DiagnosticReport to the Patient
+  subject: createReference(patient), // Connect this DiagnosticReport to the Patient,
+  status: 'preliminary',
   code: {
     coding: [
       {
