@@ -130,8 +130,8 @@ const config = {
             items: [
               {
                 html: `
-                <a href="/security"><img src="/img/compliance/soc.png" style="width: 45px; height: 45px; margin: 4px;" loading="lazy" alt="SOC"></a>
-                <a href="/security"><img src="/img/compliance/hipaa.png" style="width: 100px; height: 45px; margin: 4px;" loading="lazy" alt="HIPAA"></a>
+                <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
+                <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
                   `,
               },
             ],
