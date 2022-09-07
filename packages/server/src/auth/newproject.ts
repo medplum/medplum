@@ -75,6 +75,7 @@ export async function createProject(
     resourceType: 'Project',
     name: projectName,
     owner: createReference(user),
+    strictMode: true,
   });
 
   logger.info('Created project: ' + project.id);

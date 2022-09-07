@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 
-export async function createTestProject(): Promise<{
+export async function createTestProject(options?: Partial<Project>): Promise<{
   project: Project;
   client: ClientApplication;
   membership: ProjectMembership;
@@ -15,6 +15,7 @@ export async function createTestProject(): Promise<{
     owner: {
       reference: 'User/' + randomUUID(),
     },
+    strictMode: true,
     features: ['bots', 'email'],
     secret: [
       {
@@ -22,6 +23,7 @@ export async function createTestProject(): Promise<{
         valueString: 'bar',
       },
     ],
+    ...options,
   });
 
   const client = await systemRepo.createResource<ClientApplication>({
@@ -47,12 +49,12 @@ export async function createTestProject(): Promise<{
   };
 }
 
-export async function createTestClient(): Promise<ClientApplication> {
-  return (await createTestProject()).client;
+export async function createTestClient(options?: Partial<Project>): Promise<ClientApplication> {
+  return (await createTestProject(options)).client;
 }
 
-export async function initTestAuth(): Promise<string> {
-  const { client, membership } = await createTestProject();
+export async function initTestAuth(options?: Partial<Project>): Promise<string> {
+  const { client, membership } = await createTestProject(options);
   const scope = 'openid';
 
   const login = await systemRepo.createResource<Login>({

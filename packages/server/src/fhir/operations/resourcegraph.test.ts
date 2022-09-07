@@ -28,7 +28,7 @@ describe('Resource $graph', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    defaultAccessToken = await initTestAuth();
+    defaultAccessToken = await initTestAuth({ strictMode: false });
   });
 
   afterAll(async () => {

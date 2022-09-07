@@ -1613,12 +1613,14 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * This method ensures that the repository is setup correctly.
  * @param login The user login.
  * @param membership The active project membership.
+ * @param strictMode Optional flag to enable strict mode for in-depth FHIR schema validation.
  * @param extendedMode Optional flag to enable extended mode for custom Medplum properties.
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(
   login: Login,
   membership: ProjectMembership,
+  strictMode?: boolean,
   extendedMode?: boolean
 ): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
@@ -1632,6 +1634,7 @@ export async function getRepoForLogin(
     author: membership.profile as Reference,
     superAdmin: login.admin || login.superAdmin,
     accessPolicy,
+    strictMode,
     extendedMode,
   });
 }

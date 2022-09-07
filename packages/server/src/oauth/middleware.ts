@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, unauthorized } from '@medplum/core';
-import { ClientApplication, Login, ProjectMembership } from '@medplum/fhirtypes';
+import { createReference, resolveId, unauthorized } from '@medplum/core';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
@@ -42,13 +42,7 @@ async function authenticateBearerToken(req: Request, res: Response, token: strin
     }
 
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-
-    res.locals.login = login;
-    res.locals.membership = membership;
-    res.locals.user = claims.username;
-    res.locals.profile = claims.profile;
-    res.locals.scope = claims.scope;
-    res.locals.repo = await getRepoForLogin(login, membership, isExtendedMode(req));
+    await setupLocals(req, res, login, membership);
   } catch (err) {
     logger.error('verify error', err);
     throw unauthorized;
@@ -88,14 +82,17 @@ async function authenticateBasicAuth(req: Request, res: Response, token: string)
     throw unauthorized;
   }
 
-  const membership = memberships[0];
+  await setupLocals(req, res, login, memberships[0]);
+}
 
-  res.locals.login = login;
-  res.locals.membership = membership;
-  res.locals.user = client.id;
-  res.locals.profile = getReferenceString(client);
-  res.locals.scope = 'openid';
-  res.locals.repo = await getRepoForLogin(login, membership, isExtendedMode(req));
+async function setupLocals(req: Request, res: Response, login: Login, membership: ProjectMembership): Promise<void> {
+  const locals = res.locals;
+  locals.membership = membership;
+  locals.user = resolveId(membership.user as Reference<User>);
+  locals.profile = membership.profile?.reference;
+  locals.scope = login.scope;
+  locals.project = await systemRepo.readReference(membership.project as Reference<Project>);
+  locals.repo = await getRepoForLogin(login, membership, locals.project.strictMode, isExtendedMode(req));
 }
 
 function isExtendedMode(req: Request): boolean {
