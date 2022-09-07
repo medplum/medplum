@@ -26,7 +26,7 @@ By using Bots, the entire logic is self contained and managed in one place. Like
 
 ## Patient registration example
 
-Let's create a simple example Patient Registration form to see how this works. We'll write a simple questionnaire to collect information from a patient, and then write a Bot that creates the corresponding  [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest)  resources.
+Let's create a simple example Patient Registration form to see how this works. We'll write a simple questionnaire to collect information from a patient, and then write a Bot that creates the corresponding [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) resources.
 
 ### 1. Create the Questionnaire
 
@@ -93,7 +93,7 @@ Let’s take a look at the resource that is created:
 
 Next, we'll write a Bot that creates a [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) based on the the user's response. To learn how to set up a new Bot, see the [Bot Basics tutorial](./bot-basics)
 
-To parse out the answers in the '[QuestionnaireResponse](/docs/api/fhir/resources/QuestionnaireResponse), we'll use the [`getQuestionnaireAnswers`](/docs/sdk/modules#getquestionnaireanswers) utility function. This function returns a map from the question's `linkId` to the response.
+To parse out the answers in the '[QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse), we'll use the [`getQuestionnaireAnswers`](/docs/sdk/modules#getquestionnaireanswers) utility function. This function returns a map from the question's `linkId` to the response.
 
 ```ts
 // Use the getQuestionnaireAnswers utility function to convert the response into
@@ -185,13 +185,11 @@ import connectBotUrl from './connect-bot.png';
 
 ### 6. Watch it work
 
-Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) have been created. 
+Now if you [submit the form](#3-submit-the-form) again, you'll notice that a new [Patient](/docs/api/fhir/resources/patient) and [ServiceRequest](/docs/api/fhir/resources/servicerequest) have been created.
 
 ![Submit Form](./submit-form2.png)
 
 ![Review Patient](./review-patient.png)![Review Service Request](./review-service-request.png)
-
-
 
 ## Conclusion
 
