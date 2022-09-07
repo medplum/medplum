@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Location, useLocation } from 'react-router-dom';
-import './Popup.css';
 import { killEvent } from './utils/dom';
+import './Popup.css';
 
 interface PopupProps {
   visible: boolean;
@@ -46,9 +46,19 @@ export function Popup(props: PopupProps): JSX.Element {
       }
     }
 
+    function handleScroll(e: Event): void {
+      if (propsRef.current?.visible) {
+        killEvent(e);
+      }
+    }
+
     document.addEventListener('click', handleClick, true);
+    window.addEventListener('wheel', handleScroll, { passive: false });
+    window.addEventListener('touchmove', handleScroll, true);
     return () => {
       document.removeEventListener('click', handleClick, true);
+      window.removeEventListener('wheel', handleScroll);
+      window.removeEventListener('touchmove', handleScroll, true);
     };
   }, [props]);
 
