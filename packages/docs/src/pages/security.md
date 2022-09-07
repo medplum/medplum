@@ -78,13 +78,39 @@ An unqualified opinion on a SOC 2 Type II audit report demonstrates to the Medpl
 
 Customers can request access to the audit report.
 
-## Security Scorecard
+## Security Tools
 
-<a href="https://securityscorecard.com/security-rating/medplum.com?utm_medium=badge&utm_source=medplum.com&utm_campaign=seal-of-trust&utm_content=https://platform.securityscorecard.io/"><img src="/img/compliance/securityscorecard.png" alt="Security Scorecard Logo" style={{ width: 250 }} /></a>
+Medplum continuously monitors all services to track security best practices.
+
+### SonarCloud
+
+[SonarCloud](https://observatory.mozilla.org/) is a cloud-based code quality and security service.
+
+<a href="https://sonarcloud.io/summary/new_code?id=medplum_medplum"><img src="/img/compliance/sonarcloud.png" alt="SonarCloud screenshot" width="500" /></a>
+
+### Mozilla Observatory
+
+[Mozilla Observatory](https://observatory.mozilla.org/) is a tool that is geared towards informing website owners of best practices for securing their sites.
+
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
+
+### SSL Labs
+
+[SSL Labs](https://www.ssllabs.com/index.html) is an online service that performs a deep analysis of the configuration of any SSL web server on the public Internet.
+
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com"><img src="/img/compliance/ssllabs-api.png" alt="SSL Labs api.medplum.com screenshot" width="350" /></a>
+<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com"><img src="/img/compliance/ssllabs-app.png" alt="SSL Labs app.medplum.com screenshot" width="350" /></a>
+
+### Security Scorecard
+
+[Security Scorecard](https://securityscorecard.com/) is an information security company that rates cybersecurity postures of corporate entities through completing scored analysis of cyber threat intelligence signals for the purposes of third party management and IT risk management.
+
+<a href="https://securityscorecard.com/security-rating/medplum.com?utm_medium=badge&utm_source=medplum.com&utm_campaign=seal-of-trust&utm_content=https://platform.securityscorecard.io/"><img src="/img/compliance/securityscorecard.png" alt="Security Scorecard Logo" width="200" /></a>
 
 ## Availability
 
-Medplum tracks and reports status on the [Medplum Status Page](https://status.medplum.com/).
+Medplum tracks and reports status on the [Medplum Status Page](https://status.medplum.com/) using [StatusCake](https://www.statuscake.com/) and [Pingdom](https://www.pingdom.com/).
 
 ## Report Vulnerabilities
 
