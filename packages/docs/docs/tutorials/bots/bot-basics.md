@@ -135,7 +135,7 @@ Let's walk through each of the parameters here in more detail.
 
 You can find the `id` of your Bot by clicking on the **Details** tab of the Bot resource. In this example, it is ` 43ac3060-ff20-49e8-9682-bf91ab3a5191`
 
-<img src='/img/app/bots/find_bot_id.png'/>
+![Find your Bot ID](/img/app/bots/find_bot_id.png)
 
 #### `CONTENT_TYPE`
 

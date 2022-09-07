@@ -13,7 +13,7 @@ export default function AboutPage(): JSX.Element {
           <div className={styles.cardContainer}>
             <div className={styles.profileCard}>
               <div className={styles.profileImage}>
-                <img src="/img/people/reshma.jpg" />
+                <img src="/img/people/reshma.jpg" alt="Reshma Khilnani profile picture" />
               </div>
               <h3>Reshma Khilnani</h3>
               <p>CEO</p>
@@ -24,7 +24,7 @@ export default function AboutPage(): JSX.Element {
             </div>
             <div className={styles.profileCard}>
               <div className={styles.profileImage}>
-                <img src="/img/people/cody.jpg" />
+                <img src="/img/people/cody.jpg" alt="Cody Ebberson profile picture" />
               </div>
               <h3>Cody Ebberson</h3>
               <p>CTO</p>
@@ -35,7 +35,7 @@ export default function AboutPage(): JSX.Element {
             </div>
             <div className={styles.profileCard}>
               <div className={styles.profileImage}>
-                <img src="/img/people/rahul.jpg" />
+                <img src="/img/people/rahul.jpg" alt="Rahul Agarwal profile picture" />
               </div>
               <h3>Rahul Agarwal</h3>
               <p>COO</p>

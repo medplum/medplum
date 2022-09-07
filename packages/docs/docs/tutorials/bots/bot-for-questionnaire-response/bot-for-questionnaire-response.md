@@ -35,7 +35,7 @@ import questionnaireSidebarURL from './questionnaire-sidebar.png'
 Our first step will be to create the questionnaire in the Medplum App
 
 1. Log into the [Medplum App](https://app.medplum.com)
-2. <span>Click "Questionnaire" on the left sidebar or navigate to <a href="https://app.medplum.com/Questionnaire">app.medplum.com/Questionnaire</a> <img alt="Questionnaire Sidebar" src={questionnaireSidebarURL} style={{maxHeight:"250px", width:"auto"}}/></span>
+2. <span>Click "Questionnaire" on the left sidebar or navigate to <a href="https://app.medplum.com/Questionnaire">app.medplum.com/Questionnaire</a> <img alt="Questionnaire Sidebar" src={questionnaireSidebarURL} style={{maxHeight:'250px', width:'auto'}} alt="Questionnaire sidebar screenshot" /></span>
 3. Click "new"
 4. This brings you to the default Resource editor. However, we are going to use an alternate method to author the Questionnaire. For now:
    1. Enter a "Title" for your new Questionnaire

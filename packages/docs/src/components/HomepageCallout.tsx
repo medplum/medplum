@@ -16,7 +16,7 @@ export default function HomepageCallout(props: HomepageCalloutProps): JSX.Elemen
         <div className={styles['link-container']}>
           <a href={props.linkRef}>{props.linkText}</a>
           <a href={props.linkRef} style={{ maxHeight: '26px' }}>
-            <img className={styles['icon']} src="img/small_arrow.svg" />
+            <img className={styles['icon']} src="img/small_arrow.svg" alt="Arrow icon" />
           </a>
         </div>
       </div>
