@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Location, useLocation } from 'react-router-dom';
 import './Popup.css';
+import { killEvent } from './utils/dom';
 
 interface PopupProps {
   visible: boolean;
@@ -40,12 +41,19 @@ export function Popup(props: PopupProps): JSX.Element {
         ref?.current &&
         !ref.current.contains(e.target as Node)
       ) {
+        killEvent(e);
         props.onClose();
       }
     }
 
     document.addEventListener('click', handleClick, true);
-    return () => document.removeEventListener('click', handleClick, true);
+    window.addEventListener('wheel', killEvent, { passive: false });
+    window.addEventListener('touchmove', killEvent, true);
+    return () => {
+      document.removeEventListener('click', handleClick, true);
+      window.removeEventListener('wheel', killEvent);
+      window.removeEventListener('touchmove', killEvent, true);
+    };
   }, [props]);
 
   // Listen for changes in the location

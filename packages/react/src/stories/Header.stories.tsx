@@ -15,7 +15,14 @@ const manyLinks: UserConfigurationMenuLink[] = new Array(50).fill(0).map((el, in
 }));
 
 export const Basic = (args: HeaderProps): JSX.Element => {
-  return <Header {...args} />;
+  return (
+    <>
+      <Header {...args} />
+      {new Array(50).fill(0).map((el, index) => (
+        <p key={index}>Lorem ipsum</p>
+      ))}
+    </>
+  );
 };
 
 export const CustomColor = (args: HeaderProps): JSX.Element => {
