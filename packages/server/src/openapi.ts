@@ -39,7 +39,7 @@ function buildBaseSpec(): OpenAPIObject {
       title: 'Medplum - OpenAPI 3.0',
       description:
         'Medplum OpenAPI 3.0 specification.  Learn more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
-      termsOfService: 'https://www.medplum.com/docs/terms/',
+      termsOfService: 'https://www.medplum.com/terms',
       contact: {
         email: 'hello@medplum.com',
       },

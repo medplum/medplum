@@ -25,7 +25,7 @@ Why are we back in YC?
 
 Medplum makes it fast and easy to build white label medical apps that look good and are compliant and integration-ready day one.
 
-* Read our [docs](https://www.medplum.com/docs/)
+* Read our [docs](https://www.medplum.com/docs)
 * Browse the [code](https://github.com/medplum)
 * Try our [sample app](https://foomedical.com/), with [source code](https://github.com/medplum/foomedical)
 

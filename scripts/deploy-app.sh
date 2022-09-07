@@ -49,7 +49,7 @@ aws s3 cp dist/ s3://app.medplum.com/ \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.js" \
-  --exclude "*/service-worker.js" \
+  --exclude "service-worker.js"
 
 aws s3 cp dist/ s3://app.medplum.com/ \
   --region us-east-1 \
@@ -59,7 +59,7 @@ aws s3 cp dist/ s3://app.medplum.com/ \
   --exclude "*" \
   --include "*.css.map" \
   --include "*.js.map" \
-  --exclude "*/service-worker.js.map" \
+  --exclude "service-worker.js.map"
 
 aws s3 cp dist/ s3://app.medplum.com/ \
   --region us-east-1 \
