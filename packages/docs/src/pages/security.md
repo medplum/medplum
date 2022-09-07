@@ -84,7 +84,7 @@ Customers can request access to the audit report.
 
 ## Availability
 
-Medplum tracks and reports status on the Medplum Status Page.
+Medplum tracks and reports status on the [Medplum Status Page](https://status.medplum.com/).
 
 ## Report Vulnerabilities
 
