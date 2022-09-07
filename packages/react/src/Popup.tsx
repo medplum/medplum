@@ -47,12 +47,8 @@ export function Popup(props: PopupProps): JSX.Element {
     }
 
     document.addEventListener('click', handleClick, true);
-    window.addEventListener('wheel', killEvent, { passive: false });
-    window.addEventListener('touchmove', killEvent, true);
     return () => {
       document.removeEventListener('click', handleClick, true);
-      window.removeEventListener('wheel', killEvent);
-      window.removeEventListener('touchmove', killEvent, true);
     };
   }, [props]);
 
