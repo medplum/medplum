@@ -210,6 +210,7 @@ const config = {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },
+      image: 'img/medplum.png',
       algolia: {
         // The application ID provided by Algolia
         appId: '6A1DXS603N',
