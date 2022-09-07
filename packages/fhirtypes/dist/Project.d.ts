@@ -62,6 +62,11 @@ export interface Project {
   superAdmin?: boolean;
 
   /**
+   * Whether this project uses strict FHIR validation.
+   */
+  strictMode?: boolean;
+
+  /**
    * The user who owns the project.
    */
   owner?: Reference<User>;
