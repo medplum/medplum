@@ -178,3 +178,17 @@ div.theme-code-block {
 .theme-doc-sidebar-item-link-level-3 {
   font-size: 0.8rem;
 }
+
+/* Footer styles */
+
+.medplum-soc-compliance-image {
+  width: 45px;
+  height: 45px;
+  margin: 4px;
+}
+
+.medplum-hipaa-compliance-image {
+  width: 100px;
+  height: 45px;
+  margin: 4px;
+}
