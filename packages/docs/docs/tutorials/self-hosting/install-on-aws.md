@@ -69,6 +69,12 @@ openssl rsa -in private.pem -outform PEM -pubout -out public.pem
 
 For more details, see [AWS CloudFront - Using signed URLs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html).
 
+### Add the signing key to CloudFront
+
+Follow the [Creating key pairs for your signers](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs) guide to add your signing key to CloudFront.
+
+Make note of the key ID for future steps.
+
 ### Create a S3 bucket for file storage
 
 Follow the [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) guide to create an S3 bucket for file storage. All file uploads such as images, videos, and documents will be stored in this bucket.
@@ -77,13 +83,17 @@ Follow the [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userg
 
 Follow the [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) guide to create an S3 bucket for logging. All log backups will be stored in this directory.
 
-### Create a config file
+### Create a SES email address
 
-Create a Medplum CDK config file. This is a JSON file that contains all of the custom configuration settings of the new environment.
+Follow the [Creating and verifying identities in Amazon SES](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html) guide to register an email address for system generated emails.
+
+### Create a CDK config file
+
+Create a Medplum CDK config file. This is a JSON file that contains all of the custom infrastructure configuration settings of the new environment. Note that this is distinct from the server config file (see next section).
 
 Here is a full example. See the table below for details on each setting.
 
-| Key                         | Value                                                                                                                                                                                                                                          |
+| Key                         | Description                                                                                                                                                                                                                                    |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`                      | The short name of your environment. This should be unique among your Medplum deployments. This will be used as part of Parameter Store path and CloudWatch Logs path. For example, `prod` or `staging`.                                        |
 | `stackName`                 | The long name of your environment. This will be included in many of the AWS resource names created by CDK. For example, `MyMedplumStack` or `MedplumStagingStack`.                                                                             |
@@ -142,6 +152,48 @@ Here is the server configuration for the Medplum staging environment:
 ```
 
 Make note of this file name.
+
+### Create a server config
+
+Create a Medplum server config in AWS Parameter Store.
+
+> **_TODO:_** Write documentation for how to use JSON config file format with Docker and CDK. It is technically possible using either a custom Dockerfile or a Docker layer on top of the official Medplum Docker image. It would require modifying the `MedplumTaskDefinition` `command` in `backend.ts`.
+
+When running Medplum server on a local developer machine, Medplum server typically loads config settings from a JSON config file. By default, it loads config settings from `medplum.config.json`.
+
+When running in AWS, Medplum server loads config settings from AWS Parameter Store, a feature of AWS Systems Manager (SSM).
+
+Some configuration settings are created automatically by the CDK deployment (for example, database and redis connection details). Other settings must be created manually before the first deploy.
+
+| Key                    | Description                                                                                                                                                                       | Automatic |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `port`                 | The port number that the API server binds to inside the Docker image. By default, you should use `8103`. In some cases, you may need to use `5000`.                               | no        |
+| `baseUrl`              | The fully qualified base URL of the API server including a trailing slash. For example, `https://api.example.com/`.                                                               | no        |
+| `issuer`               | The JWK issuer. By default, Medplum server uses built in OAuth, so `issuer` should be the same as `baseUrl`.                                                                      | no        |
+| `audience`             | The JWK audience. By default, Medplum server uses built in OAuth, so `audience` should be the same as `baseUrl`.                                                                  | no        |
+| `jwksUrl`              | The JWKS URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `.well-known/jwks.json`.                                                         | no        |
+| `authorizeUrl`         | The OAuth authorize URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/authorize`.                                                   | no        |
+| `tokenUrl`             | The OAuth token URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/token`.                                                           | no        |
+| `userInfoUrl`          | The OAuth userinfo URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/userinfo`.                                                     | no        |
+| `appBaseUrl`           | The fully qualified URL of the user-facing app. This is used for CORS and system generated emails. For example, `https://app.example.com/`.                                       | no        |
+| `binaryStorage`        | Where to store binary contents. This should be the CDK config `storageBucketName` with `s3:` prefix. For example, `s3:medplum-storage`.                                           | no        |
+| `storageBaseUrl`       | The fully qualified base URL of the binary storage. This should be the CDK config `storageDomainName` with `https://` prefix. For example, `https://storage.medplum.com/binary/`. | no        |
+| `signingKeyId`         | The AWS key ID of the CloudFront signing key that you created before.                                                                                                             | no        |
+| `signingKey`           | The private key of the CloudFront signing key.                                                                                                                                    | no        |
+| `signingKeyPassphrase` | The passphrase of the CloudFront signing key.                                                                                                                                     | no        |
+| `supportEmail`         | The email address to use when sending system generated messages. This email address must be registered in AWS SES.                                                                | no        |
+| `googleClientId`       | If using Google Authentication, this is the Google Client ID.                                                                                                                     | no        |
+| `googleClientSecret`   | If using Google Authentication, this is the Google Client Secret.                                                                                                                 | no        |
+| `recaptchaSiteKey`     | If using reCAPTCHA, this is the reCAPTCHA site key.                                                                                                                               | no        |
+| `recaptchaSecretKey`   | If using reCAPTCHA, this is the reCAPTCHA secret key.                                                                                                                             | no        |
+| `botLambdaRoleArn`     |                                                                                                                                                                                   | yes       |
+| `botLambdaLayerName`   |                                                                                                                                                                                   | no        |
+| `database`             | The database connection details (created automatically).                                                                                                                          | yes       |
+| `redis`                | The redis connection details (created automatically).                                                                                                                             | yes       |
+
+> **_TODO:_** Update the server with intelligent defaults to reduce the number of implicit configuration settings.
+
+> **_TODO:_** Investigate creating a signing key automatically on first run.
 
 ## Synth
 
