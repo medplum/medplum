@@ -61081,6 +61081,10 @@
           "description": "Whether this project is the super administrator project. A super administrator is a user who has complete access to all resources in all projects.",
           "$ref": "#/definitions/boolean"
         },
+        "strictMode": {
+          "description": "Whether this project uses strict FHIR validation.",
+          "$ref": "#/definitions/boolean"
+        },
         "owner": {
           "description": "Indicates the user with responsibility for managing the Project.",
           "$ref": "#/definitions/Reference"
