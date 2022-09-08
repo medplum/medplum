@@ -143,7 +143,7 @@ export interface CodeSystem {
    * The date (and optionally time) when the code system resource was
    * created or revised.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this code system is authored for
@@ -222,7 +222,7 @@ export interface CodeSystem {
    * The meaning of the hierarchy of concepts as represented in this
    * resource.
    */
-  hierarchyMeaning?: string;
+  hierarchyMeaning?: 'grouped-by' | 'is-a' | 'part-of' | 'classified-with';
 
   /**
    * The code system defines a compositional (post-coordination) grammar.
@@ -240,7 +240,7 @@ export interface CodeSystem {
    * The extent of the content of the code system (the concepts and codes
    * it defines) are represented in this resource instance.
    */
-  content?: string;
+  content?: 'not-present' | 'example' | 'fragment' | 'complete' | 'supplement';
 
   /**
    * The canonical URL of the code system that this code system supplement
@@ -549,7 +549,7 @@ export interface CodeSystemFilter {
   /**
    * A list of operators that can be used with the filter.
    */
-  operator?: string[];
+  operator?: ('=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists')[];
 
   /**
    * A description of what the value for the filter should be.
@@ -623,5 +623,5 @@ export interface CodeSystemProperty {
    * code defined by the code system (e.g. a reference to another defined
    * concept).
    */
-  type?: string;
+  type?: 'code' | 'Coding' | 'string' | 'integer' | 'boolean' | 'dateTime' | 'decimal';
 }

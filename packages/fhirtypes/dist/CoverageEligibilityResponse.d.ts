@@ -109,7 +109,7 @@ export interface CoverageEligibilityResponse {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * Code to specify whether requesting: prior authorization requirements
@@ -118,7 +118,7 @@ export interface CoverageEligibilityResponse {
    * patient; and/or validation that the specified coverage is in-force at
    * the date/period specified or 'now' if not specified.
    */
-  purpose?: string[];
+  purpose?: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom
@@ -156,7 +156,7 @@ export interface CoverageEligibilityResponse {
   /**
    * The outcome of the request processing.
    */
-  outcome?: string;
+  outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.

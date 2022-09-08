@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -135,7 +136,7 @@ export interface SearchParameter {
    * The status of this search parameter. Enables tracking the life-cycle
    * of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this search parameter is authored for
@@ -200,13 +201,13 @@ export interface SearchParameter {
    * The base resource type(s) that this search parameter can be used
    * against.
    */
-  base?: string[];
+  base?: ResourceType[];
 
   /**
    * The type of value that a search parameter may contain, and how the
    * content is interpreted.
    */
-  type?: string;
+  type?: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
 
   /**
    * A FHIRPath expression that returns a set of elements for the search
@@ -224,12 +225,12 @@ export interface SearchParameter {
    * How the search parameter relates to the set of elements returned by
    * evaluating the xpath query.
    */
-  xpathUsage?: string;
+  xpathUsage?: 'normal' | 'phonetic' | 'nearby' | 'distance' | 'other';
 
   /**
    * Types of resource (if a resource is referenced).
    */
-  target?: string[];
+  target?: ResourceType[];
 
   /**
    * Whether multiple values are allowed for each time the parameter
@@ -247,12 +248,12 @@ export interface SearchParameter {
   /**
    * Comparators supported for the search parameter.
    */
-  comparator?: string[];
+  comparator?: ('eq' | 'ne' | 'gt' | 'lt' | 'ge' | 'le' | 'sa' | 'eb' | 'ap')[];
 
   /**
    * A modifier supported for the search parameter.
    */
-  modifier?: string[];
+  modifier?: ('missing' | 'exact' | 'contains' | 'not' | 'text' | 'in' | 'not-in' | 'below' | 'above' | 'type' | 'identifier' | 'ofType')[];
 
   /**
    * Contains the names of any search parameters which may be chained to

@@ -67,13 +67,13 @@ test('Format Address', () => {
         city: 'Springfield',
         state: 'OR',
         postalCode: '97403',
-        use: 'official',
+        use: 'home',
       },
       {
         use: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 
   expect(
     formatAddress(
@@ -82,13 +82,13 @@ test('Format Address', () => {
         city: 'Springfield',
         state: 'OR',
         postalCode: '97403',
-        use: 'official',
+        use: 'home',
       },
       {
         all: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 });
 
 test('Format HumanName', () => {

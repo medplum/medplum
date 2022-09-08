@@ -34,7 +34,7 @@ export interface Identifier {
   /**
    * The purpose of this identifier.
    */
-  use?: string;
+  use?: 'usual' | 'official' | 'temp' | 'secondary' | 'old';
 
   /**
    * A coded type for the identifier that can be used to determine which

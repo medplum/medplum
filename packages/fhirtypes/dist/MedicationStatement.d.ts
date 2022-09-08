@@ -163,7 +163,7 @@ export interface MedicationStatement {
    * state of the medication used that this statement is about.  Generally,
    * this will be active or completed.
    */
-  status?: string;
+  status?: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold' | 'unknown' | 'not-taken';
 
   /**
    * Captures the reason for the current state of the MedicationStatement.

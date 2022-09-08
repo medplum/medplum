@@ -142,7 +142,7 @@ export interface MedicationAdministration {
    * it is possible for an administration to be started but not completed
    * or it may be paused while some other process is under way.
    */
-  status?: string;
+  status?: 'in-progress' | 'not-done' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'unknown';
 
   /**
    * A code indicating why the administration was not performed.

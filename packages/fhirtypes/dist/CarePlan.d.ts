@@ -168,13 +168,13 @@ export interface CarePlan {
    * Indicates whether the plan is currently being acted upon, represents
    * future intentions or is now a historical record.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * care plan and where the care plan fits into the workflow chain.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'order' | 'option';
 
   /**
    * Identifies what &quot;kind&quot; of plan this is to support differentiation
@@ -394,7 +394,7 @@ export interface CarePlanActivityDetail {
    * CarePlan.activity.reference.  For example, a MedicationRequest, a
    * ServiceRequest, or a CommunicationRequest.
    */
-  kind?: string;
+  kind?: 'Appointment' | 'CommunicationRequest' | 'DeviceRequest' | 'MedicationRequest' | 'NutritionOrder' | 'Task' | 'ServiceRequest' | 'VisionPrescription';
 
   /**
    * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
@@ -439,7 +439,7 @@ export interface CarePlanActivityDetail {
   /**
    * Identifies what progress is being made for the specific activity.
    */
-  status?: string;
+  status?: 'not-started' | 'scheduled' | 'in-progress' | 'on-hold' | 'completed' | 'cancelled' | 'stopped' | 'unknown' | 'entered-in-error';
 
   /**
    * Provides reason why the activity isn't yet started, is on hold, was

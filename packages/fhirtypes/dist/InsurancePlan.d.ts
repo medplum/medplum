@@ -112,7 +112,7 @@ export interface InsurancePlan {
   /**
    * The current state of the health insurance product.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The kind of health insurance product.

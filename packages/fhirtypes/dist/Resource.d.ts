@@ -317,5 +317,5 @@ export type Resource = AccessPolicy
   | VerificationResult
   | VisionPrescription;
 
-export type ResourceType = Resource['resourceType'];
-export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;
+  export type ResourceType = Resource['resourceType'];
+  export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;

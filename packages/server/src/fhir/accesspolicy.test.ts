@@ -603,7 +603,7 @@ describe('AccessPolicy', () => {
     try {
       await clientRepo.createResource<Observation>({
         resourceType: 'Observation',
-        status: 'active',
+        status: 'final',
         subject: createReference(patient as Patient),
         code: {
           text: 'test',

@@ -287,7 +287,7 @@ describe('FHIR schema', () => {
       resourceType: 'ImplementationGuide',
       name: 'x',
       status: 'active',
-      fhirVersion: ['x'],
+      fhirVersion: ['4.0.1'],
       url: 'https://example.com',
     };
 

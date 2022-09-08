@@ -123,7 +123,7 @@ export interface Device {
   /**
    * Status of the Device availability.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error' | 'unknown';
 
   /**
    * Reason for the dtatus of the Device availability.
@@ -305,7 +305,7 @@ export interface DeviceDeviceName {
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
-  type?: string;
+  type?: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
 }
 
 /**
@@ -509,7 +509,7 @@ export interface DeviceUdiCarrier {
   /**
    * A coded entry to indicate how the data was entered.
    */
-  entryType?: string;
+  entryType?: 'barcode' | 'rfid' | 'manual' | 'card' | 'self-reported' | 'unknown';
 }
 
 /**

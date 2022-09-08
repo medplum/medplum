@@ -135,7 +135,7 @@ export interface MedicationRequest {
    * A code specifying the current state of the order.  Generally, this
    * will be active or completed state.
    */
-  status?: string;
+  status?: 'active' | 'on-hold' | 'cancelled' | 'completed' | 'entered-in-error' | 'stopped' | 'draft' | 'unknown';
 
   /**
    * Captures the reason for the current state of the MedicationRequest.
@@ -145,7 +145,7 @@ export interface MedicationRequest {
   /**
    * Whether the request is a proposal, plan, or an original order.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates the type of medication request (for example, where the
@@ -158,7 +158,7 @@ export interface MedicationRequest {
    * Indicates how quickly the Medication Request should be addressed with
    * respect to other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * If true indicates that the provider is asking for the medication

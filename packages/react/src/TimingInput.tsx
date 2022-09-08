@@ -12,6 +12,8 @@ import { Select } from './Select';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
+type DayOfWeek = 'sun' | 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat';
+
 export interface TimingInputProps {
   name: string;
   defaultValue?: Timing;
@@ -76,7 +78,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     setRepeat({ ...valueRef.current?.repeat, periodUnit: newPeriodUnit });
   }
 
-  function setDayOfWeek(day: string, enabled: boolean): void {
+  function setDayOfWeek(day: DayOfWeek, enabled: boolean): void {
     if (enabled) {
       addDayOfWeek(day);
     } else {
@@ -84,14 +86,14 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     }
   }
 
-  function addDayOfWeek(day: string): void {
+  function addDayOfWeek(day: DayOfWeek): void {
     const existing = valueRef.current?.repeat?.dayOfWeek || [];
     if (!existing.includes(day)) {
       setRepeat({ ...valueRef.current?.repeat, dayOfWeek: [...existing, day] });
     }
   }
 
-  function removeDayOfWeek(day: string): void {
+  function removeDayOfWeek(day: DayOfWeek): void {
     const existing = valueRef.current?.repeat?.dayOfWeek || [];
     if (existing.includes(day)) {
       setRepeat({ ...valueRef.current?.repeat, dayOfWeek: existing.filter((d) => d !== day) });
@@ -130,7 +132,10 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             {daysOfWeek.map((day) => (
               <React.Fragment key={day}>
                 <label htmlFor={'timing-dialog-repeat-' + day}>{day.charAt(0).toUpperCase()}</label>
-                <Checkbox name={'timing-dialog-repeat-' + day} onChange={(newValue) => setDayOfWeek(day, newValue)} />
+                <Checkbox
+                  name={'timing-dialog-repeat-' + day}
+                  onChange={(newValue) => setDayOfWeek(day as DayOfWeek, newValue)}
+                />
               </React.Fragment>
             ))}
           </InputRow>

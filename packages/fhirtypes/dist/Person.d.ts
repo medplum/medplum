@@ -119,7 +119,7 @@ export interface Person {
   /**
    * Administrative Gender.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * The birth date for the person.
@@ -202,5 +202,5 @@ export interface PersonLink {
    * Level of assurance that this link is associated with the target
    * resource.
    */
-  assurance?: string;
+  assurance?: 'level1' | 'level2' | 'level3' | 'level4';
 }

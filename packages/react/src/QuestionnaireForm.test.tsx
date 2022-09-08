@@ -1,4 +1,4 @@
-import { getQuestionnaireAnswers, PropertyType } from '@medplum/core';
+import { getQuestionnaireAnswers } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -174,7 +174,7 @@ describe('QuestionnaireForm', () => {
           },
           {
             linkId: 'q5',
-            type: '', // Silently ignore missing type
+            type: '' as unknown as 'string', // Silently ignore missing type
             text: 'q5',
           },
           {
@@ -249,7 +249,7 @@ describe('QuestionnaireForm', () => {
     [QuestionnaireItemType.text, 'textarea', 'lorem ipsum'],
     [QuestionnaireItemType.url, 'url', 'https://example.com/'],
     [QuestionnaireItemType.quantity, 'number', '123'],
-  ]).test('%s question', async (propertyType: PropertyType, inputType: string, value: string) => {
+  ]).test('%s question', async (propertyType: QuestionnaireItemType, inputType: string, value: string) => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',

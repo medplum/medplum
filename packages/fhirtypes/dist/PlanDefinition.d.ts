@@ -170,7 +170,7 @@ export interface PlanDefinition {
    * The status of this plan definition. Enables tracking the life-cycle of
    * the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this plan definition is authored for
@@ -396,7 +396,7 @@ export interface PlanDefinitionAction {
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * A code that provides meaning for the action or action group. For
@@ -505,27 +505,27 @@ export interface PlanDefinitionAction {
   /**
    * Defines the grouping behavior for the action and its children.
    */
-  groupingBehavior?: string;
+  groupingBehavior?: 'visual-group' | 'logical-group' | 'sentence-group';
 
   /**
    * Defines the selection behavior for the action and its children.
    */
-  selectionBehavior?: string;
+  selectionBehavior?: 'any' | 'all' | 'all-or-none' | 'exactly-one' | 'at-most-one' | 'one-or-more';
 
   /**
    * Defines the required behavior for the action.
    */
-  requiredBehavior?: string;
+  requiredBehavior?: 'must' | 'could' | 'must-unless-documented';
 
   /**
    * Defines whether the action should usually be preselected.
    */
-  precheckBehavior?: string;
+  precheckBehavior?: 'yes' | 'no';
 
   /**
    * Defines whether the action can be selected multiple times.
    */
-  cardinalityBehavior?: string;
+  cardinalityBehavior?: 'single' | 'multiple';
 
   /**
    * A reference to an ActivityDefinition that describes the action to be
@@ -610,7 +610,7 @@ export interface PlanDefinitionActionCondition {
   /**
    * The kind of condition.
    */
-  kind?: string;
+  kind?: 'applicability' | 'start' | 'stop';
 
   /**
    * An expression that returns true or false, indicating whether the
@@ -725,7 +725,7 @@ export interface PlanDefinitionActionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: string;
+  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described
@@ -783,7 +783,8 @@ export interface PlanDefinitionActionRelatedAction {
   /**
    * The relationship of this action to the related action.
    */
-  relationship?: string;
+  relationship?: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
+      'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
 
   /**
    * A duration or range of durations to apply to the relationship. For

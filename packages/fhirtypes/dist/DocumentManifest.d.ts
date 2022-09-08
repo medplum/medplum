@@ -115,7 +115,7 @@ export interface DocumentManifest {
   /**
    * The status of this document manifest.
    */
-  status?: string;
+  status?: 'current' | 'superseded' | 'entered-in-error';
 
   /**
    * The code specifying the type of clinical activity that resulted in

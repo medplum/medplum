@@ -29,7 +29,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         onChange={(newValue) =>
           setValueWrapper({
             ...value,
-            comparator: newValue,
+            comparator: newValue as '<' | '<=' | '>=' | '>',
           })
         }
       >

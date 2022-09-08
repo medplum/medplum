@@ -126,12 +126,12 @@ export interface DocumentReference {
   /**
    * The status of this document reference.
    */
-  status?: string;
+  status?: 'current' | 'superseded' | 'entered-in-error';
 
   /**
    * The status of the underlying document.
    */
-  docStatus?: string;
+  docStatus?: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
 
   /**
    * Specifies the particular kind of document referenced  (e.g. History
@@ -394,7 +394,7 @@ export interface DocumentReferenceRelatesTo {
   /**
    * The type of relationship that this document has with anther document.
    */
-  code?: string;
+  code?: 'replaces' | 'transforms' | 'signs' | 'appends';
 
   /**
    * The target document of this relationship.

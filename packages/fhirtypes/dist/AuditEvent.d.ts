@@ -118,7 +118,7 @@ export interface AuditEvent {
    * Indicator for type of action performed during the event that generated
    * the audit.
    */
-  action?: string;
+  action?: 'C' | 'R' | 'U' | 'D' | 'E';
 
   /**
    * The period during which the activity occurred.
@@ -133,7 +133,7 @@ export interface AuditEvent {
   /**
    * Indicates whether the event succeeded or failed.
    */
-  outcome?: string;
+  outcome?: '0' | '4' | '8' | '12';
 
   /**
    * A free text description of the outcome of the event.
@@ -324,7 +324,7 @@ export interface AuditEventAgentNetwork {
    * An identifier for the type of network access point that originated the
    * audit event.
    */
-  type?: string;
+  type?: '1' | '2' | '3' | '4' | '5';
 }
 
 /**

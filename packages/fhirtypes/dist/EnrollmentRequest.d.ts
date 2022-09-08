@@ -105,7 +105,7 @@ export interface EnrollmentRequest {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The date when this resource was created.

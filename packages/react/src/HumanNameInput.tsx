@@ -23,7 +23,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
     }
   }
 
-  function setUse(use: string): void {
+  function setUse(use: 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden' | undefined): void {
     setValueWrapper({ ...valueRef.current, use: use ? use : undefined });
   }
 
@@ -57,7 +57,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <Select defaultValue={value?.use} onChange={setUse} testid="use">
+      <Select defaultValue={value?.use} onChange={setUse as (use: string) => void} testid="use">
         <option></option>
         <option>usual</option>
         <option>official</option>

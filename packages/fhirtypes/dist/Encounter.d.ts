@@ -121,7 +121,7 @@ export interface Encounter {
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  status?: string;
+  status?: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The status history permits the encounter resource to contain the
@@ -516,7 +516,7 @@ export interface EncounterLocation {
    * during the period specified. If the participant is no longer at the
    * location, then the period will have an end date/time.
    */
-  status?: string;
+  status?: 'planned' | 'active' | 'reserved' | 'completed';
 
   /**
    * This will be used to specify the required levels (bed/ward/room/etc.)
@@ -634,7 +634,7 @@ export interface EncounterStatusHistory {
    * planned | arrived | triaged | in-progress | onleave | finished |
    * cancelled +.
    */
-  status?: string;
+  status?: 'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The time that the episode was in the specified status.

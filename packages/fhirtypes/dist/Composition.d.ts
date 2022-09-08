@@ -119,7 +119,7 @@ export interface Composition {
    * The workflow/clinical status of this composition. The status is a
    * marker for the clinical standing of the document.
    */
-  status?: string;
+  status?: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
 
   /**
    * Specifies the particular kind of composition (e.g. History and
@@ -245,7 +245,7 @@ export interface CompositionAttester {
   /**
    * The type of attestation the authenticator offers.
    */
-  mode?: string;
+  mode?: 'personal' | 'professional' | 'legal' | 'official';
 
   /**
    * When the composition was attested by the party.
@@ -368,7 +368,7 @@ export interface CompositionRelatesTo {
    * The type of relationship that this composition has with anther
    * composition or document.
    */
-  code?: string;
+  code?: 'replaces' | 'transforms' | 'signs' | 'appends';
 
   /**
    * The target composition/document of this relationship.
@@ -468,7 +468,7 @@ export interface CompositionSection {
    * a snapshot of a list of items from another source, or whether it is a
    * prepared list where items may be marked as added, modified or deleted.
    */
-  mode?: string;
+  mode?: 'working' | 'snapshot' | 'changes';
 
   /**
    * Specifies the order applied to the items in the section entries.

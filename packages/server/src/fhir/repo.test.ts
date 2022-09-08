@@ -447,7 +447,7 @@ describe('FHIR Repo', () => {
 
     const encounter1 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
-      status: 'active',
+      status: 'in-progress',
       class: {
         code: 'HH',
         display: 'home health',
@@ -459,7 +459,7 @@ describe('FHIR Repo', () => {
 
     const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
-      status: 'active',
+      status: 'completed',
       encounter: createReference(encounter1 as Encounter),
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
@@ -477,7 +477,7 @@ describe('FHIR Repo', () => {
 
     const encounter2 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
-      status: 'active',
+      status: 'in-progress',
       class: {
         code: 'HH',
         display: 'home health',
@@ -489,7 +489,7 @@ describe('FHIR Repo', () => {
 
     const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
-      status: 'active',
+      status: 'completed',
       encounter: createReference(encounter2 as Encounter),
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
@@ -535,7 +535,7 @@ describe('FHIR Repo', () => {
 
     const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
-      status: 'active',
+      status: 'completed',
       basedOn: [createReference(serviceRequest1 as ServiceRequest)],
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
@@ -565,7 +565,7 @@ describe('FHIR Repo', () => {
 
     const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
-      status: 'active',
+      status: 'completed',
       basedOn: [createReference(serviceRequest2 as ServiceRequest)],
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),

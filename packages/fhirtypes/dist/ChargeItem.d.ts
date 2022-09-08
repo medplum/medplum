@@ -143,7 +143,7 @@ export interface ChargeItem {
   /**
    * The current state of the ChargeItem.
    */
-  status?: string;
+  status?: 'planned' | 'billable' | 'not-billable' | 'aborted' | 'billed' | 'entered-in-error' | 'unknown';
 
   /**
    * ChargeItems can be grouped to larger ChargeItems covering the whole

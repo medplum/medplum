@@ -166,7 +166,7 @@ export interface ResearchElementDefinition {
    * The status of this research element definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this research element definition is
@@ -326,13 +326,13 @@ export interface ResearchElementDefinition {
    * The type of research element, a population, an exposure, or an
    * outcome.
    */
-  type?: string;
+  type?: 'population' | 'exposure' | 'outcome';
 
   /**
    * The type of the outcome (e.g. Dichotomous, Continuous, or
    * Descriptive).
    */
-  variableType?: string;
+  variableType?: 'dichotomous' | 'continuous' | 'descriptive';
 
   /**
    * A characteristic that defines the members of the research element.
@@ -465,7 +465,7 @@ export interface ResearchElementDefinitionCharacteristic {
    * Indicates how elements are aggregated within the study effective
    * period.
    */
-  studyEffectiveGroupMeasure?: string;
+  studyEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 
   /**
    * A narrative description of the time period the study covers.
@@ -501,5 +501,5 @@ export interface ResearchElementDefinitionCharacteristic {
    * Indicates how elements are aggregated within the study effective
    * period.
    */
-  participantEffectiveGroupMeasure?: string;
+  participantEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 }

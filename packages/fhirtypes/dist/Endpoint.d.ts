@@ -108,7 +108,7 @@ export interface Endpoint {
   /**
    * active | suspended | error | off | test.
    */
-  status?: string;
+  status?: 'active' | 'suspended' | 'error' | 'off' | 'entered-in-error' | 'test';
 
   /**
    * A coded value that represents the technical details of the usage of

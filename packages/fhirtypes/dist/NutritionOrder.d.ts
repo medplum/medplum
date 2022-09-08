@@ -132,13 +132,13 @@ export interface NutritionOrder {
   /**
    * The workflow status of the nutrition order/request.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * NutrionOrder and where the request fits into the workflow chain.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * The person (patient) who needs the nutrition order for an oral diet,

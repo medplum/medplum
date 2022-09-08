@@ -135,7 +135,7 @@ export interface Patient {
    * Administrative Gender - the gender that the patient is considered to
    * have for administration and record keeping purposes.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * The date of birth for the individual.
@@ -329,7 +329,7 @@ export interface PatientContact {
    * Administrative Gender - the gender that the contact person is
    * considered to have for administration and record keeping purposes.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * Organization on behalf of which the contact is acting or for which the
@@ -394,5 +394,5 @@ export interface PatientLink {
    * The type of link between this patient resource and another patient
    * resource.
    */
-  type?: string;
+  type?: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
 }

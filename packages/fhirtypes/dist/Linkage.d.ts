@@ -161,7 +161,7 @@ export interface LinkageItem {
    * Distinguishes which item is &quot;source of truth&quot; (if any) and which items
    * are no longer considered to be current representations.
    */
-  type?: string;
+  type?: 'source' | 'alternate' | 'historical';
 
   /**
    * The resource instance being linked as part of the group.

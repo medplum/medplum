@@ -165,7 +165,7 @@ export interface EvidenceVariable {
    * The status of this evidence variable. Enables tracking the life-cycle
    * of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the evidence variable was
@@ -282,7 +282,7 @@ export interface EvidenceVariable {
    * The type of evidence element, a population, an exposure, or an
    * outcome.
    */
-  type?: string;
+  type?: 'dichotomous' | 'continuous' | 'descriptive';
 
   /**
    * A characteristic that defines the members of the evidence element.
@@ -427,5 +427,5 @@ export interface EvidenceVariableCharacteristic {
    * Indicates how elements are aggregated within the study effective
    * period.
    */
-  groupMeasure?: string;
+  groupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 }

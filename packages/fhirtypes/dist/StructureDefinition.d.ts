@@ -144,7 +144,7 @@ export interface StructureDefinition {
    * The status of this structure definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this structure definition is authored
@@ -221,7 +221,8 @@ export interface StructureDefinition {
    * specification, without the revision number, e.g.
    * [publication].[major].[minor], which is 4.0.1. for this version.
    */
-  fhirVersion?: string;
+  fhirVersion?: '0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
+      '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' | '4.0.1';
 
   /**
    * An external specification that the content is mapped to.
@@ -231,7 +232,7 @@ export interface StructureDefinition {
   /**
    * Defines the kind of structure that this definition is describing.
    */
-  kind?: string;
+  kind?: 'primitive-type' | 'complex-type' | 'resource' | 'logical';
 
   /**
    * Whether structure this definition describes is abstract or not  - that
@@ -276,7 +277,7 @@ export interface StructureDefinition {
   /**
    * How the type relates to the baseDefinition.
    */
-  derivation?: string;
+  derivation?: 'specialization' | 'constraint';
 
   /**
    * A snapshot view is expressed in a standalone form that can be used and
@@ -336,7 +337,7 @@ export interface StructureDefinitionContext {
    * Defines how to interpret the expression that defines what the context
    * of the extension is.
    */
-  type?: string;
+  type?: 'fhirpath' | 'element' | 'extension';
 
   /**
    * An expression that defines where an extension can be used in

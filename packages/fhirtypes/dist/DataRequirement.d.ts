@@ -271,5 +271,5 @@ export interface DataRequirementSort {
   /**
    * The direction of the sort, ascending or descending.
    */
-  direction?: string;
+  direction?: 'ascending' | 'descending';
 }

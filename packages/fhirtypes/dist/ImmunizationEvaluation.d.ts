@@ -106,7 +106,7 @@ export interface ImmunizationEvaluation {
    * Indicates the current status of the evaluation of the vaccination
    * administration event.
    */
-  status?: string;
+  status?: 'completed' | 'entered-in-error';
 
   /**
    * The individual for whom the evaluation is being done.

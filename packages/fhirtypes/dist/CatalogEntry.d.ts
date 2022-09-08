@@ -141,7 +141,7 @@ export interface CatalogEntry {
    * Used to support catalog exchange even for unsupported products, e.g.
    * getting list of medications even if not prescribable.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The time period in which this catalog entry is expected to be active.
@@ -221,7 +221,7 @@ export interface CatalogEntryRelatedEntry {
    * The type of relation to the related item: child, parent,
    * packageContent, containerPackage, usedIn, uses, requires, etc.
    */
-  relationtype?: string;
+  relationtype?: 'triggers' | 'is-replaced-by';
 
   /**
    * The reference to the related item.

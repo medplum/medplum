@@ -30,7 +30,7 @@ export interface HumanName {
   /**
    * Identifies the purpose for this name.
    */
-  use?: string;
+  use?: 'usual' | 'official' | 'temp' | 'nickname' | 'anonymous' | 'old' | 'maiden';
 
   /**
    * Specifies the entire name as it should be displayed e.g. on an

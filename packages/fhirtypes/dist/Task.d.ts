@@ -176,7 +176,8 @@ export interface Task {
   /**
    * The current status of the task.
    */
-  status?: string;
+  status?: 'draft' | 'requested' | 'received' | 'accepted' | 'rejected' | 'ready' | 'cancelled' | 'in-progress' |
+      'on-hold' | 'failed' | 'completed' | 'entered-in-error';
 
   /**
    * An explanation as to why this task is held, failed, was refused, etc.
@@ -193,13 +194,13 @@ export interface Task {
    * i+R[9]Cs this a proposed task, a planned task, an actionable task,
    * etc.
    */
-  intent?: string;
+  intent?: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the Task should be addressed with respect to
    * other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * A name or code (or both) briefly describing what the task involves.

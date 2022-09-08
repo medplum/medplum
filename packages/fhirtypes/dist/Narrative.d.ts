@@ -32,7 +32,7 @@ export interface Narrative {
    * just the defined data or the extensions too), or whether a human
    * authored it and it may contain additional data.
    */
-  status?: string;
+  status?: 'generated' | 'extensions' | 'additional' | 'empty';
 
   /**
    * The actual narrative content, a stripped down version of XHTML.

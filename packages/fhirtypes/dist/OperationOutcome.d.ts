@@ -143,7 +143,7 @@ export interface OperationOutcomeIssue {
    * Indicates whether the issue indicates a variation from successful
    * processing.
    */
-  severity?: string;
+  severity?: 'fatal' | 'error' | 'warning' | 'information';
 
   /**
    * Describes the type of the issue. The system that creates an
@@ -151,7 +151,10 @@ export interface OperationOutcomeIssue {
    * IssueType value set, and may additional provide its own code for the
    * error in the details element.
    */
-  code?: string;
+  code?: 'invalid' | 'structure' | 'required' | 'value' | 'invariant' | 'security' | 'login' | 'unknown' | 'expired' |
+      'forbidden' | 'suppressed' | 'processing' | 'not-supported' | 'duplicate' | 'multiple-matches' | 'not-found' |
+      'deleted' | 'too-long' | 'code-invalid' | 'extension' | 'too-costly' | 'business-rule' | 'conflict' | 'transient' |
+      'lock-error' | 'no-store' | 'exception' | 'timeout' | 'incomplete' | 'throttled' | 'informational';
 
   /**
    * Additional details about the error. This may be a text description of

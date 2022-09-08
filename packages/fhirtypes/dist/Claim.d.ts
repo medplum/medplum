@@ -123,7 +123,7 @@ export interface Claim {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
@@ -145,7 +145,7 @@ export interface Claim {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: string;
+  use?: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been

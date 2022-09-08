@@ -34,14 +34,14 @@ export interface Address {
   /**
    * The purpose of this address.
    */
-  use?: string;
+  use?: 'home' | 'work' | 'temp' | 'old' | 'billing';
 
   /**
    * Distinguishes between physical addresses (those you can visit) and
    * mailing addresses (e.g. PO Boxes and care-of addresses). Most
    * addresses are both.
    */
-  type?: string;
+  type?: 'postal' | 'physical' | 'both';
 
   /**
    * Specifies the entire address as it should be displayed e.g. on a

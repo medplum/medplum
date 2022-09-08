@@ -11,6 +11,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -142,7 +143,7 @@ export interface MessageDefinition {
    * The status of this message definition. Enables tracking the life-cycle
    * of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this message definition is authored
@@ -230,7 +231,7 @@ export interface MessageDefinition {
   /**
    * The impact of the content of the message.
    */
-  category?: string;
+  category?: 'consequence' | 'currency' | 'notification';
 
   /**
    * Identifies the resource (or resources) that are being addressed by the
@@ -243,7 +244,7 @@ export interface MessageDefinition {
    * Declare at a message definition level whether a response is required
    * or only upon error or success, or never.
    */
-  responseRequired?: string;
+  responseRequired?: 'always' | 'on-error' | 'never' | 'on-success';
 
   /**
    * Indicates what types of messages may be sent as an application-level
@@ -360,7 +361,7 @@ export interface MessageDefinitionFocus {
   /**
    * The kind of resource that must be the focus for this message.
    */
-  code?: string;
+  code?: ResourceType;
 
   /**
    * A profile that reflects constraints for the focal resource (and

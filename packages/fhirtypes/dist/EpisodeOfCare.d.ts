@@ -114,7 +114,7 @@ export interface EpisodeOfCare {
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  status?: string;
+  status?: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
 
   /**
    * The history of statuses that the EpisodeOfCare has been through
@@ -277,7 +277,7 @@ export interface EpisodeOfCareStatusHistory {
   /**
    * planned | waitlist | active | onhold | finished | cancelled.
    */
-  status?: string;
+  status?: 'planned' | 'waitlist' | 'active' | 'onhold' | 'finished' | 'cancelled' | 'entered-in-error';
 
   /**
    * The period during this EpisodeOfCare that the specific status applied.

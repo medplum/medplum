@@ -164,7 +164,7 @@ export interface ChargeItemDefinition {
   /**
    * The current state of the ChargeItemDefinition.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this charge item definition is
@@ -439,7 +439,7 @@ export interface ChargeItemDefinitionPropertyGroupPriceComponent {
   /**
    * This code identifies the type of the component.
    */
-  type?: string;
+  type?: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
 
   /**
    * A code that identifies the component. Codes may be used to

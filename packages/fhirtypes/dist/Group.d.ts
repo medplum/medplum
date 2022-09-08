@@ -121,7 +121,7 @@ export interface Group {
    * Identifies the broad classification of the kind of resources the group
    * includes.
    */
-  type?: string;
+  type?: 'person' | 'animal' | 'practitioner' | 'device' | 'medication' | 'substance';
 
   /**
    * If true, indicates that the resource refers to a specific group of

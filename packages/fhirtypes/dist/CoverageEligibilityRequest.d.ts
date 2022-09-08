@@ -114,7 +114,7 @@ export interface CoverageEligibilityRequest {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * When the requestor expects the processor to complete processing.
@@ -128,7 +128,7 @@ export interface CoverageEligibilityRequest {
    * patient; and/or validation that the specified coverage is in-force at
    * the date/period specified or 'now' if not specified.
    */
-  purpose?: string[];
+  purpose?: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom

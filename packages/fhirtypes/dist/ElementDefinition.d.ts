@@ -88,7 +88,7 @@ export interface ElementDefinition {
    * Codes that define how this element is represented in instances, when
    * the deviation varies from the normal case.
    */
-  representation?: string[];
+  representation?: ('xmlAttr' | 'xmlText' | 'typeAttr' | 'cdaText' | 'xhtml')[];
 
   /**
    * The name of this element definition slice, when slicing is working.
@@ -2391,7 +2391,7 @@ export interface ElementDefinitionBinding {
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  strength?: string;
+  strength?: 'required' | 'extensible' | 'preferred' | 'example';
 
   /**
    * Describes the intended use of this particular set of codes.
@@ -2443,7 +2443,7 @@ export interface ElementDefinitionConstraint {
    * Identifies the impact constraint violation has on the conformance of
    * the instance.
    */
-  severity?: string;
+  severity?: 'error' | 'warning';
 
   /**
    * Text that can be used to describe the constraint in messages
@@ -2898,7 +2898,7 @@ export interface ElementDefinitionSlicing {
    * ordered, profile authors can also say that additional slices are only
    * allowed at the end.
    */
-  rules?: string;
+  rules?: 'closed' | 'open' | 'openAtEnd';
 }
 
 /**
@@ -2929,7 +2929,7 @@ export interface ElementDefinitionSlicingDiscriminator {
   /**
    * How the element value is interpreted when discrimination is evaluated.
    */
-  type?: string;
+  type?: 'value' | 'exists' | 'pattern' | 'type' | 'profile';
 
   /**
    * A FHIRPath expression, using [the simple subset of
@@ -2999,11 +2999,11 @@ export interface ElementDefinitionType {
    * can be aggregated - is it a contained resource, or a reference, and if
    * the context is a bundle, is it included in the bundle.
    */
-  aggregation?: string[];
+  aggregation?: ('contained' | 'referenced' | 'bundled')[];
 
   /**
    * Whether this reference needs to be version specific or version
    * independent, or whether either can be used.
    */
-  versioning?: string;
+  versioning?: 'either' | 'independent' | 'specific';
 }

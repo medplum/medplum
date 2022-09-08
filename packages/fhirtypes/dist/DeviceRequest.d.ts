@@ -155,19 +155,19 @@ export interface DeviceRequest {
   /**
    * The status of the request.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the {{title}} should be addressed with respect
    * to other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * The details of the device to be used.

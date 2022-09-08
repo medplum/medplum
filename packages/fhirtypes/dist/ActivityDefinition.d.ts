@@ -166,7 +166,7 @@ export interface ActivityDefinition {
    * The status of this activity definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this activity definition is authored
@@ -317,7 +317,9 @@ export interface ActivityDefinition {
    * CommunicationRequest. Typically, but not always, this is a Request
    * resource.
    */
-  kind?: string;
+  kind?: 'Appointment' | 'AppointmentResponse' | 'CarePlan' | 'Claim' | 'CommunicationRequest' | 'Contract' |
+      'DeviceRequest' | 'EnrollmentRequest' | 'ImmunizationRecommendation' | 'MedicationRequest' | 'NutritionOrder' |
+      'ServiceRequest' | 'SupplyRequest' | 'Task' | 'VisionPrescription';
 
   /**
    * A profile to which the target of the activity definition is expected
@@ -335,13 +337,13 @@ export interface ActivityDefinition {
    * Indicates the level of authority/intentionality associated with the
    * activity and where the request should fit into the workflow chain.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the activity  should be addressed with respect
    * to other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * Set this to true if the definition is to indicate that a particular
@@ -570,7 +572,7 @@ export interface ActivityDefinitionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: string;
+  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described

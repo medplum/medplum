@@ -130,7 +130,7 @@ export interface DiagnosticReport {
   /**
    * The status of the diagnostic report.
    */
-  status?: string;
+  status?: 'registered' | 'partial' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'appended' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies the clinical discipline, department or

@@ -1,4 +1,4 @@
-import { globalSchema } from '@medplum/core';
+import { globalSchema, TypeSchema } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
@@ -56,7 +56,7 @@ globalSchema.types['ValueSet'] = {
   properties: {
     compose: valueSetComposeProperty,
   },
-};
+} as unknown as TypeSchema;
 
 globalSchema.types['ValueSetCompose'] = {
   display: 'Value Set Compose',
@@ -64,7 +64,7 @@ globalSchema.types['ValueSetCompose'] = {
     lockedDate: valueSetComposeLockedDateProperty,
     exclude: valueSetComposeExcludeProperty,
   },
-};
+} as unknown as TypeSchema;
 
 const medplum = new MockClient();
 
