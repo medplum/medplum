@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, createEvent, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from './MedplumProvider';
@@ -130,5 +130,33 @@ describe('Popup', () => {
     expect(popup.style.display).toEqual('block');
     expect(popup.style.left).toEqual('20px');
     expect(popup.style.bottom).toEqual('100px');
+  });
+
+  test('Block scrolling when visible', async () => {
+    setup(
+      <Popup visible={true} onClose={jest.fn()}>
+        test
+      </Popup>
+    );
+
+    const wheelEvent = createEvent.wheel(window);
+    await act(async () => {
+      fireEvent(window, wheelEvent);
+    });
+    expect(wheelEvent.defaultPrevented).toBe(true);
+  });
+
+  test('Do not block scrolling when not visible', async () => {
+    setup(
+      <Popup visible={false} onClose={jest.fn()}>
+        test
+      </Popup>
+    );
+
+    const wheelEvent = createEvent.wheel(window);
+    await act(async () => {
+      fireEvent(window, wheelEvent);
+    });
+    expect(wheelEvent.defaultPrevented).toBe(false);
   });
 });
