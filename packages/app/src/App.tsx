@@ -47,7 +47,7 @@ export function App(): JSX.Element {
       </ErrorBoundary>
       {!profile && (
         <FooterLinks>
-          <a href="https://www.medplum.com/privacy">Terms</a>
+          <a href="https://www.medplum.com/terms">Terms</a>
           <a href="https://www.medplum.com/privacy">Privacy</a>
         </FooterLinks>
       )}
