@@ -1936,6 +1936,7 @@ export class MedplumClient extends EventTarget {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
+      credentials: 'include',
     })
       .then((response) => {
         if (!response.ok) {
