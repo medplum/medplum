@@ -227,6 +227,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   useEffect(() => {
+    setSchemaLoaded(false);
     medplum
       .requestSchema(props.search.resourceType as ResourceType)
       .then(() => setSchemaLoaded(true))
