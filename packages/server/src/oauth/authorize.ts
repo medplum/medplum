@@ -171,7 +171,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.search<Login>({
     resourceType: 'Login',
     filters: [
       {
@@ -182,7 +182,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     ],
   });
 
-  return bundle.entry?.[0]?.resource as Login | undefined;
+  return bundle.entry?.[0]?.resource;
 }
 
 /**

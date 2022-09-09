@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import { Router } from 'express';
 import { getRateLimiter } from '../ratelimit';
 import { authorizeGetHandler } from './authorize';
@@ -7,7 +8,7 @@ import { userInfoHandler } from './userinfo';
 
 export const oauthRouter = Router();
 oauthRouter.use(getRateLimiter());
-oauthRouter.get('/authorize', authorizeGetHandler);
+oauthRouter.get('/authorize', cookieParser(), authorizeGetHandler);
 oauthRouter.post('/token', tokenHandler);
 oauthRouter.get('/userinfo', authenticateToken, userInfoHandler);
 oauthRouter.post('/userinfo', authenticateToken, userInfoHandler);

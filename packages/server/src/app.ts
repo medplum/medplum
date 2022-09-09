@@ -1,7 +1,6 @@
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
-import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, text, urlencoded } from 'express';
 import { adminRouter } from './admin';
@@ -111,7 +110,6 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
-  app.use(cookieParser());
   app.use(cors(corsOptions));
   app.use(compression());
   app.use('/fhir/R4/Binary', [authenticateToken], binaryRouter);

@@ -117,8 +117,7 @@ export async function sendLoginResult(res: Response, login: Login, projectId: st
 export function sendLoginCookie(res: Response, login: Login): void {
   if (login.client) {
     const cookieName = 'medplum-' + resolveId(login.client);
-    console.log(cookieName, (login as Login).cookie);
-    res.cookie(cookieName, (login as Login).cookie as string, {
+    res.cookie(cookieName, login.cookie as string, {
       maxAge: 3600 * 1000,
       sameSite: 'none',
       secure: true,
