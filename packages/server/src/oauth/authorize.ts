@@ -166,7 +166,6 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
 async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
   const cookieName = 'medplum-' + client.id;
   const cookieValue = req.cookies[cookieName];
-  console.log('CODY getExistingLoginFromCookie', cookieName, cookieValue);
   if (!cookieValue) {
     return undefined;
   }
