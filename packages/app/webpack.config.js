@@ -78,6 +78,7 @@ export default (env, argv) => ({
     new WorkboxPlugin.GenerateSW({
       clientsClaim: true,
       skipWaiting: true,
+      maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
     }),
   ],
   module: {
