@@ -32,7 +32,6 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
   const issues = getIssuesForExpression(outcome, undefined);
 
   async function startPkce(): Promise<void> {
-    console.log('CODY: startPkce', props.generatePkce);
     if (props.generatePkce) {
       await medplum.startPkce();
     }
