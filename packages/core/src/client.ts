@@ -623,11 +623,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startNewUser(newUserRequest: NewUserRequest): Promise<LoginAuthenticationResponse> {
-    await this.#startPkce();
+    await this.startPkce();
     return this.post('auth/newuser', {
       ...newUserRequest,
       codeChallengeMethod: 'S256',
-      codeChallenge: this.#storage.getString('codeChallenge') as string,
+      codeChallenge: sessionStorage.getItem('codeChallenge') as string,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -662,15 +662,13 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startLogin(loginRequest: LoginRequest): Promise<LoginAuthenticationResponse> {
-    if (!loginRequest.codeChallenge || !loginRequest.codeChallengeMethod) {
-      await this.#startPkce();
-    }
+    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/login', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
       scope: loginRequest.scope ?? DEFAULT_SCOPE,
-      codeChallengeMethod: loginRequest.codeChallengeMethod || 'S256',
-      codeChallenge: loginRequest.codeChallenge || (this.#storage.getString('codeChallenge') as string),
+      codeChallengeMethod,
+      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -683,16 +681,36 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
-    if (!loginRequest.codeChallenge || !loginRequest.codeChallengeMethod) {
-      await this.#startPkce();
-    }
+    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/google', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
       scope: loginRequest.scope ?? DEFAULT_SCOPE,
-      codeChallengeMethod: loginRequest.codeChallengeMethod || 'S256',
-      codeChallenge: loginRequest.codeChallenge || (this.#storage.getString('codeChallenge') as string),
+      codeChallengeMethod,
+      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
+  }
+
+  getCodeChallenge(loginRequest: LoginRequest | GoogleLoginRequest): {
+    codeChallenge?: string;
+    codeChallengeMethod?: string;
+  } {
+    if (loginRequest.codeChallenge) {
+      return {
+        codeChallenge: loginRequest.codeChallenge,
+        codeChallengeMethod: loginRequest.codeChallengeMethod,
+      };
+    }
+
+    const codeChallenge = sessionStorage.getItem('codeChallenge');
+    if (codeChallenge) {
+      return {
+        codeChallenge,
+        codeChallengeMethod: 'S256',
+      };
+    }
+
+    return {};
   }
 
   /**
@@ -1819,16 +1837,16 @@ export class MedplumClient extends EventTarget {
    * Starts a new PKCE flow.
    * These PKCE values are stateful, and must survive redirects and page refreshes.
    */
-  async #startPkce(): Promise<void> {
+  async startPkce(): Promise<void> {
     const pkceState = getRandomString();
-    this.#storage.setString('pkceState', pkceState);
+    sessionStorage.setItem('pkceState', pkceState);
 
     const codeVerifier = getRandomString();
-    this.#storage.setString('codeVerifier', codeVerifier);
+    sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
     const codeChallenge = arrayBufferToBase64(arrayHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    this.#storage.setString('codeChallenge', codeChallenge);
+    sessionStorage.setItem('codeChallenge', codeChallenge);
   }
 
   /**
@@ -1837,16 +1855,16 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   async #requestAuthorization(): Promise<void> {
-    await this.#startPkce();
+    await this.startPkce();
 
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('state', this.#storage.getString('pkceState') as string);
+    url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', this.#clientId);
     url.searchParams.set('redirect_uri', getBaseUrl());
     url.searchParams.set('scope', DEFAULT_SCOPE);
     url.searchParams.set('code_challenge_method', 'S256');
-    url.searchParams.set('code_challenge', this.#storage.getString('codeChallenge') as string);
+    url.searchParams.set('code_challenge', sessionStorage.getItem('codeChallenge') as string);
     window.location.assign(url.toString());
   }
 
@@ -1856,24 +1874,17 @@ export class MedplumClient extends EventTarget {
    * @param code The authorization code received by URL parameter.
    */
   processCode(code: string): Promise<ProfileResource> {
-    const pkceState = this.#storage.getString('pkceState');
-    if (!pkceState) {
-      this.clear();
-      throw new Error('Invalid PCKE state');
-    }
-
-    const codeVerifier = this.#storage.getString('codeVerifier');
-    if (!codeVerifier) {
-      this.clear();
-      throw new Error('Invalid PCKE code verifier');
-    }
-
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
     formBody.set('client_id', this.#clientId);
-    formBody.set('code_verifier', codeVerifier);
     formBody.set('code', code);
     formBody.set('redirect_uri', getBaseUrl());
+
+    const codeVerifier = sessionStorage.getItem('codeVerifier');
+    if (codeVerifier) {
+      formBody.set('code_verifier', codeVerifier);
+    }
+
     return this.#fetchTokens(formBody);
   }
 
@@ -1925,6 +1936,7 @@ export class MedplumClient extends EventTarget {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
+      credentials: 'include',
     })
       .then((response) => {
         if (!response.ok) {

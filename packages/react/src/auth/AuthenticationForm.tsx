@@ -16,6 +16,7 @@ export interface AuthenticationFormProps {
   readonly scope?: string;
   readonly nonce?: string;
   readonly googleClientId?: string;
+  readonly generatePkce?: boolean;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly onForgotPassword?: () => void;
@@ -30,22 +31,30 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const issues = getIssuesForExpression(outcome, undefined);
 
+  async function startPkce(): Promise<void> {
+    if (props.generatePkce) {
+      await medplum.startPkce();
+    }
+  }
+
   return (
     <Form
       style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
-        medplum
-          .startLogin({
-            projectId: props.projectId,
-            clientId: props.clientId,
-            scope: props.scope,
-            nonce: props.nonce,
-            codeChallenge: props.codeChallenge,
-            codeChallengeMethod: props.codeChallengeMethod,
-            email: formData.email,
-            password: formData.password,
-            remember: formData.remember === 'true',
-          })
+        startPkce()
+          .then(() =>
+            medplum.startLogin({
+              projectId: props.projectId,
+              clientId: props.clientId,
+              scope: props.scope,
+              nonce: props.nonce,
+              codeChallenge: props.codeChallenge,
+              codeChallengeMethod: props.codeChallengeMethod,
+              email: formData.email,
+              password: formData.password,
+              remember: formData.remember === 'true',
+            })
+          )
           .then(props.handleAuthResponse)
           .catch(setOutcome);
       }}
@@ -66,17 +75,19 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={(response: GoogleCredentialResponse) => {
-                medplum
-                  .startGoogleLogin({
-                    projectId: props.projectId,
-                    clientId: props.clientId,
-                    scope: props.scope,
-                    nonce: props.nonce,
-                    codeChallenge: props.codeChallenge,
-                    codeChallengeMethod: props.codeChallengeMethod,
-                    googleClientId: response.clientId,
-                    googleCredential: response.credential,
-                  })
+                startPkce()
+                  .then(() =>
+                    medplum.startGoogleLogin({
+                      projectId: props.projectId,
+                      clientId: props.clientId,
+                      scope: props.scope,
+                      nonce: props.nonce,
+                      codeChallenge: props.codeChallenge,
+                      codeChallengeMethod: props.codeChallengeMethod,
+                      googleClientId: response.clientId,
+                      googleCredential: response.credential,
+                    })
+                  )
                   .then(props.handleAuthResponse)
                   .catch(setOutcome);
               }}

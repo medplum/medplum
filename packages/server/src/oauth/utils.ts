@@ -92,6 +92,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     authMethod: request.authMethod,
     authTime: new Date().toISOString(),
     code: generateSecret(16),
+    cookie: generateSecret(16),
     refreshSecret,
     scope: request.scope,
     nonce: request.nonce,

@@ -66,6 +66,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               scope={props.scope}
               nonce={props.nonce}
               googleClientId={props.googleClientId}
+              generatePkce={!props.onCode}
               codeChallenge={props.codeChallenge}
               codeChallengeMethod={props.codeChallengeMethod}
               onForgotPassword={props.onForgotPassword}

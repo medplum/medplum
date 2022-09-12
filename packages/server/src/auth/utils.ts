@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
   Login,
@@ -84,6 +84,7 @@ export async function sendLoginResult(res: Response, login: Login, projectId: st
 
   if (login.membership) {
     // User only has one profile, so proceed
+    sendLoginCookie(res, login);
     res.json({
       login: login?.id,
       code: login?.code,
@@ -106,6 +107,23 @@ export async function sendLoginResult(res: Response, login: Login, projectId: st
       memberships: redactedMemberships,
     })
   );
+}
+
+/**
+ * Adds a login cookie to the response if this is a OAuth2 client login.
+ * @param res The response object.
+ * @param login The login details.
+ */
+export function sendLoginCookie(res: Response, login: Login): void {
+  if (login.client) {
+    const cookieName = 'medplum-' + resolveId(login.client);
+    res.cookie(cookieName, login.cookie as string, {
+      maxAge: 3600 * 1000,
+      sameSite: 'none',
+      secure: true,
+      httpOnly: true,
+    });
+  }
 }
 
 /**

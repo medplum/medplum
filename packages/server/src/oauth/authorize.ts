@@ -1,4 +1,4 @@
-import { getDateProperty } from '@medplum/core';
+import { getDateProperty, Operator } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { URL } from 'url';
@@ -81,7 +81,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
     }
   }
 
-  const existingLogin = await getExistingLogin(req);
+  const existingLogin = await getExistingLogin(req, client);
 
   const prompt = req.query.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
@@ -109,10 +109,11 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
 /**
  * Tries to get an existing login for the current request.
  * @param req The HTTP request.
+ * @param client The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
-async function getExistingLogin(req: Request): Promise<Login | undefined> {
-  const login = await getExistingLoginFromIdTokenHint(req);
+async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
+  const login = (await getExistingLoginFromIdTokenHint(req)) || (await getExistingLoginFromCookie(req, client));
 
   if (!login) {
     return undefined;
@@ -131,7 +132,6 @@ async function getExistingLogin(req: Request): Promise<Login | undefined> {
 /**
  * Tries to get an existing login based on the "id_token_hint" query string parameter.
  * @param req The HTTP request.
- * @param client The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
@@ -155,6 +155,33 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   }
 
   return systemRepo.readResource<Login>('Login', existingLoginId);
+}
+
+/**
+ * Tries to get an existing login based on the HTTP cookies.
+ * @param req The HTTP request.
+ * @param client The current client application.
+ * @returns Existing login if found; undefined otherwise.
+ */
+async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
+  const cookieName = 'medplum-' + client.id;
+  const cookieValue = req.cookies[cookieName];
+  if (!cookieValue) {
+    return undefined;
+  }
+
+  const bundle = await systemRepo.search<Login>({
+    resourceType: 'Login',
+    filters: [
+      {
+        code: 'cookie',
+        operator: Operator.EQUALS,
+        value: cookieValue,
+      },
+    ],
+  });
+
+  return bundle.entry?.[0]?.resource;
 }
 
 /**
