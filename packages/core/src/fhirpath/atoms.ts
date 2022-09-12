@@ -1,5 +1,6 @@
 import { Resource } from '@medplum/fhirtypes';
-import { PropertyType } from '../types';
+import { Atom } from '../fhirlexer';
+import { PropertyType, TypedValue } from '../types';
 import { FhirPathFunction, functions } from './functions';
 import {
   booleanToTypedValue,
@@ -13,15 +14,6 @@ import {
   toJsBoolean,
   toTypedValue,
 } from './utils';
-
-export interface TypedValue {
-  readonly type: string;
-  readonly value: any;
-}
-
-export interface Atom {
-  eval(context: TypedValue[]): TypedValue[];
-}
 
 export class FhirPathAtom implements Atom {
   constructor(public readonly original: string, public readonly child: Atom) {}

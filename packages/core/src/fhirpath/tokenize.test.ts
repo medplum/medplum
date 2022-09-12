@@ -82,7 +82,7 @@ describe('Tokenizer', () => {
   });
 
   test('String escape sequence', () => {
-    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toEqual([
+    expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toMatchObject([
       {
         id: 'String',
         value: '\\\\\\/\\f\\r\\n\\t\\"\\`\\\'\\u002a',

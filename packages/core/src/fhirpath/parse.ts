@@ -1,10 +1,10 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { PropertyType } from '../types';
+import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer';
+import { PropertyType, TypedValue } from '../types';
 import {
   AndAtom,
   ArithemticOperatorAtom,
   AsAtom,
-  Atom,
   ConcatAtom,
   ContainsAtom,
   DotAtom,
@@ -21,133 +21,14 @@ import {
   NotEquivalentAtom,
   OrAtom,
   SymbolAtom,
-  TypedValue,
   UnaryOperatorAtom,
   UnionAtom,
   XorAtom,
 } from './atoms';
 import { parseDateString } from './date';
 import { functions } from './functions';
-import { Token, tokenize } from './tokenize';
+import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
-
-interface PrefixParselet {
-  parse(parser: Parser, token: Token): Atom;
-}
-
-interface InfixParselet {
-  precedence: number;
-  parse(parser: Parser, left: Atom, token: Token): Atom;
-}
-
-class ParserBuilder {
-  readonly #prefixParselets: Record<string, PrefixParselet> = {};
-  readonly #infixParselets: Record<string, InfixParselet> = {};
-
-  public registerInfix(tokenType: string, parselet: InfixParselet): ParserBuilder {
-    this.#infixParselets[tokenType] = parselet;
-    return this;
-  }
-
-  public registerPrefix(tokenType: string, parselet: PrefixParselet): ParserBuilder {
-    this.#prefixParselets[tokenType] = parselet;
-    return this;
-  }
-
-  public prefix(tokenType: string, precedence: number, builder: (token: Token, right: Atom) => Atom): ParserBuilder {
-    return this.registerPrefix(tokenType, {
-      parse(parser, token) {
-        const right = parser.consumeAndParse(precedence);
-        return builder(token, right);
-      },
-    });
-  }
-
-  public infixLeft(
-    tokenType: string,
-    precedence: number,
-    builder: (left: Atom, token: Token, right: Atom) => Atom
-  ): ParserBuilder {
-    return this.registerInfix(tokenType, {
-      parse(parser, left, token) {
-        const right = parser.consumeAndParse(precedence);
-        return builder(left, token, right);
-      },
-      precedence,
-    });
-  }
-
-  public construct(input: string): Parser {
-    return new Parser(tokenize(input), this.#prefixParselets, this.#infixParselets);
-  }
-}
-
-class Parser {
-  #tokens: Token[];
-  #prefixParselets: Record<string, PrefixParselet>;
-  #infixParselets: Record<string, InfixParselet>;
-
-  constructor(
-    tokens: Token[],
-    prefixParselets: Record<string, PrefixParselet>,
-    infixParselets: Record<string, InfixParselet>
-  ) {
-    this.#tokens = tokens;
-    this.#prefixParselets = prefixParselets;
-    this.#infixParselets = infixParselets;
-  }
-
-  public match(expected: string): boolean {
-    const token = this.#look();
-    if (token?.id !== expected) {
-      return false;
-    }
-
-    this.#consume();
-    return true;
-  }
-
-  public consumeAndParse(precedence = Precedence.MaximumPrecedence): Atom {
-    const token = this.#consume();
-    const prefix = this.#prefixParselets[token.id];
-    if (!prefix) {
-      throw Error(`Parse error at ${token.value}. No matching prefix parselet.`);
-    }
-
-    let left = prefix.parse(this, token);
-
-    while (precedence > this.#getPrecedence()) {
-      const next = this.#consume();
-      const infix = this.#infixParselets[next.id];
-      left = infix.parse(this, left, next);
-    }
-
-    return left;
-  }
-
-  #getPrecedence(): number {
-    const nextToken = this.#look();
-    if (!nextToken) {
-      return Precedence.MaximumPrecedence;
-    }
-    const parser = this.#infixParselets[nextToken.id];
-    if (parser) {
-      return parser.precedence;
-    }
-    return Precedence.MaximumPrecedence;
-  }
-
-  #consume(): Token {
-    if (!this.#tokens.length) {
-      throw Error('Cant consume unknown more tokens.');
-    }
-    return this.#tokens.shift() as Token;
-  }
-
-  #look(): Token | undefined {
-    return this.#tokens.length > 0 ? this.#tokens[0] : undefined;
-  }
-}
 
 /**
  * Operator precedence
@@ -183,7 +64,6 @@ const enum Precedence {
   Xor = 12,
   Or = 12,
   Implies = 13,
-  MaximumPrecedence = 100,
 }
 
 const PARENTHESES_PARSELET: PrefixParselet = {
@@ -241,83 +121,68 @@ function parseQuantity(str: string): Quantity {
   return { value, unit };
 }
 
-const parserBuilder = new ParserBuilder()
-  .registerPrefix('String', {
-    parse: (_, token) => new LiteralAtom({ type: PropertyType.string, value: token.value }),
-  })
-  .registerPrefix('DateTime', {
-    parse: (_, token) => new LiteralAtom({ type: PropertyType.dateTime, value: parseDateString(token.value) }),
-  })
-  .registerPrefix('Quantity', {
-    parse: (_, token) => new LiteralAtom({ type: PropertyType.Quantity, value: parseQuantity(token.value) }),
-  })
-  .registerPrefix('Number', {
-    parse: (_, token) => new LiteralAtom({ type: PropertyType.decimal, value: parseFloat(token.value) }),
-  })
-  .registerPrefix('Symbol', {
-    parse: (_, token) => {
-      if (token.value === 'false') {
-        return new LiteralAtom({ type: PropertyType.boolean, value: false });
-      }
-      if (token.value === 'true') {
-        return new LiteralAtom({ type: PropertyType.boolean, value: true });
-      }
-      return new SymbolAtom(token.value);
-    },
-  })
-  .registerPrefix('{}', { parse: () => new EmptySetAtom() })
-  .registerPrefix('(', PARENTHESES_PARSELET)
-  .registerInfix('[', INDEXER_PARSELET)
-  .registerInfix('(', FUNCTION_CALL_PARSELET)
-  .prefix('+', Precedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
-  .prefix('-', Precedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
-  .infixLeft('.', Precedence.Dot, (left, _, right) => new DotAtom(left, right))
-  .infixLeft('/', Precedence.Divide, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x / y))
-  .infixLeft('*', Precedence.Multiply, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x * y))
-  .infixLeft('+', Precedence.Add, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x + y))
-  .infixLeft('-', Precedence.Subtract, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x - y))
-  .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
-  .infixLeft('=', Precedence.Equals, (left, _, right) => new EqualsAtom(left, right))
-  .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
-  .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
-  .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
-  .infixLeft('<', Precedence.LessThan, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x < y))
-  .infixLeft(
-    '<=',
-    Precedence.LessThanOrEquals,
-    (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x <= y)
-  )
-  .infixLeft('>', Precedence.GreaterThan, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x > y))
-  .infixLeft(
-    '>=',
-    Precedence.GreaterThanOrEquals,
-    (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x >= y)
-  )
-  .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
-  .infixLeft('Symbol', Precedence.Is, (left: Atom, symbol: Token, right: Atom) => {
-    switch (symbol.value) {
-      case 'and':
-        return new AndAtom(left, right);
-      case 'as':
-        return new AsAtom(left, right);
-      case 'contains':
-        return new ContainsAtom(left, right);
-      case 'div':
-        return new ArithemticOperatorAtom(left, right, (x, y) => (x / y) | 0);
-      case 'in':
-        return new InAtom(left, right);
-      case 'is':
-        return new IsAtom(left, right);
-      case 'mod':
-        return new ArithemticOperatorAtom(left, right, (x, y) => x % y);
-      case 'or':
-        return new OrAtom(left, right);
-      case 'xor':
-        return new XorAtom(left, right);
-      default:
-        throw new Error('Cannot use ' + symbol.value + ' as infix operator');
-    }
-  });
+export function initFhirPathParserBuilder(): ParserBuilder {
+  return new ParserBuilder()
+    .registerPrefix('String', {
+      parse: (_, token) => new LiteralAtom({ type: PropertyType.string, value: token.value }),
+    })
+    .registerPrefix('DateTime', {
+      parse: (_, token) => new LiteralAtom({ type: PropertyType.dateTime, value: parseDateString(token.value) }),
+    })
+    .registerPrefix('Quantity', {
+      parse: (_, token) => new LiteralAtom({ type: PropertyType.Quantity, value: parseQuantity(token.value) }),
+    })
+    .registerPrefix('Number', {
+      parse: (_, token) => new LiteralAtom({ type: PropertyType.decimal, value: parseFloat(token.value) }),
+    })
+    .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })
+    .registerPrefix('false', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: false }) })
+    .registerPrefix('Symbol', { parse: (_, token) => new SymbolAtom(token.value) })
+    .registerPrefix('{}', { parse: () => new EmptySetAtom() })
+    .registerPrefix('(', PARENTHESES_PARSELET)
+    .registerInfix('[', INDEXER_PARSELET)
+    .registerInfix('(', FUNCTION_CALL_PARSELET)
+    .prefix('+', Precedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
+    .prefix('-', Precedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
+    .infixLeft('.', Precedence.Dot, (left, _, right) => new DotAtom(left, right))
+    .infixLeft('/', Precedence.Divide, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x / y))
+    .infixLeft('*', Precedence.Multiply, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x * y))
+    .infixLeft('+', Precedence.Add, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x + y))
+    .infixLeft('-', Precedence.Subtract, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x - y))
+    .infixLeft('|', Precedence.Union, (left, _, right) => new UnionAtom(left, right))
+    .infixLeft('=', Precedence.Equals, (left, _, right) => new EqualsAtom(left, right))
+    .infixLeft('!=', Precedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
+    .infixLeft('~', Precedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
+    .infixLeft('!~', Precedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
+    .infixLeft('<', Precedence.LessThan, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x < y))
+    .infixLeft(
+      '<=',
+      Precedence.LessThanOrEquals,
+      (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x <= y)
+    )
+    .infixLeft(
+      '>',
+      Precedence.GreaterThan,
+      (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x > y)
+    )
+    .infixLeft(
+      '>=',
+      Precedence.GreaterThanOrEquals,
+      (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x >= y)
+    )
+    .infixLeft('&', Precedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
+    .infixLeft('and', Precedence.Is, (left, _, right) => new AndAtom(left, right))
+    .infixLeft('as', Precedence.Is, (left, _, right) => new AsAtom(left, right))
+    .infixLeft('contains', Precedence.Is, (left, _, right) => new ContainsAtom(left, right))
+    .infixLeft('div', Precedence.Is, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => (x / y) | 0))
+    .infixLeft('in', Precedence.Is, (left, _, right) => new InAtom(left, right))
+    .infixLeft('is', Precedence.Is, (left, _, right) => new IsAtom(left, right))
+    .infixLeft('mod', Precedence.Is, (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x % y))
+    .infixLeft('or', Precedence.Is, (left, _, right) => new OrAtom(left, right))
+    .infixLeft('xor', Precedence.Is, (left, _, right) => new XorAtom(left, right));
+}
+
+const fhirPathParserBuilder = initFhirPathParserBuilder();
 
 /**
  * Parses a FHIRPath expression into an AST.
@@ -328,17 +193,13 @@ const parserBuilder = new ParserBuilder()
  * @returns The AST representing the expression.
  */
 export function parseFhirPath(input: string): FhirPathAtom {
-  try {
-    return new FhirPathAtom(input, parserBuilder.construct(input).consumeAndParse());
-  } catch (error) {
-    throw new Error(`FhirPathError on "${input}": ${error}`);
-  }
+  return new FhirPathAtom(input, fhirPathParserBuilder.construct(tokenize(input)).consumeAndParse());
 }
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param input The FHIRPath expression to parse.
- * @param context The resource or object to evaluate the expression against.
+ * @param expression The FHIRPath expression to parse.
+ * @param input The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPath(expression: string, input: unknown): unknown[] {
@@ -356,8 +217,8 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param input The FHIRPath expression to parse.
- * @param context The resource or object to evaluate the expression against.
+ * @param expression The FHIRPath expression to parse.
+ * @param input The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(expression: string, input: TypedValue[]): TypedValue[] {
