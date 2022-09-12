@@ -117,7 +117,7 @@ export interface Consent {
   /**
    * Indicates the current state of this consent.
    */
-  status?: string;
+  status?: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
 
   /**
    * A selector of the type of consent being presented: ADR, Privacy,
@@ -300,7 +300,7 @@ export interface ConsentProvision {
    * Action  to take - permit or deny - when the rule conditions are met.
    * Not permitted in root rule, required in all nested rules.
    */
-  type?: string;
+  type?: 'deny' | 'permit';
 
   /**
    * The timeframe in this rule is valid.
@@ -460,7 +460,7 @@ export interface ConsentProvisionData {
    * How the resource reference is interpreted when testing consent
    * restrictions.
    */
-  meaning?: string;
+  meaning?: 'instance' | 'related' | 'dependents' | 'authoredby';
 
   /**
    * A reference to a specific resource that defines which resources are

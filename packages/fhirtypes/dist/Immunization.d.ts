@@ -113,7 +113,7 @@ export interface Immunization {
   /**
    * Indicates the current status of the immunization event.
    */
-  status?: string;
+  status?: 'completed' | 'entered-in-error' | 'not-done';
 
   /**
    * Indicates the reason the immunization event was not performed.

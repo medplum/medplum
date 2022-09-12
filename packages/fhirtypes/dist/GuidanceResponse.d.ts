@@ -151,7 +151,7 @@ export interface GuidanceResponse {
    * available, the status will be data-requested, and the response will
    * contain a description of the additional requested information.
    */
-  status?: string;
+  status?: 'success' | 'data-requested' | 'data-required' | 'in-progress' | 'failure' | 'entered-in-error';
 
   /**
    * The patient for which the request was processed.

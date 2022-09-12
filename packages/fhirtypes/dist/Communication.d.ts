@@ -150,7 +150,7 @@ export interface Communication {
   /**
    * The status of the transmission.
    */
-  status?: string;
+  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Captures the reason for the current state of the Communication.
@@ -167,7 +167,7 @@ export interface Communication {
    * Characterizes how quickly the planned or in progress communication
    * must be addressed. Includes concepts such as stat, urgent, routine.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * A channel that was used for this communication (e.g. email, fax).

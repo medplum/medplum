@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -126,7 +127,7 @@ export interface CompartmentDefinition {
    * The status of this compartment definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this compartment definition is
@@ -181,7 +182,7 @@ export interface CompartmentDefinition {
   /**
    * Which compartment this definition describes.
    */
-  code?: string;
+  code?: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
 
   /**
    * Whether the search syntax is supported,.
@@ -237,7 +238,7 @@ export interface CompartmentDefinitionResource {
   /**
    * The name of a resource supported by the server.
    */
-  code?: string;
+  code?: ResourceType;
 
   /**
    * The name of a search parameter that represents the link to the

@@ -140,7 +140,7 @@ export interface CommunicationRequest {
   /**
    * The status of the proposal or order.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Captures the reason for the current state of the CommunicationRequest.
@@ -157,7 +157,7 @@ export interface CommunicationRequest {
    * Characterizes how quickly the proposed act must be initiated. Includes
    * concepts such as stat, urgent, routine.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * If true indicates that the CommunicationRequest is asking for the

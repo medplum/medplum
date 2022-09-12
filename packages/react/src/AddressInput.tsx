@@ -36,11 +36,11 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
     }
   }
 
-  function setUse(use: string): void {
+  function setUse(use: 'home' | 'work' | 'temp' | 'old' | 'billing'): void {
     setValueWrapper({ ...valueRef.current, use });
   }
 
-  function setType(type: string): void {
+  function setType(type: 'postal' | 'physical' | 'both'): void {
     setValueWrapper({ ...valueRef.current, type });
   }
 
@@ -66,7 +66,7 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <Select testid="address-use" defaultValue={value?.use} onChange={setUse}>
+      <Select testid="address-use" defaultValue={value?.use} onChange={setUse as (use: string) => void}>
         <option></option>
         <option>home</option>
         <option>mobile</option>
@@ -74,7 +74,7 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
         <option>temp</option>
         <option>work</option>
       </Select>
-      <Select testid="address-type" defaultValue={value?.type} onChange={setType}>
+      <Select testid="address-type" defaultValue={value?.type} onChange={setType as (use: string) => void}>
         <option></option>
         <option>postal</option>
         <option>physical</option>

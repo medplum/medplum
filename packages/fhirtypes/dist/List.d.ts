@@ -109,7 +109,7 @@ export interface List {
   /**
    * Indicates the current state of this list.
    */
-  status?: string;
+  status?: 'current' | 'retired' | 'entered-in-error';
 
   /**
    * How this list was prepared - whether it is a working list that is
@@ -117,7 +117,7 @@ export interface List {
    * a snapshot of a list of items from another source, or whether it is a
    * prepared list where items may be marked as added, modified or deleted.
    */
-  mode?: string;
+  mode?: 'working' | 'snapshot' | 'changes';
 
   /**
    * A label for the list assigned by the author.

@@ -26,7 +26,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
     }
   }
 
-  function setSystem(system: string): void {
+  function setSystem(system: 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other'): void {
     const newValue: ContactPoint = { ...ref.current, system };
     if (!system) {
       delete newValue.system;
@@ -34,7 +34,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
     setContactPointWrapper(newValue);
   }
 
-  function setUse(use: string): void {
+  function setUse(use: 'home' | 'work' | 'temp' | 'old' | 'mobile'): void {
     const newValue: ContactPoint = { ...ref.current, use };
     if (!use) {
       delete newValue.use;
@@ -52,7 +52,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
 
   return (
     <InputRow>
-      <Select defaultValue={contactPoint?.system} onChange={setSystem} testid="system">
+      <Select defaultValue={contactPoint?.system} onChange={setSystem as (system: string) => void} testid="system">
         <option></option>
         <option>email</option>
         <option>fax</option>
@@ -60,8 +60,9 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         <option>phone</option>
         <option>other</option>
         <option>sms</option>
+        <option>url</option>
       </Select>
-      <Select defaultValue={contactPoint?.use} onChange={setUse} testid="use">
+      <Select defaultValue={contactPoint?.use} onChange={setUse as (use: string) => void} testid="use">
         <option></option>
         <option>home</option>
         <option>mobile</option>

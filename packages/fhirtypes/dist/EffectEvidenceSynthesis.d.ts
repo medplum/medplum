@@ -148,7 +148,7 @@ export interface EffectEvidenceSynthesis {
    * The status of this effect evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the effect evidence synthesis was
@@ -616,7 +616,7 @@ export interface EffectEvidenceSynthesisResultsByExposure {
    * Whether these results are for the exposure state or alternative
    * exposure state.
    */
-  exposureState?: string;
+  exposureState?: 'exposure' | 'exposure-alternative';
 
   /**
    * Used to define variant exposure states such as low-risk state.

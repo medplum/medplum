@@ -54,7 +54,7 @@ export interface Bundle<T extends Resource = Resource> {
   /**
    * Indicates the purpose of this bundle - how it is intended to be used.
    */
-  type?: string;
+  type?: 'document' | 'message' | 'transaction' | 'transaction-response' | 'batch' | 'batch-response' | 'history' | 'searchset' | 'collection';
 
   /**
    * The date/time that the bundle was assembled - i.e. when the resources
@@ -220,7 +220,7 @@ export interface BundleEntryRequest {
    * this entry. In a history bundle, this indicates the HTTP action that
    * occurred.
    */
-  method?: string;
+  method?: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
   /**
    * The URL for this entry, relative to the root (the address to which the
@@ -377,7 +377,7 @@ export interface BundleEntrySearch {
    * or because of an _include requirement, or to convey information or
    * warning information about the search process.
    */
-  mode?: string;
+  mode?: 'match' | 'include' | 'outcome';
 
   /**
    * When searching, the server's search ranking score for the entry.

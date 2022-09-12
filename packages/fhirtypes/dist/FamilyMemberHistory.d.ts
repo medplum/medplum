@@ -129,7 +129,7 @@ export interface FamilyMemberHistory {
    * A code specifying the status of the record of the family history of a
    * specific family member.
    */
-  status?: string;
+  status?: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
 
   /**
    * Describes why the family member's history is not available.

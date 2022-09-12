@@ -141,7 +141,7 @@ export interface TestScript {
    * The status of this test script. Enables tracking the life-cycle of the
    * content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this test script is authored for
@@ -767,7 +767,7 @@ export interface TestScriptSetupActionAssert {
   /**
    * The direction to use for the assertion.
    */
-  direction?: string;
+  direction?: 'response' | 'request';
 
   /**
    * Id of the source fixture used as the contents to be evaluated by
@@ -822,7 +822,7 @@ export interface TestScriptSetupActionAssert {
    * The operator type defines the conditional behavior of the assert. If
    * not defined, the default is equals.
    */
-  operator?: string;
+  operator?: 'equals' | 'notEquals' | 'in' | 'notIn' | 'greaterThan' | 'lessThan' | 'empty' | 'notEmpty' | 'contains' | 'notContains' | 'eval';
 
   /**
    * The XPath or JSONPath expression to be evaluated against the fixture
@@ -834,7 +834,7 @@ export interface TestScriptSetupActionAssert {
    * The request method or HTTP operation code to compare against that used
    * by the client system under test.
    */
-  requestMethod?: string;
+  requestMethod?: 'delete' | 'get' | 'options' | 'patch' | 'post' | 'put' | 'head';
 
   /**
    * The value to use in a comparison against the request URL path string.
@@ -852,7 +852,8 @@ export interface TestScriptSetupActionAssert {
    * | methodNotAllowed | conflict | gone | preconditionFailed |
    * unprocessable.
    */
-  response?: string;
+  response?: 'okay' | 'created' | 'noContent' | 'notModified' | 'bad' | 'forbidden' | 'notFound' | 'methodNotAllowed'
+      | 'conflict' | 'gone' | 'preconditionFailed' | 'unprocessable';
 
   /**
    * The value of the HTTP response code to be tested.
@@ -973,7 +974,7 @@ export interface TestScriptSetupActionOperation {
    * The HTTP method the test engine MUST use for this operation regardless
    * of any other operation details.
    */
-  method?: string;
+  method?: 'delete' | 'get' | 'options' | 'patch' | 'post' | 'put' | 'head';
 
   /**
    * The server where the request message originates from.  Must be one of

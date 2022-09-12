@@ -142,7 +142,8 @@ export interface Contract {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' | 'executed' |
+      'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
 
   /**
    * Legal states of the formation of a legal instrument, which is a
@@ -433,7 +434,8 @@ export interface ContractContentDefinition {
    * executable | executed | negotiable | offered | policy | rejected |
    * renewed | revoked | resolved | terminated.
    */
-  publicationStatus?: string;
+  publicationStatus?: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' |
+      'executed' | 'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
 
   /**
    * A copyright statement relating to Contract precursor content.

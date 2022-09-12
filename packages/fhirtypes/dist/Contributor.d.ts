@@ -31,7 +31,7 @@ export interface Contributor {
   /**
    * The type of contributor.
    */
-  type?: string;
+  type?: 'author' | 'editor' | 'reviewer' | 'endorser';
 
   /**
    * The name of the individual or organization responsible for the

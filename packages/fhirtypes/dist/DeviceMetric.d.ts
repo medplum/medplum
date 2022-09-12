@@ -135,7 +135,7 @@ export interface DeviceMetric {
    * Indicates current operational state of the device. For example: On,
    * Off, Standby, etc.
    */
-  operationalStatus?: string;
+  operationalStatus?: 'on' | 'off' | 'standby' | 'entered-in-error';
 
   /**
    * Describes the color representation for the metric. This is often used
@@ -144,14 +144,14 @@ export interface DeviceMetric {
    * example; the parameters are displayed in different characteristic
    * colors, such as HR-blue, BP-green, and PR and SpO2- magenta.
    */
-  color?: string;
+  color?: 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white';
 
   /**
    * Indicates the category of the observation generation process. A
    * DeviceMetric can be for example a setting, measurement, or
    * calculation.
    */
-  category?: string;
+  category?: 'measurement' | 'setting' | 'calculation' | 'unspecified';
 
   /**
    * Describes the measurement repetition time. This is not necessarily the
@@ -217,12 +217,12 @@ export interface DeviceMetricCalibration {
   /**
    * Describes the type of the calibration method.
    */
-  type?: string;
+  type?: 'unspecified' | 'offset' | 'gain' | 'two-point';
 
   /**
    * Describes the state of the calibration.
    */
-  state?: string;
+  state?: 'not-calibrated' | 'calibration-required' | 'calibrated' | 'unspecified';
 
   /**
    * Describes the time last calibration has been performed.

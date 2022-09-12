@@ -134,7 +134,9 @@ export interface ResearchStudy {
   /**
    * The current state of the study.
    */
-  status?: string;
+  status?: 'active' | 'administratively-completed' | 'approved' | 'closed-to-accrual' |
+      'closed-to-accrual-and-intervention' | 'completed' | 'disapproved' | 'in-review' | 'temporarily-closed-to-accrual' |
+      'temporarily-closed-to-accrual-and-intervention' | 'withdrawn';
 
   /**
    * The type of study based upon the intent of the study's activities. A

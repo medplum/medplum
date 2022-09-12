@@ -142,7 +142,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       .catch(console.log);
   }
 
-  function setPriority(communication: Communication, priority: string): Promise<Communication> {
+  function setPriority(
+    communication: Communication,
+    priority: 'routine' | 'urgent' | 'asap' | 'stat'
+  ): Promise<Communication> {
     return medplum.updateResource({ ...communication, priority });
   }
 

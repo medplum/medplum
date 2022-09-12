@@ -115,7 +115,7 @@ export interface Medication {
   /**
    * A code to indicate if the medication is in active use.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * Describes the details of the manufacturer of the medication product.

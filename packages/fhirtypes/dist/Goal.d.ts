@@ -122,7 +122,7 @@ export interface Goal {
   /**
    * The state of the goal throughout its lifecycle.
    */
-  lifecycleStatus?: string;
+  lifecycleStatus?: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
 
   /**
    * Describes the progression, or lack thereof, towards the goal against

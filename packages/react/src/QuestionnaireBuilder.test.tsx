@@ -106,7 +106,7 @@ describe('QuestionnaireBuilder', () => {
           },
           {
             linkId: 'q5',
-            type: '', // Silently ignore missing type
+            type: '' as unknown as 'string', // Silently ignore missing type
             text: 'q5',
           },
         ],

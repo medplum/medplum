@@ -38,7 +38,7 @@ export interface Duration {
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
    * value is &lt; stated value.
    */
-  comparator?: string;
+  comparator?: '<' | '<=' | '>=' | '>';
 
   /**
    * A human-readable form of the unit.

@@ -35,7 +35,7 @@ export interface Quantity {
   /**
    * Not allowed to be used in this context
    */
-  comparator?: string;
+  comparator?: '<' | '<=' | '>=' | '>';
 
   /**
    * A human-readable form of the unit.

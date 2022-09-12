@@ -113,7 +113,7 @@ export interface Account {
   /**
    * Indicates whether the account is presently used/usable or not.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error' | 'on-hold' | 'unknown';
 
   /**
    * Categorizes the account for reporting and searching purposes.

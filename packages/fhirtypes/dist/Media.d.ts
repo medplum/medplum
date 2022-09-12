@@ -132,7 +132,7 @@ export interface Media {
   /**
    * The current state of the {{title}}.
    */
-  status?: string;
+  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies whether the media is an image, video or audio

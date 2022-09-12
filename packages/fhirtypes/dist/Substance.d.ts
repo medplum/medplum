@@ -102,7 +102,7 @@ export interface Substance {
   /**
    * A code to indicate if the substance is actively used.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * A code that classifies the general type of substance.  This is used

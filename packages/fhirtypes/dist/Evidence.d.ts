@@ -162,7 +162,7 @@ export interface Evidence {
    * The status of this evidence. Enables tracking the life-cycle of the
    * content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the evidence was published. The

@@ -124,7 +124,7 @@ export interface ExplanationOfBenefit {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
@@ -146,7 +146,7 @@ export interface ExplanationOfBenefit {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: string;
+  use?: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been
@@ -252,7 +252,7 @@ export interface ExplanationOfBenefit {
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  outcome?: string;
+  outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.
@@ -1901,7 +1901,7 @@ export interface ExplanationOfBenefitProcessNote {
   /**
    * The business purpose of the note text.
    */
-  type?: string;
+  type?: 'display' | 'print' | 'printoper';
 
   /**
    * The explanation or description associated with the processing.

@@ -24,7 +24,7 @@ describe('Address Lookup Table', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
       address: [
         {
-          use: 'both',
+          use: 'home',
           line: [addressLine],
           city: addressCity,
           state: 'CA',

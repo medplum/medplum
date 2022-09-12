@@ -117,7 +117,7 @@ export interface MedicationKnowledge {
    * refers to the validity about the information of the medication and not
    * to its medicinal properties.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * Describes the details of the manufacturer of the medication product.

@@ -144,7 +144,7 @@ export interface ValueSet {
    * definition (ValueSet.compose) and the associated ValueSet metadata.
    * Expansions do not have a state.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this value set is authored for
@@ -548,7 +548,7 @@ export interface ValueSetComposeIncludeFilter {
   /**
    * The kind of operation to perform as a part of the filter criteria.
    */
-  op?: string;
+  op?: '=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists';
 
   /**
    * The match value may be either a code defined by the system, or a

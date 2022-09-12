@@ -148,7 +148,7 @@ export interface TimingRepeat {
   /**
    * The units of time for the duration, in UCUM units.
    */
-  durationUnit?: string;
+  durationUnit?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
 
   /**
    * The number of times to repeat the action within the specified period.
@@ -182,13 +182,13 @@ export interface TimingRepeat {
   /**
    * The units of time for the period in UCUM units.
    */
-  periodUnit?: string;
+  periodUnit?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
 
   /**
    * If one or more days of week is provided, then the action happens only
    * on the specified day(s).
    */
-  dayOfWeek?: string[];
+  dayOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
    * Specified time of day for action to take place.
@@ -199,7 +199,9 @@ export interface TimingRepeat {
    * An approximate time period during the day, potentially linked to an
    * event of daily living that indicates when the action should occur.
    */
-  when?: string[];
+  when?: ('MORN' | 'MORN.early' | 'MORN.late' | 'NOON' | 'AFT' | 'AFT.early' | 'AFT.late' | 'EVE' | 'EVE.early' |
+      'EVE.late' | 'NIGHT' | 'PHS' | 'HS' | 'WAKE' | 'C' | 'CM' | 'CD' | 'CV' | 'AC' | 'ACM' | 'ACD' | 'ACV' | 'PC' | 'PCM'
+      | 'PCD' | 'PCV')[];
 
   /**
    * The number of minutes from the event. If the event code does not

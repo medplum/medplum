@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -128,7 +129,7 @@ export interface GraphDefinition {
    * The status of this graph definition. Enables tracking the life-cycle
    * of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this graph definition is authored for
@@ -187,7 +188,7 @@ export interface GraphDefinition {
   /**
    * The type of FHIR resource at which instances of this graph start.
    */
-  start?: string;
+  start?: ResourceType;
 
   /**
    * The profile that describes the use of the base resource.
@@ -316,7 +317,7 @@ export interface GraphDefinitionLinkTarget {
   /**
    * Type of resource this link refers to.
    */
-  type?: string;
+  type?: ResourceType;
 
   /**
    * A set of parameters to look up.
@@ -384,17 +385,17 @@ export interface GraphDefinitionLinkTargetCompartment {
    * test whether resources are subject to the rule, or whether it is a
    * rule that must be followed.
    */
-  use?: string;
+  use?: 'condition' | 'requirement';
 
   /**
    * Identifies the compartment.
    */
-  code?: string;
+  code?: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
 
   /**
    * identical | matching | different | no-rule | custom.
    */
-  rule?: string;
+  rule?: 'identical' | 'matching' | 'different' | 'custom';
 
   /**
    * Custom rule, as a FHIRPath expression.

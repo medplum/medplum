@@ -106,7 +106,7 @@ export interface PaymentNotice {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * Reference of resource for which payment is being made.

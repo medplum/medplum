@@ -153,7 +153,7 @@ export interface Measure {
    * The status of this measure. Enables tracking the life-cycle of the
    * content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this measure is authored for testing

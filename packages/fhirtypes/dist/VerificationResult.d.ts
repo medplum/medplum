@@ -117,7 +117,7 @@ export interface VerificationResult {
    * The validation status of the target (attested; validated; in process;
    * requires revalidation; validation failed; revalidation failed).
    */
-  status?: string;
+  status?: 'attested' | 'validated' | 'in-process' | 'req-revalid' | 'val-fail' | 'reval-fail';
 
   /**
    * When the validation status was updated.

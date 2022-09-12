@@ -124,7 +124,8 @@ export interface ObservationDefinition {
    * The data types allowed for the value element of the instance
    * observations conforming to this ObservationDefinition.
    */
-  permittedDataType?: string[];
+  permittedDataType?: ('Quantity' | 'CodeableConcept' | 'string' | 'boolean' | 'integer' | 'Range' | 'Ratio' |
+      'SampledData' | 'time' | 'dateTime' | 'Period')[];
 
   /**
    * Multiple results allowed for observations conforming to this
@@ -226,7 +227,7 @@ export interface ObservationDefinitionQualifiedInterval {
    * The category of interval of values for continuous or ordinal
    * observations conforming to this ObservationDefinition.
    */
-  category?: string;
+  category?: 'reference' | 'critical' | 'absolute';
 
   /**
    * The low and high values determining the interval. There may be only
@@ -249,7 +250,7 @@ export interface ObservationDefinitionQualifiedInterval {
   /**
    * Sex of the population the range applies to.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * The age at which this reference range is applicable. This is a

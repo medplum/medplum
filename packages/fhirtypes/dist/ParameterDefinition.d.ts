@@ -38,7 +38,7 @@ export interface ParameterDefinition {
   /**
    * Whether the parameter is input or output for the module.
    */
-  use?: string;
+  use?: 'in' | 'out';
 
   /**
    * The minimum number of times this parameter SHALL appear in the request

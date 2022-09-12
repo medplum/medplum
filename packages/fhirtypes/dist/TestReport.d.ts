@@ -107,7 +107,7 @@ export interface TestReport {
   /**
    * The current state of this test report.
    */
-  status?: string;
+  status?: 'completed' | 'in-progress' | 'waiting' | 'stopped' | 'entered-in-error';
 
   /**
    * Ideally this is an absolute URL that is used to identify the
@@ -119,7 +119,7 @@ export interface TestReport {
   /**
    * The overall result from the execution of the TestScript.
    */
-  result?: string;
+  result?: 'pass' | 'fail' | 'pending';
 
   /**
    * The final score (percentage of tests passed) resulting from the
@@ -205,7 +205,7 @@ export interface TestReportParticipant {
   /**
    * The type of participant.
    */
-  type?: string;
+  type?: 'test-engine' | 'client' | 'server';
 
   /**
    * The uri of the participant. An absolute URL is preferred.
@@ -359,7 +359,7 @@ export interface TestReportSetupActionAssert {
   /**
    * The result of this assertion.
    */
-  result?: string;
+  result?: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
    * An explanatory message associated with the result.
@@ -415,7 +415,7 @@ export interface TestReportSetupActionOperation {
   /**
    * The result of this operation.
    */
-  result?: string;
+  result?: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
    * An explanatory message associated with the result.

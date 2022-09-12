@@ -125,7 +125,7 @@ export interface ClinicalImpression {
   /**
    * Identifies the workflow status of the assessment.
    */
-  status?: string;
+  status?: 'in-progress' | 'completed' | 'entered-in-error';
 
   /**
    * Captures the reason for the current state of the ClinicalImpression.

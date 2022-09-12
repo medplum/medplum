@@ -149,7 +149,7 @@ export interface Observation {
   /**
    * The status of the result value.
    */
-  status?: string;
+  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies the general type of observation being made.

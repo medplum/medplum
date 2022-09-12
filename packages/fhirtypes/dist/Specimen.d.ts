@@ -119,7 +119,7 @@ export interface Specimen {
   /**
    * The availability of the specimen.
    */
-  status?: string;
+  status?: 'available' | 'unavailable' | 'unsatisfactory' | 'entered-in-error';
 
   /**
    * The kind of material that forms the specimen.

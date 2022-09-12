@@ -32,7 +32,7 @@ export interface ContactPoint {
    * Telecommunications form for contact point - what communications system
    * is required to make use of the contact.
    */
-  system?: string;
+  system?: 'phone' | 'fax' | 'email' | 'pager' | 'url' | 'sms' | 'other';
 
   /**
    * The actual contact point details, in a form that is meaningful to the
@@ -43,7 +43,7 @@ export interface ContactPoint {
   /**
    * Identifies the purpose for the contact point.
    */
-  use?: string;
+  use?: 'home' | 'work' | 'temp' | 'old' | 'mobile';
 
   /**
    * Specifies a preferred order in which to use a set of contacts.

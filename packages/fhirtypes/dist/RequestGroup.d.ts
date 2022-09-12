@@ -156,19 +156,19 @@ export interface RequestGroup {
    * The current state of the request. For request groups, the status
    * reflects the status of all the requests in the group.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * request and where the request fits into the workflow chain.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the request should be addressed with respect to
    * other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * A code that identifies what the overall request group is.
@@ -286,7 +286,7 @@ export interface RequestGroupAction {
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * A code that provides meaning for the action or action group. For
@@ -357,27 +357,27 @@ export interface RequestGroupAction {
   /**
    * Defines the grouping behavior for the action and its children.
    */
-  groupingBehavior?: string;
+  groupingBehavior?: 'visual-group' | 'logical-group' | 'sentence-group';
 
   /**
    * Defines the selection behavior for the action and its children.
    */
-  selectionBehavior?: string;
+  selectionBehavior?: 'any' | 'all' | 'all-or-none' | 'exactly-one' | 'at-most-one' | 'one-or-more';
 
   /**
    * Defines expectations around whether an action is required.
    */
-  requiredBehavior?: string;
+  requiredBehavior?: 'must' | 'could' | 'must-unless-documented';
 
   /**
    * Defines whether the action should usually be preselected.
    */
-  precheckBehavior?: string;
+  precheckBehavior?: 'yes' | 'no';
 
   /**
    * Defines whether the action can be selected multiple times.
    */
-  cardinalityBehavior?: string;
+  cardinalityBehavior?: 'single' | 'multiple';
 
   /**
    * The resource that is the target of the action (e.g.
@@ -435,7 +435,7 @@ export interface RequestGroupActionCondition {
   /**
    * The kind of condition.
    */
-  kind?: string;
+  kind?: 'applicability' | 'start' | 'stop';
 
   /**
    * An expression that returns true or false, indicating whether or not
@@ -493,7 +493,8 @@ export interface RequestGroupActionRelatedAction {
   /**
    * The relationship of this action to the related action.
    */
-  relationship?: string;
+  relationship?: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
+      'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
 
   /**
    * A duration or range of durations to apply to the relationship. For

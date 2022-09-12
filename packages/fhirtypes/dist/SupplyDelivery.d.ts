@@ -125,7 +125,7 @@ export interface SupplyDelivery {
   /**
    * A code specifying the state of the dispense event.
    */
-  status?: string;
+  status?: 'in-progress' | 'completed' | 'abandoned' | 'entered-in-error';
 
   /**
    * A link to a resource representing the person whom the delivered item

@@ -287,7 +287,7 @@ export interface HealthcareServiceAvailableTime {
    * Indicates which days of the week are available between the start and
    * end Times.
    */
-  daysOfWeek?: string[];
+  daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
    * Is this always available? (hence times are irrelevant) e.g. 24 hour

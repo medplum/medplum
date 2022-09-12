@@ -15,6 +15,7 @@ import { Period } from './Period';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -151,7 +152,7 @@ export interface Questionnaire {
    * The status of this questionnaire. Enables tracking the life-cycle of
    * the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this questionnaire is authored for
@@ -164,7 +165,7 @@ export interface Questionnaire {
    * The types of subjects that can be the subject of responses created for
    * the questionnaire.
    */
-  subjectType?: string[];
+  subjectType?: ResourceType[];
 
   /**
    * The date  (and optionally time) when the questionnaire was published.
@@ -344,7 +345,8 @@ export interface QuestionnaireItem {
    * grouping of other items or a particular type of data to be captured
    * (string, integer, coded choice, etc.).
    */
-  type?: string;
+  type?: 'group' | 'display' | 'question' | 'boolean' | 'decimal' | 'integer' | 'date' | 'dateTime' | 'time' |
+      'string' | 'text' | 'url' | 'choice' | 'open-choice' | 'attachment' | 'reference' | 'quantity';
 
   /**
    * A constraint indicating that this item should only be enabled
@@ -357,7 +359,7 @@ export interface QuestionnaireItem {
    * Controls how multiple enableWhen values are interpreted -  whether all
    * or any must be true.
    */
-  enableBehavior?: string;
+  enableBehavior?: 'all' | 'any';
 
   /**
    * An indication, if true, that the item must be present in a &quot;completed&quot;
@@ -537,7 +539,7 @@ export interface QuestionnaireItemEnableWhen {
   /**
    * Specifies the criteria by which the question is enabled.
    */
-  operator?: string;
+  operator?: 'exists' | '=' | '!=' | '>' | '<' | '>=' | '<=';
 
   /**
    * A value that the referenced question is tested using the specified

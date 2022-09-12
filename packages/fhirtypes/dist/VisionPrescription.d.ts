@@ -107,7 +107,7 @@ export interface VisionPrescription {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The date this resource was created.
@@ -195,7 +195,7 @@ export interface VisionPrescriptionLensSpecification {
   /**
    * The eye for which the lens specification applies.
    */
-  eye?: string;
+  eye?: 'right' | 'left';
 
   /**
    * Lens power measured in dioptres (0.25 units).
@@ -307,5 +307,5 @@ export interface VisionPrescriptionLensSpecificationPrism {
   /**
    * The relative base, or reference lens edge, for the prism.
    */
-  base?: string;
+  base?: 'up' | 'down' | 'in' | 'out';
 }

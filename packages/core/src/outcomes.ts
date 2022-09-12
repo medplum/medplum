@@ -99,7 +99,7 @@ export const gone: OperationOutcome = {
   issue: [
     {
       severity: 'error',
-      code: 'gone',
+      code: 'deleted',
       details: {
         text: 'Gone',
       },

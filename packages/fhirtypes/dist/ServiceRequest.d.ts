@@ -161,13 +161,13 @@ export interface ServiceRequest {
   /**
    * The status of the order.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  intent?: string;
+  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * A code that classifies the service for searching, sorting and display
@@ -179,7 +179,7 @@ export interface ServiceRequest {
    * Indicates how quickly the ServiceRequest should be addressed with
    * respect to other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * Set this to true if the record is saying that the service/procedure

@@ -107,7 +107,7 @@ export interface PaymentReconciliation {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The period of time for which payments have been gathered into this
@@ -139,7 +139,7 @@ export interface PaymentReconciliation {
   /**
    * The outcome of a request for a reconciliation.
    */
-  outcome?: string;
+  outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the request for the
@@ -321,7 +321,7 @@ export interface PaymentReconciliationProcessNote {
   /**
    * The business purpose of the note text.
    */
-  type?: string;
+  type?: 'display' | 'print' | 'printoper';
 
   /**
    * The explanation or description associated with the processing.

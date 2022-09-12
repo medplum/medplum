@@ -1,4 +1,4 @@
-import { IndexedStructureDefinition } from '@medplum/core';
+import { globalSchema } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -8,7 +8,6 @@ import { MedplumProvider } from './MedplumProvider';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
 const medplum = new MockClient();
-let schema: IndexedStructureDefinition;
 
 function setup(child: React.ReactNode): void {
   render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
@@ -18,7 +17,6 @@ describe('SearchFilterValueInput', () => {
   beforeAll(async () => {
     await medplum.requestSchema('Encounter');
     await medplum.requestSchema('Patient');
-    schema = medplum.getSchema();
   });
 
   beforeEach(async () => {
@@ -37,9 +35,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Patient"
-        searchParam={schema.types['Patient'].searchParams?.['name'] as SearchParameter}
+        searchParam={globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter}
         onChange={onChange}
       />
     );
@@ -56,9 +53,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Patient"
-        searchParam={schema.types['Patient'].searchParams?.['active'] as SearchParameter}
+        searchParam={globalSchema.types['Patient'].searchParams?.['active'] as SearchParameter}
         onChange={onChange}
       />
     );
@@ -83,9 +79,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Patient"
-        searchParam={schema.types['Patient'].searchParams?.['birthdate'] as SearchParameter}
+        searchParam={globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter}
         onChange={onChange}
       />
     );
@@ -104,9 +99,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Patient"
-        searchParam={schema.types['Patient'].searchParams?.['_lastUpdated'] as SearchParameter}
+        searchParam={globalSchema.types['Patient'].searchParams?.['_lastUpdated'] as SearchParameter}
         onChange={onChange}
       />
     );
@@ -123,9 +117,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Encounter"
-        searchParam={schema.types['Encounter'].searchParams?.['length'] as SearchParameter}
+        searchParam={globalSchema.types['Encounter'].searchParams?.['length'] as SearchParameter}
         onChange={onChange}
       />
     );
@@ -145,9 +138,8 @@ describe('SearchFilterValueInput', () => {
 
     setup(
       <SearchFilterValueInput
-        schema={schema}
         resourceType="Patient"
-        searchParam={schema.types['Patient'].searchParams?.['organization'] as SearchParameter}
+        searchParam={globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter}
         defaultValue="Organization/123"
         onChange={onChange}
       />

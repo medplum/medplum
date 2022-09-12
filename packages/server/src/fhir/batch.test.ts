@@ -46,7 +46,7 @@ describe('Batch', () => {
 
   test('Process batch with invalid bundle type', async () => {
     try {
-      await processBatch(repo, { resourceType: 'Bundle', type: 'xyz' });
+      await processBatch(repo, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
       fail('Expected error');
     } catch (err) {
       const outcome = err as OperationOutcome;
@@ -789,7 +789,7 @@ describe('Batch', () => {
       entry: [
         {
           request: {
-            method: 'XXX',
+            method: 'XXX' as unknown as 'GET',
             url: 'Patient',
           },
           resource: {

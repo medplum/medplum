@@ -1,6 +1,5 @@
-import { Filter, formatDateTime } from '@medplum/core';
+import { Filter, formatDateTime, getSearchParameterDetails, globalSchema, SearchParameterType } from '@medplum/core';
 import React from 'react';
-import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 
 export interface SearchFilterValueDisplayProps {
@@ -8,18 +7,19 @@ export interface SearchFilterValueDisplayProps {
   readonly filter: Filter;
 }
 
-export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): JSX.Element | null {
-  const medplum = useMedplum();
-  const schema = medplum.getSchema();
-  const searchParam = schema.types[props.resourceType]?.searchParams?.[props.filter.code];
+export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): JSX.Element {
+  const { resourceType, filter } = props;
 
-  const filter = props.filter;
-  if (searchParam?.type === 'reference') {
-    return <ResourceName value={{ reference: filter.value }} />;
-  }
+  const searchParam = globalSchema.types[resourceType]?.searchParams?.[filter.code];
+  if (searchParam) {
+    if (searchParam.type === 'reference') {
+      return <ResourceName value={{ reference: filter.value }} />;
+    }
 
-  if (props.filter.code === '_lastUpdated' || searchParam?.type === 'datetime') {
-    return <>{formatDateTime(filter.value)}</>;
+    const searchParamDetails = getSearchParameterDetails(resourceType, searchParam);
+    if (filter.code === '_lastUpdated' || searchParamDetails.type === SearchParameterType.DATETIME) {
+      return <>{formatDateTime(filter.value)}</>;
+    }
   }
 
   return <>{filter.value}</>;

@@ -136,7 +136,7 @@ export interface RelatedPerson {
    * Administrative Gender - the gender that the person is considered to
    * have for administration and record keeping purposes.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * The date on which the related person was born.

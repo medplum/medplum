@@ -160,7 +160,7 @@ export interface Library {
    * The status of this library. Enables tracking the life-cycle of the
    * content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this library is authored for testing

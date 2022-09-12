@@ -104,7 +104,9 @@ export interface ResearchSubject {
   /**
    * The current state of the subject.
    */
-  status?: string;
+  status?: 'candidate' | 'eligible' | 'follow-up' | 'ineligible' | 'not-registered' | 'off-study' | 'on-study' |
+      'on-study-intervention' | 'on-study-observation' | 'pending-on-study' | 'potential-candidate' | 'screening' |
+      'withdrawn';
 
   /**
    * The dates the subject began and ended their participation in the

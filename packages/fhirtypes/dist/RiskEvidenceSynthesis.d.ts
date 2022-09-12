@@ -147,7 +147,7 @@ export interface RiskEvidenceSynthesis {
    * The status of this risk evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * The date  (and optionally time) when the risk evidence synthesis was

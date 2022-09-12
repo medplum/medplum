@@ -108,7 +108,7 @@ export interface Coverage {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * The type of coverage: social program, medical plan, accident coverage

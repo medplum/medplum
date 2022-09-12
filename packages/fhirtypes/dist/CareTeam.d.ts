@@ -114,7 +114,7 @@ export interface CareTeam {
   /**
    * Indicates the current state of the care team.
    */
-  status?: string;
+  status?: 'proposed' | 'active' | 'suspended' | 'inactive' | 'entered-in-error';
 
   /**
    * Identifies what kind of team.  This is to support differentiation

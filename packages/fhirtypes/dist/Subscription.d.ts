@@ -99,7 +99,7 @@ export interface Subscription {
    * The status of the subscription, which marks the server state for
    * managing the subscription.
    */
-  status?: string;
+  status?: 'requested' | 'active' | 'error' | 'off';
 
   /**
    * Contact details for a human to contact about the subscription. The
@@ -180,7 +180,7 @@ export interface SubscriptionChannel {
   /**
    * The type of channel to send notifications on.
    */
-  type?: string;
+  type?: 'rest-hook' | 'websocket' | 'email' | 'sms' | 'message';
 
   /**
    * The url that describes the actual end-point to send messages to.

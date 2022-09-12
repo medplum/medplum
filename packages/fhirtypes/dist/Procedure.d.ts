@@ -154,7 +154,7 @@ export interface Procedure {
    * A code specifying the state of the procedure. Generally, this will be
    * the in-progress or completed state.
    */
-  status?: string;
+  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Captures the reason for the current state of the procedure.

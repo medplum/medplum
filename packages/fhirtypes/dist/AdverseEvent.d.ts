@@ -128,7 +128,7 @@ export interface AdverseEvent {
    * Note that this is independent of whether anyone was affected or harmed
    * or how severely.
    */
-  actuality?: string;
+  actuality?: 'actual' | 'potential';
 
   /**
    * The overall type of event, intended for search and filtering purposes.
