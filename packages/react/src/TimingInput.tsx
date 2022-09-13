@@ -74,7 +74,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     setRepeat({ ...valueRef.current?.repeat, period: newPeriod });
   }
 
-  function setPeriodUnit(newPeriodUnit: string | undefined): void {
+  function setPeriodUnit(newPeriodUnit: 'a' | 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | undefined): void {
     setRepeat({ ...valueRef.current?.repeat, periodUnit: newPeriodUnit });
   }
 
@@ -118,7 +118,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             <Select
               name={'timing-dialog-periodUnit'}
               defaultValue={value?.repeat?.periodUnit}
-              onChange={(newValue) => setPeriodUnit(newValue)}
+              onChange={(newValue) => setPeriodUnit(newValue as 'a' | 'd' | 'wk' | 'mo' | undefined)}
             >
               <option value="d">day</option>
               <option value="wk">week</option>
