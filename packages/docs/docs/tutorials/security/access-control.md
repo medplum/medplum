@@ -108,7 +108,7 @@ The following policy uses a FHIR Search Query to grant access only to Patients w
   "resource": [
     {
       "resourceType": "Patient",
-      "criteria": "organization=Organization/123"
+      "criteria": "Patient?organization=Organization/123"
     }
   ]
 }
