@@ -44,7 +44,9 @@ Access policies allow you to:
 
 Access policies also allow you to grant access by "Compartment".
 
-### Example: Resource Type
+## Examples
+
+### Resource Type
 
 The following access policy grants read/write access to the "Patient" resource type:
 
@@ -60,7 +62,7 @@ The following access policy grants read/write access to the "Patient" resource t
 }
 ```
 
-### Example: Read-only Resource Type
+### Read-only Resource Type
 
 The following access policy grants read-only access to the "Patient" resource type:
 
@@ -77,7 +79,7 @@ The following access policy grants read-only access to the "Patient" resource ty
 }
 ```
 
-### Example: Hidden fields
+### Hidden fields
 
 The following access policy grants read-only access to the "Patient" resource type, but hides "name" and "address":
 
@@ -95,7 +97,24 @@ The following access policy grants read-only access to the "Patient" resource ty
 }
 ```
 
-## Example: Healthcare Partnerships
+### Criteria-based Access Control
+
+The following policy uses a FHIR Search Query to grant access only to Patients who's `managingOrganization` is `Organization/123`:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Criteria Based Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?organization=Organization/123"
+    }
+  ]
+}
+```
+
+### Healthcare Partnerships
 
 A common need is to grant access to a subset of resources for a healthcare partnership. For example, a lab provider may want to grant access to all patient records that originated from a specific lab customer.
 
@@ -166,7 +185,7 @@ For example:
 
 Because the account-tagging is handled within the resource, project administrators and API users can set the account directly.
 
-## Example: Patient Access
+### Patient Access
 
 :::caution Note
 
@@ -263,6 +282,6 @@ A common need is to grant access to resources belonging to a specific patient. I
 
 You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
 
-### Related Resources
+## Related Resources
 
 - [Registration React Component](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic)
