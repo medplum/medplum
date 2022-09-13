@@ -221,7 +221,7 @@ export async function getUserMemberships(
  * Most users will only have one membership, so this happens immediately after login.
  * Some users have multiple memberships, so this happens after choosing a profile.
  * @param login The login before the membership is set.
- * @param membership The membership to set.
+ * @param membershipId The membership to set.
  * @returns The updated login.
  */
 export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
@@ -238,10 +238,14 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   }
 
   // Find the membership for the user
-  const memberships = await getUserMemberships(login?.user as Reference<User>);
-  const membership = memberships.find((m) => m.id === membershipId);
-  if (!membership) {
+  let membership = undefined;
+  try {
+    membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  } catch (err) {
     throw badRequest('Profile not found');
+  }
+  if (membership.user?.reference !== login.user?.reference) {
+    throw badRequest('Invalid profile');
   }
 
   // Get the project

@@ -1,5 +1,5 @@
 import { getReferenceString, ProfileResource } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
+import { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -183,6 +183,38 @@ describe('Profile', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Profile not found');
+  });
+
+  test('Membership for different user', async () => {
+    // Create a dummy ProjectMembership
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: randomUUID() },
+      profile: { reference: randomUUID() },
+      user: { reference: randomUUID() },
+    });
+
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+    expect(res1.body.memberships).toBeDefined();
+    expect(res1.body.memberships.length).toBe(2);
+
+    const res2 = await request(app)
+      .post('/auth/profile')
+      .type('json')
+      .send({
+        login: res1.body.login,
+        profile: membership.id as string,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Invalid profile');
   });
 
   test('Success', async () => {
