@@ -183,7 +183,7 @@ describe('PlanDefinition apply', () => {
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing subject parameter');
   });
 
-  test('Unsupported action type', async () => {
+  test('General task', async () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -194,7 +194,7 @@ describe('PlanDefinition apply', () => {
         status: 'active',
         action: [
           {
-            definitionCanonical: 'UnsupportedResourceType',
+            description: 'do the thing',
           },
         ],
       });
@@ -223,7 +223,6 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported action type');
+    expect(res4.status).toBe(200);
   });
 });
