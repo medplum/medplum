@@ -267,6 +267,13 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
           onChange={(newValue) => changeProperty('title', newValue)}
         />
       </FormSection>
+      <FormSection title="Description" htmlFor={`actionDescription-${action.id}`}>
+        <Input
+          name={`actionDescription-${action.id}`}
+          defaultValue={action.description}
+          onChange={(newValue) => changeProperty('description', newValue)}
+        />
+      </FormSection>
       <FormSection
         title="Type of Action"
         description="The type of the action to be performed."

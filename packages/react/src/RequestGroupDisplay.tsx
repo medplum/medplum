@@ -42,6 +42,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
             <div className="medplum-request-group-task-checkmark">{task?.status === 'completed' ? '🗹' : '☐'}</div>
             <div className="medplum-request-group-task-details">
               <div className="medplum-request-group-task-title">{action.title}</div>
+              {action.description && <div>{action.description}</div>}
               <div>
                 Last edited by&nbsp;
                 <ResourceName value={task?.meta?.author as Reference} />

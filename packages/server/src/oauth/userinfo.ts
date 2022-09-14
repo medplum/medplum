@@ -7,6 +7,7 @@ import {
   getReferenceString,
   ProfileResource,
 } from '@medplum/core';
+import { Reference } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir/repo';
@@ -20,11 +21,7 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
     sub: res.locals.user,
   };
 
-  const resource = await systemRepo.readReference({
-    reference: res.locals.profile,
-  });
-
-  const profile = resource as ProfileResource;
+  const profile = await systemRepo.readReference(res.locals.profile as Reference<ProfileResource>);
 
   if (res.locals.scope.includes('profile')) {
     buildProfile(userInfo, profile);

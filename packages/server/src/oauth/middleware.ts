@@ -89,7 +89,7 @@ async function setupLocals(req: Request, res: Response, login: Login, membership
   const locals = res.locals;
   locals.membership = membership;
   locals.user = resolveId(membership.user as Reference<User>);
-  locals.profile = membership.profile?.reference;
+  locals.profile = membership.profile;
   locals.scope = login.scope;
   locals.project = await systemRepo.readReference(membership.project as Reference<Project>);
   locals.repo = await getRepoForLogin(login, membership, locals.project.strictMode, isExtendedMode(req));
