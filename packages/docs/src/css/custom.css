@@ -132,9 +132,7 @@ h1 {
   line-height: 130%;
 }
 
-.markdown {
-  margin-left: 2rem;
-}
+
 
 /* Styles for the grid of cards on the docs homepage*/
 .homepage-grid {
@@ -207,10 +205,6 @@ div.theme-code-block {
   .docs-wrapper  td {
     --ifm-table-font-size : 12px;
     font-size: var(--ifm-table-font-size);
-  }
-
-  .theme-doc-markdown {
-    margin-inline: 0px;
   }
 
 }
