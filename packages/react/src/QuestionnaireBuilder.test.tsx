@@ -254,6 +254,57 @@ describe('QuestionnaireBuilder', () => {
     });
   });
 
+  test('Add item with existing linkId', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        title: 'My questionnaire',
+        item: [
+          {
+            id: 'id-100',
+            linkId: 'q100',
+            text: 'Question 1',
+            type: 'string',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('My questionnaire'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add item'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toBeCalled();
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      resourceType: 'Questionnaire',
+      item: [
+        {
+          id: 'id-100',
+          linkId: 'q100',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          id: 'id-101',
+          linkId: 'q101',
+          text: 'Question',
+          type: 'string',
+        },
+      ],
+    });
+  });
+
   test('Remove item', async () => {
     const onSubmit = jest.fn();
 

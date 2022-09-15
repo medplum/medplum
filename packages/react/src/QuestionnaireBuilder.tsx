@@ -5,6 +5,7 @@ import { Button } from './Button';
 import { Form } from './Form';
 import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
+import './QuestionnaireBuilder.css';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
 import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
 import { getValueAndType } from './ResourcePropertyDisplay';
@@ -13,7 +14,6 @@ import { Select } from './Select';
 import { TextArea } from './TextArea';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
-import './QuestionnaireBuilder.css';
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -370,6 +370,14 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   if (!items) {
     return undefined;
   }
+  items.forEach((item) => {
+    if (item.id?.match(/^id-\d+$/)) {
+      nextId = Math.max(nextId, parseInt(item.id.substring(3)) + 1);
+    }
+    if (item.linkId?.match(/^q\d+$/)) {
+      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1)) + 1);
+    }
+  });
   return items.map((item) => ({
     ...item,
     id: item.id || generateId(),
