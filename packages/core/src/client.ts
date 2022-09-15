@@ -967,8 +967,12 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readResource<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<ExtractResource<K>> {
-    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id));
+  readResource<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    options: RequestInit = {}
+  ): ReadablePromise<ExtractResource<K>> {
+    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
 
   /**
@@ -990,7 +994,7 @@ export class MedplumClient extends EventTarget {
    * @param reference The FHIR reference object.
    * @returns The resource if available; undefined otherwise.
    */
-  readReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
+  readReference<T extends Resource>(reference: Reference<T>, options: RequestInit = {}): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
@@ -999,7 +1003,7 @@ export class MedplumClient extends EventTarget {
     if (!resourceType || !id) {
       return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
     }
-    return this.readResource(resourceType as ResourceType, id) as ReadablePromise<T>;
+    return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<T>;
   }
 
   /**
@@ -1089,8 +1093,12 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns Promise to the resource history.
    */
-  readHistory<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<Bundle<ExtractResource<K>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history'));
+  readHistory<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    options: RequestInit = {}
+  ): ReadablePromise<Bundle<ExtractResource<K>>> {
+    return this.get(this.fhirUrl(resourceType, id, '_history'), options);
   }
 
   /**
@@ -1110,8 +1118,13 @@ export class MedplumClient extends EventTarget {
    * @param id The resource ID.
    * @returns The resource if available; undefined otherwise.
    */
-  readVersion<K extends ResourceType>(resourceType: K, id: string, vid: string): ReadablePromise<ExtractResource<K>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history', vid));
+  readVersion<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    vid: string,
+    options: RequestInit = {}
+  ): ReadablePromise<ExtractResource<K>> {
+    return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
   }
 
   /**
@@ -1120,8 +1133,8 @@ export class MedplumClient extends EventTarget {
    * @param id The Patient Id
    * @returns A Bundle of all Resources related to the Patient
    */
-  readPatientEverything(id: string): ReadablePromise<Bundle> {
-    return this.get(this.fhirUrl('Patient', id, '$everything'));
+  readPatientEverything(id: string, options: RequestInit = {}): ReadablePromise<Bundle> {
+    return this.get(this.fhirUrl('Patient', id, '$everything'), options);
   }
 
   /**
