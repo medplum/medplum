@@ -132,9 +132,7 @@ h1 {
   line-height: 130%;
 }
 
-.markdown {
-  margin-left: 2rem;
-}
+
 
 /* Styles for the grid of cards on the docs homepage*/
 .homepage-grid {
@@ -191,4 +189,22 @@ div.theme-code-block {
   width: 100px;
   height: 45px;
   margin: 4px;
+}
+
+/* Mobile Styles */
+/** In mobile view, reduce the padding */
+@media screen and (max-width: 996px) {
+  .markdown h1:first-child {
+    font-size: var(--ifm-h1-font-size);
+  }
+  .docs-wrapper {
+    --ifm-font-size-base: 14px;
+    --ifm-table-cell-padding: 0.25rem;
+  }
+
+  .docs-wrapper  td {
+    --ifm-table-font-size : 12px;
+    font-size: var(--ifm-table-font-size);
+  }
+
 }

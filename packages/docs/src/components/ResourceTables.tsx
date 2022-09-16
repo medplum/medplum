@@ -26,7 +26,7 @@ export function ResourcePropertiesTable(props: { properties: PropertyDocInfo[] }
       <tbody>
         {properties.map((property) => (
           <tr key={property.path}>
-            <td style={{ whiteSpace: 'nowrap' }}>
+            <td className={styles.propertyNameColumn}>
               {property.depth > 1 ? (
                 <span
                   className={styles.indentation}
@@ -98,7 +98,7 @@ function renderPropertyTypes(property: PropertyDocInfo): JSX.Element {
       {property.types
         .map((t) => (t.datatype === 'Reference' ? renderReferenceType(property.referenceTypes || []) : getTypeLink(t)))
         .map((type, i, allTypes) => (
-          <span key={`${property.path}-type-${i}`}>
+          <span className={styles.propertyTypeColumn} key={`${property.path}-type-${i}`}>
             {type}
             {i < allTypes.length - 1 ? ', ' : ''}
           </span>

@@ -18,6 +18,14 @@ td {
   font-size: 14px;
 }
 
+.propertyNameColumn {
+  white-space: nowrap;
+}
+
+.propertyTypeColumn {
+  display: inline-block;
+}
+
 details summary {
   font-style: italic;
   margin-bottom: 0.2ch;
