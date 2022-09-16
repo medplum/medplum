@@ -1,3 +1,4 @@
+import { ResourceType } from '@medplum/fhirtypes';
 import { getPropertyDisplayName, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
 
 describe('Type Utils', () => {
@@ -44,7 +45,7 @@ describe('Type Utils', () => {
     indexSearchParameter({ resourceType: 'SearchParameter' });
 
     // Silently ignore search parameters for types without a StructureDefinition
-    indexSearchParameter({ resourceType: 'SearchParameter', base: ['XYZ'] });
+    indexSearchParameter({ resourceType: 'SearchParameter', base: ['XYZ' as ResourceType] });
     expect(globalSchema.types['XYZ']).toBeUndefined();
 
     // Index a patient search parameter

@@ -7,7 +7,7 @@ import {
   Operator,
   SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import {
@@ -232,11 +232,11 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType {
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
-    fields: () => buildGraphQLFields(resourceType),
+    fields: () => buildGraphQLFields(resourceType as ResourceType),
   });
 }
 
-function buildGraphQLFields(resourceType: string): GraphQLFieldConfigMap<any, any> {
+function buildGraphQLFields(resourceType: ResourceType): GraphQLFieldConfigMap<any, any> {
   const fields: GraphQLFieldConfigMap<any, any> = {};
   buildPropertyFields(resourceType, fields);
   buildReverseLookupFields(resourceType, fields);
@@ -290,7 +290,7 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
  * @param resourceType The resource type to build fields for.
  * @param fields The fields object to add fields to.
  */
-function buildReverseLookupFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
+function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
   for (const childResourceType of getJsonSchemaResourceTypes()) {
     const childGraphQLType = getGraphQLType(childResourceType);
     const childSearchParams = getSearchParameters(childResourceType);

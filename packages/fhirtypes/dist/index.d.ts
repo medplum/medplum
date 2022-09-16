@@ -166,6 +166,7 @@ export * from './ResearchElementDefinition';
 export * from './ResearchStudy';
 export * from './ResearchSubject';
 export * from './Resource';
+export * from './ResourceType';
 export * from './RiskAssessment';
 export * from './RiskEvidenceSynthesis';
 export * from './SampledData';

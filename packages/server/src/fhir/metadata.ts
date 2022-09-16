@@ -5,6 +5,7 @@ import {
   CapabilityStatementRestResource,
   CapabilityStatementRestResourceSearchParam,
   CapabilityStatementRestSecurity,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { getConfig, MedplumServerConfig } from '../config';
 import { isResourceType } from './schema';
@@ -172,7 +173,7 @@ function buildResourceTypes(): CapabilityStatementRestResource[] {
         typeSchema.structureDefinition.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
     )
     .map(([resourceType, typeSchema]) => ({
-      type: resourceType,
+      type: resourceType as ResourceType,
       profile: typeSchema.structureDefinition.url,
       supportedProfile: supportedProfiles[resourceType] || undefined,
       interaction: [

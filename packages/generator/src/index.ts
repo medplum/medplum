@@ -80,6 +80,7 @@ export function main(): void {
       .map((e) => e[0])
       .sort()
   );
+  writeResourceTypeFile();
   Object.values(parentTypes).forEach((fhirType) => writeInterfaceFile(fhirType));
 }
 
@@ -137,7 +138,7 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
 
 function writeIndexFile(names: string[]): void {
   const b = new FileBuilder();
-  for (const resourceType of [...names, 'Resource'].sort()) {
+  for (const resourceType of [...names, 'Resource', 'ResourceType'].sort()) {
     if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
       continue;
     }
@@ -162,11 +163,16 @@ function writeResourceFile(names: string[]): void {
       b.append('| ' + names[i] + ';');
     }
   }
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
+}
 
+function writeResourceTypeFile(): void {
+  const b = new FileBuilder();
+  b.append("import { Resource } from './Resource';");
   b.newLine();
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: FhirType): void {
