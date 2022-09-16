@@ -10,6 +10,7 @@ import {
   Patient,
   Questionnaire,
   QuestionnaireResponse,
+  ResourceType,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
@@ -1560,7 +1561,7 @@ describe('FHIR Repo', () => {
     const resource1 = await systemRepo.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
       status: 'active',
-      subjectType: [nonce],
+      subjectType: [nonce as ResourceType],
     });
 
     const resource2 = await systemRepo.search({
