@@ -187,13 +187,13 @@ Because the account-tagging is handled within the resource, project administrato
 
 ### Patient Access
 
+If you are building a patient-facing application (such as [FooMedical](https://github.com/medplum/foomedical)), a common requirement is to restrict each patient's access to only their own data. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
+
 :::caution Note
 
 Patient Access is disabled by default. Contact your info@medplum.com if you'd like to enable patient registration and default patient access policy.
 
 :::
-
-A common need is to grant access to resources belonging to a specific patient. In this case it is recommended to use templated access policies, that also implement compartments as shown below.
 
 ```json
 {
