@@ -370,6 +370,14 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   if (!items) {
     return undefined;
   }
+  items.forEach((item) => {
+    if (item.id?.match(/^id-\d+$/)) {
+      nextId = Math.max(nextId, parseInt(item.id.substring(3)) + 1);
+    }
+    if (item.linkId?.match(/^q\d+$/)) {
+      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1)) + 1);
+    }
+  });
   return items.map((item) => ({
     ...item,
     id: item.id || generateId(),
