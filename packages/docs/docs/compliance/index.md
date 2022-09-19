@@ -27,7 +27,7 @@ This section is under construction.  Please check back frequently for updates.  
 :::
 
 - [ONC Certification](onc.md)
-- CLIA/CAP (coming soon)
+- [CLIA/CAP](clia-cap.md)
 - SOC2 Type 2 (coming soon)
 - HIPAA compliance audit (coming soon)
 - FHIR (coming soon)
