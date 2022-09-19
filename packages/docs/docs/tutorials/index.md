@@ -13,7 +13,7 @@ Welcome to the Medplum tutorials! This section contains various guides on how to
 
 **Building front-end apps:** If you're building front-end healthcare apps for patients or providers, take a a look our [**UI Component Tutorials**](./tutorials/ui-components).
 
-**Security:** Medplum offers a number of security features that app builders need, including OAuth2 endpoints, and Access Controls. The [**Authentication & Security**](./tutorials/security) section has more details.
+**Security:** Medplum offers a number of security features that app builders need, including OAuth2 endpoints, and Access Controls. The [**Authentication & Security**](./tutorials/authentication-and-security) section has more details.
 
 **Integrations & Workflow Automation:** The [**Medplum Bots**](./tutorials/bots) section covers how developers can use Medplum's offers developer-friendly tools to automate complex medical workflows and integrate with 3rd-party services.
 
