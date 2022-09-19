@@ -5,7 +5,7 @@ slug: /tutorials/bots
 
 # Intro
 
-If you have never heard of Medplum Bots, we encourage you to read the intro material in the [Bot Guide](./bots).
+If you have never heard of Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](./bots/bot-basics).
 
 Medplum bots are functions that execute when triggered. They are similar to AWS Lambda functions, and in Medplum we make them easy to write and deploy and trigger with [FHIR Subscriptions](./api-basics/publish-and-subscribe). For the purpose of the tutorials found in this section, it's important to understand that **Bots drive many of the major integrations that you see in Medplum**.
 
