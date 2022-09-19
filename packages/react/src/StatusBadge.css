@@ -25,8 +25,13 @@
  * draft, requested, received, accepted, rejected, ready, cancelled, in-progress, on-hold, failed, completed, entered-in-error
  */
 
+.medplum-status {
+  margin: 0 4px;
+}
+
 .medplum-status-active,
 .medplum-status-draft,
+.medplum-status-in-progress,
 .medplum-status-preliminary,
 .medplum-status-registered,
 .medplum-status-requested {
