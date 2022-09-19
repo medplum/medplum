@@ -22,6 +22,7 @@ export * from './DateTimeInput';
 export * from './DefaultResourceTimeline';
 export * from './DescriptionList';
 export * from './DiagnosticReportDisplay';
+export * from './Dialog';
 export * from './Document';
 export * from './EncounterTimeline';
 export * from './ErrorBoundary';
