@@ -1,5 +1,6 @@
 .medplum-status {
   padding: 1px 6px;
+  margin: 0 4px;
   font-size: 80%;
   line-height: 1;
   text-align: center;
@@ -24,10 +25,6 @@
  * Task status: https://hl7.org/fhir/valueset-task-status.html
  * draft, requested, received, accepted, rejected, ready, cancelled, in-progress, on-hold, failed, completed, entered-in-error
  */
-
-.medplum-status {
-  margin: 0 4px;
-}
 
 .medplum-status-active,
 .medplum-status-draft,
