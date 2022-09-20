@@ -1,14 +1,15 @@
+import { Button } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Avatar } from './Avatar';
-import { Button } from '@mantine/core';
 import { HeaderSearchInput, HeaderSearchTypes } from './HeaderSearchInput';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
 import { useMedplumContext } from './MedplumProvider';
 import { Popup } from './Popup';
+import { ResourceAvatar } from './ResourceAvatar';
+
 import './Header.css';
 
 export interface HeaderProps {
@@ -67,7 +68,7 @@ export function Header(props: HeaderProps): JSX.Element {
         {context.profile && (
           <div className="medplum-nav-menu-container">
             <MedplumLink testid="header-profile-menu-button" onClick={() => setUserMenuVisible(true)}>
-              <Avatar size="small" color="#f68d42" value={context.profile} />
+              <ResourceAvatar size="sm" color="#f68d42" value={context.profile} />
             </MedplumLink>
             <Popup
               visible={userMenuVisible}
@@ -77,7 +78,7 @@ export function Header(props: HeaderProps): JSX.Element {
             >
               <div className="medplum-nav-menu">
                 <div style={{ margin: 'auto', padding: '8px' }}>
-                  <Avatar size="large" value={context.profile} />
+                  <ResourceAvatar size="lg" value={context.profile} />
                 </div>
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <div style={{ margin: '4px auto 4px auto', fontWeight: 'bold' }}>
@@ -115,7 +116,7 @@ export function Header(props: HeaderProps): JSX.Element {
                             }}
                           >
                             <div className="medplum-nav-menu-profile-icon">
-                              <Avatar />
+                              <ResourceAvatar />
                             </div>
                             <div className="medplum-nav-menu-profile-label">
                               {login.profile?.display}

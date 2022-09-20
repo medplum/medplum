@@ -2,7 +2,7 @@ import { formatHumanName, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import React from 'react';
 import { Autocomplete } from './Autocomplete';
-import { Avatar } from './Avatar';
+import { ResourceAvatar } from './ResourceAvatar';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 
@@ -36,7 +36,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
       getId={(item: HeaderSearchTypes) => {
         return item.id as string;
       }}
-      getIcon={(item: HeaderSearchTypes) => <Avatar value={item} />}
+      getIcon={(item: HeaderSearchTypes) => <ResourceAvatar value={item} />}
       getDisplay={(item: HeaderSearchTypes) => <ResourceName value={item} />}
       getHelpText={(item: HeaderSearchTypes) => {
         if (item.resourceType === 'Patient' && item.birthDate) {

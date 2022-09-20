@@ -3,18 +3,18 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { Avatar, AvatarProps } from './Avatar';
 import { MedplumProvider } from './MedplumProvider';
+import { ResourceAvatar, ResourceAvatarProps } from './ResourceAvatar';
 
 const medplum = new MockClient();
 
-describe('Avatar', () => {
-  async function setup(args: AvatarProps): Promise<void> {
+describe('ResourceAvatar', () => {
+  async function setup(args: ResourceAvatarProps): Promise<void> {
     await act(async () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
-            <Avatar {...args} />
+            <ResourceAvatar {...args} />
           </MedplumProvider>
         </MemoryRouter>
       );

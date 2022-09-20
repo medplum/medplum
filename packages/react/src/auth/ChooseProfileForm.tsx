@@ -1,6 +1,6 @@
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React from 'react';
-import { Avatar } from '../Avatar';
+import { ResourceAvatar } from '../ResourceAvatar';
 import { Logo } from '../Logo';
 import { useMedplum } from '../MedplumProvider';
 
@@ -33,7 +33,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
           }}
         >
           <div className="medplum-nav-menu-profile-icon">
-            <Avatar alt={membership.profile?.display} />
+            <ResourceAvatar alt={membership.profile?.display} />
           </div>
           <div className="medplum-nav-menu-profile-label">
             {membership.profile?.display}

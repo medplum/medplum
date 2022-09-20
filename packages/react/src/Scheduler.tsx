@@ -2,10 +2,10 @@ import { Button } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Avatar } from './Avatar';
 import { CalendarInput, getStartMonth } from './CalendarInput';
 import { useMedplum } from './MedplumProvider';
 import { QuestionnaireForm } from './QuestionnaireForm';
+import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
 import { useResource } from './useResource';
 
@@ -59,7 +59,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   return (
     <div className="medplum-calendar-container" data-testid="scheduler">
       <div className="medplum-calendar-info-pane">
-        {actor && <Avatar value={actor} size="large" />}
+        {actor && <ResourceAvatar value={actor} size="xl" />}
         {actor && (
           <h1>
             <ResourceName value={actor} />

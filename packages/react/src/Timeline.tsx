@@ -2,10 +2,10 @@ import { Button } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Avatar } from './Avatar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
 import { Popup } from './Popup';
+import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
 import { killEvent } from './utils/dom';
 
@@ -36,7 +36,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
     <article className={props.className || 'medplum-timeline-item'} data-testid="timeline-item">
       <div className="medplum-timeline-item-header">
         <div className="medplum-timeline-item-avatar">
-          <Avatar value={author} link={true} size="medium" />
+          <ResourceAvatar value={author} link={true} size="md" />
         </div>
         <div className="medplum-timeline-item-title">
           <ResourceName value={author} link={true} />

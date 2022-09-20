@@ -1,7 +1,7 @@
 import { Bundle, BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Autocomplete } from './Autocomplete';
-import { Avatar } from './Avatar';
+import { ResourceAvatar } from './ResourceAvatar';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { useResource } from './useResource';
@@ -45,7 +45,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       getId={(item: T) => {
         return item.id as string;
       }}
-      getIcon={(item: T) => <Avatar value={item} />}
+      getIcon={(item: T) => <ResourceAvatar value={item} />}
       getDisplay={(item: T) => <ResourceName value={item} />}
       getHelpText={(item: T) => {
         if (item.resourceType === 'Patient' && item.birthDate) {
