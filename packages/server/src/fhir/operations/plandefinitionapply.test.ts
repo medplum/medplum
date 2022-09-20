@@ -109,10 +109,12 @@ describe('PlanDefinition apply', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.resourceType).toEqual('Task');
-    expect((res6.body as Task).input).toHaveLength(1);
-    expect((res6.body as Task).input?.[0]?.valueReference?.reference).toEqual(
-      getReferenceString(res1.body as Questionnaire)
-    );
+
+    const resultTask = res6.body as Task;
+    expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
+    expect(resultTask.input).toHaveLength(1);
+    expect(resultTask.input?.[0]?.valueReference?.reference).toEqual(getReferenceString(res1.body as Questionnaire));
   });
 
   test('Unsupported content type', async () => {

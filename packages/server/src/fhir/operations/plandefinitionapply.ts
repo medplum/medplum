@@ -177,8 +177,10 @@ async function createTask(
     status: 'requested',
     authoredOn: new Date().toISOString(),
     requester,
+    for: createReference(params.subject),
     owner: createReference(params.subject),
     description: action.description,
+    focus: input?.[0]?.valueReference,
     input,
   });
 
