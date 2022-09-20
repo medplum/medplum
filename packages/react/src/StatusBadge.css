@@ -1,5 +1,6 @@
 .medplum-status {
   padding: 1px 6px;
+  margin: 0 4px;
   font-size: 80%;
   line-height: 1;
   text-align: center;
@@ -27,6 +28,7 @@
 
 .medplum-status-active,
 .medplum-status-draft,
+.medplum-status-in-progress,
 .medplum-status-preliminary,
 .medplum-status-registered,
 .medplum-status-requested {
