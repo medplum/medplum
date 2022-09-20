@@ -3,7 +3,6 @@ import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medpl
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog } from './Dialog';
-import './SearchFilterEditor.css';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 import {
@@ -14,6 +13,8 @@ import {
   getSearchOperators,
   setFilters,
 } from './SearchUtils';
+
+import './SearchFilterEditor.css';
 
 export interface SearchFilterEditorProps {
   visible: boolean;

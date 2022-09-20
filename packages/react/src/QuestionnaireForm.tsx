@@ -1,4 +1,4 @@
-import { Button, Checkbox, NumberInput, Textarea, TextInput } from '@mantine/core';
+import { Button, Checkbox, NativeSelect, NumberInput, Textarea, TextInput } from '@mantine/core';
 import { DatePicker, TimeInput } from '@mantine/dates';
 import {
   capitalize,
@@ -29,6 +29,7 @@ import { AttachmentInput } from './AttachmentInput';
 import { CheckboxFormSection } from './CheckboxFormSection';
 import { DateTimeInput } from './DateTimeInput';
 import { Form } from './Form';
+import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
@@ -158,13 +159,13 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           );
         }
         return (
-          // <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
-          <QuestionnaireFormItem
-            item={item}
-            answers={props.answers}
-            onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-          />
-          // </FormSection>
+          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
+            <QuestionnaireFormItem
+              item={item}
+              answers={props.answers}
+              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+            />
+          </FormSection>
         );
       })}
     </>
@@ -325,14 +326,29 @@ interface QuestionnaireChoiceInputProps {
 
 function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial } = props;
-  const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
     | undefined;
 
+  const data = [''];
+  if (item.answerOption) {
+    for (const option of item.answerOption) {
+      const optionValue = getTypedPropertyValue(
+        { type: 'QuestionnaireItemAnswerOption', value: option },
+        'value'
+      ) as TypedValue;
+      if (optionValue.type === 'CodeableConcept') {
+        data.push(optionValue.value.coding[0].display);
+      } else if (optionValue.type === 'Coding') {
+        data.push(optionValue.value.display);
+      } else {
+        data.push(JSON.stringify(optionValue.value));
+      }
+    }
+  }
+
   return (
-    <select
-      id={name}
+    <NativeSelect
       name={name}
       className="medplum-select"
       onChange={(e: ChangeEvent<HTMLSelectElement>) => {
@@ -349,30 +365,9 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-    >
-      <option></option>
-      {item.answerOption &&
-        item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-          const optionValue = getTypedPropertyValue(
-            { type: 'QuestionnaireItemAnswerOption', value: option },
-            'value'
-          ) as TypedValue;
-          const optionName = `${name}-option-${index}`;
-          return (
-            <option
-              key={optionName}
-              value={optionValue.value}
-              selected={initialValue && stringify(optionValue) === stringify(initialValue)}
-            >
-              <ResourcePropertyDisplay
-                property={valueElementDefinition}
-                propertyType={optionValue.type as PropertyType}
-                value={optionValue.value}
-              />
-            </option>
-          );
-        })}
-    </select>
+      defaultValue={initialValue?.value?.toString()}
+      data={data}
+    />
   );
 }
 

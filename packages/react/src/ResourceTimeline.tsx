@@ -21,12 +21,13 @@ import { useMedplum } from './MedplumProvider';
 import { MenuItem } from './MenuItem';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
-import './ResourceTimeline.css';
 import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
+
+import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
