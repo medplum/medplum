@@ -1,6 +1,7 @@
+import { Button, Group } from '@mantine/core';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
-import { Button, InputRow, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
+import { ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -54,10 +55,10 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
       ))}
       <hr />
       <h1>Connect to bot</h1>
-      <InputRow>
+      <Group>
         <ResourceInput name="bot" resourceType="Bot" onChange={setConnectBot} />
         <Button onClick={connectToBot}>Connect</Button>
-      </InputRow>
+      </Group>
       <div style={{ display: 'none' }}>{updated}</div>
     </div>
   );

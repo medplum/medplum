@@ -1,12 +1,13 @@
+import { Button } from '@mantine/core';
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
 import { FhirPathDisplay } from './FhirPathDisplay';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
 import { isCheckboxCell, killEvent } from './utils/dom';
+
 import './SearchControl.css';
 
 export interface SmartSearchField {
@@ -199,7 +200,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
         </div>
       )}
       {props.onBulk && (
-        <Button size="small" onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
+        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
           Bulk...
         </Button>
       )}

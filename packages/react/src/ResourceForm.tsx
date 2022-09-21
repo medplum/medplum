@@ -1,10 +1,8 @@
+import { Button, TextInput } from '@mantine/core';
 import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from './BackboneElementInput';
-import { Button } from './Button';
-import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { useResource } from './useResource';
 
@@ -43,25 +41,18 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         }
       }}
     >
-      <FormSection title="Resource Type">
-        <Input name="resourceType" defaultValue={value.resourceType} disabled={true} />
-      </FormSection>
-      <FormSection title="ID">
-        <Input name="id" defaultValue={value.id} disabled={true} />
-      </FormSection>
+      <TextInput name="resourceType" label="Resource Type" defaultValue={value.resourceType} disabled={true} />
+      <TextInput name="id" label="ID" defaultValue={value.id} disabled={true} />
       <BackboneElementInput
         typeName={value.resourceType}
         defaultValue={value}
         outcome={props.outcome}
         onChange={setValue}
       />
-      <Button type="submit" size="large">
-        OK
-      </Button>
+      <Button type="submit">OK</Button>
       {props.onDelete && (
         <Button
           type="button"
-          size="large"
           onClick={() => {
             (props.onDelete as (resource: Resource) => void)(value);
           }}

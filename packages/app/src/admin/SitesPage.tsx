@@ -1,6 +1,7 @@
+import { Button } from '@mantine/core';
 import { IndexedStructureDefinition } from '@medplum/core';
 import { ProjectSite } from '@medplum/fhirtypes';
-import { Button, ResourcePropertyInput, useMedplum } from '@medplum/react';
+import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { getProjectId } from '../utils';
@@ -47,9 +48,7 @@ export function SitesPage(): JSX.Element {
         defaultValue={sites}
         onChange={setSites}
       />
-      <Button type="submit" size="large">
-        Save
-      </Button>
+      <Button type="submit">Save</Button>
     </form>
   );
 }

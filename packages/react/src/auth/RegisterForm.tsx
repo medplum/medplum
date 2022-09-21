@@ -5,8 +5,9 @@ import { Document } from '../Document';
 import { useMedplum } from '../MedplumProvider';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
-import './SignInForm.css';
+
 import '../util.css';
+import './SignInForm.css';
 
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';

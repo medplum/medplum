@@ -3,7 +3,7 @@ import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Avatar } from './Avatar';
-import { Button } from './Button';
+import { Button } from '@mantine/core';
 import { HeaderSearchInput, HeaderSearchTypes } from './HeaderSearchInput';
 import { HumanNameDisplay } from './HumanNameDisplay';
 import { MedplumLink } from './MedplumLink';
@@ -85,7 +85,6 @@ export function Header(props: HeaderProps): JSX.Element {
                   </div>
                   <div style={{ margin: '4px auto 4px auto' }}>{medplum.getActiveLogin()?.project?.display}</div>
                   <Button
-                    testid="header-profile-link"
                     onClick={() => {
                       setUserMenuVisible(false);
                       if (props.onProfile) {
@@ -130,7 +129,6 @@ export function Header(props: HeaderProps): JSX.Element {
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <Button
-                    testid="header-add-account-button"
                     onClick={() => {
                       navigate('/signin');
                     }}
@@ -141,7 +139,6 @@ export function Header(props: HeaderProps): JSX.Element {
                 <hr />
                 <div style={{ margin: 'auto', padding: '8px' }}>
                   <Button
-                    testid="header-signout-button"
                     onClick={() => {
                       setUserMenuVisible(false);
                       if (props.onSignOut) {

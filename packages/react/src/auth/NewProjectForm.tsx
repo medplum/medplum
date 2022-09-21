@@ -1,12 +1,11 @@
+import { Button, TextInput } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Button } from '../Button';
 import { Form } from '../Form';
-import { FormSection } from '../FormSection';
-import { Input } from '../Input';
 import { Logo } from '../Logo';
 import { useMedplum } from '../MedplumProvider';
+import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
   login: string;
@@ -36,16 +35,13 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         <Logo size={32} />
         <h1>Create project</h1>
       </div>
-      <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
-        <Input
-          name="projectName"
-          type="text"
-          testid="projectName"
-          placeholder="My Project"
-          required={true}
-          outcome={outcome}
-        />
-      </FormSection>
+      <TextInput
+        name="projectName"
+        label="Project Name"
+        placeholder="My Project"
+        required={true}
+        error={getErrorsForInput(outcome, 'projectName')}
+      />
       <p style={{ fontSize: '12px', color: '#888' }}>
         By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
         {' and '}
@@ -54,9 +50,7 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
       <div className="medplum-signin-buttons">
         <div />
         <div>
-          <Button type="submit" testid="submit">
-            Create project
-          </Button>
+          <Button type="submit">Create project</Button>
         </div>
       </div>
     </Form>

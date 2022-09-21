@@ -1,7 +1,7 @@
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Button } from './Button';
+import { Button } from '@mantine/core';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { StatusBadge } from './StatusBadge';

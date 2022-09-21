@@ -1,11 +1,5 @@
-import {
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  globalSchema,
-  parseSearchDefinition,
-  SearchRequest,
-} from '@medplum/core';
+import { Button } from '@mantine/core';
+import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
 import {
   Bundle,
   OperationOutcome,
@@ -15,7 +9,6 @@ import {
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { getFieldDefinitions } from './SearchControlField';
@@ -25,9 +18,9 @@ import { SearchFilterValueDialog } from './SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
-import { Select } from './Select';
 import { TitleBar } from './TitleBar';
 import { isCheckboxCell, killEvent } from './utils/dom';
+
 import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
@@ -245,7 +238,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
-  const savedSearches = props.userConfig?.search?.filter((s) => s.criteria?.startsWith(resourceType));
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
@@ -257,62 +249,50 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 {resourceType}
               </a>
             </h1>
-            {savedSearches && (
-              <Select
-                testid="saved-search-select"
-                style={{ width: 80 }}
-                onChange={(newValue) => {
-                  emitSearchChange(parseSearchDefinition(newValue));
-                }}
-              >
-                <option></option>
-                {savedSearches.map((s, index) => (
-                  <option key={`${index}-${savedSearches.length}`} value={s.criteria}>
-                    {s.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-            <Button
-              testid="fields-button"
-              size="small"
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
-            >
-              Fields
-            </Button>
-            <Button
-              testid="filters-button"
-              size="small"
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
-            >
-              Filters
-            </Button>
-            {props.onNew && (
-              <Button size="small" onClick={props.onNew}>
-                New...
-              </Button>
-            )}
-            {props.onExport && (
-              <Button size="small" onClick={props.onExport}>
-                Export...
-              </Button>
-            )}
-            {props.onDelete && (
+            <Button.Group>
               <Button
-                size="small"
-                onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
+                compact
+                variant="outline"
+                onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
               >
-                Delete...
+                Fields
               </Button>
-            )}
-            {props.onBulk && (
               <Button
-                size="small"
-                onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
+                compact
+                variant="outline"
+                onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
               >
-                Bulk...
+                Filters
               </Button>
-            )}
+              {props.onNew && (
+                <Button compact variant="outline" onClick={props.onNew}>
+                  New...
+                </Button>
+              )}
+              {props.onExport && (
+                <Button compact variant="outline" onClick={props.onExport}>
+                  Export...
+                </Button>
+              )}
+              {props.onDelete && (
+                <Button
+                  compact
+                  variant="outline"
+                  onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
+                >
+                  Delete...
+                </Button>
+              )}
+              {props.onBulk && (
+                <Button
+                  compact
+                  variant="outline"
+                  onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
+                >
+                  Bulk...
+                </Button>
+              )}
+            </Button.Group>
           </div>
           {lastResult && (
             <div>
@@ -320,12 +300,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
                 {lastResult.total?.toLocaleString()}
               </span>
-              <Button testid="prev-page-button" size="small" onClick={() => emitSearchChange(movePage(search, -1))}>
-                &lt;&lt;
-              </Button>
-              <Button testid="next-page-button" size="small" onClick={() => emitSearchChange(movePage(search, 1))}>
-                &gt;&gt;
-              </Button>
+              <Button.Group>
+                <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, -1))}>
+                  &lt;&lt;
+                </Button>
+                <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, 1))}>
+                  &gt;&gt;
+                </Button>
+              </Button.Group>
             </div>
           )}
         </TitleBar>

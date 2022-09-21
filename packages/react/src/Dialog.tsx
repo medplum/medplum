@@ -1,6 +1,7 @@
+import { Button } from '@mantine/core';
 import React, { useState } from 'react';
-import { Button } from './Button';
 import { killEvent } from './utils/dom';
+
 import './Dialog.css';
 
 export interface DialogProps {
@@ -55,12 +56,8 @@ export function Dialog(props: DialogProps): JSX.Element | null {
         </div>
         <div className="modal-dialog-content">{props.children}</div>
         <div className="modal-dialog-buttons">
-          <Button testid="dialog-ok" onClick={props.onOk}>
-            OK
-          </Button>
-          <Button testid="dialog-cancel" onClick={props.onCancel}>
-            Cancel
-          </Button>
+          <Button onClick={props.onOk}>OK</Button>
+          <Button onClick={props.onCancel}>Cancel</Button>
         </div>
       </div>
     </>

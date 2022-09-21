@@ -1,13 +1,11 @@
+import { Button, PasswordInput, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Button } from '../Button';
 import { Form } from '../Form';
-import { FormSection } from '../FormSection';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton';
-import { Input } from '../Input';
 import { useMedplum } from '../MedplumProvider';
-import { getIssuesForExpression } from '../utils/outcomes';
+import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
 export interface NewUserFormProps {
@@ -83,40 +81,38 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           <div className="medplum-signin-separator">or</div>
         </>
       )}
-      <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
-        <Input
-          name="firstName"
-          type="text"
-          testid="firstName"
-          placeholder="First name"
-          required={true}
-          autoFocus={true}
-          outcome={outcome}
-        />
-      </FormSection>
-      <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-        <Input
-          name="lastName"
-          type="text"
-          testid="lastName"
-          placeholder="Last name"
-          required={true}
-          outcome={outcome}
-        />
-      </FormSection>
-      <FormSection title="Email" htmlFor="email" outcome={outcome}>
-        <Input
-          name="email"
-          type="email"
-          testid="email"
-          placeholder="name@domain.com"
-          required={true}
-          outcome={outcome}
-        />
-      </FormSection>
-      <FormSection title="Password" htmlFor="password" outcome={outcome}>
-        <Input name="password" type="password" testid="password" autoComplete="off" required={true} outcome={outcome} />
-      </FormSection>
+      <TextInput
+        name="firstName"
+        type="text"
+        label="First Name"
+        placeholder="First name"
+        required={true}
+        autoFocus={true}
+        error={getErrorsForInput(outcome, 'firstName')}
+      />
+      <TextInput
+        name="lastName"
+        type="text"
+        label="Last name"
+        placeholder="Last name"
+        required={true}
+        error={getErrorsForInput(outcome, 'lastName')}
+      />
+      <TextInput
+        name="email"
+        type="email"
+        label="Email"
+        placeholder="name@domain.com"
+        required={true}
+        error={getErrorsForInput(outcome, 'email')}
+      />
+      <PasswordInput
+        name="password"
+        label="Password"
+        autoComplete="off"
+        required={true}
+        error={getErrorsForInput(outcome, 'password')}
+      />
       <p style={{ fontSize: '12px', color: '#888' }}>
         By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
         {' and '}
@@ -134,9 +130,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           <label htmlFor="remember">Remember me</label>
         </div>
         <div>
-          <Button type="submit" testid="submit">
-            Create account
-          </Button>
+          <Button type="submit">Create account</Button>
         </div>
       </div>
     </Form>

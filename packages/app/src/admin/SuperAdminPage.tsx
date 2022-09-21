@@ -1,5 +1,6 @@
+import { Button, TextInput } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
-import { Button, Document, Form, FormSection, Input, useMedplum } from '@medplum/react';
+import { Document, Form, FormSection, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 
@@ -75,11 +76,11 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form>
         <FormSection title="Resource Type">
-          <Input
+          <TextInput
             name="resourceType"
             placeholder="Resource Type"
             defaultValue={resourceType}
-            onChange={setResourceType}
+            onChange={(e) => setResourceType(e.currentTarget.value)}
           />
         </FormSection>
         <Button onClick={reindexResourceType}>Reindex</Button>

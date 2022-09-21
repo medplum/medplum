@@ -1,14 +1,15 @@
+import { Button } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Avatar } from './Avatar';
-import { Button } from './Button';
 import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
 import { Popup } from './Popup';
 import { ResourceName } from './ResourceName';
-import './Timeline.css';
 import { killEvent } from './utils/dom';
+
+import './Timeline.css';
 
 export interface TimelineProps {
   children?: React.ReactNode;
@@ -72,8 +73,8 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
       </ErrorBoundary>
       {props.socialEnabled && (
         <div className="medplum-timeline-item-footer">
-          <Button borderless={true}>Like</Button>
-          <Button borderless={true}>Comment</Button>
+          <Button variant="subtle">Like</Button>
+          <Button variant="subtle">Comment</Button>
         </div>
       )}
       {props.popupMenuItems && (

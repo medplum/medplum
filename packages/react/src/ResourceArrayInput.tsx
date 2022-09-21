@@ -1,6 +1,6 @@
+import { Button } from '@mantine/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Button } from './Button';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { killEvent } from './utils/dom';
 
@@ -51,7 +51,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             </td>
             <td style={{ textAlign: 'right' }}>
               <Button
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   const copy = [...(valuesRef.current as any[])];
                   copy.splice(index, 1);
@@ -67,7 +67,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           <td></td>
           <td style={{ textAlign: 'right' }}>
             <Button
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 killEvent(e);
                 const copy = [...(valuesRef.current as any[])];
                 copy.push(undefined);

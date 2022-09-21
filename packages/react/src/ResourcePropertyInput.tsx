@@ -1,3 +1,5 @@
+import { Checkbox, Group, NativeSelect, NumberInput, Textarea, TextInput } from '@mantine/core';
+import { DatePicker, TimeInput } from '@mantine/dates';
 import { buildTypeName, capitalize, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -6,26 +8,20 @@ import { AnnotationInput } from './AnnotationInput';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 import { AttachmentInput } from './AttachmentInput';
 import { BackboneElementInput } from './BackboneElementInput';
-import { Checkbox } from './Checkbox';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactDetailInput } from './ContactDetailInput';
 import { ContactPointInput } from './ContactPointInput';
-import { DateTimeInput } from './DateTimeInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
 import { PeriodInput } from './PeriodInput';
 import { QuantityInput } from './QuantityInput';
 import { RangeInput } from './RangeInput';
 import { RatioInput } from './RatioInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
-import { Select } from './Select';
-import { TextArea } from './TextArea';
 import { TimingInput } from './TimingInput';
 
 export interface ResourcePropertyInputProps {
@@ -74,22 +70,22 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
-    <InputRow>
-      <Select
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
         style={{ width: '200px' }}
         defaultValue={selectedType?.code}
-        onChange={(newValue) => {
+        onChange={(e) => {
           setSelectedType(
-            propertyTypes.find((type: ElementDefinitionType) => type.code === newValue) as ElementDefinitionType
+            propertyTypes.find(
+              (type: ElementDefinitionType) => type.code === e.currentTarget.value
+            ) as ElementDefinitionType
           );
         }}
-      >
-        {propertyTypes.map((type: ElementDefinitionType) => (
-          <option key={type.code} value={type.code}>
-            {type.code}
-          </option>
-        ))}
-      </Select>
+        data={propertyTypes.map((type: ElementDefinitionType) => ({
+          value: type.code as string,
+          label: type.code as string,
+        }))}
+      />
       <ElementDefinitionTypeInput
         {...props}
         elementDefinitionType={selectedType}
@@ -99,7 +95,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
           }
         }}
       />
-    </InputRow>
+    </Group>
   );
 }
 
@@ -123,56 +119,30 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
-      return (
-        <Input
-          type="text"
-          name={name}
-          testid={name}
-          defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
-        />
-      );
+      return <TextInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.date:
-      return (
-        <Input
-          type="date"
-          name={name}
-          testid={name}
-          defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
-        />
-      );
+      return <DatePicker name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
       return (
-        <DateTimeInput
-          type="datetime-local"
-          name={name}
-          testid={name}
-          defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
-        />
+        <Group>
+          <DatePicker name={name} defaultValue={value} onChange={props.onChange} />
+          <TimeInput name={name} defaultValue={value} onChange={props.onChange} />
+        </Group>
       );
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <Input
-          type="number"
-          step={propertyType === PropertyType.decimal ? 'any' : 1}
+        <NumberInput
           name={name}
-          testid={name}
           defaultValue={value}
           onChange={(newValue) => {
             if (props.onChange) {
-              props.onChange(parseFloat(newValue));
+              props.onChange(newValue);
             }
           }}
-          outcome={props.outcome}
         />
       );
     case PropertyType.code:
@@ -181,8 +151,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <Checkbox
           name={name}
-          testid={name}
-          defaultValue={!!value}
+          checked={!!value}
           onChange={(newValue) => {
             if (props.onChange) {
               props.onChange(newValue);
@@ -191,7 +160,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         />
       );
     case PropertyType.markdown:
-      return <TextArea name={name} testid={name} defaultValue={value} onChange={props.onChange} />;
+      return <Textarea name={name} defaultValue={value} onChange={props.onChange} />;
 
     // 2.24.0.2 Complex Types
     // https://www.hl7.org/fhir/datatypes.html#complex

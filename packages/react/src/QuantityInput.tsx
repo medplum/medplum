@@ -1,8 +1,6 @@
+import { Group, NativeSelect, NumberInput, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 export interface QuantityInputProps {
   name: string;
@@ -21,54 +19,39 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Select
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
         style={{ width: 80 }}
-        testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
-        onChange={(newValue) =>
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            comparator: newValue as '<' | '<=' | '>=' | '>',
+            comparator: e.currentTarget.value as '<' | '<=' | '>=' | '>',
           })
         }
-      >
-        <option></option>
-        <option>&lt;</option>
-        <option>&lt;=</option>
-        <option>&gt;=</option>
-        <option>&gt;</option>
-      </Select>
-      <Input
+        data={['<', '<=', '>=', '>']}
+      />
+      <NumberInput
         name={props.name}
-        type="number"
-        step="any"
         placeholder="Value"
-        defaultValue={value?.value?.toString()}
+        defaultValue={value?.value}
         onChange={(newValue) =>
           setValueWrapper({
             ...value,
-            value: tryParseNumber(newValue),
+            value: newValue,
           })
         }
       />
-      <Input
+      <TextInput
         placeholder="Unit"
         defaultValue={value?.unit}
-        onChange={(newValue) =>
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            unit: newValue,
+            unit: e.currentTarget.value,
           })
         }
       />
-    </InputRow>
+    </Group>
   );
-}
-
-function tryParseNumber(str: string): number | undefined {
-  if (!str) {
-    return undefined;
-  }
-  return parseFloat(str);
 }

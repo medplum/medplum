@@ -1,14 +1,12 @@
+import { Button, PasswordInput, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Button } from '../Button';
 import { Form } from '../Form';
-import { FormSection } from '../FormSection';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton';
-import { Input } from '../Input';
 import { MedplumLink } from '../MedplumLink';
 import { useMedplum } from '../MedplumProvider';
-import { getIssuesForExpression } from '../utils/outcomes';
+import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
 export interface AuthenticationFormProps {
   readonly projectId?: string;
@@ -96,12 +94,22 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
           <div className="medplum-signin-separator">or</div>
         </>
       )}
-      <FormSection title="Email" htmlFor="email" outcome={outcome}>
-        <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
-      </FormSection>
-      <FormSection title="Password" htmlFor="password" outcome={outcome}>
-        <Input name="password" type="password" testid="password" autoComplete="off" required={true} outcome={outcome} />
-      </FormSection>
+      <TextInput
+        name="email"
+        type="email"
+        label="Email"
+        required={true}
+        autoFocus={true}
+        error={getErrorsForInput(outcome, 'email')}
+      />
+      <PasswordInput
+        name="password"
+        type="password"
+        label="Password"
+        autoComplete="off"
+        required={true}
+        error={getErrorsForInput(outcome, 'password')}
+      />
       <div className="medplum-signin-buttons">
         {(props.onForgotPassword || props.onRegister) && (
           <div>
@@ -122,9 +130,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
           <label htmlFor="remember">Remember me</label>
         </div>
         <div>
-          <Button type="submit" testid="submit">
-            Sign in
-          </Button>
+          <Button type="submit">Sign in</Button>
         </div>
       </div>
     </Form>

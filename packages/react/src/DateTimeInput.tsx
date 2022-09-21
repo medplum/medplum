@@ -1,6 +1,13 @@
+import { Group } from '@mantine/core';
+import { DatePicker, TimeInput } from '@mantine/dates';
 import { isValidDate } from '@medplum/core';
-import React from 'react';
-import { Input, InputProps } from './Input';
+import React, { useState } from 'react';
+
+export interface DateTimeInputProps {
+  name: string;
+  defaultValue?: string;
+  onChange?: (value: string) => void;
+}
 
 /**
  * The DateTimeInput component is a wrapper around the HTML5 input type="datetime-local".
@@ -10,18 +17,43 @@ import { Input, InputProps } from './Input';
  * @param props The Input props.
  * @returns The JSX element to render.
  */
-export function DateTimeInput(props: InputProps): JSX.Element {
+export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
+  // return (
+  //   <Input
+  //     {...props}
+  //     type="datetime-local"
+  //     defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
+  //     onChange={(newValue: string) => {
+  //       if (props.onChange) {
+  //         props.onChange(convertLocalToIso(newValue));
+  //       }
+  //     }}
+  //   />
+  // );
+  const [value, setValue] = useState<Date>(props.defaultValue ? new Date(props.defaultValue) : new Date());
+
+  function setDate(newDate: Date): void {
+    const newValue = new Date(value.getTime());
+    newValue.setFullYear(newDate.getFullYear());
+    newValue.setMonth(newDate.getMonth());
+    newValue.setDate(newDate.getDate());
+    setValue(newValue);
+  }
+
+  function setTime(newDate: Date): void {
+    const newValue = new Date(value.getTime());
+    newValue.setHours(newDate.getHours());
+    newValue.setMinutes(newDate.getMinutes());
+    newValue.setSeconds(newDate.getSeconds());
+    newValue.setMilliseconds(newDate.getMilliseconds());
+    setValue(newValue);
+  }
+
   return (
-    <Input
-      {...props}
-      type="datetime-local"
-      defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
-      onChange={(newValue: string) => {
-        if (props.onChange) {
-          props.onChange(convertLocalToIso(newValue));
-        }
-      }}
-    />
+    <Group>
+      <DatePicker name={props.name} defaultValue={value} onChange={setDate} />
+      <TimeInput name={props.name} defaultValue={value} onChange={setTime} />
+    </Group>
   );
 }
 

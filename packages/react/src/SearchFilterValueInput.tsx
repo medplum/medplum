@@ -1,9 +1,8 @@
+import { Checkbox, Group, NumberInput, TextInput } from '@mantine/core';
+import { DatePicker, TimeInput } from '@mantine/dates';
 import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';
 import React from 'react';
-import { Checkbox } from './Checkbox';
-import { DateTimeInput } from './DateTimeInput';
-import { Input } from './Input';
 import { QuantityInput } from './QuantityInput';
 import { ReferenceInput } from './ReferenceInput';
 
@@ -40,20 +39,42 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <Checkbox
           name={name}
-          testid={name}
-          defaultValue={props.defaultValue === 'true'}
+          checked={props.defaultValue === 'true'}
           onChange={(newValue) => props.onChange(newValue.toString())}
         />
       );
 
     case SearchParameterType.DATE:
-      return <Input type="date" testid={name} defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return (
+        <DatePicker
+          defaultValue={props.defaultValue ? new Date(props.defaultValue) : undefined}
+          onChange={(newValue) => props.onChange(newValue?.toISOString() || '')}
+        />
+      );
 
     case SearchParameterType.DATETIME:
-      return <DateTimeInput testid={name} defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return (
+        <Group>
+          <DatePicker
+            name={name}
+            defaultValue={props.defaultValue ? new Date(props.defaultValue) : undefined}
+            onChange={(newValue) => props.onChange(newValue?.toISOString() || '')}
+          />
+          <TimeInput
+            name={name}
+            defaultValue={props.defaultValue ? new Date(props.defaultValue) : undefined}
+            onChange={(newValue) => props.onChange(newValue?.toISOString() || '')}
+          />
+        </Group>
+      );
 
     case SearchParameterType.NUMBER:
-      return <Input type="number" defaultValue={props.defaultValue} onChange={props.onChange} />;
+      return (
+        <NumberInput
+          defaultValue={props.defaultValue ? parseFloat(props.defaultValue) : undefined}
+          onChange={(newValue) => props.onChange(newValue?.toString() || '')}
+        />
+      );
 
     case SearchParameterType.QUANTITY:
       return (
@@ -72,7 +93,11 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
 
     default:
       return (
-        <Input testid={name} defaultValue={props.defaultValue} autoFocus={props.autoFocus} onChange={props.onChange} />
+        <TextInput
+          defaultValue={props.defaultValue}
+          autoFocus={props.autoFocus}
+          onChange={(e) => props.onChange(e.currentTarget.value)}
+        />
       );
   }
 }

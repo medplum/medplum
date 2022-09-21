@@ -1,12 +1,12 @@
+import { Button, TextInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import {
-  Button,
   Document,
   Form,
   FormSection,
+  getErrorsForInput,
   getRecaptcha,
   initRecaptcha,
-  Input,
   Logo,
   MedplumLink,
   useMedplum,
@@ -42,7 +42,13 @@ export function ResetPasswordPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
+              <TextInput
+                name="email"
+                type="email"
+                required={true}
+                autoFocus={true}
+                error={getErrorsForInput(outcome, 'email')}
+              />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div>
@@ -51,9 +57,7 @@ export function ResetPasswordPage(): JSX.Element {
                 </MedplumLink>
               </div>
               <div>
-                <Button type="submit" testid="submit">
-                  Reset password
-                </Button>
+                <Button type="submit">Reset password</Button>
               </div>
             </div>
           </>

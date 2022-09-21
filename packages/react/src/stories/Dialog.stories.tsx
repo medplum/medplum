@@ -1,6 +1,6 @@
 import { Meta } from '@storybook/react';
 import React, { useState } from 'react';
-import { Button } from '../Button';
+import { Button } from '@mantine/core';
 import { Dialog } from '../Dialog';
 import { Document } from '../Document';
 

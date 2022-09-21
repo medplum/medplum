@@ -1,3 +1,4 @@
+import { MantineProvider } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import React from 'react';
@@ -31,7 +32,9 @@ root.render(
   <React.StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
-        <App />
+        <MantineProvider withGlobalStyles withNormalizeCSS>
+          <App />
+        </MantineProvider>
       </MedplumProvider>
     </BrowserRouter>
   </React.StrictMode>

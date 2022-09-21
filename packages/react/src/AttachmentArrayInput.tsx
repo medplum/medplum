@@ -1,7 +1,7 @@
+import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { AttachmentDisplay } from './AttachmentDisplay';
-import { Button } from './Button';
 import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
@@ -39,7 +39,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             </td>
             <td className="medplum-right">
               <Button
-                onClick={(e) => {
+                onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   const copy = values.slice();
                   copy.splice(index, 1);

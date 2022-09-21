@@ -1,3 +1,4 @@
+import { Button } from '@mantine/core';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
@@ -11,7 +12,6 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
-  Button,
   DefaultResourceTimeline,
   DiagnosticReportDisplay,
   Document,
@@ -193,7 +193,7 @@ export function ResourcePage(): JSX.Element {
       <Document>
         <h1>Deleted</h1>
         <p>The resource was deleted.</p>
-        <Button danger={true} onClick={restoreResource}>
+        <Button color="red" onClick={restoreResource}>
           Restore
         </Button>
       </Document>

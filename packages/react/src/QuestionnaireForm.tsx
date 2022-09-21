@@ -1,3 +1,5 @@
+import { Button, Checkbox, NumberInput, Textarea, TextInput } from '@mantine/core';
+import { DatePicker, TimeInput } from '@mantine/dates';
 import {
   capitalize,
   createReference,
@@ -24,20 +26,16 @@ import {
 } from '@medplum/fhirtypes';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
-import { Button } from './Button';
-import { Checkbox } from './Checkbox';
 import { CheckboxFormSection } from './CheckboxFormSection';
 import { DateTimeInput } from './DateTimeInput';
 import { Form } from './Form';
-import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
-import { TextArea } from './TextArea';
 import { useResource } from './useResource';
+
 import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
@@ -99,9 +97,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.item && (
         <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
       )}
-      <Button type="submit" size="large">
-        {props.submitButtonText || 'OK'}
-      </Button>
+      <Button type="submit">{props.submitButtonText || 'OK'}</Button>
     </Form>
   );
 }
@@ -149,12 +145,12 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
             <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
               <Checkbox
                 name={item.linkId}
-                defaultValue={initial?.valueBoolean}
-                onChange={(newValue) =>
+                checked={initial?.valueBoolean}
+                onChange={(e) =>
                   setResponseItem(index, {
                     linkId: item.linkId,
                     text: item.text,
-                    answer: [{ valueBoolean: newValue }],
+                    answer: [{ valueBoolean: e.currentTarget.checked }],
                   })
                 }
               />
@@ -162,13 +158,13 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           );
         }
         return (
-          <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
-            <QuestionnaireFormItem
-              item={item}
-              answers={props.answers}
-              onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
-            />
-          </FormSection>
+          // <FormSection key={item.linkId} htmlFor={item.linkId} title={item.text || ''}>
+          <QuestionnaireFormItem
+            item={item}
+            answers={props.answers}
+            onChange={(newResponseItem) => setResponseItem(index, newResponseItem)}
+          />
+          // </FormSection>
         );
       })}
     </>
@@ -226,81 +222,58 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return (
         <Checkbox
           name={name}
-          defaultValue={initial?.valueBoolean}
-          onChange={(newValue) => onChangeAnswer({ valueBoolean: newValue })}
+          checked={initial?.valueBoolean}
+          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
         />
       );
     case QuestionnaireItemType.decimal:
-      return (
-        <Input
-          type="number"
-          step="any"
-          name={name}
-          defaultValue={initial?.valueDecimal}
-          onChange={(newValue) => onChangeAnswer({ valueDecimal: parseFloat(newValue) })}
-        />
-      );
     case QuestionnaireItemType.integer:
       return (
-        <Input
-          type="number"
-          step={1}
+        <NumberInput
           name={name}
-          defaultValue={initial?.valueInteger}
-          onChange={(newValue) => onChangeAnswer({ valueInteger: parseInt(newValue) })}
+          defaultValue={initial?.valueDecimal}
+          onChange={(newValue) => onChangeAnswer({ valueDecimal: newValue })}
         />
       );
     case QuestionnaireItemType.date:
       return (
-        <Input
-          type="date"
+        <DatePicker
           name={name}
-          defaultValue={initial?.valueDate}
-          onChange={(newValue) => onChangeAnswer({ valueDate: newValue })}
+          defaultValue={initial?.valueDate ? new Date(initial.valueDate) : undefined}
+          onChange={(newValue) => onChangeAnswer({ valueDate: newValue?.toISOString() })}
         />
       );
     case QuestionnaireItemType.dateTime:
       return (
         <DateTimeInput
-          type="datetime-local"
           name={name}
           defaultValue={initial?.valueDateTime}
-          onChange={(newValue) => onChangeAnswer({ valueDateTime: newValue })}
+          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
         />
       );
     case QuestionnaireItemType.time:
       return (
-        <Input
-          type="time"
+        <TimeInput
           name={name}
-          defaultValue={initial?.valueTime}
-          onChange={(newValue) => onChangeAnswer({ valueTime: newValue })}
+          defaultValue={initial?.valueTime ? new Date(initial.valueTime) : undefined}
+          onChange={(newValue) => onChangeAnswer({ valueTime: newValue?.toISOString() })}
         />
       );
     case QuestionnaireItemType.string:
+    case QuestionnaireItemType.url:
       return (
-        <Input
-          type="text"
+        <TextInput
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.text:
       return (
-        <TextArea
+        <Textarea
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
-        />
-      );
-    case QuestionnaireItemType.url:
-      return (
-        <Input
-          type="url"
-          name={name}
-          defaultValue={initial?.valueUri}
-          onChange={(newValue) => onChangeAnswer({ valueUri: newValue })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.attachment:

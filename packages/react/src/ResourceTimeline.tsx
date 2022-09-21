@@ -1,3 +1,4 @@
+import { Button, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -13,21 +14,19 @@ import {
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttachmentDisplay } from './AttachmentDisplay';
-import { Button } from './Button';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
-import { Input } from './Input';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { MenuItem } from './MenuItem';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
+import './ResourceTimeline.css';
 import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
-import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -194,7 +193,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 }
               }}
             >
-              <Input name="text" testid="timeline-input" inputRef={inputRef} />
+              <TextInput ref={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
             </Form>

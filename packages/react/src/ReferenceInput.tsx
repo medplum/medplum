@@ -1,10 +1,8 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
 import { ResourceInput } from './ResourceInput';
-import { Select } from './Select';
 
 export interface ReferenceInputProps {
   name: string;
@@ -33,17 +31,15 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
+    <Group spacing="xs" grow noWrap>
       {targetTypes ? (
-        <Select testid="reference-input-resource-type-select" defaultValue={resourceType} onChange={setResourceType}>
-          {targetTypes.map((targetType) => (
-            <option key={targetType} value={targetType}>
-              {targetType}
-            </option>
-          ))}
-        </Select>
+        <NativeSelect
+          defaultValue={resourceType}
+          onChange={(e) => setResourceType(e.currentTarget.value)}
+          data={targetTypes}
+        />
       ) : (
-        <Input testid="reference-input-resource-type-input" defaultValue={resourceType} onChange={setResourceType} />
+        <TextInput defaultValue={resourceType} onChange={(e) => setResourceType(e.currentTarget.value)} />
       )}
       <ResourceInput
         resourceType={resourceType as string}
@@ -53,7 +49,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           setValueHelper(item ? createReference(item) : undefined);
         }}
       />
-    </InputRow>
+    </Group>
   );
 }
 

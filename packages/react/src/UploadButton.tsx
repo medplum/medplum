@@ -1,6 +1,6 @@
+import { Button } from '@mantine/core';
 import { Attachment, Binary, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useRef } from 'react';
-import { Button } from './Button';
 import { useMedplum } from './MedplumProvider';
 import { killEvent } from './utils/dom';
 
@@ -62,8 +62,7 @@ export function UploadButton(props: UploadButtonProps): JSX.Element {
         onChange={(e) => onFileChange(e)}
       />
       <Button
-        testid="upload-button"
-        onClick={(e) => {
+        onClick={(e: React.MouseEvent) => {
           killEvent(e);
           fileInputRef.current?.click();
         }}

@@ -2,7 +2,7 @@ import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Avatar } from './Avatar';
-import { Button } from './Button';
+import { Button } from '@mantine/core';
 import { CalendarInput, getStartMonth } from './CalendarInput';
 import { useMedplum } from './MedplumProvider';
 import { QuestionnaireForm } from './QuestionnaireForm';

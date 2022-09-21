@@ -1,6 +1,6 @@
 import { globalSchema, SearchRequest, stringify, TypeSchema } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
+import { Button } from '@mantine/core';
 import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
 
@@ -221,22 +221,22 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           <tfoot>
             <tr>
               <td align="center">
-                <Button size="small" onClick={onAddField}>
+                <Button compact variant="outline" onClick={onAddField}>
                   Add
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onRemoveField}>
+                <Button compact variant="outline" onClick={onRemoveField}>
                   Remove
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onMoveUp}>
+                <Button compact variant="outline" onClick={onMoveUp}>
                   Up
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onMoveDown}>
+                <Button compact variant="outline" onClick={onMoveDown}>
                   Down
                 </Button>
               </td>
