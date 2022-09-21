@@ -1,17 +1,19 @@
-import { AppShell, Aside, Burger, Footer, Header, MediaQuery, Navbar, Text, useMantineTheme } from '@mantine/core';
+import { AppShell, useMantineTheme } from '@mantine/core';
 import { ErrorBoundary, FooterLinks, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
-import React, { Suspense, useState } from 'react';
+import React, { Suspense } from 'react';
 import { Slide, ToastContainer } from 'react-toastify';
+import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
 
 import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
+import { AppHeader } from './AppHeader';
 
 export function App(): JSX.Element {
   const theme = useMantineTheme();
-  const [opened, setOpened] = useState(false);
+  // const [opened, setOpened] = useState(false);
   // const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
@@ -37,34 +39,44 @@ export function App(): JSX.Element {
             background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
           },
         }}
-        navbarOffsetBreakpoint="sm"
-        asideOffsetBreakpoint="sm"
+        // navbarOffsetBreakpoint="sm"
+        // asideOffsetBreakpoint="sm"
+        // padding="md"
+        padding={0}
+        fixed={false}
         navbar={
-          <Navbar p="md" hiddenBreakpoint="sm" hidden={!opened} width={{ sm: 200, lg: 300 }}>
-            <Text>Application navbar</Text>
-          </Navbar>
+          profile && (
+            // <Navbar p="md" hiddenBreakpoint="sm" hidden={!opened} width={{ sm: 200, lg: 300 }}>
+            //   <Text>Application navbar</Text>
+            // </Navbar>
+            <AppNavbar />
+          )
         }
-        footer={
-          <Footer height={60} p="md">
-            Application footer
-          </Footer>
-        }
+        // footer={
+        //   profile && (
+        //     <Footer height={60} p="md">
+        //       Application footer
+        //     </Footer>
+        //   )
+        // }
         header={
-          <Header height={70} p="md">
-            <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-              <MediaQuery largerThan="sm" styles={{ display: 'none' }}>
-                <Burger
-                  opened={opened}
-                  onClick={() => setOpened((o) => !o)}
-                  size="sm"
-                  color={theme.colors.gray[6]}
-                  mr="xl"
-                />
-              </MediaQuery>
-
-              <Text>Application header</Text>
-            </div>
-          </Header>
+          profile && (
+            // <Header height={70} p="md">
+            //   <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
+            //     <MediaQuery largerThan="sm" styles={{ display: 'none' }}>
+            //       <Burger
+            //         opened={opened}
+            //         onClick={() => setOpened((o) => !o)}
+            //         size="sm"
+            //         color={theme.colors.gray[6]}
+            //         mr="xl"
+            //       />
+            //     </MediaQuery>
+            //     <Text>Application header</Text>
+            //   </div>
+            // </Header>
+            <AppHeader profile={profile} />
+          )
         }
       >
         {/* {profile && (

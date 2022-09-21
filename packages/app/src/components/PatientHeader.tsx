@@ -17,7 +17,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   return (
     <Scrollable className="medplum-surface" height={74}>
       <div className="medplum-patient-header">
-        <ResourceAvatar value={patient} size="xl" color={getDefaultColor(patient)} />
+        <ResourceAvatar value={patient} size="lg" color={getDefaultColor(patient)} />
         <dl>
           <dt>Name</dt>
           <dd>
