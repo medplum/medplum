@@ -39,7 +39,7 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
               {row.span > 0 && (
                 <td className="details" rowSpan={row.span}>
                   <Group spacing="xs" grow noWrap>
-                    <ResourceBadge value={row.meta.author} size="xsmall" link={true} />
+                    <ResourceBadge value={row.meta.author} link={true} />
                     <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
                       {getTimeString(row.meta.lastUpdated as string)}
                     </MedplumLink>

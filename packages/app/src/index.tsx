@@ -6,20 +6,20 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { App } from './App';
 
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/service-worker.js')
-      .then((reg) => {
-        console.log('SW registered: ', reg);
-        return reg.update();
-      })
-      .then((reg) => {
-        console.log('SW updated: ', reg);
-      })
-      .catch((regError) => console.log('SW registration failed: ', regError));
-  });
-}
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker
+//       .register('/service-worker.js')
+//       .then((reg) => {
+//         console.log('SW registered: ', reg);
+//         return reg.update();
+//       })
+//       .then((reg) => {
+//         console.log('SW updated: ', reg);
+//       })
+//       .catch((regError) => console.log('SW registration failed: ', regError));
+//   });
+// }
 
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
