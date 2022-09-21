@@ -20,3 +20,11 @@ The materials below can help prepare for your inspection.
 |---|---|---|
 | Checklist  | General Lab checklist  | [Request Access](https://drive.google.com/file/d/1Km-VLLV4HJ0ZcL51rkQoY4MnxUHlSTKt/view?usp=sharing)  |
 | Security Overview  | General information on Medplum security practices | [medplum.com](https://www.medplum.com/security)  |
+
+## Checklist
+
+:::caution Note
+
+Checklist materials coming soon.  Contact hello@medplum.com for immediate support.
+
+:::

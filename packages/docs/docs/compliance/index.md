@@ -6,7 +6,7 @@ sidebar_position: 1
 
 As an Medplum customer, you will benefit from the compliance built into the platform. With Medplum, you can improve your ability to meet compliance requirements with our tools and automations.
 
-**Compliance is a shared responsibility**, and the tutorials in this section will provide you with tools and resources to guide your compliance processes.  If you are using Medplum hosted service, you'll take advantage of all of the features built into the platform and the certifications we have pursued.  We attempt to make resources publicly available where possible, but in some cases our agreements with partners preclude us from doing so.  For access related questions, contact us at hello@medplum.com.
+**Compliance is a shared responsibility**, and the content in this section will provide you with tools and resources to guide your compliance processes.  If you are using Medplum hosted service, you'll take advantage of all of the features built into the platform and the certifications we have pursued.  We attempt to make resources publicly available where possible, but in some cases our agreements with partners preclude us from doing so.  For access related questions, contact us at hello@medplum.com.
 
 This is a living document, and we continually update our resources.  We welcome feedback.
 
@@ -28,8 +28,8 @@ This section is under construction.  Please check back frequently for updates.  
 
 - [ONC Certification](onc.md)
 - [CLIA/CAP](clia-cap.md)
-- SOC2 Type 2 (coming soon)
-- HIPAA compliance audit (coming soon)
+- [SOC2 Type 2](soc2.md)
+- [HIPAA compliance](hipaa.md)
 - FHIR (coming soon)
 - HITRUST (coming soon)
 - CFR Part 11 (coming soon)
