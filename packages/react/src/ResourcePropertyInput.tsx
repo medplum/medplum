@@ -151,7 +151,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return (
         <Checkbox
           name={name}
-          checked={!!value}
+          defaultChecked={!!value}
           onChange={(newValue) => {
             if (props.onChange) {
               props.onChange(newValue);

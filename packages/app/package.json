@@ -29,6 +29,7 @@
     "@medplum/fhirtypes": "0.9.38",
     "@medplum/mock": "0.9.38",
     "@medplum/react": "0.9.38",
+    "@tabler/icons": "1.96.0",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.4.0",
     "@types/grecaptcha": "3.0.4",
