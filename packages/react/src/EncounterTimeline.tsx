@@ -37,6 +37,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
       })}
       createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
+        status: 'completed',
         encounter: createReference(resource),
         subject: resource.subject,
         sender: createReference(sender),
@@ -45,6 +46,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
       })}
       createMedia={(resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
+        status: 'completed',
         encounter: createReference(resource),
         subject: resource.subject,
         operator: createReference(operator),

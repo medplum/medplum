@@ -79,6 +79,7 @@ describe('ResourceTimeline', () => {
       buildSearchRequests: buildEncounterSearch,
       createCommunication: (resource: Encounter, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
+        status: 'completed',
         encounter: createReference(resource),
         subject: (resource as Encounter).subject,
         sender: createReference(sender),

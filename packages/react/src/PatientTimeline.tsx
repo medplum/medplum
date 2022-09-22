@@ -33,6 +33,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
       })}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
+        status: 'completed',
         subject: createReference(resource),
         sender: createReference(sender),
         sent: new Date().toISOString(),
@@ -40,6 +41,7 @@ export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
       })}
       createMedia={(resource: Patient, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
+        status: 'completed',
         subject: createReference(resource),
         operator: createReference(operator),
         issued: new Date().toISOString(),
