@@ -174,7 +174,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The last step is to have your Bot listen to your Questionnaire responses.
 
-1. Got to you the your Questionnaire's page in the [Medplum App](https://app.medplum.com)
+1. Go to you the your Questionnaire's page in the [Medplum App](https://app.medplum.com/Questionnaire)
 2. Click on the the "Bots" tab
 3. Start typing the name of your Bot.
 4. When your Bot appears in the type ahead, select it and click "Connect"
