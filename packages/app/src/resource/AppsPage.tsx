@@ -1,6 +1,6 @@
 import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import { MedplumLink, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, useMedplum } from '@medplum/react';
 import React from 'react';
 
 export interface AppsPageProps {
@@ -13,18 +13,18 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
 
   if (questionnaires.length === 0) {
     return (
-      <div>
+      <Document>
         <h1>Apps</h1>
         <p>
           No apps found. Contact your administrator or <a href="mailto:support@medplum.com">Medplum Support</a> to add
           automation here.
         </p>
-      </div>
+      </Document>
     );
   }
 
   return (
-    <div>
+    <Document>
       {questionnaires.map((questionnaire) => (
         <div key={questionnaire.id}>
           <h3>
@@ -35,6 +35,6 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
           <p>{questionnaire?.description}</p>
         </div>
       ))}
-    </div>
+    </Document>
   );
 }

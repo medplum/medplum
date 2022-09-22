@@ -1,4 +1,4 @@
-header {
+/* header {
   min-height: 50px;
   line-height: 24px;
   margin: 0 0 2px 0;
@@ -251,4 +251,4 @@ div.medplum-nav-menu-container {
 
 .medplum-sidebar > ul > li > a:hover {
   background: var(--medplum-gray-300);
-}
+} */

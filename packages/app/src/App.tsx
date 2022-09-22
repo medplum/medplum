@@ -1,7 +1,9 @@
 import { AppShell, useMantineTheme } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { ErrorBoundary, FooterLinks, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
 import { Slide, ToastContainer } from 'react-toastify';
+import { AppHeader } from './AppHeader';
 import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
 
@@ -9,12 +11,10 @@ import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
-import { AppHeader } from './AppHeader';
 
 export function App(): JSX.Element {
   const theme = useMantineTheme();
-  // const [opened, setOpened] = useState(false);
-  // const navigate = useNavigate();
+  const [navbarOpen, { toggle }] = useDisclosure(false);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
@@ -41,8 +41,8 @@ export function App(): JSX.Element {
         }}
         padding={0}
         fixed={true}
-        navbar={profile && <AppNavbar />}
-        header={profile && <AppHeader profile={profile} />}
+        navbar={(profile && navbarOpen && <AppNavbar />) as React.ReactElement | undefined}
+        header={profile && <AppHeader profile={profile} navbarToggle={toggle} />}
       >
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>

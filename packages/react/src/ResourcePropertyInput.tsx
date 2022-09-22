@@ -30,7 +30,7 @@ export interface ResourcePropertyInputProps {
   defaultPropertyType?: PropertyType;
   defaultValue?: any;
   arrayElement?: boolean;
-  onChange?: (value: any, propName?: string) => void;
+  onChange: (value: any, propName?: string) => void;
   outcome?: OperationOutcome;
 }
 
@@ -119,7 +119,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
-      return <TextInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <TextInput name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />;
     case PropertyType.date:
       return <DatePicker name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.dateTime:
@@ -149,18 +149,10 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.boolean:
       return (
-        <Checkbox
-          name={name}
-          defaultChecked={!!value}
-          onChange={(newValue) => {
-            if (props.onChange) {
-              props.onChange(newValue);
-            }
-          }}
-        />
+        <Checkbox name={name} defaultChecked={!!value} onChange={(e) => props.onChange(e.currentTarget.checked)} />
       );
     case PropertyType.markdown:
-      return <Textarea name={name} defaultValue={value} onChange={props.onChange} />;
+      return <Textarea name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />;
 
     // 2.24.0.2 Complex Types
     // https://www.hl7.org/fhir/datatypes.html#complex

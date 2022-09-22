@@ -1,5 +1,4 @@
-import { Burger, createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { ResourceAvatar } from '@medplum/react';
@@ -16,6 +15,19 @@ import React, { useState } from 'react';
 import { MedplumLogo } from './components/MedplumLogo';
 
 const useStyles = createStyles((theme) => ({
+  logoButton: {
+    padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+    borderRadius: theme.radius.sm,
+    transition: 'background-color 100ms ease',
+
+    '&:hover': {
+      backgroundColor: theme.fn.lighten(
+        theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
+        0.8
+      ),
+    },
+  },
+
   user: {
     padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
     borderRadius: theme.radius.sm,
@@ -24,17 +36,17 @@ const useStyles = createStyles((theme) => ({
     '&:hover': {
       backgroundColor: theme.fn.lighten(
         theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-        0.1
+        0.8
       ),
-    },
-
-    [theme.fn.smallerThan('xs')]: {
-      display: 'none',
     },
   },
 
-  burger: {
-    [theme.fn.largerThan('xs')]: {
+  userName: {
+    fontWeight: 500,
+    lineHeight: 1,
+    marginRight: 3,
+
+    [theme.fn.smallerThan('xs')]: {
       display: 'none',
     },
   },
@@ -42,26 +54,26 @@ const useStyles = createStyles((theme) => ({
   userActive: {
     backgroundColor: theme.fn.lighten(
       theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background as string,
-      0.1
+      0.8
     ),
   },
 }));
 
 interface HeaderTabsProps {
   profile: ProfileResource;
+  navbarToggle: () => void;
 }
 
-export function AppHeader({ profile }: HeaderTabsProps): JSX.Element {
+export function AppHeader({ profile, navbarToggle }: HeaderTabsProps): JSX.Element {
   const { classes, theme, cx } = useStyles();
-  const [opened, { toggle }] = useDisclosure(false);
   const [userMenuOpened, setUserMenuOpened] = useState(false);
 
   return (
-    <Header height={60}>
+    <Header height={60} p={8}>
       <Group position="apart">
-        <MedplumLogo style={{ width: 120 }} />
-
-        <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" color={theme.white} />
+        <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
+          <MedplumLogo style={{ width: 100 }} />
+        </UnstyledButton>
 
         <Menu
           width={260}
@@ -74,7 +86,7 @@ export function AppHeader({ profile }: HeaderTabsProps): JSX.Element {
             <UnstyledButton className={cx(classes.user, { [classes.userActive]: userMenuOpened })}>
               <Group spacing={7}>
                 <ResourceAvatar value={profile} radius="xl" size={24} />
-                <Text weight={500} size="sm" sx={{ lineHeight: 1 }} mr={3}>
+                <Text size="sm" className={classes.userName}>
                   {formatHumanName(profile.name?.[0] as HumanName)}
                 </Text>
                 <IconChevronDown size={12} stroke={1.5} />

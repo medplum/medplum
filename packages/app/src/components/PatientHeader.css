@@ -5,6 +5,7 @@
   background-color: white;
   padding: 4px 10px;
   overflow: auto;
+  padding: 8px;
 }
 
 .medplum-patient-header > .medplum-avatar {

@@ -239,7 +239,7 @@ export function ResourcePage(): JSX.Element {
         </ErrorBoundary>
       )}
       {currentTab !== 'editor' && (
-        <Document>
+        <>
           {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
           <TabSwitch value={currentTab}>
             <TabPanel name={currentTab}>
@@ -254,7 +254,7 @@ export function ResourcePage(): JSX.Element {
               </ErrorBoundary>
             </TabPanel>
           </TabSwitch>
-        </Document>
+        </>
       )}
     </>
   );
@@ -273,22 +273,36 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
   const { resourceType, id } = props.resource;
   switch (props.name) {
     case 'details':
-      return <ResourceTable value={props.resource} />;
+      return (
+        <Document>
+          <ResourceTable value={props.resource} />
+        </Document>
+      );
     case 'edit':
       return (
-        <ResourceForm
-          defaultValue={props.resource}
-          onSubmit={props.onSubmit}
-          onDelete={() => navigate(`/${resourceType}/${id}/delete`)}
-          outcome={props.outcome}
-        />
+        <Document>
+          <ResourceForm
+            defaultValue={props.resource}
+            onSubmit={props.onSubmit}
+            onDelete={() => navigate(`/${resourceType}/${id}/delete`)}
+            outcome={props.outcome}
+          />
+        </Document>
       );
     case 'delete':
       return <DeletePage resourceType={resourceType} id={id as string} />;
     case 'history':
-      return <ResourceHistoryTable history={props.resourceHistory} />;
+      return (
+        <Document>
+          <ResourceHistoryTable history={props.resourceHistory} />
+        </Document>
+      );
     case 'blame':
-      return <ResourceBlame history={props.resourceHistory} />;
+      return (
+        <Document>
+          <ResourceBlame history={props.resourceHistory} />
+        </Document>
+      );
     case 'json':
       return <JsonPage resource={props.resource} onSubmit={props.onSubmit} />;
     case 'apps':

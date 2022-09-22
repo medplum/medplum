@@ -3,6 +3,7 @@
   min-height: 50px;
   user-select: none;
   white-space: nowrap;
+  font-size: 14px;
 }
 
 .medplum-tablist-foreground {
@@ -16,4 +17,5 @@
   border-bottom: 2px solid var(--medplum-gray-200);
   padding: 0 20px;
   z-index: 3;
+  font-size: 14px;
 }
