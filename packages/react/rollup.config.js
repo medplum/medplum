@@ -18,6 +18,7 @@ const globals = {
   '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
+  '@tabler/icons': 'tabler.icons',
   dayjs: 'dayjs',
   react: 'React',
   'react-dom': 'ReactDOM',

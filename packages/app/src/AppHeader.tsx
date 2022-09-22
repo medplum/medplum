@@ -2,30 +2,21 @@ import { Burger, createStyles, Group, Header, Menu, Text, UnstyledButton } from 
 import { useDisclosure } from '@mantine/hooks';
 import { formatHumanName, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { Logo, ResourceAvatar } from '@medplum/react';
+import { ResourceAvatar } from '@medplum/react';
 import {
   IconChevronDown,
   IconHeart,
   IconLogout,
   IconMessage,
-  IconPlayerPause,
   IconSettings,
   IconStar,
   IconSwitchHorizontal,
-  IconTrash,
 } from '@tabler/icons';
 import React, { useState } from 'react';
+import { MedplumLogo } from './components/MedplumLogo';
 
 const useStyles = createStyles((theme) => ({
-  header: {
-    paddingTop: theme.spacing.sm,
-    // backgroundColor: theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background,
-    backgroundColor: '#862E9C',
-    borderBottom: `1px solid ${theme.fn.variant({ variant: 'filled', color: theme.primaryColor }).background}`,
-  },
-
   user: {
-    color: theme.white,
     padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
     borderRadius: theme.radius.sm,
     transition: 'background-color 100ms ease',
@@ -66,9 +57,9 @@ export function AppHeader({ profile }: HeaderTabsProps): JSX.Element {
   const [userMenuOpened, setUserMenuOpened] = useState(false);
 
   return (
-    <Header height={60} className={classes.header}>
+    <Header height={60}>
       <Group position="apart">
-        <Logo size={28} />
+        <MedplumLogo style={{ width: 120 }} />
 
         <Burger opened={opened} onClick={toggle} className={classes.burger} size="sm" color={theme.white} />
 
@@ -82,8 +73,8 @@ export function AppHeader({ profile }: HeaderTabsProps): JSX.Element {
           <Menu.Target>
             <UnstyledButton className={cx(classes.user, { [classes.userActive]: userMenuOpened })}>
               <Group spacing={7}>
-                <ResourceAvatar value={profile} radius="xl" size={20} />
-                <Text weight={500} size="sm" sx={{ lineHeight: 1, color: theme.white }} mr={3}>
+                <ResourceAvatar value={profile} radius="xl" size={24} />
+                <Text weight={500} size="sm" sx={{ lineHeight: 1 }} mr={3}>
                   {formatHumanName(profile.name?.[0] as HumanName)}
                 </Text>
                 <IconChevronDown size={12} stroke={1.5} />

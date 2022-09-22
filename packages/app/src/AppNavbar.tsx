@@ -11,6 +11,7 @@ import {
   IconSwitchHorizontal,
 } from '@tabler/icons';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const useStyles = createStyles((theme, _params, getRef) => {
   const icon = getRef('icon');
@@ -67,16 +68,17 @@ const useStyles = createStyles((theme, _params, getRef) => {
 });
 
 const data = [
-  { link: '', label: 'Notifications', icon: IconBellRinging },
-  { link: '', label: 'Billing', icon: IconReceipt2 },
-  { link: '', label: 'Security', icon: IconFingerprint },
-  { link: '', label: 'SSH Keys', icon: IconKey },
-  { link: '', label: 'Databases', icon: IconDatabaseImport },
-  { link: '', label: 'Authentication', icon: Icon2fa },
+  { link: '/Patient', label: 'Patient', icon: IconBellRinging },
+  { link: '/Practitioner', label: 'Practitioner', icon: IconReceipt2 },
+  { link: '/Organization', label: 'Organization', icon: IconFingerprint },
+  { link: '/ServiceRequest', label: 'ServiceRequest', icon: IconKey },
+  { link: '/DiagnosticReport', label: 'DiagnosticReport', icon: IconDatabaseImport },
+  { link: '/Questionnaire', label: 'Questionnaire', icon: Icon2fa },
   { link: '', label: 'Other Settings', icon: IconSettings },
 ];
 
 export function AppNavbar(): JSX.Element {
+  const navigate = useNavigate();
   const { classes, cx } = useStyles();
   const [active, setActive] = useState('Billing');
 
@@ -88,6 +90,7 @@ export function AppNavbar(): JSX.Element {
       onClick={(event) => {
         event.preventDefault();
         setActive(item.label);
+        navigate(item.link);
       }}
     >
       <item.icon className={classes.linkIcon} stroke={1.5} />
@@ -96,7 +99,7 @@ export function AppNavbar(): JSX.Element {
   ));
 
   return (
-    <Navbar width={{ sm: 300 }} p="md">
+    <Navbar width={{ sm: 250 }} p="xs">
       <Navbar.Section grow>{links}</Navbar.Section>
 
       <Navbar.Section className={classes.footer}>

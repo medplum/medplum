@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Group, Table } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
 import {
   Bundle,
@@ -18,7 +18,6 @@ import { SearchFilterValueDialog } from './SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
-import { TitleBar } from './TitleBar';
 import { isCheckboxCell, killEvent } from './utils/dom';
 
 import './SearchControl.css';
@@ -208,6 +207,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       return;
     }
 
+    if (e.button === 2) {
+      // Ignore right clicks
+      return;
+    }
+
     killEvent(e);
 
     if (e.button !== 1 && props.onClick) {
@@ -240,79 +244,70 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const resources = entries?.map((e) => e.resource);
 
   return (
-    <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
+    <div className="medplum-search-control" data-testid="search-control">
       {!props.hideToolbar && (
-        <TitleBar>
-          <div>
-            <h1>
-              <a href={`https://www.hl7.org/fhir/${resourceType.toLowerCase()}.html`} target="_blank" rel="noopener">
-                {resourceType}
-              </a>
-            </h1>
-            <Button.Group>
+        <Group position="apart">
+          <Group spacing={2}>
+            <Button
+              compact
+              variant="outline"
+              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+            >
+              Fields
+            </Button>
+            <Button
+              compact
+              variant="outline"
+              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+            >
+              Filters
+            </Button>
+            {props.onNew && (
+              <Button compact variant="outline" onClick={props.onNew}>
+                New...
+              </Button>
+            )}
+            {props.onExport && (
+              <Button compact variant="outline" onClick={props.onExport}>
+                Export...
+              </Button>
+            )}
+            {props.onDelete && (
               <Button
                 compact
                 variant="outline"
-                onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+                onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
               >
-                Fields
+                Delete...
               </Button>
+            )}
+            {props.onBulk && (
               <Button
                 compact
                 variant="outline"
-                onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+                onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
               >
-                Filters
+                Bulk...
               </Button>
-              {props.onNew && (
-                <Button compact variant="outline" onClick={props.onNew}>
-                  New...
-                </Button>
-              )}
-              {props.onExport && (
-                <Button compact variant="outline" onClick={props.onExport}>
-                  Export...
-                </Button>
-              )}
-              {props.onDelete && (
-                <Button
-                  compact
-                  variant="outline"
-                  onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
-                >
-                  Delete...
-                </Button>
-              )}
-              {props.onBulk && (
-                <Button
-                  compact
-                  variant="outline"
-                  onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
-                >
-                  Bulk...
-                </Button>
-              )}
-            </Button.Group>
-          </div>
+            )}
+          </Group>
           {lastResult && (
-            <div>
+            <Group spacing={2}>
               <span className="medplum-search-summary">
                 {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
                 {lastResult.total?.toLocaleString()}
               </span>
-              <Button.Group>
-                <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, -1))}>
-                  &lt;&lt;
-                </Button>
-                <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, 1))}>
-                  &gt;&gt;
-                </Button>
-              </Button.Group>
-            </div>
+              <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, -1))}>
+                &lt;&lt;
+              </Button>
+              <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, 1))}>
+                &gt;&gt;
+              </Button>
+            </Group>
           )}
-        </TitleBar>
+        </Group>
       )}
-      <table>
+      <Table>
         <thead>
           <tr>
             {checkboxColumn && (
@@ -380,7 +375,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               )
           )}
         </tbody>
-      </table>
+      </Table>
       {resources?.length === 0 && (
         <div data-testid="empty-search" className="medplum-empty-search">
           No results
