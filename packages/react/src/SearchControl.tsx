@@ -297,10 +297,20 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
                 {lastResult.total?.toLocaleString()}
               </span>
-              <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, -1))}>
+              <Button
+                compact
+                variant="outline"
+                aria-label="Previous page"
+                onClick={() => emitSearchChange(movePage(search, -1))}
+              >
                 &lt;&lt;
               </Button>
-              <Button compact variant="outline" onClick={() => emitSearchChange(movePage(search, 1))}>
+              <Button
+                compact
+                variant="outline"
+                aria-label="Next page"
+                onClick={() => emitSearchChange(movePage(search, 1))}
+              >
                 &gt;&gt;
               </Button>
             </Group>

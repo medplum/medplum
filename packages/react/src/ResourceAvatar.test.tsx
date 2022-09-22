@@ -28,12 +28,12 @@ describe('ResourceAvatar', () => {
 
   test('Avatar renders system', async () => {
     await setup({ value: { reference: 'system' } });
-    expect(screen.getByText('S')).toBeDefined();
+    expect(screen.getByTitle('System')).toBeDefined();
   });
 
   test('Avatar renders initials', async () => {
     await setup({ alt: 'Homer Simpson' });
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByTitle('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
@@ -41,9 +41,9 @@ describe('ResourceAvatar', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders resource directly as link', async () => {
@@ -52,9 +52,9 @@ describe('ResourceAvatar', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders after loading the resource', async () => {
@@ -62,8 +62,8 @@ describe('ResourceAvatar', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 });

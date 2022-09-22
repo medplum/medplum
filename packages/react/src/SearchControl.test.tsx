@@ -38,11 +38,9 @@ describe('SearchControl', () => {
     await setup(props);
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
+      await waitFor(() => screen.getByText('Homer Simpson'));
     });
 
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
@@ -265,11 +263,11 @@ describe('SearchControl', () => {
     await setup(props);
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('next-page-button'));
+      await waitFor(() => screen.getByLabelText('Next page'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
 
     expect(props.onChange).toBeCalled();
@@ -292,11 +290,11 @@ describe('SearchControl', () => {
     await setup(props);
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('next-page-button'));
+      await waitFor(() => screen.getByLabelText('Next page'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
   });
 
@@ -318,11 +316,11 @@ describe('SearchControl', () => {
     await setup(props);
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('prev-page-button'));
+      await waitFor(() => screen.getByLabelText('Previous page'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('prev-page-button'));
+      fireEvent.click(screen.getByLabelText('Previous page'));
     });
 
     expect(props.onChange).toBeCalled();
@@ -504,15 +502,15 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('fields-button'));
+      fireEvent.click(screen.getByText('Fields'));
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-ok'));
+      await waitFor(() => screen.getByText('OK'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -538,15 +536,15 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('fields-button'));
+      fireEvent.click(screen.getByText('Fields'));
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-cancel'));
+      await waitFor(() => screen.getByText('Cancel'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-cancel'));
+      fireEvent.click(screen.getByText('Cancel'));
     });
   });
 
@@ -572,15 +570,15 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('filters-button'));
+      fireEvent.click(screen.getByText('Filters'));
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-ok'));
+      await waitFor(() => screen.getByText('OK'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -606,15 +604,15 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('filters-button'));
+      fireEvent.click(screen.getByText('Filters'));
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-cancel'));
+      await waitFor(() => screen.getByText('Cancel'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-cancel'));
+      fireEvent.click(screen.getByText('Cancel'));
     });
   });
 
@@ -649,13 +647,13 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-value'), {
+      fireEvent.change(screen.getByPlaceholderText('Search value'), {
         target: { value: 'Washington' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -797,41 +795,6 @@ describe('SearchControl', () => {
 
     // Expect the popup menu to be closed now
     expect(screen.queryByText('Sort A to Z')).toBeNull();
-  });
-
-  test('Saved searches', async () => {
-    const onChange = jest.fn();
-
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        fields: ['id', 'name'],
-      },
-      userConfig: {
-        resourceType: 'UserConfiguration',
-        search: [
-          {
-            name: 'Simpsons',
-            criteria: 'Patient?name=Simpson',
-          },
-        ],
-      },
-      onChange,
-    };
-
-    await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('saved-search-select'));
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('saved-search-select'), {
-        target: { value: 'Patient?name=Simpson' },
-      });
-    });
-
-    expect(onChange).toBeCalled();
   });
 
   test('Hide toolbar', async () => {

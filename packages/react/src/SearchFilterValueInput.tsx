@@ -97,6 +97,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
           defaultValue={props.defaultValue}
           autoFocus={props.autoFocus}
           onChange={(e) => props.onChange(e.currentTarget.value)}
+          placeholder="Search value"
         />
       );
   }
