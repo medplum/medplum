@@ -1,6 +1,6 @@
-import { evalFhirPath, resolveId } from '@medplum/core';
+import { createReference, evalFhirPath } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { CompartmentDefinition, CompartmentDefinitionResource, Reference, Resource } from '@medplum/fhirtypes';
+import { CompartmentDefinition, CompartmentDefinitionResource, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { getSearchParameter } from './structure';
 
 /**
@@ -46,9 +46,9 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
  * @param resource The resource to inspect.
  * @returns The patient ID if found; undefined otherwise.
  */
-export function getPatientId(resource: Resource): string | undefined {
+export function getPatient(resource: Resource): Reference<Patient> | undefined {
   if (resource.resourceType === 'Patient') {
-    return resource.id;
+    return resource.id ? createReference(resource) : undefined;
   }
   const params = getPatientCompartmentParams(resource.resourceType);
   if (params) {
@@ -57,7 +57,7 @@ export function getPatientId(resource: Resource): string | undefined {
       if (searchParam) {
         const values = evalFhirPath(searchParam.expression as string, resource);
         for (const value of values) {
-          const patientId = getPatientIdFromUnknownValue(value);
+          const patientId = getPatientFromUnknownValue(value);
           if (patientId) {
             return patientId;
           }
@@ -73,7 +73,7 @@ export function getPatientId(resource: Resource): string | undefined {
  * @param value The unknown value.
  * @returns The patient ID if found; undefined otherwise.
  */
-function getPatientIdFromUnknownValue(value: unknown): string | undefined {
+function getPatientFromUnknownValue(value: unknown): Reference<Patient> | undefined {
   if (value && typeof value === 'object') {
     return getPatientIdFromReference(value as Reference);
   }
@@ -85,9 +85,9 @@ function getPatientIdFromUnknownValue(value: unknown): string | undefined {
  * @param reference A FHIR reference.
  * @returns The patient ID if found; undefined otherwise.
  */
-function getPatientIdFromReference(reference: Reference): string | undefined {
+function getPatientIdFromReference(reference: Reference): Reference<Patient> | undefined {
   if (reference.reference?.startsWith('Patient/')) {
-    return resolveId(reference);
+    return reference as Reference<Patient>;
   }
   return undefined;
 }

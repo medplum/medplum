@@ -88,4 +88,10 @@ export interface Meta {
    * compartments.
    */
   account?: Reference;
+
+  /**
+   * The list of compartments containing this resource. This is readonly
+   * and is set by the server.
+   */
+  compartment?: Reference[];
 }

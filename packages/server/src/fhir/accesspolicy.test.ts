@@ -433,6 +433,59 @@ describe('AccessPolicy', () => {
     }
   });
 
+  test('Multiple entries per resource type', async () => {
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          criteria: `ServiceRequest?status=active`,
+        },
+        {
+          resourceType: 'ServiceRequest',
+          criteria: `ServiceRequest?status=completed`,
+          readonly: true,
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy: accessPolicy,
+    });
+
+    // User can create a ServiceRequest with status=active
+    const serviceRequest1 = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      subject: { reference: 'Patient/' + randomUUID() },
+      code: { text: 'test' },
+    });
+    expect(serviceRequest1).toBeDefined();
+
+    // User can update the ServiceRequest with status=active
+    const serviceRequest2 = await repo.updateResource<ServiceRequest>({
+      ...serviceRequest1,
+      orderDetail: [{ text: 'test' }],
+    });
+    expect(serviceRequest2).toBeDefined();
+
+    // Try to update the ServiceRequest with status=completed
+    // This should fail
+    try {
+      await repo.updateResource<ServiceRequest>({
+        ...serviceRequest2,
+        status: 'completed',
+      });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('forbidden');
+    }
+  });
+
   test('ClientApplication with account restriction', async () => {
     const project = randomUUID();
     const account = 'Organization/' + randomUUID();
