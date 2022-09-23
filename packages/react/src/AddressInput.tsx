@@ -65,11 +65,13 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   return (
     <Group spacing="xs" grow noWrap>
       <NativeSelect
+        data-testid="address-use"
         defaultValue={value?.use}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'billing')}
         data={['', 'home', 'work', 'temp', 'old', 'billing']}
       />
       <NativeSelect
+        data-testid="address-type"
         defaultValue={value?.type}
         onChange={(e) => setType(e.currentTarget.value as 'postal' | 'physical' | 'both')}
         data={['', 'postal', 'physical', 'both']}

@@ -49,6 +49,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="date"
           name={name}
+          data-testid={name}
           defaultValue={props.defaultValue}
           onChange={(e) => props.onChange(e.currentTarget.value)}
         />
@@ -62,6 +63,7 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
         <TextInput
           type="number"
           name={name}
+          data-testid={name}
           defaultValue={props.defaultValue}
           onChange={(e) => props.onChange(e.currentTarget.value)}
         />
@@ -85,6 +87,8 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
     default:
       return (
         <TextInput
+          name={name}
+          data-testid={name}
           defaultValue={props.defaultValue}
           autoFocus={props.autoFocus}
           onChange={(e) => props.onChange(e.currentTarget.value)}

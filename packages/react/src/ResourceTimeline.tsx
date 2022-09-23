@@ -194,7 +194,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 }
               }}
             >
-              <TextInput ref={inputRef} />
+              <TextInput data-testid="timeline-input" ref={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
             </Form>

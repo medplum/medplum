@@ -269,19 +269,14 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
         defaultValue={action.description}
         onChange={(e) => changeProperty('description', e.currentTarget.value)}
       />
-      {/* </FormSection>
-      <FormSection
-        title="Type of Action"
-        description="The type of the action to be performed."
-        htmlFor={`actionType-${action.id}`}
-      > */}
       <NativeSelect
+        label="Type of Action"
+        description="The type of the action to be performed."
         name={`actionType-${action.id}`}
         defaultValue={actionType}
         onChange={(e) => setActionType(e.currentTarget.value)}
         data={['', 'appointment', 'lab', 'questionnaire', 'task']}
       />
-      {/* </FormSection> */}
       {action.action && action.action.length > 0 && (
         <ActionArrayBuilder
           actions={action.action}

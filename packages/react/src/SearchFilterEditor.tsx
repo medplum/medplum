@@ -171,6 +171,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
     <tr>
       <td>
         <NativeSelect
+          data-testid="filter-field"
           defaultValue={valueRef.current.code}
           onChange={(e) => setFilterCode(e.currentTarget.value)}
           data={Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) }))}
@@ -179,6 +180,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {operators && (
           <NativeSelect
+            data-testid="filter-operation"
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
             data={operators.map((op) => ({ value: op, label: getOpString(op) }))}
