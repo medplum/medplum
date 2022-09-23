@@ -1,5 +1,4 @@
-import { Checkbox, Group, NativeSelect, NumberInput, Textarea, TextInput } from '@mantine/core';
-import { DatePicker, TimeInput } from '@mantine/dates';
+import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { buildTypeName, capitalize, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -13,6 +12,7 @@ import { CodeInput } from './CodeInput';
 import { CodingInput } from './CodingInput';
 import { ContactDetailInput } from './ContactDetailInput';
 import { ContactPointInput } from './ContactPointInput';
+import { DateTimeInput } from './DateTimeInput';
 import { ExtensionInput } from './ExtensionInput';
 import { HumanNameInput } from './HumanNameInput';
 import { IdentifierInput } from './IdentifierInput';
@@ -23,6 +23,7 @@ import { RatioInput } from './RatioInput';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourceArrayInput } from './ResourceArrayInput';
 import { TimingInput } from './TimingInput';
+import { getErrorsForInput } from './utils/outcomes';
 
 export interface ResourcePropertyInputProps {
   property: ElementDefinition;
@@ -120,30 +121,42 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.uri:
     case PropertyType.url:
       return (
-        <TextInput id={name} name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />
+        <TextInput
+          id={name}
+          name={name}
+          defaultValue={value}
+          onChange={(e) => props.onChange(e.currentTarget.value)}
+          error={getErrorsForInput(props.outcome, name)}
+        />
       );
     case PropertyType.date:
-      return <DatePicker id={name} name={name} defaultValue={value} onChange={props.onChange} />;
+      return (
+        <TextInput
+          type="date"
+          id={name}
+          name={name}
+          defaultValue={value}
+          onChange={(e) => props.onChange(e.currentTarget.value)}
+          error={getErrorsForInput(props.outcome, name)}
+        />
+      );
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return (
-        <Group>
-          <DatePicker id={name} name={name} defaultValue={value} onChange={props.onChange} />
-          <TimeInput id={name} name={name} defaultValue={value} onChange={props.onChange} />
-        </Group>
-      );
+      return <DateTimeInput name={name} defaultValue={value} onChange={props.onChange} outcome={props.outcome} />;
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
-        <NumberInput
+        <TextInput
+          type="number"
+          step={propertyType === PropertyType.decimal ? 'any' : '1'}
           id={name}
           name={name}
           defaultValue={value}
-          onChange={(newValue) => {
+          onChange={(e) => {
             if (props.onChange) {
-              props.onChange(newValue);
+              props.onChange(e.currentTarget.value);
             }
           }}
         />

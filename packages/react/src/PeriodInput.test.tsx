@@ -3,66 +3,59 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { PeriodInput } from './PeriodInput';
 
-const startDateTime = '2021-01-01T12:00:00Z';
-const endDateTime = '2021-01-02T12:00:00Z';
+const startDateTime = '2021-01-01T00:00:00Z';
+const endDateTime = '2021-01-02T00:00:00Z';
 
 describe('PeriodInput', () => {
-  beforeAll(() => {
-    window.ResizeObserver =
-      window.ResizeObserver ||
-      jest.fn().mockImplementation(() => ({
-        disconnect: jest.fn(),
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-      }));
-  });
-
   test('Renders undefined value', () => {
-    render(<PeriodInput name="a" placeholder="Test" />);
-    expect(screen.getByPlaceholderText('Test')).toBeDefined();
+    render(<PeriodInput name="a" />);
+    expect(screen.getByPlaceholderText('Start')).toBeDefined();
+    expect(screen.getByPlaceholderText('End')).toBeDefined();
   });
 
   test('Renders', () => {
-    render(<PeriodInput name="a" placeholder="Test" defaultValue={{ start: startDateTime, end: endDateTime }} />);
-    expect(screen.getByPlaceholderText('Test')).toBeDefined();
-    expect((screen.getByPlaceholderText('Test') as HTMLInputElement).value).toBe('January 1, 2021 – January 2, 2021');
+    render(<PeriodInput name="a" defaultValue={{ start: startDateTime, end: endDateTime }} />);
+    expect(screen.getByPlaceholderText('Start')).toBeDefined();
+    expect(screen.getByPlaceholderText('End')).toBeDefined();
   });
 
   test('Set value', async () => {
-    render(<PeriodInput name="a" placeholder="Test" />);
+    render(<PeriodInput name="a" />);
 
     await act(async () => {
-      fireEvent.click(screen.getByPlaceholderText('Test'));
+      fireEvent.change(screen.getByPlaceholderText('Start'), {
+        target: { value: startDateTime },
+      });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('11'));
+      fireEvent.change(screen.getByPlaceholderText('End'), {
+        target: { value: endDateTime },
+      });
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('12'));
-    });
-
-    expect((screen.getByPlaceholderText('Test') as HTMLInputElement).value).toBeDefined();
+    expect(screen.getByDisplayValue(startDateTime)).toBeInTheDocument();
+    expect(screen.getByDisplayValue(endDateTime)).toBeInTheDocument();
   });
 
   test('Change event', async () => {
     let lastValue: Period | undefined = undefined;
 
-    render(<PeriodInput name="a" placeholder="Test" onChange={(value) => (lastValue = value)} />);
+    render(<PeriodInput name="a" onChange={(value) => (lastValue = value)} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByPlaceholderText('Test'));
+      fireEvent.change(screen.getByPlaceholderText('Start'), {
+        target: { value: startDateTime },
+      });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('11'));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('12'));
+      fireEvent.change(screen.getByPlaceholderText('End'), {
+        target: { value: endDateTime },
+      });
     });
 
     expect(lastValue).toBeDefined();
+    expect(lastValue).toMatchObject({ start: startDateTime, end: endDateTime });
   });
 });

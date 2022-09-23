@@ -1,11 +1,14 @@
-import { Group } from '@mantine/core';
-import { DatePicker, TimeInput } from '@mantine/dates';
+import { TextInput } from '@mantine/core';
 import { isValidDate } from '@medplum/core';
-import React, { useState } from 'react';
+import { OperationOutcome } from '@medplum/fhirtypes';
+import React from 'react';
+import { getErrorsForInput } from './utils/outcomes';
 
 export interface DateTimeInputProps {
   name: string;
+  placeholder?: string;
   defaultValue?: string;
+  outcome?: OperationOutcome;
   onChange?: (value: string) => void;
 }
 
@@ -18,42 +21,21 @@ export interface DateTimeInputProps {
  * @returns The JSX element to render.
  */
 export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
-  // return (
-  //   <Input
-  //     {...props}
-  //     type="datetime-local"
-  //     defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
-  //     onChange={(newValue: string) => {
-  //       if (props.onChange) {
-  //         props.onChange(convertLocalToIso(newValue));
-  //       }
-  //     }}
-  //   />
-  // );
-  const [value, setValue] = useState<Date>(props.defaultValue ? new Date(props.defaultValue) : new Date());
-
-  function setDate(newDate: Date): void {
-    const newValue = new Date(value.getTime());
-    newValue.setFullYear(newDate.getFullYear());
-    newValue.setMonth(newDate.getMonth());
-    newValue.setDate(newDate.getDate());
-    setValue(newValue);
-  }
-
-  function setTime(newDate: Date): void {
-    const newValue = new Date(value.getTime());
-    newValue.setHours(newDate.getHours());
-    newValue.setMinutes(newDate.getMinutes());
-    newValue.setSeconds(newDate.getSeconds());
-    newValue.setMilliseconds(newDate.getMilliseconds());
-    setValue(newValue);
-  }
-
   return (
-    <Group>
-      <DatePicker name={props.name} defaultValue={value} onChange={setDate} />
-      <TimeInput name={props.name} defaultValue={value} onChange={setTime} />
-    </Group>
+    <TextInput
+      id={props.name}
+      name={props.name}
+      placeholder={props.placeholder}
+      type="datetime-local"
+      defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
+      error={getErrorsForInput(props.outcome, props.name)}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+        if (props.onChange) {
+          const newValue = e.currentTarget.value;
+          props.onChange(convertLocalToIso(newValue));
+        }
+      }}
+    />
   );
 }
 

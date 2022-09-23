@@ -23,7 +23,6 @@
   "devDependencies": {
     "@emotion/react": "11.10.4",
     "@mantine/core": "5.4.0",
-    "@mantine/dates": "5.4.0",
     "@mantine/hooks": "5.4.0",
     "@medplum/core": "0.9.38",
     "@medplum/fhirtypes": "0.9.38",

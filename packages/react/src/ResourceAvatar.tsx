@@ -5,8 +5,6 @@ import React from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useResource } from './useResource';
 
-import './ResourceAvatar.css';
-
 export interface ResourceAvatarProps extends AvatarProps {
   value?: Reference | Resource;
   link?: boolean;

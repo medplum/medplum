@@ -1,4 +1,4 @@
-import { Group, NativeSelect, NumberInput, TextInput } from '@mantine/core';
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 
@@ -23,22 +23,24 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       <NativeSelect
         style={{ width: 80 }}
         defaultValue={value?.comparator}
+        data={['', '<', '<=', '>=', '>']}
         onChange={(e) =>
           setValueWrapper({
             ...value,
             comparator: e.currentTarget.value as '<' | '<=' | '>=' | '>',
           })
         }
-        data={['<', '<=', '>=', '>']}
       />
-      <NumberInput
+      <TextInput
         name={props.name}
+        type="number"
+        step="any"
         placeholder="Value"
-        defaultValue={value?.value}
-        onChange={(newValue) =>
+        defaultValue={value?.value?.toString()}
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            value: newValue,
+            value: tryParseNumber(e.currentTarget.value),
           })
         }
       />
@@ -54,4 +56,11 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       />
     </Group>
   );
+}
+
+function tryParseNumber(str: string): number | undefined {
+  if (!str) {
+    return undefined;
+  }
+  return parseFloat(str);
 }

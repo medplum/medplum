@@ -1,5 +1,4 @@
-import { Button, Checkbox, NativeSelect, NumberInput, Textarea, TextInput } from '@mantine/core';
-import { DatePicker, TimeInput } from '@mantine/dates';
+import { Button, Checkbox, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -228,20 +227,32 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         />
       );
     case QuestionnaireItemType.decimal:
-    case QuestionnaireItemType.integer:
       return (
-        <NumberInput
+        <TextInput
+          type="number"
+          step="any"
           name={name}
           defaultValue={initial?.valueDecimal}
-          onChange={(newValue) => onChangeAnswer({ valueDecimal: newValue })}
+          onChange={(e) => onChangeAnswer({ valueDecimal: parseFloat(e.currentTarget.value) })}
+        />
+      );
+    case QuestionnaireItemType.integer:
+      return (
+        <TextInput
+          type="number"
+          step={1}
+          name={name}
+          defaultValue={initial?.valueInteger}
+          onChange={(e) => onChangeAnswer({ valueInteger: parseInt(e.currentTarget.value) })}
         />
       );
     case QuestionnaireItemType.date:
       return (
-        <DatePicker
+        <TextInput
+          type="date"
           name={name}
-          defaultValue={initial?.valueDate ? new Date(initial.valueDate) : undefined}
-          onChange={(newValue) => onChangeAnswer({ valueDate: newValue?.toISOString() })}
+          defaultValue={initial?.valueDate}
+          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.dateTime:
@@ -254,10 +265,11 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       );
     case QuestionnaireItemType.time:
       return (
-        <TimeInput
+        <TextInput
+          type="time"
           name={name}
-          defaultValue={initial?.valueTime ? new Date(initial.valueTime) : undefined}
-          onChange={(newValue) => onChangeAnswer({ valueTime: newValue?.toISOString() })}
+          defaultValue={initial?.valueTime}
+          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.string:

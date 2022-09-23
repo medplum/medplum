@@ -1,9 +1,10 @@
-import { Button, Checkbox, Group, NativeSelect, NumberInput } from '@mantine/core';
-import { DatePicker } from '@mantine/dates';
+import { Button, Checkbox, Group, NativeSelect, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
+import { DateTimeInput } from './DateTimeInput';
 import { Dialog } from './Dialog';
+import { FormSection } from './FormSection';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -57,8 +58,8 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   const valueRef = useRef<Timing>();
   valueRef.current = value;
 
-  function setStart(newStart: string | undefined): void {
-    setValue({ ...valueRef.current, event: newStart ? [newStart] : undefined });
+  function setStart(newStart: string): void {
+    setValue({ ...valueRef.current, event: [newStart] });
   }
 
   function setRepeat(repeat: TimingRepeat): void {
@@ -98,43 +99,44 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   return (
     <Dialog title="Timing" visible={props.visible} onOk={() => props.onOk(value)} onCancel={() => props.onCancel()}>
       <div style={{ padding: '5px 20px', textAlign: 'left' }}>
-        <DatePicker
-          placeholder="Pick date"
-          label="Starts on"
-          onChange={(newValue) => setStart(newValue?.toISOString())}
-        />
-        <h3>Repeat every</h3>
-        <Group spacing="xs" grow noWrap>
-          <NumberInput
-            step={1}
-            name={'timing-dialog-period'}
-            defaultValue={value?.repeat?.period}
-            onChange={(newValue) => setPeriod(newValue)}
-          />
-          <NativeSelect
-            name={'timing-dialog-periodUnit'}
-            defaultValue={value?.repeat?.periodUnit}
-            onChange={(e) => setPeriodUnit(e.currentTarget.value as 'a' | 'd' | 'wk' | 'mo' | undefined)}
-            data={[
-              { value: 'd', label: 'day' },
-              { value: 'wk', label: 'week' },
-              { value: 'mo', label: 'month' },
-              { value: 'a', label: 'year' },
-            ]}
-          />
-        </Group>
-        <h3>Repeat on</h3>
-        <Group spacing="xs" grow noWrap>
-          {daysOfWeek.map((day) => (
-            <React.Fragment key={day}>
-              <label htmlFor={'timing-dialog-repeat-' + day}>{day.charAt(0).toUpperCase()}</label>
-              <Checkbox
-                name={'timing-dialog-repeat-' + day}
-                onChange={(e) => setDayOfWeek(day as DayOfWeek, e.currentTarget.checked)}
-              />
-            </React.Fragment>
-          ))}
-        </Group>
+        <FormSection title="Starts on" htmlFor={'timing-dialog-start'}>
+          <DateTimeInput name={'timing-dialog-start'} onChange={(newValue) => setStart(newValue)} />
+        </FormSection>
+        <FormSection title="Repeat every" htmlFor={'timing-dialog-period'}>
+          <Group spacing="xs" grow noWrap>
+            <TextInput
+              type="number"
+              step={1}
+              name={'timing-dialog-period'}
+              defaultValue={value?.repeat?.period}
+              onChange={(e) => setPeriod(parseInt(e.currentTarget.value))}
+            />
+            <NativeSelect
+              name={'timing-dialog-periodUnit'}
+              defaultValue={value?.repeat?.periodUnit}
+              onChange={(e) => setPeriodUnit(e.currentTarget.value as 'a' | 'd' | 'wk' | 'mo' | undefined)}
+              data={[
+                { label: 'day', value: 'd' },
+                { label: 'week', value: 'wk' },
+                { label: 'month', value: 'mo' },
+                { label: 'year', value: 'a' },
+              ]}
+            />
+          </Group>
+        </FormSection>
+        <FormSection title="Repeat on">
+          <Group spacing="xs" grow noWrap>
+            {daysOfWeek.map((day) => (
+              <React.Fragment key={day}>
+                <label htmlFor={'timing-dialog-repeat-' + day}>{day.charAt(0).toUpperCase()}</label>
+                <Checkbox
+                  name={'timing-dialog-repeat-' + day}
+                  onChange={(e) => setDayOfWeek(day as DayOfWeek, e.currentTarget.checked)}
+                />
+              </React.Fragment>
+            ))}
+          </Group>
+        </FormSection>
       </div>
     </Dialog>
   );
