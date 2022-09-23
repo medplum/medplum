@@ -4,7 +4,10 @@ export function getErrorsForInput(
   outcome: OperationOutcome | undefined,
   expression: string | undefined
 ): string | undefined {
-  return outcome?.issue?.filter((issue) => isExpressionMatch(issue.expression?.[0], expression))?.join('\n');
+  return outcome?.issue
+    ?.filter((issue) => isExpressionMatch(issue.expression?.[0], expression))
+    ?.map((issue) => issue.details?.text)
+    ?.join('\n');
 }
 
 export function getIssuesForExpression(

@@ -137,14 +137,17 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         <>
           {isResource && (
             <div>
-              <TextInput defaultValue={resource.title} onChange={(newValue) => changeProperty('title', newValue)} />
+              <TextInput
+                defaultValue={resource.title}
+                onChange={(e) => changeProperty('title', e.currentTarget.value)}
+              />
             </div>
           )}
           {!isContainer && (
             <div>
               <NativeSelect
                 defaultValue={item.type}
-                onChange={(newValue) => changeProperty('type', newValue)}
+                onChange={(e) => changeProperty('type', e.currentTarget.value)}
                 data={[
                   { value: 'display', label: 'Display' },
                   { value: 'boolean', label: 'Boolean' },
@@ -169,7 +172,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             <Textarea
               style={{ width: '95%', height: '100px', minHeight: '100px', margin: '8px 4px 4px 4px' }}
               defaultValue={item.text}
-              onChange={(newValue) => changeProperty('text', newValue)}
+              onChange={(e) => changeProperty('text', e.currentTarget.value)}
             />
           )}
           {isChoiceQuestion(item) && (
@@ -203,7 +206,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       {!isContainer && (
         <div className="top-actions">
           {editing ? (
-            <TextInput defaultValue={item.linkId} onChange={(newValue) => changeProperty('linkId', newValue)} />
+            <TextInput defaultValue={item.linkId} onChange={(e) => changeProperty('linkId', e.currentTarget.value)} />
           ) : (
             <div>{linkId}</div>
           )}

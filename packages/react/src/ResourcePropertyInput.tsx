@@ -124,6 +124,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <TextInput
           id={name}
           name={name}
+          data-testid={name}
           defaultValue={value}
           onChange={(e) => props.onChange(e.currentTarget.value)}
           error={getErrorsForInput(props.outcome, name)}
@@ -135,6 +136,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           type="date"
           id={name}
           name={name}
+          data-testid={name}
           defaultValue={value}
           onChange={(e) => props.onChange(e.currentTarget.value)}
           error={getErrorsForInput(props.outcome, name)}
@@ -153,6 +155,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           step={propertyType === PropertyType.decimal ? 'any' : '1'}
           id={name}
           name={name}
+          data-testid={name}
           defaultValue={value}
           onChange={(e) => {
             if (props.onChange) {
@@ -168,13 +171,20 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
         <Checkbox
           id={name}
           name={name}
+          data-testid={name}
           defaultChecked={!!value}
           onChange={(e) => props.onChange(e.currentTarget.checked)}
         />
       );
     case PropertyType.markdown:
       return (
-        <Textarea id={name} name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />
+        <Textarea
+          id={name}
+          name={name}
+          data-testid={name}
+          defaultValue={value}
+          onChange={(e) => props.onChange(e.currentTarget.value)}
+        />
       );
 
     // 2.24.0.2 Complex Types

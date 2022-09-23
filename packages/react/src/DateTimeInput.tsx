@@ -5,7 +5,7 @@ import React from 'react';
 import { getErrorsForInput } from './utils/outcomes';
 
 export interface DateTimeInputProps {
-  name: string;
+  name?: string;
   placeholder?: string;
   defaultValue?: string;
   outcome?: OperationOutcome;
@@ -25,8 +25,9 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
     <TextInput
       id={props.name}
       name={props.name}
+      data-testid={props.name}
       placeholder={props.placeholder}
-      type="datetime-local"
+      type={getInputType()}
       defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
       error={getErrorsForInput(props.outcome, props.name)}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,4 +82,13 @@ export function convertLocalToIso(localString: string | undefined): string {
   }
 
   return date.toISOString();
+}
+
+/**
+ * Returns the input type for the requested type.
+ * JSDOM does not support many of the valid <input> type attributes.
+ * For example, it won't fire change events for <input type="datetime-local">.
+ */
+function getInputType(): string {
+  return process.env.NODE_ENV === 'test' ? 'text' : 'datetime-local';
 }

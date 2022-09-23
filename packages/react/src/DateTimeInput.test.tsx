@@ -32,7 +32,6 @@ describe('DateTimeInput', () => {
     const input = screen.getByPlaceholderText('Placeholder');
     expect(input).toBeDefined();
     expect(input.getAttribute('aria-invalid')).toEqual('true');
-    expect(input.getAttribute('aria-describedby')).toEqual('test-errors');
   });
 
   test('onChange without listener', async () => {
