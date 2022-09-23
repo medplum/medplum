@@ -3,6 +3,7 @@ import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from './BackboneElementInput';
+import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { useResource } from './useResource';
 
@@ -41,8 +42,12 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         }
       }}
     >
-      <TextInput name="resourceType" label="Resource Type" defaultValue={value.resourceType} disabled={true} />
-      <TextInput name="id" label="ID" defaultValue={value.id} disabled={true} />
+      <FormSection title="Resource Type" htmlFor="resourceType" outcome={props.outcome}>
+        <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
+      </FormSection>
+      <FormSection title="ID" htmlFor="id" outcome={props.outcome}>
+        <TextInput name="id" defaultValue={value.id} disabled={true} />
+      </FormSection>
       <BackboneElementInput
         typeName={value.resourceType}
         defaultValue={value}

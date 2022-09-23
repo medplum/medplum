@@ -119,15 +119,17 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
-      return <TextInput name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />;
+      return (
+        <TextInput id={name} name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />
+      );
     case PropertyType.date:
-      return <DatePicker name={name} defaultValue={value} onChange={props.onChange} />;
+      return <DatePicker id={name} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
       return (
         <Group>
-          <DatePicker name={name} defaultValue={value} onChange={props.onChange} />
-          <TimeInput name={name} defaultValue={value} onChange={props.onChange} />
+          <DatePicker id={name} name={name} defaultValue={value} onChange={props.onChange} />
+          <TimeInput id={name} name={name} defaultValue={value} onChange={props.onChange} />
         </Group>
       );
     case PropertyType.decimal:
@@ -136,6 +138,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.unsignedInt:
       return (
         <NumberInput
+          id={name}
           name={name}
           defaultValue={value}
           onChange={(newValue) => {
@@ -149,10 +152,17 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.boolean:
       return (
-        <Checkbox name={name} defaultChecked={!!value} onChange={(e) => props.onChange(e.currentTarget.checked)} />
+        <Checkbox
+          id={name}
+          name={name}
+          defaultChecked={!!value}
+          onChange={(e) => props.onChange(e.currentTarget.checked)}
+        />
       );
     case PropertyType.markdown:
-      return <Textarea name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />;
+      return (
+        <Textarea id={name} name={name} defaultValue={value} onChange={(e) => props.onChange(e.currentTarget.value)} />
+      );
 
     // 2.24.0.2 Complex Types
     // https://www.hl7.org/fhir/datatypes.html#complex
