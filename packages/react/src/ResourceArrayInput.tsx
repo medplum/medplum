@@ -52,6 +52,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
             </td>
             <td style={{ textAlign: 'right' }}>
               <ActionIcon
+                title="Remove"
                 size="sm"
                 onClick={(e: React.MouseEvent) => {
                   killEvent(e);
@@ -69,6 +70,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
           <td></td>
           <td style={{ textAlign: 'right' }}>
             <ActionIcon
+              title="Add"
               size="sm"
               color="green"
               onClick={(e: React.MouseEvent) => {

@@ -41,6 +41,7 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   return (
     <Group spacing="xs" grow noWrap>
       <TextInput
+        data-testid={props.name + '-name'}
         name={props.name + '-name'}
         placeholder="Name"
         style={{ width: 180 }}

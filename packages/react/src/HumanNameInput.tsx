@@ -57,6 +57,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       <NativeSelect
         defaultValue={value?.use}
+        data-testid="use"
         onChange={(e) =>
           setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
         }

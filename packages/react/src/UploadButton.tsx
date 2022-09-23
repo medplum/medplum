@@ -62,6 +62,7 @@ export function UploadButton(props: UploadButtonProps): JSX.Element {
         onChange={(e) => onFileChange(e)}
       />
       <Button
+        data-testid="upload-button"
         onClick={(e: React.MouseEvent) => {
           killEvent(e);
           fileInputRef.current?.click();

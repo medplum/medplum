@@ -39,7 +39,8 @@ export function SearchFilterValueInput(props: SearchFilterValueInputProps): JSX.
       return (
         <Checkbox
           name={name}
-          checked={props.defaultValue === 'true'}
+          data-testid={name}
+          defaultChecked={props.defaultValue === 'true'}
           onChange={(e) => props.onChange(e.currentTarget.checked.toString())}
         />
       );

@@ -34,6 +34,7 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       {targetTypes ? (
         <NativeSelect
+          data-testid="reference-input-resource-type-select"
           defaultValue={resourceType}
           onChange={(e) => setResourceType(e.currentTarget.value)}
           data={targetTypes}

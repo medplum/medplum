@@ -22,6 +22,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       <NativeSelect
         style={{ width: 80 }}
+        data-testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
         data={['', '<', '<=', '>=', '>']}
         onChange={(e) =>

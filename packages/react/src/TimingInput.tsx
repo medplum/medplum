@@ -107,12 +107,14 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
             <TextInput
               type="number"
               step={1}
-              name={'timing-dialog-period'}
+              id="timing-dialog-period"
+              name="timing-dialog-period"
               defaultValue={value?.repeat?.period}
               onChange={(e) => setPeriod(parseInt(e.currentTarget.value))}
             />
             <NativeSelect
-              name={'timing-dialog-periodUnit'}
+              id="timing-dialog-periodUnit"
+              name="timing-dialog-periodUnit"
               defaultValue={value?.repeat?.periodUnit}
               onChange={(e) => setPeriodUnit(e.currentTarget.value as 'a' | 'd' | 'wk' | 'mo' | undefined)}
               data={[
@@ -130,6 +132,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
               <React.Fragment key={day}>
                 <label htmlFor={'timing-dialog-repeat-' + day}>{day.charAt(0).toUpperCase()}</label>
                 <Checkbox
+                  id={'timing-dialog-repeat-' + day}
                   name={'timing-dialog-repeat-' + day}
                   onChange={(e) => setDayOfWeek(day as DayOfWeek, e.currentTarget.checked)}
                 />

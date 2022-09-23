@@ -14,6 +14,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
     <JsonInput
       id={props.name}
       name={props.name}
+      data-testid="extension-input"
       defaultValue={stringify(props.defaultValue)}
       onChange={(newValue) => {
         if (props.onChange) {

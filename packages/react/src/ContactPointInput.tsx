@@ -51,6 +51,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   return (
     <Group spacing="xs" grow noWrap>
       <NativeSelect
+        data-testid="system"
         defaultValue={contactPoint?.system}
         onChange={(e) =>
           setSystem(e.currentTarget.value as 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other')
@@ -58,6 +59,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
         data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'other']}
       />
       <NativeSelect
+        data-testid="use"
         defaultValue={contactPoint?.use}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'mobile')}
         data={['', 'home', 'work', 'temp', 'old', 'mobile']}

@@ -1,7 +1,6 @@
-import { Button } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
 import React, { useMemo, useState } from 'react';
-import { Group } from '@mantine/core';
 
 import './CalendarInput.css';
 
@@ -47,8 +46,12 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
       <Group spacing="xs" grow noWrap>
         <p style={{ flex: 1 }}>{getMonthString(month)}</p>
         <p>
-          <Button onClick={() => moveMonth(-1)}>&lt;</Button>
-          <Button onClick={() => moveMonth(1)}>&gt;</Button>
+          <Button aria-label="Previous month" onClick={() => moveMonth(-1)}>
+            &lt;
+          </Button>
+          <Button aria-label="Next month" onClick={() => moveMonth(1)}>
+            &gt;
+          </Button>
         </p>
       </Group>
       <table className="medplum-calendar-table">
