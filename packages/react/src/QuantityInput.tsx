@@ -32,6 +32,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }
       />
       <TextInput
+        id={props.name}
         name={props.name}
         data-testid={props.name}
         type="number"

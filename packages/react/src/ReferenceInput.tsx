@@ -39,7 +39,11 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
           data={targetTypes}
         />
       ) : (
-        <TextInput defaultValue={resourceType} onChange={(e) => setResourceType(e.currentTarget.value)} />
+        <TextInput
+          data-testid="reference-input-resource-type-input"
+          defaultValue={resourceType}
+          onChange={(e) => setResourceType(e.currentTarget.value)}
+        />
       )}
       <ResourceInput
         resourceType={resourceType as string}
