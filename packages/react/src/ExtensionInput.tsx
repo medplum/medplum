@@ -12,6 +12,7 @@ export interface ExtensionInputProps {
 export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
   return (
     <JsonInput
+      id={props.name}
       name={props.name}
       defaultValue={stringify(props.defaultValue)}
       onChange={(newValue) => {

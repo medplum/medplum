@@ -31,7 +31,7 @@ export interface ResourcePropertyInputProps {
   defaultPropertyType?: PropertyType;
   defaultValue?: any;
   arrayElement?: boolean;
-  onChange: (value: any, propName?: string) => void;
+  onChange?: (value: any, propName?: string) => void;
   outcome?: OperationOutcome;
 }
 
@@ -126,7 +126,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           name={name}
           data-testid={name}
           defaultValue={value}
-          onChange={(e) => props.onChange(e.currentTarget.value)}
+          onChange={(e) => {
+            if (props.onChange) {
+              props.onChange(e.currentTarget.value);
+            }
+          }}
           error={getErrorsForInput(props.outcome, name)}
         />
       );
@@ -138,7 +142,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           name={name}
           data-testid={name}
           defaultValue={value}
-          onChange={(e) => props.onChange(e.currentTarget.value)}
+          onChange={(e) => {
+            if (props.onChange) {
+              props.onChange(e.currentTarget.value);
+            }
+          }}
           error={getErrorsForInput(props.outcome, name)}
         />
       );
@@ -159,7 +167,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           defaultValue={value}
           onChange={(e) => {
             if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+              props.onChange(e.currentTarget.valueAsNumber);
             }
           }}
         />
@@ -173,7 +181,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           name={name}
           data-testid={name}
           defaultChecked={!!value}
-          onChange={(e) => props.onChange(e.currentTarget.checked)}
+          onChange={(e) => {
+            if (props.onChange) {
+              props.onChange(e.currentTarget.checked);
+            }
+          }}
         />
       );
     case PropertyType.markdown:
@@ -183,7 +195,11 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           name={name}
           data-testid={name}
           defaultValue={value}
-          onChange={(e) => props.onChange(e.currentTarget.value)}
+          onChange={(e) => {
+            if (props.onChange) {
+              props.onChange(e.currentTarget.value);
+            }
+          }}
         />
       );
 

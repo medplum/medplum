@@ -350,12 +350,11 @@ describe('ResourcePropertyInput', () => {
       onChange,
     });
 
-    expect(screen.getByTestId('extension-input')).toBeInTheDocument();
+    const el = screen.getByDisplayValue('{"url":"https://example.com","valueString":"foo"}');
+    expect(el).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('extension-input'), {
-        target: { value: '{"url":"https://example.com","valueString":"bar"}' },
-      });
+      fireEvent.change(el, { target: { value: '{"url":"https://example.com","valueString":"bar"}' } });
     });
 
     expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
@@ -432,8 +431,8 @@ describe('ResourcePropertyInput', () => {
     };
 
     const defaultValue: Period = {
-      start: '2020-01-01T12:00:00Z',
-      end: '2021-01-02T12:00:00Z',
+      start: '2020-01-01T12:00:00.000Z',
+      end: '2021-01-02T12:00:00.000Z',
     };
 
     const onChange = jest.fn();
@@ -450,11 +449,11 @@ describe('ResourcePropertyInput', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('End'), {
-        target: { value: '2021-01-03T12:00:00Z' },
+        target: { value: '2021-01-03T12:00:00.000Z' },
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00Z', end: '2021-01-03T12:00:00Z' });
+    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00.000Z', end: '2021-01-03T12:00:00.000Z' });
   });
 
   test('Quantity property', async () => {

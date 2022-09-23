@@ -1,6 +1,6 @@
+import { Group } from '@mantine/core';
 import { Range } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Group } from '@mantine/core';
 import { QuantityInput } from './QuantityInput';
 
 export interface RangeInputProps {
