@@ -10,14 +10,6 @@ As an Medplum customer, you will benefit from the compliance built into the plat
 
 This is a living document, and we continually update our resources.  We welcome feedback.
 
-## Materials and Usage
-
-The materials in this section can be used in multiple contexts, and depend on your objectives.  Common use cases are as follows:
-
-- When engaging a customer or partner, you may need to answer their security questionnaire or vendor qualification process.  Materials here can help.
-- When pursuing certification, for example SOC2, or CLIA/CAP Accreditation you may use materials here and submit them as part of your process.
-- To eligible for use in a clinical or research setting, you may need to demonstrate certain capabilities or conformance to market or sell a product.
-
 ## Compliance Resources
 
 :::caution Note
@@ -34,3 +26,11 @@ This section is under construction.  Please check back frequently for updates.  
 - HITRUST (coming soon)
 - CFR Part 11 (coming soon)
 - ISO 27001 Certification (coming soon)
+
+## Materials and Usage
+
+The materials in this section can be used in multiple contexts, and depend on your objectives.  Common use cases are as follows:
+
+- When engaging a customer or partner, you may need to answer their security questionnaire or vendor qualification process.  Materials here can help.
+- When pursuing certification, for example SOC2, or CLIA/CAP Accreditation you may use materials here and submit them as part of your process.
+- To eligible for use in a clinical or research setting, you may need to demonstrate certain capabilities or conformance to market or sell a product.

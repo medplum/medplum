@@ -17,7 +17,7 @@ These feeds contain a wealth of information, but can be hard to manage, programm
 
 When we this implementation is complete we will:
 
-- Recieve an HL7 message over HTTPS from another EHR that produces HL7 feeds
+- Receive an HL7 message over HTTPS from another EHR that produces HL7 feeds
 - Create FHIR objects that capture the parts of the feed we care about.
 - Respond to the EHR with an HL7 acknowledgment that the message was received
 - (Optional) Send a notification to another application, indicating that new FHIR resources are available.
@@ -40,28 +40,31 @@ When we this implementation is complete we will:
 
 - Make the bot that will listen for HL7 messages
   - First, [create a bot](https://app.medplum.com/admin/project) called ADT Handler Bot and save it
-  - Paste the code below into the Bot you created and save.
+  - Paste the code below into the Bot you created and save.  You can also find this bot and a corresponding test in the [Sample Bots Github Repository](https://github.com/medplum/medplum-demo-bots/).
 
 ```js
-export async function handler(medplum, event) {
-  const input = event.input;
+import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Hl7Message> {
+  const input = event.input as Hl7Message;
   // Log Message Type
-  const messageType = input.get('MSH').get(8);
+  const messageType = input.get('MSH')?.get(8);
   console.log(messageType);
 
   // Get patient name
-  const givenName = input.get('EVN').get(5).get(1);
-  const familyName = input.get('EVN').get(5).get(2);
+  const givenName = input.get('EVN')?.get(5).get(1) as string;
+  const familyName = input.get('EVN')?.get(5).get(2) as string;
 
   // Get patient ID
-  const mrnNumber = input.get('PID').get(3).get(4);
+  const mrnNumber = input.get('PID')?.get(3).get(4);
 
-  const patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
+  let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
 
   if (patient) {
     console.log('Patient already in the system');
   } else {
-    patient = await medplum.createResource({
+    patient = await medplum.createResource<Patient>({
       resourceType: 'Patient',
       name: [
         {
@@ -82,7 +85,7 @@ export async function handler(medplum, event) {
   // Based on the messageType, you may consider making additional FHIR objects here
 
   // Return Ack
-  return input.buildAck().toString();
+  return input.buildAck();
 }
 ```
 
@@ -93,7 +96,7 @@ Functionally, the code above will create a new patient with the `mrnNumber` prov
 You'll need your bot id (see [bot list](https://app.medplum.com/Bot) and click) to execute the bot. Once you have found it, you can attempt to execute your Bot using an HTTP message by sending the following via curl. Note the content type.
 
 ```bash
-curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
+curl -X POST 'https://api.medplum.com/fhir/R4/Bot/<bot-id>/$execute' \
 --header 'Content-Type: x-application/hl7-v2+er7' \
 --header 'Authorization: Bearer <access_token>' \
 --data-raw 'MSH|^~\&|Primary||CL|PDMT|20200312081842|168866|ADT^A28|203598|T|2.3|||||||||||
