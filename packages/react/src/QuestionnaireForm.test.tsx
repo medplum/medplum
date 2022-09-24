@@ -453,6 +453,7 @@ describe('QuestionnaireForm', () => {
       resourceType: 'QuestionnaireResponse',
       questionnaire: 'Questionnaire/' + questionnaire.id,
       source: {
+        display: 'Alice Smith',
         reference: 'Practitioner/123',
       },
       item: [

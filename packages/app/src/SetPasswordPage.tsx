@@ -1,7 +1,7 @@
 import { Button, PasswordInput } from '@mantine/core';
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, FormSection, getErrorsForInput, Logo, MedplumLink, useMedplum } from '@medplum/react';
+import { Document, Form, getErrorsForInput, Logo, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -38,16 +38,18 @@ export function SetPasswordPage(): JSX.Element {
         </div>
         {!success && (
           <>
-            <FormSection title="New password" htmlFor="password" outcome={outcome}>
-              <PasswordInput name="password" required={true} error={getErrorsForInput(outcome, 'password')} />
-            </FormSection>
-            <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
-              <PasswordInput
-                name="confirmPassword"
-                required={true}
-                error={getErrorsForInput(outcome, 'confirmPassword')}
-              />
-            </FormSection>
+            <PasswordInput
+              name="password"
+              label="New password"
+              required={true}
+              error={getErrorsForInput(outcome, 'password')}
+            />
+            <PasswordInput
+              name="confirmPassword"
+              label="Confirm new password"
+              required={true}
+              error={getErrorsForInput(outcome, 'confirmPassword')}
+            />
             <div className="medplum-signin-buttons">
               <div></div>
               <div>

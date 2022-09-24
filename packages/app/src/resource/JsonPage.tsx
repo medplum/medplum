@@ -17,7 +17,12 @@ export function JsonPage(props: JsonPageProps): JSX.Element {
           props.onSubmit(JSON.parse(formData.resource));
         }}
       >
-        <JsonInput name="resource" minRows={24} defaultValue={stringify(props.resource, true)} />
+        <JsonInput
+          name="resource"
+          data-testid="resource-json"
+          minRows={24}
+          defaultValue={stringify(props.resource, true)}
+        />
         <Button type="submit">OK</Button>
       </Form>
     </Document>

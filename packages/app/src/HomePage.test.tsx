@@ -50,19 +50,19 @@ describe('HomePage', () => {
 
   test('Next page button', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('next-page-button'));
+    await waitFor(() => screen.getByLabelText('Next page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
   });
 
   test('Prev page button', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('prev-page-button'));
+    await waitFor(() => screen.getByLabelText('Previous page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('prev-page-button'));
+      fireEvent.click(screen.getByLabelText('Previous page'));
     });
   });
 

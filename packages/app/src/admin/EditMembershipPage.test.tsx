@@ -60,7 +60,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
@@ -93,7 +93,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with user configuration', async () => {
@@ -126,7 +126,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with admin', async () => {
@@ -137,7 +137,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+    const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
     await act(async () => {
       fireEvent.click(input);
@@ -147,7 +147,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
 
     expect(medplumPostSpy).toHaveBeenCalledWith(
       `admin/projects/123/members/456`,
@@ -165,7 +165,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+    const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
     // Click once to set admin
     await act(async () => {
@@ -181,7 +181,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
 
     expect(medplumPostSpy).toHaveBeenCalledWith(
       `admin/projects/123/members/456`,
@@ -202,7 +202,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Remove user'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Remove user reject confirm', async () => {

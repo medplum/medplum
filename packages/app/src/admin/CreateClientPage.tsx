@@ -37,6 +37,7 @@ export function CreateClientPage(): JSX.Element {
           <>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
               <TextInput
+                id="name"
                 name="name"
                 required={true}
                 autoFocus={true}
@@ -46,6 +47,7 @@ export function CreateClientPage(): JSX.Element {
             </FormSection>
             <FormSection title="Description" htmlFor="description" outcome={outcome}>
               <TextInput
+                id="description"
                 name="description"
                 onChange={(e) => setDescription(e.currentTarget.value)}
                 error={getErrorsForInput(outcome, 'description')}
@@ -53,6 +55,7 @@ export function CreateClientPage(): JSX.Element {
             </FormSection>
             <FormSection title="Redirect URI" htmlFor="redirectUri" outcome={outcome}>
               <TextInput
+                id="redirectUri"
                 name="redirectUri"
                 onChange={(e) => setRedirectUri(e.currentTarget.value)}
                 error={getErrorsForInput(outcome, 'redirectUri')}

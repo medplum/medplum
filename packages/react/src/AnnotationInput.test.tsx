@@ -49,6 +49,7 @@ describe('AnnotationInput', () => {
     expect(onChange).toHaveBeenCalledWith({
       text: 'TEST',
       authorReference: {
+        display: 'Alice Smith',
         reference: 'Practitioner/123',
       },
       time: expect.anything(),

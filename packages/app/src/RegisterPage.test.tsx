@@ -35,8 +35,7 @@ describe('RegisterPage', () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
     await setup(medplum);
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Create account');
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
   });
 
   test('Redirect if signed in', async () => {
@@ -63,30 +62,30 @@ describe('RegisterPage', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password *'), {
         target: { value: 'password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
-    fireEvent.change(screen.getByTestId('projectName'), {
+    fireEvent.change(screen.getByLabelText('Project Name *'), {
       target: { value: 'Test Project' },
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
   });
 });

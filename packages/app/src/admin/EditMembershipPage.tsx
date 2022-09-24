@@ -63,7 +63,12 @@ export function EditMembershipPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
-              <Checkbox name="admin" checked={admin} onChange={(e) => setAdmin(e.currentTarget.checked)} />
+              <Checkbox
+                id="admin"
+                name="admin"
+                defaultChecked={admin}
+                onChange={(e) => setAdmin(e.currentTarget.checked)}
+              />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>

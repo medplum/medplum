@@ -20,18 +20,17 @@ function setup(url: string): void {
 describe('SetPasswordPage', () => {
   test('Renders', () => {
     setup('/setpassword/123/456');
-    const input = screen.getByRole('button') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Set password');
+    expect(screen.getByRole('button', { name: 'Set password' })).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('New password *'), {
         target: { value: 'orange' },
       });
-      fireEvent.change(screen.getByTestId('confirmPassword'), {
+      fireEvent.change(screen.getByLabelText('Confirm new password *'), {
         target: { value: 'orange' },
       });
     });
@@ -47,10 +46,10 @@ describe('SetPasswordPage', () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('New password *'), {
         target: { value: 'orange' },
       });
-      fireEvent.change(screen.getByTestId('confirmPassword'), {
+      fireEvent.change(screen.getByLabelText('Confirm new password *'), {
         target: { value: 'watermelon' },
       });
     });
@@ -66,10 +65,10 @@ describe('SetPasswordPage', () => {
     setup('/setpassword/123/456');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('New password *'), {
         target: { value: 'watermelon' },
       });
-      fireEvent.change(screen.getByTestId('confirmPassword'), {
+      fireEvent.change(screen.getByLabelText('Confirm new password *'), {
         target: { value: 'watermelon' },
       });
     });

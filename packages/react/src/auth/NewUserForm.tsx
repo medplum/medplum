@@ -84,7 +84,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       <TextInput
         name="firstName"
         type="text"
-        label="First Name"
+        label="First name"
         placeholder="First name"
         required={true}
         autoFocus={true}

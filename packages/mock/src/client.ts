@@ -9,7 +9,7 @@ import {
   parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
-import { Binary, Bundle, BundleEntry, OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import { Binary, Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -89,13 +89,7 @@ export class MockClient extends MedplumClient {
   }
 
   getProfile(): ProfileResource {
-    return {
-      resourceType: 'Practitioner',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    } as Practitioner;
+    return DrAliceSmith;
   }
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {
