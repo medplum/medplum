@@ -40,7 +40,7 @@ export function BatchPage(): JSX.Element {
           medplum.executeBatch(JSON.parse(formData.input)).then(setOutput).catch(console.log);
         }}
       >
-        <JsonInput name="input" defaultValue={DEFAULT_VALUE} />
+        <JsonInput data-testid="batch-input" name="input" defaultValue={DEFAULT_VALUE} />
         <Button type="submit">Submit</Button>
       </Form>
       {output && (

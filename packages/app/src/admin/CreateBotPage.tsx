@@ -35,6 +35,7 @@ export function CreateBotPage(): JSX.Element {
           <>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
               <TextInput
+                id="name"
                 name="name"
                 required={true}
                 autoFocus={true}
@@ -44,6 +45,7 @@ export function CreateBotPage(): JSX.Element {
             </FormSection>
             <FormSection title="Description" htmlFor="description" outcome={outcome}>
               <TextInput
+                id="description"
                 name="description"
                 onChange={(e) => setDescription(e.currentTarget.value)}
                 error={getErrorsForInput(outcome, 'description')}

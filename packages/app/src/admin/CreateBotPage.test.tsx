@@ -57,10 +57,10 @@ describe('CreateBotPage', () => {
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });
@@ -79,10 +79,10 @@ describe('CreateBotPage', () => {
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });

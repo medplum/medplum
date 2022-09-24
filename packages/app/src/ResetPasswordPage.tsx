@@ -3,7 +3,6 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import {
   Document,
   Form,
-  FormSection,
   getErrorsForInput,
   getRecaptcha,
   initRecaptcha,
@@ -41,15 +40,14 @@ export function ResetPasswordPage(): JSX.Element {
         </div>
         {!success && (
           <>
-            <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <TextInput
-                name="email"
-                type="email"
-                required={true}
-                autoFocus={true}
-                error={getErrorsForInput(outcome, 'email')}
-              />
-            </FormSection>
+            <TextInput
+              name="email"
+              type="email"
+              label="Email"
+              required={true}
+              autoFocus={true}
+              error={getErrorsForInput(outcome, 'email')}
+            />
             <div className="medplum-signin-buttons">
               <div>
                 <MedplumLink testid="register" to="/register">

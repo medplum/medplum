@@ -1,6 +1,6 @@
 import { Button, PasswordInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, FormSection, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
+import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
@@ -26,31 +26,25 @@ export function ChangePasswordPage(): JSX.Element {
         </div>
         {!success && (
           <>
-            <FormSection title="Old password" htmlFor="oldPassword" outcome={outcome}>
-              <PasswordInput
-                name="oldPassword"
-                type="password"
-                required={true}
-                autoFocus={true}
-                error={getErrorsForInput(outcome, 'oldPassword')}
-              />
-            </FormSection>
-            <FormSection title="New password" htmlFor="newPassword" outcome={outcome}>
-              <PasswordInput
-                name="newPassword"
-                type="password"
-                required={true}
-                error={getErrorsForInput(outcome, 'newPassword')}
-              />
-            </FormSection>
-            <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
-              <PasswordInput
-                name="confirmPassword"
-                type="password"
-                required={true}
-                error={getErrorsForInput(outcome, 'confirmPassword')}
-              />
-            </FormSection>
+            <PasswordInput
+              name="oldPassword"
+              label="Old password"
+              required={true}
+              autoFocus={true}
+              error={getErrorsForInput(outcome, 'oldPassword')}
+            />
+            <PasswordInput
+              name="newPassword"
+              label="New password"
+              required={true}
+              error={getErrorsForInput(outcome, 'newPassword')}
+            />
+            <PasswordInput
+              name="confirmPassword"
+              label="Confirm new password"
+              required={true}
+              error={getErrorsForInput(outcome, 'confirmPassword')}
+            />
             <div className="medplum-signin-buttons">
               <div></div>
               <div>

@@ -58,13 +58,13 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email'), {
         target: { value: 'george@example.com' },
       });
     });
@@ -83,13 +83,13 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email'), {
         target: { value: 'george@example.com' },
       });
     });

@@ -28,7 +28,7 @@ describe('App', () => {
     expect(control).toBeDefined();
   });
 
-  test('Click logo', async () => {
+  test.skip('Click logo', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 
@@ -37,7 +37,7 @@ describe('App', () => {
     });
   });
 
-  test('Click profile', async () => {
+  test.skip('Click profile', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 
@@ -50,7 +50,7 @@ describe('App', () => {
     });
   });
 
-  test('Click sign out', async () => {
+  test.skip('Click sign out', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 

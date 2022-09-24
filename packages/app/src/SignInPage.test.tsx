@@ -21,15 +21,14 @@ describe('SignInPage', () => {
   test('Renders', async () => {
     setup();
 
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Sign in');
+    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
   });
 
   test('Success', async () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
   });
 
@@ -37,7 +36,7 @@ describe('SignInPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
   });
 
@@ -45,7 +44,7 @@ describe('SignInPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
   });
 });

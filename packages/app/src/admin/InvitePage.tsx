@@ -37,6 +37,7 @@ export function InvitePage(): JSX.Element {
           <>
             <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
               <TextInput
+                id="firstName"
                 name="firstName"
                 type="text"
                 required={true}
@@ -47,6 +48,7 @@ export function InvitePage(): JSX.Element {
             </FormSection>
             <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
               <TextInput
+                id="lastName"
                 name="lastName"
                 type="text"
                 required={true}
@@ -56,6 +58,7 @@ export function InvitePage(): JSX.Element {
             </FormSection>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
               <TextInput
+                id="email"
                 name="email"
                 type="email"
                 required={true}

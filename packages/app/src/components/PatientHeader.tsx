@@ -63,12 +63,12 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   );
 }
 
-function getDefaultColor(patient: Patient): string {
+export function getDefaultColor(patient: Patient): string | undefined {
   if (patient.gender === 'male') {
-    return '#79a3d2'; // blue
+    return 'blue';
   }
   if (patient.gender === 'female') {
-    return '#c58686'; // pink
+    return 'pink';
   }
-  return '#6cb578'; // green
+  return undefined;
 }
