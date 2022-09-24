@@ -49,10 +49,9 @@
 }
 
 .medplum-search-control .medplum-empty-search {
-  border: 0.1px solid var(--medplum-gray-300);
   color: var(--medplum-gray-500);
   text-align: center;
-  padding: 40px;
+  padding: 60px;
   font-size: var(--medplum-font-big);
 }
 

@@ -71,7 +71,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
   });
 
@@ -79,7 +79,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
   });
 });

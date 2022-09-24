@@ -1,13 +1,13 @@
 import { createStyles, Navbar } from '@mantine/core';
 import {
-  Icon2fa,
-  IconBellRinging,
-  IconDatabaseImport,
-  IconFingerprint,
-  IconKey,
+  IconBuilding,
+  IconForms,
+  IconId,
   IconLogout,
-  IconReceipt2,
+  IconReceipt,
+  IconReportMedical,
   IconSettings,
+  IconStar,
   IconSwitchHorizontal,
 } from '@tabler/icons';
 import React, { useState } from 'react';
@@ -69,12 +69,12 @@ const useStyles = createStyles((theme, _params, getRef) => {
 });
 
 const data = [
-  { link: '/Patient', label: 'Patient', icon: IconBellRinging },
-  { link: '/Practitioner', label: 'Practitioner', icon: IconReceipt2 },
-  { link: '/Organization', label: 'Organization', icon: IconFingerprint },
-  { link: '/ServiceRequest', label: 'ServiceRequest', icon: IconKey },
-  { link: '/DiagnosticReport', label: 'DiagnosticReport', icon: IconDatabaseImport },
-  { link: '/Questionnaire', label: 'Questionnaire', icon: Icon2fa },
+  { link: '/Patient', label: 'Patient', icon: IconStar },
+  { link: '/Practitioner', label: 'Practitioner', icon: IconId },
+  { link: '/Organization', label: 'Organization', icon: IconBuilding },
+  { link: '/ServiceRequest', label: 'ServiceRequest', icon: IconReceipt },
+  { link: '/DiagnosticReport', label: 'DiagnosticReport', icon: IconReportMedical },
+  { link: '/Questionnaire', label: 'Questionnaire', icon: IconForms },
   { link: '', label: 'Other Settings', icon: IconSettings },
 ];
 

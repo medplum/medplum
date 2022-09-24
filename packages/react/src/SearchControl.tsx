@@ -20,6 +20,7 @@ import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { isCheckboxCell, killEvent } from './utils/dom';
 
+import { IconBoxMultiple, IconColumns, IconFilePlus, IconFilter, IconTableExport, IconTrash } from '@tabler/icons';
 import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
@@ -243,39 +244,61 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
 
+  const buttonVariant = 'subtle';
+  const buttonColor = 'gray';
+  const iconSize = 16;
+
   return (
     <div className="medplum-search-control" data-testid="search-control">
       {!props.hideToolbar && (
-        <Group position="apart">
+        <Group position="apart" mb="xl">
           <Group spacing={2}>
             <Button
               compact
-              variant="outline"
+              variant={buttonVariant}
+              color={buttonColor}
+              leftIcon={<IconFilter size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
             >
               Fields
             </Button>
             <Button
               compact
-              variant="outline"
+              variant={buttonVariant}
+              color={buttonColor}
+              leftIcon={<IconColumns size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
             >
               Filters
             </Button>
             {props.onNew && (
-              <Button compact variant="outline" onClick={props.onNew}>
+              <Button
+                compact
+                variant={buttonVariant}
+                color={buttonColor}
+                leftIcon={<IconFilePlus size={iconSize} />}
+                onClick={props.onNew}
+              >
                 New...
               </Button>
             )}
             {props.onExport && (
-              <Button compact variant="outline" onClick={props.onExport}>
+              <Button
+                compact
+                variant={buttonVariant}
+                color={buttonColor}
+                leftIcon={<IconTableExport size={iconSize} />}
+                onClick={props.onExport}
+              >
                 Export...
               </Button>
             )}
             {props.onDelete && (
               <Button
                 compact
-                variant="outline"
+                variant={buttonVariant}
+                color={buttonColor}
+                leftIcon={<IconTrash size={iconSize} />}
                 onClick={() => (props.onDelete as (ids: string[]) => any)(Object.keys(state.selected))}
               >
                 Delete...
@@ -284,7 +307,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             {props.onBulk && (
               <Button
                 compact
-                variant="outline"
+                variant={buttonVariant}
+                color={buttonColor}
+                leftIcon={<IconBoxMultiple size={iconSize} />}
                 onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(state.selected))}
               >
                 Bulk...
@@ -300,6 +325,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               <Button
                 compact
                 variant="outline"
+                color={buttonColor}
                 aria-label="Previous page"
                 onClick={() => emitSearchChange(movePage(search, -1))}
               >
@@ -308,6 +334,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               <Button
                 compact
                 variant="outline"
+                color={buttonColor}
                 aria-label="Next page"
                 onClick={() => emitSearchChange(movePage(search, 1))}
               >

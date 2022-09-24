@@ -1,4 +1,4 @@
-import { SearchRequest } from '@medplum/core';
+import { Operator, SearchRequest } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import React, { useState } from 'react';
 import { SearchControl } from '../SearchControl';
@@ -183,6 +183,26 @@ export const HideToolbarAndFilters = (): JSX.Element => {
       checkboxesEnabled={true}
       hideToolbar={true}
       hideFilters={true}
+      onLoad={(e) => console.log('onLoad', e)}
+      onClick={(e) => console.log('onClick', e)}
+      onChange={(e) => {
+        console.log('onChange', e);
+        setSearch(e.definition);
+      }}
+    />
+  );
+};
+
+export const NoResults = (): JSX.Element => {
+  const [search, setSearch] = useState<SearchRequest>({
+    resourceType: 'Patient',
+    fields: ['id', '_lastUpdated', 'name'],
+    filters: [{ code: 'name', operator: Operator.EQUALS, value: 'does not exist' }],
+  });
+
+  return (
+    <SearchControl
+      search={search}
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onChange={(e) => {
