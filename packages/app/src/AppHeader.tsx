@@ -1,7 +1,7 @@
 import { createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { ResourceAvatar } from '@medplum/react';
+import { Logo, ResourceAvatar } from '@medplum/react';
 import {
   IconChevronDown,
   IconHeart,
@@ -12,7 +12,6 @@ import {
   IconSwitchHorizontal,
 } from '@tabler/icons';
 import React, { useState } from 'react';
-import { MedplumLogo } from './components/MedplumLogo';
 
 const useStyles = createStyles((theme) => ({
   logoButton: {
@@ -72,7 +71,7 @@ export function AppHeader({ profile, navbarToggle }: HeaderTabsProps): JSX.Eleme
     <Header height={60} p={8}>
       <Group position="apart">
         <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
-          <MedplumLogo style={{ width: 100 }} />
+          <Logo size={24} />
         </UnstyledButton>
 
         <Menu

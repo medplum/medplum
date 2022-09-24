@@ -15,6 +15,14 @@ function setup(child: React.ReactNode): void {
 
 describe('SearchFilterValueInput', () => {
   beforeAll(async () => {
+    window.ResizeObserver =
+      window.ResizeObserver ||
+      jest.fn().mockImplementation(() => ({
+        disconnect: jest.fn(),
+        observe: jest.fn(),
+        unobserve: jest.fn(),
+      }));
+
     await medplum.requestSchema('Encounter');
     await medplum.requestSchema('Patient');
   });
@@ -147,10 +155,10 @@ describe('SearchFilterValueInput', () => {
 
     // Wait for the resource to load
     await act(async () => {
-      await waitFor(() => screen.getByText('Test Organization'));
+      await waitFor(() => screen.getByDisplayValue('Test Organization'));
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
@@ -160,7 +168,10 @@ describe('SearchFilterValueInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {

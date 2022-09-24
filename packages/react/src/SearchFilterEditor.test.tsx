@@ -15,6 +15,14 @@ async function setup(child: React.ReactNode): Promise<void> {
 
 describe('SearchFilterEditor', () => {
   beforeAll(async () => {
+    window.ResizeObserver =
+      window.ResizeObserver ||
+      jest.fn().mockImplementation(() => ({
+        disconnect: jest.fn(),
+        observe: jest.fn(),
+        unobserve: jest.fn(),
+      }));
+
     await medplum.requestSchema('Patient');
   });
 
@@ -120,7 +128,7 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
@@ -130,7 +138,10 @@ describe('SearchFilterEditor', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {

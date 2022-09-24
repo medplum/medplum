@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { ResourceInput, ResourceInputProps } from './ResourceInput';
@@ -15,6 +15,16 @@ function setup(args: ResourceInputProps): void {
 }
 
 describe('ResourceInput', () => {
+  beforeAll(() => {
+    window.ResizeObserver =
+      window.ResizeObserver ||
+      jest.fn().mockImplementation(() => ({
+        disconnect: jest.fn(),
+        observe: jest.fn(),
+        unobserve: jest.fn(),
+      }));
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
@@ -30,8 +40,9 @@ describe('ResourceInput', () => {
     setup({
       resourceType: 'Patient',
       name: 'foo',
+      placeholder: 'Test',
     });
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
   });
 
   test('Renders default value', async () => {
@@ -42,18 +53,20 @@ describe('ResourceInput', () => {
         defaultValue: {
           reference: 'Patient/123',
         },
+        placeholder: 'Test',
       });
     });
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Test')).toBeInTheDocument();
   });
 
   test('Use autocomplete', async () => {
     setup({
       resourceType: 'Patient',
       name: 'foo',
+      placeholder: 'Test',
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -63,13 +76,6 @@ describe('ResourceInput', () => {
     // Wait for the drop down
     await act(async () => {
       jest.advanceTimersByTime(1000);
-    });
-
-    await waitFor(() => screen.getByTestId('dropdown'));
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
@@ -81,10 +87,11 @@ describe('ResourceInput', () => {
     setup({
       resourceType: 'Patient',
       name: 'foo',
+      placeholder: 'Test',
       onChange,
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -96,14 +103,17 @@ describe('ResourceInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
-    // Press "Enter"
+    // Press enter
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
 });

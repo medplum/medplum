@@ -581,7 +581,7 @@ describe('ResourcePropertyInput', () => {
       name: 'managingOrganization',
       property,
     });
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Type selector', async () => {

@@ -1,16 +1,23 @@
-import { Bundle, BundleEntry, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
-import { Autocomplete } from './Autocomplete';
-import { ResourceAvatar } from './ResourceAvatar';
+import {
+  Autocomplete,
+  AutocompleteItem,
+  Avatar,
+  Group,
+  Loader,
+  MantineColor,
+  SelectItemProps,
+  Text,
+} from '@mantine/core';
+import { getDisplayString } from '@medplum/core';
+import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import React, { forwardRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
 import { useResource } from './useResource';
 
 export interface ResourceInputProps<T extends Resource = Resource> {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly name: string;
   readonly defaultValue?: T | Reference<T>;
-  readonly className?: string;
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
   readonly onChange?: (value: T | undefined) => void;
@@ -18,49 +25,67 @@ export interface ResourceInputProps<T extends Resource = Resource> {
 
 export function ResourceInput<T extends Resource = Resource>(props: ResourceInputProps<T>): JSX.Element {
   const medplum = useMedplum();
-  const defaultResource = useResource(props.defaultValue);
-  const [value, setValue] = useState<T>();
+  const defaultValue = useResource(props.defaultValue);
+  const [value, setValue] = useState<string>(defaultValue ? getDisplayString(defaultValue) : '');
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<AutocompleteItem[]>([]);
 
-  const resourceTypeRef = useRef<string>(props.resourceType);
-  resourceTypeRef.current = props.resourceType;
+  async function handleChange(val: string): Promise<void> {
+    setValue(val);
+    setData([]);
 
-  useEffect(() => {
-    setValue(defaultResource);
-  }, [defaultResource]);
+    if (val.trim().length === 0) {
+      setLoading(false);
+    } else {
+      setLoading(true);
+      const resources = await medplum.searchResources(
+        props.resourceType,
+        'name=' + encodeURIComponent(val) + '&_count=10'
+      );
+      setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
+      setLoading(false);
+    }
+  }
 
-  function setValueWrapper(newValue: T | undefined): void {
-    setValue(newValue);
+  function handleSelect(item: AutocompleteItem): void {
+    setValue(item.value);
+    setData([]);
     if (props.onChange) {
-      props.onChange(newValue);
+      props.onChange(item.resource);
     }
   }
 
   return (
     <Autocomplete
-      loadOptions={async (input: string): Promise<T[]> => {
-        return medplum
-          .search(resourceTypeRef.current as ResourceType, 'name=' + encodeURIComponent(input) + '&_count=10')
-          .then((bundle: Bundle) => (bundle.entry as BundleEntry[]).map((entry) => entry.resource as T));
-      }}
-      getId={(item: T) => {
-        return item.id as string;
-      }}
-      getIcon={(item: T) => <ResourceAvatar value={item} />}
-      getDisplay={(item: T) => <ResourceName value={item} />}
-      getHelpText={(item: T) => {
-        if (item.resourceType === 'Patient' && item.birthDate) {
-          return 'DoB: ' + item.birthDate;
-        }
-        return undefined;
-      }}
-      name={props.name}
-      defaultValue={value ? [value] : undefined}
-      className={props.className}
+      itemComponent={RowComponent}
+      value={value}
+      data={data}
       placeholder={props.placeholder}
-      loadOnFocus={props.loadOnFocus}
-      onChange={(items: T[]) => {
-        setValueWrapper(items.length > 0 ? items[0] : undefined);
-      }}
+      onChange={handleChange}
+      onItemSubmit={handleSelect}
+      rightSection={loading ? <Loader size={16} /> : null}
     />
   );
 }
+
+interface ItemProps extends SelectItemProps {
+  color: MantineColor;
+  description: string;
+  image: string;
+}
+
+const RowComponent = forwardRef<HTMLDivElement, ItemProps>(
+  ({ description, value, image, ...others }: ItemProps, ref) => (
+    <div ref={ref} {...others}>
+      <Group noWrap>
+        <Avatar src={image} />
+        <div>
+          <Text>{value}</Text>
+          <Text size="xs" color="dimmed">
+            {description}
+          </Text>
+        </div>
+      </Group>
+    </div>
+  )
+);

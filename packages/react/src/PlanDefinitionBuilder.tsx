@@ -1,6 +1,6 @@
 import { Button, NativeSelect, TextInput } from '@mantine/core';
 import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
+import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from './Form';
 import { useMedplum } from './MedplumProvider';
@@ -344,7 +344,7 @@ interface ActionResourceTypeBuilderProps {
   action: PlanDefinitionAction;
   title: string;
   description: string;
-  resourceType: string;
+  resourceType: ResourceType;
   onChange: (action: PlanDefinitionAction) => void;
 }
 
