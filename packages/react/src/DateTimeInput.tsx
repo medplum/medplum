@@ -28,7 +28,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       data-testid={props.name}
       placeholder={props.placeholder}
       type={getInputType()}
-      defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
+      defaultValue={convertIsoToLocal(props.defaultValue)}
       error={getErrorsForInput(props.outcome, props.name)}
       onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         if (props.onChange) {

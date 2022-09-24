@@ -7,7 +7,6 @@ import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 
 import '../util.css';
-import './SignInForm.css';
 
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';

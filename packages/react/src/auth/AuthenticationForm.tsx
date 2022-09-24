@@ -1,10 +1,9 @@
-import { Button, PasswordInput, TextInput } from '@mantine/core';
+import { Anchor, Button, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Form } from '../Form';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton';
-import { MedplumLink } from '../MedplumLink';
 import { useMedplum } from '../MedplumProvider';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
@@ -69,7 +68,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
       )}
       {googleClientId && (
         <>
-          <div className="medplum-signin-google-container">
+          <Group position="center" p="xl" style={{ height: 70 }}>
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={(response: GoogleCredentialResponse) => {
@@ -90,49 +89,43 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
                   .catch(setOutcome);
               }}
             />
-          </div>
-          <div className="medplum-signin-separator">or</div>
+          </Group>
+          <Divider label="or" labelPosition="center" my="lg" />
         </>
       )}
-      <TextInput
-        name="email"
-        type="email"
-        label="Email"
-        required={true}
-        autoFocus={true}
-        error={getErrorsForInput(outcome, 'email')}
-      />
-      <PasswordInput
-        name="password"
-        type="password"
-        label="Password"
-        autoComplete="off"
-        required={true}
-        error={getErrorsForInput(outcome, 'password')}
-      />
-      <div className="medplum-signin-buttons">
-        {(props.onForgotPassword || props.onRegister) && (
-          <div>
-            {props.onForgotPassword && (
-              <MedplumLink testid="forgotpassword" onClick={props.onForgotPassword}>
-                Forgot password
-              </MedplumLink>
-            )}
-            {props.onRegister && (
-              <MedplumLink testid="register" onClick={props.onRegister}>
-                Register
-              </MedplumLink>
-            )}
-          </div>
+      <Stack spacing="xl">
+        <TextInput
+          name="email"
+          type="email"
+          label="Email"
+          placeholder="name@domain.com"
+          required={true}
+          autoFocus={true}
+          error={getErrorsForInput(outcome, 'email')}
+        />
+        <PasswordInput
+          name="password"
+          type="password"
+          label="Password"
+          autoComplete="off"
+          required={true}
+          error={getErrorsForInput(outcome, 'password')}
+        />
+      </Stack>
+      <Group position="apart" mt="xl" noWrap>
+        {props.onForgotPassword && (
+          <Anchor component="button" type="button" color="dimmed" onClick={props.onForgotPassword} size="xs">
+            Forgot password
+          </Anchor>
         )}
-        <div>
-          <input type="checkbox" id="remember" name="remember" value="true" />
-          <label htmlFor="remember">Remember me</label>
-        </div>
-        <div>
-          <Button type="submit">Sign in</Button>
-        </div>
-      </div>
+        {props.onRegister && (
+          <Anchor component="button" type="button" color="dimmed" onClick={props.onRegister} size="xs">
+            Register
+          </Anchor>
+        )}
+        <Checkbox name="remember" label="Remember me" size="xs" />
+        <Button type="submit">Sign in</Button>
+      </Group>
     </Form>
   );
 }

@@ -8,7 +8,6 @@ import { ChooseProfileForm } from './ChooseProfileForm';
 import { NewProjectForm } from './NewProjectForm';
 
 import '../util.css';
-import './SignInForm.css';
 
 export interface SignInFormProps {
   readonly remember?: boolean;

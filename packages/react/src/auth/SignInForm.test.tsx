@@ -385,7 +385,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
 
     expect(props.onForgotPassword).toBeCalled();
@@ -400,7 +400,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
 
     expect(props.onRegister).toBeCalled();
