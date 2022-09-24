@@ -1,17 +1,3 @@
-a {
-  color: var(--medplum-blue-700);
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-  transition: background-color 100ms linear, color 100ms linear, border 100ms linear;
-}
-
-a:focus {
-  outline: 0.1px solid var(--medplum-blue-500);
-}
-
 .medplum-alert {
   background-color: #cce5ff;
   border-color: #b8daff;
