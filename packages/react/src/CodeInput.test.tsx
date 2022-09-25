@@ -70,7 +70,7 @@ describe('CodeInput', () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
     });
 
-    // Press enter
+    // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
