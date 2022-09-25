@@ -19,7 +19,6 @@ const globals = {
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
   '@tabler/icons': 'tabler.icons',
-  dayjs: 'dayjs',
   react: 'React',
   'react-dom': 'ReactDOM',
   'react-router-dom': 'ReactRouterDOM',
