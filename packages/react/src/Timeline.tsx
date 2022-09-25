@@ -1,13 +1,12 @@
-import { Button } from '@mantine/core';
+import { ActionIcon, Button, Menu } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import { IconDots } from '@tabler/icons';
+import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import { MedplumLink } from './MedplumLink';
-import { Popup } from './Popup';
 import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
-import { killEvent } from './utils/dom';
 
 import './Timeline.css';
 
@@ -30,7 +29,6 @@ export interface TimelineItemProps {
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
-  const [popupAnchor, setPopupAnchor] = useState<DOMRect | undefined>();
   const author = props.profile ?? props.resource.meta?.author;
   return (
     <article className={props.className || 'medplum-timeline-item'} data-testid="timeline-item">
@@ -47,24 +45,14 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           </div>
         </div>
         {props.popupMenuItems && (
-          <div className="medplum-timeline-item-actions">
-            <a
-              href="#"
-              aria-label={`Actions for ${getReferenceString(props.resource)}`}
-              onClick={(e) => {
-                killEvent(e);
-                const el = e.currentTarget;
-                const rect = el.getBoundingClientRect();
-                setPopupAnchor(rect);
-              }}
-            >
-              <svg fill="currentColor" viewBox="0 0 20 20">
-                <g transform="translate(-446 -350)">
-                  <path d="M458 360a2 2 0 1 1-4 0 2 2 0 0 1 4 0m6 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0m-12 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0"></path>
-                </g>
-              </svg>
-            </a>
-          </div>
+          <Menu position="bottom-end" shadow="md" width={200}>
+            <Menu.Target>
+              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(props.resource)}`}>
+                <IconDots />
+              </ActionIcon>
+            </Menu.Target>
+            {props.popupMenuItems}
+          </Menu>
         )}
       </div>
       <ErrorBoundary>
@@ -76,11 +64,6 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           <Button variant="subtle">Like</Button>
           <Button variant="subtle">Comment</Button>
         </div>
-      )}
-      {props.popupMenuItems && (
-        <Popup visible={!!popupAnchor} anchor={popupAnchor} autoClose={true} onClose={() => setPopupAnchor(undefined)}>
-          {props.popupMenuItems}
-        </Popup>
       )}
     </article>
   );

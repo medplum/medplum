@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, Menu, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -11,6 +11,7 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
+import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttachmentDisplay } from './AttachmentDisplay';
@@ -18,7 +19,6 @@ import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
-import { MenuItem } from './MenuItem';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
 import { Scrollable } from './Scrollable';
@@ -265,48 +265,59 @@ interface BaseTimelineItemProps<T extends Resource> {
 
 function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<T>): JSX.Element {
   return (
-    <>
+    <Menu.Dropdown>
+      <Menu.Label>Resource</Menu.Label>
       {props.onPin && (
-        <MenuItem
+        <Menu.Item
+          icon={<IconPin size={14} />}
           onClick={() => (props.onPin as (resource: T) => void)(props.resource)}
-          label={`Pin ${getReferenceString(props.resource)}`}
+          aria-label={`Pin ${getReferenceString(props.resource)}`}
         >
           Pin
-        </MenuItem>
+        </Menu.Item>
       )}
       {props.onUnpin && (
-        <MenuItem
+        <Menu.Item
+          icon={<IconPinnedOff size={14} />}
           onClick={() => (props.onUnpin as (resource: T) => void)(props.resource)}
-          label={`Unpin ${getReferenceString(props.resource)}`}
+          aria-label={`Unpin ${getReferenceString(props.resource)}`}
         >
           Unpin
-        </MenuItem>
+        </Menu.Item>
       )}
       {props.onDetails && (
-        <MenuItem
+        <Menu.Item
+          icon={<IconListDetails size={14} />}
           onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}
-          label={`Details ${getReferenceString(props.resource)}`}
+          aria-label={`Details ${getReferenceString(props.resource)}`}
         >
           Details
-        </MenuItem>
+        </Menu.Item>
       )}
       {props.onEdit && (
-        <MenuItem
+        <Menu.Item
+          icon={<IconEdit size={14} />}
           onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}
-          label={`Edit ${getReferenceString(props.resource)}`}
+          aria-label={`Edit ${getReferenceString(props.resource)}`}
         >
           Edit
-        </MenuItem>
+        </Menu.Item>
       )}
       {props.onDelete && (
-        <MenuItem
-          onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
-          label={`Delete ${getReferenceString(props.resource)}`}
-        >
-          Delete
-        </MenuItem>
+        <>
+          <Menu.Divider />
+          <Menu.Label>Danger zone</Menu.Label>
+          <Menu.Item
+            color="red"
+            icon={<IconTrash size={14} />}
+            onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
+            aria-label={`Delete ${getReferenceString(props.resource)}`}
+          >
+            Delete
+          </Menu.Item>
+        </>
       )}
-    </>
+    </Menu.Dropdown>
   );
 }
 
