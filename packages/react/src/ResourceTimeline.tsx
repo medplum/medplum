@@ -1,4 +1,4 @@
-import { Button, Loader, Menu, TextInput } from '@mantine/core';
+import { Button, Group, Loader, Menu, Paper, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -179,26 +179,26 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   return (
     <Timeline>
       {props.createCommunication && (
-        <article className="medplum-timeline-item">
-          <div className="medplum-timeline-item-header">
-            <Form
-              testid="timeline-form"
-              onSubmit={(formData: Record<string, string>) => {
-                createComment(formData.text);
+        <Paper shadow="xs" m="md" p="xs">
+          <Form
+            testid="timeline-form"
+            onSubmit={(formData: Record<string, string>) => {
+              createComment(formData.text);
 
-                const input = inputRef.current;
-                if (input) {
-                  input.value = '';
-                  input.focus();
-                }
-              }}
-            >
-              <TextInput data-testid="timeline-input" ref={inputRef} />
+              const input = inputRef.current;
+              if (input) {
+                input.value = '';
+                input.focus();
+              }
+            }}
+          >
+            <Group noWrap spacing={0}>
+              <TextInput name="text" data-testid="timeline-input" ref={inputRef} />
               <Button type="submit">Comment</Button>
               <UploadButton onUpload={createMedia} />
-            </Form>
-          </div>
-        </article>
+            </Group>
+          </Form>
+        </Paper>
       )}
       {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {

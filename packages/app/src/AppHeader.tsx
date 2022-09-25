@@ -1,7 +1,7 @@
 import { createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { Logo, ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
+import { Logo, ResourceAvatar, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -68,6 +68,16 @@ export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
         <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
           <Logo size={24} />
         </UnstyledButton>
+
+        <ResourceInput
+          name="patient"
+          resourceType="Patient"
+          onChange={(newValue) => {
+            if (newValue) {
+              navigate(`/${newValue.resourceType}/${newValue.id}`);
+            }
+          }}
+        />
 
         <Menu
           width={260}
