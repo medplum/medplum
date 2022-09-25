@@ -1,8 +1,7 @@
-import { Button, NativeSelect } from '@mantine/core';
+import { Button, Modal, NativeSelect } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Dialog } from './Dialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 import {
@@ -47,12 +46,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const filters = search.filters || [];
 
   return (
-    <Dialog
-      title="Filters"
-      visible={props.visible}
-      onOk={() => props.onOk(searchRef.current)}
-      onCancel={props.onCancel}
-    >
+    <Modal title="Filters" closeButtonLabel="Close" opened={props.visible} onClose={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <colgroup>
@@ -105,7 +99,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           </tbody>
         </table>
       </div>
-    </Dialog>
+      <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
+    </Modal>
   );
 }
 

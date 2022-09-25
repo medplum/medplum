@@ -1,9 +1,8 @@
-import { Button, Checkbox, Group, NativeSelect, TextInput } from '@mantine/core';
+import { Button, Checkbox, Group, Modal, NativeSelect, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { DateTimeInput } from './DateTimeInput';
-import { Dialog } from './Dialog';
 import { FormSection } from './FormSection';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -97,7 +96,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   }
 
   return (
-    <Dialog title="Timing" visible={props.visible} onOk={() => props.onOk(value)} onCancel={() => props.onCancel()}>
+    <Modal title="Timing" closeButtonLabel="Close" opened={props.visible} onClose={() => props.onCancel()}>
       <div style={{ padding: '5px 20px', textAlign: 'left' }}>
         <FormSection title="Starts on" htmlFor={'timing-dialog-start'}>
           <DateTimeInput name={'timing-dialog-start'} onChange={(newValue) => setStart(newValue)} />
@@ -141,6 +140,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
           </Group>
         </FormSection>
       </div>
-    </Dialog>
+      <Button onClick={() => props.onOk(value)}>OK</Button>
+    </Modal>
   );
 }

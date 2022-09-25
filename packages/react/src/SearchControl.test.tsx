@@ -540,11 +540,11 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Cancel'));
+      await waitFor(() => screen.getByLabelText('Close'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByLabelText('Close'));
     });
   });
 
@@ -608,11 +608,11 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Cancel'));
+      await waitFor(() => screen.getByLabelText('Close'));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByLabelText('Close'));
     });
   });
 
