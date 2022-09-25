@@ -15,14 +15,6 @@ function setup(child: React.ReactNode): void {
 
 describe('SearchFilterValueInput', () => {
   beforeAll(async () => {
-    window.ResizeObserver =
-      window.ResizeObserver ||
-      jest.fn().mockImplementation(() => ({
-        disconnect: jest.fn(),
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-      }));
-
     await medplum.requestSchema('Encounter');
     await medplum.requestSchema('Patient');
   });

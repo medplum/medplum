@@ -1,6 +1,6 @@
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { CodeableConceptInput } from './CodeableConceptInput';
 import { MedplumProvider } from './MedplumProvider';
@@ -32,7 +32,7 @@ describe('CodeableConceptInput', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Renders CodeableConcept default value', () => {
@@ -42,8 +42,8 @@ describe('CodeableConceptInput', () => {
       </MedplumProvider>
     );
 
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
-    expect(screen.getByText('abc')).toBeDefined();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('abc')).toBeDefined();
   });
 
   test('Searches for results', async () => {
@@ -53,11 +53,11 @@ describe('CodeableConceptInput', () => {
       </MedplumProvider>
     );
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter random text
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'xyz' } });
+      fireEvent.change(input, { target: { value: 'Test' } });
     });
 
     // Wait for the drop down
@@ -65,13 +65,16 @@ describe('CodeableConceptInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
-    // Press "Enter"
+    // Press enter
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(screen.getByDisplayValue('Test Display')).toBeDefined();
   });
 });

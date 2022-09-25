@@ -15,14 +15,6 @@ async function setup(child: React.ReactNode): Promise<void> {
 
 describe('SearchFilterEditor', () => {
   beforeAll(async () => {
-    window.ResizeObserver =
-      window.ResizeObserver ||
-      jest.fn().mockImplementation(() => ({
-        disconnect: jest.fn(),
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-      }));
-
     await medplum.requestSchema('Patient');
   });
 

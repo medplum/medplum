@@ -15,16 +15,6 @@ function setup(args: ResourceInputProps): void {
 }
 
 describe('ResourceInput', () => {
-  beforeAll(() => {
-    window.ResizeObserver =
-      window.ResizeObserver ||
-      jest.fn().mockImplementation(() => ({
-        disconnect: jest.fn(),
-        observe: jest.fn(),
-        unobserve: jest.fn(),
-      }));
-  });
-
   beforeEach(() => {
     jest.useFakeTimers();
   });

@@ -295,7 +295,7 @@ describe('ResourcePropertyInput', () => {
       property,
       defaultValue,
     });
-    expect(screen.getByText('Married')).toBeDefined();
+    expect(screen.getByDisplayValue('Married')).toBeDefined();
   });
 
   test('ContactPoint property', () => {

@@ -70,7 +70,7 @@ describe('EditMembershipPage', () => {
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     // There are 2 autocompletes.  Access policy is the first.
-    const input = screen.getAllByTestId('input-element')[0] as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -82,9 +82,12 @@ describe('EditMembershipPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
-    // Press "Enter"
+    // Press enter
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
@@ -103,7 +106,7 @@ describe('EditMembershipPage', () => {
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     // There are 2 autocompletes.  User configuration is the second.
-    const input = screen.getAllByTestId('input-element')[1] as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -115,9 +118,12 @@ describe('EditMembershipPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
-    // Press "Enter"
+    // Press enter
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });

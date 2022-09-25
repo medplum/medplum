@@ -1,53 +1,43 @@
-import { stringify } from '@medplum/core';
-import {
-  CodeableConcept,
-  ElementDefinition,
-  ValueSet,
-  ValueSetExpansion,
-  ValueSetExpansionContains,
-} from '@medplum/fhirtypes';
-import React from 'react';
-import { Autocomplete } from './Autocomplete';
-import { useMedplum } from './MedplumProvider';
+import { CodeableConcept, ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import React, { useState } from 'react';
+import { ValueSetAutocomplete } from './ValueSetAutocomplete';
 
 export interface CodeableConceptInputProps {
   property: ElementDefinition;
   name: string;
+  placeholder?: string;
   defaultValue?: CodeableConcept;
   onChange?: (value: CodeableConcept) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const medplum = useMedplum();
+  const [value, setValue] = useState<CodeableConcept | undefined>(props.defaultValue);
 
-  let defaultValue = undefined;
-  if (props.defaultValue) {
-    defaultValue = [props.defaultValue];
+  function handleChange(newValue: ValueSetExpansionContains): void {
+    const newConcept = valueSetElementToCodeableConcept(newValue);
+    setValue(newConcept);
+    if (props.onChange) {
+      props.onChange(newConcept);
+    }
   }
 
   return (
-    <Autocomplete
-      loadOptions={(input: string): Promise<CodeableConcept[]> => {
-        const system = props.property.binding?.valueSet as string;
-        return medplum.searchValueSet(system, input).then((valueSet: ValueSet) => {
-          return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(
-            valueSetElementToCodeableConcept
-          );
-        });
-      }}
-      buildUnstructured={buildUnstructured}
-      getId={getId}
-      getDisplay={getDisplay}
+    <ValueSetAutocomplete
+      property={props.property}
       name={props.name}
-      defaultValue={defaultValue}
-      loadOnFocus={true}
-      onChange={(values: CodeableConcept[]) => {
-        if (props.onChange) {
-          props.onChange(values[0]);
-        }
-      }}
+      placeholder={props.placeholder}
+      defaultValue={value && codeableConceptToValueSetElement(value)}
+      onChange={handleChange}
     />
   );
+}
+
+function codeableConceptToValueSetElement(concept: CodeableConcept): ValueSetExpansionContains {
+  return {
+    system: concept.coding?.[0]?.system,
+    code: concept.coding?.[0]?.code,
+    display: concept.coding?.[0]?.display,
+  };
 }
 
 function valueSetElementToCodeableConcept(element: ValueSetExpansionContains): CodeableConcept {
@@ -61,20 +51,4 @@ function valueSetElementToCodeableConcept(element: ValueSetExpansionContains): C
       },
     ],
   };
-}
-
-function buildUnstructured(str: string): CodeableConcept {
-  return { text: str };
-}
-
-function getId(concept: CodeableConcept): string {
-  if (concept.coding && concept.coding.length > 0) {
-    return concept.coding[0].code as string;
-  }
-  return stringify(concept);
-}
-
-function getDisplay(concept: CodeableConcept): JSX.Element {
-  const text = concept.coding?.[0]?.display ?? concept.coding?.[0]?.code ?? concept.text;
-  return <>{text}</>;
 }
