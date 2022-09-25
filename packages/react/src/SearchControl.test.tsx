@@ -787,14 +787,6 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Name'));
     });
-
-    // Click outside the popup to dismiss it
-    await act(async () => {
-      fireEvent.click(document.body);
-    });
-
-    // Expect the popup menu to be closed now
-    expect(screen.queryByText('Sort A to Z')).toBeNull();
   });
 
   test('Hide toolbar', async () => {

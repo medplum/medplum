@@ -18,30 +18,6 @@
   cursor: pointer;
 }
 
-/* Header cells */
-
-.medplum-search-control > table thead th {
-  position: relative;
-}
-
-.medplum-search-control > table thead th:hover {
-  background-color: var(--medplum-gray-50);
-}
-
-.medplum-search-control > table thead th.filters {
-  font-weight: normal;
-  text-align: center;
-  color: var(--medplum-gray-600);
-}
-
-.medplum-search-control > table thead th svg {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 14px;
-  height: 14px;
-}
-
 /* Body cells */
 
 .medplum-search-control > table tbody tr:hover {

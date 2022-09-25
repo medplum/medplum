@@ -1,3 +1,4 @@
+import { Button, Menu } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -29,7 +30,12 @@ describe('SearchPopupMenu', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <SearchPopupMenu {...props} />
+          <Menu>
+            <Menu.Target>
+              <Button>Toggle menu</Button>
+            </Menu.Target>
+            <SearchPopupMenu {...props} />
+          </Menu>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -58,6 +64,10 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Sort Oldest to Newest'));
     });
@@ -66,6 +76,10 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sort Newest to Oldest'));
@@ -100,6 +114,10 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
@@ -125,6 +143,10 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'];
     for (const option of options) {
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option));
       });
@@ -157,6 +179,10 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option));
       });
@@ -190,6 +216,10 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Clear filters'));
     });
@@ -210,6 +240,10 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Sort Smallest to Largest'));
     });
@@ -218,6 +252,10 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Sort Largest to Smallest'));
@@ -253,6 +291,10 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
@@ -280,6 +322,10 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option));
       });
@@ -315,6 +361,10 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Clear filters'));
     });
@@ -338,6 +388,10 @@ describe('SearchPopupMenu', () => {
       search: currSearch,
       searchParams: [globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
       onChange: (e) => (currSearch = e),
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
     });
 
     await act(async () => {
@@ -367,6 +421,10 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
@@ -394,6 +452,10 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option));
       });
@@ -418,6 +480,10 @@ describe('SearchPopupMenu', () => {
       search: currSearch,
       searchParams: [globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
     });
 
     await act(async () => {
@@ -457,6 +523,10 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Clear filters'));
     });
@@ -486,6 +556,10 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option.text));
       });
@@ -513,6 +587,10 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
+      act(() => {
+        fireEvent.click(screen.getByText('Toggle menu'));
+      });
+
       await act(async () => {
         fireEvent.click(screen.getByText(option));
       });
@@ -541,6 +619,10 @@ describe('SearchPopupMenu', () => {
       searchParams: fields[0].searchParams,
     });
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     expect(screen.getByText('Equals...')).toBeDefined();
   });
 
@@ -557,6 +639,10 @@ describe('SearchPopupMenu', () => {
         resourceType: 'Patient',
       },
       searchParams: fields[0].searchParams,
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
     });
 
     expect(screen.getByText('Before...')).toBeDefined();
@@ -576,6 +662,10 @@ describe('SearchPopupMenu', () => {
         resourceType: 'Observation',
       },
       searchParams: fields[0].searchParams,
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
     });
 
     expect(screen.getByText('Value Quantity')).toBeDefined();
@@ -604,6 +694,10 @@ describe('SearchPopupMenu', () => {
         resourceType: 'Observation',
       },
       searchParams: fields[0].searchParams,
+    });
+
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
     });
 
     expect(screen.getByText('Equals...')).toBeDefined();

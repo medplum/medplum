@@ -1,4 +1,4 @@
-import { Button, Group, Table } from '@mantine/core';
+import { Button, Center, createStyles, Group, Menu, Table, Text, UnstyledButton } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
 import {
   Bundle,
@@ -8,6 +8,15 @@ import {
   SearchParameter,
   UserConfiguration,
 } from '@medplum/fhirtypes';
+import {
+  IconAdjustmentsHorizontal,
+  IconBoxMultiple,
+  IconColumns,
+  IconFilePlus,
+  IconFilter,
+  IconTableExport,
+  IconTrash,
+} from '@tabler/icons';
 import React, { useEffect, useRef, useState } from 'react';
 import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
@@ -20,7 +29,6 @@ import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
 import { isCheckboxCell, killEvent } from './utils/dom';
 
-import { IconBoxMultiple, IconColumns, IconFilePlus, IconFilter, IconTableExport, IconTrash } from '@tabler/icons';
 import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
@@ -72,10 +80,6 @@ export interface SearchControlProps {
 interface SearchControlState {
   searchResponse?: Bundle;
   selected: { [id: string]: boolean };
-  popupVisible: boolean;
-  popupX: number;
-  popupY: number;
-  popupSearchParams?: SearchParameter[];
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
   filterDialogVisible: boolean;
@@ -83,12 +87,34 @@ interface SearchControlState {
   filterDialogSearchParam?: SearchParameter;
 }
 
+const useStyles = createStyles((theme) => ({
+  th: {
+    padding: '0 !important',
+  },
+
+  control: {
+    width: '100%',
+    padding: `${theme.spacing.xs}px ${theme.spacing.md}px`,
+
+    '&:hover': {
+      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
+    },
+  },
+
+  icon: {
+    width: 21,
+    height: 21,
+    borderRadius: 21,
+  },
+}));
+
 /**
  * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
  * It does not include the field editor, filter editor, pagination buttons.
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
+  const { classes } = useStyles();
   const medplum = useMedplum();
   const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
@@ -96,10 +122,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
-    popupVisible: false,
-    popupX: 0,
-    popupY: 0,
-    popupSearchParams: undefined,
     fieldEditorVisible: false,
     filterEditorVisible: false,
     filterDialogVisible: false,
@@ -169,21 +191,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       }
     }
     return true;
-  }
-
-  /**
-   * Handles a click on a column header cell.
-   * @param e The click event.
-   * @param key The field key.
-   */
-  function handleSortClick(e: React.MouseEvent, searchParams: SearchParameter[] | undefined): void {
-    setState({
-      ...stateRef.current,
-      popupVisible: true,
-      popupX: e.clientX,
-      popupY: e.clientY,
-      popupSearchParams: searchParams,
-    });
   }
 
   /**
@@ -360,9 +367,36 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               </th>
             )}
             {fields.map((field) => (
-              <th key={field.name} onClick={(e) => handleSortClick(e, field.searchParams)}>
-                {buildFieldNameString(field.name)}
-                {field.searchParams && <FilterIcon />}
+              <th key={field.name}>
+                <Menu shadow="md" width={240} position="bottom-end">
+                  <Menu.Target>
+                    <UnstyledButton className={classes.control}>
+                      <Group position="apart" noWrap>
+                        <Text weight={500} size="sm">
+                          {buildFieldNameString(field.name)}
+                        </Text>
+                        <Center className={classes.icon}>
+                          <IconAdjustmentsHorizontal size={14} stroke={1.5} />
+                        </Center>
+                      </Group>
+                    </UnstyledButton>
+                  </Menu.Target>
+                  <SearchPopupMenu
+                    search={props.search}
+                    searchParams={field.searchParams}
+                    onPrompt={(searchParam, filter) => {
+                      setState({
+                        ...stateRef.current,
+                        filterDialogVisible: true,
+                        filterDialogSearchParam: searchParam,
+                        filterDialogFilter: filter,
+                      });
+                    }}
+                    onChange={(result) => {
+                      emitSearchChange(result);
+                    }}
+                  />
+                </Menu>
               </th>
             ))}
           </tr>
@@ -423,37 +457,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
         </div>
       )}
-      <SearchPopupMenu
-        search={props.search}
-        visible={state.popupVisible}
-        x={state.popupX}
-        y={state.popupY}
-        searchParams={state.popupSearchParams}
-        onPrompt={(searchParam, filter) => {
-          setState({
-            ...stateRef.current,
-            popupVisible: false,
-            filterDialogVisible: true,
-            filterDialogSearchParam: searchParam,
-            filterDialogFilter: filter,
-          });
-        }}
-        onChange={(result) => {
-          emitSearchChange(result);
-          setState({
-            ...stateRef.current,
-            popupVisible: false,
-            popupSearchParams: undefined,
-          });
-        }}
-        onClose={() => {
-          setState({
-            ...stateRef.current,
-            popupVisible: false,
-            popupSearchParams: undefined,
-          });
-        }}
-      />
       <SearchFieldEditor
         search={props.search}
         visible={stateRef.current.fieldEditorVisible}
@@ -537,21 +540,6 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
         </div>
       ))}
     </>
-  );
-}
-
-function FilterIcon(): JSX.Element {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-6 w-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="rgba(0, 0, 0, 0.3)"
-      strokeWidth={2}
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
-    </svg>
   );
 }
 
