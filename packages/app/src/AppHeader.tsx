@@ -1,17 +1,10 @@
 import { createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
-import { formatHumanName, ProfileResource } from '@medplum/core';
+import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { Logo, ResourceAvatar } from '@medplum/react';
-import {
-  IconChevronDown,
-  IconHeart,
-  IconLogout,
-  IconMessage,
-  IconSettings,
-  IconStar,
-  IconSwitchHorizontal,
-} from '@tabler/icons';
+import { Logo, ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons';
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const useStyles = createStyles((theme) => ({
   logoButton: {
@@ -59,13 +52,15 @@ const useStyles = createStyles((theme) => ({
 }));
 
 interface HeaderTabsProps {
-  profile: ProfileResource;
   navbarToggle: () => void;
 }
 
-export function AppHeader({ profile, navbarToggle }: HeaderTabsProps): JSX.Element {
-  const { classes, theme, cx } = useStyles();
+export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
+  const medplum = useMedplum();
+  const profile = useMedplumProfile() as ProfileResource;
+  const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <Header height={60} p={8}>
@@ -93,16 +88,23 @@ export function AppHeader({ profile, navbarToggle }: HeaderTabsProps): JSX.Eleme
             </UnstyledButton>
           </Menu.Target>
           <Menu.Dropdown>
-            <Menu.Item icon={<IconHeart size={14} stroke={1.5} color={theme.colors.red[6]} />}>Liked posts</Menu.Item>
-            <Menu.Item icon={<IconStar size={14} stroke={1.5} color={theme.colors.yellow[6]} />}>Saved posts</Menu.Item>
-            <Menu.Item icon={<IconMessage size={14} stroke={1.5} color={theme.colors.blue[6]} />}>
-              Your comments
-            </Menu.Item>
-
             <Menu.Label>Settings</Menu.Label>
-            <Menu.Item icon={<IconSettings size={14} stroke={1.5} />}>Account settings</Menu.Item>
+            <Menu.Item
+              icon={<IconSettings size={14} stroke={1.5} />}
+              onClick={() => navigate(`/${getReferenceString(profile)}`)}
+            >
+              Account settings
+            </Menu.Item>
             <Menu.Item icon={<IconSwitchHorizontal size={14} stroke={1.5} />}>Change account</Menu.Item>
-            <Menu.Item icon={<IconLogout size={14} stroke={1.5} />}>Logout</Menu.Item>
+            <Menu.Item
+              icon={<IconLogout size={14} stroke={1.5} />}
+              onClick={() => {
+                medplum.signOut();
+                navigate('/signin');
+              }}
+            >
+              Sign out
+            </Menu.Item>
           </Menu.Dropdown>
         </Menu>
       </Group>

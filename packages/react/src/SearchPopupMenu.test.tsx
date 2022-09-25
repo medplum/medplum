@@ -495,6 +495,10 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].code).toEqual('name');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
 
+    act(() => {
+      fireEvent.click(screen.getByText('Toggle menu'));
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Sort Z to A'));
     });

@@ -42,7 +42,7 @@ export function App(): JSX.Element {
         padding={0}
         fixed={true}
         navbar={(profile && navbarOpen && <AppNavbar />) as React.ReactElement | undefined}
-        header={profile && <AppHeader profile={profile} navbarToggle={toggle} />}
+        header={profile && <AppHeader navbarToggle={toggle} />}
       >
         <ErrorBoundary>
           <Suspense fallback={<Loader />}>
