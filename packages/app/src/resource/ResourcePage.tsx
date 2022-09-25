@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
@@ -17,7 +17,6 @@ import {
   Document,
   EncounterTimeline,
   ErrorBoundary,
-  Loading,
   MedplumLink,
   PatientTimeline,
   PlanDefinitionBuilder,
@@ -185,7 +184,7 @@ export function ResourcePage(): JSX.Element {
   }, [loadResource]);
 
   if (loading) {
-    return <Loading />;
+    return <Loader />;
   }
 
   if (error && isGone(error)) {

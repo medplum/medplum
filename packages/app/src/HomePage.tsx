@@ -1,4 +1,4 @@
-import { Paper } from '@mantine/core';
+import { Loader, Paper } from '@mantine/core';
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
@@ -9,7 +9,7 @@ import {
   SortRule,
 } from '@medplum/core';
 import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -41,7 +41,7 @@ export function HomePage(): JSX.Element {
   }, [medplum, navigate, location]);
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
-    return <Loading />;
+    return <Loader />;
   }
 
   return (

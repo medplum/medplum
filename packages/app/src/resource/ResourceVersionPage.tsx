@@ -1,7 +1,7 @@
+import { Loader } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
-  Loading,
   MedplumLink,
   ResourceDiff,
   Tab,
@@ -41,7 +41,7 @@ export function ResourceVersionPage(): JSX.Element {
   }, [medplum, resourceType, id]);
 
   if (loading) {
-    return <Loading />;
+    return <Loader />;
   }
 
   if (!historyBundle) {

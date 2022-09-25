@@ -1,6 +1,6 @@
-import { AppShell, useMantineTheme } from '@mantine/core';
+import { AppShell, Loader, useMantineTheme } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { ErrorBoundary, FooterLinks, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
+import { ErrorBoundary, FooterLinks, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
 import { Slide, ToastContainer } from 'react-toastify';
 import { AppHeader } from './AppHeader';
@@ -19,7 +19,7 @@ export function App(): JSX.Element {
   const profile = useMedplumProfile();
 
   if (medplum.isLoading()) {
-    return <Loading />;
+    return <Loader />;
   }
 
   return (
@@ -45,7 +45,7 @@ export function App(): JSX.Element {
         header={profile && <AppHeader profile={profile} navbarToggle={toggle} />}
       >
         <ErrorBoundary>
-          <Suspense fallback={<Loading />}>
+          <Suspense fallback={<Loader />}>
             <AppRoutes />
           </Suspense>
         </ErrorBoundary>

@@ -1,3 +1,4 @@
+import { Loader } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
 import {
   Bundle,
@@ -7,7 +8,7 @@ import {
   QuestionnaireResponse,
   Resource,
 } from '@medplum/fhirtypes';
-import { Document, Loading, MedplumLink, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
 import { PatientHeader } from './components/PatientHeader';
@@ -116,7 +117,7 @@ export function FormPage(): JSX.Element {
   }
 
   if (loading || !questionnaire) {
-    return <Loading />;
+    return <Loader />;
   }
 
   const patient = subject && getPatient(subject);

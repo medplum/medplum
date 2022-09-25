@@ -1,4 +1,4 @@
-import { Button, Center, createStyles, Group, Menu, Table, Text, UnstyledButton } from '@mantine/core';
+import { Button, Center, createStyles, Group, Loader, Menu, Table, Text, UnstyledButton } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
 import {
   Bundle,
@@ -18,7 +18,6 @@ import {
   IconTrash,
 } from '@tabler/icons';
 import React, { useEffect, useRef, useState } from 'react';
-import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { getFieldDefinitions } from './SearchControlField';
 import { SearchFieldEditor } from './SearchFieldEditor';
@@ -241,7 +240,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   const typeSchema = schemaLoaded && globalSchema?.types?.[props.search.resourceType];
   if (!typeSchema) {
-    return <Loading />;
+    return <Loader />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;

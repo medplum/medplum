@@ -1,4 +1,4 @@
-import { Button, Menu, TextInput } from '@mantine/core';
+import { Button, Loader, Menu, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -17,7 +17,6 @@ import { useNavigate } from 'react-router-dom';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
-import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
@@ -174,7 +173,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   }
 
   if (!resource || !history) {
-    return <Loading />;
+    return <Loader />;
   }
 
   return (

@@ -30,7 +30,6 @@ export * from './FormUtils';
 export * from './HumanNameDisplay';
 export * from './HumanNameInput';
 export * from './IdentifierInput';
-export * from './Loading';
 export * from './Logo';
 export * from './MedplumLink';
 export * from './MedplumProvider';

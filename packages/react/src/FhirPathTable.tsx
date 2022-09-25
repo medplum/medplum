@@ -1,9 +1,8 @@
-import { Button } from '@mantine/core';
+import { Button, Loader } from '@mantine/core';
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from './FhirPathDisplay';
-import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
 import { isCheckboxCell, killEvent } from './utils/dom';
@@ -128,7 +127,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
   const typeSchema = schema?.types?.[props.resourceType];
   if (!typeSchema) {
-    return <Loading />;
+    return <Loader />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;
