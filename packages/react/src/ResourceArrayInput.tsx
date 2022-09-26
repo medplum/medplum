@@ -61,7 +61,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                   setValuesWrapper(copy);
                 }}
               >
-                <IconCircleMinus size="sm" />
+                <IconCircleMinus />
               </ActionIcon>
             </td>
           </tr>
@@ -80,7 +80,7 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
                 setValuesWrapper(copy);
               }}
             >
-              <IconCirclePlus size="sm" />
+              <IconCirclePlus />
             </ActionIcon>
           </td>
         </tr>
