@@ -16,3 +16,19 @@
   box-shadow: 0 1px 3px 0 var(--medplum-shadow);
   font-size: 14px;
 }
+
+@media (max-width: 700px) {
+  .medplum-document {
+    margin: 10px auto 6px auto;
+    padding: 4px;
+  }
+
+  .medplum-document article {
+    padding: 6px 12px;
+  }
+}
+
+.medplum-document img,
+.medplum-document video {
+  width: 100%;
+}

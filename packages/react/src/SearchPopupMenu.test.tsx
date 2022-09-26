@@ -130,24 +130,24 @@ describe('SearchPopupMenu', () => {
     }
   });
 
-  test('Date shortcuts', async () => {
-    let currSearch: SearchRequest = {
-      resourceType: 'Patient',
-    };
+  test.each(['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'])(
+    '%s shortcut',
+    (option) => {
+      let currSearch: SearchRequest = {
+        resourceType: 'Patient',
+      };
 
-    setup({
-      search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
-      onChange: (e) => (currSearch = e),
-    });
+      setup({
+        search: currSearch,
+        searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+        onChange: (e) => (currSearch = e),
+      });
 
-    const options = ['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'];
-    for (const option of options) {
       act(() => {
         fireEvent.click(screen.getByText('Toggle menu'));
       });
 
-      await act(async () => {
+      act(() => {
         fireEvent.click(screen.getByText(option));
       });
 
@@ -164,7 +164,7 @@ describe('SearchPopupMenu', () => {
         },
       ]);
     }
-  });
+  );
 
   test('Date missing', async () => {
     let currSearch: SearchRequest = {

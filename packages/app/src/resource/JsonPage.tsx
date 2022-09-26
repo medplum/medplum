@@ -22,6 +22,7 @@ export function JsonPage(props: JsonPageProps): JSX.Element {
           data-testid="resource-json"
           minRows={24}
           defaultValue={stringify(props.resource, true)}
+          formatOnBlur
         />
         <Button type="submit">OK</Button>
       </Form>

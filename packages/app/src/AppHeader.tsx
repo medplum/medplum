@@ -65,19 +65,21 @@ export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
   return (
     <Header height={60} p={8}>
       <Group position="apart">
-        <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
-          <Logo size={24} />
-        </UnstyledButton>
+        <Group spacing="xs">
+          <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
+            <Logo size={24} />
+          </UnstyledButton>
 
-        <ResourceInput
-          name="patient"
-          resourceType="Patient"
-          onChange={(newValue) => {
-            if (newValue) {
-              navigate(`/${newValue.resourceType}/${newValue.id}`);
-            }
-          }}
-        />
+          <ResourceInput
+            name="patient"
+            resourceType="Patient"
+            onChange={(newValue) => {
+              if (newValue) {
+                navigate(`/${newValue.resourceType}/${newValue.id}`);
+              }
+            }}
+          />
+        </Group>
 
         <Menu
           width={260}
