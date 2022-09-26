@@ -1,4 +1,4 @@
-import { Button, Group, Loader, Menu, Paper, TextInput } from '@mantine/core';
+import { ActionIcon, Group, Loader, Menu, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -11,7 +11,7 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons';
+import { IconCloudUpload, IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AttachmentDisplay } from './AttachmentDisplay';
@@ -22,10 +22,11 @@ import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
 import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
-import { UploadButton } from './UploadButton';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
 
+import { AttachmentButton } from './AttachmentButton';
+import { ResourceAvatar } from './ResourceAvatar';
 import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
@@ -179,26 +180,44 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   return (
     <Timeline>
       {props.createCommunication && (
-        <Paper shadow="xs" m="md" p="xs">
-          <Form
-            testid="timeline-form"
-            onSubmit={(formData: Record<string, string>) => {
-              createComment(formData.text);
+        <article className="medplum-timeline-item">
+          <div className="medplum-timeline-item-header">
+            <Form
+              testid="timeline-form"
+              onSubmit={(formData: Record<string, string>) => {
+                createComment(formData.text);
 
-              const input = inputRef.current;
-              if (input) {
-                input.value = '';
-                input.focus();
-              }
-            }}
-          >
-            <Group noWrap spacing={0}>
-              <TextInput name="text" data-testid="timeline-input" ref={inputRef} />
-              <Button type="submit">Comment</Button>
-              <UploadButton onUpload={createMedia} />
-            </Group>
-          </Form>
-        </Paper>
+                const input = inputRef.current;
+                if (input) {
+                  input.value = '';
+                  input.focus();
+                }
+              }}
+            >
+              <Group noWrap>
+                <ResourceAvatar value={sender} />
+                <TextInput
+                  name="text"
+                  data-testid="timeline-input"
+                  ref={inputRef}
+                  size="md"
+                  radius="xl"
+                  rightSectionWidth={40}
+                  rightSection={
+                    <AttachmentButton onUpload={createMedia}>
+                      {(props) => (
+                        <ActionIcon {...props} size={24} radius="xl" color="blue" variant="filled">
+                          <IconCloudUpload size={16} />
+                        </ActionIcon>
+                      )}
+                    </AttachmentButton>
+                  }
+                  placeholder="Add comment"
+                />
+              </Group>
+            </Form>
+          </div>
+        </article>
       )}
       {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {

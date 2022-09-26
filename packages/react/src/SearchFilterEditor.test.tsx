@@ -111,10 +111,12 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    // Wait for the resource to load
     await act(async () => {
-      await waitFor(() => screen.getByText('Test Organization'));
+      jest.advanceTimersByTime(200);
     });
+
+    // Wait for the resource to load
+    expect(screen.getByText('Test Organization')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Edit'));
@@ -127,8 +129,10 @@ describe('SearchFilterEditor', () => {
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(200);
     });
+
+    expect(screen.getByText('Different')).toBeInTheDocument();
 
     // Press the down arrow
     await act(async () => {
@@ -145,9 +149,7 @@ describe('SearchFilterEditor', () => {
     });
 
     // Wait for the resource to load
-    await act(async () => {
-      await waitFor(() => screen.getByText('Different'));
-    });
+    expect(screen.getByText('Different')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -160,7 +162,7 @@ describe('SearchFilterEditor', () => {
         value: 'Organization/456',
       },
     ]);
-  });
+  }, 10000);
 
   test('Delete filter', async () => {
     let currSearch: SearchRequest = {

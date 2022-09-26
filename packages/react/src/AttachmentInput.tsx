@@ -1,8 +1,8 @@
 import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
+import { AttachmentButton } from './AttachmentButton';
 import { AttachmentDisplay } from './AttachmentDisplay';
-import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
 export interface AttachmentInputProps {
@@ -38,5 +38,7 @@ export function AttachmentInput(props: AttachmentInputProps): JSX.Element {
     );
   }
 
-  return <UploadButton onUpload={setValueWrapper} />;
+  return (
+    <AttachmentButton onUpload={setValueWrapper}>{(props) => <Button {...props}>Upload...</Button>}</AttachmentButton>
+  );
 }
