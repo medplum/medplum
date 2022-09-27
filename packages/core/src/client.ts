@@ -790,7 +790,6 @@ export class MedplumClient extends EventTarget {
    * {
    *    "resourceType": "Bundle",
    *    "type": "searchset",
-   *    "total": 1,
    *    "entry": [
    *       {
    *          "resource": {
@@ -807,6 +806,12 @@ export class MedplumClient extends EventTarget {
    *       }
    *    ]
    * }
+   * ```
+   *
+   * To query the count of a search, use the summary feature like so:
+   *
+   * ```typescript
+   * const patients = medplum.search('Patient', '_summary=count');
    * ```
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
