@@ -86,6 +86,8 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('> 50 x')).toBeDefined();
     expect(screen.getByText('Specimen hemolyzed. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
+    expect(screen.getByText('Critical high')).toBeInTheDocument();
+    expect(screen.getByText('Critical high')).toHaveStyle('background:');
   });
 
   test('Renders by reference', async () => {

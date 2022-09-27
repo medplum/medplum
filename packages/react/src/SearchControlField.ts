@@ -1,5 +1,5 @@
 import { getSearchParameterDetails, globalSchema, SearchRequest } from '@medplum/core';
-import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.
@@ -63,7 +63,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
       searchParams: [
         {
           resourceType: 'SearchParameter',
-          base: ['Resource'],
+          base: ['Resource' as ResourceType],
           code: '_lastUpdated',
           name: '_lastUpdated',
           type: 'date',
@@ -79,7 +79,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
       searchParams: [
         {
           resourceType: 'SearchParameter',
-          base: ['Resource'],
+          base: ['Resource' as ResourceType],
           code: '_versionId',
           name: '_versionId',
           type: 'token',

@@ -116,8 +116,13 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
     return null;
   }
 
+  let className = undefined;
+  if (isCritical(observation)) {
+    className = 'medplum-critical';
+  }
+
   return (
-    <tr>
+    <tr className={className}>
       <td>
         <MedplumLink to={observation}>
           <CodeableConceptDisplay value={observation.code} />
@@ -178,4 +183,15 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
     return null;
   }
   return <RangeDisplay value={range} />;
+}
+
+/**
+ * Returns true if the observation is critical.
+ * See: https://www.hl7.org/fhir/valueset-observation-interpretation.html
+ * @param observation The FHIR observation.
+ * @returns True if the FHIR observation is a critical value.
+ */
+function isCritical(observation: Observation): boolean {
+  const code = observation.interpretation?.[0]?.coding?.[0]?.code;
+  return code === 'AA' || code === 'LL' || code === 'HH';
 }
