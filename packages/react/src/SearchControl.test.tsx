@@ -8,6 +8,7 @@ import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
   beforeEach(() => {
+    jest.setTimeout(60000);
     jest.useFakeTimers();
   });
 
