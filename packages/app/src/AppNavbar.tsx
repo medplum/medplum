@@ -1,17 +1,24 @@
-import { createStyles, Navbar } from '@mantine/core';
+import { createStyles, Navbar, Space, Text } from '@mantine/core';
+import { useMedplumContext } from '@medplum/react';
 import {
+  IconBrandAsana,
   IconBuilding,
   IconForms,
   IconId,
+  IconLockAccess,
   IconLogout,
+  IconPackages,
   IconReceipt,
   IconReportMedical,
-  IconSettings,
+  IconSquareAsterisk,
   IconStar,
   IconSwitchHorizontal,
+  IconUserCircle,
+  IconWebhook,
+  TablerIcon,
 } from '@tabler/icons';
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 
 const useStyles = createStyles((theme, _params, getRef) => {
   const icon = getRef('icon');
@@ -22,6 +29,14 @@ const useStyles = createStyles((theme, _params, getRef) => {
       borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
     },
 
+    menuTitle: {
+      margin: '20px 0 4px 6px',
+      fontSize: '9px',
+      fontWeight: 'normal',
+      textTransform: 'uppercase',
+      letterSpacing: '2px',
+    },
+
     link: {
       ...theme.fn.focusStyles(),
       display: 'flex',
@@ -29,7 +44,7 @@ const useStyles = createStyles((theme, _params, getRef) => {
       textDecoration: 'none',
       fontSize: theme.fontSizes.sm,
       color: theme.colorScheme === 'dark' ? theme.colors.dark[1] : theme.colors.gray[7],
-      padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+      padding: `8px 12px`,
       borderRadius: theme.radius.sm,
       fontWeight: 500,
 
@@ -48,6 +63,9 @@ const useStyles = createStyles((theme, _params, getRef) => {
       ref: icon,
       color: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6],
       marginRight: theme.spacing.sm,
+      strokeWidth: 1.5,
+      width: 18,
+      height: 18,
     },
 
     linkActive: {
@@ -62,52 +80,89 @@ const useStyles = createStyles((theme, _params, getRef) => {
   };
 });
 
-const data = [
-  { link: '/Patient', label: 'Patient', icon: IconStar },
-  { link: '/Practitioner', label: 'Practitioner', icon: IconId },
-  { link: '/Organization', label: 'Organization', icon: IconBuilding },
-  { link: '/ServiceRequest', label: 'ServiceRequest', icon: IconReceipt },
-  { link: '/DiagnosticReport', label: 'DiagnosticReport', icon: IconReportMedical },
-  { link: '/Questionnaire', label: 'Questionnaire', icon: IconForms },
-  { link: '', label: 'Other Settings', icon: IconSettings },
-];
-
 export function AppNavbar(): JSX.Element {
-  const navigate = useNavigate();
   const { classes, cx } = useStyles();
-  const [active, setActive] = useState('Billing');
-
-  const links = data.map((item) => (
-    <a
-      className={cx(classes.link, { [classes.linkActive]: item.label === active })}
-      href={item.link}
-      key={item.label}
-      onClick={(event) => {
-        event.preventDefault();
-        setActive(item.label);
-        navigate(item.link);
-      }}
-    >
-      <item.icon className={classes.linkIcon} stroke={1.5} />
-      <span>{item.label}</span>
-    </a>
-  ));
+  const context = useMedplumContext();
+  const profile = context.profile;
+  const config = context.medplum.getUserConfiguration();
 
   return (
     <Navbar width={{ sm: 250 }} p="xs">
-      <Navbar.Section grow>{links}</Navbar.Section>
+      <Navbar.Section grow>
+        {config?.menu?.map((menu, index) => (
+          <React.Fragment key={`menu-${index}-${config?.menu?.length}`}>
+            <Text className={classes.menuTitle}>{menu.title}</Text>
+            {menu.link?.map((link) => (
+              <NavLink
+                key={link.name}
+                to={link.target as string}
+                className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
+              >
+                <NavLinkIcon to={link.target as string} className={classes.linkIcon} />
+                <span>{link.name}</span>
+              </NavLink>
+            ))}
+          </React.Fragment>
+        ))}
+        <Text className={classes.menuTitle}>Settings</Text>
+        <NavLink
+          to={`/${profile?.resourceType}/${profile?.id}`}
+          className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
+        >
+          <IconUserCircle className={classes.linkIcon} />
+          <span>Profile</span>
+        </NavLink>
+        <NavLink
+          to="/changepassword"
+          className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
+        >
+          <IconSquareAsterisk className={classes.linkIcon} />
+          <span>Change password</span>
+        </NavLink>
+      </Navbar.Section>
 
       <Navbar.Section className={classes.footer}>
         <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconSwitchHorizontal className={classes.linkIcon} stroke={1.5} />
+          <IconSwitchHorizontal className={classes.linkIcon} />
           <span>Change account</span>
         </a>
 
         <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconLogout className={classes.linkIcon} stroke={1.5} />
+          <IconLogout className={classes.linkIcon} />
           <span>Logout</span>
         </a>
       </Navbar.Section>
     </Navbar>
   );
+}
+
+interface NavLinkIconProps {
+  to: string;
+  className: string;
+}
+
+const resourceTypeToIcon: Record<string, TablerIcon> = {
+  Patient: IconStar,
+  Practitioner: IconId,
+  Organization: IconBuilding,
+  ServiceRequest: IconReceipt,
+  DiagnosticReport: IconReportMedical,
+  Questionnaire: IconForms,
+  admin: IconBrandAsana,
+  AccessPolicy: IconLockAccess,
+  Subscription: IconWebhook,
+  batch: IconPackages,
+};
+
+function NavLinkIcon({ to, className }: NavLinkIconProps): JSX.Element {
+  try {
+    const resourceType = new URL(to, 'https://app.medplum.com').pathname.split('/')[1];
+    if (resourceType in resourceTypeToIcon) {
+      const Icon = resourceTypeToIcon[resourceType];
+      return <Icon className={className} />;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return <Space w={30} />;
 }
