@@ -7,6 +7,17 @@ import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   async function setup(args: SearchControlProps): Promise<void> {
     await act(async () => {
       render(
