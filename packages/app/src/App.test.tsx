@@ -28,38 +28,53 @@ describe('App', () => {
     expect(control).toBeDefined();
   });
 
-  test.skip('Click logo', async () => {
+  test('Click logo', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('header-logo'));
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+
+    expect(screen.getByText('Patients')).toBeInTheDocument();
+  });
+
+  test('Click profile', async () => {
+    await setup();
+    await waitFor(() => screen.getByTestId('search-control'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Account settings'));
     });
   });
 
-  test.skip('Click profile', async () => {
+  test('Change profile', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('header-profile-menu-button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('header-profile-link'));
+      fireEvent.click(screen.getByText('Change account'));
     });
   });
 
-  test.skip('Click sign out', async () => {
+  test('Click sign out', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('header-profile-menu-button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('header-signout-button'));
+      fireEvent.click(screen.getByText('Sign out'));
     });
   });
 });
