@@ -184,27 +184,13 @@ function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       >
         Year to date
       </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconBleach size={14} />} onClick={() => props.onChange(addMissingFilter(props.search, code))}>
-        Missing
-      </Menu.Item>
-      <Menu.Item
-        icon={<IconBleachOff size={14} />}
-        onClick={() => props.onChange(addMissingFilter(props.search, code, false))}
-      >
-        Not missing
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconX size={14} />} onClick={() => props.onClear(searchParam)}>
-        Clear filters
-      </Menu.Item>
+      <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
 }
 
 function NumericFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
   return (
     <Menu.Dropdown>
       <Menu.Item icon={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
@@ -242,27 +228,13 @@ function NumericFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       >
         Less than or equal to...
       </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconBleach size={14} />} onClick={() => props.onChange(addMissingFilter(props.search, code))}>
-        Missing
-      </Menu.Item>
-      <Menu.Item
-        icon={<IconBleachOff size={14} />}
-        onClick={() => props.onChange(addMissingFilter(props.search, code, false))}
-      >
-        Not missing
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconX size={14} />} onClick={() => props.onClear(searchParam)}>
-        Clear filters
-      </Menu.Item>
+      <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
 }
 
 function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
   return (
     <Menu.Dropdown>
       <Menu.Item icon={<IconEqual size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
@@ -271,27 +243,13 @@ function ReferenceFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       <Menu.Item icon={<IconEqualNot size={14} />} onClick={() => props.onPrompt(searchParam, Operator.NOT)}>
         Does not equal...
       </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconBleach size={14} />} onClick={() => props.onChange(addMissingFilter(props.search, code))}>
-        Missing
-      </Menu.Item>
-      <Menu.Item
-        icon={<IconBleachOff size={14} />}
-        onClick={() => props.onChange(addMissingFilter(props.search, code, false))}
-      >
-        Not missing
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item icon={<IconX size={14} />} onClick={() => props.onClear(searchParam)}>
-        Clear filters
-      </Menu.Item>
+      <CommonMenuItems {...props} />
     </Menu.Dropdown>
   );
 }
 
 function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
   return (
     <Menu.Dropdown>
       <Menu.Item icon={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
@@ -314,6 +272,16 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       <Menu.Item icon={<IconBucketOff size={14} />} onClick={() => props.onPrompt(searchParam, Operator.EQUALS)}>
         Does not contain...
       </Menu.Item>
+      <CommonMenuItems {...props} />
+    </Menu.Dropdown>
+  );
+}
+
+function CommonMenuItems(props: SearchPopupSubMenuProps): JSX.Element {
+  const { searchParam } = props;
+  const code = searchParam.code as string;
+  return (
+    <>
       <Menu.Divider />
       <Menu.Item icon={<IconBleach size={14} />} onClick={() => props.onChange(addMissingFilter(props.search, code))}>
         Missing
@@ -328,6 +296,6 @@ function TextFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
       <Menu.Item icon={<IconX size={14} />} onClick={() => props.onClear(searchParam)}>
         Clear filters
       </Menu.Item>
-    </Menu.Dropdown>
+    </>
   );
 }
