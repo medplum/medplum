@@ -1,10 +1,11 @@
 import { createStyles, Group, Header, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { Logo, ResourceAvatar, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { Logo, ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons';
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { HeaderSearchInput } from './components/HeaderSearchInput';
 
 const useStyles = createStyles((theme) => ({
   logoButton: {
@@ -63,22 +64,13 @@ export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
   const navigate = useNavigate();
 
   return (
-    <Header height={60} p={8}>
+    <Header height={60} p={8} style={{ zIndex: 101 }}>
       <Group position="apart">
         <Group spacing="xs">
           <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
             <Logo size={24} />
           </UnstyledButton>
-
-          <ResourceInput
-            name="patient"
-            resourceType="Patient"
-            onChange={(newValue) => {
-              if (newValue) {
-                navigate(`/${newValue.resourceType}/${newValue.id}`);
-              }
-            }}
-          />
+          <HeaderSearchInput />
         </Group>
 
         <Menu
