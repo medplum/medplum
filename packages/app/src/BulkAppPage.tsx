@@ -1,8 +1,8 @@
-import { Loader } from '@mantine/core';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Loading } from './components/Loading';
 
 export function BulkAppPage(): JSX.Element {
   const { resourceType } = useParams() as {
@@ -19,7 +19,7 @@ export function BulkAppPage(): JSX.Element {
   }, [medplum, resourceType]);
 
   if (!questionnaires) {
-    return <Loader />;
+    return <Loading />;
   }
 
   if (questionnaires.length === 0) {

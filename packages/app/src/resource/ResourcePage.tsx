@@ -1,4 +1,4 @@
-import { Button, Loader } from '@mantine/core';
+import { Button } from '@mantine/core';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
@@ -37,6 +37,7 @@ import {
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Loading } from '../components/Loading';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
@@ -184,7 +185,7 @@ export function ResourcePage(): JSX.Element {
   }, [loadResource]);
 
   if (loading) {
-    return <Loader />;
+    return <Loading />;
   }
 
   if (error && isGone(error)) {

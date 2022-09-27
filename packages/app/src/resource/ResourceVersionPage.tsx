@@ -1,4 +1,3 @@
-import { Loader } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
@@ -13,6 +12,7 @@ import {
 } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Loading } from '../components/Loading';
 
 export function ResourceVersionPage(): JSX.Element {
   const navigate = useNavigate();
@@ -41,7 +41,7 @@ export function ResourceVersionPage(): JSX.Element {
   }, [medplum, resourceType, id]);
 
   if (loading) {
-    return <Loader />;
+    return <Loading />;
   }
 
   if (!historyBundle) {
