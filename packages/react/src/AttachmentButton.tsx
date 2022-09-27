@@ -5,7 +5,6 @@ import { killEvent } from './utils/dom';
 
 export interface AttachmentButtonProps {
   onUpload: (attachment: Attachment) => void;
-  // children?: React.ReactNode;
   children(props: { onClick(e: React.MouseEvent): void }): React.ReactNode;
 }
 
@@ -66,15 +65,6 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
         ref={fileInputRef}
         onChange={(e) => onFileChange(e)}
       />
-      {/* <Button
-        data-testid="upload-button"
-        onClick={(e: React.MouseEvent) => {
-          killEvent(e);
-          fileInputRef.current?.click();
-        }}
-      >
-        {props.children || 'Upload...'}
-      </Button> */}
       {props.children({ onClick })}
     </>
   );

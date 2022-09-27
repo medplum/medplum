@@ -79,7 +79,7 @@ describe('AttachmentArrayInput', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Remove'));
+      fireEvent.click(screen.getByTitle('Remove'));
     });
 
     expect(screen.queryByText('image/jpeg')).toBeNull();
