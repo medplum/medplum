@@ -1,4 +1,4 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
+import { CodeableConcept, ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
@@ -19,7 +19,7 @@ describe('CodeableConceptInput', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -76,5 +76,39 @@ describe('CodeableConceptInput', () => {
     });
 
     expect(screen.getByDisplayValue('Test Display')).toBeDefined();
+  });
+
+  test('Create unstructured value', async () => {
+    let currValue: CodeableConcept | undefined;
+
+    render(
+      <MedplumProvider medplum={medplum}>
+        <CodeableConceptInput property={statusProperty} name="test" onChange={(newValue) => (currValue = newValue)} />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.focus(input);
+    });
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'XYZ' } });
+    });
+
+    await act(async () => {
+      fireEvent.blur(input);
+    });
+
+    expect(currValue).toMatchObject({
+      text: 'XYZ',
+      coding: [
+        {
+          code: 'XYZ',
+          display: 'XYZ',
+        },
+      ],
+    });
   });
 });

@@ -35,7 +35,7 @@ describe('ResourcePropertyInput', () => {
   // 2.24.0.1 Primitive Types
   // https://www.hl7.org/fhir/datatypes.html#primitive
 
-  test('boolean property', () => {
+  test('boolean property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -53,7 +53,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('active')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.click(screen.getByTestId('active'));
     });
 
@@ -78,7 +78,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('date')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('date'), { target: { value: '2021-01-01' } });
     });
 
@@ -105,14 +105,14 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('dateTime')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('dateTime'), { target: { value: localString } });
     });
 
     expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
-  test('Markdown property', () => {
+  test('Markdown property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -130,7 +130,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('markdown')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('markdown'), { target: { value: 'xyz' } });
     });
 

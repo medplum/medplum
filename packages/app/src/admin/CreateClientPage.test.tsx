@@ -38,7 +38,7 @@ describe('CreateClientPage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();

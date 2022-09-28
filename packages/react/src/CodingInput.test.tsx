@@ -19,7 +19,7 @@ describe('CodingInput', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -65,16 +65,16 @@ describe('CodingInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    // // Press the down arrow
-    // await act(async () => {
-    //   fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    // });
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
-    // // Press "Enter"
-    // await act(async () => {
-    //   fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    // });
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(screen.getByDisplayValue('Test Display')).toBeDefined();
   });
 });

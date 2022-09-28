@@ -37,7 +37,7 @@ describe('EditMembershipPage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
