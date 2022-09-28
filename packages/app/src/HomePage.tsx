@@ -41,7 +41,7 @@ export function HomePage(): JSX.Element {
     }
   }, [medplum, navigate, location]);
 
-  if (!search?.resourceType || !search.fields || search.fields.length === 0 || Math.random() > -1) {
+  if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
   }
 
