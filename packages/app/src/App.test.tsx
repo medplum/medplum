@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { App } from './App';
@@ -32,17 +32,8 @@ describe('App', () => {
     jest.useRealTimers();
   });
 
-  test('Renders', async () => {
-    await setup();
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
-  });
-
   test('Click logo', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
@@ -53,7 +44,6 @@ describe('App', () => {
 
   test('Click profile', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
@@ -66,7 +56,6 @@ describe('App', () => {
 
   test('Change profile', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
@@ -79,7 +68,6 @@ describe('App', () => {
 
   test('Click sign out', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
