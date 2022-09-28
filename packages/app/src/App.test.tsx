@@ -1,3 +1,4 @@
+import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -12,7 +13,9 @@ async function setup(): Promise<void> {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <App />
+          <MantineProvider withGlobalStyles withNormalizeCSS>
+            <App />
+          </MantineProvider>
         </MedplumProvider>
       </MemoryRouter>
     );
@@ -20,18 +23,6 @@ async function setup(): Promise<void> {
 }
 
 describe('App', () => {
-  beforeEach(() => {
-    jest.setTimeout(60000);
-    jest.useFakeTimers();
-  });
-
-  afterEach(async () => {
-    act(() => {
-      jest.runOnlyPendingTimers();
-    });
-    jest.useRealTimers();
-  });
-
   test('Click logo', async () => {
     await setup();
 

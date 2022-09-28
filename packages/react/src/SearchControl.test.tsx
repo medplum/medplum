@@ -8,7 +8,6 @@ import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
   beforeEach(() => {
-    jest.setTimeout(60000);
     jest.useFakeTimers();
   });
 
@@ -475,9 +474,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Fields'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('OK'));
-    });
+    await waitFor(() => screen.getByText('OK'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -507,9 +504,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Fields'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByLabelText('Close'));
-    });
+    await waitFor(() => screen.getByLabelText('Close'));
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Close'));
@@ -539,9 +534,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('OK'));
-    });
+    await waitFor(() => screen.getByText('OK'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -571,9 +564,7 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Filters'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByLabelText('Close'));
-    });
+    await waitFor(() => screen.getByLabelText('Close'));
 
     await act(async () => {
       fireEvent.click(screen.getByLabelText('Close'));
