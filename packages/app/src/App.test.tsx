@@ -20,6 +20,18 @@ async function setup(): Promise<void> {
 }
 
 describe('App', () => {
+  beforeEach(() => {
+    jest.setTimeout(60000);
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders', async () => {
     await setup();
     await waitFor(() => screen.getByTestId('search-control'));
