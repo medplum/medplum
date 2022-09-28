@@ -6,13 +6,11 @@ import {
   IconForms,
   IconId,
   IconLockAccess,
-  IconLogout,
   IconPackages,
   IconReceipt,
   IconReportMedical,
   IconSquareAsterisk,
   IconStar,
-  IconSwitchHorizontal,
   IconUserCircle,
   IconWebhook,
   TablerIcon,
@@ -23,12 +21,6 @@ import { NavLink } from 'react-router-dom';
 const useStyles = createStyles((theme, _params, getRef) => {
   const icon = getRef('icon');
   return {
-    footer: {
-      paddingTop: theme.spacing.md,
-      marginTop: theme.spacing.md,
-      borderTop: `1px solid ${theme.colorScheme === 'dark' ? theme.colors.dark[4] : theme.colors.gray[2]}`,
-    },
-
     menuTitle: {
       margin: '20px 0 4px 6px',
       fontSize: '9px',
@@ -119,18 +111,6 @@ export function AppNavbar(): JSX.Element {
           <IconSquareAsterisk className={classes.linkIcon} />
           <span>Change password</span>
         </NavLink>
-      </Navbar.Section>
-
-      <Navbar.Section className={classes.footer}>
-        <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconSwitchHorizontal className={classes.linkIcon} />
-          <span>Change account</span>
-        </a>
-
-        <a href="#" className={classes.link} onClick={(event) => event.preventDefault()}>
-          <IconLogout className={classes.linkIcon} />
-          <span>Logout</span>
-        </a>
       </Navbar.Section>
     </Navbar>
   );

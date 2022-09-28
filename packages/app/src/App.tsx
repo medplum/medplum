@@ -1,6 +1,6 @@
 import { AppShell, useMantineTheme } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { ErrorBoundary, FooterLinks, useMedplum, useMedplumProfile } from '@medplum/react';
+import { ErrorBoundary, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
 import { Slide, ToastContainer } from 'react-toastify';
 import { AppHeader } from './AppHeader';
@@ -51,12 +51,6 @@ export function App(): JSX.Element {
           </Suspense>
         </ErrorBoundary>
       </AppShell>
-      {!profile && (
-        <FooterLinks>
-          <a href="https://www.medplum.com/terms">Terms</a>
-          <a href="https://www.medplum.com/privacy">Privacy</a>
-        </FooterLinks>
-      )}
     </>
   );
 }

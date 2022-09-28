@@ -28,7 +28,7 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
   }
 
   return (
-    <Modal title={props.title} opened={props.visible} onClose={props.onCancel}>
+    <Modal title={props.title} size="xl" opened={props.visible} onClose={props.onCancel}>
       <div style={{ width: 500 }}>
         <Form onSubmit={onOk}>
           <SearchFilterValueInput

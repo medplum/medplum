@@ -46,7 +46,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const filters = search.filters || [];
 
   return (
-    <Modal title="Filters" closeButtonLabel="Close" opened={props.visible} onClose={props.onCancel}>
+    <Modal title="Filters" closeButtonLabel="Close" size={900} opened={props.visible} onClose={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <colgroup>
