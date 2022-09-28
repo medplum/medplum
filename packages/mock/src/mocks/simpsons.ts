@@ -269,6 +269,38 @@ export const HomerObservation6: Observation = {
   ],
 };
 
+export const HomerObservation7: Observation = {
+  resourceType: 'Observation',
+  id: '7',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
+  code: {
+    text: 'Test 7',
+  },
+  component: [
+    {
+      valueQuantity: {
+        value: 1000,
+        unit: 'mg/dL',
+        system: 'http://unitsofmeasure.org',
+      },
+    },
+  ],
+  interpretation: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+          code: 'HH',
+          display: 'Critical high',
+        },
+      ],
+    },
+  ],
+};
+
 export const HomerSimpsonSpecimen: Specimen = {
   id: '123',
   resourceType: 'Specimen',
@@ -341,6 +373,7 @@ export const HomerDiagnosticReport: DiagnosticReport = {
     createReference(HomerObservation4),
     createReference(HomerObservation5),
     createReference(HomerObservation6),
+    createReference(HomerObservation7),
   ],
 };
 

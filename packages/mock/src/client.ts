@@ -37,6 +37,7 @@ import {
   HomerObservation4,
   HomerObservation5,
   HomerObservation6,
+  HomerObservation7,
   HomerServiceRequest,
   HomerSimpson,
   HomerSimpsonPreviousVersion,
@@ -370,6 +371,7 @@ class MockFetchClient {
     this.mockRepo.createResource(HomerObservation4);
     this.mockRepo.createResource(HomerObservation5);
     this.mockRepo.createResource(HomerObservation6);
+    this.mockRepo.createResource(HomerObservation7);
     this.mockRepo.createResource(HomerSimpsonSpecimen);
     this.mockRepo.createResource(TestOrganization);
     this.mockRepo.createResource(DifferentOrganization);

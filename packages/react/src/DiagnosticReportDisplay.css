@@ -35,3 +35,9 @@
   align-items: center;
   margin: 0;
 }
+
+.medplum-critical {
+  background: var(--medplum-red-50);
+  color: var(--medplum-red-500);
+  font-weight: bold;
+}
