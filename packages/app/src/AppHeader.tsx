@@ -102,14 +102,7 @@ export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
                 {medplum.getActiveLogin()?.project?.display}
               </Text>
             </Stack>
-            <Menu.Divider />
-            <Menu.Item
-              icon={<IconSettings size={14} stroke={1.5} />}
-              onClick={() => navigate(`/${getReferenceString(profile)}`)}
-            >
-              Account settings
-            </Menu.Item>
-            <Menu.Divider />
+            {logins.length > 0 && <Menu.Divider />}
             {logins.map(
               (login) =>
                 login.profile?.reference !== getReferenceString(context.profile as ProfileResource) && (
@@ -139,6 +132,12 @@ export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
             <Menu.Divider />
             <Menu.Item icon={<IconSwitchHorizontal size={14} stroke={1.5} />} onClick={() => navigate('/signin')}>
               Add another account
+            </Menu.Item>
+            <Menu.Item
+              icon={<IconSettings size={14} stroke={1.5} />}
+              onClick={() => navigate(`/${getReferenceString(profile)}`)}
+            >
+              Account settings
             </Menu.Item>
             <Menu.Item
               icon={<IconLogout size={14} stroke={1.5} />}
