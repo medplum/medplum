@@ -53,7 +53,7 @@ describe('App', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Change account'));
+      fireEvent.click(screen.getByText('Add another account'));
     });
   });
 
