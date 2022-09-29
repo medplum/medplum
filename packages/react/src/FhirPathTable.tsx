@@ -1,4 +1,4 @@
-import { Button, Loader } from '@mantine/core';
+import { Button, Loader, Table } from '@mantine/core';
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -134,7 +134,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
-      <table>
+      <Table>
         <thead>
           <tr>
             {checkboxColumn && (
@@ -187,7 +187,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
               )
           )}
         </tbody>
-      </table>
+      </Table>
       {response?.data?.ResourceList?.length === 0 && (
         <div data-testid="empty-search" className="medplum-empty-search">
           No results
