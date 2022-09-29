@@ -43,16 +43,16 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
 
   return (
     <div>
-      <Group spacing="xs" grow noWrap>
+      <Group position="apart" spacing="xs" grow noWrap>
         <p style={{ flex: 1 }}>{getMonthString(month)}</p>
-        <p>
-          <Button aria-label="Previous month" onClick={() => moveMonth(-1)}>
+        <Group position="right" spacing="xs">
+          <Button variant="outline" aria-label="Previous month" onClick={() => moveMonth(-1)}>
             &lt;
           </Button>
-          <Button aria-label="Next month" onClick={() => moveMonth(1)}>
+          <Button variant="outline" aria-label="Next month" onClick={() => moveMonth(1)}>
             &gt;
           </Button>
-        </p>
+        </Group>
       </Group>
       <table className="medplum-calendar-table">
         <thead>
@@ -72,9 +72,9 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <button disabled={!day.available} onClick={() => onClick(day.date)}>
+                    <Button disabled={!day.available} onClick={() => onClick(day.date)}>
                       {day.date.getDate()}
-                    </button>
+                    </Button>
                   )}
                 </td>
               ))}
