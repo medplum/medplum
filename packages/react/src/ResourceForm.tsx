@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, Group, TextInput } from '@mantine/core';
 import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
@@ -54,17 +54,21 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         outcome={props.outcome}
         onChange={setValue}
       />
-      <Button type="submit">OK</Button>
-      {props.onDelete && (
-        <Button
-          type="button"
-          onClick={() => {
-            (props.onDelete as (resource: Resource) => void)(value);
-          }}
-        >
-          Delete
-        </Button>
-      )}
+      <Group>
+        <Button type="submit">OK</Button>
+        {props.onDelete && (
+          <Button
+            variant="outline"
+            color="red"
+            type="button"
+            onClick={() => {
+              (props.onDelete as (resource: Resource) => void)(value);
+            }}
+          >
+            Delete
+          </Button>
+        )}
+      </Group>
     </form>
   );
 }

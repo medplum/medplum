@@ -117,6 +117,9 @@ export const Questionnaire = (): JSX.Element => (
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
+      onDelete={(formData: any) => {
+        console.log('delete', formData);
+      }}
     />
   </Document>
 );
