@@ -81,15 +81,43 @@ The following function arguments are available to the Bot code, to enable it to 
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
-```js
-export async function handler(medplum, event) {
-  // Print the name listed for the patient
-  const name = event.input.name[0];
-  console.log(`Hello ${name.given[0]} ${name.family}!`);
+```ts
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  const patient = event.input as Patient;
+  const firstName = patient.name?.[0]?.given?.[0];
+  const lastName = patient.name?.[0]?.family;
+  console.log(`Hello ${firstName} ${lastName}!`);
+  return true;
 }
 ```
 
 When you are done editing, click "Save" to save your Bot code to Medplum.
+
+### Understanding the code
+
+Let's break this example down.
+
+```ts
+import { Patient } from '@medplum/fhirtypes';
+//....
+const patient = event.input as Patient;
+```
+
+This first line casts the contents of event.input of type `Patient`. This allows the rest of the bot code to take advantage of Typescript's strong type system, along with IDE autocomplete and ESLint verification. Medplum provides type definitions for all FHIR resources in the `@medplum/fhirtypes` package.
+
+```ts
+const firstName = patient.name?.[0]?.given?.[0];
+const lastName = patient.name?.[0]?.family;
+```
+
+This line extracts the first and last name for the patient. Since patients can have many different names (e.g. maiden name, common name, official name), `Patient.name` is an array. In this example, we will only consider the `0th` name entry.
+
+FHIR stores a person's first names, middle names, etc. in an array called `HumanName.given`, and the last name in the `HumanName.family` property. For more information, refer to the documentation for the [`HumanName` datatype](/docs/api/fhir/datatypes/humanname).
+
+Because these properties may be undefined, we make heavy use of the Javascript [optional chaining (`?.`) operator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Optional_chaining) to access these properties.
 
 ## Deploying a Bot
 
