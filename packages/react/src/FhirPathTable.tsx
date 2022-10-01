@@ -1,12 +1,12 @@
+import { Button, Loader, Table } from '@mantine/core';
 import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
 import { FhirPathDisplay } from './FhirPathDisplay';
-import { Loading } from './Loading';
 import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
 import { isCheckboxCell, killEvent } from './utils/dom';
+
 import './SearchControl.css';
 
 export interface SmartSearchField {
@@ -127,14 +127,14 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
   const typeSchema = schema?.types?.[props.resourceType];
   if (!typeSchema) {
-    return <Loading />;
+    return <Loader />;
   }
 
   const checkboxColumn = props.checkboxesEnabled;
 
   return (
     <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
-      <table>
+      <Table>
         <thead>
           <tr>
             {checkboxColumn && (
@@ -187,7 +187,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
               )
           )}
         </tbody>
-      </table>
+      </Table>
       {response?.data?.ResourceList?.length === 0 && (
         <div data-testid="empty-search" className="medplum-empty-search">
           No results
@@ -199,7 +199,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
         </div>
       )}
       {props.onBulk && (
-        <Button size="small" onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
+        <Button onClick={() => (props.onBulk as (ids: string[]) => any)(Object.keys(selectedRef.current))}>
           Bulk...
         </Button>
       )}

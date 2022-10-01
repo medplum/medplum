@@ -1,11 +1,12 @@
+import { Button } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Button } from './Button';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { StatusBadge } from './StatusBadge';
 import { useResource } from './useResource';
+
 import './RequestGroupDisplay.css';
 
 export interface RequestGroupDisplayProps {

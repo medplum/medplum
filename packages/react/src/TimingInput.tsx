@@ -1,14 +1,9 @@
+import { Button, Checkbox, Group, Modal, NativeSelect, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Button } from './Button';
-import { Checkbox } from './Checkbox';
 import { DateTimeInput } from './DateTimeInput';
-import { Dialog } from './Dialog';
 import { FormSection } from './FormSection';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -29,10 +24,10 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
 
   return (
     <>
-      <InputRow>
+      <Group spacing="xs" grow noWrap>
         <span>{formatTiming(valueRef.current) || 'No repeat'}</span>
         <Button onClick={() => setOpen(true)}>Edit</Button>
-      </InputRow>
+      </Group>
       <TimingEditorDialog
         visible={open}
         defaultValue={valueRef.current}
@@ -101,46 +96,51 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   }
 
   return (
-    <Dialog title="Timing" visible={props.visible} onOk={() => props.onOk(value)} onCancel={() => props.onCancel()}>
+    <Modal title="Timing" closeButtonLabel="Close" opened={props.visible} onClose={() => props.onCancel()}>
       <div style={{ padding: '5px 20px', textAlign: 'left' }}>
         <FormSection title="Starts on" htmlFor={'timing-dialog-start'}>
           <DateTimeInput name={'timing-dialog-start'} onChange={(newValue) => setStart(newValue)} />
         </FormSection>
         <FormSection title="Repeat every" htmlFor={'timing-dialog-period'}>
-          <InputRow>
-            <Input
+          <Group spacing="xs" grow noWrap>
+            <TextInput
               type="number"
               step={1}
-              name={'timing-dialog-period'}
+              id="timing-dialog-period"
+              name="timing-dialog-period"
               defaultValue={value?.repeat?.period}
-              onChange={(newValue) => setPeriod(parseInt(newValue))}
+              onChange={(e) => setPeriod(parseInt(e.currentTarget.value))}
             />
-            <Select
-              name={'timing-dialog-periodUnit'}
+            <NativeSelect
+              id="timing-dialog-periodUnit"
+              name="timing-dialog-periodUnit"
               defaultValue={value?.repeat?.periodUnit}
-              onChange={(newValue) => setPeriodUnit(newValue as 'a' | 'd' | 'wk' | 'mo' | undefined)}
-            >
-              <option value="d">day</option>
-              <option value="wk">week</option>
-              <option value="mo">month</option>
-              <option value="a">year</option>
-            </Select>
-          </InputRow>
+              onChange={(e) => setPeriodUnit(e.currentTarget.value as 'a' | 'd' | 'wk' | 'mo' | undefined)}
+              data={[
+                { label: 'day', value: 'd' },
+                { label: 'week', value: 'wk' },
+                { label: 'month', value: 'mo' },
+                { label: 'year', value: 'a' },
+              ]}
+            />
+          </Group>
         </FormSection>
         <FormSection title="Repeat on">
-          <InputRow>
+          <Group spacing="xs" grow noWrap>
             {daysOfWeek.map((day) => (
               <React.Fragment key={day}>
                 <label htmlFor={'timing-dialog-repeat-' + day}>{day.charAt(0).toUpperCase()}</label>
                 <Checkbox
+                  id={'timing-dialog-repeat-' + day}
                   name={'timing-dialog-repeat-' + day}
-                  onChange={(newValue) => setDayOfWeek(day as DayOfWeek, newValue)}
+                  onChange={(e) => setDayOfWeek(day as DayOfWeek, e.currentTarget.checked)}
                 />
               </React.Fragment>
             ))}
-          </InputRow>
+          </Group>
         </FormSection>
       </div>
-    </Dialog>
+      <Button onClick={() => props.onOk(value)}>OK</Button>
+    </Modal>
   );
 }

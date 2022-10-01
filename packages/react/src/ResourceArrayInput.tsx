@@ -1,6 +1,7 @@
+import { ActionIcon } from '@mantine/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
+import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
 import React, { useRef, useState } from 'react';
-import { Button } from './Button';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { killEvent } from './utils/dom';
 
@@ -30,8 +31,8 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <colgroup>
-        <col width="90%" />
-        <col width="10%" />
+        <col width="97%" />
+        <col width="3%" />
       </colgroup>
       <tbody>
         {values.map((v, index) => (
@@ -50,32 +51,37 @@ export function ResourceArrayInput(props: ResourceArrayInputProps): JSX.Element 
               />
             </td>
             <td style={{ textAlign: 'right' }}>
-              <Button
-                onClick={(e) => {
+              <ActionIcon
+                title="Remove"
+                size="sm"
+                onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   const copy = [...(valuesRef.current as any[])];
                   copy.splice(index, 1);
                   setValuesWrapper(copy);
                 }}
               >
-                Remove
-              </Button>
+                <IconCircleMinus />
+              </ActionIcon>
             </td>
           </tr>
         ))}
         <tr>
           <td></td>
           <td style={{ textAlign: 'right' }}>
-            <Button
-              onClick={(e) => {
+            <ActionIcon
+              title="Add"
+              size="sm"
+              color="green"
+              onClick={(e: React.MouseEvent) => {
                 killEvent(e);
                 const copy = [...(valuesRef.current as any[])];
                 copy.push(undefined);
                 setValuesWrapper(copy);
               }}
             >
-              Add
-            </Button>
+              <IconCirclePlus />
+            </ActionIcon>
           </td>
         </tr>
       </tbody>

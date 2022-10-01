@@ -1,13 +1,6 @@
+import { Button } from '@mantine/core';
 import { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
-import {
-  Button,
-  CodeableConceptDisplay,
-  Form,
-  FormSection,
-  MedplumLink,
-  ReferenceInput,
-  useMedplum,
-} from '@medplum/react';
+import { CodeableConceptDisplay, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export interface PlanDefinitionApplyFormProps {

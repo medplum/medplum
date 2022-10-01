@@ -14,24 +14,13 @@
   border: 0.1px solid var(--medplum-gray-300);
   border-radius: 8px;
   box-shadow: 0 1px 3px 0 var(--medplum-shadow);
-}
-
-.medplum-document h1,
-.medplum-document h2,
-.medplum-document h3 {
-  margin: 12px 0;
-}
-
-.medplum-document p,
-.medplum-document li {
-  line-height: 175%;
-  margin: 8px 0;
+  font-size: 14px;
 }
 
 @media (max-width: 700px) {
   .medplum-document {
     margin: 10px auto 6px auto;
-    padding: 6px;
+    padding: 4px;
   }
 
   .medplum-document article {
@@ -41,11 +30,5 @@
 
 .medplum-document img,
 .medplum-document video {
-  width: 100%;
-}
-
-.medplum-document textarea {
-  margin: 0;
-  min-height: 100px;
   width: 100%;
 }

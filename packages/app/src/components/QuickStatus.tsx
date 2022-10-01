@@ -1,5 +1,6 @@
+import { NativeSelect } from '@mantine/core';
 import { Reference, ValueSet } from '@medplum/fhirtypes';
-import { Select, useResource } from '@medplum/react';
+import { useResource } from '@medplum/react';
 import React from 'react';
 import './QuickStatus.css';
 
@@ -17,13 +18,11 @@ export function QuickStatus(props: QuickStatusProps): JSX.Element | null {
 
   return (
     <div className="medplum-quick-status">
-      <Select defaultValue={props.defaultValue} onChange={props.onChange}>
-        {valueSet.compose?.include?.[0]?.concept?.map((concept) => (
-          <option key={concept.code} value={concept.code}>
-            {concept.code}
-          </option>
-        ))}
-      </Select>
+      <NativeSelect
+        defaultValue={props.defaultValue}
+        onChange={(e) => props.onChange(e.currentTarget.value)}
+        data={valueSet.compose?.include?.[0]?.concept?.map((concept) => concept.code) as string[]}
+      />
     </div>
   );
 }

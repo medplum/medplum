@@ -15,13 +15,13 @@ describe('ResourceArrayInput', () => {
   test('Renders default', () => {
     render(<ResourceArrayInput property={property} name="myProp" />);
 
-    expect(screen.getByText('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add')).toBeInTheDocument();
   });
 
   test('Renders empty', () => {
     render(<ResourceArrayInput property={property} name="myProp" defaultValue={[]} />);
 
-    expect(screen.getByText('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add')).toBeInTheDocument();
   });
 
   test('Renders elements', () => {
@@ -29,23 +29,23 @@ describe('ResourceArrayInput', () => {
 
     expect(screen.getByDisplayValue('foo')).toBeInTheDocument();
     expect(screen.getByDisplayValue('bar')).toBeInTheDocument();
-    expect(screen.getByText('Add')).toBeInTheDocument();
-    expect(screen.getAllByText('Remove')).toHaveLength(2);
+    expect(screen.getByTitle('Add')).toBeInTheDocument();
+    expect(screen.getAllByTitle('Remove')).toHaveLength(2);
   });
 
   test('Handles non-arrays', () => {
     render(<ResourceArrayInput property={property} name="myProp" defaultValue={'x' as unknown as string[]} />);
 
-    expect(screen.getByText('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add')).toBeInTheDocument();
   });
 
   test('Click add button', async () => {
     render(<ResourceArrayInput property={property} name="myProp" defaultValue={[]} />);
 
-    expect(screen.getByText('Add')).toBeInTheDocument();
+    expect(screen.getByTitle('Add')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add'));
+      fireEvent.click(screen.getByTitle('Add'));
     });
 
     expect(screen.getByTestId('myProp.0')).toBeInTheDocument();
@@ -55,7 +55,7 @@ describe('ResourceArrayInput', () => {
     render(<ResourceArrayInput property={property} name="myProp" defaultValue={['foo', 'bar']} />);
 
     await act(async () => {
-      fireEvent.click(screen.getAllByText('Remove')[0]);
+      fireEvent.click(screen.getAllByTitle('Remove')[0]);
     });
 
     expect(screen.queryByDisplayValue('foo')).toBeNull();

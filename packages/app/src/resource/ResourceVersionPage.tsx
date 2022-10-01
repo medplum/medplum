@@ -1,7 +1,6 @@
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   Document,
-  Loading,
   MedplumLink,
   ResourceDiff,
   Tab,
@@ -13,6 +12,7 @@ import {
 } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { Loading } from '../components/Loading';
 
 export function ResourceVersionPage(): JSX.Element {
   const navigate = useNavigate();

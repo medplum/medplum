@@ -1,5 +1,6 @@
+import { Button, Group, PasswordInput, Stack, Text } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Logo, Input, useMedplum } from '@medplum/react';
+import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
@@ -21,41 +22,35 @@ export function ChangePasswordPage(): JSX.Element {
       >
         <div className="medplum-center">
           <Logo size={32} />
-          <h1>Change password</h1>
+          <Text size="lg" weight={500}>
+            Change password
+          </Text>
         </div>
         {!success && (
-          <>
-            <FormSection title="Old password" htmlFor="oldPassword" outcome={outcome}>
-              <Input
-                name="oldPassword"
-                type="password"
-                testid="oldPassword"
-                required={true}
-                autoFocus={true}
-                outcome={outcome}
-              />
-            </FormSection>
-            <FormSection title="New password" htmlFor="newPassword" outcome={outcome}>
-              <Input name="newPassword" type="password" testid="newPassword" required={true} outcome={outcome} />
-            </FormSection>
-            <FormSection title="Confirm new password" htmlFor="confirmPassword" outcome={outcome}>
-              <Input
-                name="confirmPassword"
-                type="password"
-                testid="confirmPassword"
-                required={true}
-                outcome={outcome}
-              />
-            </FormSection>
-            <div className="medplum-signin-buttons">
-              <div></div>
-              <div>
-                <Button type="submit" testid="submit">
-                  Change password
-                </Button>
-              </div>
-            </div>
-          </>
+          <Stack spacing="xl" mt="xl">
+            <PasswordInput
+              name="oldPassword"
+              label="Old password"
+              required={true}
+              autoFocus={true}
+              error={getErrorsForInput(outcome, 'oldPassword')}
+            />
+            <PasswordInput
+              name="newPassword"
+              label="New password"
+              required={true}
+              error={getErrorsForInput(outcome, 'newPassword')}
+            />
+            <PasswordInput
+              name="confirmPassword"
+              label="Confirm new password"
+              required={true}
+              error={getErrorsForInput(outcome, 'confirmPassword')}
+            />
+            <Group position="right" mt="xl" noWrap>
+              <Button type="submit">Change password</Button>
+            </Group>
+          </Stack>
         )}
         {success && <div data-testid="success">Password changed successfully</div>}
       </Form>

@@ -1,8 +1,9 @@
+import { ActionIcon } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
+import { IconCircleMinus, IconCloudUpload } from '@tabler/icons';
 import React, { useRef, useState } from 'react';
+import { AttachmentButton } from './AttachmentButton';
 import { AttachmentDisplay } from './AttachmentDisplay';
-import { Button } from './Button';
-import { UploadButton } from './UploadButton';
 import { killEvent } from './utils/dom';
 
 export interface AttachmentArrayInputProps {
@@ -28,8 +29,8 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
   return (
     <table style={{ width: '100%' }}>
       <colgroup>
-        <col width="90%" />
-        <col width="10%" />
+        <col width="97%" />
+        <col width="3%" />
       </colgroup>
       <tbody>
         {values.map((v: Attachment, index: number) => (
@@ -38,27 +39,35 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
               <AttachmentDisplay value={v} maxWidth={200} />
             </td>
             <td className="medplum-right">
-              <Button
-                onClick={(e) => {
+              <ActionIcon
+                title="Remove"
+                size="sm"
+                onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   const copy = values.slice();
                   copy.splice(index, 1);
                   setValuesWrapper(copy);
                 }}
               >
-                Remove
-              </Button>
+                <IconCircleMinus />
+              </ActionIcon>
             </td>
           </tr>
         ))}
         <tr>
           <td></td>
           <td className="medplum-right">
-            <UploadButton
+            <AttachmentButton
               onUpload={(attachment: Attachment) => {
                 setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
               }}
-            />
+            >
+              {(props) => (
+                <ActionIcon {...props} title="Add" size="sm" color="green">
+                  <IconCloudUpload size={16} />
+                </ActionIcon>
+              )}
+            </AttachmentButton>
           </td>
         </tr>
       </tbody>

@@ -1,7 +1,8 @@
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { Avatar, HumanNameDisplay, MedplumLink, Scrollable, useResource } from '@medplum/react';
+import { HumanNameDisplay, MedplumLink, ResourceAvatar, Scrollable, useResource } from '@medplum/react';
 import React from 'react';
+
 import './PatientHeader.css';
 
 export interface PatientHeaderProps {
@@ -16,7 +17,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   return (
     <Scrollable className="medplum-surface" height={74}>
       <div className="medplum-patient-header">
-        <Avatar value={patient} size="large" color={getDefaultColor(patient)} />
+        <ResourceAvatar value={patient} size="lg" color={getDefaultColor(patient)} />
         <dl>
           <dt>Name</dt>
           <dd>
@@ -62,12 +63,12 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   );
 }
 
-function getDefaultColor(patient: Patient): string {
+export function getDefaultColor(patient: Patient): string | undefined {
   if (patient.gender === 'male') {
-    return '#79a3d2'; // blue
+    return 'blue';
   }
   if (patient.gender === 'female') {
-    return '#c58686'; // pink
+    return 'pink';
   }
-  return '#6cb578'; // green
+  return undefined;
 }

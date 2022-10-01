@@ -1,13 +1,14 @@
+import { Button, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Avatar } from './Avatar';
-import { Button } from './Button';
 import { CalendarInput, getStartMonth } from './CalendarInput';
 import { useMedplum } from './MedplumProvider';
 import { QuestionnaireForm } from './QuestionnaireForm';
+import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
 import { useResource } from './useResource';
+
 import './Scheduler.css';
 
 export interface SchedulerProps {
@@ -58,11 +59,11 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   return (
     <div className="medplum-calendar-container" data-testid="scheduler">
       <div className="medplum-calendar-info-pane">
-        {actor && <Avatar value={actor} size="large" />}
+        {actor && <ResourceAvatar value={actor} size="xl" />}
         {actor && (
-          <h1>
+          <Text size="xl" weight={500}>
             <ResourceName value={actor} />
-          </h1>
+          </Text>
         )}
         <p>1 hour</p>
         {date && <p>{date.toLocaleDateString()}</p>}
@@ -78,19 +79,21 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         {date && !slot && (
           <div>
             <h3>Select time</h3>
-            {slots.map((s) => {
-              const slotStart = new Date(s.start as string);
-              return (
-                slotStart.getTime() > date.getTime() &&
-                slotStart.getTime() < date.getTime() + 24 * 3600 * 1000 && (
-                  <div key={s.id}>
-                    <Button style={{ width: 150 }} onClick={() => setSlot(s)}>
-                      {formatTime(slotStart)}
-                    </Button>
-                  </div>
-                )
-              );
-            })}
+            <Stack>
+              {slots.map((s) => {
+                const slotStart = new Date(s.start as string);
+                return (
+                  slotStart.getTime() > date.getTime() &&
+                  slotStart.getTime() < date.getTime() + 24 * 3600 * 1000 && (
+                    <div key={s.id}>
+                      <Button variant="outline" style={{ width: 150 }} onClick={() => setSlot(s)}>
+                        {formatTime(slotStart)}
+                      </Button>
+                    </div>
+                  )
+                );
+              })}
+            </Stack>
           </div>
         )}
         {date && slot && !response && (

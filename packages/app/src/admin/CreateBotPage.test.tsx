@@ -38,7 +38,7 @@ describe('CreateBotPage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -57,10 +57,10 @@ describe('CreateBotPage', () => {
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });
@@ -79,15 +79,15 @@ describe('CreateBotPage', () => {
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -99,7 +99,10 @@ describe('CreateBotPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {

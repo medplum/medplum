@@ -44,11 +44,11 @@ describe('SitesPage', () => {
     toast.success = jest.fn();
 
     await setup('/admin/sites');
-    await waitFor(() => screen.getByText('Add'));
+    await waitFor(() => screen.getByTitle('Add'));
 
     // Click the "Add" button
     await act(async () => {
-      fireEvent.click(screen.getByText('Add'));
+      fireEvent.click(screen.getByTitle('Add'));
     });
 
     // Enter the site name

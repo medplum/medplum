@@ -4,7 +4,7 @@ import { MedplumProvider } from '@medplum/react';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { PatientHeader } from './PatientHeader';
+import { getDefaultColor, PatientHeader } from './PatientHeader';
 
 const medplum = new MockClient();
 
@@ -81,57 +81,6 @@ describe('PatientHeader', () => {
     expect(screen.getByText('value-with-null-system')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
-  });
-
-  test('Male avatar', async () => {
-    setup({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Bob'],
-          family: 'Jones',
-        },
-      ],
-      gender: 'male',
-    });
-
-    const avatar = screen.getByTestId('avatar');
-    expect(avatar).toBeDefined();
-    expect(avatar.style.backgroundColor).toEqual('rgb(121, 163, 210)');
-  });
-
-  test('Female avatar', async () => {
-    setup({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Alice'],
-          family: 'Smith',
-        },
-      ],
-      gender: 'female',
-    });
-
-    const avatar = screen.getByTestId('avatar');
-    expect(avatar).toBeDefined();
-    expect(avatar.style.backgroundColor).toEqual('rgb(197, 134, 134)');
-  });
-
-  test('Other gender avatar', async () => {
-    setup({
-      resourceType: 'Patient',
-      name: [
-        {
-          given: ['Unknown'],
-          family: 'Smith',
-        },
-      ],
-      gender: 'other',
-    });
-
-    const avatar = screen.getByTestId('avatar');
-    expect(avatar).toBeDefined();
-    expect(avatar.style.backgroundColor).toEqual('rgb(108, 181, 120)');
   });
 
   test('Age in years day after birthday', async () => {
@@ -220,5 +169,12 @@ describe('PatientHeader', () => {
     });
 
     expect(screen.getByText('[blank]')).toBeInTheDocument();
+  });
+
+  test('Avatar color', () => {
+    expect(getDefaultColor({ resourceType: 'Patient', gender: 'male' })).toBe('blue');
+    expect(getDefaultColor({ resourceType: 'Patient', gender: 'female' })).toBe('pink');
+    expect(getDefaultColor({ resourceType: 'Patient', gender: 'other' })).toBeUndefined();
+    expect(getDefaultColor({ resourceType: 'Patient' })).toBeUndefined();
   });
 });

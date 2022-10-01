@@ -7,6 +7,17 @@ import { MedplumProvider } from './MedplumProvider';
 import { SearchControl, SearchControlProps } from './SearchControl';
 
 describe('SearchControl', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   async function setup(args: SearchControlProps): Promise<void> {
     await act(async () => {
       render(
@@ -37,12 +48,8 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByText('Homer Simpson'));
 
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
@@ -65,9 +72,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     expect(screen.getByText('greater than or equals', { exact: false })).toBeInTheDocument();
   });
@@ -89,9 +94,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('empty-search'));
-    });
+    await waitFor(() => screen.getByTestId('empty-search'));
 
     const control = screen.getByTestId('empty-search');
     expect(control).toBeDefined();
@@ -109,9 +112,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -138,9 +139,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -165,9 +164,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('empty-search'));
-    });
+    await waitFor(() => screen.getByTestId('empty-search'));
 
     const control = screen.getByTestId('empty-search');
     expect(control).toBeDefined();
@@ -185,9 +182,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -208,9 +203,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -238,9 +231,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -264,12 +255,10 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('next-page-button'));
-    });
+    await waitFor(() => screen.getByLabelText('Next page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
 
     expect(props.onChange).toBeCalled();
@@ -291,12 +280,10 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('next-page-button'));
-    });
+    await waitFor(() => screen.getByLabelText('Next page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
   });
 
@@ -317,12 +304,10 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('prev-page-button'));
-    });
+    await waitFor(() => screen.getByLabelText('Previous page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('prev-page-button'));
+      fireEvent.click(screen.getByLabelText('Previous page'));
     });
 
     expect(props.onChange).toBeCalled();
@@ -338,9 +323,7 @@ describe('SearchControl', () => {
       onNew,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('New...'));
-    });
+    await waitFor(() => screen.getByText('New...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('New...'));
@@ -359,9 +342,7 @@ describe('SearchControl', () => {
       onExport,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Export...'));
-    });
+    await waitFor(() => screen.getByText('Export...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Export...'));
@@ -380,9 +361,7 @@ describe('SearchControl', () => {
       onDelete,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Delete...'));
-    });
+    await waitFor(() => screen.getByText('Delete...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Delete...'));
@@ -401,9 +380,7 @@ describe('SearchControl', () => {
       onBulk,
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByText('Bulk...'));
-    });
+    await waitFor(() => screen.getByText('Bulk...'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Bulk...'));
@@ -430,13 +407,9 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('search-control-row'));
-    });
+    await waitFor(() => screen.getAllByTestId('search-control-row'));
 
     await act(async () => {
       const rows = screen.getAllByTestId('search-control-row');
@@ -465,13 +438,9 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('search-control-row'));
-    });
+    await waitFor(() => screen.getAllByTestId('search-control-row'));
 
     await act(async () => {
       const rows = screen.getAllByTestId('search-control-row');
@@ -499,20 +468,16 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('fields-button'));
+      fireEvent.click(screen.getByText('Fields'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-ok'));
-    });
+    await waitFor(() => screen.getByText('OK'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -533,20 +498,16 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('fields-button'));
+      fireEvent.click(screen.getByText('Fields'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-cancel'));
-    });
+    await waitFor(() => screen.getByLabelText('Close'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-cancel'));
+      fireEvent.click(screen.getByLabelText('Close'));
     });
   });
 
@@ -567,20 +528,16 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('filters-button'));
+      fireEvent.click(screen.getByText('Filters'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-ok'));
-    });
+    await waitFor(() => screen.getByText('OK'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -601,20 +558,16 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('filters-button'));
+      fireEvent.click(screen.getByText('Filters'));
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('dialog-cancel'));
-    });
+    await waitFor(() => screen.getByLabelText('Close'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-cancel'));
+      fireEvent.click(screen.getByLabelText('Close'));
     });
   });
 
@@ -636,9 +589,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     await act(async () => {
       fireEvent.click(screen.getByText('Name'));
@@ -649,13 +600,13 @@ describe('SearchControl', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-value'), {
+      fireEvent.change(screen.getByPlaceholderText('Search value'), {
         target: { value: 'Washington' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('dialog-ok'));
+      fireEvent.click(screen.getByText('OK'));
     });
   });
 
@@ -677,9 +628,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -718,9 +667,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -764,9 +711,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -789,49 +734,6 @@ describe('SearchControl', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Name'));
     });
-
-    // Click outside the popup to dismiss it
-    await act(async () => {
-      fireEvent.click(document.body);
-    });
-
-    // Expect the popup menu to be closed now
-    expect(screen.queryByText('Sort A to Z')).toBeNull();
-  });
-
-  test('Saved searches', async () => {
-    const onChange = jest.fn();
-
-    const props: SearchControlProps = {
-      search: {
-        resourceType: 'Patient',
-        fields: ['id', 'name'],
-      },
-      userConfig: {
-        resourceType: 'UserConfiguration',
-        search: [
-          {
-            name: 'Simpsons',
-            criteria: 'Patient?name=Simpson',
-          },
-        ],
-      },
-      onChange,
-    };
-
-    await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('saved-search-select'));
-    });
-
-    await act(async () => {
-      fireEvent.change(screen.getByTestId('saved-search-select'), {
-        target: { value: 'Patient?name=Simpson' },
-      });
-    });
-
-    expect(onChange).toBeCalled();
   });
 
   test('Hide toolbar', async () => {
@@ -853,9 +755,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();
@@ -883,9 +783,7 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
+    await waitFor(() => screen.getByTestId('search-control'));
 
     const control = screen.getByTestId('search-control');
     expect(control).toBeDefined();

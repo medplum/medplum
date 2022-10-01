@@ -17,27 +17,26 @@ function setup(): void {
 describe('ChangePasswordPage', () => {
   test('Renders', () => {
     setup();
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Change password');
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('oldPassword'), {
+      fireEvent.change(screen.getByLabelText('Old password *'), {
         target: { value: 'orange' },
       });
-      fireEvent.change(screen.getByTestId('newPassword'), {
+      fireEvent.change(screen.getByLabelText('New password *'), {
         target: { value: 'purple' },
       });
-      fireEvent.change(screen.getByTestId('confirmPassword'), {
+      fireEvent.change(screen.getByLabelText('Confirm new password *'), {
         target: { value: 'purple' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
@@ -47,19 +46,19 @@ describe('ChangePasswordPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('oldPassword'), {
+      fireEvent.change(screen.getByLabelText('Old password *'), {
         target: { value: 'watermelon' },
       });
-      fireEvent.change(screen.getByTestId('newPassword'), {
+      fireEvent.change(screen.getByLabelText('New password *'), {
         target: { value: 'purple' },
       });
-      fireEvent.change(screen.getByTestId('confirmPassword'), {
+      fireEvent.change(screen.getByLabelText('Confirm new password *'), {
         target: { value: 'purple' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
     expect(screen.getByText('Incorrect password')).toBeInTheDocument();

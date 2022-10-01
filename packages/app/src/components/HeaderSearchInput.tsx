@@ -1,19 +1,12 @@
-import { formatHumanName, isUUID } from '@medplum/core';
+import { Autocomplete, AutocompleteItem, Loader } from '@mantine/core';
+import { formatHumanName, getDisplayString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
-import React from 'react';
-import { Autocomplete } from './Autocomplete';
-import { Avatar } from './Avatar';
-import { useMedplum } from './MedplumProvider';
-import { ResourceName } from './ResourceName';
+import { useMedplum } from '@medplum/react';
+import { IconSearch } from '@tabler/icons';
+import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
-
-export interface HeaderSearchInputProps {
-  readonly name: string;
-  readonly className?: string;
-  readonly placeholder?: string;
-  readonly onChange: (value: HeaderSearchTypes) => void;
-}
 
 interface SearchGraphQLResponse {
   readonly data: {
@@ -23,31 +16,61 @@ interface SearchGraphQLResponse {
   };
 }
 
-export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
+export function HeaderSearchInput(): JSX.Element {
+  const navigate = useNavigate();
   const medplum = useMedplum();
+  const [loadingPromise, setLoadingPromise] = useState<Promise<void> | undefined>();
+  const [data, setData] = useState<AutocompleteItem[]>([]);
+
+  const currDataRef = useRef<AutocompleteItem[]>();
+  currDataRef.current = data;
+
+  async function loadData(input: string): Promise<void> {
+    const response = (await medplum.graphql(buildGraphQLQuery(input))) as SearchGraphQLResponse;
+    const resources = getResourcesFromResponse(response, input);
+    setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
+  }
+
+  async function handleChange(input: string): Promise<void> {
+    const promise = loadData(input);
+    setLoadingPromise(promise);
+    await promise;
+    setLoadingPromise(undefined);
+  }
+
+  function handleSelect(item: AutocompleteItem): void {
+    setData([]);
+    navigate(`/${item.resource.resourceType}/${item.resource.id}`);
+  }
+
+  async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): Promise<void> {
+    if (e.key === 'Enter') {
+      // If loading, wait for the next results
+      if (loadingPromise) {
+        await loadingPromise;
+      }
+
+      // Select the first result
+      if (currDataRef.current && currDataRef.current.length > 0) {
+        handleSelect(currDataRef.current[0]);
+      }
+    }
+  }
+
   return (
     <Autocomplete
-      loadOptions={async (input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> => {
-        return getResourcesFromResponse(
-          (await medplum.graphql(buildGraphQLQuery(input), undefined, undefined, { signal })) as SearchGraphQLResponse,
-          input
-        );
-      }}
-      getId={(item: HeaderSearchTypes) => {
-        return item.id as string;
-      }}
-      getIcon={(item: HeaderSearchTypes) => <Avatar value={item} />}
-      getDisplay={(item: HeaderSearchTypes) => <ResourceName value={item} />}
-      getHelpText={(item: HeaderSearchTypes) => {
-        if (item.resourceType === 'Patient' && item.birthDate) {
-          return 'DoB: ' + item.birthDate;
-        }
-        return (item as ServiceRequest).subject?.display;
-      }}
-      name={props.name}
-      className={props.className}
-      placeholder={props.placeholder}
-      onChange={(items: HeaderSearchTypes[]) => props.onChange(items[0])}
+      size="sm"
+      radius="md"
+      style={{ width: 220 }}
+      icon={<IconSearch size={16} />}
+      placeholder="Search"
+      data={data}
+      onChange={handleChange}
+      onItemSubmit={handleSelect}
+      onKeyDown={handleKeyDown}
+      rightSectionWidth={40}
+      rightSection={loadingPromise ? <Loader size={16} /> : null}
+      filter={() => true}
     />
   );
 }

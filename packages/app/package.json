@@ -18,13 +18,17 @@
     "debug": "webpack --mode development",
     "start": "http-server dist --port 3000 --proxy http://localhost:3000?",
     "test": "jest",
-    "source-map-explorer": "source-map-explorer *.js --gzip"
+    "source-map-explorer": "source-map-explorer dist/**/*.js --gzip"
   },
   "devDependencies": {
+    "@emotion/react": "11.10.4",
+    "@mantine/core": "5.4.0",
+    "@mantine/hooks": "5.4.0",
     "@medplum/core": "0.9.38",
     "@medplum/fhirtypes": "0.9.38",
     "@medplum/mock": "0.9.38",
     "@medplum/react": "0.9.38",
+    "@tabler/icons": "1.100.0",
     "@testing-library/jest-dom": "5.16.5",
     "@testing-library/react": "13.4.0",
     "@types/grecaptcha": "3.0.4",

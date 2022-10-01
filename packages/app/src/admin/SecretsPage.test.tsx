@@ -44,11 +44,11 @@ describe('SecretsPage', () => {
     toast.success = jest.fn();
 
     await setup('/admin/secrets');
-    await waitFor(() => screen.getByText('Add'));
+    await waitFor(() => screen.getByTitle('Add'));
 
     // Click the "Add" button
     await act(async () => {
-      fireEvent.click(screen.getByText('Add'));
+      fireEvent.click(screen.getByTitle('Add'));
     });
 
     // Enter the secret name

@@ -1,6 +1,6 @@
+import { Avatar, Group, Stack, Text, UnstyledButton } from '@mantine/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React from 'react';
-import { Avatar } from '../Avatar';
 import { Logo } from '../Logo';
 import { useMedplum } from '../MedplumProvider';
 
@@ -13,14 +13,15 @@ export interface ChooseProfileFormProps {
 export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
-    <div>
+    <Stack>
       <div className="medplum-center">
         <Logo size={32} />
-        <h1>Choose profile</h1>
+        <Text size="lg" weight={500}>
+          Choose profile
+        </Text>
       </div>
       {props.memberships.map((membership: ProjectMembership) => (
-        <div
-          className="medplum-nav-menu-profile"
+        <UnstyledButton
           key={membership.id}
           onClick={() => {
             medplum
@@ -32,15 +33,19 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
               .catch(console.log);
           }}
         >
-          <div className="medplum-nav-menu-profile-icon">
-            <Avatar alt={membership.profile?.display} />
-          </div>
-          <div className="medplum-nav-menu-profile-label">
-            {membership.profile?.display}
-            <div className="medplum-nav-menu-profile-help-text">{membership.project?.display}</div>
-          </div>
-        </div>
+          <Group>
+            <Avatar radius="xl" />
+            <div style={{ flex: 1 }}>
+              <Text size="sm" weight={500}>
+                {membership.profile?.display}
+              </Text>
+              <Text color="dimmed" size="xs">
+                {membership.project?.display}
+              </Text>
+            </div>
+          </Group>
+        </UnstyledButton>
       ))}
-    </div>
+    </Stack>
   );
 }

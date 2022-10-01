@@ -23,7 +23,7 @@ describe('SearchFilterEditor', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -111,26 +111,33 @@ describe('SearchFilterEditor', () => {
       />
     );
 
-    // Wait for the resource to load
     await act(async () => {
-      await waitFor(() => screen.getByText('Test Organization'));
+      jest.advanceTimersByTime(200);
     });
+
+    // Wait for the resource to load
+    expect(screen.getByText('Test Organization')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });
 
     // Wait for the drop down
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      jest.advanceTimersByTime(200);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    expect(screen.getByText('Different')).toBeInTheDocument();
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -142,9 +149,7 @@ describe('SearchFilterEditor', () => {
     });
 
     // Wait for the resource to load
-    await act(async () => {
-      await waitFor(() => screen.getByText('Different'));
-    });
+    expect(screen.getByText('Different')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
@@ -157,7 +162,7 @@ describe('SearchFilterEditor', () => {
         value: 'Organization/456',
       },
     ]);
-  });
+  }, 10000);
 
   test('Delete filter', async () => {
     let currSearch: SearchRequest = {

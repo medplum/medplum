@@ -3,11 +3,11 @@ import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { Document } from '../Document';
 import { useMedplum } from '../MedplumProvider';
-import '../util.css';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { NewProjectForm } from './NewProjectForm';
-import './SignInForm.css';
+
+import '../util.css';
 
 export interface SignInFormProps {
   readonly remember?: boolean;

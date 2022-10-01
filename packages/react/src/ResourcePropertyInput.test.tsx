@@ -35,7 +35,7 @@ describe('ResourcePropertyInput', () => {
   // 2.24.0.1 Primitive Types
   // https://www.hl7.org/fhir/datatypes.html#primitive
 
-  test('boolean property', () => {
+  test('boolean property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -53,7 +53,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('active')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.click(screen.getByTestId('active'));
     });
 
@@ -78,7 +78,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('date')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('date'), { target: { value: '2021-01-01' } });
     });
 
@@ -105,14 +105,14 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('dateTime')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('dateTime'), { target: { value: localString } });
     });
 
     expect(onChange).toHaveBeenCalledWith(isoString);
   });
 
-  test('Markdown property', () => {
+  test('Markdown property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -130,7 +130,7 @@ describe('ResourcePropertyInput', () => {
     });
     expect(screen.getByTestId('markdown')).toBeDefined();
 
-    act(() => {
+    await act(async () => {
       fireEvent.change(screen.getByTestId('markdown'), { target: { value: 'xyz' } });
     });
 
@@ -295,7 +295,7 @@ describe('ResourcePropertyInput', () => {
       property,
       defaultValue,
     });
-    expect(screen.getByText('Married')).toBeDefined();
+    expect(screen.getByDisplayValue('Married')).toBeDefined();
   });
 
   test('ContactPoint property', () => {
@@ -350,12 +350,11 @@ describe('ResourcePropertyInput', () => {
       onChange,
     });
 
-    expect(screen.getByTestId('extension-input')).toBeInTheDocument();
+    const el = screen.getByDisplayValue('{"url":"https://example.com","valueString":"foo"}');
+    expect(el).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('extension-input'), {
-        target: { value: '{"url":"https://example.com","valueString":"bar"}' },
-      });
+      fireEvent.change(el, { target: { value: '{"url":"https://example.com","valueString":"bar"}' } });
     });
 
     expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
@@ -432,8 +431,8 @@ describe('ResourcePropertyInput', () => {
     };
 
     const defaultValue: Period = {
-      start: '2020-01-01T12:00:00Z',
-      end: '2021-01-02T12:00:00Z',
+      start: '2020-01-01T12:00:00.000Z',
+      end: '2021-01-02T12:00:00.000Z',
     };
 
     const onChange = jest.fn();
@@ -450,11 +449,11 @@ describe('ResourcePropertyInput', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('End'), {
-        target: { value: '2021-01-03T12:00:00Z' },
+        target: { value: '2021-01-03T12:00:00.000Z' },
       });
     });
 
-    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00Z', end: '2021-01-03T12:00:00Z' });
+    expect(onChange).toHaveBeenCalledWith({ start: '2020-01-01T12:00:00.000Z', end: '2021-01-03T12:00:00.000Z' });
   });
 
   test('Quantity property', async () => {
@@ -582,7 +581,7 @@ describe('ResourcePropertyInput', () => {
       name: 'managingOrganization',
       property,
     });
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Type selector', async () => {

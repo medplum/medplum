@@ -1,8 +1,6 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 function getLine(address: Address, index: number): string {
   return address && address.line && address.line.length > index ? address.line[index] : '';
@@ -65,26 +63,36 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Select testid="address-use" defaultValue={value?.use} onChange={setUse as (use: string) => void}>
-        <option></option>
-        <option>home</option>
-        <option>mobile</option>
-        <option>old</option>
-        <option>temp</option>
-        <option>work</option>
-      </Select>
-      <Select testid="address-type" defaultValue={value?.type} onChange={setType as (use: string) => void}>
-        <option></option>
-        <option>postal</option>
-        <option>physical</option>
-        <option>both</option>
-      </Select>
-      <Input placeholder="Line 1" defaultValue={getLine(value, 0)} onChange={setLine1} />
-      <Input placeholder="Line 2" defaultValue={getLine(value, 1)} onChange={setLine2} />
-      <Input placeholder="City" defaultValue={value.city} onChange={setCity} />
-      <Input placeholder="State" defaultValue={value.state} onChange={setState} />
-      <Input placeholder="Postal Code" defaultValue={value.postalCode} onChange={setPostalCode} />
-    </InputRow>
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
+        data-testid="address-use"
+        defaultValue={value?.use}
+        onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'billing')}
+        data={['', 'home', 'work', 'temp', 'old', 'billing']}
+      />
+      <NativeSelect
+        data-testid="address-type"
+        defaultValue={value?.type}
+        onChange={(e) => setType(e.currentTarget.value as 'postal' | 'physical' | 'both')}
+        data={['', 'postal', 'physical', 'both']}
+      />
+      <TextInput
+        placeholder="Line 1"
+        defaultValue={getLine(value, 0)}
+        onChange={(e) => setLine1(e.currentTarget.value)}
+      />
+      <TextInput
+        placeholder="Line 2"
+        defaultValue={getLine(value, 1)}
+        onChange={(e) => setLine2(e.currentTarget.value)}
+      />
+      <TextInput placeholder="City" defaultValue={value.city} onChange={(e) => setCity(e.currentTarget.value)} />
+      <TextInput placeholder="State" defaultValue={value.state} onChange={(e) => setState(e.currentTarget.value)} />
+      <TextInput
+        placeholder="Postal Code"
+        defaultValue={value.postalCode}
+        onChange={(e) => setPostalCode(e.currentTarget.value)}
+      />
+    </Group>
   );
 }

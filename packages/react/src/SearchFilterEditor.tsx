@@ -1,8 +1,7 @@
+import { Button, Modal, NativeSelect } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
-import { Dialog } from './Dialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 import {
@@ -13,7 +12,7 @@ import {
   getSearchOperators,
   setFilters,
 } from './SearchUtils';
-import { Select } from './Select';
+
 import './SearchFilterEditor.css';
 
 export interface SearchFilterEditorProps {
@@ -47,12 +46,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const filters = search.filters || [];
 
   return (
-    <Dialog
-      title="Filters"
-      visible={props.visible}
-      onOk={() => props.onOk(searchRef.current)}
-      onCancel={props.onCancel}
-    >
+    <Modal title="Filters" closeButtonLabel="Close" size={900} opened={props.visible} onClose={props.onCancel}>
       <div className="medplum-filter-editor">
         <table className="medplum-filter-editor-table">
           <colgroup>
@@ -105,7 +99,8 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           </tbody>
         </table>
       </div>
-    </Dialog>
+      <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
+    </Modal>
   );
 }
 
@@ -127,10 +122,10 @@ function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
         <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
       </td>
       <td>
-        <Button size="small" onClick={props.onEdit}>
+        <Button compact variant="outline" onClick={props.onEdit}>
           Edit
         </Button>
-        <Button size="small" onClick={props.onDelete}>
+        <Button compact variant="outline" onClick={props.onDelete}>
           Delete
         </Button>
       </td>
@@ -170,29 +165,21 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
   return (
     <tr>
       <td>
-        <Select testid="filter-field" defaultValue={valueRef.current.code} onChange={setFilterCode}>
-          <option value=""></option>
-          {Object.keys(props.searchParams).map((param) => (
-            <option key={param} value={param}>
-              {buildFieldNameString(param)}
-            </option>
-          ))}
-        </Select>
+        <NativeSelect
+          data-testid="filter-field"
+          defaultValue={valueRef.current.code}
+          onChange={(e) => setFilterCode(e.currentTarget.value)}
+          data={Object.keys(props.searchParams).map((param) => ({ value: param, label: buildFieldNameString(param) }))}
+        />
       </td>
       <td>
         {operators && (
-          <Select
-            testid="filter-operation"
+          <NativeSelect
+            data-testid="filter-operation"
             defaultValue={value.operator}
-            onChange={setFilterOperator as (newOperator: string) => void}
-          >
-            <option value=""></option>
-            {operators.map((operator) => (
-              <option key={operator} value={operator}>
-                {getOpString(operator)}
-              </option>
-            ))}
-          </Select>
+            onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
+            data={operators.map((op) => ({ value: op, label: getOpString(op) }))}
+          />
         )}
       </td>
       <td>
@@ -208,7 +195,8 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {value.code && value.operator && value.value && (
           <Button
-            size="small"
+            compact
+            variant="outline"
             onClick={() => {
               props.onOk(valueRef.current);
               setValue({} as Filter);
@@ -218,7 +206,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
           </Button>
         )}
         {props.onCancel && (
-          <Button size="small" onClick={props.onCancel}>
+          <Button compact variant="outline" onClick={props.onCancel}>
             Cancel
           </Button>
         )}

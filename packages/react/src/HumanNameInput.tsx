@@ -1,8 +1,6 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 export interface HumanNameInputProps {
   name: string;
@@ -56,21 +54,31 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Select defaultValue={value?.use} onChange={setUse as (use: string) => void} testid="use">
-        <option></option>
-        <option>usual</option>
-        <option>official</option>
-        <option>temp</option>
-        <option>nickname</option>
-        <option>anonymous</option>
-        <option>old</option>
-        <option>maiden</option>
-      </Select>
-      <Input placeholder="Prefix" defaultValue={value?.prefix?.join(' ')} onChange={setPrefix} />
-      <Input placeholder="Given" defaultValue={value?.given?.join(' ')} onChange={setGiven} />
-      <Input placeholder="Family" defaultValue={value?.family} onChange={setFamily} />
-      <Input placeholder="Suffix" defaultValue={value?.suffix?.join(' ')} onChange={setSuffix} />
-    </InputRow>
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
+        defaultValue={value?.use}
+        data-testid="use"
+        onChange={(e) =>
+          setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
+        }
+        data={['', 'temp', 'old', 'usual', 'official', 'nickname', 'anonymous', 'maiden']}
+      />
+      <TextInput
+        placeholder="Prefix"
+        defaultValue={value?.prefix?.join(' ')}
+        onChange={(e) => setPrefix(e.currentTarget.value)}
+      />
+      <TextInput
+        placeholder="Given"
+        defaultValue={value?.given?.join(' ')}
+        onChange={(e) => setGiven(e.currentTarget.value)}
+      />
+      <TextInput placeholder="Family" defaultValue={value?.family} onChange={(e) => setFamily(e.currentTarget.value)} />
+      <TextInput
+        placeholder="Suffix"
+        defaultValue={value?.suffix?.join(' ')}
+        onChange={(e) => setSuffix(e.currentTarget.value)}
+      />
+    </Group>
   );
 }

@@ -1,7 +1,7 @@
+import { Group } from '@mantine/core';
 import { Period } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
+import { DateTimeInput } from './DateTimeInput';
 
 export interface PeriodInputProps {
   name: string;
@@ -20,19 +20,19 @@ export function PeriodInput(props: PeriodInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Input
-        type="datetime-local"
+    <Group spacing="xs" grow noWrap>
+      <DateTimeInput
+        name={props.name + '.start'}
         placeholder="Start"
         defaultValue={value?.start}
         onChange={(newValue) => setValueWrapper({ ...value, start: newValue })}
       />
-      <Input
-        type="datetime-local"
+      <DateTimeInput
+        name={props.name + '.end'}
         placeholder="End"
         defaultValue={value?.end}
         onChange={(newValue) => setValueWrapper({ ...value, end: newValue })}
       />
-    </InputRow>
+    </Group>
   );
 }

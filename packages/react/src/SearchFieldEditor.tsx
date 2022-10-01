@@ -1,7 +1,6 @@
+import { Button, Modal } from '@mantine/core';
 import { globalSchema, SearchRequest, stringify, TypeSchema } from '@medplum/core';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
-import { Dialog } from './Dialog';
 import { buildFieldNameString } from './SearchUtils';
 
 interface SearchFieldEditorProps {
@@ -167,7 +166,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     .sort();
 
   return (
-    <Dialog title="Fields" visible={props.visible} onOk={() => props.onOk(state.search)} onCancel={props.onCancel}>
+    <Modal title="Fields" closeButtonLabel="Close" opened={props.visible} onClose={props.onCancel}>
       <div>
         <table style={{ margin: 'auto' }}>
           <thead>
@@ -221,22 +220,22 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           <tfoot>
             <tr>
               <td align="center">
-                <Button size="small" onClick={onAddField}>
+                <Button compact variant="outline" onClick={onAddField}>
                   Add
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onRemoveField}>
+                <Button compact variant="outline" onClick={onRemoveField}>
                   Remove
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onMoveUp}>
+                <Button compact variant="outline" onClick={onMoveUp}>
                   Up
                 </Button>
               </td>
               <td align="center">
-                <Button size="small" onClick={onMoveDown}>
+                <Button compact variant="outline" onClick={onMoveDown}>
                   Down
                 </Button>
               </td>
@@ -244,7 +243,8 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
           </tfoot>
         </table>
       </div>
-    </Dialog>
+      <Button onClick={() => props.onOk(state.search)}>OK</Button>
+    </Modal>
   );
 }
 

@@ -9,7 +9,7 @@ import {
   parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
-import { Binary, Bundle, BundleEntry, OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import { Binary, Bundle, BundleEntry, OperationOutcome, Resource, UserConfiguration } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -90,13 +90,26 @@ export class MockClient extends MedplumClient {
   }
 
   getProfile(): ProfileResource {
+    return DrAliceSmith;
+  }
+
+  getUserConfiguration(): UserConfiguration | undefined {
     return {
-      resourceType: 'Practitioner',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    } as Practitioner;
+      resourceType: 'UserConfiguration',
+      menu: [
+        {
+          title: 'Favorites',
+          link: [{ name: 'Patients', target: '/Patient' }],
+        },
+        {
+          title: 'Admin',
+          link: [
+            { name: 'Project', target: '/admin/project' },
+            { name: 'Batch', target: '/batch' },
+          ],
+        },
+      ],
+    };
   }
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {

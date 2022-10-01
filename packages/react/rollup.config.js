@@ -13,8 +13,12 @@ dotenv.config();
 const extensions = ['.ts', '.tsx'];
 
 const globals = {
+  '@mantine/core': 'mantine.core',
+  '@mantine/hooks': 'mantine.hooks',
+  '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
+  '@tabler/icons': 'tabler.icons',
   react: 'React',
   'react-dom': 'ReactDOM',
   'react-router-dom': 'ReactRouterDOM',

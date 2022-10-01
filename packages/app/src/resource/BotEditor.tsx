@@ -1,10 +1,12 @@
+import { Button } from '@mantine/core';
 import { Bot, OperationOutcome } from '@medplum/fhirtypes';
-import { Button, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import React, { useRef } from 'react';
 import { toast } from 'react-toastify';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
+
 import './BotEditor.css';
 
 export interface BotEditorProps {

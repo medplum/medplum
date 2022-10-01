@@ -38,7 +38,7 @@ describe('CreateClientPage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -57,13 +57,13 @@ describe('CreateClientPage', () => {
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Client' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
-      fireEvent.change(screen.getByTestId('redirectUri'), {
+      fireEvent.change(screen.getByLabelText('Redirect URI'), {
         target: { value: 'https://example.com/' },
       });
     });
@@ -72,7 +72,7 @@ describe('CreateClientPage', () => {
       fireEvent.click(screen.getByText('Create Client'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Client created')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
@@ -82,18 +82,18 @@ describe('CreateClientPage', () => {
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Client' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
-      fireEvent.change(screen.getByTestId('redirectUri'), {
+      fireEvent.change(screen.getByLabelText('Redirect URI'), {
         target: { value: 'https://example.com/' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -105,7 +105,10 @@ describe('CreateClientPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -116,6 +119,6 @@ describe('CreateClientPage', () => {
       fireEvent.click(screen.getByText('Create Client'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Client created')).toBeInTheDocument();
   });
 });

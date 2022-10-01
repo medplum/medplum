@@ -1,12 +1,11 @@
+import { Button, Group, Stack, Text, TextInput } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Button } from '../Button';
 import { Form } from '../Form';
-import { FormSection } from '../FormSection';
-import { Input } from '../Input';
 import { Logo } from '../Logo';
 import { useMedplum } from '../MedplumProvider';
+import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
   login: string;
@@ -36,29 +35,24 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         <Logo size={32} />
         <h1>Create project</h1>
       </div>
-      <FormSection title="Project Name" htmlFor="projectName" outcome={outcome}>
-        <Input
+      <Stack spacing="xl">
+        <TextInput
           name="projectName"
-          type="text"
-          testid="projectName"
+          label="Project Name"
           placeholder="My Project"
           required={true}
-          outcome={outcome}
+          autoFocus={true}
+          error={getErrorsForInput(outcome, 'firstName')}
         />
-      </FormSection>
-      <p style={{ fontSize: '12px', color: '#888' }}>
-        By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
-        {' and '}
-        <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
-      </p>
-      <div className="medplum-signin-buttons">
-        <div />
-        <div>
-          <Button type="submit" testid="submit">
-            Create project
-          </Button>
-        </div>
-      </div>
+        <Text color="dimmed" size="xs">
+          By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
+          {' and '}
+          <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
+        </Text>
+      </Stack>
+      <Group position="right" mt="xl" noWrap>
+        <Button type="submit">Create project</Button>
+      </Group>
     </Form>
   );
 }

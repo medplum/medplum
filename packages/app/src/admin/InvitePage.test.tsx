@@ -38,7 +38,7 @@ describe('InvitePage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -58,13 +58,13 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email'), {
         target: { value: 'george@example.com' },
       });
     });
@@ -83,18 +83,18 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email'), {
         target: { value: 'george@example.com' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -106,7 +106,10 @@ describe('InvitePage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {

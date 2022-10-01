@@ -1,6 +1,7 @@
+import { Button } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Button, useMedplum } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -18,7 +19,7 @@ export function DeletePage(props: DeletePageProps): JSX.Element {
     <>
       <p>Are you sure you want to delete this {resourceType}?</p>
       <Button
-        danger={true}
+        color="red"
         onClick={() => {
           medplum
             .deleteResource(resourceType, id as string)

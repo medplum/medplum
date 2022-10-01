@@ -1,13 +1,12 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
 import { ResourceInput } from './ResourceInput';
-import { Select } from './Select';
 
 export interface ReferenceInputProps {
   name: string;
+  placeholder?: string;
   defaultValue?: Reference;
   targetTypes?: string[];
   onChange?: (value: Reference | undefined) => void;
@@ -33,27 +32,31 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
+    <Group spacing="xs" grow noWrap>
       {targetTypes ? (
-        <Select testid="reference-input-resource-type-select" defaultValue={resourceType} onChange={setResourceType}>
-          {targetTypes.map((targetType) => (
-            <option key={targetType} value={targetType}>
-              {targetType}
-            </option>
-          ))}
-        </Select>
+        <NativeSelect
+          data-testid="reference-input-resource-type-select"
+          defaultValue={resourceType}
+          onChange={(e) => setResourceType(e.currentTarget.value)}
+          data={targetTypes}
+        />
       ) : (
-        <Input testid="reference-input-resource-type-input" defaultValue={resourceType} onChange={setResourceType} />
+        <TextInput
+          data-testid="reference-input-resource-type-input"
+          defaultValue={resourceType}
+          onChange={(e) => setResourceType(e.currentTarget.value)}
+        />
       )}
       <ResourceInput
-        resourceType={resourceType as string}
+        resourceType={resourceType as ResourceType}
         name={props.name + '-id'}
+        placeholder={props.placeholder}
         defaultValue={value}
         onChange={(item: Resource | undefined) => {
           setValueHelper(item ? createReference(item) : undefined);
         }}
       />
-    </InputRow>
+    </Group>
   );
 }
 

@@ -50,7 +50,7 @@ describe('Scheduler', () => {
     });
 
     // Expect the 15th to be available
-    const dayButton = screen.getByText('15');
+    const dayButton = screen.getByRole('button', { name: '15' });
     expect((dayButton as HTMLButtonElement).disabled).toBe(false);
     await act(async () => {
       fireEvent.click(dayButton);

@@ -1,16 +1,21 @@
-import { getReferenceString } from '@medplum/core';
-import { ErrorBoundary, FooterLinks, Header, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, useMantineTheme } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { ErrorBoundary, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Slide, ToastContainer } from 'react-toastify';
+import { AppHeader } from './AppHeader';
+import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
+import { Loading } from './components/Loading';
+
 import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './App.css';
 
 export function App(): JSX.Element {
-  const navigate = useNavigate();
+  const theme = useMantineTheme();
+  const [navbarOpen, { toggle }] = useDisclosure(false);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
@@ -29,28 +34,23 @@ export function App(): JSX.Element {
         draggable
         pauseOnHover
       />
-      {profile && (
-        <Header
-          onLogo={() => navigate('/')}
-          onProfile={() => navigate(`/${getReferenceString(profile)}`)}
-          onSignOut={() => {
-            medplum.signOut();
-            navigate('/signin');
-          }}
-          config={medplum.getUserConfiguration()}
-        />
-      )}
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <AppRoutes />
-        </Suspense>
-      </ErrorBoundary>
-      {!profile && (
-        <FooterLinks>
-          <a href="https://www.medplum.com/terms">Terms</a>
-          <a href="https://www.medplum.com/privacy">Privacy</a>
-        </FooterLinks>
-      )}
+      <AppShell
+        styles={{
+          main: {
+            background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
+          },
+        }}
+        padding={0}
+        fixed={true}
+        navbar={(profile && navbarOpen && <AppNavbar />) as React.ReactElement | undefined}
+        header={profile && <AppHeader navbarToggle={toggle} />}
+      >
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>
+            <AppRoutes />
+          </Suspense>
+        </ErrorBoundary>
+      </AppShell>
     </>
   );
 }

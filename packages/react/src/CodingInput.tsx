@@ -1,50 +1,49 @@
-import { Coding, ElementDefinition, ValueSet, ValueSetExpansion, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React from 'react';
-import { Autocomplete } from './Autocomplete';
-import { CodingDisplay } from './CodingDisplay';
-import { useMedplum } from './MedplumProvider';
+import { Coding, ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import React, { useState } from 'react';
+import { ValueSetAutocomplete } from './ValueSetAutocomplete';
 
 export interface CodingInputProps {
   property: ElementDefinition;
   name: string;
+  placeholder?: string;
   defaultValue?: Coding;
   onChange?: (value: Coding) => void;
 }
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
-  const medplum = useMedplum();
+  const [value, setValue] = useState<Coding | undefined>(props.defaultValue);
 
-  let defaultValue = undefined;
-  if (props.defaultValue) {
-    defaultValue = [props.defaultValue];
+  function handleChange(newValue: ValueSetExpansionContains): void {
+    const newConcept = valueSetElementToCoding(newValue);
+    setValue(newConcept);
+    if (props.onChange) {
+      props.onChange(newConcept);
+    }
   }
 
   return (
-    <Autocomplete
-      loadOptions={(input: string): Promise<Coding[]> => {
-        const system = props.property.binding?.valueSet as string;
-        return medplum.searchValueSet(system, input).then((valueSet: ValueSet) => {
-          return ((valueSet.expansion as ValueSetExpansion).contains as ValueSetExpansionContains[]).map(
-            (e) =>
-              ({
-                system: e.system,
-                code: e.code,
-                display: e.display,
-              } as Coding)
-          );
-        });
-      }}
-      buildUnstructured={(str: string) => ({ code: str })}
-      getId={(item: Coding) => item.code as string}
-      getDisplay={(item: Coding) => <CodingDisplay value={item} />}
+    <ValueSetAutocomplete
+      property={props.property}
       name={props.name}
-      defaultValue={defaultValue}
-      loadOnFocus={true}
-      onChange={(values: Coding[]) => {
-        if (props.onChange) {
-          props.onChange(values[0]);
-        }
-      }}
+      placeholder={props.placeholder}
+      defaultValue={value && codingToValueSetElement(value)}
+      onChange={handleChange}
     />
   );
+}
+
+function codingToValueSetElement(coding: Coding): ValueSetExpansionContains {
+  return {
+    system: coding.system,
+    code: coding.code,
+    display: coding.display,
+  };
+}
+
+function valueSetElementToCoding(element: ValueSetExpansionContains): Coding {
+  return {
+    system: element.system,
+    code: element.code,
+    display: element.display,
+  };
 }

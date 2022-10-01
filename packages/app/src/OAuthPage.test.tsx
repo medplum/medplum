@@ -48,19 +48,19 @@ describe('OAuthPage', () => {
     );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password *'), {
         target: { value: 'password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
     await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
@@ -71,7 +71,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
   });
 
@@ -79,7 +79,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
   });
 });

@@ -1,8 +1,7 @@
+import { Group, TextInput } from '@mantine/core';
 import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 import { ContactPointInput } from './ContactPointInput';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
 
 export interface ContactDetailInputProps {
   name: string;
@@ -40,19 +39,20 @@ export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element 
   }
 
   return (
-    <InputRow>
-      <Input
+    <Group spacing="xs" grow noWrap>
+      <TextInput
+        data-testid={props.name + '-name'}
         name={props.name + '-name'}
         placeholder="Name"
         style={{ width: 180 }}
         defaultValue={contactPoint?.name}
-        onChange={setName}
+        onChange={(e) => setName(e.currentTarget.value)}
       />
       <ContactPointInput
         name={props.name + '-telecom'}
         defaultValue={contactPoint?.telecom?.[0]}
         onChange={setTelecom}
       />
-    </InputRow>
+    </Group>
   );
 }

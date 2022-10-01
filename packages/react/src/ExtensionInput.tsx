@@ -1,7 +1,7 @@
+import { JsonInput } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { Extension } from '@medplum/fhirtypes';
 import React from 'react';
-import { TextArea } from './TextArea';
 
 export interface ExtensionInputProps {
   name: string;
@@ -11,12 +11,12 @@ export interface ExtensionInputProps {
 
 export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
   return (
-    <TextArea
-      testid="extension-input"
+    <JsonInput
+      id={props.name}
       name={props.name}
+      data-testid="extension-input"
       defaultValue={stringify(props.defaultValue)}
-      monospace={true}
-      onChange={(newValue: string) => {
+      onChange={(newValue) => {
         if (props.onChange) {
           props.onChange(JSON.parse(newValue));
         }

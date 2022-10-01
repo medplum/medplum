@@ -247,7 +247,7 @@ describe('QuestionnaireForm', () => {
     [QuestionnaireItemType.time, 'time', '12:01:01'],
     [QuestionnaireItemType.string, 'text', 'hello'],
     [QuestionnaireItemType.text, 'textarea', 'lorem ipsum'],
-    [QuestionnaireItemType.url, 'url', 'https://example.com/'],
+    [QuestionnaireItemType.url, 'text', 'https://example.com/'],
     [QuestionnaireItemType.quantity, 'number', '123'],
   ]).test('%s question', async (propertyType: QuestionnaireItemType, inputType: string, value: string) => {
     await setup({
@@ -453,6 +453,7 @@ describe('QuestionnaireForm', () => {
       resourceType: 'QuestionnaireResponse',
       questionnaire: 'Questionnaire/' + questionnaire.id,
       source: {
+        display: 'Alice Smith',
         reference: 'Practitioner/123',
       },
       item: [

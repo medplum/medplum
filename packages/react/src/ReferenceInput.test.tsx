@@ -1,5 +1,5 @@
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
@@ -20,7 +20,7 @@ describe('ReferenceInput', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -87,6 +87,7 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       targetTypes: ['Patient', 'Practitioner'],
+      placeholder: 'Test',
     });
 
     // Select "Patient" resource type
@@ -94,7 +95,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -106,14 +107,17 @@ describe('ReferenceInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
   });
 
   test('Call onChange', async () => {
@@ -122,6 +126,7 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
       targetTypes: ['Patient', 'Practitioner'],
+      placeholder: 'Test',
       onChange,
     });
 
@@ -130,7 +135,7 @@ describe('ReferenceInput', () => {
       fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -142,16 +147,17 @@ describe('ReferenceInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
-
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
 });

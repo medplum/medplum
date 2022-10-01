@@ -1,3 +1,4 @@
+import { Button, Checkbox, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -24,20 +25,17 @@ import {
 } from '@medplum/fhirtypes';
 import React, { ChangeEvent, useEffect, useState } from 'react';
 import { AttachmentInput } from './AttachmentInput';
-import { Button } from './Button';
-import { Checkbox } from './Checkbox';
 import { CheckboxFormSection } from './CheckboxFormSection';
 import { DateTimeInput } from './DateTimeInput';
 import { Form } from './Form';
 import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { QuantityInput } from './QuantityInput';
 import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
-import { TextArea } from './TextArea';
 import { useResource } from './useResource';
+
 import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
@@ -99,9 +97,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.item && (
         <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
       )}
-      <Button type="submit" size="large">
-        {props.submitButtonText || 'OK'}
-      </Button>
+      <Button type="submit">{props.submitButtonText || 'OK'}</Button>
     </Form>
   );
 }
@@ -148,13 +144,14 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           return (
             <CheckboxFormSection key={item.linkId} title={item.text} htmlFor={item.linkId}>
               <Checkbox
+                id={item.linkId}
                 name={item.linkId}
-                defaultValue={initial?.valueBoolean}
-                onChange={(newValue) =>
+                defaultChecked={initial?.valueBoolean}
+                onChange={(e) =>
                   setResponseItem(index, {
                     linkId: item.linkId,
                     text: item.text,
-                    answer: [{ valueBoolean: newValue }],
+                    answer: [{ valueBoolean: e.currentTarget.checked }],
                   })
                 }
               />
@@ -225,82 +222,79 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.boolean:
       return (
         <Checkbox
+          id={name}
           name={name}
-          defaultValue={initial?.valueBoolean}
-          onChange={(newValue) => onChangeAnswer({ valueBoolean: newValue })}
+          defaultChecked={initial?.valueBoolean}
+          onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
         />
       );
     case QuestionnaireItemType.decimal:
       return (
-        <Input
+        <TextInput
           type="number"
           step="any"
+          id={name}
           name={name}
           defaultValue={initial?.valueDecimal}
-          onChange={(newValue) => onChangeAnswer({ valueDecimal: parseFloat(newValue) })}
+          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber })}
         />
       );
     case QuestionnaireItemType.integer:
       return (
-        <Input
+        <TextInput
           type="number"
           step={1}
+          id={name}
           name={name}
           defaultValue={initial?.valueInteger}
-          onChange={(newValue) => onChangeAnswer({ valueInteger: parseInt(newValue) })}
+          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber })}
         />
       );
     case QuestionnaireItemType.date:
       return (
-        <Input
+        <TextInput
           type="date"
+          id={name}
           name={name}
           defaultValue={initial?.valueDate}
-          onChange={(newValue) => onChangeAnswer({ valueDate: newValue })}
+          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.dateTime:
       return (
         <DateTimeInput
-          type="datetime-local"
           name={name}
           defaultValue={initial?.valueDateTime}
-          onChange={(newValue) => onChangeAnswer({ valueDateTime: newValue })}
+          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
         />
       );
     case QuestionnaireItemType.time:
       return (
-        <Input
+        <TextInput
           type="time"
+          id={name}
           name={name}
           defaultValue={initial?.valueTime}
-          onChange={(newValue) => onChangeAnswer({ valueTime: newValue })}
+          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.string:
+    case QuestionnaireItemType.url:
       return (
-        <Input
-          type="text"
+        <TextInput
+          id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.text:
       return (
-        <TextArea
+        <Textarea
+          id={name}
           name={name}
           defaultValue={initial?.valueString}
-          onChange={(newValue) => onChangeAnswer({ valueString: newValue })}
-        />
-      );
-    case QuestionnaireItemType.url:
-      return (
-        <Input
-          type="url"
-          name={name}
-          defaultValue={initial?.valueUri}
-          onChange={(newValue) => onChangeAnswer({ valueUri: newValue })}
+          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
         />
       );
     case QuestionnaireItemType.attachment:
@@ -352,13 +346,23 @@ interface QuestionnaireChoiceInputProps {
 
 function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial } = props;
-  const valueElementDefinition = globalSchema.types['QuestionnaireItemAnswerOption'].properties['value[x]'];
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
     | undefined;
 
+  const data = [''];
+  if (item.answerOption) {
+    for (const option of item.answerOption) {
+      const optionValue = getTypedPropertyValue(
+        { type: 'QuestionnaireItemAnswerOption', value: option },
+        'value'
+      ) as TypedValue;
+      data.push(typedValueToString(optionValue) as string);
+    }
+  }
+
   return (
-    <select
+    <NativeSelect
       id={name}
       name={name}
       className="medplum-select"
@@ -376,31 +380,23 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
-    >
-      <option></option>
-      {item.answerOption &&
-        item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-          const optionValue = getTypedPropertyValue(
-            { type: 'QuestionnaireItemAnswerOption', value: option },
-            'value'
-          ) as TypedValue;
-          const optionName = `${name}-option-${index}`;
-          return (
-            <option
-              key={optionName}
-              value={optionValue.value}
-              selected={initialValue && stringify(optionValue) === stringify(initialValue)}
-            >
-              <ResourcePropertyDisplay
-                property={valueElementDefinition}
-                propertyType={optionValue.type as PropertyType}
-                value={optionValue.value}
-              />
-            </option>
-          );
-        })}
-    </select>
+      defaultValue={typedValueToString(initialValue)}
+      data={data}
+    />
   );
+}
+
+function typedValueToString(typedValue: TypedValue | undefined): string | undefined {
+  if (!typedValue) {
+    return undefined;
+  }
+  if (typedValue.type === 'CodeableConcept') {
+    return typedValue.value.coding[0].display;
+  }
+  if (typedValue.type === 'Coding') {
+    return typedValue.value.display;
+  }
+  return typedValue.value.toString();
 }
 
 function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {

@@ -1,17 +1,14 @@
+import { Button, NativeSelect, TextInput } from '@mantine/core';
 import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference } from '@medplum/fhirtypes';
+import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
 import { Form } from './Form';
-import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { setPropertyValue } from './ResourceForm';
 import { ResourceInput } from './ResourceInput';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
-import { Select } from './Select';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
 
@@ -67,9 +64,11 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   return (
     <div className="medplum-questionnaire-builder">
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
-        <FormSection title="Plan Title" htmlFor="title">
-          <Input defaultValue={value.title} onChange={(newValue) => changeProperty('title', newValue)} />
-        </FormSection>
+        <TextInput
+          label="Plan Title"
+          defaultValue={value.title}
+          onChange={(e) => changeProperty('title', e.currentTarget.value)}
+        />
         <ActionArrayBuilder
           actions={value.action || []}
           selectedKey={selectedKey}
@@ -78,9 +77,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
           setHoverKey={setHoverKey}
           onChange={(x) => changeProperty('action', x)}
         />
-        <Button type="submit" size="large">
-          Save
-        </Button>
+        <Button type="submit">Save</Button>
       </Form>
     </div>
   );
@@ -260,33 +257,26 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
   return (
     <>
-      <FormSection title="Title" htmlFor={`actionTitle-${action.id}`}>
-        <Input
-          name={`actionTitle-${action.id}`}
-          defaultValue={action.title}
-          onChange={(newValue) => changeProperty('title', newValue)}
-        />
-      </FormSection>
-      <FormSection title="Description" htmlFor={`actionDescription-${action.id}`}>
-        <Input
-          name={`actionDescription-${action.id}`}
-          defaultValue={action.description}
-          onChange={(newValue) => changeProperty('description', newValue)}
-        />
-      </FormSection>
-      <FormSection
-        title="Type of Action"
+      <TextInput
+        name={`actionTitle-${action.id}`}
+        label="Title"
+        defaultValue={action.title}
+        onChange={(e) => changeProperty('title', e.currentTarget.value)}
+      />
+      <TextInput
+        name={`actionDescription-${action.id}`}
+        label="Description"
+        defaultValue={action.description}
+        onChange={(e) => changeProperty('description', e.currentTarget.value)}
+      />
+      <NativeSelect
+        label="Type of Action"
         description="The type of the action to be performed."
-        htmlFor={`actionType-${action.id}`}
-      >
-        <Select name={`actionType-${action.id}`} defaultValue={actionType} onChange={setActionType}>
-          <option></option>
-          <option value="appointment">Appointment</option>
-          <option value="lab">Lab</option>
-          <option value="questionnaire">Questionnaire</option>
-          <option value="task">Task</option>
-        </Select>
-      </FormSection>
+        name={`actionType-${action.id}`}
+        defaultValue={actionType}
+        onChange={(e) => setActionType(e.currentTarget.value)}
+        data={['', 'appointment', 'lab', 'questionnaire', 'task']}
+      />
       {action.action && action.action.length > 0 && (
         <ActionArrayBuilder
           actions={action.action}
@@ -343,9 +333,9 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
             return null;
         }
       })()}
-      <FormSection title="Timing" description="When the action should take place." htmlFor={'timing-' + action.id}>
-        <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
-      </FormSection>
+      <p>Timing</p>
+      <p>When the action should take place.</p>
+      <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
     </>
   );
 }
@@ -354,7 +344,7 @@ interface ActionResourceTypeBuilderProps {
   action: PlanDefinitionAction;
   title: string;
   description: string;
-  resourceType: string;
+  resourceType: ResourceType;
   onChange: (action: PlanDefinitionAction) => void;
 }
 
@@ -364,21 +354,19 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
     ? { reference: definitionCanonical }
     : undefined;
   return (
-    <FormSection title={props.title} description={props.description} htmlFor={id}>
-      <ResourceInput
-        name={id as string}
-        resourceType={props.resourceType}
-        defaultValue={reference}
-        loadOnFocus={true}
-        onChange={(newValue) => {
-          if (newValue) {
-            props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
-          } else {
-            props.onChange({ ...props.action, definitionCanonical: undefined });
-          }
-        }}
-      />
-    </FormSection>
+    <ResourceInput
+      name={id as string}
+      resourceType={props.resourceType}
+      defaultValue={reference}
+      loadOnFocus={true}
+      onChange={(newValue) => {
+        if (newValue) {
+          props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
+        } else {
+          props.onChange({ ...props.action, definitionCanonical: undefined });
+        }
+      }}
+    />
   );
 }
 

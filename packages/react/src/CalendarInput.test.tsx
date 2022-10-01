@@ -15,8 +15,7 @@ describe('CalendarInput', () => {
   test('Disabled days', () => {
     const onClick = jest.fn();
     render(<CalendarInput slots={[]} onChangeMonth={jest.fn()} onClick={onClick} />);
-    expect(screen.getByText('4')).toBeDefined();
-    expect((screen.queryByText('4') as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole('button', { name: '4' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
   test('Change months', async () => {
@@ -67,7 +66,7 @@ describe('CalendarInput', () => {
     expect(screen.getByText(getMonthString(nextMonth))).toBeDefined();
 
     // Expect the 15th to be available
-    const dayButton = screen.getByText('15');
+    const dayButton = screen.getByRole('button', { name: '15' });
     expect((dayButton as HTMLButtonElement).disabled).toBe(false);
 
     await act(async () => {

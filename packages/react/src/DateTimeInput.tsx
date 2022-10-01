@@ -1,6 +1,16 @@
+import { TextInput } from '@mantine/core';
 import { isValidDate } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import React from 'react';
-import { Input, InputProps } from './Input';
+import { getErrorsForInput } from './utils/outcomes';
+
+export interface DateTimeInputProps {
+  name?: string;
+  placeholder?: string;
+  defaultValue?: string;
+  outcome?: OperationOutcome;
+  onChange?: (value: string) => void;
+}
 
 /**
  * The DateTimeInput component is a wrapper around the HTML5 input type="datetime-local".
@@ -10,14 +20,19 @@ import { Input, InputProps } from './Input';
  * @param props The Input props.
  * @returns The JSX element to render.
  */
-export function DateTimeInput(props: InputProps): JSX.Element {
+export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
   return (
-    <Input
-      {...props}
-      type="datetime-local"
-      defaultValue={convertIsoToLocal(props.defaultValue as string | undefined)}
-      onChange={(newValue: string) => {
+    <TextInput
+      id={props.name}
+      name={props.name}
+      data-testid={props.name}
+      placeholder={props.placeholder}
+      type={getInputType()}
+      defaultValue={convertIsoToLocal(props.defaultValue)}
+      error={getErrorsForInput(props.outcome, props.name)}
+      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
         if (props.onChange) {
+          const newValue = e.currentTarget.value;
           props.onChange(convertLocalToIso(newValue));
         }
       }}
@@ -67,4 +82,13 @@ export function convertLocalToIso(localString: string | undefined): string {
   }
 
   return date.toISOString();
+}
+
+/**
+ * Returns the input type for the requested type.
+ * JSDOM does not support many of the valid <input> type attributes.
+ * For example, it won't fire change events for <input type="datetime-local">.
+ */
+function getInputType(): string {
+  return process.env.NODE_ENV === 'test' ? 'text' : 'datetime-local';
 }

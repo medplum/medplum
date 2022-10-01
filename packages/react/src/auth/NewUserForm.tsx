@@ -1,13 +1,11 @@
+import { Button, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { Button } from '../Button';
 import { Form } from '../Form';
-import { FormSection } from '../FormSection';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton';
-import { Input } from '../Input';
 import { useMedplum } from '../MedplumProvider';
-import { getIssuesForExpression } from '../utils/outcomes';
+import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
 export interface NewUserFormProps {
@@ -62,7 +60,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       )}
       {googleClientId && (
         <>
-          <div className="medplum-signin-google-container">
+          <Group position="center" p="xl" style={{ height: 70 }}>
             <GoogleButton
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
@@ -79,66 +77,59 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
                 }
               }}
             />
-          </div>
-          <div className="medplum-signin-separator">or</div>
+          </Group>
+          <Divider label="or" labelPosition="center" my="lg" />
         </>
       )}
-      <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
-        <Input
+      <Stack spacing="xl">
+        <TextInput
           name="firstName"
           type="text"
-          testid="firstName"
+          label="First name"
           placeholder="First name"
           required={true}
           autoFocus={true}
-          outcome={outcome}
+          error={getErrorsForInput(outcome, 'firstName')}
         />
-      </FormSection>
-      <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-        <Input
+        <TextInput
           name="lastName"
           type="text"
-          testid="lastName"
+          label="Last name"
           placeholder="Last name"
           required={true}
-          outcome={outcome}
+          error={getErrorsForInput(outcome, 'lastName')}
         />
-      </FormSection>
-      <FormSection title="Email" htmlFor="email" outcome={outcome}>
-        <Input
+        <TextInput
           name="email"
           type="email"
-          testid="email"
+          label="Email"
           placeholder="name@domain.com"
           required={true}
-          outcome={outcome}
+          error={getErrorsForInput(outcome, 'email')}
         />
-      </FormSection>
-      <FormSection title="Password" htmlFor="password" outcome={outcome}>
-        <Input name="password" type="password" testid="password" autoComplete="off" required={true} outcome={outcome} />
-      </FormSection>
-      <p style={{ fontSize: '12px', color: '#888' }}>
-        By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
-        {' and '}
-        <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
-      </p>
-      <p style={{ fontSize: '12px', color: '#888' }}>
-        This site is protected by reCAPTCHA and the Google{' '}
-        <a href="https://policies.google.com/privacy">Privacy&nbsp;Policy</a>
-        {' and '}
-        <a href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</a> apply.
-      </p>
-      <div className="medplum-signin-buttons">
-        <div>
-          <input type="checkbox" id="remember" name="remember" value="true" />
-          <label htmlFor="remember">Remember me</label>
-        </div>
-        <div>
-          <Button type="submit" testid="submit">
-            Create account
-          </Button>
-        </div>
-      </div>
+        <PasswordInput
+          name="password"
+          label="Password"
+          autoComplete="off"
+          required={true}
+          error={getErrorsForInput(outcome, 'password')}
+        />
+        <Text color="dimmed" size="xs">
+          By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
+          {' and '}
+          <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
+        </Text>
+        <Text color="dimmed" size="xs">
+          This site is protected by reCAPTCHA and the Google{' '}
+          <a href="https://policies.google.com/privacy">Privacy&nbsp;Policy</a>
+          {' and '}
+          <a href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</a> apply.
+        </Text>
+      </Stack>
+      <Group position="apart" mt="xl" noWrap>
+        <Checkbox name="remember" label="Remember me" size="xs" />
+        <Button type="submit">Create account</Button>
+      </Group>
     </Form>
   );
 }

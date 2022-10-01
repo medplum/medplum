@@ -42,6 +42,19 @@ export const Practitioner = (): JSX.Element => (
   </Document>
 );
 
+export const ServiceRequest = (): JSX.Element => (
+  <Document>
+    <ResourceForm
+      defaultValue={{
+        resourceType: 'ServiceRequest',
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const DiagnosticReport = (): JSX.Element => (
   <Document>
     <ResourceForm
@@ -103,6 +116,9 @@ export const Questionnaire = (): JSX.Element => (
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
+      }}
+      onDelete={(formData: any) => {
+        console.log('delete', formData);
       }}
     />
   </Document>

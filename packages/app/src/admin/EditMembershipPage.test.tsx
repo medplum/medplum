@@ -37,7 +37,7 @@ describe('EditMembershipPage', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
@@ -60,7 +60,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
@@ -70,7 +70,7 @@ describe('EditMembershipPage', () => {
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     // There are 2 autocompletes.  Access policy is the first.
-    const input = screen.getAllByTestId('input-element')[0] as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -82,7 +82,10 @@ describe('EditMembershipPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -93,7 +96,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with user configuration', async () => {
@@ -103,7 +106,7 @@ describe('EditMembershipPage', () => {
     expect(screen.getByText('Save')).toBeInTheDocument();
 
     // There are 2 autocompletes.  User configuration is the second.
-    const input = screen.getAllByTestId('input-element')[1] as HTMLInputElement;
+    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -115,7 +118,10 @@ describe('EditMembershipPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -126,7 +132,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Submit with admin', async () => {
@@ -137,7 +143,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+    const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
     await act(async () => {
       fireEvent.click(input);
@@ -147,7 +153,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
 
     expect(medplumPostSpy).toHaveBeenCalledWith(
       `admin/projects/123/members/456`,
@@ -165,7 +171,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    const input = screen.getByTestId('admin-checkbox') as HTMLInputElement;
+    const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
     // Click once to set admin
     await act(async () => {
@@ -181,7 +187,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
 
     expect(medplumPostSpy).toHaveBeenCalledWith(
       `admin/projects/123/members/456`,
@@ -202,7 +208,7 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Remove user'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('User updated')).toBeInTheDocument();
   });
 
   test('Remove user reject confirm', async () => {

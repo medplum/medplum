@@ -171,7 +171,7 @@ describe('SignInForm', () => {
 
   test('Renders', async () => {
     await setup();
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
+    const input = screen.getByText('Sign in') as HTMLButtonElement;
     expect(input.innerHTML).toBe('Sign in');
   });
 
@@ -183,19 +183,19 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -211,19 +211,19 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => expect(code).toBeDefined());
@@ -235,19 +235,19 @@ describe('SignInForm', () => {
     expect(medplum.getProfile()).toBeUndefined();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -263,19 +263,19 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'multiple@medplum.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
@@ -300,25 +300,27 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), { target: { value: 'newproject@example.com' } });
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'newproject@example.com' },
+      });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), { target: { value: 'newproject' } });
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), { target: { value: 'newproject' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
-    await waitFor(() => screen.getByLabelText('Project Name'));
+    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Project Name'), { target: { value: 'My Project' } });
+      fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
     });
 
     expect(success).toBe(true);
@@ -328,19 +330,19 @@ describe('SignInForm', () => {
     await setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'not-found@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => screen.getByTestId('text-field-error'));
@@ -353,19 +355,19 @@ describe('SignInForm', () => {
     await setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'not-found@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Sign in'));
     });
 
     await waitFor(() => expect(screen.getByTestId('text-field-error')).toBeInTheDocument());
@@ -383,7 +385,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
 
     expect(props.onForgotPassword).toBeCalled();
@@ -398,7 +400,7 @@ describe('SignInForm', () => {
     await setup(props);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
 
     expect(props.onRegister).toBeCalled();

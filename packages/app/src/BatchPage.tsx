@@ -1,5 +1,6 @@
+import { Button, JsonInput } from '@mantine/core';
 import { Bundle } from '@medplum/fhirtypes';
-import { Button, Document, Form, TextArea, useMedplum } from '@medplum/react';
+import { Document, Form, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 const DEFAULT_VALUE = `{
@@ -39,7 +40,7 @@ export function BatchPage(): JSX.Element {
           medplum.executeBatch(JSON.parse(formData.input)).then(setOutput).catch(console.log);
         }}
       >
-        <TextArea name="input" testid="batch-input" defaultValue={DEFAULT_VALUE} monospace={true} />
+        <JsonInput data-testid="batch-input" name="input" defaultValue={DEFAULT_VALUE} />
         <Button type="submit">Submit</Button>
       </Form>
       {output && (

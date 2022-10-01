@@ -1,18 +1,16 @@
+import { Button, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
-import { Button } from './Button';
 import { Form } from './Form';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { QuestionnaireFormItem } from './QuestionnaireForm';
 import { isChoiceQuestion, QuestionnaireItemType } from './QuestionnaireUtils';
 import { getValueAndType } from './ResourcePropertyDisplay';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
-import { Select } from './Select';
-import { TextArea } from './TextArea';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
+
 import './QuestionnaireBuilder.css';
 
 export interface QuestionnaireBuilderProps {
@@ -65,9 +63,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setHoverKey={setHoverKey}
           onChange={setValue}
         />
-        <Button type="submit" size="large">
-          Save
-        </Button>
+        <Button type="submit">Save</Button>
       </Form>
     </div>
   );
@@ -141,37 +137,42 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         <>
           {isResource && (
             <div>
-              <Input defaultValue={resource.title} onChange={(newValue) => changeProperty('title', newValue)} />
+              <TextInput
+                defaultValue={resource.title}
+                onChange={(e) => changeProperty('title', e.currentTarget.value)}
+              />
             </div>
           )}
           {!isContainer && (
             <div>
-              <Select defaultValue={item.type} onChange={(newValue) => changeProperty('type', newValue)}>
-                <option value="display">Display</option>
-                <optgroup label="Question">
-                  <option value="boolean">Boolean</option>
-                  <option value="decimal">Decimal</option>
-                  <option value="integer">Integer</option>
-                  <option value="date">Date</option>
-                  <option value="dateTime">Date/Time</option>
-                  <option value="time">Time</option>
-                  <option value="string">String</option>
-                  <option value="text">Text</option>
-                  <option value="url">URL</option>
-                  <option value="choice">Choice</option>
-                  <option value="open-choice">Open Choice</option>
-                  <option value="attachment">Attachment</option>
-                  <option value="reference">Reference</option>
-                  <option value="quantity">Quantity</option>
-                </optgroup>
-              </Select>
+              <NativeSelect
+                defaultValue={item.type}
+                onChange={(e) => changeProperty('type', e.currentTarget.value)}
+                data={[
+                  { value: 'display', label: 'Display' },
+                  { value: 'boolean', label: 'Boolean' },
+                  { value: 'decimal', label: 'Decimal' },
+                  { value: 'integer', label: 'Integer' },
+                  { value: 'date', label: 'Date' },
+                  { value: 'dateTime', label: 'Date/Time' },
+                  { value: 'time', label: 'Time' },
+                  { value: 'string', label: 'String' },
+                  { value: 'text', label: 'Text' },
+                  { value: 'url', label: 'URL' },
+                  { value: 'choice', label: 'Choice' },
+                  { value: 'open-choice', label: 'Open Choice' },
+                  { value: 'attachment', label: 'Attachment' },
+                  { value: 'reference', label: 'Reference' },
+                  { value: 'quantity', label: 'Quantity' },
+                ]}
+              />
             </div>
           )}
           {!isResource && (
-            <TextArea
+            <Textarea
               style={{ width: '95%', height: '100px', minHeight: '100px', margin: '8px 4px 4px 4px' }}
               defaultValue={item.text}
-              onChange={(newValue) => changeProperty('text', newValue)}
+              onChange={(e) => changeProperty('text', e.currentTarget.value)}
             />
           )}
           {isChoiceQuestion(item) && (
@@ -205,7 +206,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       {!isContainer && (
         <div className="top-actions">
           {editing ? (
-            <Input defaultValue={item.linkId} onChange={(newValue) => changeProperty('linkId', newValue)} size={4} />
+            <TextInput defaultValue={item.linkId} onChange={(e) => changeProperty('linkId', e.currentTarget.value)} />
           ) : (
             <div>{linkId}</div>
           )}

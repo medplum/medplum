@@ -3,18 +3,18 @@ import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { Avatar, AvatarProps } from './Avatar';
 import { MedplumProvider } from './MedplumProvider';
+import { ResourceAvatar, ResourceAvatarProps } from './ResourceAvatar';
 
 const medplum = new MockClient();
 
-describe('Avatar', () => {
-  async function setup(args: AvatarProps): Promise<void> {
+describe('ResourceAvatar', () => {
+  async function setup(args: ResourceAvatarProps): Promise<void> {
     await act(async () => {
       render(
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>
-            <Avatar {...args} />
+            <ResourceAvatar {...args} />
           </MedplumProvider>
         </MemoryRouter>
       );
@@ -28,12 +28,12 @@ describe('Avatar', () => {
 
   test('Avatar renders system', async () => {
     await setup({ value: { reference: 'system' } });
-    expect(screen.getByText('S')).toBeDefined();
+    expect(screen.getByTitle('System')).toBeDefined();
   });
 
   test('Avatar renders initials', async () => {
     await setup({ alt: 'Homer Simpson' });
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByTitle('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders resource directly', async () => {
@@ -41,9 +41,9 @@ describe('Avatar', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders resource directly as link', async () => {
@@ -52,9 +52,9 @@ describe('Avatar', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 
   test('Avatar renders after loading the resource', async () => {
@@ -62,8 +62,8 @@ describe('Avatar', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByTestId('avatar'));
+    await waitFor(() => screen.getByAltText('Homer Simpson'));
 
-    expect(screen.getByTestId('avatar')).toBeDefined();
+    expect(screen.getByAltText('Homer Simpson')).toBeDefined();
   });
 });

@@ -1,5 +1,6 @@
+import { Button, TextInput } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
+import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -35,28 +36,35 @@ export function InvitePage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
-              <Input
+              <TextInput
+                id="firstName"
                 name="firstName"
                 type="text"
-                testid="firstName"
                 required={true}
                 autoFocus={true}
-                onChange={setFirstName}
-                outcome={outcome}
+                onChange={(e) => setFirstName(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'firstName')}
               />
             </FormSection>
             <FormSection title="Last Name" htmlFor="lastName" outcome={outcome}>
-              <Input
+              <TextInput
+                id="lastName"
                 name="lastName"
                 type="text"
-                testid="lastName"
                 required={true}
-                onChange={setLastName}
-                outcome={outcome}
+                onChange={(e) => setLastName(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'lastName')}
               />
             </FormSection>
             <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <Input name="email" type="email" testid="email" required={true} onChange={setEmail} outcome={outcome} />
+              <TextInput
+                id="email"
+                name="email"
+                type="email"
+                required={true}
+                onChange={(e) => setEmail(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'email')}
+              />
             </FormSection>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
@@ -64,9 +72,7 @@ export function InvitePage(): JSX.Element {
             <div className="medplum-signin-buttons">
               <div></div>
               <div>
-                <Button type="submit" testid="submit">
-                  Invite
-                </Button>
+                <Button type="submit">Invite</Button>
               </div>
             </div>
           </>

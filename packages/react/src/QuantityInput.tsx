@@ -1,8 +1,6 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 export interface QuantityInputProps {
   name: string;
@@ -21,48 +19,45 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Select
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
         style={{ width: 80 }}
-        testid={props.name + '-comparator'}
+        data-testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
-        onChange={(newValue) =>
+        data={['', '<', '<=', '>=', '>']}
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            comparator: newValue as '<' | '<=' | '>=' | '>',
+            comparator: e.currentTarget.value as '<' | '<=' | '>=' | '>',
           })
         }
-      >
-        <option></option>
-        <option>&lt;</option>
-        <option>&lt;=</option>
-        <option>&gt;=</option>
-        <option>&gt;</option>
-      </Select>
-      <Input
+      />
+      <TextInput
+        id={props.name}
         name={props.name}
+        data-testid={props.name}
         type="number"
         step="any"
         placeholder="Value"
         defaultValue={value?.value?.toString()}
-        onChange={(newValue) =>
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            value: tryParseNumber(newValue),
+            value: tryParseNumber(e.currentTarget.value),
           })
         }
       />
-      <Input
+      <TextInput
         placeholder="Unit"
         defaultValue={value?.unit}
-        onChange={(newValue) =>
+        onChange={(e) =>
           setValueWrapper({
             ...value,
-            unit: newValue,
+            unit: e.currentTarget.value,
           })
         }
       />
-    </InputRow>
+    </Group>
   );
 }
 

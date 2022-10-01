@@ -1,8 +1,6 @@
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
-import { Select } from './Select';
 
 export interface ContactPointInputProps {
   name: string;
@@ -51,26 +49,26 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Select defaultValue={contactPoint?.system} onChange={setSystem as (system: string) => void} testid="system">
-        <option></option>
-        <option>email</option>
-        <option>fax</option>
-        <option>pager</option>
-        <option>phone</option>
-        <option>other</option>
-        <option>sms</option>
-        <option>url</option>
-      </Select>
-      <Select defaultValue={contactPoint?.use} onChange={setUse as (use: string) => void} testid="use">
-        <option></option>
-        <option>home</option>
-        <option>mobile</option>
-        <option>old</option>
-        <option>temp</option>
-        <option>work</option>
-      </Select>
-      <Input placeholder="Value" defaultValue={contactPoint?.value} onChange={setValue} />
-    </InputRow>
+    <Group spacing="xs" grow noWrap>
+      <NativeSelect
+        data-testid="system"
+        defaultValue={contactPoint?.system}
+        onChange={(e) =>
+          setSystem(e.currentTarget.value as 'url' | 'phone' | 'fax' | 'email' | 'pager' | 'sms' | 'other')
+        }
+        data={['', 'email', 'phone', 'fax', 'pager', 'sms', 'other']}
+      />
+      <NativeSelect
+        data-testid="use"
+        defaultValue={contactPoint?.use}
+        onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'mobile')}
+        data={['', 'home', 'work', 'temp', 'old', 'mobile']}
+      />
+      <TextInput
+        placeholder="Value"
+        defaultValue={contactPoint?.value}
+        onChange={(e) => setValue(e.currentTarget.value)}
+      />
+    </Group>
   );
 }

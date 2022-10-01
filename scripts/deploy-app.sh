@@ -22,13 +22,11 @@ aws s3 cp dist/ s3://app.medplum.com/ \
 
 aws s3 cp dist/service-worker.js s3://app.medplum.com/ \
   --region us-east-1 \
-  --recursive \
   --content-type "application/javascript" \
   --cache-control "no-cache"
 
 aws s3 cp dist/service-worker.js.map s3://app.medplum.com/ \
   --region us-east-1 \
-  --recursive \
   --content-type "application/json" \
   --cache-control "no-cache"
 

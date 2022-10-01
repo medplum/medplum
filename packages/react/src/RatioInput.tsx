@@ -1,6 +1,6 @@
+import { Group } from '@mantine/core';
 import { Ratio } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { InputRow } from './InputRow';
 import { QuantityInput } from './QuantityInput';
 
 export interface RatioInputProps {
@@ -26,7 +26,7 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
+    <Group spacing="xs" grow noWrap>
       <QuantityInput
         name={props.name + '-numerator'}
         defaultValue={value?.numerator}
@@ -47,6 +47,6 @@ export function RatioInput(props: RatioInputProps): JSX.Element {
           })
         }
       />
-    </InputRow>
+    </Group>
   );
 }

@@ -1,10 +1,9 @@
+import { Button, Group, TextInput } from '@mantine/core';
 import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from './BackboneElementInput';
-import { Button } from './Button';
 import { FormSection } from './FormSection';
-import { Input } from './Input';
 import { useMedplum } from './MedplumProvider';
 import { useResource } from './useResource';
 
@@ -43,11 +42,11 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         }
       }}
     >
-      <FormSection title="Resource Type">
-        <Input name="resourceType" defaultValue={value.resourceType} disabled={true} />
+      <FormSection title="Resource Type" htmlFor="resourceType" outcome={props.outcome}>
+        <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
       </FormSection>
-      <FormSection title="ID">
-        <Input name="id" defaultValue={value.id} disabled={true} />
+      <FormSection title="ID" htmlFor="id" outcome={props.outcome}>
+        <TextInput name="id" defaultValue={value.id} disabled={true} />
       </FormSection>
       <BackboneElementInput
         typeName={value.resourceType}
@@ -55,20 +54,21 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         outcome={props.outcome}
         onChange={setValue}
       />
-      <Button type="submit" size="large">
-        OK
-      </Button>
-      {props.onDelete && (
-        <Button
-          type="button"
-          size="large"
-          onClick={() => {
-            (props.onDelete as (resource: Resource) => void)(value);
-          }}
-        >
-          Delete
-        </Button>
-      )}
+      <Group>
+        <Button type="submit">OK</Button>
+        {props.onDelete && (
+          <Button
+            variant="outline"
+            color="red"
+            type="button"
+            onClick={() => {
+              (props.onDelete as (resource: Resource) => void)(value);
+            }}
+          >
+            Delete
+          </Button>
+        )}
+      </Group>
     </form>
   );
 }

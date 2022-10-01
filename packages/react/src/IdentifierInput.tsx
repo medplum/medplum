@@ -1,7 +1,6 @@
+import { Group, TextInput } from '@mantine/core';
 import { Identifier } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Input } from './Input';
-import { InputRow } from './InputRow';
 
 export interface IdentifierInputProps {
   name: string;
@@ -20,17 +19,17 @@ export function IdentifierInput(props: IdentifierInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
-      <Input
+    <Group spacing="xs" grow noWrap>
+      <TextInput
         placeholder="System"
         defaultValue={value?.system}
-        onChange={(newValue) => setValueWrapper({ ...value, system: newValue })}
+        onChange={(e) => setValueWrapper({ ...value, system: e.currentTarget.value })}
       />
-      <Input
+      <TextInput
         placeholder="Value"
         defaultValue={value?.value}
-        onChange={(newValue) => setValueWrapper({ ...value, value: newValue })}
+        onChange={(e) => setValueWrapper({ ...value, value: e.currentTarget.value })}
       />
-    </InputRow>
+    </Group>
   );
 }

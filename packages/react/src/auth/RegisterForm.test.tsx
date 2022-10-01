@@ -160,37 +160,37 @@ describe('RegisterForm', () => {
     expect(screen.getByText('My Register Form')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'First' } });
+      fireEvent.change(screen.getByLabelText('First Name', { exact: false }), { target: { value: 'First' } });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('lastName'), { target: { value: 'Last' } });
+      fireEvent.change(screen.getByLabelText('Last Name', { exact: false }), { target: { value: 'Last' } });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'new-user@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'new-password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Create account'));
     });
 
-    await waitFor(() => screen.getByTestId('projectName'));
+    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('projectName'), { target: { value: 'My Project' } });
+      fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
@@ -210,30 +210,30 @@ describe('RegisterForm', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), { target: { value: 'First' } });
+      fireEvent.change(screen.getByLabelText('First Name', { exact: false }), { target: { value: 'First' } });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('lastName'), { target: { value: 'Last' } });
+      fireEvent.change(screen.getByLabelText('Last Name', { exact: false }), { target: { value: 'Last' } });
     });
 
     expect(screen.queryByTestId('projectName')).toBeNull();
     expect(screen.queryByText('Project Name')).toBeNull();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'new-user@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'new-password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByText('Create account'));
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());

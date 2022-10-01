@@ -1,5 +1,6 @@
+import { Button, Checkbox } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
-import { Button, Checkbox, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
+import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getProjectId } from '../utils';
@@ -62,19 +63,22 @@ export function EditMembershipPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
-              <Checkbox name="admin" testid="admin-checkbox" defaultValue={admin} onChange={setAdmin} />
+              <Checkbox
+                id="admin"
+                name="admin"
+                defaultChecked={admin}
+                onChange={(e) => setAdmin(e.currentTarget.checked)}
+              />
             </FormSection>
             <div className="medplum-signin-buttons">
               <div></div>
               <div>
-                <Button type="submit" testid="submit">
-                  Save
-                </Button>
+                <Button type="submit">Save</Button>
               </div>
             </div>
             <hr />
             <div style={{ textAlign: 'right' }}>
-              <Button type="button" testid="remove-user" danger={true} onClick={deleteMembership}>
+              <Button type="button" color="red" onClick={deleteMembership}>
                 Remove user
               </Button>
             </div>

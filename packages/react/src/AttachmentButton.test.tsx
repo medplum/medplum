@@ -1,32 +1,29 @@
+import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
+import { AttachmentButton } from './AttachmentButton';
 import { MedplumProvider } from './MedplumProvider';
-import { UploadButton, UploadButtonProps } from './UploadButton';
 
 const medplum = new MockClient();
 
-describe('UploadButton', () => {
-  const setup = (args?: UploadButtonProps): void => {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <UploadButton onUpload={(attachment) => console.log('upload', attachment)} {...args} />
-      </MedplumProvider>
-    );
+describe('AttachmentButton', () => {
+  const setup = (children: React.ReactNode): void => {
+    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   };
 
   test('Null files', async () => {
     const results: Attachment[] = [];
 
-    setup({
-      onUpload: (attachment: Attachment) => {
-        results.push(attachment);
-      },
-    });
+    setup(
+      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('upload-file-input'), { target: {} });
+      fireEvent.change(screen.getByText('Upload'), { target: {} });
     });
 
     expect(results.length).toEqual(0);
@@ -35,14 +32,14 @@ describe('UploadButton', () => {
   test('Null file element', async () => {
     const results: Attachment[] = [];
 
-    setup({
-      onUpload: (attachment: Attachment) => {
-        results.push(attachment);
-      },
-    });
+    setup(
+      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
+      fireEvent.change(screen.getByText('Upload'), {
         target: { files: [null] },
       });
     });
@@ -53,14 +50,14 @@ describe('UploadButton', () => {
   test('File without filename', async () => {
     const results: Attachment[] = [];
 
-    setup({
-      onUpload: (attachment: Attachment) => {
-        results.push(attachment);
-      },
-    });
+    setup(
+      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
+      fireEvent.change(screen.getByText('Upload'), {
         target: { files: [{}] },
       });
     });
@@ -71,11 +68,11 @@ describe('UploadButton', () => {
   test('Upload media', async () => {
     const results: Attachment[] = [];
 
-    setup({
-      onUpload: (attachment: Attachment) => {
-        results.push(attachment);
-      },
-    });
+    setup(
+      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
       const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
@@ -90,21 +87,21 @@ describe('UploadButton', () => {
   test('Click button', async () => {
     const results: Attachment[] = [];
 
-    setup({
-      onUpload: (attachment: Attachment) => {
-        results.push(attachment);
-      },
-    });
+    setup(
+      <AttachmentButton onUpload={(attachment: Attachment) => results.push(attachment)}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('upload-button'));
+      fireEvent.click(screen.getByText('Upload'));
     });
   });
 
   test('Error handling', async () => {
     window.alert = jest.fn();
 
-    setup();
+    setup(<AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
 
     await act(async () => {
       const files = [new File(['exe'], 'hello.exe', { type: 'application/exe' })];
@@ -117,10 +114,9 @@ describe('UploadButton', () => {
   });
 
   test('Custom text', async () => {
-    setup({
-      children: 'My button',
-      onUpload: jest.fn(),
-    });
+    setup(
+      <AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>My button</Button>}</AttachmentButton>
+    );
 
     expect(screen.getByText('My button')).toBeInTheDocument();
   });

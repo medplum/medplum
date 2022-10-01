@@ -13,93 +13,21 @@
   white-space: nowrap;
 }
 
-/*
- * Table styles
- */
-
-.medplum-search-control > table {
-  width: 100%;
-  clear: both;
-  border-top: 0.1px solid var(--medplum-gray-300);
-  border-collapse: collapse;
-}
-
-.medplum-search-control > table tr {
-  border-bottom: 0.1px solid var(--medplum-gray-300);
-}
-
 .medplum-search-control > table td,
 .medplum-search-control > table th {
-  padding: 7px 10px;
   cursor: pointer;
-}
-
-.medplum-search-control > table td.c {
-  text-align: center;
-}
-
-.medplum-search-control > table td.r {
-  text-align: right;
-}
-
-/* Header cells */
-
-.medplum-search-control > table thead th {
-  text-align: left;
-  background-color: var(--medplum-blue-50);
-  white-space: nowrap;
-  color: var(--medplum-gray-700);
-  border: 0.1px solid var(--medplum-gray-300);
-  position: relative;
-}
-
-.medplum-search-control > table thead th:hover {
-  background-color: var(--medplum-blue-200);
-}
-
-.medplum-search-control > table thead th.filters {
-  background-color: var(--medplum-gray-100);
-  text-align: center;
-  color: var(--medplum-gray-600);
-}
-
-.medplum-search-control > table thead th svg {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 14px;
-  height: 14px;
 }
 
 /* Body cells */
 
-.medplum-search-control > table tbody tr {
-  background-color: var(--medplum-surface);
-}
-
-.medplum-search-control > table tbody tr.high-priority {
-  background-color: var(--medplum-gray-300);
-}
-
-.medplum-search-control > table tbody tr.duplicate {
-  background-color: var(--medplum-gray-100);
-}
-
 .medplum-search-control > table tbody tr:hover {
-  background-color: var(--medplum-yellow-100);
-}
-
-.medplum-search-control > table tbody td {
-  color: var(--medplum-gray-800);
-  border-right: 0.1px solid var(--medplum-gray-100);
+  background-color: var(--medplum-gray-50);
 }
 
 .medplum-search-control .medplum-empty-search {
-  background: var(--medplum-gray-100);
-  border: 0.1px solid var(--medplum-gray-300);
   color: var(--medplum-gray-500);
   text-align: center;
-  padding: 40px;
+  padding: 60px;
   font-size: var(--medplum-font-big);
 }
 

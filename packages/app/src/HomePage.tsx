@@ -1,3 +1,4 @@
+import { Paper } from '@mantine/core';
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
@@ -8,10 +9,11 @@ import {
   SortRule,
 } from '@medplum/core';
 import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { Loading } from './components/Loading';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
@@ -44,53 +46,55 @@ export function HomePage(): JSX.Element {
   }
 
   return (
-    <MemoizedSearchControl
-      checkboxesEnabled={true}
-      search={search}
-      userConfig={medplum.getUserConfiguration()}
-      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
-      onChange={(e) => {
-        navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
-      }}
-      onNew={
-        canCreate(search.resourceType)
-          ? () => {
-              navigate(`/${search.resourceType}/new`);
-            }
-          : undefined
-      }
-      onExport={() => {
-        const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
-        medplum
-          .download(url)
-          .then((blob) => {
-            window.open(window.URL.createObjectURL(blob), '_blank');
-          })
-          .catch((err) => toast.error(normalizeErrorString(err)));
-      }}
-      onDelete={(ids: string[]) => {
-        if (window.confirm('Are you sure you want to delete these resources?')) {
-          medplum.invalidateSearches(search.resourceType as ResourceType);
-          medplum
-            .executeBatch({
-              resourceType: 'Bundle',
-              type: 'batch',
-              entry: ids.map((id) => ({
-                request: {
-                  method: 'DELETE',
-                  url: `${search.resourceType}/${id}`,
-                },
-              })),
-            })
-            .then(() => setSearch({ ...search }))
-            .catch((err) => toast.error(normalizeErrorString(err)));
+    <Paper shadow="xs" m="md" p="xs">
+      <MemoizedSearchControl
+        checkboxesEnabled={true}
+        search={search}
+        userConfig={medplum.getUserConfiguration()}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
+        onChange={(e) => {
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+        }}
+        onNew={
+          canCreate(search.resourceType)
+            ? () => {
+                navigate(`/${search.resourceType}/new`);
+              }
+            : undefined
         }
-      }}
-      onBulk={(ids: string[]) => {
-        navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
-      }}
-    />
+        onExport={() => {
+          const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
+          medplum
+            .download(url)
+            .then((blob) => {
+              window.open(window.URL.createObjectURL(blob), '_blank');
+            })
+            .catch((err) => toast.error(normalizeErrorString(err)));
+        }}
+        onDelete={(ids: string[]) => {
+          if (window.confirm('Are you sure you want to delete these resources?')) {
+            medplum.invalidateSearches(search.resourceType as ResourceType);
+            medplum
+              .executeBatch({
+                resourceType: 'Bundle',
+                type: 'batch',
+                entry: ids.map((id) => ({
+                  request: {
+                    method: 'DELETE',
+                    url: `${search.resourceType}/${id}`,
+                  },
+                })),
+              })
+              .then(() => setSearch({ ...search }))
+              .catch((err) => toast.error(normalizeErrorString(err)));
+          }
+        }}
+        onBulk={(ids: string[]) => {
+          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+        }}
+      />
+    </Paper>
   );
 }
 

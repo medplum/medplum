@@ -1,9 +1,10 @@
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
-import { HeaderSearchInput, HeaderSearchInputProps } from './HeaderSearchInput';
-import { MedplumProvider } from './MedplumProvider';
+import { MemoryRouter } from 'react-router-dom';
+import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();
 medplum.graphql = jest.fn((query: string) => {
@@ -75,11 +76,13 @@ medplum.graphql = jest.fn((query: string) => {
   return Promise.resolve({ data });
 });
 
-function setup(args: HeaderSearchInputProps): void {
+function setup(): void {
   render(
-    <MedplumProvider medplum={medplum}>
-      <HeaderSearchInput {...args} />
-    </MedplumProvider>
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <HeaderSearchInput />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 }
 
@@ -89,27 +92,21 @@ describe('HeaderSearchInput', () => {
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
   });
 
   test('Renders empty', () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
-    expect(screen.getByTestId('autocomplete')).toBeInTheDocument();
+    setup();
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Use autocomplete', async () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
+    setup();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -121,23 +118,23 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
   });
 
   test('Search by UUID', async () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
+    setup();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "00000000-0000-0000-0000-000000000000"
     await act(async () => {
@@ -149,25 +146,23 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
   });
 
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {
-    const onChange = jest.fn();
+    setup();
 
-    setup({
-      name: 'foo',
-      onChange,
-    });
-
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter the search term
     // Can be patient name, patient identifier, or service request identifier
@@ -180,23 +175,23 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(onChange).toHaveBeenCalled();
+    // expect(onChange).toHaveBeenCalled();
   });
 
   test('Sort by relevance', async () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
+    setup();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {
@@ -208,7 +203,10 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // There should only be 5 results displayed
     const elements = screen.getAllByText('__Many__');
@@ -216,12 +214,9 @@ describe('HeaderSearchInput', () => {
   });
 
   test('Max results', async () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
+    setup();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "many"
     await act(async () => {
@@ -233,7 +228,10 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // There should only be 5 results displayed
     const elements = screen.getAllByText('__Many__');
@@ -241,12 +239,9 @@ describe('HeaderSearchInput', () => {
   });
 
   test('Empty strings', async () => {
-    setup({
-      name: 'foo',
-      onChange: jest.fn(),
-    });
+    setup();
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "empty"
     await act(async () => {
@@ -258,7 +253,10 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     expect(screen.getByText('Patient/emptyPatient')).toBeInTheDocument();
     expect(screen.getByText('ServiceRequest/emptyServiceRequest')).toBeInTheDocument();

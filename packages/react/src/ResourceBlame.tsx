@@ -1,10 +1,11 @@
+import { Group } from '@mantine/core';
 import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
-import { InputRow } from './InputRow';
 import { MedplumLink } from './MedplumLink';
 import { useMedplum } from './MedplumProvider';
 import { ResourceBadge } from './ResourceBadge';
 import { blame } from './utils/blame';
+
 import './ResourceBlame.css';
 
 export interface ResourceBlameProps {
@@ -37,12 +38,12 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element {
             <tr key={'row-' + index} className={row.span > 0 ? 'start-row' : 'normal-row'}>
               {row.span > 0 && (
                 <td className="details" rowSpan={row.span}>
-                  <InputRow justifyContent="space-between">
-                    <ResourceBadge value={row.meta.author} size="xsmall" link={true} />
+                  <Group spacing="xs" grow noWrap>
+                    <ResourceBadge value={row.meta.author} link={true} />
                     <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
                       {getTimeString(row.meta.lastUpdated as string)}
                     </MedplumLink>
-                  </InputRow>
+                  </Group>
                 </td>
               )}
               <td className="line-number">{index + 1}</td>

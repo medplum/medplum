@@ -6,4 +6,6 @@
   padding: 12px;
 }
 
-.grecaptcha-badge { visibility: hidden; }
+.grecaptcha-badge {
+  visibility: hidden;
+}

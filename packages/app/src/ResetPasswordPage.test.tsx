@@ -33,23 +33,22 @@ describe('ResetPasswordPage', () => {
 
   test('Renders', () => {
     setup();
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Reset password');
+    expect(screen.getByRole('button', { name: 'Reset password' })).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Email sent')).toBeInTheDocument();
   });
 });

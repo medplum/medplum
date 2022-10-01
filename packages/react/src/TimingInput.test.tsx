@@ -31,7 +31,7 @@ describe('TimingInput', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Cancel'));
+      fireEvent.click(screen.getByLabelText('Close'));
     });
 
     expect(onChange).not.toHaveBeenCalled();

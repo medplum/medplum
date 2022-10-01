@@ -1,7 +1,7 @@
+import { Button, Modal } from '@mantine/core';
 import { Filter } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Dialog } from './Dialog';
 import { Form } from './Form';
 import { SearchFilterValueInput } from './SearchFilterValueInput';
 
@@ -28,7 +28,7 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
   }
 
   return (
-    <Dialog title={props.title} visible={props.visible} onOk={onOk} onCancel={props.onCancel}>
+    <Modal title={props.title} size="xl" opened={props.visible} onClose={props.onCancel}>
       <div style={{ width: 500 }}>
         <Form onSubmit={onOk}>
           <SearchFilterValueInput
@@ -40,6 +40,7 @@ export function SearchFilterValueDialog(props: SearchFilterValueDialogProps): JS
           />
         </Form>
       </div>
-    </Dialog>
+      <Button onClick={onOk}>OK</Button>
+    </Modal>
   );
 }

@@ -1,6 +1,6 @@
+import { Group } from '@mantine/core';
 import { Range } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { InputRow } from './InputRow';
 import { QuantityInput } from './QuantityInput';
 
 export interface RangeInputProps {
@@ -26,7 +26,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
   }
 
   return (
-    <InputRow>
+    <Group spacing="xs" grow noWrap>
       <QuantityInput
         name={props.name + '-low'}
         defaultValue={value?.low}
@@ -47,6 +47,6 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
           })
         }
       />
-    </InputRow>
+    </Group>
   );
 }
