@@ -16,7 +16,7 @@ import {
   TablerIcon,
 } from '@tabler/icons';
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 const useStyles = createStyles((theme, _params, getRef) => {
   const icon = getRef('icon');
@@ -72,11 +72,25 @@ const useStyles = createStyles((theme, _params, getRef) => {
   };
 });
 
-export function AppNavbar(): JSX.Element {
+export interface AppNavbarProps {
+  closeNavbar: () => void;
+}
+
+export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
   const { classes, cx } = useStyles();
+  const navigate = useNavigate();
   const context = useMedplumContext();
   const profile = context.profile;
   const config = context.medplum.getUserConfiguration();
+
+  function onLinkClick(e: React.SyntheticEvent, to: string): void {
+    e.stopPropagation();
+    e.preventDefault();
+    navigate(to);
+    if (window.innerWidth < 768) {
+      closeNavbar();
+    }
+  }
 
   return (
     <Navbar width={{ sm: 250 }} p="xs">
@@ -88,6 +102,7 @@ export function AppNavbar(): JSX.Element {
               <NavLink
                 key={link.name}
                 to={link.target as string}
+                onClick={(e) => onLinkClick(e, link.target as string)}
                 className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
               >
                 <NavLinkIcon to={link.target as string} className={classes.linkIcon} />

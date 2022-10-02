@@ -52,11 +52,11 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-interface HeaderTabsProps {
+interface AppHeaderProps {
   navbarToggle: () => void;
 }
 
-export function AppHeader({ navbarToggle }: HeaderTabsProps): JSX.Element {
+export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
   const context = useMedplumContext();
   const medplum = context.medplum;
   const profile = context.profile as ProfileResource;
