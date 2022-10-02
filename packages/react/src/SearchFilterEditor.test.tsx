@@ -162,7 +162,7 @@ describe('SearchFilterEditor', () => {
         value: 'Organization/456',
       },
     ]);
-  }, 10000);
+  });
 
   test('Delete filter', async () => {
     let currSearch: SearchRequest = {
