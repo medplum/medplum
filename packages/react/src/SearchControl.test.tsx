@@ -242,6 +242,7 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
+        count: 1,
         filters: [
           {
             code: 'name',
@@ -268,6 +269,7 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
+        count: 1,
         filters: [
           {
             code: 'name',
@@ -291,6 +293,8 @@ describe('SearchControl', () => {
     const props = {
       search: {
         resourceType: 'Patient',
+        count: 1,
+        offset: 1,
         filters: [
           {
             code: 'name',
