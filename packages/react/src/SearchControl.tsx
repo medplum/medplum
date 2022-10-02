@@ -444,7 +444,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           No results
         </div>
       )}
-      {lastResult?.total && (
+      {lastResult?.total !== undefined && lastResult.total > 0 && (
         <Center m="md" p="md">
           <Pagination
             page={getPage(search)}
