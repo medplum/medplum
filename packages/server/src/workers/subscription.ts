@@ -10,7 +10,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
@@ -38,6 +38,7 @@ export interface SubscriptionJobData {
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
+let queueScheduler: QueueScheduler | undefined = undefined;
 let queue: Queue<SubscriptionJobData> | undefined = undefined;
 let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
@@ -50,6 +51,8 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config,
   };
+
+  queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
   queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
@@ -73,6 +76,11 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
  * Clsoes the BullMQ worker.
  */
 export async function closeSubscriptionWorker(): Promise<void> {
+  if (queueScheduler) {
+    await queueScheduler.close();
+    queueScheduler = undefined;
+  }
+
   if (queue) {
     await queue.close();
     queue = undefined;
