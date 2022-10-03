@@ -1,4 +1,15 @@
-import { Button, Center, createStyles, Group, Loader, Menu, Table, Text, UnstyledButton } from '@mantine/core';
+import {
+  Button,
+  Center,
+  createStyles,
+  Group,
+  Loader,
+  Menu,
+  Pagination,
+  Table,
+  Text,
+  UnstyledButton,
+} from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, Filter, formatSearchQuery, globalSchema, SearchRequest } from '@medplum/core';
 import {
   Bundle,
@@ -25,7 +36,7 @@ import { SearchFilterEditor } from './SearchFilterEditor';
 import { SearchFilterValueDialog } from './SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
-import { addFilter, buildFieldNameString, getOpString, movePage, renderValue } from './SearchUtils';
+import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
 import { isCheckboxCell, killEvent } from './utils/dom';
 
 import './SearchControl.css';
@@ -328,24 +339,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
                 {lastResult.total?.toLocaleString()}
               </span>
-              <Button
-                compact
-                variant="outline"
-                color={buttonColor}
-                aria-label="Previous page"
-                onClick={() => emitSearchChange(movePage(search, -1))}
-              >
-                &lt;&lt;
-              </Button>
-              <Button
-                compact
-                variant="outline"
-                color={buttonColor}
-                aria-label="Next page"
-                onClick={() => emitSearchChange(movePage(search, 1))}
-              >
-                &gt;&gt;
-              </Button>
             </Group>
           )}
         </Group>
@@ -451,6 +444,25 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           No results
         </div>
       )}
+      {lastResult?.total !== undefined && lastResult.total > 0 && (
+        <Center m="md" p="md">
+          <Pagination
+            page={getPage(search)}
+            total={getTotalPages(search, lastResult.total)}
+            onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
+            getItemAriaLabel={(page) => {
+              switch (page) {
+                case 'prev':
+                  return 'Previous page';
+                case 'next':
+                  return 'Next page';
+                default:
+                  return undefined;
+              }
+            }}
+          />
+        </Center>
+      )}
       {outcome && (
         <div data-testid="search-error" className="medplum-empty-search">
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
@@ -540,6 +552,15 @@ function FilterDescription(props: FilterDescriptionProps): JSX.Element {
       ))}
     </>
   );
+}
+
+function getPage(search: SearchRequest): number {
+  return Math.floor((search.offset || 0) / (search.count || DEFAULT_SEARCH_COUNT)) + 1;
+}
+
+function getTotalPages(search: SearchRequest, total: number): number {
+  const pageSize = search.count || DEFAULT_SEARCH_COUNT;
+  return Math.ceil(total / pageSize);
 }
 
 function getStart(search: SearchRequest, total: number): number {

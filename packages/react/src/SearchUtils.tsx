@@ -1,5 +1,6 @@
 import {
   capitalize,
+  DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   Filter,
   formatDateTime,
@@ -381,16 +382,15 @@ export function setOffset(definition: SearchRequest, offset: number): SearchRequ
 }
 
 /**
- * Moves the page forward or backward.
- *
- * @param {number} delta The delta to the page number.
- * @return {boolean} True if the page actually moved; false otherwise.
+ * Creates a new search request with the search offset at the specified page.
+ * @param definition The search definition.
+ * @param page The new page number
+ * @return The new search definition.
  */
-export function movePage(definition: SearchRequest, delta: number): SearchRequest {
-  const count = definition.count ?? 20;
-  const currOffset = definition.offset ?? 0;
-  const newOffset = currOffset + delta * count;
-  return setOffset(definition, Math.max(newOffset, 0));
+export function setPage(definition: SearchRequest, page: number): SearchRequest {
+  const count = definition.count ?? DEFAULT_SEARCH_COUNT;
+  const newOffset = (page - 1) * count;
+  return setOffset(definition, newOffset);
 }
 
 /**
