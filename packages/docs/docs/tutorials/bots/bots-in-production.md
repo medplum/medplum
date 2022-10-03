@@ -27,7 +27,7 @@ Clone the repo and install the dependencies
 ```bash
 git clone git@github.com:medplum/medplum-demo-bots.git my-bots
 cd my-bots
-npm ci
+npm install
 ```
 
 ## Create a source file
@@ -83,10 +83,14 @@ This runs the `tsc` compiler to translate your Typescript code to Javascript.
 Next, take a look at your `dist/` directory and notice how there is now a file called `my-first-bot.js` with the compiled version of your code.
 
 ```bash
+cd ..
 ls dist
-### ...
-### dist/my-first-bot.js
-### ....
+
+# my-first-bot.d.ts
+# my-first-bot.js
+# my-first-bot.js.map
+# examples/
+# ...
 
 ```
 
@@ -139,9 +143,10 @@ export MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
 Alternatively, you can create a `.env` file to avoid having to re-export the environment variables in every new terminal. The example repository has a `.env.example` file you can copy to get started.
 
 ```bash
-# shell
 cp .env.example .env
+```
 
+```bash
 # .env
 MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
 MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
@@ -171,10 +176,22 @@ Where `<bot-name>` is the `name` property that you set for your bot in `medplum.
 npx medplum deploy-bot my-first-bot
 ```
 
-Running this command:
+Running this command does two things:
 
 1. Save the Typescript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
 2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
+
+:::caution Note
+There is a known timing issue with the `deploy-bot` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
+
+```
+Deploy error: {
+resourceType: 'OperationOutcome',
+issue: [ { severity: 'error', code: 'invalid', details: [Object] } ]
+}
+```
+
+:::
 
 ## Deploying to Staging vs. Production
 
@@ -224,3 +241,5 @@ npx medplum deploy-bot my-first-bot-production
 This pattern is especially powerful when deploying Bots **as part of a CI pipeline**.
 
 ## Conclusion
+
+As your Bots become more complex, integrating them into your software development workflow becomes crucial. Using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) allows you do integrate Bots into your regular code review process and deploy as part of your CI/CD pipelines.
