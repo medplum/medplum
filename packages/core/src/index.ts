@@ -4,6 +4,7 @@ export * from './fhirpath';
 export * from './format';
 export * from './hl7';
 export * from './jwt';
+export * from './match';
 export * from './outcomes';
 export * from './readablepromise';
 export * from './search';

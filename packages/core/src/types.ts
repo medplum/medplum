@@ -208,7 +208,6 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
 
 /**
  * Indexes PropertySchema from an ElementDefinition.
- * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
  */
 function indexProperty(element: ElementDefinition): void {
@@ -226,10 +225,18 @@ function indexProperty(element: ElementDefinition): void {
   typeSchema.properties[key] = element;
 }
 
+export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
+  for (const entry of bundle.entry as BundleEntry[]) {
+    const resource = entry.resource as SearchParameter;
+    if (resource.resourceType === 'SearchParameter') {
+      indexSearchParameter(resource);
+    }
+  }
+}
+
 /**
  * Indexes a SearchParameter resource for fast lookup.
  * Indexes by SearchParameter.code, which is the query string parameter name.
- * @param schema The output IndexedStructureDefinition.
  * @param searchParam The SearchParameter resource.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {

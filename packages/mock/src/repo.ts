@@ -1,4 +1,4 @@
-import { badRequest, deepClone, evalFhirPath, Filter, notFound, Operator, SearchRequest } from '@medplum/core';
+import { badRequest, deepClone, matchesSearchRequest, notFound, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
@@ -137,66 +137,5 @@ export class MemoryRepository {
       const v = c === 'x' ? r : (r & 0x3) | 0x8;
       return v.toString(16);
     });
-  }
-}
-
-/**
- * Determines if the resource matches the search request.
- * @param resource The resource that was created or updated.
- * @param searchRequest The subscription criteria as a search request.
- * @returns True if the resource satisfies the search request.
- */
-export function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
-  if (searchRequest.resourceType !== resource.resourceType) {
-    return false;
-  }
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      if (!matchesSearchFilter(resource, filter)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-/**
- * Determines if the resource matches the search filter.
- * @param resource The resource that was created or updated.
- * @param filter One of the filters of a subscription criteria.
- * @returns True if the resource satisfies the search filter.
- */
-function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
-  for (const filterValue of filter.value.split(',')) {
-    if (matchesSearchFilterValue(resource, filter, filterValue)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
-  const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-  const values = evalFhirPath(expression as string, resource);
-
-  switch (filter.operator) {
-    case Operator.GREATER_THAN:
-      return values.some((value) => (value as any).toString() > filterValue);
-
-    case Operator.GREATER_THAN_OR_EQUALS:
-      return values.some((value) => (value as any).toString() >= filterValue);
-
-    case Operator.LESS_THAN:
-      return values.some((value) => (value as any).toString() < filterValue);
-
-    case Operator.LESS_THAN_OR_EQUALS:
-      return values.some((value) => (value as any).toString() <= filterValue);
-
-    default: {
-      const result =
-        filterValue === '' ||
-        values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-      return filter.operator === Operator.NOT_EQUALS ? !result : result;
-    }
   }
 }
