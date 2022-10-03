@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, TextInput, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Group, Loader, Menu, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -205,11 +205,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               <Group spacing="xs" noWrap>
                 <ResourceAvatar value={sender} />
                 <TextInput name="text" ref={inputRef} placeholder="Add comment" style={{ width: 300 }} />
-                <UnstyledButton type="submit">
-                  <ActionIcon radius="xl" color="blue" variant="filled">
-                    <IconMessage size={16} />
-                  </ActionIcon>
-                </UnstyledButton>
+                <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
+                  <IconMessage size={16} />
+                </ActionIcon>
                 <AttachmentButton onUpload={createMedia}>
                   {(props) => (
                     <ActionIcon {...props} radius="xl" color="blue" variant="filled">

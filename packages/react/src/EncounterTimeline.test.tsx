@@ -47,7 +47,7 @@ describe('EncounterTimeline', () => {
 
     // Enter the comment text
     await act(async () => {
-      fireEvent.change(screen.getByTestId('timeline-input'), {
+      fireEvent.change(screen.getByPlaceholderText('Add comment'), {
         target: { value: 'Test comment' },
       });
     });
