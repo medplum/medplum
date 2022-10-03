@@ -1,12 +1,26 @@
-import { Autocomplete, AutocompleteItem, Loader } from '@mantine/core';
+import { Autocomplete, AutocompleteItem, createStyles, Group, Loader, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons';
-import React, { useRef, useState } from 'react';
+import React, { forwardRef, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
+
+const useStyles = createStyles(() => {
+  return {
+    searchInput: {
+      input: {
+        width: 220,
+        transition: 'width 0.2s',
+      },
+      'input:focus': {
+        width: 400,
+      },
+    },
+  };
+});
 
 interface SearchGraphQLResponse {
   readonly data: {
@@ -17,6 +31,7 @@ interface SearchGraphQLResponse {
 }
 
 export function HeaderSearchInput(): JSX.Element {
+  const { classes } = useStyles();
   const navigate = useNavigate();
   const medplum = useMedplum();
   const [loadingPromise, setLoadingPromise] = useState<Promise<void> | undefined>();
@@ -61,10 +76,11 @@ export function HeaderSearchInput(): JSX.Element {
     <Autocomplete
       size="sm"
       radius="md"
-      style={{ width: 220 }}
+      className={classes.searchInput}
       icon={<IconSearch size={16} />}
       placeholder="Search"
       data={data}
+      itemComponent={ItemComponent}
       onChange={handleChange}
       onItemSubmit={handleSelect}
       onKeyDown={handleKeyDown}
@@ -74,6 +90,30 @@ export function HeaderSearchInput(): JSX.Element {
     />
   );
 }
+
+const ItemComponent = forwardRef<HTMLDivElement, any>(({ value, resource, ...others }: any, ref) => {
+  let helpText: string | undefined = undefined;
+
+  if (resource.resourceType === 'Patient') {
+    helpText = resource.birthDate;
+  } else if (resource.resourceType === 'ServiceRequest') {
+    helpText = resource.subject?.display;
+  }
+
+  return (
+    <div ref={ref} {...others}>
+      <Group noWrap>
+        <ResourceAvatar value={resource} />
+        <div>
+          <Text>{value}</Text>
+          <Text size="xs" color="dimmed">
+            {helpText}
+          </Text>
+        </div>
+      </Group>
+    </div>
+  );
+});
 
 function buildGraphQLQuery(input: string): string {
   const escaped = JSON.stringify(input);
