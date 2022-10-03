@@ -240,4 +240,4 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 
 ## Software Development Lifecycle
 
-Bots written using the web editor should be written in Javascript. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you can use our [**Bot CLI**](https://github.com/medplum/medplum-demo-bots).
+Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
