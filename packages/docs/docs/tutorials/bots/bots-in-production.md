@@ -104,7 +104,7 @@ Next, we need to tell the [Medplum CLI](https://github.com/medplum/medplum/tree/
 
 Open the the file `medplum.config.json` and add the following entry to the `bots` array.
 
-```json
+```js
 {
   "bots": [
     //…
@@ -127,7 +127,7 @@ Open the the file `medplum.config.json` and add the following entry to the `bots
 
 ## Setting up your Permissions
 
-Because Bots important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Medplum uses the [client credentials workflow](/docs/tutorials/security/client-credentials) authenticate the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
+Because Bots contain important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Medplum uses the [client credentials workflow](/docs/tutorials/security/client-credentials) authenticate the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
 
 First, you should create a Client Application on the Medplum Server by following [these directions](/docs/tutorials/security/client-credentials).
 
@@ -199,7 +199,7 @@ A common usage pattern is to set up two Medplum Projects for an application: A `
 
 The same Bot source code can be deployed to multiple Medplum projects by creating two separate entries in `medplum.config.json` with different names, pointing to the same source/compiled files.
 
-```json
+```js
 {
   "bots": [
     //…
