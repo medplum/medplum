@@ -32,26 +32,6 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
-  if (!searchParam) {
-    // Throw error?
-    return false;
-  }
-  for (const filterValue of filter.value.split(',')) {
-    if (matchesSearchFilterValue(resource, filter, filterValue)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- * Determines if the resource matches the search filter.
- * @param resource The resource that was created or updated.
- * @param filter One of the filters of a subscription criteria.
- * @returns True if the resource satisfies the search filter.
- */
-function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
   switch (searchParam?.type) {
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);
@@ -98,65 +78,58 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
     }
     return undefined;
   });
-  const result = values.includes(filter.value);
-  return filter.operator === Operator.NOT_EQUALS ? !result : result;
+
+  if (filter.value === '' && values.length === 0) {
+    return true;
+  }
+
+  for (const filterValue of filter.value.split(',')) {
+    const found = values.includes(filterValue);
+    if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function matchesStringFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const values = evalFhirPath(searchParam.expression as string, resource);
-  // const result = values.some((value) => JSON.stringify(value).includes(filter.value));
-  // return filter.operator === Operator.NOT_EQUALS ? !result : result;
+  for (const filterValue of filter.value.split(',')) {
+    switch (filter.operator) {
+      case Operator.GREATER_THAN:
+        if (values.some((value) => (value as any).toString() > filterValue)) {
+          return true;
+        }
+        break;
 
-  // const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-  // const values = evalFhirPath(expression as string, resource);
-  const filterValue = filter.value;
+      case Operator.GREATER_THAN_OR_EQUALS:
+        if (values.some((value) => (value as any).toString() >= filterValue)) {
+          return true;
+        }
+        break;
 
-  switch (filter.operator) {
-    case Operator.GREATER_THAN:
-      return values.some((value) => (value as any).toString() > filterValue);
+      case Operator.LESS_THAN:
+        if (values.some((value) => (value as any).toString() < filterValue)) {
+          return true;
+        }
+        break;
 
-    case Operator.GREATER_THAN_OR_EQUALS:
-      return values.some((value) => (value as any).toString() >= filterValue);
+      case Operator.LESS_THAN_OR_EQUALS:
+        if (values.some((value) => (value as any).toString() <= filterValue)) {
+          return true;
+        }
+        break;
 
-    case Operator.LESS_THAN:
-      return values.some((value) => (value as any).toString() < filterValue);
-
-    case Operator.LESS_THAN_OR_EQUALS:
-      return values.some((value) => (value as any).toString() <= filterValue);
-
-    default: {
-      const result =
-        filterValue === '' ||
-        values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-      return filter.operator === Operator.NOT_EQUALS ? !result : result;
+      default: {
+        const found =
+          filterValue === '' ||
+          values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
+        if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
+          return true;
+        }
+      }
     }
   }
+
+  return false;
 }
-
-/////
-
-// function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
-//   const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-//   const values = evalFhirPath(expression as string, resource);
-
-//   switch (filter.operator) {
-//     case Operator.GREATER_THAN:
-//       return values.some((value) => (value as any).toString() > filterValue);
-
-//     case Operator.GREATER_THAN_OR_EQUALS:
-//       return values.some((value) => (value as any).toString() >= filterValue);
-
-//     case Operator.LESS_THAN:
-//       return values.some((value) => (value as any).toString() < filterValue);
-
-//     case Operator.LESS_THAN_OR_EQUALS:
-//       return values.some((value) => (value as any).toString() <= filterValue);
-
-//     default: {
-//       const result =
-//         filterValue === '' ||
-//         values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-//       return filter.operator === Operator.NOT_EQUALS ? !result : result;
-//     }
-//   }
-// }
