@@ -264,6 +264,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const buttonVariant = 'subtle';
   const buttonColor = 'gray';
   const iconSize = 16;
+  const isMobile = window.innerWidth < 768;
 
   return (
     <div className="medplum-search-control" data-testid="search-control">
@@ -299,7 +300,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 New...
               </Button>
             )}
-            {props.onExport && (
+            {!isMobile && props.onExport && (
               <Button
                 compact
                 variant={buttonVariant}
@@ -310,7 +311,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 Export...
               </Button>
             )}
-            {props.onDelete && (
+            {!isMobile && props.onDelete && (
               <Button
                 compact
                 variant={buttonVariant}
@@ -321,7 +322,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 Delete...
               </Button>
             )}
-            {props.onBulk && (
+            {!isMobile && props.onBulk && (
               <Button
                 compact
                 variant={buttonVariant}

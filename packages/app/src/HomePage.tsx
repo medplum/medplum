@@ -1,4 +1,4 @@
-import { Paper } from '@mantine/core';
+import { createStyles, Paper } from '@mantine/core';
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
@@ -15,7 +15,19 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Loading } from './components/Loading';
 
+const useStyles = createStyles((theme) => {
+  return {
+    paper: {
+      [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+        margin: 2,
+        padding: 4,
+      },
+    },
+  };
+});
+
 export function HomePage(): JSX.Element {
+  const { classes } = useStyles();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,7 +58,7 @@ export function HomePage(): JSX.Element {
   }
 
   return (
-    <Paper shadow="xs" m="md" p="xs">
+    <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
       <MemoizedSearchControl
         checkboxesEnabled={true}
         search={search}

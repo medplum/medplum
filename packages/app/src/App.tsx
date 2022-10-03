@@ -15,7 +15,7 @@ import './App.css';
 
 export function App(): JSX.Element {
   const theme = useMantineTheme();
-  const [navbarOpen, { toggle }] = useDisclosure(false);
+  const [navbarOpen, { toggle, close }] = useDisclosure(false);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
@@ -42,7 +42,7 @@ export function App(): JSX.Element {
         }}
         padding={0}
         fixed={true}
-        navbar={(profile && navbarOpen && <AppNavbar />) as React.ReactElement | undefined}
+        navbar={(profile && navbarOpen && <AppNavbar closeNavbar={close} />) as React.ReactElement | undefined}
         header={profile && <AppHeader navbarToggle={toggle} />}
       >
         <ErrorBoundary>
