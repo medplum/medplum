@@ -22,9 +22,9 @@ This section is under construction.  Please check back frequently for updates.  
 - [CLIA/CAP](clia-cap.md)
 - [SOC2 Type 2](soc2.md)
 - [HIPAA compliance](hipaa.md)
+- [CFR Part 11](cfr11.md)
 - FHIR (coming soon)
 - HITRUST (coming soon)
-- CFR Part 11 (coming soon)
 - ISO 27001 Certification (coming soon)
 
 ## Materials and Usage

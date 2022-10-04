@@ -13,20 +13,21 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 
 ## Consume event data or webhooks from other platforms
 
-1. [Integrating Logistics (3PL) into your EHR](./bots/logistics-into-ehr)
-2. [Consuming HL7 Feeds and Converting to FHIR](./bots/insurance-eligibility-check)
+1. [Integrating Logistics (3PL) into your EHR](logistics-into-ehr.md)
+2. [Consuming HL7 Feeds and Converting to FHIR](hl7-into-fhir.md)
 3. Coming Soon: Consuming Lab Results from a lab instrument or LIS
 
 ## Export data to other systems
 
 1. Coming Soon: Exporting data to a billing service
-2. Coming Soon: Exporting a PDF Report for human consumption
+2. [Exporting a PDF Report for human consumption](creating-a-pdf.md)
+3. [File Uploads](file-uploads.md)
 
 ## Drive workflow
 
-1. Coming Soon: Checking Insurance Eligibility for a specific medical service
+1. [Checking Insurance Eligibility for a specific medical service](insurance-eligibility-check.md)
 2. Coming Soon: Order Medication through an Online Pharmacy
-3. Coming Soon: Creating and FHIR Objects on Questionnaire submissions
+3. [Creating and FHIR Objects on Questionnaire submissions](./bot-for-questionnaire-response/bot-for-questionnaire-response.md)
 4. Coming Soon: Send email notifications when critical lab values are received
 
 ## Ensure correctness
