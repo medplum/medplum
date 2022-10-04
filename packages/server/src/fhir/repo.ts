@@ -1639,8 +1639,22 @@ export class Repository {
       // Don't log system events.
       return;
     }
-    const outcomeDesc = normalizeErrorString(description);
-    const query = search ? formatSearchQuery(search) : undefined;
+    if (resource && publicResourceTypes.includes(resource.resourceType)) {
+      // Don't log public events.
+      return;
+    }
+    if (search && publicResourceTypes.includes(search.resourceType)) {
+      // Don't log public events.
+      return;
+    }
+    let outcomeDesc: string | undefined = undefined;
+    if (description) {
+      outcomeDesc = normalizeErrorString(description);
+    }
+    let query: string | undefined = undefined;
+    if (search) {
+      query = search.resourceType + formatSearchQuery(search);
+    }
     logRestfulEvent(subtype, this.#context.author, this.#context.remoteAddress, outcome, outcomeDesc, resource, query);
   }
 }
@@ -1740,6 +1754,7 @@ export async function getRepoForLogin(
   return new Repository({
     project: resolveId(membership.project) as string,
     author: membership.profile as Reference,
+    remoteAddress: login.remoteAddress,
     superAdmin: login.admin || login.superAdmin,
     accessPolicy,
     strictMode,

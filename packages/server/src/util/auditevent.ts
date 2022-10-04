@@ -1,5 +1,6 @@
 import { createReference } from '@medplum/core';
 import {
+  AuditEvent,
   AuditEventAgentNetwork,
   AuditEventEntity,
   Coding,
@@ -191,7 +192,7 @@ export function logAuditEvent(
     network = { address: remoteAddress, type: '2' };
   }
 
-  const auditEvent = {
+  const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     type,
     subtype: [subtype],
@@ -210,5 +211,5 @@ export function logAuditEvent(
     entity,
   };
 
-  logger.info(JSON.stringify(auditEvent));
+  logger.logAuditEvent(auditEvent);
 }
