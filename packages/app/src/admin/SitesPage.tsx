@@ -1,6 +1,6 @@
 import { Button } from '@mantine/core';
 import { IndexedStructureDefinition } from '@medplum/core';
-import { ProjectSite } from '@medplum/fhirtypes';
+import { OperationOutcome, ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -37,7 +37,13 @@ export function SitesPage(): JSX.Element {
           .post(`admin/projects/${projectId}/sites`, sites)
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => toast.success('Saved'))
-          .catch(console.log);
+          .catch((err) => {
+            const operationOutcome = err as OperationOutcome;
+            // Only show the first error
+            toast.error(
+              `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`
+            );
+          });
       }}
     >
       <h1>Project Sites</h1>
