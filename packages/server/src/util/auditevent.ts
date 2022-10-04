@@ -147,16 +147,18 @@ export enum AuditEventOutcome {
 
 export function logAuthEvent(
   subtype: AuditEventSubtype,
+  projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
   outcomeDesc?: string
 ): void {
-  logAuditEvent(UserAuthenticationEvent, subtype, who, remoteAddress, outcome, outcomeDesc);
+  logAuditEvent(UserAuthenticationEvent, subtype, projectId, who, remoteAddress, outcome, outcomeDesc);
 }
 
 export function logRestfulEvent(
   subtype: AuditEventSubtype,
+  projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
@@ -164,12 +166,23 @@ export function logRestfulEvent(
   resource?: Resource,
   searchQuery?: string
 ): void {
-  logAuditEvent(RestfulOperationType, subtype, who, remoteAddress, outcome, outcomeDesc, resource, searchQuery);
+  logAuditEvent(
+    RestfulOperationType,
+    subtype,
+    projectId,
+    who,
+    remoteAddress,
+    outcome,
+    outcomeDesc,
+    resource,
+    searchQuery
+  );
 }
 
 export function logAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
+  projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
@@ -194,6 +207,9 @@ export function logAuditEvent(
 
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
+    meta: {
+      project: projectId,
+    },
     type,
     subtype: [subtype],
     action: AuditEventActionLookup[subtype.code as string],

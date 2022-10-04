@@ -1655,7 +1655,16 @@ export class Repository {
     if (search) {
       query = search.resourceType + formatSearchQuery(search);
     }
-    logRestfulEvent(subtype, this.#context.author, this.#context.remoteAddress, outcome, outcomeDesc, resource, query);
+    logRestfulEvent(
+      subtype,
+      this.#context.project as string,
+      this.#context.author,
+      this.#context.remoteAddress,
+      outcome,
+      outcomeDesc,
+      resource,
+      query
+    );
   }
 }
 
