@@ -14,7 +14,7 @@ Medplum supports building applications with the following features.  Reference i
 
 ### Forms
 
-Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention. [Learn more](./forms.md).
+Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention.
 
 ### Scheduling
 
