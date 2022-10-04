@@ -267,6 +267,7 @@ export class Repository {
       .column('versionId')
       .column('id')
       .column('content')
+      .column('lastUpdated')
       .where('id', Operator.EQUALS, id)
       .orderBy('lastUpdated', true)
       .limit(100)
@@ -275,8 +276,22 @@ export class Repository {
     const entries: BundleEntry<T>[] = [];
 
     for (const row of rows) {
-      const resource = row.content && this.#removeHiddenFields(JSON.parse(row.content as string));
-      const outcome = row.content ? allOk : gone;
+      const resource = row.content ? this.#removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+      const outcome: OperationOutcome = row.content
+        ? allOk
+        : {
+            resourceType: 'OperationOutcome',
+            id: 'gone',
+            issue: [
+              {
+                severity: 'error',
+                code: 'deleted',
+                details: {
+                  text: 'Deleted on ' + row.lastUpdated,
+                },
+              },
+            ],
+          };
       entries.push({
         fullUrl: this.#getFullUrl(resourceType, row.id),
         request: {
