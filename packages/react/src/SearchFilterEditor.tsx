@@ -1,4 +1,4 @@
-import { Button, Modal, NativeSelect } from '@mantine/core';
+import { Button, Group, Modal, NativeSelect } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest, stringify } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -99,7 +99,9 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           </tbody>
         </table>
       </div>
-      <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
+      <Group position="right" mt="xl">
+        <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
+      </Group>
     </Modal>
   );
 }
@@ -178,7 +180,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
             data-testid="filter-operation"
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
-            data={operators.map((op) => ({ value: op, label: getOpString(op) }))}
+            data={['', ...operators.map((op) => ({ value: op, label: getOpString(op) }))]}
           />
         )}
       </td>
