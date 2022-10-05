@@ -57,6 +57,7 @@ import {
   ReadInteraction,
   SearchInteraction,
   UpdateInteraction,
+  VreadInteraction,
 } from '../util/auditevent';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -369,10 +370,10 @@ export class Repository {
       }
 
       const result = this.#removeHiddenFields(JSON.parse(rows[0].content as string));
-      this.#logEvent(HistoryInteraction, AuditEventOutcome.Success, undefined, result);
+      this.#logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
-      this.#logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err);
+      this.#logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
     }
   }
