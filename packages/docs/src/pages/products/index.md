@@ -1,3 +1,8 @@
+---
+sidebar_label: Medplum Products
+sidebar_position: 1
+---
+
 # Products
 
 At Medplum our goal is to help you build a healthcare application quickly, easily and compliantly.
@@ -10,15 +15,15 @@ This section is under construction. Check back frequently for updates.
 
 ## Features
 
-Medplum supports building applications with the following features. Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/ and [Provider Application](https://provider.foomedical.com/).
+Medplum supports building applications with the following features. Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/).
 
 ### Forms
 
-Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention. [Learn More](./forms)
+Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention. [Learn More](../products/forms)
 
 ### Scheduling
 
-Publish scheduling pages customized to practitioners or locations. Patients can self-schedule and change their appointments, designed with pre-built components or fully customizable by API. [Learn More](./scheduling)
+Publish scheduling pages customized to practitioners or locations. Patients can self-schedule and change their appointments, designed with pre-built components or fully customizable by API. [Learn More](../products/scheduling)
 
 ### Messaging and Communications
 
