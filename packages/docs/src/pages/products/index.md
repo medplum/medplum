@@ -10,6 +10,8 @@ This section is under construction.  Check back frequently for updates.
 
 ## Features
 
+Medplum supports building applications with the following features.  Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/ and [Provider Application](https://provider.foomedical.com/).
+
 ### Forms
 
 Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention.
