@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, TextInput } from '@mantine/core';
+import { ActionIcon, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -11,22 +11,29 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { IconCloudUpload, IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons';
+import {
+  IconCloudUpload,
+  IconEdit,
+  IconListDetails,
+  IconMessage,
+  IconPin,
+  IconPinnedOff,
+  IconTrash,
+} from '@tabler/icons';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AttachmentButton } from './AttachmentButton';
 import { AttachmentDisplay } from './AttachmentDisplay';
 import { DiagnosticReportDisplay } from './DiagnosticReportDisplay';
 import { Form } from './Form';
 import { useMedplum } from './MedplumProvider';
+import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
-import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
 
-import { AttachmentButton } from './AttachmentButton';
-import { ResourceAvatar } from './ResourceAvatar';
 import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
@@ -194,26 +201,24 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 }
               }}
             >
-              <Group noWrap>
+              <Group spacing="xs" noWrap style={{ width: '100%' }}>
                 <ResourceAvatar value={sender} />
                 <TextInput
                   name="text"
-                  data-testid="timeline-input"
                   ref={inputRef}
-                  size="md"
-                  radius="xl"
-                  rightSectionWidth={40}
-                  rightSection={
-                    <AttachmentButton onUpload={createMedia}>
-                      {(props) => (
-                        <ActionIcon {...props} size={24} radius="xl" color="blue" variant="filled">
-                          <IconCloudUpload size={16} />
-                        </ActionIcon>
-                      )}
-                    </AttachmentButton>
-                  }
                   placeholder="Add comment"
+                  style={{ width: '100%', maxWidth: 300 }}
                 />
+                <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
+                  <IconMessage size={16} />
+                </ActionIcon>
+                <AttachmentButton onUpload={createMedia}>
+                  {(props) => (
+                    <ActionIcon {...props} radius="xl" color="blue" variant="filled">
+                      <IconCloudUpload size={16} />
+                    </ActionIcon>
+                  )}
+                </AttachmentButton>
               </Group>
             </Form>
           </div>
@@ -403,9 +408,9 @@ function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
 function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.Element {
   return (
     <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
-      <Scrollable>
+      <ScrollArea>
         <pre>{props.resource.outcomeDesc}</pre>
-      </Scrollable>
+      </ScrollArea>
     </TimelineItem>
   );
 }

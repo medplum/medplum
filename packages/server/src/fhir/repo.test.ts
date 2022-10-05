@@ -3,6 +3,7 @@ import {
   Appointment,
   AuditEvent,
   Bundle,
+  BundleEntry,
   Communication,
   Encounter,
   Observation,
@@ -826,6 +827,15 @@ describe('FHIR Repo', () => {
 
     const history3 = await systemRepo.readHistory('Patient', patient?.id as string);
     expect(history3?.entry?.length).toBe(3);
+
+    const entries = history3?.entry as BundleEntry[];
+    expect(entries[0].response?.status).toEqual('200');
+    expect(entries[0].resource).toBeDefined();
+    expect(entries[1].response?.status).toEqual('410');
+    expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
+    expect(entries[1].resource).toBeUndefined();
+    expect(entries[2].response?.status).toEqual('200');
+    expect(entries[2].resource).toBeDefined();
   });
 
   test('Search birthDate after delete', async () => {

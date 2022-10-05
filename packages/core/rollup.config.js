@@ -1,8 +1,11 @@
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
+import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
+import { execSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
 import { terser } from 'rollup-plugin-terser';
+import { version } from './package.json';
 
 const extensions = ['.ts'];
 
@@ -12,6 +15,9 @@ const globals = {
 };
 
 const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
+
+const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+const medplumVersion = version + '-' + gitHash;
 
 export default [
   {
@@ -36,6 +42,13 @@ export default [
       },
     ],
     plugins: [
+      replace({
+        preventAssignment: true,
+        values: {
+          'process.env.NODE_ENV': '"production"',
+          'process.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
+        },
+      }),
       json(),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
@@ -68,6 +81,13 @@ export default [
       },
     ],
     plugins: [
+      replace({
+        preventAssignment: true,
+        values: {
+          'process.env.NODE_ENV': '"production"',
+          'process.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
+        },
+      }),
       json(),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),

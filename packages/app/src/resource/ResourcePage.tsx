@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Paper, ScrollArea, Tabs } from '@mantine/core';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
@@ -28,10 +28,6 @@ import {
   ResourceHistoryTable,
   ResourceTable,
   ServiceRequestTimeline,
-  Tab,
-  TabList,
-  TabPanel,
-  TabSwitch,
   useMedplum,
 } from '@medplum/react';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -137,18 +133,9 @@ export function ResourcePage(): JSX.Element {
   /**
    * Handles a tab change event.
    * @param newTabName The new tab name.
-   * @param button Which mouse button was used to change the tab.
    */
-  function onTabChange(newTabName: string, button: number): void {
-    const url = `/${resourceType}/${id}/${newTabName}`;
-    if (button === 1) {
-      // "Aux Click" / middle click
-      // Open in new tab or new window
-      window.open(url, '_blank');
-    } else {
-      // Otherwise, by default, navigate to the new tab
-      navigate(url);
-    }
+  function onTabChange(newTabName: string): void {
+    navigate(`/${resourceType}/${id}/${newTabName}`);
   }
 
   function onSubmit(newResource: Resource): void {
@@ -225,14 +212,22 @@ export function ResourcePage(): JSX.Element {
         />
       )}
       <QuickServiceRequests value={value} />
-      {patient && <PatientHeader patient={patient} />}
-      {specimen && <SpecimenHeader specimen={specimen} />}
-      {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
-      <TabList value={currentTab} onChange={onTabChange}>
-        {tabs.map((t) => (
-          <Tab key={t} name={t.toLowerCase()} label={t} />
-        ))}
-      </TabList>
+      <Paper>
+        {patient && <PatientHeader patient={patient} />}
+        {specimen && <SpecimenHeader specimen={specimen} />}
+        {resourceType !== 'Patient' && <ResourceHeader resource={value} />}
+        <ScrollArea>
+          <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
+            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+              {tabs.map((t) => (
+                <Tabs.Tab key={t} value={t.toLowerCase()}>
+                  {t}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        </ScrollArea>
+      </Paper>
       {currentTab === 'editor' && (
         <ErrorBoundary>
           <BotEditor bot={value as Bot} />
@@ -241,19 +236,15 @@ export function ResourcePage(): JSX.Element {
       {currentTab !== 'editor' && (
         <>
           {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-          <TabSwitch value={currentTab}>
-            <TabPanel name={currentTab}>
-              <ErrorBoundary>
-                <ResourceTab
-                  name={currentTab.toLowerCase()}
-                  resource={value}
-                  resourceHistory={historyBundle}
-                  onSubmit={onSubmit}
-                  outcome={error}
-                />
-              </ErrorBoundary>
-            </TabPanel>
-          </TabSwitch>
+          <ErrorBoundary>
+            <ResourceTab
+              name={currentTab.toLowerCase()}
+              resource={value}
+              resourceHistory={historyBundle}
+              onSubmit={onSubmit}
+              outcome={error}
+            />
+          </ErrorBoundary>
         </>
       )}
     </>

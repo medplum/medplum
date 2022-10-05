@@ -252,8 +252,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     return;
   }
 
+  let currentVersion;
   try {
-    await systemRepo.readResource(resourceType, id);
+    currentVersion = await systemRepo.readResource(resourceType, id);
   } catch (err) {
     if (isGone(err as OperationOutcome)) {
       // If the resource was deleted, then stop processing it.
@@ -261,6 +262,11 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     }
     // Otherwise re-throw
     throw err;
+  }
+
+  if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+    // If this is a retry and the resource is not the current version, then stop processing it.
+    return;
   }
 
   const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);

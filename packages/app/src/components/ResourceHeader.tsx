@@ -1,6 +1,7 @@
+import { ScrollArea } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { Scrollable, useResource } from '@medplum/react';
+import { useResource } from '@medplum/react';
 import React from 'react';
 import './ResourceHeader.css';
 
@@ -70,7 +71,7 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
   }
 
   return (
-    <Scrollable className="medplum-surface" height={50}>
+    <ScrollArea>
       <div className="medplum-resource-header">
         {entries.map((entry) => (
           <dl key={entry.key}>
@@ -79,6 +80,6 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
           </dl>
         ))}
       </div>
-    </Scrollable>
+    </ScrollArea>
   );
 }

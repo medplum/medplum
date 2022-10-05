@@ -1,4 +1,5 @@
-import { Document, Scrollable, Tab, TabList, useMedplum } from '@medplum/react';
+import { Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
 import React, { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { getProjectId } from '../utils';
@@ -16,35 +17,34 @@ export function ProjectPage(): JSX.Element {
   /**
    * Handles a tab change event.
    * @param newTabName The new tab name.
-   * @param button Which mouse button was used to change the tab.
    */
-  function onTabChange(newTabName: string, button: number): void {
-    const url = `/admin/${newTabName}`;
-    if (button === 1) {
-      // "Aux Click" / middle click
-      // Open in new tab or new window
-      window.open(url, '_blank');
-    } else {
-      // Otherwise, by default, navigate to the new tab
-      navigate(url);
-    }
+  function onTabChange(newTabName: string): void {
+    navigate(`/admin/${newTabName}`);
   }
 
   return (
     <>
-      <Scrollable className="medplum-surface" height={50}>
-        <div className="medplum-resource-header">
-          <dl>
-            <dt>Project</dt>
-            <dd>{result.project.name}</dd>
-          </dl>
-        </div>
-      </Scrollable>
-      <TabList value={currentTab.toLowerCase()} onChange={onTabChange}>
-        {tabs.map((t) => (
-          <Tab key={t} name={t.toLowerCase()} label={t} />
-        ))}
-      </TabList>
+      <Paper>
+        <ScrollArea>
+          <div className="medplum-resource-header">
+            <dl>
+              <dt>Project</dt>
+              <dd>{result.project.name}</dd>
+            </dl>
+          </div>
+        </ScrollArea>
+        <ScrollArea>
+          <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
+            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+              {tabs.map((t) => (
+                <Tabs.Tab key={t} value={t.toLowerCase()}>
+                  {t}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        </ScrollArea>
+      </Paper>
       <Document width={700}>
         <Outlet />
       </Document>
