@@ -8,13 +8,14 @@ import {
 } from '@medplum/fhirtypes';
 import React from 'react';
 import { CodeableConceptDisplay } from './CodeableConceptDisplay';
-import './DiagnosticReportDisplay.css';
 import { MedplumLink } from './MedplumLink';
 import { QuantityDisplay } from './QuantityDisplay';
 import { RangeDisplay } from './RangeDisplay';
 import { ResourceBadge } from './ResourceBadge';
-import './Table.css';
 import { useResource } from './useResource';
+
+import './DiagnosticReportDisplay.css';
+import './Table.css';
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
@@ -193,5 +194,5 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
  */
 function isCritical(observation: Observation): boolean {
   const code = observation.interpretation?.[0]?.coding?.[0]?.code;
-  return code === 'AA' || code === 'LL' || code === 'HH';
+  return code === 'AA' || code === 'LL' || code === 'HH' || code === 'RR';
 }
