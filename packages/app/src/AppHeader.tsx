@@ -1,5 +1,5 @@
 import { Avatar, createStyles, Group, Header, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
-import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
+import { formatHumanName, getReferenceString, MEDPLUM_VERSION, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { HumanNameDisplay, Logo, ResourceAvatar, useMedplumContext } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons';
@@ -102,7 +102,7 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
                 {medplum.getActiveLogin()?.project?.display}
               </Text>
             </Stack>
-            {logins.length > 0 && <Menu.Divider />}
+            {logins.length > 1 && <Menu.Divider />}
             {logins.map(
               (login) =>
                 login.profile?.reference !== getReferenceString(context.profile as ProfileResource) && (
@@ -148,6 +148,9 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
             >
               Sign out
             </Menu.Item>
+            <Text size="xs" color="dimmed" align="center">
+              {MEDPLUM_VERSION}
+            </Text>
           </Menu.Dropdown>
         </Menu>
       </Group>
