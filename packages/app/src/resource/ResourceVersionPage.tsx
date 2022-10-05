@@ -1,15 +1,6 @@
+import { Tabs } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import {
-  Document,
-  MedplumLink,
-  ResourceDiff,
-  Tab,
-  TabList,
-  TabPanel,
-  TabSwitch,
-  TitleBar,
-  useMedplum,
-} from '@medplum/react';
+import { Document, MedplumLink, ResourceDiff, TitleBar, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';
@@ -72,17 +63,18 @@ export function ResourceVersionPage(): JSX.Element {
       <TitleBar>
         <h1>{`${resourceType} ${id}`}</h1>
       </TitleBar>
-      <TabList
+      <Tabs
         value={tab || defaultTab}
-        onChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
+        onTabChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
       >
-        <Tab name="diff" label="Diff" />
-        <Tab name="raw" label="Raw" />
-      </TabList>
-      <Document>
-        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-        <TabSwitch value={tab || defaultTab}>
-          <TabPanel name="diff">
+        <Tabs.List>
+          <Tabs.Tab value="diff">Diff</Tabs.Tab>
+          <Tabs.Tab value="raw">Raw</Tabs.Tab>
+        </Tabs.List>
+
+        <Document>
+          {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
+          <Tabs.Panel value="diff">
             {prev ? (
               <>
                 <ul>
@@ -105,12 +97,13 @@ export function ResourceVersionPage(): JSX.Element {
                 <pre>{JSON.stringify(value, undefined, 2)}</pre>
               </>
             )}
-          </TabPanel>
-          <TabPanel name="raw">
+          </Tabs.Panel>
+
+          <Tabs.Panel value="raw">
             <pre>{JSON.stringify(value, undefined, 2)}</pre>
-          </TabPanel>
-        </TabSwitch>
-      </Document>
+          </Tabs.Panel>
+        </Document>
+      </Tabs>
     </>
   );
 }

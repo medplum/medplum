@@ -1,6 +1,7 @@
+import { ScrollArea } from '@mantine/core';
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { HumanNameDisplay, MedplumLink, ResourceAvatar, Scrollable, useResource } from '@medplum/react';
+import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
 import React from 'react';
 
 import './PatientHeader.css';
@@ -15,7 +16,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <Scrollable className="medplum-surface" height={74}>
+    <ScrollArea>
       <div className="medplum-patient-header">
         <ResourceAvatar value={patient} size="lg" color={getDefaultColor(patient)} />
         <dl>
@@ -59,7 +60,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
           </dl>
         ))}
       </div>
-    </Scrollable>
+    </ScrollArea>
   );
 }
 

@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, TextInput } from '@mantine/core';
+import { ActionIcon, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { getReferenceString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
@@ -30,7 +30,6 @@ import { useMedplum } from './MedplumProvider';
 import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceDiffTable } from './ResourceDiffTable';
 import { ResourceTable } from './ResourceTable';
-import { Scrollable } from './Scrollable';
 import { Timeline, TimelineItem } from './Timeline';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
@@ -202,9 +201,14 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 }
               }}
             >
-              <Group spacing="xs" noWrap>
+              <Group spacing="xs" noWrap style={{ width: '100%' }}>
                 <ResourceAvatar value={sender} />
-                <TextInput name="text" ref={inputRef} placeholder="Add comment" style={{ width: 300 }} />
+                <TextInput
+                  name="text"
+                  ref={inputRef}
+                  placeholder="Add comment"
+                  style={{ width: '100%', maxWidth: 300 }}
+                />
                 <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
                   <IconMessage size={16} />
                 </ActionIcon>
@@ -404,9 +408,9 @@ function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
 function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.Element {
   return (
     <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
-      <Scrollable>
+      <ScrollArea>
         <pre>{props.resource.outcomeDesc}</pre>
-      </Scrollable>
+      </ScrollArea>
     </TimelineItem>
   );
 }

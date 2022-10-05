@@ -1,6 +1,7 @@
+import { ScrollArea } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
 import { Reference, Specimen } from '@medplum/fhirtypes';
-import { Scrollable, useResource } from '@medplum/react';
+import { useResource } from '@medplum/react';
 import React from 'react';
 
 export interface SpecimenHeaderProps {
@@ -13,7 +14,7 @@ export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <Scrollable className="medplum-surface" height={50}>
+    <ScrollArea>
       <div className="medplum-resource-header">
         <dl>
           <dt>Type</dt>
@@ -28,7 +29,7 @@ export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {
           <dd>{getAge(specimen)}</dd>
         </dl>
       </div>
-    </Scrollable>
+    </ScrollArea>
   );
 }
 
