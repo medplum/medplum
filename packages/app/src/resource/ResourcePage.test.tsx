@@ -280,26 +280,9 @@ describe('ResourcePage', () => {
     });
 
     // Change the tab
-    expect(screen.getByText('History')).toHaveClass('selected');
+    expect(screen.getByRole('tab', { name: 'History' })).toHaveAttribute('aria-selected', 'true');
 
     // Do not open a new browser tab
     expect(window.open).not.toHaveBeenCalled();
-  });
-
-  test('Middle click on tab', async () => {
-    window.open = jest.fn();
-
-    await setup('/Practitioner/123/details');
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('History'), { button: 1 });
-    });
-
-    // Should not change the tab
-    expect(screen.getByText('Details')).toHaveClass('selected');
-    expect(screen.getByText('History')).not.toHaveClass('selected');
-
-    // Should open a new browser tab
-    expect(window.open).toHaveBeenCalledWith('/Practitioner/123/history', '_blank');
   });
 });
