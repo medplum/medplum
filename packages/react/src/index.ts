@@ -64,7 +64,6 @@ export * from './SearchUtils';
 export * from './ServiceRequestTimeline';
 export * from './StatusBadge';
 export * from './Timeline';
-export * from './TitleBar';
 export * from './useResource';
 export * from './utils';
 export * from './utils/date';
