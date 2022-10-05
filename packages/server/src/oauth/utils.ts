@@ -12,6 +12,7 @@ import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { systemRepo } from '../fhir/repo';
+import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -255,6 +256,8 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
     throw badRequest('Google authentication is required');
   }
+
+  logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
   // Everything checks out, update the login
   return systemRepo.updateResource<Login>({

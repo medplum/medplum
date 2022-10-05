@@ -13,6 +13,7 @@ import {
   isGone,
   isNotFound,
   isOk,
+  normalizeErrorString,
   notFound,
   Operator as FhirOperator,
   resolveId,
@@ -45,6 +46,19 @@ import { getConfig } from '../config';
 import { getClient } from '../database';
 import { logger } from '../logger';
 import { getRedis } from '../redis';
+import {
+  AuditEventOutcome,
+  AuditEventSubtype,
+  CreateInteraction,
+  DeleteInteraction,
+  HistoryInteraction,
+  logRestfulEvent,
+  PatchInteraction,
+  ReadInteraction,
+  SearchInteraction,
+  UpdateInteraction,
+  VreadInteraction,
+} from '../util/auditevent';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
@@ -80,6 +94,8 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.author.
    */
   author: Reference;
+
+  remoteAddress?: string;
 
   /**
    * The current project reference.
@@ -176,17 +192,31 @@ export class Repository {
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
-    return this.#updateResourceImpl(
-      {
-        ...resource,
-        id: randomUUID(),
-      },
-      true
-    );
+    try {
+      const result = await this.#updateResourceImpl(
+        {
+          ...resource,
+          id: randomUUID(),
+        },
+        true
+      );
+      this.#logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+      return result;
+    } catch (err) {
+      this.#logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    return this.#removeHiddenFields(await this.#readResourceImpl<T>(resourceType, id));
+    try {
+      const result = this.#removeHiddenFields(await this.#readResourceImpl<T>(resourceType, id));
+      this.#logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
+      return result;
+    } catch (err) {
+      this.#logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async #readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
@@ -255,87 +285,108 @@ export class Repository {
    */
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     try {
-      await this.#readResourceImpl<T>(resourceType, id);
-    } catch (err) {
-      if (!isGone(err as OperationOutcome)) {
-        throw err;
+      let resource: T | undefined = undefined;
+      try {
+        resource = await this.#readResourceImpl<T>(resourceType, id);
+      } catch (err) {
+        if (!isGone(err as OperationOutcome)) {
+          throw err;
+        }
       }
-    }
 
-    const client = getClient();
-    const rows = await new SelectQuery(resourceType + '_History')
-      .column('versionId')
-      .column('id')
-      .column('content')
-      .column('lastUpdated')
-      .where('id', Operator.EQUALS, id)
-      .orderBy('lastUpdated', true)
-      .limit(100)
-      .execute(client);
+      const client = getClient();
+      const rows = await new SelectQuery(resourceType + '_History')
+        .column('versionId')
+        .column('id')
+        .column('content')
+        .column('lastUpdated')
+        .where('id', Operator.EQUALS, id)
+        .orderBy('lastUpdated', true)
+        .limit(100)
+        .execute(client);
 
-    const entries: BundleEntry<T>[] = [];
+      const entries: BundleEntry<T>[] = [];
 
-    for (const row of rows) {
-      const resource = row.content ? this.#removeHiddenFields(JSON.parse(row.content as string)) : undefined;
-      const outcome: OperationOutcome = row.content
-        ? allOk
-        : {
-            resourceType: 'OperationOutcome',
-            id: 'gone',
-            issue: [
-              {
-                severity: 'error',
-                code: 'deleted',
-                details: {
-                  text: 'Deleted on ' + row.lastUpdated,
+      for (const row of rows) {
+        const resource = row.content ? this.#removeHiddenFields(JSON.parse(row.content as string)) : undefined;
+        const outcome: OperationOutcome = row.content
+          ? allOk
+          : {
+              resourceType: 'OperationOutcome',
+              id: 'gone',
+              issue: [
+                {
+                  severity: 'error',
+                  code: 'deleted',
+                  details: {
+                    text: 'Deleted on ' + row.lastUpdated,
+                  },
                 },
-              },
-            ],
-          };
-      entries.push({
-        fullUrl: this.#getFullUrl(resourceType, row.id),
-        request: {
-          method: 'GET',
-          url: `${resourceType}/${row.id}/_history/${row.versionId}`,
-        },
-        response: {
-          status: getStatus(outcome).toString(),
-          outcome,
-        },
-        resource,
-      });
-    }
+              ],
+            };
+        entries.push({
+          fullUrl: this.#getFullUrl(resourceType, row.id),
+          request: {
+            method: 'GET',
+            url: `${resourceType}/${row.id}/_history/${row.versionId}`,
+          },
+          response: {
+            status: getStatus(outcome).toString(),
+            outcome,
+          },
+          resource,
+        });
+      }
 
-    return {
-      resourceType: 'Bundle',
-      type: 'history',
-      entry: entries,
-    };
+      this.#logEvent(HistoryInteraction, AuditEventOutcome.Success, undefined, resource);
+      return {
+        resourceType: 'Bundle',
+        type: 'history',
+        entry: entries,
+      };
+    } catch (err) {
+      this.#logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
-    if (!validator.isUUID(vid)) {
-      throw notFound;
+    try {
+      if (!validator.isUUID(vid)) {
+        throw notFound;
+      }
+
+      await this.#readResourceImpl<T>(resourceType, id);
+
+      const client = getClient();
+      const rows = await new SelectQuery(resourceType + '_History')
+        .column('content')
+        .where('id', Operator.EQUALS, id)
+        .where('versionId', Operator.EQUALS, vid)
+        .execute(client);
+
+      if (rows.length === 0) {
+        throw notFound;
+      }
+
+      const result = this.#removeHiddenFields(JSON.parse(rows[0].content as string));
+      this.#logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, result);
+      return result;
+    } catch (err) {
+      this.#logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
     }
-
-    await this.#readResourceImpl<T>(resourceType, id);
-
-    const client = getClient();
-    const rows = await new SelectQuery(resourceType + '_History')
-      .column('content')
-      .where('id', Operator.EQUALS, id)
-      .where('versionId', Operator.EQUALS, vid)
-      .execute(client);
-
-    if (rows.length === 0) {
-      throw notFound;
-    }
-
-    return this.#removeHiddenFields(JSON.parse(rows[0].content as string));
   }
 
   async updateResource<T extends Resource>(resource: T): Promise<T> {
-    return this.#updateResourceImpl(resource, false);
+    try {
+      const result = await this.#updateResourceImpl(resource, false);
+      this.#logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+      return result;
+    } catch (err) {
+      this.#logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async #updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
@@ -537,89 +588,108 @@ export class Repository {
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
-    const resource = await this.#readResourceImpl(resourceType, id);
+    try {
+      const resource = await this.#readResourceImpl(resourceType, id);
 
-    if (!this.#canWriteResourceType(resourceType)) {
-      throw forbidden;
-    }
+      if (!this.#canWriteResourceType(resourceType)) {
+        throw forbidden;
+      }
 
-    await deleteCacheEntry(resourceType, id);
+      await deleteCacheEntry(resourceType, id);
 
-    const client = getClient();
-    const lastUpdated = new Date();
-    const content = '';
-    const columns: Record<string, any> = {
-      id,
-      lastUpdated,
-      deleted: true,
-      compartments: this.#getCompartments(resource),
-      content,
-    };
-
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
-
-    await new InsertQuery(resourceType + '_History', [
-      {
+      const client = getClient();
+      const lastUpdated = new Date();
+      const content = '';
+      const columns: Record<string, any> = {
         id,
-        versionId: randomUUID(),
         lastUpdated,
+        deleted: true,
+        compartments: this.#getCompartments(resource),
         content,
-      },
-    ]).execute(client);
+      };
 
-    await this.#deleteFromLookupTables(resource);
+      await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
+
+      await new InsertQuery(resourceType + '_History', [
+        {
+          id,
+          versionId: randomUUID(),
+          lastUpdated,
+          content,
+        },
+      ]).execute(client);
+
+      await this.#deleteFromLookupTables(resource);
+      this.#logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+    } catch (err) {
+      this.#logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
-    const resource = await this.#readResourceImpl(resourceType, id);
-
-    let patchResult;
     try {
-      patchResult = applyPatch(resource, patch, true);
-    } catch (err) {
-      const patchError = err as JsonPatchError;
-      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
-      throw badRequest(message);
-    }
+      const resource = await this.#readResourceImpl(resourceType, id);
 
-    const patchedResource = patchResult.newDocument;
-    return this.updateResource(patchedResource);
+      let patchResult;
+      try {
+        patchResult = applyPatch(resource, patch, true);
+      } catch (err) {
+        const patchError = err as JsonPatchError;
+        const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
+        throw badRequest(message);
+      }
+
+      const patchedResource = patchResult.newDocument;
+      const result = await this.#updateResourceImpl(patchedResource, false);
+      this.#logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+      return result;
+    } catch (err) {
+      this.#logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
+      throw err;
+    }
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>> {
-    const resourceType = searchRequest.resourceType;
-    validateResourceType(resourceType);
+    try {
+      const resourceType = searchRequest.resourceType;
+      validateResourceType(resourceType);
 
-    if (!this.#canReadResourceType(resourceType)) {
-      throw forbidden;
+      if (!this.#canReadResourceType(resourceType)) {
+        throw forbidden;
+      }
+
+      // Ensure that "count" is set.
+      // Count is an optional field.  From this point on, it is safe to assume it is a number.
+      if (searchRequest.count === undefined) {
+        searchRequest.count = DEFAULT_SEARCH_COUNT;
+      } else if (searchRequest.count > maxSearchResults) {
+        searchRequest.count = maxSearchResults;
+      }
+
+      let entry = undefined;
+      let hasMore = false;
+      if (searchRequest.count > 0) {
+        ({ entry, hasMore } = await this.#getSearchEntries<T>(searchRequest));
+      }
+
+      let total = undefined;
+      if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
+        total = await this.#getTotalCount(searchRequest);
+      }
+
+      this.#logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
+      return {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry,
+        total,
+        link: this.#getSearchLinks(searchRequest, hasMore),
+      };
+    } catch (err) {
+      this.#logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, undefined, searchRequest);
+      throw err;
     }
-
-    // Ensure that "count" is set.
-    // Count is an optional field.  From this point on, it is safe to assume it is a number.
-    if (searchRequest.count === undefined) {
-      searchRequest.count = DEFAULT_SEARCH_COUNT;
-    } else if (searchRequest.count > maxSearchResults) {
-      searchRequest.count = maxSearchResults;
-    }
-
-    let entry = undefined;
-    let hasMore = false;
-    if (searchRequest.count > 0) {
-      ({ entry, hasMore } = await this.#getSearchEntries<T>(searchRequest));
-    }
-
-    let total = undefined;
-    if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
-      total = await this.#getTotalCount(searchRequest);
-    }
-
-    return {
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry,
-      total,
-      link: this.#getSearchLinks(searchRequest, hasMore),
-    };
   }
 
   /**
@@ -1550,6 +1620,53 @@ export class Repository {
     const { adminClientId } = getConfig();
     return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
   }
+
+  /**
+   * Logs an AuditEvent for a restful operation.
+   * @param subtype The AuditEvent subtype.
+   * @param outcome The AuditEvent outcome.
+   * @param description The description.  Can be a string, object, or Error.  Will be normalized to a string.
+   * @param resource Optional resource to associate with the AuditEvent.
+   * @param search Optional search parameters to associate with the AuditEvent.
+   */
+  #logEvent(
+    subtype: AuditEventSubtype,
+    outcome: AuditEventOutcome,
+    description?: unknown,
+    resource?: Resource,
+    search?: SearchRequest
+  ): void {
+    if (this.#context.author.reference === 'system') {
+      // Don't log system events.
+      return;
+    }
+    if (resource && publicResourceTypes.includes(resource.resourceType)) {
+      // Don't log public events.
+      return;
+    }
+    if (search && publicResourceTypes.includes(search.resourceType)) {
+      // Don't log public events.
+      return;
+    }
+    let outcomeDesc: string | undefined = undefined;
+    if (description) {
+      outcomeDesc = normalizeErrorString(description);
+    }
+    let query: string | undefined = undefined;
+    if (search) {
+      query = search.resourceType + formatSearchQuery(search);
+    }
+    logRestfulEvent(
+      subtype,
+      this.#context.project as string,
+      this.#context.author,
+      this.#context.remoteAddress,
+      outcome,
+      outcomeDesc,
+      resource,
+      query
+    );
+  }
 }
 
 /**
@@ -1647,6 +1764,7 @@ export async function getRepoForLogin(
   return new Repository({
     project: resolveId(membership.project) as string,
     author: membership.profile as Reference,
+    remoteAddress: login.remoteAddress,
     superAdmin: login.admin || login.superAdmin,
     accessPolicy,
     strictMode,
