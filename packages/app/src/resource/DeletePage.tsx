@@ -1,10 +1,10 @@
 import { Button } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 
 export interface DeletePageProps {
   resourceType: ResourceType;
@@ -24,7 +24,7 @@ export function DeletePage(props: DeletePageProps): JSX.Element {
           medplum
             .deleteResource(resourceType, id as string)
             .then(() => navigate(`/${resourceType}`))
-            .catch((err) => toast.error(normalizeErrorString(err)));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
       >
         Delete

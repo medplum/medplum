@@ -1,9 +1,9 @@
 import { Button } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { IndexedStructureDefinition } from '@medplum/core';
 import { OperationOutcome, ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {
@@ -36,13 +36,14 @@ export function SitesPage(): JSX.Element {
         medplum
           .post(`admin/projects/${projectId}/sites`, sites)
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
-          .then(() => toast.success('Saved'))
+          .then(() => showNotification({ color: 'green', message: 'Saved' }))
           .catch((err) => {
             const operationOutcome = err as OperationOutcome;
             // Only show the first error
-            toast.error(
-              `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`
-            );
+            showNotification({
+              color: 'red',
+              message: `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`,
+            });
           });
       }}
     >
