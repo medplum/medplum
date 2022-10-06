@@ -301,6 +301,39 @@ export const HomerObservation7: Observation = {
   ],
 };
 
+export const HomerObservation8: Observation = {
+  resourceType: 'Observation',
+  id: '8',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
+  code: {
+    text: 'Test 8',
+  },
+  component: [
+    {
+      valueString: 'REACTIVE',
+    },
+  ],
+  referenceRange: [
+    {
+      text: 'NEGATIVE',
+    },
+  ],
+  interpretation: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+          code: 'RR',
+          display: 'Reactive',
+        },
+      ],
+    },
+  ],
+};
+
 export const HomerSimpsonSpecimen: Specimen = {
   id: '123',
   resourceType: 'Specimen',
@@ -374,6 +407,7 @@ export const HomerDiagnosticReport: DiagnosticReport = {
     createReference(HomerObservation5),
     createReference(HomerObservation6),
     createReference(HomerObservation7),
+    createReference(HomerObservation8),
   ],
 };
 

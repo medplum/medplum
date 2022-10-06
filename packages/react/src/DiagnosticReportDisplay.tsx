@@ -183,6 +183,9 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
   if (!range) {
     return null;
   }
+  if (range.text) {
+    return <>{range.text}</>;
+  }
   return <RangeDisplay value={range} />;
 }
 
