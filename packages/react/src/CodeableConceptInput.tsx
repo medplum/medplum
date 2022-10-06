@@ -7,14 +7,14 @@ export interface CodeableConceptInputProps {
   name: string;
   placeholder?: string;
   defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept) => void;
+  onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
   const [value, setValue] = useState<CodeableConcept | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains): void {
-    const newConcept = valueSetElementToCodeableConcept(newValue);
+  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
+    const newConcept = newValue && valueSetElementToCodeableConcept(newValue);
     setValue(newConcept);
     if (props.onChange) {
       props.onChange(newConcept);

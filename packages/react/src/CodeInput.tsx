@@ -13,7 +13,7 @@ export interface CodeInputProps {
 export function CodeInput(props: CodeInputProps): JSX.Element {
   const [value, setValue] = useState<string | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains): void {
+  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
     const newCode = valueSetElementToCode(newValue);
     setValue(newCode);
     if (props.onChange) {
@@ -32,10 +32,10 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
   );
 }
 
-function codeToValueSetElement(code: string | undefined): ValueSetExpansionContains {
-  return { code };
+function codeToValueSetElement(code: string | undefined): ValueSetExpansionContains | undefined {
+  return code ? { code } : undefined;
 }
 
-function valueSetElementToCode(element: ValueSetExpansionContains): string | undefined {
-  return element.code;
+function valueSetElementToCode(element: ValueSetExpansionContains | undefined): string | undefined {
+  return element?.code;
 }
