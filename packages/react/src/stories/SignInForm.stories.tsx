@@ -2,7 +2,6 @@ import { Text } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { SignInForm } from '../auth/SignInForm';
-import { FooterLinks } from '../FooterLinks';
 import { Logo } from '../Logo';
 
 export default {
@@ -49,11 +48,6 @@ export function WithFooter(): JSX.Element {
           Sign in to Medplum
         </Text>
       </SignInForm>
-      <FooterLinks>
-        <a href="#">Help</a>
-        <a href="#">Terms</a>
-        <a href="#">Privacy</a>
-      </FooterLinks>
     </>
   );
 }
@@ -72,11 +66,6 @@ export function WithGoogle(): JSX.Element {
           Sign in to Medplum
         </Text>
       </SignInForm>
-      <FooterLinks>
-        <a href="#">Help</a>
-        <a href="#">Terms</a>
-        <a href="#">Privacy</a>
-      </FooterLinks>
     </>
   );
 }

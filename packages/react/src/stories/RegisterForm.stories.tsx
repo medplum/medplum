@@ -2,7 +2,6 @@ import { Text } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { RegisterForm } from '../auth/RegisterForm';
-import { FooterLinks } from '../FooterLinks';
 import { Logo } from '../Logo';
 
 export default {
@@ -32,11 +31,6 @@ export function WithFooter(): JSX.Element {
           Register new account
         </Text>
       </RegisterForm>
-      <FooterLinks>
-        <a href="#">Help</a>
-        <a href="#">Terms</a>
-        <a href="#">Privacy</a>
-      </FooterLinks>
     </>
   );
 }
@@ -55,11 +49,6 @@ export function WithGoogle(): JSX.Element {
           Register new account
         </Text>
       </RegisterForm>
-      <FooterLinks>
-        <a href="#">Help</a>
-        <a href="#">Terms</a>
-        <a href="#">Privacy</a>
-      </FooterLinks>
     </>
   );
 }

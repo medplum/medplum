@@ -1,3 +1,4 @@
+import { Table } from '@mantine/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, useMedplum } from '@medplum/react';
 import React from 'react';
@@ -8,7 +9,7 @@ export function PanelsPage(): JSX.Element {
   const assays = medplum.searchResources('ObservationDefinition', '_count=100').read();
 
   return (
-    <table className="medplum-table">
+    <Table withBorder withColumnBorders>
       <thead>
         <tr>
           <th>Category</th>
@@ -35,6 +36,6 @@ export function PanelsPage(): JSX.Element {
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }

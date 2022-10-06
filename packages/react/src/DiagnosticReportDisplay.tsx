@@ -14,8 +14,8 @@ import { RangeDisplay } from './RangeDisplay';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
 
+import { Table } from '@mantine/core';
 import './DiagnosticReportDisplay.css';
-import './Table.css';
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
@@ -89,7 +89,7 @@ export interface ObservationTableProps {
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
   return (
-    <table className="medplum-table">
+    <Table withBorder withColumnBorders>
       <thead>
         <tr>
           <th>Test</th>
@@ -103,7 +103,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
           <ObservationRow key={'obs-' + index} value={observation} />
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 
