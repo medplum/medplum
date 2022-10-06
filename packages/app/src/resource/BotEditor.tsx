@@ -1,8 +1,9 @@
 import { Button } from '@mantine/core';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
+import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import React, { useRef } from 'react';
-import { toast } from 'react-toastify';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
@@ -43,9 +44,9 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
           value: code,
         },
       ]);
-      toast.success('Saved');
+      showNotification({ color: 'green', message: 'Saved' });
     } catch (err) {
-      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+      showNotification({ color: 'red', message: normalizeErrorString(err) });
     }
   }
 
@@ -53,9 +54,9 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
     try {
       const code = await getCodeOutput();
       await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code });
-      toast.success('Deployed');
+      showNotification({ color: 'green', message: 'Deployed' });
     } catch (err) {
-      toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
+      showNotification({ color: 'red', message: normalizeErrorString(err) });
     }
   }
 
@@ -67,17 +68,9 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         command: 'setValue',
         value: result,
       });
-      toast.success('Success');
+      showNotification({ color: 'green', message: 'Success' });
     } catch (err) {
-      if (err && typeof err === 'object') {
-        if ('errorMessage' in err) {
-          toast.error((err as any).errorMessage);
-        } else {
-          toast.error((err as OperationOutcome).issue?.[0]?.details?.text);
-        }
-      } else {
-        toast.error(JSON.stringify(err));
-      }
+      showNotification({ color: 'red', message: normalizeErrorString(err) });
     }
   }
 

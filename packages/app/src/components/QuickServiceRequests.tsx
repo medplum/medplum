@@ -1,9 +1,10 @@
+import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { getPatient } from '../utils';
+
 import './QuickServiceRequests.css';
 
 export interface QuickServiceRequestsProps {
@@ -33,7 +34,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
         resources.reverse();
         setServiceRequests(resources);
       })
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum, resource]);
 
   if (!serviceRequests) {

@@ -1,9 +1,10 @@
+import { MantineProvider } from '@mantine/core';
+import { NotificationsProvider } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
@@ -12,7 +13,11 @@ function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-        <AppRoutes />
+        <MantineProvider withGlobalStyles withNormalizeCSS>
+          <NotificationsProvider>
+            <AppRoutes />
+          </NotificationsProvider>
+        </MantineProvider>
       </MemoryRouter>
     </MedplumProvider>
   );
@@ -20,44 +25,36 @@ function setup(): void {
 
 describe('SuperAdminPage', () => {
   test('Rebuild StructureDefinitions', async () => {
-    toast.success = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild StructureDefinitions'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Rebuild SearchParameters', async () => {
-    toast.success = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild SearchParameters'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Rebuild ValueSets', async () => {
-    toast.success = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Reindex resource type', async () => {
-    toast.success = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -68,6 +65,6 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Reindex'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 });

@@ -1,8 +1,8 @@
 import { Button, TextInput } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, Form, FormSection, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -11,29 +11,29 @@ export function SuperAdminPage(): JSX.Element {
   function rebuildStructureDefinitions(): void {
     medplum
       .post('admin/super/structuredefinitions', {})
-      .then(() => toast.success('Done'))
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
   function rebuildSearchParameters(): void {
     medplum
       .post('admin/super/searchparameters', {})
-      .then(() => toast.success('Done'))
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
   function rebuildValueSets(): void {
     medplum
       .post('admin/super/valuesets', {})
-      .then(() => toast.success('Done'))
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
   function reindexResourceType(): void {
     medplum
       .post('admin/super/reindex', { resourceType })
-      .then(() => toast.success('Done'))
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
   return (

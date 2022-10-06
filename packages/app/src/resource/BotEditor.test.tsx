@@ -1,18 +1,12 @@
+import { MantineProvider } from '@mantine/core';
+import { NotificationsProvider } from '@mantine/notifications';
 import { badRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { AppRoutes } from '../AppRoutes';
-
-jest.mock('react-toastify', () => ({
-  toast: {
-    success: jest.fn(),
-    error: jest.fn(),
-  },
-}));
 
 let medplum: MockClient;
 
@@ -23,7 +17,11 @@ describe('BotEditor', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <AppRoutes />
+            <MantineProvider withGlobalStyles withNormalizeCSS>
+              <NotificationsProvider>
+                <AppRoutes />
+              </NotificationsProvider>
+            </MantineProvider>
           </MemoryRouter>
         </MedplumProvider>
       );
@@ -42,11 +40,6 @@ describe('BotEditor', () => {
         },
       } as unknown as MessagePort;
     };
-  });
-
-  beforeEach(() => {
-    (toast.success as unknown as jest.Mock).mockClear();
-    (toast.error as unknown as jest.Mock).mockClear();
   });
 
   test('Bot editor', async () => {
@@ -80,8 +73,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Saved');
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(screen.getByText('Saved')).toBeInTheDocument();
   });
 
   test('Save error', async () => {
@@ -101,8 +93,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Save'));
     });
 
-    expect(toast.error).toHaveBeenCalledWith('Error');
-    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
   test('Deploy success', async () => {
@@ -122,8 +113,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Deployed');
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(screen.getByText('Deployed')).toBeInTheDocument();
   });
 
   test('Deploy error', async () => {
@@ -143,8 +133,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(toast.error).toHaveBeenCalledWith('Error');
-    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 
   test('Execute success', async () => {
@@ -173,8 +162,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Execute'));
     });
 
-    expect(toast.success).toHaveBeenCalledWith('Success');
-    expect(toast.error).not.toHaveBeenCalled();
+    expect(screen.getByText('Success')).toBeInTheDocument();
   });
 
   test('Execute error', async () => {
@@ -203,7 +191,6 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Execute'));
     });
 
-    expect(toast.error).toHaveBeenCalledWith('Error');
-    expect(toast.success).not.toHaveBeenCalled();
+    expect(screen.getByText('Error')).toBeInTheDocument();
   });
 });
