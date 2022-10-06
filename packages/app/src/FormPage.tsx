@@ -128,8 +128,10 @@ export function FormPage(): JSX.Element {
       {patient && <PatientHeader patient={patient} />}
       {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
       <Paper p="xl" shadow="xs" radius={0}>
-        <Text>{getDisplayString(questionnaire)}</Text>
-        {subjectList && subjectList.length > 1 && <Text>&nbsp;(for {subjectList.length} resources)</Text>}
+        <Text>
+          {getDisplayString(questionnaire)}
+          {subjectList && subjectList.length > 1 && <>&nbsp;(for {subjectList.length} resources)</>}
+        </Text>
       </Paper>
       <Document>
         <QuestionnaireForm
