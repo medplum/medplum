@@ -918,6 +918,8 @@ export class Repository {
       this.#addTokenSearchFilter(predicate, resourceType, details, filter);
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(predicate, details, filter);
+    } else if (param.type === 'date') {
+      this.#addDateSearchFilter(predicate, details, filter);
     } else if (param.type === 'quantity') {
       predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
     } else {
@@ -941,12 +943,10 @@ export class Repository {
       return false;
     }
 
-    const op = fhirOperatorToSqlOperator(filter.operator);
-
     if (code === '_id') {
       this.#addTokenSearchFilter(predicate, resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
     } else if (code === '_lastUpdated') {
-      predicate.where({ tableName: resourceType, columnName: 'lastUpdated' }, op, filter.value);
+      this.#addDateSearchFilter(predicate, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
     } else if (code === '_compartment' || code === '_project') {
       predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
     }
@@ -1014,6 +1014,20 @@ export class Repository {
     } else {
       predicate.where(details.columnName, Operator.EQUALS, filter.value);
     }
+  }
+
+  /**
+   * Adds a date or date/time search filter.
+   * @param predicate The select query predicate conjunction.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  #addDateSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+    const dateValue = new Date(filter.value);
+    if (isNaN(dateValue.getTime())) {
+      throw badRequest(`Invalid date value: ${filter.value}`);
+    }
+    predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }
 
   /**
