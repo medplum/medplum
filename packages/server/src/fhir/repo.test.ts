@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, isOk, Operator } from '@medplum/core';
+import { createReference, getReferenceString, isOk, normalizeErrorString, Operator } from '@medplum/core';
 import {
   Appointment,
   AuditEvent,
@@ -839,15 +839,22 @@ describe('FHIR Repo', () => {
   });
 
   test('Search birthDate after delete', async () => {
+    const family = randomUUID();
+
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }],
+      name: [{ given: ['Alice'], family }],
       birthDate: '1971-02-02',
     });
 
     const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        {
+          code: 'family',
+          operator: Operator.EQUALS,
+          value: family,
+        },
         {
           code: 'birthdate',
           operator: Operator.EQUALS,
@@ -864,6 +871,11 @@ describe('FHIR Repo', () => {
     const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        {
+          code: 'family',
+          operator: Operator.EQUALS,
+          value: family,
+        },
         {
           code: 'birthdate',
           operator: Operator.EQUALS,
@@ -1027,6 +1039,24 @@ describe('FHIR Repo', () => {
     expect(bundle?.entry?.length).toEqual(1);
     expect(bundleContains(bundle as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(bundle as Bundle, patient2 as Patient)).toEqual(false);
+  });
+
+  test('Handle malformed _lastUpdated', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_lastUpdated',
+            operator: Operator.GREATER_THAN,
+            value: 'xyz',
+          },
+        ],
+      });
+      fail('Expected error');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Invalid date value: xyz');
+    }
   });
 
   test('Filter by _lastUpdated', async () => {
