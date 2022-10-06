@@ -1,6 +1,6 @@
-import { Tabs } from '@mantine/core';
+import { Container, Paper, Tabs, Text } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, MedplumLink, ResourceDiff, TitleBar, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';
@@ -60,17 +60,19 @@ export function ResourceVersionPage(): JSX.Element {
   const defaultTab = 'diff';
   return (
     <>
-      <TitleBar>
-        <h1>{`${resourceType} ${id}`}</h1>
-      </TitleBar>
       <Tabs
         value={tab || defaultTab}
         onTabChange={(name: string) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name}`)}
       >
-        <Tabs.List>
-          <Tabs.Tab value="diff">Diff</Tabs.Tab>
-          <Tabs.Tab value="raw">Raw</Tabs.Tab>
-        </Tabs.List>
+        <Paper>
+          <Container fluid p="md">
+            <Text>{`${resourceType} ${id}`}</Text>
+          </Container>
+          <Tabs.List>
+            <Tabs.Tab value="diff">Diff</Tabs.Tab>
+            <Tabs.Tab value="raw">Raw</Tabs.Tab>
+          </Tabs.List>
+        </Paper>
 
         <Document>
           {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}

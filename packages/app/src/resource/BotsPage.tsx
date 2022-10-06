@@ -2,7 +2,7 @@ import { Button, Group } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
-import { ResourceInput, ResourceName, useMedplum } from '@medplum/react';
+import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export interface BotsPageProps {
@@ -42,7 +42,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
   }
 
   return (
-    <div>
+    <Document>
       <h1>Bots</h1>
       {subscriptions.length === 0 && <p>No bots found.</p>}
       {subscriptions.map((subscription) => (
@@ -60,7 +60,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
         <Button onClick={connectToBot}>Connect</Button>
       </Group>
       <div style={{ display: 'none' }}>{updated}</div>
-    </div>
+    </Document>
   );
 }
 

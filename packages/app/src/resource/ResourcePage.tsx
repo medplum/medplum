@@ -311,13 +311,21 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       }
     case 'builder':
       if (props.resource.resourceType === 'PlanDefinition') {
-        return <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />;
+        return (
+          <Document>
+            <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />
+          </Document>
+        );
       } else {
-        return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+        return (
+          <Document>
+            <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />
+          </Document>
+        );
       }
     case 'preview':
       return (
-        <>
+        <Document>
           <p className="medplum-alert">
             This is just a preview! Access your form here:
             <br />
@@ -327,7 +335,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             questionnaire={props.resource as Questionnaire}
             onSubmit={() => alert('You submitted the preview')}
           />
-        </>
+        </Document>
       );
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
