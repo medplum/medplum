@@ -1,3 +1,4 @@
+import { Table } from '@mantine/core';
 import {
   Bot,
   ClientApplication,
@@ -26,7 +27,7 @@ export interface MemberTableProps {
 
 export function MemberTable(props: MemberTableProps): JSX.Element {
   return (
-    <table className="medplum-table">
+    <Table withBorder withColumnBorders>
       {props.showRole ? (
         <colgroup>
           <col style={{ width: '60%' }} />
@@ -59,7 +60,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 

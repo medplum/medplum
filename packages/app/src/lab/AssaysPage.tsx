@@ -1,3 +1,4 @@
+import { Table } from '@mantine/core';
 import { capitalize } from '@medplum/core';
 import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, formatRangeString, RangeDisplay, useMedplum } from '@medplum/react';
@@ -8,7 +9,7 @@ export function AssaysPage(): JSX.Element {
   const assays = medplum.searchResources('ObservationDefinition', '_count=100').read();
 
   return (
-    <table className="medplum-table">
+    <Table withBorder withColumnBorders>
       <thead>
         <tr>
           <th>Category</th>
@@ -39,7 +40,7 @@ export function AssaysPage(): JSX.Element {
           </tr>
         ))}
       </tbody>
-    </table>
+    </Table>
   );
 }
 
