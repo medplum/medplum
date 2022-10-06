@@ -23,7 +23,6 @@ export * from './Document';
 export * from './EncounterTimeline';
 export * from './ErrorBoundary';
 export * from './FhirPathTable';
-export * from './FooterLinks';
 export * from './Form';
 export * from './FormSection';
 export * from './FormUtils';
