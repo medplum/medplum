@@ -24,12 +24,14 @@ import { ResourcePropertyInput, ResourcePropertyInputProps } from './ResourcePro
 const medplum = new MockClient();
 
 describe('ResourcePropertyInput', () => {
-  function setup(props: ResourcePropertyInputProps): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <ResourcePropertyInput {...props} />
-      </MedplumProvider>
-    );
+  async function setup(props: ResourcePropertyInputProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <ResourcePropertyInput {...props} />
+        </MedplumProvider>
+      );
+    });
   }
 
   // 2.24.0.1 Primitive Types
@@ -46,7 +48,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'active',
       property,
       onChange,
@@ -71,7 +73,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'date',
       property,
       onChange,
@@ -98,7 +100,7 @@ describe('ResourcePropertyInput', () => {
     const localString = convertIsoToLocal('2021-01-01T12:00:00Z');
     const isoString = convertLocalToIso(localString);
 
-    setup({
+    await setup({
       name: 'dateTime',
       property,
       onChange,
@@ -123,7 +125,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'markdown',
       property,
       onChange,
@@ -140,7 +142,7 @@ describe('ResourcePropertyInput', () => {
   // 2.24.0.2 Complex Types
   // https://www.hl7.org/fhir/datatypes.html#complex
 
-  test('Address property', () => {
+  test('Address property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -156,7 +158,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    setup({
+    await setup({
       name: 'address',
       property,
       defaultValue,
@@ -164,7 +166,7 @@ describe('ResourcePropertyInput', () => {
     expect(screen.getByDisplayValue('San Francisco')).toBeDefined();
   });
 
-  test('Annotation property', () => {
+  test('Annotation property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -180,7 +182,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    setup({
+    await setup({
       name: 'note',
       property,
       defaultValue,
@@ -205,7 +207,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'content',
       property,
       defaultValue,
@@ -249,7 +251,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'photo',
       property,
       defaultValue,
@@ -272,7 +274,7 @@ describe('ResourcePropertyInput', () => {
     );
   });
 
-  test('CodeableConcept property', () => {
+  test('CodeableConcept property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -290,15 +292,15 @@ describe('ResourcePropertyInput', () => {
       ],
     };
 
-    setup({
+    await setup({
       name: 'maritalStatus',
       property,
       defaultValue,
     });
-    expect(screen.getByDisplayValue('Married')).toBeDefined();
+    expect(screen.getByText('Married')).toBeDefined();
   });
 
-  test('ContactPoint property', () => {
+  test('ContactPoint property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -315,7 +317,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    setup({
+    await setup({
       name: 'telecom',
       property,
       defaultValue,
@@ -343,7 +345,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'extension',
       property,
       defaultValue,
@@ -360,7 +362,7 @@ describe('ResourcePropertyInput', () => {
     expect(onChange).toHaveBeenCalledWith([{ url: 'https://example.com', valueString: 'bar' }]);
   });
 
-  test('HumanName property', () => {
+  test('HumanName property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -376,7 +378,7 @@ describe('ResourcePropertyInput', () => {
       },
     ];
 
-    setup({
+    await setup({
       name: 'name',
       property,
       defaultValue,
@@ -403,7 +405,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'identifier',
       property,
       defaultValue,
@@ -437,7 +439,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'period',
       property,
       defaultValue,
@@ -472,7 +474,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'test',
       property,
       defaultValue,
@@ -507,7 +509,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'test',
       property,
       defaultValue,
@@ -545,7 +547,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'test',
       property,
       defaultValue,
@@ -567,7 +569,7 @@ describe('ResourcePropertyInput', () => {
     });
   });
 
-  test('Reference property', () => {
+  test('Reference property', async () => {
     const property: ElementDefinition = {
       type: [
         {
@@ -577,7 +579,7 @@ describe('ResourcePropertyInput', () => {
       ],
     };
 
-    setup({
+    await setup({
       name: 'managingOrganization',
       property,
     });
@@ -591,7 +593,7 @@ describe('ResourcePropertyInput', () => {
 
     const onChange = jest.fn();
 
-    setup({
+    await setup({
       name: 'value[x]',
       property,
       onChange,
@@ -663,7 +665,7 @@ describe('ResourcePropertyInput', () => {
       type: [{ code: 'Quantity' }, { code: 'string' }, { code: 'integer' }],
     };
 
-    setup({
+    await setup({
       name: 'value[x]',
       property,
       defaultPropertyType: PropertyType.integer,

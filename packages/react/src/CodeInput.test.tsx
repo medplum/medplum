@@ -25,33 +25,33 @@ describe('CodeInput', () => {
     jest.useRealTimers();
   });
 
-  test('Renders', () => {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <CodeInput property={statusProperty} name="test" />
-      </MedplumProvider>
-    );
+  async function setup(child: React.ReactNode): Promise<void> {
+    await act(async () => {
+      render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
+    });
+  }
+
+  test('Renders', async () => {
+    await setup(<CodeInput property={statusProperty} name="test" />);
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
-  test('Renders string default value', () => {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <CodeInput property={statusProperty} name="test" defaultValue="xyz" />
-      </MedplumProvider>
-    );
+  test('Renders string default value', async () => {
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <CodeInput property={statusProperty} name="test" defaultValue="xyz" />
+        </MedplumProvider>
+      );
+    });
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('xyz')).toBeDefined();
+    expect(screen.getByText('xyz')).toBeDefined();
   });
 
   test('Searches for results', async () => {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <CodeInput property={statusProperty} name="test" />
-      </MedplumProvider>
-    );
+    await setup(<CodeInput property={statusProperty} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -75,6 +75,6 @@ describe('CodeInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByDisplayValue('Test Display')).toBeDefined();
+    expect(screen.getByText('Test Display')).toBeDefined();
   });
 });
