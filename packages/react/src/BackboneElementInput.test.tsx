@@ -1,7 +1,7 @@
 import { globalSchema, TypeSchema } from '@medplum/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
@@ -69,31 +69,33 @@ globalSchema.types['ValueSetCompose'] = {
 const medplum = new MockClient();
 
 describe('BackboneElementInput', () => {
-  function setup(args: BackboneElementInputProps): void {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <BackboneElementInput {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
+  async function setup(args: BackboneElementInputProps): Promise<void> {
+    await act(async () => {
+      render(
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <BackboneElementInput {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      );
+    });
   }
 
   test('Renders', async () => {
     await medplum.requestSchema('Patient');
-    setup({ typeName: 'PatientContact' });
+    await setup({ typeName: 'PatientContact' });
     expect(screen.getByText('Name')).toBeDefined();
   });
 
   test('Handles content reference', async () => {
     await medplum.requestSchema('ValueSet');
-    setup({ typeName: 'ValueSetCompose' });
+    await setup({ typeName: 'ValueSetCompose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
     expect(screen.queryByText('Exclude')).toBeNull();
   });
 
-  test('Not implemented', () => {
-    setup({ typeName: 'Foo' });
+  test('Not implemented', async () => {
+    await setup({ typeName: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
   });
 });

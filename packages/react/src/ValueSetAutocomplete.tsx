@@ -1,6 +1,6 @@
-import { Autocomplete, Loader } from '@mantine/core';
+import { MultiSelect } from '@mantine/core';
 import { ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 
 export interface ValueSetAutocompleteProps {
@@ -8,68 +8,95 @@ export interface ValueSetAutocompleteProps {
   name: string;
   placeholder?: string;
   defaultValue?: ValueSetExpansionContains;
-  onChange?: (value: ValueSetExpansionContains) => void;
+  onChange?: (value: ValueSetExpansionContains | undefined) => void;
 }
 
 interface ValueSetAutocompleteItem {
   value: string;
+  label: string;
   element: ValueSetExpansionContains;
+}
+
+function valueSetElementToAutocompleteItem(element: ValueSetExpansionContains): ValueSetAutocompleteItem {
+  return {
+    value: element.code as string,
+    label: getDisplay(element),
+    element,
+  };
 }
 
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const defaultValue = props.defaultValue;
-  const [value, setValue] = useState<ValueSetExpansionContains | undefined>(defaultValue);
-  const [text, setText] = useState<string>(defaultValue ? getDisplay(defaultValue) : '');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<ValueSetAutocompleteItem[]>([]);
+  const { property, defaultValue } = props;
+  const [textValues, setTextValues] = useState<string[]>(defaultValue ? [defaultValue.code as string] : []);
 
-  async function loadValues(input: string): Promise<void> {
-    setLoading(true);
-    const system = props.property.binding?.valueSet as string;
-    const valueSet = await medplum.searchValueSet(system, input);
-    const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
-    setData(valueSetElements.map((element) => ({ value: getDisplay(element), element })));
-    setLoading(false);
-  }
+  const [data, setData] = useState<ValueSetAutocompleteItem[]>(
+    defaultValue ? [valueSetElementToAutocompleteItem(defaultValue)] : []
+  );
 
-  async function handleChange(val: string): Promise<void> {
-    setText(val);
-    return loadValues(val);
-  }
+  const dataRef = useRef<ValueSetAutocompleteItem[]>();
+  dataRef.current = data;
 
-  function handleSelect(item: ValueSetAutocompleteItem): void {
-    setValue(item.element);
-    setText(item.value);
-    setData([]);
-    if (props.onChange) {
-      props.onChange(item.element);
-    }
-  }
+  const loadValues = useCallback(
+    async (input: string): Promise<void> => {
+      const system = property.binding?.valueSet as string;
+      const valueSet = await medplum.searchValueSet(system, input);
+      const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
+      const newData = [...(dataRef.current as ValueSetAutocompleteItem[])];
 
-  function handleBlur(val: string): void {
-    if (!value) {
-      const unstructured: ValueSetExpansionContains = {
-        display: val,
-        code: val,
-      };
-      setValue(unstructured);
-      if (props.onChange) {
-        props.onChange(unstructured);
+      for (const valueSetElement of valueSetElements) {
+        if (!newData.some((item) => item.value === valueSetElement.code)) {
+          newData.push(valueSetElementToAutocompleteItem(valueSetElement));
+        }
+      }
+
+      setData(newData);
+    },
+    [medplum, property, dataRef]
+  );
+
+  function handleChange(values: string[]): void {
+    setTextValues(values);
+
+    const textValue = values[0];
+    let currentItem = undefined;
+    if (textValue) {
+      currentItem = (dataRef.current as ValueSetAutocompleteItem[]).find((item) => item.value === values[0]);
+      if (!currentItem) {
+        const newElement = { code: textValue, display: textValue };
+        currentItem = valueSetElementToAutocompleteItem(newElement);
+        setData([...(dataRef.current as ValueSetAutocompleteItem[]), currentItem]);
       }
     }
+
+    if (props.onChange) {
+      props.onChange(currentItem?.element);
+    }
   }
 
+  useEffect(() => {
+    loadValues('').catch(console.log);
+  }, [loadValues]);
+
   return (
-    <Autocomplete
-      value={text}
+    <MultiSelect
       data={data}
       placeholder={props.placeholder}
-      onFocus={() => loadValues(text)}
-      onBlur={() => handleBlur(text)}
+      searchable
+      creatable
+      clearable
+      value={textValues}
+      filter={(value: string, selected: boolean, item: ValueSetAutocompleteItem) =>
+        !!(
+          textValues.length === 0 &&
+          !selected &&
+          (item.element.display?.toLowerCase().includes(value.toLowerCase().trim()) ||
+            item.element.code?.toLowerCase().includes(value.toLowerCase().trim()))
+        )
+      }
       onChange={handleChange}
-      onItemSubmit={handleSelect}
-      rightSection={loading ? <Loader size={16} /> : null}
+      getCreateLabel={(query) => `+ Create ${query}`}
+      onCreate={(query) => valueSetElementToAutocompleteItem({ code: query, display: query })}
     />
   );
 }

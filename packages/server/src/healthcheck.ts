@@ -1,3 +1,4 @@
+import { MEDPLUM_VERSION } from '@medplum/core';
 import { Request, Response } from 'express';
 import { getClient } from './database';
 import { getRedis } from './redis';
@@ -5,6 +6,7 @@ import { getRedis } from './redis';
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
   res.json({
     ok: true,
+    version: MEDPLUM_VERSION,
     postgres: await testPostgres(),
     redis: await testRedis(),
   });

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "0.10.0",
+  "version": "0.10.1",
   "description": "Medplum Command Line Interface",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -16,13 +16,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "0.10.0",
+    "@medplum/core": "0.10.1",
     "dotenv": "16.0.3",
     "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "0.10.0",
-    "@medplum/mock": "0.10.0"
+    "@medplum/fhirtypes": "0.10.1",
+    "@medplum/mock": "0.10.1"
   },
   "bin": {
     "medplum": "./dist/index.js"

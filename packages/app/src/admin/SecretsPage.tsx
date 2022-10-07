@@ -1,9 +1,9 @@
 import { Button } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { IndexedStructureDefinition } from '@medplum/core';
 import { ProjectSecret } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
-import { toast } from 'react-toastify';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {
@@ -36,7 +36,7 @@ export function SecretsPage(): JSX.Element {
         medplum
           .post(`admin/projects/${projectId}/secrets`, secrets)
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
-          .then(() => toast.success('Saved'))
+          .then(() => showNotification({ color: 'green', message: 'Saved' }))
           .catch(console.log);
       }}
     >

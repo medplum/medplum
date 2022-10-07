@@ -6,6 +6,6 @@ describe('StatusBadge', () => {
   test('Renders', () => {
     render(<StatusBadge status="active" />);
     expect(screen.getByText('active')).toBeDefined();
-    expect(screen.getByText('active').className).toEqual('medplum-status medplum-status-active');
+    expect(screen.getByText('active')).toHaveStyle('background-image:');
   });
 });

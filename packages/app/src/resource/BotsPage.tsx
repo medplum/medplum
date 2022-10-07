@@ -1,9 +1,9 @@
 import { Button, Group } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
-import { ResourceInput, ResourceName, useMedplum } from '@medplum/react';
+import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
 
 export interface BotsPageProps {
   resource: Resource;
@@ -35,14 +35,14 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
           setConnectBot(undefined);
           setUpdated(Date.now());
           medplum.invalidateSearches('Subscription');
-          toast.success('Success');
+          showNotification({ color: 'green', message: 'Success' });
         })
-        .catch((err) => toast.error(normalizeErrorString(err)));
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
   }
 
   return (
-    <div>
+    <Document>
       <h1>Bots</h1>
       {subscriptions.length === 0 && <p>No bots found.</p>}
       {subscriptions.map((subscription) => (
@@ -60,7 +60,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
         <Button onClick={connectToBot}>Connect</Button>
       </Group>
       <div style={{ display: 'none' }}>{updated}</div>
-    </div>
+    </Document>
   );
 }
 

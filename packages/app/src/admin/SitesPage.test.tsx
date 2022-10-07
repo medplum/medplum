@@ -1,9 +1,10 @@
+import { MantineProvider } from '@mantine/core';
+import { NotificationsProvider } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
@@ -13,7 +14,11 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <AppRoutes />
+          <MantineProvider withGlobalStyles withNormalizeCSS>
+            <NotificationsProvider>
+              <AppRoutes />
+            </NotificationsProvider>
+          </MantineProvider>
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -41,8 +46,6 @@ describe('SitesPage', () => {
   });
 
   test('Add and submit', async () => {
-    toast.success = jest.fn();
-
     await setup('/admin/sites');
     await waitFor(() => screen.getByTitle('Add'));
 
@@ -62,6 +65,6 @@ describe('SitesPage', () => {
     });
 
     // Wait for the toast
-    await waitFor(() => expect(toast.success).toHaveBeenCalledWith('Saved'));
+    await waitFor(() => screen.getByText('Saved'));
   });
 });

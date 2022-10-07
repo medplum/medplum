@@ -1,4 +1,5 @@
 import { Button, Paper, ScrollArea, Tabs } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
@@ -32,7 +33,6 @@ import {
 } from '@medplum/react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { Loading } from '../components/Loading';
 import { PatientHeader } from '../components/PatientHeader';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
@@ -142,8 +142,8 @@ export function ResourcePage(): JSX.Element {
     medplum
       .updateResource(cleanResource(newResource))
       .then(loadResource)
-      .then(() => toast.success('Success'))
-      .catch((err) => toast.error(normalizeErrorString(err)));
+      .then(() => showNotification({ color: 'green', message: 'Success' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
   function restoreResource(): void {
@@ -151,7 +151,7 @@ export function ResourcePage(): JSX.Element {
     if (restoredResource) {
       onSubmit(restoredResource);
     } else {
-      toast.error('No history to restore');
+      showNotification({ color: 'red', message: 'No history to restore' });
     }
   }
 
@@ -311,13 +311,21 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       }
     case 'builder':
       if (props.resource.resourceType === 'PlanDefinition') {
-        return <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />;
+        return (
+          <Document>
+            <PlanDefinitionBuilder value={props.resource as PlanDefinition} onSubmit={props.onSubmit} />
+          </Document>
+        );
       } else {
-        return <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />;
+        return (
+          <Document>
+            <QuestionnaireBuilder questionnaire={props.resource as Questionnaire} onSubmit={props.onSubmit} />
+          </Document>
+        );
       }
     case 'preview':
       return (
-        <>
+        <Document>
           <p className="medplum-alert">
             This is just a preview! Access your form here:
             <br />
@@ -327,7 +335,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
             questionnaire={props.resource as Questionnaire}
             onSubmit={() => alert('You submitted the preview')}
           />
-        </>
+        </Document>
       );
     case 'report':
       return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;

@@ -33,6 +33,8 @@ import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 
+export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
+
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;

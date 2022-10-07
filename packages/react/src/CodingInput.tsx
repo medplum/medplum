@@ -7,14 +7,14 @@ export interface CodingInputProps {
   name: string;
   placeholder?: string;
   defaultValue?: Coding;
-  onChange?: (value: Coding) => void;
+  onChange?: (value: Coding | undefined) => void;
 }
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const [value, setValue] = useState<Coding | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains): void {
-    const newConcept = valueSetElementToCoding(newValue);
+  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
+    const newConcept = newValue && valueSetElementToCoding(newValue);
     setValue(newConcept);
     if (props.onChange) {
       props.onChange(newConcept);
