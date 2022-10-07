@@ -16,15 +16,16 @@ The following tutorial for building an app that meets the requirements for ONC c
 
 The materials below can help you scope your certification program.
 
-| Resource Name  | Description  | Access  |
-|---|---|---|
-| Checklist  | Checklist for certification  | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)  |
-| Decision Guide  | Decision framework for which certification to pursue   | [Request Access](https://chpl.healthit.gov/#/search)   |
-| Certified Product List  | Search tool for certified products | [HealthIT.gov](https://chpl.healthit.gov/#/search)  |
-| ONC 2015E Cures Base EHR  | Requirements for a basic EHR per Cures Act | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition)  |
-| CMS-specific CEHRT  | Certification for CMS reimbursement | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)  |
-| Reference Implementation  | Sample EHR code | [Github](https://github.com/medplum/foomedical-provider)  |
-| Account Setup  | Example account setup bot | [Github](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)  |
+| Resource Name            | Description                                          | Access                                                                                                                                                        |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checklist                | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
+| Decision Guide           | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
+| Certified Product List   | Search tool for certified products                   | [HealthIT.gov](https://chpl.healthit.gov/#/search)                                                                                                            |
+| ONC 2015E Cures Base EHR | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
+| CMS-specific CEHRT       | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
+| Reference Implementation | Sample EHR code                                      | [Github](https://github.com/medplum/foomedical-provider)                                                                                                      |
+| Account Setup            | Example account setup bot                            | [Github](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)                                                         |
+| CMS Queries              | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
 
 ## Checklist
 
@@ -210,19 +211,19 @@ Below is a checklist of criteria for ONC Certification.
 Technical outcome – The health IT must be able to record all data necessary to calculate CQMs presented for certification.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-record-and-export)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria.  [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
+- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 
 ### Clinical Quality Measures – import and calculate
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-import-and-calculate)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria.  [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
+- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 - [Medplum App Import Data](https://app.medplum.com/batch)
 - [Test FHIR Batch Data for Import](https://drive.google.com/drive/folders/1-tpx7lHSDjc8lG3ZTVox0ndLnbCgx_t2?usp=sharing)
 
 ### Clinical Quality Measures - report
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-report)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria.  [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
+- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 
 ### Clinical Quality Measures – filter
 

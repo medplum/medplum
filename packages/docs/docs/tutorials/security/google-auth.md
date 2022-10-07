@@ -53,7 +53,7 @@ When you successfully create the OAuth client, you will receive a **Client ID** 
 
 ## Add Google Client ID to your Project
 
-TODO: In your Project admin page, enter your Client ID and Client Secret
+Go to the [sites](https://app.medplum.com/admin/sites) section of your admin console to set up your domain.
 
 ## Add Google Client ID to your SignInForm
 
