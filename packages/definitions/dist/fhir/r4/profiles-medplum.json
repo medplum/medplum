@@ -142,6 +142,17 @@
             }]
           },
           {
+            "id" : "Project.defaultPractitionerAccessPolicy",
+            "path" : "Project.defaultPractitionerAccessPolicy",
+            "definition" : "The default access policy for practitioners using open registration.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }]
+          },
+          {
             "id" : "Project.secret",
             "path" : "Project.secret",
             "definition" : "Secure environment variable that can be used to store secrets for bots.",

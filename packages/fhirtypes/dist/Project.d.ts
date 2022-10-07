@@ -82,6 +82,11 @@ export interface Project {
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
   /**
+   * The default access policy for practitioners using open registration.
+   */
+  defaultPractitionerAccessPolicy?: Reference<AccessPolicy>;
+
+  /**
    * Secure environment variable that can be used to store secrets for
    * bots.
    */

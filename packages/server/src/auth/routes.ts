@@ -7,6 +7,7 @@ import { googleHandler, googleValidators } from './google';
 import { loginHandler, loginValidators } from './login';
 import { meHandler } from './me';
 import { newPatientHandler, newPatientValidators } from './newpatient';
+import { newPractitionerHandler } from './newpractitioner';
 import { newProjectHandler, newProjectValidators } from './newproject';
 import { newUserHandler, newUserValidators } from './newuser';
 import { profileHandler, profileValidators } from './profile';
@@ -25,3 +26,4 @@ authRouter.post('/changepassword', changePasswordValidators, asyncWrap(changePas
 authRouter.post('/resetpassword', resetPasswordValidators, asyncWrap(resetPasswordHandler));
 authRouter.post('/setpassword', setPasswordValidators, asyncWrap(setPasswordHandler));
 authRouter.post('/google', googleValidators, asyncWrap(googleHandler));
+authRouter.post('/newpractitioner', newPatientValidators, asyncWrap(newPractitionerHandler));

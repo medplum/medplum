@@ -1,0 +1,167 @@
+import { createReference, Operator, resolveId } from '@medplum/core';
+import { AccessPolicy, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import { pwnedPassword } from 'hibp';
+import fetch from 'node-fetch';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config';
+import { systemRepo } from '../fhir/repo';
+import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+
+jest.mock('hibp');
+jest.mock('node-fetch');
+
+const app = express();
+
+describe('New practitioner', () => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  beforeEach(async () => {
+    (fetch as unknown as jest.Mock).mockClear();
+    (pwnedPassword as unknown as jest.Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+  });
+
+  test('Practitioner registration', async () => {
+    // Register as Christina
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Christina',
+        lastName: 'Smith',
+        email: `christina${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res1.status).toBe(200);
+
+    const res2 = await request(app).post('/auth/newproject').type('json').send({
+      login: res1.body.login,
+      projectName: 'Christina Project',
+    });
+    expect(res2.status).toBe(200);
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res2.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res3.status).toBe(200);
+
+    const projectId = resolveId(res3.body.project) as string;
+
+    // Try to register as a patient in the new project
+    // (This should fail)
+    const res4 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId,
+        firstName: 'Peggy',
+        lastName: 'Practitioner',
+        email: `peggy${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res4.status).toBe(200);
+
+    const res5 = await request(app).post('/auth/newpractitioner').type('json').send({
+      login: res4.body.login,
+      projectId: projectId,
+    });
+    expect(res5.status).toBe(400);
+
+    // As Christina, create a default access policy for new practitioners
+    const res6 = await request(app)
+      .post(`/fhir/R4/AccessPolicy`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token)
+      .type('json')
+      .send({
+        resourceType: 'AccessPolicy',
+        name: 'Default Practitioner Policy',
+        compartment: {
+          reference: '%practitioner',
+        },
+        resource: [
+          {
+            resourceType: 'Practitioner',
+            criteria: 'Practitioner?_id=%practitioner.id',
+          },
+          {
+            resourceType: 'Observation',
+            criteria: 'Observation?subject=%practitioner',
+          },
+        ],
+      });
+    expect(res6.status).toBe(201);
+
+    // As a super admin, enable practitioner registration
+    await systemRepo.patchResource('Project', projectId, [
+      {
+        op: 'add',
+        path: '/defaultPractitionerAccessPolicy',
+        value: createReference(res6.body),
+      },
+    ]);
+
+    // Try to register as a practitioner in the new project
+    // (This should succeed)
+    const res7 = await request(app).post('/auth/newpractitioner').type('json').send({
+      login: res4.body.login,
+      projectId,
+    });
+    expect(res7.status).toBe(200);
+
+    // Get the Practitioner
+    const res10 = await request(app)
+      .get(`/fhir/R4/Practitioner`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token);
+    expect(res10.status).toBe(200);
+
+    // Entry 0 is expected to be Christine, entry 1 is Peggy, our new
+    // created practitioner.
+    const practitioner = res10.body.entry[1].resource as Practitioner;
+
+    // Get the AccessPolicy
+    const res11 = await request(app)
+      .get(`/fhir/R4/AccessPolicy`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token);
+    expect(res11.status).toBe(200);
+
+    const accessPolicies = (res11.body.entry as BundleEntry<AccessPolicy>[]).map((e) => e.resource) as AccessPolicy[];
+
+    expect(accessPolicies).toHaveLength(2);
+    expect(accessPolicies.some((p) => p.name === 'Default Practitioner Policy')).toBe(true);
+    expect(accessPolicies.some((p) => p.name === 'Peggy Practitioner Access Policy')).toBe(true);
+
+    const peggyPolicy = accessPolicies.find((p) => p.name === 'Peggy Practitioner Access Policy');
+    expect(peggyPolicy).toBeDefined();
+    expect(peggyPolicy?.compartment?.reference).toEqual('Practitioner/' + practitioner.id);
+    expect(peggyPolicy?.resource?.[0]?.criteria).toEqual('Practitioner?_id=' + practitioner.id);
+    expect(peggyPolicy?.resource?.[1]?.criteria).toEqual('Observation?subject=Practitioner/' + practitioner.id);
+
+    // Get the ProjectMembership
+    const membershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Practitioner/' + practitioner.id }],
+    });
+    expect(membershipBundle).toBeDefined();
+    expect(membershipBundle.entry).toBeDefined();
+    expect(membershipBundle.entry).toHaveLength(1);
+  });
+});

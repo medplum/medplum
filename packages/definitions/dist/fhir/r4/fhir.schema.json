@@ -61100,6 +61100,10 @@
           "description": "The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
         },
+        "defaultPractitionerAccessPolicy": {
+          "description": "The default access policy for practitioners using open registration.",
+          "$ref": "#/definitions/Reference"
+        },
         "secret": {
           "description": "Secure environment variable that can be used to store secrets for bots.",
           "items": {
