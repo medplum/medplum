@@ -90,8 +90,8 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
         !!(
           textValues.length === 0 &&
           !selected &&
-          ((item as ValueSetAutocompleteItem).element.display?.toLowerCase().includes(value.toLowerCase().trim()) ||
-            (item as ValueSetAutocompleteItem).element.code?.toLowerCase().includes(value.toLowerCase().trim()))
+          (item.element.display?.toLowerCase().includes(value.toLowerCase().trim()) ||
+            item.element.code?.toLowerCase().includes(value.toLowerCase().trim()))
         )
       }
       onChange={handleChange}
