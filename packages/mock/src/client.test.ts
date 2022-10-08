@@ -445,12 +445,6 @@ describe('MockClient', () => {
       expect((err as OperationOutcome).id).toEqual('not-found');
     }
   });
-
-  test('Empty search', async () => {
-    const client = new MockClient();
-    const result = await client.search('Schedule', 'actor=');
-    expect(result.entry).toHaveLength(1);
-  });
 });
 
 function fail(reason: string): never {
