@@ -1,4 +1,6 @@
-import { createReference } from '@medplum/core';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -9,6 +11,12 @@ import { PatientTimeline, PatientTimelineProps } from './PatientTimeline';
 const medplum = new MockClient();
 
 describe('PatientTimeline', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   async function setup(args: PatientTimelineProps): Promise<void> {
     await act(async () => {
       render(

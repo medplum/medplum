@@ -1,5 +1,11 @@
-import { createReference, getReferenceString } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+import {
+  createReference,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, Communication, SearchParameter } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
@@ -11,6 +17,12 @@ import { ServiceRequestTimeline, ServiceRequestTimelineProps } from './ServiceRe
 const medplum = new MockClient();
 
 describe('ServiceRequestTimeline', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   async function setup(args: ServiceRequestTimelineProps): Promise<void> {
     await act(async () => {
       render(
