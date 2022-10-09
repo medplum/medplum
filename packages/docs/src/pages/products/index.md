@@ -59,6 +59,10 @@ Build your app just the way you want it. Use our Smart-on-FHIR authentication an
 
 Store your data in FHIR, and allow access through a FHIR API. Partition data with access policies to ensure parties only see the data they need to. [Learn More](https://www.medplum.com/docs/tutorials/api-basics)
 
+### TypeScript SDK
+
+TypeScript SDK that makes the FHIR spec easier to manage. Includes all FHIR types and mock data. [Learn More](https://www.medplum.com/docs/sdk)
+
 ### React Components
 
 Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](https://www.medplum.com/docs/tutorials/ui-components)
