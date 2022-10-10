@@ -26,7 +26,7 @@ Bots are written in TypeScript using the Medplum [SDK](/docs/sdk). Bots are then
 
 Bots can be triggered the following ways:
 
-- **Via subscription**: [subscriptions](/docs/tutorials/api-basics/publish-and-subscribe) are webhooks that are triggered when FHIR resources are created or updated and can trigger bots.
+- **Via subscription**: [subscriptions](/docs/tutorials/bots/bot-basics#executing-automatically-using-a-subscription) are webhooks that are triggered when FHIR resources are created or updated and can trigger bots.
 - **POST to $execute endpoint**: each bot exposes an API endpoint and a POST to that endpoint will trigger the bot.
 - **Via Questionnaire**: you can link a questionnaire to a bot and when the questionnaire is filled out, the bot can [process the response](/docs/tutorials/bots/bot-for-questionnaire-response).
 
