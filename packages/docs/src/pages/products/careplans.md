@@ -31,25 +31,25 @@ Once care plans are designed, the next step is to create all the relevant resour
 
 ## FHIR Resources for CarePlan Design
 
-| Resource           | App Link                                               | Create New                                                   | API Documentation                                                         |
-| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
-| PlanDefinition     | [View All](https://app.medplum.com/PlanDefinition)     | [Create New](https://app.medplum.com/PlanDefinition/new)     | [API](https://www.medplum.com/docs/api/fhir/resources/plandefinition)     |
-| ActivityDefinition | [View All](https://app.medplum.com/ActivityDefinition) | [Create New](https://app.medplum.com/ActivityDefinition/new) | [API](https://www.medplum.com/docs/api/fhir/resources/activitydefinition) |
-| Schedule           | [View All](https://app.medplum.com/Schedule)           | [Create New](https://app.medplum.com/Schedule/new)           | [API](https://www.medplum.com/docs/api/fhir/resources/schedule)           |
-| Questionnaire      | [View All](https://app.medplum.com/Questionnaire)      | [Create New](https://app.medplum.com/Questionnaire/new)      | [API](https://www.medplum.com/docs/api/fhir/resources/questionnaire)      |
+| Resource           | App Link                                               | Create New                                                   | API Documentation                                  |
+| ------------------ | ------------------------------------------------------ | ------------------------------------------------------------ | -------------------------------------------------- |
+| PlanDefinition     | [View All](https://app.medplum.com/PlanDefinition)     | [Create New](https://app.medplum.com/PlanDefinition/new)     | [API](/docs/api/fhir/resources/plandefinition)     |
+| ActivityDefinition | [View All](https://app.medplum.com/ActivityDefinition) | [Create New](https://app.medplum.com/ActivityDefinition/new) | [API](/docs/api/fhir/resources/activitydefinition) |
+| Schedule           | [View All](https://app.medplum.com/Schedule)           | [Create New](https://app.medplum.com/Schedule/new)           | [API](/docs/api/fhir/resources/schedule)           |
+| Questionnaire      | [View All](https://app.medplum.com/Questionnaire)      | [Create New](https://app.medplum.com/Questionnaire/new)      | [API](/docs/api/fhir/resources/questionnaire)      |
 
 ## FHIR Resources for Care Plans for a Specific Patient
 
 These are a common subset of objects that can be linked to CarePlans. Complex CarePlans may have more resource types.
 
-| Resource              | App Link                                                  | Create New                                             | API Documentation                                                            |
-| --------------------- | --------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| CarePlan              | [View All](https://app.medplum.com/CarePlan)              | [Create New](https://app.medplum.com/CarePlan/new)     | [API](https://www.medplum.com/docs/api/fhir/resources/careplan)              |
-| RequestGroup          | [View All](https://app.medplum.com/RequestGroup)          | [Create New](https://app.medplum.com/RequestGroup/new) | [API](https://www.medplum.com/docs/api/fhir/resources/requestgroup)          |
-| Task                  | [View All](https://app.medplum.com/Task)                  | [Create New](https://app.medplum.com/Task/new)         | [API](https://www.medplum.com/docs/api/fhir/resources/task)                  |
-| QuestionnaireResponse | [View All](https://app.medplum.com/QuestionnaireResponse) | Created via API or workflow                            | [API](https://www.medplum.com/docs/api/fhir/resources/questionnaireresponse) |
-| Appointment           | [View All](https://app.medplum.com/Appointment)           | [Create New](https://app.medplum.com/Appointment/new)  | [API](https://www.medplum.com/docs/api/fhir/resources/appointment)           |
-| Medication            | [View All](https://app.medplum.com/Medication)            | [Create New](https://app.medplum.com/Medication/new)   | [API](https://www.medplum.com/docs/api/fhir/resources/medication)            |
+| Resource              | App Link                                                  | Create New                                             | API Documentation                                     |
+| --------------------- | --------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| CarePlan              | [View All](https://app.medplum.com/CarePlan)              | [Create New](https://app.medplum.com/CarePlan/new)     | [API](/docs/api/fhir/resources/careplan)              |
+| RequestGroup          | [View All](https://app.medplum.com/RequestGroup)          | [Create New](https://app.medplum.com/RequestGroup/new) | [API](/docs/api/fhir/resources/requestgroup)          |
+| Task                  | [View All](https://app.medplum.com/Task)                  | [Create New](https://app.medplum.com/Task/new)         | [API](/docs/api/fhir/resources/task)                  |
+| QuestionnaireResponse | [View All](https://app.medplum.com/QuestionnaireResponse) | Created via API or workflow                            | [API](/docs/api/fhir/resources/questionnaireresponse) |
+| Appointment           | [View All](https://app.medplum.com/Appointment)           | [Create New](https://app.medplum.com/Appointment/new)  | [API](/docs/api/fhir/resources/appointment)           |
+| Medication            | [View All](https://app.medplum.com/Medication)            | [Create New](https://app.medplum.com/Medication/new)   | [API](/docs/api/fhir/resources/medication)            |
 
 ## Demos and Reference Material
 
