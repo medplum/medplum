@@ -89,4 +89,4 @@ HIPAA compliance and SOC 2 Type 2 certified. We provide in-depth guides, content
 
 ## Security
 
-Medplum's hosted service follows all security best practices, and comes with HIPAA and SOC2 compliance out of the box. We follow all OWASP security guidelines, and have been verified by multiple penetration tests. [Learn More](/docs/security)
+Medplum's hosted service follows all security best practices, and comes with HIPAA and SOC2 compliance out of the box. We follow all OWASP security guidelines, and have been verified by multiple penetration tests. [Learn More](/security)
