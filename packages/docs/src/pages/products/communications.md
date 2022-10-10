@@ -23,7 +23,7 @@ The Medplum Forms implementation is a very standards compliant implementation of
 | -------------------- | -------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------- |
 | Communication        | [View All](https://app.medplum.com/Communication)        | [Create New](https://app.medplum.com/Communication/new)        | [API](/docs/api/fhir/resources/communication)        |
 | CommunicationRequest | [View All](https://app.medplum.com/CommunicationRequest) | [Create New](https://app.medplum.com/CommunicationRequest/new) | [API](/docs/api/fhir/resources/communicationrequest) |
-| Attachment           | FHIR Datatype                                            | Create via API                                                 | [Reference](/docs/api/fhir/datatype/attachment)      |
+| Attachment           | FHIR Datatype                                            | Create via API                                                 | [Reference](/docs/api/fhir/datatypes/attachment)     |
 | Media                | [View All](https://app.medplum.com/Media)                | [Create New](https://app.medplum.com/Media/new)                | [API](/docs/api/fhir/resources/media)                |
 
 ## Demos and Reference Material
