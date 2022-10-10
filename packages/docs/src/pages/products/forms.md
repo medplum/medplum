@@ -11,26 +11,26 @@ Medplum supports collecting form data in a standards compliant way and using it 
 
 ## Features
 
-The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Questionnaires](https://www.medplum.com/docs/api/fhir/resources/questionnaire). It has the following features.
+The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Questionnaires](/docs/api/fhir/resources/questionnaire). It has the following features.
 
 - **Questionnaire Builder**: Medplum supports a Google Forms-like experience for building questionnaires. You can build your questionnaires on [app.medplum.com](https://app.medplum.com/Questionnaire). See a sample on [storybook](https://storybook.medplum.com/?path=/docs/medplum-questionnairebuilder--basic).
 
-- **Questionnaire Library**: Store and manage your questionnaires programmatically or on [app.medplum.com](https://www.medplum.com/docs/api/fhir/resources/questionnaire).
+- **Questionnaire Library**: Store and manage your questionnaires programmatically or on [app.medplum.com](/docs/api/fhir/resources/questionnaire).
 
 - **React component**: Add forms to your applications via pre-built React components. View samples on [storybook](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--basic)
 
 - **API and SDK**: Ability to search, create and update questionnaires and responses via API.
 
-- **Response Management**: Automatically trigger emails, notifications and workflows after a user submits a form. View [tutorial](https://www.medplum.com/docs/tutorials/bots/bot-for-questionnaire-response)
+- **Response Management**: Automatically trigger emails, notifications and workflows after a user submits a form. View [tutorial](/docs/tutorials/bots/bot-for-questionnaire-response)
 
 - **Version history and tagging**: Add metadata such as category or intended audience to questionnaires as well as track version history.
 
 ## FHIR Resources
 
-| Resource               | App Link                                                  | Create New                                              | API Documentation                                                            |
-| ---------------------- | --------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------- |
-| Questionnaire          | [View All](https://app.medplum.com/Questionnaire)         | [Create New](https://app.medplum.com/Questionnaire/new) | [API](https://www.medplum.com/docs/api/fhir/resources/questionnaire)         |
-| Questionnaire Response | [View All](https://app.medplum.com/QuestionnaireResponse) | Create via API or workflow                              | [API](https://www.medplum.com/docs/api/fhir/resources/questionnaireresponse) |
+| Resource               | App Link                                                  | Create New                                              | API Documentation                                     |
+| ---------------------- | --------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
+| Questionnaire          | [View All](https://app.medplum.com/Questionnaire)         | [Create New](https://app.medplum.com/Questionnaire/new) | [API](/docs/api/fhir/resources/questionnaire)         |
+| Questionnaire Response | [View All](https://app.medplum.com/QuestionnaireResponse) | Create via API or workflow                              | [API](/docs/api/fhir/resources/questionnaireresponse) |
 
 ## Demos and Reference Material
 
@@ -39,4 +39,4 @@ The Medplum Forms implementation is a very standards compliant implementation of
 - [Storybook Social Determinants of Health (SDH)](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--ahchrsn-screening)
 - [Foo Medical](https://foomedical.com/) sample patient portal with questionnaires
 - [Provider Demo](https://provider.foomedical.com/) sample simple EHR with questionnaires
-- [Questionnaire Automation Tutorial](https://www.medplum.com/docs/tutorials/bots) shows how to build automations on questionnaire submission
+- [Questionnaire Automation Tutorial](/docs/tutorials/bots) shows how to build automations on questionnaire submission
