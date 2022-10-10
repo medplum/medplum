@@ -7,3 +7,4 @@ export * from './subscription';
 export * from './types';
 export * from './valueset';
 export * from './workflow';
+export * from './covid19';
