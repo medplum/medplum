@@ -694,11 +694,16 @@ export const Covid19ReviewReport: ActivityDefinition = {
   id: 'covid19-review-report',
   status: 'active',
   kind: 'Task',
+  participant: [
+    {
+      type: 'practitioner',
+    },
+  ],
 };
 
 export const Covid19CarePlanDefinition: PlanDefinition = {
   resourceType: 'PlanDefinition',
-  title: 'COVID-19 Evaluation',
+  title: 'COVID-19 Evaluation Pre-Admission to Inpatient Oncology Department',
   identifier: [
     {
       system: 'foomedical.com',
@@ -712,30 +717,35 @@ export const Covid19CarePlanDefinition: PlanDefinition = {
       title: 'Request COVID-19 Symptoms Assessment',
       description: 'Request patient to complete "Request COVID-19 Symptoms Assessment" questionnaire',
       definitionCanonical: getReferenceString(Covid19AssessmentQuestionnaire),
+      timingDateTime: '2022-01-01',
     },
     {
       id: '1',
       title: 'Initial Patient Consultation',
       description: 'Schedule initial patient consultation',
       definitionCanonical: getReferenceString(DrAliceSmithSchedule),
+      timingDateTime: '2022-01-02',
     },
     {
       id: '2',
       title: 'Order COVID-19 PCR Test',
       description: 'Order COVID-19 PCR Panel (Loinc: 96894-1)',
       definitionCanonical: getReferenceString(Covid19PCRTest),
+      timingDateTime: '2022-01-04',
     },
     {
       id: '3',
       title: 'Review COVID-19 Report',
       description: 'Review COVID-19 PCR diagnostic results',
       definitionCanonical: getReferenceString(Covid19ReviewReport),
+      timingDateTime: '2022-01-05',
     },
     {
       id: '4',
-      title: 'Patient Follow-up',
+      title: 'Patient Follow Up: Patient admission appointment with specialist',
       description: 'Schedule patient follow-up call to review diagnostic results',
       definitionCanonical: getReferenceString(DrAliceSmithSchedule),
+      timingDateTime: '2022-01-06',
     },
   ],
   id: 'covid19-care-plan-definition',
@@ -859,7 +869,7 @@ export const Covid19RequestGroup: RequestGroup = {
     {
       id: 'action-4',
       resource: createReference(Covid19FollowUpConsultTask),
-      title: 'Patient Follow-up',
+      title: 'Patient Follow Up: Patient admission appointment with specialist',
     },
   ],
   id: 'covid19-request-group',
