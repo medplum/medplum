@@ -40,10 +40,31 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
     case 'token':
       return matchesTokenFilter(resource, filter, searchParam);
     case 'date':
-      return true;
+      return matchesDateFilter(resource, filter, searchParam);
   }
   // Unknown search parameter or search parameter type
   // Default fail the check
+  return false;
+}
+
+function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+  const values = evalFhirPath(searchParam.expression as string, resource) as (Reference | string)[];
+
+  if (filter.value === '' && values.length === 0) {
+    // If the filter operator is "equals", then the filter matches.
+    // If the filter operator is "not equals", then the filter does not match.
+    return filter.operator === Operator.EQUALS;
+  }
+
+  // Normalize the values array into reference strings
+  const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
+
+  for (const filterValue of filter.value.split(',')) {
+    const found = references.includes(filterValue);
+    if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
+      return true;
+    }
+  }
   return false;
 }
 
@@ -63,73 +84,60 @@ function matchesBooleanFilter(resource: Resource, filter: Filter, searchParam: S
   return filter.operator === Operator.NOT_EQUALS ? !result : result;
 }
 
-function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource).map((value) => {
-    if (value) {
-      if (typeof value === 'string') {
-        // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
-        // This is a reference string that is not a FHIR reference
-        return value;
+function matchesStringFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+  const resourceValues = evalFhirPath(searchParam.expression as string, resource);
+  const filterValues = filter.value.split(',');
+  for (const resourceValue of resourceValues) {
+    for (const filterValue of filterValues) {
+      if (matchesStringValue(resourceValue, filter.operator, filterValue)) {
+        return true;
       }
-      if (typeof value === 'object') {
-        // Handle normal "reference" properties
-        return (value as Reference).reference;
-      }
-    }
-    return undefined;
-  });
-
-  if (filter.value === '' && values.length === 0) {
-    return true;
-  }
-
-  for (const filterValue of filter.value.split(',')) {
-    const found = values.includes(filterValue);
-    if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
-      return true;
     }
   }
   return false;
 }
 
-function matchesStringFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
-  const values = evalFhirPath(searchParam.expression as string, resource);
-  for (const filterValue of filter.value.split(',')) {
-    switch (filter.operator) {
-      case Operator.GREATER_THAN:
-        if (values.some((value) => (value as any).toString() > filterValue)) {
-          return true;
-        }
-        break;
-
-      case Operator.GREATER_THAN_OR_EQUALS:
-        if (values.some((value) => (value as any).toString() >= filterValue)) {
-          return true;
-        }
-        break;
-
-      case Operator.LESS_THAN:
-        if (values.some((value) => (value as any).toString() < filterValue)) {
-          return true;
-        }
-        break;
-
-      case Operator.LESS_THAN_OR_EQUALS:
-        if (values.some((value) => (value as any).toString() <= filterValue)) {
-          return true;
-        }
-        break;
-
-      default: {
-        const found =
-          filterValue === '' ||
-          values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-        if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
-          return true;
-        }
-      }
+function matchesStringValue(resourceValue: unknown, operator: Operator, filterValue: string): boolean {
+  let str = '';
+  if (resourceValue) {
+    if (typeof resourceValue === 'string') {
+      str = resourceValue;
+    } else if (typeof resourceValue === 'object') {
+      str = JSON.stringify(resourceValue);
     }
   }
 
+  const isMatch = str.toLowerCase().includes(filterValue.toLowerCase());
+  return operator === Operator.NOT_EQUALS ? !isMatch : isMatch;
+}
+
+function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+  const resourceValues = evalFhirPath(searchParam.expression as string, resource);
+  const filterValues = filter.value.split(',');
+  for (const resourceValue of resourceValues) {
+    for (const filterValue of filterValues) {
+      if (matchesDateValue(resourceValue as string, filter.operator, filterValue)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function matchesDateValue(resourceValue: string, operator: Operator, filterValue: string): boolean {
+  switch (operator) {
+    case Operator.GREATER_THAN:
+      return resourceValue > filterValue;
+    case Operator.GREATER_THAN_OR_EQUALS:
+      return resourceValue >= filterValue;
+    case Operator.LESS_THAN:
+      return resourceValue < filterValue;
+    case Operator.LESS_THAN_OR_EQUALS:
+      return resourceValue <= filterValue;
+    case Operator.EQUALS:
+      return resourceValue === filterValue;
+    case Operator.NOT_EQUALS:
+      return resourceValue !== filterValue;
+  }
   return false;
 }
