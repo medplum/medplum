@@ -680,6 +680,8 @@ export const Covid19PCRTest: ActivityDefinition = {
   id: 'covid19-pcr-test',
   status: 'active',
   kind: 'ServiceRequest',
+  title: 'Order COVID-19 PCR Test',
+  description: 'Order COVID-19 PCR Panel (Loinc: 96894-1)',
   code: {
     coding: [{ system: 'http://loinc.org', code: '96894-1' }],
   },
@@ -687,6 +689,8 @@ export const Covid19PCRTest: ActivityDefinition = {
 
 export const Covid19ReviewReport: ActivityDefinition = {
   resourceType: 'ActivityDefinition',
+  title: 'Review COVID-19 Report',
+  description: 'Review COVID-19 PCR diagnostic results',
   id: 'covid19-review-report',
   status: 'active',
   kind: 'Task',

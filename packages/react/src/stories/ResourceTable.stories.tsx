@@ -1,4 +1,4 @@
-import { HomerObservation1, HomerSimpson } from '@medplum/mock';
+import { HomerObservation1, HomerSimpson, Covid19PCRTest, Covid19ReviewReport } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -24,5 +24,17 @@ export const Observation = (): JSX.Element => (
 export const ObservationIgnoreEmpty = (): JSX.Element => (
   <Document>
     <ResourceTable value={HomerObservation1} ignoreMissingValues={true} />
+  </Document>
+);
+
+export const Covid19PCRTestActivity = (): JSX.Element => (
+  <Document>
+    <ResourceTable value={Covid19PCRTest} ignoreMissingValues={true} />
+  </Document>
+);
+
+export const Covid19ReviewReportActivity = (): JSX.Element => (
+  <Document>
+    <ResourceTable value={Covid19ReviewReport} ignoreMissingValues={true} />
   </Document>
 );

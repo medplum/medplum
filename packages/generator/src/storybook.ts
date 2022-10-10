@@ -12,6 +12,7 @@ const resourceTypes = [
   'DiagnosticReport',
   'Observation',
   'PlanDefinition',
+  'ActivityDefinition',
   'Questionnaire',
   'QuestionnaireResponse',
   'ServiceRequest',
