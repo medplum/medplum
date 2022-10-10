@@ -18,7 +18,7 @@ To get a sense of what bots are, it's useful to consider some examples. Below ar
 Bots are written in TypeScript using the Medplum [SDK](/docs/sdk). Bots are then deployed into and hosted as part of the core application, much like AWS Lambdas. When the bot is invoked the bot code is executed.
 
 - The bots active in your account can be viewed in on [app.medplum.com](https://app.medplum.com/Bot)
-- Tutorials on how to write bots can be found [here](/docs/tutorials/bots/hl7-into-fhir)
+- Tutorials on how to write bots can be found [here](/docs/tutorials/bots)
 - Reference implementations of common bots can be found [here](https://github.com/medplum/medplum-demo-bots)
 - Command Line Interface (CLI) documentation for testing and deploying bots can be found [here](/docs/tutorials/bots/bots-in-production)
 
