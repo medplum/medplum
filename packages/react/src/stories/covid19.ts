@@ -7,8 +7,8 @@ import {
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
-import { DrAliceSmith, DrAliceSmithSchedule } from './alice';
-import { HomerDiagnosticReport, HomerSimpson } from './simpsons';
+import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
+import { HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
 
 export const Covid19AssessmentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
@@ -40,8 +40,8 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
       ],
     },
   ],
-  description: 'COVID-19 assessment questionnaire',
-  name: 'covid19_assessment_questionnaire',
+  description: 'COVID-19 Assessment Questionnaire',
+  name: 'COVID-19 Assessment Questionnaire',
   code: [
     {
       system: 'http://loinc.org',
@@ -761,7 +761,7 @@ export const Covid19AssessmentTask: Task = {
   },
   description: 'Request patient to complete "Request COVID-19 Symptoms Assessment" questionnaire',
   intent: 'order',
-  status: 'in-progress',
+  status: 'completed',
   for: createReference(HomerSimpson),
   requester: createReference(DrAliceSmith),
   id: 'covid19-assessment-task',

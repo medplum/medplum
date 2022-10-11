@@ -58,19 +58,6 @@ import {
   ExampleWorkflowTask3,
 } from './mocks/workflow';
 
-import {
-  Covid19AssessmentQuestionnaire,
-  Covid19CarePlanDefinition,
-  Covid19PCRServiceRequest,
-  Covid19RequestGroup,
-  Covid19ReviewReport,
-  Covid19AssessmentTask,
-  Covid19PCRTask,
-  Covid19PCRTest,
-  Covid19FollowUpConsultTask,
-  Covid19InitialConsultTask,
-  Covid19ReviewLabsTask,
-} from './mocks/covid19';
 import { MemoryRepository } from './repo';
 
 export interface MockClientOptions {
@@ -421,17 +408,7 @@ class MockFetchClient {
     this.mockRepo.createResource(ExampleWorkflowTask2);
     this.mockRepo.createResource(ExampleWorkflowTask3);
     this.mockRepo.createResource(ExampleWorkflowRequestGroup);
-    this.mockRepo.createResource(Covid19AssessmentQuestionnaire);
-    this.mockRepo.createResource(Covid19CarePlanDefinition);
-    this.mockRepo.createResource(Covid19PCRServiceRequest);
-    this.mockRepo.createResource(Covid19RequestGroup);
-    this.mockRepo.createResource(Covid19ReviewReport);
-    this.mockRepo.createResource(Covid19AssessmentTask);
-    this.mockRepo.createResource(Covid19PCRTask);
-    this.mockRepo.createResource(Covid19PCRTest);
-    this.mockRepo.createResource(Covid19FollowUpConsultTask);
-    this.mockRepo.createResource(Covid19InitialConsultTask);
-    this.mockRepo.createResource(Covid19ReviewLabsTask);
+
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
 

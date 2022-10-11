@@ -1,8 +1,9 @@
-import { HomerObservation1, HomerSimpson, Covid19PCRTest, Covid19ReviewReport } from '@medplum/mock';
+import { HomerObservation1, HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
 import { ResourceTable } from '../ResourceTable';
+import { Covid19PCRTest, Covid19ReviewReport } from './covid19';
 
 export default {
   title: 'Medplum/ResourceTable',
