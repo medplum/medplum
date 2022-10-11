@@ -49,7 +49,7 @@ describe('PanelsPage', () => {
       observationResultRequirement: [createReference(assay1)],
     } as ActivityDefinition);
 
-    expect(await medplum.searchResources('ActivityDefinition', '_count=100')).toHaveLength(4);
+    expect(await medplum.searchResources('ActivityDefinition', '_count=100')).toHaveLength(2);
     expect(await medplum.searchResources('ObservationDefinition', '_count=100')).toHaveLength(2);
   });
 
