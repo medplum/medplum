@@ -1,6 +1,1100 @@
 [
   {
     "resourceType": "StructureDefinition",
+    "id": "ActivityDefinition",
+    "name": "ActivityDefinition",
+    "type": "ActivityDefinition",
+    "snapshot": {
+      "element": [
+        {
+          "id": "ActivityDefinition",
+          "path": "ActivityDefinition",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "ActivityDefinition.id",
+          "path": "ActivityDefinition.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.meta",
+          "path": "ActivityDefinition.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.implicitRules",
+          "path": "ActivityDefinition.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.language",
+          "path": "ActivityDefinition.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.text",
+          "path": "ActivityDefinition.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.contained",
+          "path": "ActivityDefinition.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.extension",
+          "path": "ActivityDefinition.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.modifierExtension",
+          "path": "ActivityDefinition.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.url",
+          "path": "ActivityDefinition.url",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.url",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.identifier",
+          "path": "ActivityDefinition.identifier",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.identifier",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.version",
+          "path": "ActivityDefinition.version",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.version",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.name",
+          "path": "ActivityDefinition.name",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.name",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.title",
+          "path": "ActivityDefinition.title",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.title",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.subtitle",
+          "path": "ActivityDefinition.subtitle",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.subtitle",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.status",
+          "path": "ActivityDefinition.status",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.status",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.experimental",
+          "path": "ActivityDefinition.experimental",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.experimental",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.subject[x]",
+          "path": "ActivityDefinition.subject[x]",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.subject[x]",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Group"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.date",
+          "path": "ActivityDefinition.date",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.date",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "dateTime"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.publisher",
+          "path": "ActivityDefinition.publisher",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.publisher",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.contact",
+          "path": "ActivityDefinition.contact",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.contact",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.description",
+          "path": "ActivityDefinition.description",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.description",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.useContext",
+          "path": "ActivityDefinition.useContext",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.useContext",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "UsageContext"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.jurisdiction",
+          "path": "ActivityDefinition.jurisdiction",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.jurisdiction",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.purpose",
+          "path": "ActivityDefinition.purpose",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.purpose",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.usage",
+          "path": "ActivityDefinition.usage",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.usage",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.copyright",
+          "path": "ActivityDefinition.copyright",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.copyright",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "markdown"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.approvalDate",
+          "path": "ActivityDefinition.approvalDate",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.approvalDate",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.lastReviewDate",
+          "path": "ActivityDefinition.lastReviewDate",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.lastReviewDate",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "date"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.effectivePeriod",
+          "path": "ActivityDefinition.effectivePeriod",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.effectivePeriod",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.topic",
+          "path": "ActivityDefinition.topic",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.topic",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.author",
+          "path": "ActivityDefinition.author",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.author",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.editor",
+          "path": "ActivityDefinition.editor",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.editor",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.reviewer",
+          "path": "ActivityDefinition.reviewer",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.reviewer",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.endorser",
+          "path": "ActivityDefinition.endorser",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.endorser",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "ContactDetail"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.relatedArtifact",
+          "path": "ActivityDefinition.relatedArtifact",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.relatedArtifact",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "RelatedArtifact"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.library",
+          "path": "ActivityDefinition.library",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.library",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Library"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.kind",
+          "path": "ActivityDefinition.kind",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.kind",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.profile",
+          "path": "ActivityDefinition.profile",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.profile",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureDefinition"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.code",
+          "path": "ActivityDefinition.code",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.code",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.intent",
+          "path": "ActivityDefinition.intent",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.intent",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.priority",
+          "path": "ActivityDefinition.priority",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.priority",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.doNotPerform",
+          "path": "ActivityDefinition.doNotPerform",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.doNotPerform",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.timing[x]",
+          "path": "ActivityDefinition.timing[x]",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.timing[x]",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Timing"
+            },
+            {
+              "code": "dateTime"
+            },
+            {
+              "code": "Age"
+            },
+            {
+              "code": "Period"
+            },
+            {
+              "code": "Range"
+            },
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.location",
+          "path": "ActivityDefinition.location",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.location",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant",
+          "path": "ActivityDefinition.participant",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.participant",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant.id",
+          "path": "ActivityDefinition.participant.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant.extension",
+          "path": "ActivityDefinition.participant.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant.modifierExtension",
+          "path": "ActivityDefinition.participant.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant.type",
+          "path": "ActivityDefinition.participant.type",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.participant.type",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.participant.role",
+          "path": "ActivityDefinition.participant.role",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.participant.role",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.product[x]",
+          "path": "ActivityDefinition.product[x]",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.product[x]",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Medication",
+                "http://hl7.org/fhir/StructureDefinition/Substance"
+              ]
+            },
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.quantity",
+          "path": "ActivityDefinition.quantity",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.quantity",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dosage",
+          "path": "ActivityDefinition.dosage",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.dosage",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Dosage"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.bodySite",
+          "path": "ActivityDefinition.bodySite",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.bodySite",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.specimenRequirement",
+          "path": "ActivityDefinition.specimenRequirement",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.specimenRequirement",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/SpecimenDefinition"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.observationRequirement",
+          "path": "ActivityDefinition.observationRequirement",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.observationRequirement",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.observationResultRequirement",
+          "path": "ActivityDefinition.observationResultRequirement",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.observationResultRequirement",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ObservationDefinition"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.transform",
+          "path": "ActivityDefinition.transform",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.transform",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "canonical",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/StructureMap"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue",
+          "path": "ActivityDefinition.dynamicValue",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ActivityDefinition.dynamicValue",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue.id",
+          "path": "ActivityDefinition.dynamicValue.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue.extension",
+          "path": "ActivityDefinition.dynamicValue.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue.modifierExtension",
+          "path": "ActivityDefinition.dynamicValue.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue.path",
+          "path": "ActivityDefinition.dynamicValue.path",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.dynamicValue.path",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ActivityDefinition.dynamicValue.expression",
+          "path": "ActivityDefinition.dynamicValue.expression",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "ActivityDefinition.dynamicValue.expression",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Expression"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "Communication",
     "name": "Communication",
     "type": "Communication",
