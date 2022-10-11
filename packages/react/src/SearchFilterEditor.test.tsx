@@ -14,10 +14,6 @@ async function setup(child: React.ReactNode): Promise<void> {
 }
 
 describe('SearchFilterEditor', () => {
-  beforeAll(async () => {
-    await medplum.requestSchema('Patient');
-  });
-
   beforeEach(() => {
     jest.useFakeTimers();
   });

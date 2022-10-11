@@ -12,10 +12,6 @@ import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
-  beforeAll(async () => {
-    await new MockClient().requestSchema('Patient');
-  });
-
   function setup(partialProps: Partial<SearchPopupMenuProps>): void {
     const props = {
       visible: true,

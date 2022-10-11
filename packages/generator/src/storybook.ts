@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -18,7 +18,10 @@ const resourceTypes = [
   'Specimen',
   'Bot',
   'Project',
+  'Communication',
+  'Media',
 ];
+
 const properties = [
   'resourceType',
   'name',
@@ -35,9 +38,35 @@ const properties = [
   'address',
   'city',
   'action',
+  'base',
+  'expression',
+];
+
+const searchParams = [
+  'Patient-name',
+  'Patient-birthdate',
+  'Patient-organization',
+  'Patient-active',
+  'individual-telecom',
+  'individual-email',
+  'individual-phone',
+  'individual-address-city',
+  'individual-address-state',
+  'ServiceRequest-subject',
+  'ServiceRequest-authored',
+  'Observation-value-quantity',
+  'Observation-value-string',
+  'Encounter-length',
+  'Communication-encounter',
+  'Media-encounter',
 ];
 
 export function main(): void {
+  writeStructureDefinitions();
+  writeSearchParameters();
+}
+
+function writeStructureDefinitions(): void {
   const output: StructureDefinition[] = [];
   addStructureDefinitions('fhir/r4/profiles-resources.json', output);
   addStructureDefinitions('fhir/r4/profiles-medplum.json', output);
@@ -56,6 +85,22 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
       output.push(resource);
     }
   }
+}
+
+function writeSearchParameters(): void {
+  const input = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
+  const output: SearchParameter[] = [];
+  for (const entry of input.entry as BundleEntry<SearchParameter>[]) {
+    const resource = entry.resource as SearchParameter;
+    if (searchParams.includes(resource.id as string)) {
+      output.push(resource);
+    }
+  }
+  writeFileSync(
+    resolve(__dirname, '../../mock/src/mocks/searchparameters.json'),
+    JSON.stringify(output, keyReplacer, 2),
+    'utf8'
+  );
 }
 
 function keyReplacer(key: string, value: any): any {

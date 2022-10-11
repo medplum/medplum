@@ -1,5 +1,22 @@
-import { allOk, LoginState, NewPatientRequest, NewProjectRequest, NewUserRequest, notFound } from '@medplum/core';
-import { CodeableConcept, OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import {
+  allOk,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  LoginState,
+  NewPatientRequest,
+  NewProjectRequest,
+  NewUserRequest,
+  notFound,
+} from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import {
+  Bundle,
+  CodeableConcept,
+  OperationOutcome,
+  Patient,
+  SearchParameter,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
@@ -7,6 +24,10 @@ import { HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+
     Object.defineProperty(global, 'TextEncoder', {
       value: TextEncoder,
     });
@@ -424,10 +445,8 @@ describe('MockClient', () => {
       expect((err as OperationOutcome).id).toEqual('not-found');
     }
   });
-
-  test('Empty search', async () => {
-    const client = new MockClient();
-    const result = await client.search('Schedule', 'name=');
-    expect(result.entry).toHaveLength(1);
-  });
 });
+
+function fail(reason: string): never {
+  throw new Error(reason);
+}

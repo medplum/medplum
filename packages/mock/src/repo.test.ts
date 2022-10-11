@@ -1,9 +1,17 @@
-import { OperationOutcome, Patient } from '@medplum/fhirtypes';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
 
 describe('Mock Repo', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   test('Create resource with ID', async () => {
     const client = new MockClient();
     const id = randomUUID();

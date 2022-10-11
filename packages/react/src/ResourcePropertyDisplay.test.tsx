@@ -1,10 +1,8 @@
-import { indexStructureDefinitionBundle, PropertyType } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { PropertyType } from '@medplum/core';
 import {
   Address,
   Annotation,
   Attachment,
-  Bundle,
   CodeableConcept,
   Coding,
   ContactPoint,
@@ -383,8 +381,6 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders BackboneElement', () => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-
     const value: SubscriptionChannel = {
       type: 'rest-hook',
       endpoint: 'https://example.com/hook',
