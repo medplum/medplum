@@ -1,9 +1,13 @@
 # [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main) [![Featured on Openbase](https://badges.openbase.com/js/featured/@medplum/core.svg?token=UnCQpn8imdOYaqKQa6AI2km3rXx5shpt6bKIoGj3KMk=)](https://openbase.com/js/@medplum/core?utm_source=embedded&utm_medium=badge&utm_campaign=rate-badge)
 
-Medplum is a developer platform that enables flexible and rapid development of healthcare apps. In consists of 3 main components
+Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
-- **Medplum Clinical Data Repository (CDR)** - This is the the backend server that hosts your healthcare data in a secure, compliant, and standards based repository. The Medplum CDR also exposes a FHIR-based API for sending, receiving, and manipulating data
+- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
+- **Medplum Clinical Data Repository (CDR)** - This is the backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
+- **Medplum API** - The Medplum CDR also exposes a FHIR-based API for sending, receiving, and manipulating data.
+- **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**.
 - **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+- **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
 - **UI Component Library** - Medplum ships with a system of React components designed to help you quickly develop custom healthcare applications
 
 ## Docs
