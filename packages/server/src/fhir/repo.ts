@@ -13,6 +13,7 @@ import {
   isGone,
   isNotFound,
   isOk,
+  matchesSearchRequest,
   normalizeErrorString,
   notFound,
   Operator as FhirOperator,
@@ -66,7 +67,7 @@ import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, Looku
 import { getPatient } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
-import { matchesSearchRequest, parseSearchUrl } from './search';
+import { parseSearchUrl } from './search';
 import {
   Column,
   Condition,
