@@ -1,6 +1,5 @@
-import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, Reference, Schedule, SearchParameter } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Reference, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -21,12 +20,6 @@ function setup(schedule: Schedule | Reference<Schedule>): void {
 }
 
 describe('Scheduler', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-  });
-
   test('Renders by reference', async () => {
     await act(async () => {
       setup(createReference(DrAliceSmithSchedule));

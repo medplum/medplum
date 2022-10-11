@@ -126,10 +126,12 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
 
 function matchesDateValue(resourceValue: string, operator: Operator, filterValue: string): boolean {
   switch (operator) {
+    case Operator.STARTS_AFTER:
     case Operator.GREATER_THAN:
       return resourceValue > filterValue;
     case Operator.GREATER_THAN_OR_EQUALS:
       return resourceValue >= filterValue;
+    case Operator.ENDS_BEFORE:
     case Operator.LESS_THAN:
       return resourceValue < filterValue;
     case Operator.LESS_THAN_OR_EQUALS:

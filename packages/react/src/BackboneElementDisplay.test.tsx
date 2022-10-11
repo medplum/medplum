@@ -1,6 +1,3 @@
-import { indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
@@ -20,10 +17,6 @@ describe('BackboneElementDisplay', () => {
       </MemoryRouter>
     );
   }
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-  });
 
   test('Renders null', () => {
     setup({
