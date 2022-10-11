@@ -61,7 +61,14 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
   const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
 
   for (const filterValue of filter.value.split(',')) {
-    const match = references.includes(filterValue);
+    let match = references.includes(filterValue);
+    if (!match && filter.code === '_compartment') {
+      // Backwards compability for compartment search parameter
+      // In previous versions, the resource type was not required in compartment values
+      // So, "123" would match "Patient/123"
+      // We need to maintain this behavior for backwards compatibility
+      match = references.some((reference) => reference?.endsWith('/' + filterValue));
+    }
     if (match && !negated) {
       return true;
     }
