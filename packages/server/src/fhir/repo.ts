@@ -411,6 +411,15 @@ export class Repository {
       throw tooManyRequests;
     }
 
+    if (existing) {
+      (existing.meta as Meta).compartment = this.#getCompartments(existing);
+
+      if (!this.#canWriteResource(existing)) {
+        // Check before the update
+        throw forbidden;
+      }
+    }
+
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.#restoreReadonlyFields(resource, existing),
       meta: {
@@ -445,6 +454,7 @@ export class Repository {
     resultMeta.compartment = this.#getCompartments(result);
 
     if (!this.#canWriteResource(result)) {
+      // Check after the update
       throw forbidden;
     }
 
