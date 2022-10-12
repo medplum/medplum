@@ -1,3 +1,5 @@
+import { createReference } from '@medplum/core';
+import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document';
@@ -16,6 +18,6 @@ export const Practitioners = (): JSX.Element => (
 
 export const Patients = (): JSX.Element => (
   <Document>
-    <ResourceInput name="foo" resourceType="Patient" />
+    <ResourceInput name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} />
   </Document>
 );
