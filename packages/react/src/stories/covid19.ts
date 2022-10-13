@@ -1,10 +1,12 @@
 import { createReference, getReferenceString } from '@medplum/core';
 import {
   ActivityDefinition,
+  ObservationDefinition,
   PlanDefinition,
   Questionnaire,
   RequestGroup,
   ServiceRequest,
+  SpecimenDefinition,
   Task,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
@@ -675,16 +677,50 @@ export const Covid19AssessmentQuestionnaire: Questionnaire = {
   id: 'covid19-assessment',
 };
 
+export const Covid19NasalSpecimen: SpecimenDefinition = {
+  resourceType: 'SpecimenDefinition',
+  id: 'covid19-nasal-specimen',
+  typeCollected: {
+    coding: [{ system: 'http://snomed.info/sct', code: '871810001', display: 'Mid-turbinate nasal swab' }],
+  },
+};
+
+export const Covid19PCRObservationDefinition: ObservationDefinition = {
+  resourceType: 'ObservationDefinition',
+  id: 'covid19pcr-observation-definition',
+  preferredReportName: 'SARS-CoV-2 (COVID-19) RNA [Presence] in Respiratory specimen by NAA with probe detection',
+  code: {
+    coding: [
+      {
+        code: '94500-6',
+        system: 'http://loinc.org',
+        display: 'SARS-CoV-2 (COVID-19) RNA [Presence] in Respiratory specimen by NAA with probe detection',
+      },
+    ],
+  },
+  permittedDataType: ['string'],
+};
+
 export const Covid19PCRTest: ActivityDefinition = {
   resourceType: 'ActivityDefinition',
   id: 'covid19-pcr-test',
   status: 'active',
   kind: 'ServiceRequest',
-  title: 'Order COVID-19 PCR Test',
-  description: 'Order COVID-19 PCR Panel (Loinc: 96894-1)',
+  title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
+  description:
+    'Order SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
   code: {
-    coding: [{ system: 'http://loinc.org', code: '96894-1' }],
+    coding: [
+      {
+        system: 'http://loinc.org',
+        code: '94531-1',
+        display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
+      },
+    ],
   },
+
+  specimenRequirement: [createReference(Covid19NasalSpecimen)],
+  observationResultRequirement: [createReference(Covid19PCRObservationDefinition)],
 };
 
 export const Covid19ReviewReport: ActivityDefinition = {
@@ -728,8 +764,9 @@ export const Covid19CarePlanDefinition: PlanDefinition = {
     },
     {
       id: '2',
-      title: 'Order COVID-19 PCR Test',
-      description: 'Order COVID-19 PCR Panel (Loinc: 96894-1)',
+      title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
+      description:
+        'Order SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
       definitionCanonical: getReferenceString(Covid19PCRTest),
       timingDateTime: '2022-01-04',
     },
@@ -746,6 +783,68 @@ export const Covid19CarePlanDefinition: PlanDefinition = {
       description: 'Schedule patient follow-up call to review diagnostic results',
       definitionCanonical: getReferenceString(DrAliceSmithSchedule),
       timingDateTime: '2022-01-06',
+    },
+  ],
+  id: 'covid19-care-plan-definition',
+};
+
+export const Covid19PCRLabService: PlanDefinition = {
+  resourceType: 'PlanDefinition',
+  title: 'SARS-CoV-2 (COVID-19) RNA panel',
+  description: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
+  type: {
+    coding: [
+      {
+        system: 'http://hl7.org/fhir/uv/order-catalog/CodeSystem/laboratory-service-definition-type',
+        code: 'test',
+        display: 'Unitary measurement performed on an in vitro biologic specimen',
+      },
+    ],
+  },
+  identifier: [
+    {
+      system: 'foomedical.com',
+      value: 'covid19-pcr-lab',
+    },
+  ],
+  status: 'active',
+  useContext: [
+    {
+      code: {
+        system: 'http://terminology.hl7.org/CodeSystem/usage-context-type',
+        code: 'task',
+      },
+      valueCodeableConcept: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+            code: 'LABOE',
+            display: 'laboratory test order entry task',
+          },
+        ],
+      },
+    },
+  ],
+  action: [
+    {
+      id: '0',
+      title: 'SARS-CoV-2 (COVID-19) RNA panel',
+      description:
+        'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
+      definitionCanonical: getReferenceString(Covid19PCRTest),
+      timingDateTime: '2022-01-04',
+
+      code: [
+        {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '94531-1',
+              display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
+            },
+          ],
+        },
+      ],
     },
   ],
   id: 'covid19-care-plan-definition',
@@ -791,7 +890,13 @@ export const Covid19PCRServiceRequest: ServiceRequest = {
 
   // Code
   code: {
-    coding: [{ system: 'http://loinc.org', code: '96894-1' }],
+    coding: [
+      {
+        system: 'http://loinc.org',
+        code: '94531-1',
+        display: 'SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection',
+      },
+    ],
   },
 };
 
@@ -799,7 +904,7 @@ export const Covid19PCRTask: Task = {
   meta: { author: createReference(DrAliceSmith) },
   resourceType: 'Task',
 
-  description: 'Order COVID-19 PCR Panel (Loinc: 96894-1)',
+  description: 'Order COVID-19 PCR Panel (Loinc: 94531-1)',
   intent: 'order',
   status: 'completed',
   for: createReference(HomerSimpson),
