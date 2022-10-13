@@ -4980,6 +4980,684 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "ObservationDefinition",
+    "name": "ObservationDefinition",
+    "type": "ObservationDefinition",
+    "snapshot": {
+      "element": [
+        {
+          "id": "ObservationDefinition",
+          "path": "ObservationDefinition",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "ObservationDefinition.id",
+          "path": "ObservationDefinition.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.meta",
+          "path": "ObservationDefinition.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.implicitRules",
+          "path": "ObservationDefinition.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.language",
+          "path": "ObservationDefinition.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.text",
+          "path": "ObservationDefinition.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.contained",
+          "path": "ObservationDefinition.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.extension",
+          "path": "ObservationDefinition.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.modifierExtension",
+          "path": "ObservationDefinition.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.publisher",
+          "path": "ObservationDefinition.publisher",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.publisher",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/Organization"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.category",
+          "path": "ObservationDefinition.category",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition.category",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.code",
+          "path": "ObservationDefinition.code",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.code",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.identifier",
+          "path": "ObservationDefinition.identifier",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition.identifier",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.permittedDataType",
+          "path": "ObservationDefinition.permittedDataType",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition.permittedDataType",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.multipleResultsAllowed",
+          "path": "ObservationDefinition.multipleResultsAllowed",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.multipleResultsAllowed",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.method",
+          "path": "ObservationDefinition.method",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.method",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.preferredReportName",
+          "path": "ObservationDefinition.preferredReportName",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.preferredReportName",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails",
+          "path": "ObservationDefinition.quantitativeDetails",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.quantitativeDetails",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.id",
+          "path": "ObservationDefinition.quantitativeDetails.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.extension",
+          "path": "ObservationDefinition.quantitativeDetails.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.modifierExtension",
+          "path": "ObservationDefinition.quantitativeDetails.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.customaryUnit",
+          "path": "ObservationDefinition.quantitativeDetails.customaryUnit",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.quantitativeDetails.customaryUnit",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.unit",
+          "path": "ObservationDefinition.quantitativeDetails.unit",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.quantitativeDetails.unit",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.conversionFactor",
+          "path": "ObservationDefinition.quantitativeDetails.conversionFactor",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.quantitativeDetails.conversionFactor",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "decimal"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.quantitativeDetails.decimalPrecision",
+          "path": "ObservationDefinition.quantitativeDetails.decimalPrecision",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.quantitativeDetails.decimalPrecision",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval",
+          "path": "ObservationDefinition.qualifiedInterval",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.id",
+          "path": "ObservationDefinition.qualifiedInterval.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.extension",
+          "path": "ObservationDefinition.qualifiedInterval.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.modifierExtension",
+          "path": "ObservationDefinition.qualifiedInterval.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.category",
+          "path": "ObservationDefinition.qualifiedInterval.category",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.category",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.range",
+          "path": "ObservationDefinition.qualifiedInterval.range",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.range",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.context",
+          "path": "ObservationDefinition.qualifiedInterval.context",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.context",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.appliesTo",
+          "path": "ObservationDefinition.qualifiedInterval.appliesTo",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.appliesTo",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.gender",
+          "path": "ObservationDefinition.qualifiedInterval.gender",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.gender",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.age",
+          "path": "ObservationDefinition.qualifiedInterval.age",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.age",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.gestationalAge",
+          "path": "ObservationDefinition.qualifiedInterval.gestationalAge",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.gestationalAge",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.qualifiedInterval.condition",
+          "path": "ObservationDefinition.qualifiedInterval.condition",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.qualifiedInterval.condition",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.validCodedValueSet",
+          "path": "ObservationDefinition.validCodedValueSet",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.validCodedValueSet",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.normalCodedValueSet",
+          "path": "ObservationDefinition.normalCodedValueSet",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.normalCodedValueSet",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.abnormalCodedValueSet",
+          "path": "ObservationDefinition.abnormalCodedValueSet",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.abnormalCodedValueSet",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "ObservationDefinition.criticalCodedValueSet",
+          "path": "ObservationDefinition.criticalCodedValueSet",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "ObservationDefinition.criticalCodedValueSet",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/ValueSet"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "Organization",
     "name": "Organization",
     "type": "Organization",
@@ -11612,6 +12290,788 @@
           "type": [
             {
               "code": "Annotation"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
+    "id": "SpecimenDefinition",
+    "name": "SpecimenDefinition",
+    "type": "SpecimenDefinition",
+    "snapshot": {
+      "element": [
+        {
+          "id": "SpecimenDefinition",
+          "path": "SpecimenDefinition",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "SpecimenDefinition.id",
+          "path": "SpecimenDefinition.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.meta",
+          "path": "SpecimenDefinition.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.implicitRules",
+          "path": "SpecimenDefinition.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.language",
+          "path": "SpecimenDefinition.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.text",
+          "path": "SpecimenDefinition.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.contained",
+          "path": "SpecimenDefinition.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.extension",
+          "path": "SpecimenDefinition.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.modifierExtension",
+          "path": "SpecimenDefinition.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.identifier",
+          "path": "SpecimenDefinition.identifier",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.identifier",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeCollected",
+          "path": "SpecimenDefinition.typeCollected",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeCollected",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.patientPreparation",
+          "path": "SpecimenDefinition.patientPreparation",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.patientPreparation",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.timeAspect",
+          "path": "SpecimenDefinition.timeAspect",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.timeAspect",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.collection",
+          "path": "SpecimenDefinition.collection",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.collection",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested",
+          "path": "SpecimenDefinition.typeTested",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.typeTested",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.id",
+          "path": "SpecimenDefinition.typeTested.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.extension",
+          "path": "SpecimenDefinition.typeTested.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.modifierExtension",
+          "path": "SpecimenDefinition.typeTested.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.isDerived",
+          "path": "SpecimenDefinition.typeTested.isDerived",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.isDerived",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.type",
+          "path": "SpecimenDefinition.typeTested.type",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.type",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.preference",
+          "path": "SpecimenDefinition.typeTested.preference",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.preference",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container",
+          "path": "SpecimenDefinition.typeTested.container",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.id",
+          "path": "SpecimenDefinition.typeTested.container.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.extension",
+          "path": "SpecimenDefinition.typeTested.container.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.modifierExtension",
+          "path": "SpecimenDefinition.typeTested.container.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.material",
+          "path": "SpecimenDefinition.typeTested.container.material",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.material",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.type",
+          "path": "SpecimenDefinition.typeTested.container.type",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.type",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.cap",
+          "path": "SpecimenDefinition.typeTested.container.cap",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.cap",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.description",
+          "path": "SpecimenDefinition.typeTested.container.description",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.description",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.capacity",
+          "path": "SpecimenDefinition.typeTested.container.capacity",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.capacity",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Quantity"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
+          "path": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.minimumVolume[x]",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Quantity"
+            },
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.additive",
+          "path": "SpecimenDefinition.typeTested.container.additive",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.additive",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.additive.id",
+          "path": "SpecimenDefinition.typeTested.container.additive.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.additive.extension",
+          "path": "SpecimenDefinition.typeTested.container.additive.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.additive.modifierExtension",
+          "path": "SpecimenDefinition.typeTested.container.additive.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.additive.additive[x]",
+          "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
+          "min": 1,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.additive.additive[x]",
+            "min": 1,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            },
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Substance"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.container.preparation",
+          "path": "SpecimenDefinition.typeTested.container.preparation",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.container.preparation",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.requirement",
+          "path": "SpecimenDefinition.typeTested.requirement",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.requirement",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.retentionTime",
+          "path": "SpecimenDefinition.typeTested.retentionTime",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.retentionTime",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.rejectionCriterion",
+          "path": "SpecimenDefinition.typeTested.rejectionCriterion",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.rejectionCriterion",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling",
+          "path": "SpecimenDefinition.typeTested.handling",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.handling",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "BackboneElement"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.id",
+          "path": "SpecimenDefinition.typeTested.handling.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Element.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.extension",
+          "path": "SpecimenDefinition.typeTested.handling.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Element.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.modifierExtension",
+          "path": "SpecimenDefinition.typeTested.handling.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "BackboneElement.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
+          "path": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.handling.temperatureQualifier",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.temperatureRange",
+          "path": "SpecimenDefinition.typeTested.handling.temperatureRange",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.handling.temperatureRange",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Range"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.maxDuration",
+          "path": "SpecimenDefinition.typeTested.handling.maxDuration",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.handling.maxDuration",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Duration"
+            }
+          ]
+        },
+        {
+          "id": "SpecimenDefinition.typeTested.handling.instruction",
+          "path": "SpecimenDefinition.typeTested.handling.instruction",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "SpecimenDefinition.typeTested.handling.instruction",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
             }
           ]
         }
