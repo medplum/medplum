@@ -20,6 +20,11 @@ import {
   isLowerCase,
   isProfileResource,
   isUUID,
+  preciseEquals,
+  preciseGreaterThan,
+  preciseGreaterThanOrEquals,
+  preciseLessThan,
+  preciseLessThanOrEquals,
   resolveId,
   setCodeBySystem,
   stringify,
@@ -547,7 +552,7 @@ describe('Core Utils', () => {
     };
 
     expect(findObservationInterval(def, patient, 0.89)?.condition).toBeUndefined();
-    expect(findObservationInterval(def, patient, 0.91)?.condition).toBe('L');
+    expect(findObservationInterval(def, patient, 0.91)?.condition).toBeUndefined();
     expect(findObservationInterval(def, patient, 0.99)?.condition).toBe('L');
     expect(findObservationInterval(def, patient, 1.0)?.condition).toBe('L');
     expect(findObservationInterval(def, patient, 1.9)?.condition).toBe('L');
@@ -645,5 +650,106 @@ describe('Core Utils', () => {
     expect(findObservationReferenceRange(def, homer, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, marge, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, bart, ['N'])?.range?.low?.value).toBe(3);
+  });
+
+  test('preciseEquals', () => {
+    expect(preciseEquals(0, 0)).toBe(true);
+    expect(preciseEquals(1, 1)).toBe(true);
+    expect(preciseEquals(1, 2)).toBe(false);
+
+    expect(preciseEquals(1, 1, 0)).toBe(true);
+    expect(preciseEquals(1, 1, 1)).toBe(true);
+    expect(preciseEquals(1, 1, 2)).toBe(true);
+    expect(preciseEquals(1, 1, 3)).toBe(true);
+
+    expect(preciseEquals(-1, -1, 0)).toBe(true);
+    expect(preciseEquals(-1, -1, 1)).toBe(true);
+    expect(preciseEquals(-1, -1, 2)).toBe(true);
+    expect(preciseEquals(-1, -1, 3)).toBe(true);
+
+    // Test precision
+    expect(preciseEquals(1.0, 1.0, 0)).toBe(true);
+    expect(preciseEquals(1.0, 1.01, 1)).toBe(true);
+    expect(preciseEquals(1.0, 1.06, 1)).toBe(false);
+    expect(preciseEquals(1.0, 1.001, 2)).toBe(true);
+    expect(preciseEquals(1.0, 1.006, 2)).toBe(false);
+    expect(preciseEquals(1.0, 1.0001, 3)).toBe(true);
+    expect(preciseEquals(1.0, 1.0006, 3)).toBe(false);
+
+    // Known floating point errors
+    expect(preciseEquals(0.3, 0.3)).toBe(true);
+    expect(preciseEquals(0.3, 0.3, 1)).toBe(true);
+    expect(preciseEquals(0.3, 0.3, 2)).toBe(true);
+    expect(preciseEquals(0.3, 0.3, 3)).toBe(true);
+
+    // Try to force floating point errors
+    expect(preciseEquals(0.3, 0.300001)).toBe(false);
+    expect(preciseEquals(0.3, 0.300001, 1)).toBe(true);
+    expect(preciseEquals(0.3, 0.300001, 2)).toBe(true);
+    expect(preciseEquals(0.3, 0.300001, 3)).toBe(true);
+  });
+
+  test('preciseLessThan', () => {
+    expect(preciseLessThan(4.9, 5.0, 1)).toBe(true);
+    expect(preciseLessThan(4.92, 5.0, 1)).toBe(true);
+    expect(preciseLessThan(4.97, 5.0, 1)).toBe(false);
+    expect(preciseLessThan(5.0, 5.0, 1)).toBe(false);
+    expect(preciseLessThan(5.1, 5.0, 1)).toBe(false);
+
+    expect(preciseLessThan(4.99, 5.0, 2)).toBe(true);
+    expect(preciseLessThan(4.992, 5.0, 2)).toBe(true);
+    expect(preciseLessThan(4.997, 5.0, 2)).toBe(false);
+    expect(preciseLessThan(5.0, 5.0, 2)).toBe(false);
+    expect(preciseLessThan(5.01, 5.0, 2)).toBe(false);
+  });
+
+  test('preciseLessThanOrEquals', () => {
+    expect(preciseLessThanOrEquals(4.9, 5.0, 1)).toBe(true);
+    expect(preciseLessThanOrEquals(4.92, 5.0, 1)).toBe(true);
+    expect(preciseLessThanOrEquals(4.97, 5.0, 1)).toBe(true);
+    expect(preciseLessThanOrEquals(5.0, 5.0, 1)).toBe(true);
+    expect(preciseLessThanOrEquals(5.1, 5.0, 1)).toBe(false);
+
+    expect(preciseLessThanOrEquals(4.99, 5.0, 2)).toBe(true);
+    expect(preciseLessThanOrEquals(4.992, 5.0, 2)).toBe(true);
+    expect(preciseLessThanOrEquals(4.997, 5.0, 2)).toBe(true);
+    expect(preciseLessThanOrEquals(5.0, 5.0, 2)).toBe(true);
+    expect(preciseLessThanOrEquals(5.01, 5.0, 2)).toBe(false);
+  });
+
+  test('preciseGreaterThan', () => {
+    expect(preciseGreaterThan(4.9, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThan(4.92, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThan(4.97, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThan(5.0, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThan(5.02, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThan(5.07, 5.0, 1)).toBe(true);
+    expect(preciseGreaterThan(5.1, 5.0, 1)).toBe(true);
+
+    expect(preciseGreaterThan(4.99, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThan(4.992, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThan(4.997, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThan(5.0, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThan(5.002, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThan(5.007, 5.0, 2)).toBe(true);
+    expect(preciseGreaterThan(5.01, 5.0, 2)).toBe(true);
+  });
+
+  test('preciseGreaterThanOrEquals', () => {
+    expect(preciseGreaterThanOrEquals(4.9, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThanOrEquals(4.92, 5.0, 1)).toBe(false);
+    expect(preciseGreaterThanOrEquals(4.97, 5.0, 1)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.0, 5.0, 1)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.02, 5.0, 1)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.07, 5.0, 1)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.1, 5.0, 1)).toBe(true);
+
+    expect(preciseGreaterThanOrEquals(4.99, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThanOrEquals(4.992, 5.0, 2)).toBe(false);
+    expect(preciseGreaterThanOrEquals(4.997, 5.0, 2)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.0, 5.0, 2)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.002, 5.0, 2)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.007, 5.0, 2)).toBe(true);
+    expect(preciseGreaterThanOrEquals(5.01, 5.0, 2)).toBe(true);
   });
 });
