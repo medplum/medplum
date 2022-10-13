@@ -7,9 +7,11 @@ sidebar_position: 3
 
 Scheduling platform that supports clinical workflows such as clinician or location filtering, patient slot selection, custom notifications, pre-appointment forms and more. Medplum supports the full range of scheduling scenarios from very simple single schedule with slots, to a complex scheduling requirements with facilities, equipment and constraints requirements.
 
+![Scheduling Art](../products/img/medplum-scheduling.png)
+
 ## Features
 
-The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Schedule](/docs/api/fhir/resources/schedule). It has the following features.
+The Medplum scheduling implementation is a very standards compliant implementation of the [FHIR Schedule](/docs/api/fhir/resources/schedule). It has the following features.
 
 - **Schedule creation**: create a schedule on [app.medplum.com](https://app.medplum.com/Schedule) or via API. Associate the appropriate metadata with the schedule, for example, what service type, location and practitioner is associated with this schedule.
 - **Slot creation**: once a schedule is in place, creating slots at a certain time is the next step. Slots are commonly created via API, but can also be made on [app.medplum.com](https://app.medplum.com/Slot). Slots belong to a schedule and represent an opening on that schedule that can be booked.

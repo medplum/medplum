@@ -7,6 +7,8 @@ sidebar_position: 4
 
 Communications platform that supports clinical workflows patient messaging a care team, communications regarding a care plan or appointment, sending messages to other EHRs, sending compliant emails, SMS notifications and video conferencing.
 
+![Communications Art](../products/img/communications.png)
+
 ## Features
 
 The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Communication](/docs/api/fhir/resources/communication). It has the following features.
