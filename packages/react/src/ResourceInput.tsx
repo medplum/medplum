@@ -1,7 +1,7 @@
 import { Autocomplete, AutocompleteItem, Group, Loader, Text } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Patient, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import React, { forwardRef, useState } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { ResourceAvatar } from './ResourceAvatar';
 import { useResource } from './useResource';
@@ -21,6 +21,12 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   const [value, setValue] = useState<string>(defaultValue ? getDisplayString(defaultValue) : '');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AutocompleteItem[]>([]);
+
+  useEffect(() => {
+    if (defaultValue) {
+      setValue(getDisplayString(defaultValue));
+    }
+  }, [defaultValue, setValue]);
 
   async function loadValues(input: string): Promise<void> {
     setLoading(true);
