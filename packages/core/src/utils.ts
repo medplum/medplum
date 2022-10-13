@@ -641,7 +641,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns True if the two numbers are equal to the given precision.
  */
 export function preciseEquals(a: number, b: number, precision?: number): boolean {
-  return roundToPrecision(a, precision) === roundToPrecision(b, precision);
+  return toPreciseInteger(a, precision) === toPreciseInteger(b, precision);
 }
 
 /**
@@ -652,7 +652,7 @@ export function preciseEquals(a: number, b: number, precision?: number): boolean
  * @returns True if the first number is less than the second number to the given precision.
  */
 export function preciseLessThan(a: number, b: number, precision?: number): boolean {
-  return roundToPrecision(a, precision) < roundToPrecision(b, precision);
+  return toPreciseInteger(a, precision) < toPreciseInteger(b, precision);
 }
 
 /**
@@ -663,7 +663,7 @@ export function preciseLessThan(a: number, b: number, precision?: number): boole
  * @returns True if the first number is greater than the second number to the given precision.
  */
 export function preciseGreaterThan(a: number, b: number, precision?: number): boolean {
-  return roundToPrecision(a, precision) > roundToPrecision(b, precision);
+  return toPreciseInteger(a, precision) > toPreciseInteger(b, precision);
 }
 
 /**
@@ -674,7 +674,7 @@ export function preciseGreaterThan(a: number, b: number, precision?: number): bo
  * @returns True if the first number is less than or equal to the second number to the given precision.
  */
 export function preciseLessThanOrEquals(a: number, b: number, precision?: number): boolean {
-  return roundToPrecision(a, precision) <= roundToPrecision(b, precision);
+  return toPreciseInteger(a, precision) <= toPreciseInteger(b, precision);
 }
 
 /**
@@ -685,15 +685,19 @@ export function preciseLessThanOrEquals(a: number, b: number, precision?: number
  * @returns True if the first number is greater than or equal to the second number to the given precision.
  */
 export function preciseGreaterThanOrEquals(a: number, b: number, precision?: number): boolean {
-  return roundToPrecision(a, precision) >= roundToPrecision(b, precision);
+  return toPreciseInteger(a, precision) >= toPreciseInteger(b, precision);
 }
 
 /**
- * Returns a number rounded to the specified digits of precision.
+ * Returns an integer representation of the number with the given precision.
+ * For example, if precision is 2, then 1.2345 will be returned as 123.
  * @param a The number.
  * @param precision Optional precision in number of digits.
- * @returns The number rounded to the given precision.
+ * @returns The integer with the given precision.
  */
-export function roundToPrecision(a: number, precision?: number): number {
-  return precision === undefined ? a : parseFloat(a.toFixed(precision));
+function toPreciseInteger(a: number, precision?: number): number {
+  if (precision === undefined) {
+    return a;
+  }
+  return Math.round(a * Math.pow(10, precision));
 }
