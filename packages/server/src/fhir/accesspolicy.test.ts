@@ -202,7 +202,7 @@ describe('AccessPolicy', () => {
     expect(serviceRequest).toBeDefined();
 
     try {
-      await repo2.updateResource(resource);
+      await repo2.updateResource({ ...resource, status: 'completed' });
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcome).id).toEqual('forbidden');
