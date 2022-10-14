@@ -57,6 +57,7 @@ import {
   ExampleWorkflowTask2,
   ExampleWorkflowTask3,
 } from './mocks/workflow';
+
 import { MemoryRepository } from './repo';
 
 export interface MockClientOptions {
@@ -407,6 +408,7 @@ class MockFetchClient {
     this.mockRepo.createResource(ExampleWorkflowTask2);
     this.mockRepo.createResource(ExampleWorkflowTask3);
     this.mockRepo.createResource(ExampleWorkflowRequestGroup);
+
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
 

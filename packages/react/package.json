@@ -23,6 +23,7 @@
     "@mantine/core": "5.5.0",
     "@mantine/hooks": "5.5.0",
     "@medplum/core": "0.10.1",
+    "@medplum/definitions": "0.10.1",
     "@medplum/fhirtypes": "0.10.1",
     "@medplum/mock": "0.10.1",
     "@tabler/icons": "1.101.0",

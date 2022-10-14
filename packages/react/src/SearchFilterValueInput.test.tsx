@@ -14,11 +14,6 @@ function setup(child: React.ReactNode): void {
 }
 
 describe('SearchFilterValueInput', () => {
-  beforeAll(async () => {
-    await medplum.requestSchema('Encounter');
-    await medplum.requestSchema('Patient');
-  });
-
   beforeEach(async () => {
     jest.useFakeTimers();
   });

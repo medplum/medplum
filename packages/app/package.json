@@ -26,6 +26,7 @@
     "@mantine/hooks": "5.5.0",
     "@mantine/notifications": "5.5.0",
     "@medplum/core": "0.10.1",
+    "@medplum/definitions": "0.10.1",
     "@medplum/fhirtypes": "0.10.1",
     "@medplum/mock": "0.10.1",
     "@medplum/react": "0.10.1",

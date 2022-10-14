@@ -108,6 +108,7 @@ export const HomerCommunication: Communication = {
       reference: 'Practitioner/123',
     },
   },
+  encounter: createReference(HomerEncounter),
   payload: [
     {
       contentString: 'Hello world',
@@ -124,6 +125,7 @@ export const HomerMedia: Media = {
       reference: 'Practitioner/123',
     },
   },
+  encounter: createReference(HomerEncounter),
   content: {
     contentType: 'text/plain',
     url: 'https://example.com/test.txt',

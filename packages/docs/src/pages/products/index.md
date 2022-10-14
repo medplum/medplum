@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Products
 
-At Medplum our goal is to help you build a healthcare application quickly, easily and compliantly.
+At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly.
 
 :::caution Note
 

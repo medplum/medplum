@@ -156,6 +156,7 @@ function createTypeSchema(
 /**
  * Indexes a bundle of StructureDefinitions for faster lookup.
  * @param bundle A FHIR bundle StructureDefinition resources.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexStructureDefinitionBundle(bundle: Bundle): void {
   for (const entry of bundle.entry as BundleEntry[]) {
@@ -168,8 +169,8 @@ export function indexStructureDefinitionBundle(bundle: Bundle): void {
 
 /**
  * Indexes a StructureDefinition for fast lookup.
- * See comments on IndexedStructureDefinition for more details.
  * @param structureDefinition The original StructureDefinition.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexStructureDefinition(structureDefinition: StructureDefinition): void {
   const typeName = structureDefinition.name;
@@ -191,8 +192,9 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
  * Indexes TypeSchema from an ElementDefinition.
  * In the common case, there will be many ElementDefinition instances per TypeSchema.
  * Only the first occurrence is saved.
- * @param schema The output IndexedStructureDefinition.
- * @param element The input ElementDefinition.
+ * @param structureDefinition The parent type structure definition.
+ * @param elementDefinition The element definition.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 function indexType(structureDefinition: StructureDefinition, elementDefinition: ElementDefinition): void {
   const path = elementDefinition.path as string;
@@ -208,8 +210,8 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
 
 /**
  * Indexes PropertySchema from an ElementDefinition.
- * @param schema The output IndexedStructureDefinition.
  * @param element The input ElementDefinition.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 function indexProperty(element: ElementDefinition): void {
   const path = element.path as string;
@@ -227,10 +229,24 @@ function indexProperty(element: ElementDefinition): void {
 }
 
 /**
+ * Indexes a bundle of SearchParameter resources for faster lookup.
+ * @param bundle A FHIR bundle SearchParameter resources.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
+ */
+export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
+  for (const entry of bundle.entry as BundleEntry[]) {
+    const resource = entry.resource as SearchParameter;
+    if (resource.resourceType === 'SearchParameter') {
+      indexSearchParameter(resource);
+    }
+  }
+}
+
+/**
  * Indexes a SearchParameter resource for fast lookup.
  * Indexes by SearchParameter.code, which is the query string parameter name.
- * @param schema The output IndexedStructureDefinition.
  * @param searchParam The SearchParameter resource.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
   if (!searchParam.base) {

@@ -18,11 +18,13 @@
   },
   "devDependencies": {
     "@medplum/core": "0.10.1",
+    "@medplum/definitions": "0.10.1",
     "@medplum/fhirtypes": "0.10.1",
-    "@types/pdfmake": "^0.1.21"
+    "@types/pdfmake": "0.1.21"
   },
   "peerDependencies": {
     "@medplum/core": "0.10.1",
+    "@medplum/definitions": "0.10.1",
     "fast-json-patch": "3.1.1"
   },
   "peerDependenciesMeta": {

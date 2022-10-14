@@ -58,7 +58,7 @@ export const DrAliceSmithPreviousVersion: Practitioner = {
 
 export const DrAliceSmithSchedule: Schedule = {
   resourceType: 'Schedule',
-  id: '123',
+  id: 'alice-smith-schedule',
   actor: [
     {
       reference: 'Practitioner/123',
