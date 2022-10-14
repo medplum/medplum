@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { matchesSearchRequest } from './match';
-import { Operator } from './search';
+import { Operator, parseSearchDefinition } from './search';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
 
 // Dimensions:
@@ -225,37 +225,98 @@ describe('Search matching', () => {
     ).toBe(true);
   });
 
-  test('Token filter', () => {
-    expect(
-      matchesSearchRequest(
-        { resourceType: 'Observation', code: { text: 'foo' } },
-        { resourceType: 'Observation', filters: [{ code: 'code', operator: Operator.EQUALS, value: 'foo' }] }
-      )
-    ).toBe(true);
-    expect(
-      matchesSearchRequest(
-        { resourceType: 'Observation', code: { text: 'foo' } },
-        { resourceType: 'Observation', filters: [{ code: 'code', operator: Operator.EQUALS, value: 'George' }] }
-      )
-    ).toBe(false);
-    expect(
-      matchesSearchRequest(
-        { resourceType: 'Observation', code: { text: 'foo' } },
-        {
-          resourceType: 'Observation',
-          filters: [{ code: 'code', operator: Operator.NOT_EQUALS, value: 'foo' }],
-        }
-      )
-    ).toBe(false);
-    expect(
-      matchesSearchRequest(
-        { resourceType: 'Observation', code: { text: 'foo' } },
-        {
-          resourceType: 'Observation',
-          filters: [{ code: 'code', operator: Operator.NOT_EQUALS, value: 'George' }],
-        }
-      )
-    ).toBe(true);
+  describe('Token', () => {
+    test('equals', () => {
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'Observation', code: { text: 'foo' } },
+          { resourceType: 'Observation', filters: [{ code: 'code', operator: Operator.EQUALS, value: 'foo' }] }
+        )
+      ).toBe(true);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'Observation', code: { text: 'foo' } },
+          { resourceType: 'Observation', filters: [{ code: 'code', operator: Operator.EQUALS, value: 'George' }] }
+        )
+      ).toBe(false);
+    });
+
+    test('not equals', () => {
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'Observation', code: { text: 'foo' } },
+          {
+            resourceType: 'Observation',
+            filters: [{ code: 'code', operator: Operator.NOT_EQUALS, value: 'foo' }],
+          }
+        )
+      ).toBe(false);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'Observation', code: { text: 'foo' } },
+          {
+            resourceType: 'Observation',
+            filters: [{ code: 'code', operator: Operator.NOT_EQUALS, value: 'George' }],
+          }
+        )
+      ).toBe(true);
+    });
+
+    test('not', () => {
+      // "DiagnosticReport?status:not=cancelled"
+      // "DiagnosticReport?status=cancelled"
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'DiagnosticReport', status: 'preliminary' },
+          parseSearchDefinition('DiagnosticReport?status=cancelled')
+        )
+      ).toBe(false);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'DiagnosticReport', status: 'preliminary' },
+          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+        )
+      ).toBe(true);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'DiagnosticReport', status: 'cancelled' },
+          parseSearchDefinition('DiagnosticReport?status=cancelled')
+        )
+      ).toBe(true);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'DiagnosticReport', status: 'cancelled' },
+          parseSearchDefinition('DiagnosticReport?status:not=cancelled')
+        )
+      ).toBe(false);
+
+      // "ServiceRequest?order-detail:not=VOIDED,CANCELLED"
+      // "ServiceRequest?order-detail=VOIDED,CANCELLED"
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] },
+          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+        )
+      ).toBe(false);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'ServiceRequest', orderDetail: [{ text: 'ORDERED' }] },
+          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+        )
+      ).toBe(true);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] },
+          parseSearchDefinition('ServiceRequest?order-detail=VOIDED,CANCELLED')
+        )
+      ).toBe(true);
+      expect(
+        matchesSearchRequest(
+          { resourceType: 'ServiceRequest', orderDetail: [{ text: 'VOIDED' }] },
+          parseSearchDefinition('ServiceRequest?order-detail:not=VOIDED,CANCELLED')
+        )
+      ).toBe(false);
+    });
   });
 
   describe('Date', () => {

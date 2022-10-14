@@ -49,6 +49,7 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
 
 function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const values = evalFhirPath(searchParam.expression as string, resource) as (Reference | string)[];
+  const negated = isNegated(filter.operator);
 
   if (filter.value === '' && values.length === 0) {
     // If the filter operator is "equals", then the filter matches.
@@ -60,12 +61,17 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
   const references = values.map((value) => (typeof value === 'string' ? value : value.reference));
 
   for (const filterValue of filter.value.split(',')) {
-    const found = references.includes(filterValue);
-    if (filter.operator === Operator.NOT_EQUALS ? !found : found) {
+    const match = references.includes(filterValue);
+    if (match && !negated) {
       return true;
     }
+    if (match && negated) {
+      return false;
+    }
   }
-  return false;
+  // If "not equals" and no matches, then return true
+  // If "equals" and no matches, then return false
+  return negated;
 }
 
 function matchesTokenFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
@@ -81,20 +87,27 @@ function matchesBooleanFilter(resource: Resource, filter: Filter, searchParam: S
   const values = evalFhirPath(searchParam.expression as string, resource);
   const expected = filter.value === 'true';
   const result = values.includes(expected);
-  return filter.operator === Operator.NOT_EQUALS ? !result : result;
+  return isNegated(filter.operator) ? !result : result;
 }
 
 function matchesStringFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = filter.value.split(',');
+  const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      if (matchesStringValue(resourceValue, filter.operator, filterValue)) {
+      const match = matchesStringValue(resourceValue, filter.operator, filterValue);
+      if (match && !negated) {
         return true;
+      }
+      if (match && negated) {
+        return false;
       }
     }
   }
-  return false;
+  // If "not equals" and no matches, then return true
+  // If "equals" and no matches, then return false
+  return negated;
 }
 
 function matchesStringValue(resourceValue: unknown, operator: Operator, filterValue: string): boolean {
@@ -106,22 +119,27 @@ function matchesStringValue(resourceValue: unknown, operator: Operator, filterVa
       str = JSON.stringify(resourceValue);
     }
   }
-
-  const isMatch = str.toLowerCase().includes(filterValue.toLowerCase());
-  return operator === Operator.NOT_EQUALS ? !isMatch : isMatch;
+  return str.toLowerCase().includes(filterValue.toLowerCase());
 }
 
 function matchesDateFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = filter.value.split(',');
+  const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      if (matchesDateValue(resourceValue as string, filter.operator, filterValue)) {
+      const match = matchesDateValue(resourceValue as string, filter.operator, filterValue);
+      if (match && !negated) {
         return true;
+      }
+      if (match && negated) {
+        return false;
       }
     }
   }
-  return false;
+  // If "not equals" and no matches, then return true
+  // If "equals" and no matches, then return false
+  return negated;
 }
 
 function matchesDateValue(resourceValue: string, operator: Operator, filterValue: string): boolean {
@@ -137,9 +155,12 @@ function matchesDateValue(resourceValue: string, operator: Operator, filterValue
     case Operator.LESS_THAN_OR_EQUALS:
       return resourceValue <= filterValue;
     case Operator.EQUALS:
-      return resourceValue === filterValue;
     case Operator.NOT_EQUALS:
-      return resourceValue !== filterValue;
+      return resourceValue === filterValue;
   }
   return false;
+}
+
+function isNegated(operator: Operator): boolean {
+  return operator === Operator.NOT_EQUALS || operator === Operator.NOT;
 }
