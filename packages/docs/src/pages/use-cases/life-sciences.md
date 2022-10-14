@@ -78,7 +78,7 @@ Digital technologies such as a continuous glucose monitor, blood pressure cuff a
 
 ### Schedule of Assessments
 
-Once the instruments are tagged, the next step is to build the Schedule of Assessments (SoA), which is a tool for assembling the assessments onto a timeline, but it's a relative timeline, may start on an arbitrary date and milestones are relative to one-another. The SoA is technically a protocol, and has many similarities to a [Care Plan](../products/careplan). The data model is as follows:
+Once the instruments are tagged, the next step is to build the Schedule of Assessments (SoA), which is a tool for assembling the assessments onto a timeline, but it's a relative timeline, may start on an arbitrary date and milestones are relative to one-another. The SoA is technically a protocol, and has many similarities to a [Care Plan](../products/careplans). The data model is as follows:
 
 - SoA overall is represented as a [PlanDefinition](/docs/api/fhir/resources/plandefinition), and you can see a sample on [Storybook]
 - [PlanDefinition](/docs/api/fhir/resources/plandefinition)s have `action`s, and these are the milestones on the SoA, each `action` should have a [Timing](/docs/api/fhir/datatypes/timing) (e.g. between day 2 and day 3) and a [Location](/docs/api/fhir/resources/location), even if the assessment is done at home.
