@@ -17,6 +17,10 @@ This section is under construction. Check back frequently for updates.
 
 Medplum helps you build applications with the following features. Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/).
 
+### ↔ Integration and Interoperability Engine
+
+Build unlimited interfaces, choose the advanced capabilities best suited to your needs, enable your organization to optimize interoperability. Connect healthcare system and non-healthcare related services. This is the most popular feature of Medplum. [Learn More](../products/integration)
+
 ### 📝 Forms
 
 Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention. [Learn More](../products/forms)
@@ -41,10 +45,6 @@ Send data to your billing provider of choice. Easily connect to physician groups
 
 Build automations that will scale with your organization. Automatically route messages, remind patients, instantiate care plans, ensure correctness, and more. [Learn More](../products/automation)
 
-### ↔️ Integrations
-
-Connect to lab, pharmacy, data warehouse, legacy EHRs and more with a simple integration engine that's easy to use and test. Leverage open source implementations of common tools.
-
 ### 📈 Dashboards and Analytics
 
 Dashboards and analytics are at the heart of great clinical workflow. Build a custom dashboard that drives quality and speed, and troubleshoot with advanced analytics.
@@ -67,10 +67,6 @@ TypeScript SDK that makes the FHIR spec easier to manage. Includes all FHIR type
 
 Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/tutorials/ui-components)
 
-### Interoperability Engine
-
-Build unlimited interfaces, choose the advanced capabilities best suited to your needs, enable your organization to optimize interoperability. Connect healthcare system and non-healthcare related services.
-
 ### Custom domains
 
 Run your custom application on your own domain, giving users a fully branded experience.
@@ -83,10 +79,10 @@ Deploy your application in your own private cloud, or use our hosted option. Aud
 
 Audit activity through built in audit trails and logs, or connect your enterprise observability suite.
 
-## Compliance
+### Compliance
 
 HIPAA compliance and SOC 2 Type 2 certified. We provide in-depth guides, content and code to drive industry and domain specific compliance programs like ONC, CLIA/CAP certification and more. [Learn More](/docs/compliance)
 
-## Security
+### Security
 
 Medplum's hosted service follows all security best practices, and comes with HIPAA and SOC2 compliance out of the box. We follow all OWASP security guidelines, and have been verified by multiple penetration tests. [Learn More](/security)
