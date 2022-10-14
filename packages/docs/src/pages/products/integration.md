@@ -77,9 +77,16 @@ This is far from a comprehensive list, but below are examples of common systems 
 
 We have a lot of experience with medical integrations, and welcome questions at hello@medplum.com or on our [Discord](https://discord.gg/UBAWwvrVeN).
 
+## System Diagram
+
+Below is a system diagram that shows, at a high level all of the systems working in concert.
+
+![System diagram](../products/img/detailed-medplum-system-diagram.png)
+
 ## Reference Material
 
 - [Sample bots](https://github.com/medplum/medplum-demo-bots) these are a quickstart for building your integrations
 - [Bot tutorials](/docs/tutorials/bots)
 - [Authentication](/docs/tutorials/authentication-and-security)
 - [Compliance Portal](/docs/compliance)
+- [All Epic FHIR Endpoints](https://open.epic.com/MyApps/Endpoints)
