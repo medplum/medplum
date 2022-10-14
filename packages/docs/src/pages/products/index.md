@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Products
 
-At Medplum our goal is to help you build a healthcare application quickly, easily and compliantly.
+At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly.
 
 :::caution Note
 
@@ -15,7 +15,7 @@ This section is under construction. Check back frequently for updates.
 
 ## Features
 
-Medplum supports building applications with the following features. Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/).
+Medplum helps you build applications with the following features. Reference implementations can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/).
 
 ### 📝 Forms
 
