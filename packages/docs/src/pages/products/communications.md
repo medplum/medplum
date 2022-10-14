@@ -11,7 +11,7 @@ Communications platform that supports clinical workflows patient messaging a car
 
 ## Features
 
-The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Communication](/docs/api/fhir/resources/communication). It has the following features.
+The Medplum communications and messaging implementation is a very standards compliant implementation of the [FHIR Communication](/docs/api/fhir/resources/communication). It has the following features.
 
 - **Communication Records**: create a communication on [app.medplum.com](https://app.medplum.com/Communication) or via API. It has a rich data model and support linking to various actors and other FHIR resources. For example, a Communication can be from a patient and be about an Appointment.
 - **SMS and Email**: Trigger SMS or emails via the Medplum [bots](/docs/tutorials/bots) framework. Customize messages and messaging logic to your needs.
