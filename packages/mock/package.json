@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Medplum Mock Client",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,14 +17,14 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "0.10.1",
-    "@medplum/definitions": "0.10.1",
-    "@medplum/fhirtypes": "0.10.1",
+    "@medplum/core": "0.10.2",
+    "@medplum/definitions": "0.10.2",
+    "@medplum/fhirtypes": "0.10.2",
     "@types/pdfmake": "0.1.21"
   },
   "peerDependencies": {
-    "@medplum/core": "0.10.1",
-    "@medplum/definitions": "0.10.1",
+    "@medplum/core": "0.10.2",
+    "@medplum/definitions": "0.10.2",
     "fast-json-patch": "3.1.1"
   },
   "peerDependenciesMeta": {
