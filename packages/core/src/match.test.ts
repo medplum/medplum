@@ -476,4 +476,40 @@ describe('Search matching', () => {
       });
     });
   });
+
+  test('Compartments', () => {
+    const resource1: Patient = {
+      resourceType: 'Patient',
+      meta: { compartment: [{ reference: 'Organization/123' }] },
+    };
+
+    const resource2: Patient = {
+      resourceType: 'Patient',
+      meta: { compartment: [{ reference: 'Organization/456' }] },
+    };
+
+    const search1 = {
+      resourceType: 'Patient',
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/123' }],
+    };
+
+    const search2 = {
+      resourceType: 'Patient',
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: 'Organization/456' }],
+    };
+
+    // Backwards compatibility
+    // Support matching values without the resourceType prefix
+    const search3 = {
+      resourceType: 'Patient',
+      filters: [{ code: '_compartment', operator: Operator.EQUALS, value: '123' }],
+    };
+
+    expect(matchesSearchRequest(resource1, search1)).toBe(true);
+    expect(matchesSearchRequest(resource1, search2)).toBe(false);
+    expect(matchesSearchRequest(resource1, search3)).toBe(true);
+    expect(matchesSearchRequest(resource2, search1)).toBe(false);
+    expect(matchesSearchRequest(resource2, search2)).toBe(true);
+    expect(matchesSearchRequest(resource2, search3)).toBe(false);
+  });
 });

@@ -123,6 +123,92 @@ describe('AccessPolicy', () => {
     }
   });
 
+  test('Access policy restricting write before update', async () => {
+    const resource = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      intent: 'order',
+      subject: { reference: 'Patient/' + randomUUID() },
+      code: { text: 'test' },
+      status: 'completed',
+    });
+    expect(resource).toBeDefined();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=active',
+        },
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=completed',
+          readonly: true,
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const serviceRequest = await repo2.readResource('ServiceRequest', resource.id as string);
+    expect(serviceRequest).toBeDefined();
+
+    try {
+      await repo2.updateResource(resource);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('forbidden');
+    }
+  });
+
+  test('Access policy restricting write after update', async () => {
+    const resource = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      intent: 'order',
+      subject: { reference: 'Patient/' + randomUUID() },
+      code: { text: 'test' },
+      status: 'active',
+    });
+    expect(resource).toBeDefined();
+
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=active',
+        },
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=completed',
+          readonly: true,
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const serviceRequest = await repo2.readResource('ServiceRequest', resource.id as string);
+    expect(serviceRequest).toBeDefined();
+
+    try {
+      await repo2.updateResource({ ...resource, status: 'completed' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('forbidden');
+    }
+  });
+
   test('Access policy restricting delete', async () => {
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -430,6 +516,60 @@ describe('AccessPolicy', () => {
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcome).id).toEqual('not-found');
+    }
+  });
+
+  test('Multiple entries per resource type', async () => {
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'ServiceRequest',
+          criteria: `ServiceRequest?status=active`,
+        },
+        {
+          resourceType: 'ServiceRequest',
+          criteria: `ServiceRequest?status=completed`,
+          readonly: true,
+        },
+      ],
+    };
+
+    const repo = new Repository({
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy: accessPolicy,
+    });
+
+    // User can create a ServiceRequest with status=active
+    const serviceRequest1 = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      intent: 'order',
+      status: 'active',
+      subject: { reference: 'Patient/' + randomUUID() },
+      code: { text: 'test' },
+    });
+    expect(serviceRequest1).toBeDefined();
+
+    // User can update the ServiceRequest with status=active
+    const serviceRequest2 = await repo.updateResource<ServiceRequest>({
+      ...serviceRequest1,
+      orderDetail: [{ text: 'test' }],
+    });
+    expect(serviceRequest2).toBeDefined();
+
+    // Try to update the ServiceRequest with status=completed
+    // This should fail
+    try {
+      await repo.updateResource<ServiceRequest>({
+        ...serviceRequest2,
+        status: 'completed',
+      });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('forbidden');
     }
   });
 

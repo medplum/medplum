@@ -13,6 +13,7 @@ import {
   isGone,
   isNotFound,
   isOk,
+  matchesSearchRequest,
   normalizeErrorString,
   notFound,
   Operator as FhirOperator,
@@ -63,7 +64,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
-import { getPatientId } from './patient';
+import { getPatient } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
@@ -139,7 +140,6 @@ export interface RepositoryContext {
 export interface CacheEntry<T extends Resource> {
   resource: T;
   projectId: string;
-  compartments: string[];
 }
 
 /**
@@ -411,6 +411,15 @@ export class Repository {
       throw tooManyRequests;
     }
 
+    if (existing) {
+      (existing.meta as Meta).compartment = this.#getCompartments(existing);
+
+      if (!this.#canWriteResource(existing)) {
+        // Check before the update
+        throw forbidden;
+      }
+    }
+
     const updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.#restoreReadonlyFields(resource, existing),
       meta: {
@@ -423,24 +432,30 @@ export class Repository {
       return existing as T;
     }
 
-    const result: T = {
-      ...updated,
-      meta: {
-        ...updated?.meta,
-        versionId: randomUUID(),
-        lastUpdated: this.#getLastUpdated(existing, resource),
-        author: this.#getAuthor(resource),
-      },
+    const resultMeta = {
+      ...updated?.meta,
+      versionId: randomUUID(),
+      lastUpdated: this.#getLastUpdated(existing, resource),
+      author: this.#getAuthor(resource),
     };
+
+    const result: T = { ...updated, meta: resultMeta };
 
     const project = this.#getProjectId(updated);
     if (project) {
-      (result.meta as Meta).project = project;
+      resultMeta.project = project;
     }
 
     const account = await this.#getAccount(existing, updated);
     if (account) {
-      (result.meta as Meta).account = account;
+      resultMeta.account = account;
+    }
+
+    resultMeta.compartment = this.#getCompartments(result);
+
+    if (!this.#canWriteResource(result)) {
+      // Check after the update
+      throw forbidden;
     }
 
     await setCacheEntry(result);
@@ -565,6 +580,7 @@ export class Repository {
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
+    (resource.meta as Meta).compartment = this.#getCompartments(resource);
     await this.#writeResource(resource as T);
     await this.#writeLookupTables(resource as T);
     return resource as T;
@@ -604,7 +620,7 @@ export class Repository {
         id,
         lastUpdated,
         deleted: true,
-        compartments: this.#getCompartments(resource),
+        compartments: this.#getCompartments(resource).map((ref) => resolveId(ref)),
         content,
       };
 
@@ -856,7 +872,7 @@ export class Repository {
 
         if (policy.criteria) {
           // Add subquery for access policy criteria.
-          const searchRequest = parseSearchUrl(new URL(policy.criteria, 'https://api.medplum.com/'));
+          const searchRequest = this.#parseCriteriaAsSearchRequest(policy.criteria);
           const accessPolicyConjunction = new Conjunction([]);
           this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
           expressions.push(accessPolicyConjunction);
@@ -1077,13 +1093,14 @@ export class Repository {
     const client = getClient();
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
+    const compartments = meta.compartment?.map((ref) => resolveId(ref));
     const content = stringify(resource);
 
     const columns: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      compartments: this.#getCompartments(resource),
+      compartments,
       content,
     };
 
@@ -1125,23 +1142,23 @@ export class Repository {
    * @param resource The resource.
    * @returns The list of compartments for the resource.
    */
-  #getCompartments(resource: Resource): string[] {
-    const result = new Set<string>();
+  #getCompartments(resource: Resource): Reference[] {
+    const result: Reference[] = [];
 
     if (resource.meta?.project) {
-      result.add(resource.meta.project);
+      result.push({ reference: 'Project/' + resource.meta.project });
     }
 
     if (resource.meta?.account) {
-      result.add(resolveId(resource.meta.account) as string);
+      result.push(resource.meta.account);
     }
 
-    const patientId = getPatientId(resource);
-    if (patientId) {
-      result.add(patientId);
+    const patient = getPatient(resource);
+    if (patient) {
+      result.push(patient);
     }
 
-    return Array.from(result);
+    return result;
   }
 
   /**
@@ -1460,11 +1477,11 @@ export class Repository {
     }
 
     if (updated.resourceType !== 'Patient') {
-      const patientId = getPatientId(updated);
-      if (patientId) {
+      const patientRef = getPatient(updated);
+      if (patientRef) {
         // If the resource is in a patient compartment, then lookup the patient.
         try {
-          const patient = await systemRepo.readResource('Patient', patientId);
+          const patient = await systemRepo.readReference(patientRef);
           if (patient?.meta?.account) {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
@@ -1526,6 +1543,8 @@ export class Repository {
 
   /**
    * Determines if the current user can write the specified resource type.
+   * This is a preliminary check before evaluating a write operation in depth.
+   * If a user cannot write a resource type at all, then don't bother looking up previous versions.
    * @param resourceType The resource type.
    * @returns True if the current user can write the specified resource type.
    */
@@ -1556,6 +1575,46 @@ export class Repository {
   }
 
   /**
+   * Determines if the current user can write the specified resource.
+   * This is a more in-depth check after building the candidate result of a write operation.
+   * @param resource The resource.
+   * @returns True if the current user can write the specified resource type.
+   */
+  #canWriteResource(resource: Resource): boolean {
+    if (this.#isSuperAdmin()) {
+      return true;
+    }
+    const resourceType = resource.resourceType;
+    if (protectedResourceTypes.includes(resourceType)) {
+      return false;
+    }
+    if (publicResourceTypes.includes(resourceType)) {
+      return false;
+    }
+    if (!this.#context.accessPolicy) {
+      return true;
+    }
+    if (this.#context.accessPolicy.resource) {
+      for (const resourcePolicy of this.#context.accessPolicy.resource) {
+        if (
+          (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
+          !resourcePolicy.readonly
+        ) {
+          return (
+            !resourcePolicy.criteria ||
+            matchesSearchRequest(resource, this.#parseCriteriaAsSearchRequest(resourcePolicy.criteria))
+          );
+        }
+      }
+    }
+    return false;
+  }
+
+  #parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
+    return parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+  }
+
+  /**
    * Removes hidden fields from a resource as defined by the access policy.
    * This should be called for any "read" operation.
    * @param input The input resource.
@@ -1572,6 +1631,7 @@ export class Repository {
       meta.author = undefined;
       meta.project = undefined;
       meta.account = undefined;
+      meta.compartment = undefined;
     }
     return input;
   }

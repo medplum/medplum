@@ -273,6 +273,12 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
           type: 'date',
           expression: resourceType + '.meta.lastUpdated',
         } as SearchParameter,
+        _compartment: {
+          base: [resourceType],
+          code: '_compartment',
+          type: 'reference',
+          expression: resourceType + '.meta.compartment',
+        } as SearchParameter,
       };
     }
 

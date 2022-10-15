@@ -3053,6 +3053,17 @@
         "author": {
           "description": "The individual, device or organization who initiated the last change.",
           "$ref": "#/definitions/Reference"
+        },
+        "account": {
+          "description": "Optional account reference that can be used for sub-project compartments.",
+          "$ref": "#/definitions/Reference"
+        },
+        "compartment": {
+          "description": "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false
