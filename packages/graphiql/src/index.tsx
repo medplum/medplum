@@ -1,9 +1,11 @@
+import { MantineProvider, Text } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime.js';
+
 import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import 'graphiql/graphiql.css';
@@ -48,7 +50,9 @@ function App(): JSX.Element {
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
-      <h1>Sign in to Medplum</h1>
+      <Text size="lg" weight={500}>
+        Sign in to Medplum
+      </Text>
     </SignInForm>
   );
 }
@@ -57,7 +61,9 @@ const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <MedplumProvider medplum={medplum}>
-      <App />
+      <MantineProvider withGlobalStyles withNormalizeCSS>
+        <App />
+      </MantineProvider>
     </MedplumProvider>
   </React.StrictMode>
 );
