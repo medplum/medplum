@@ -5,7 +5,7 @@ import typescript from '@rollup/plugin-typescript';
 import { execSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
 import { terser } from 'rollup-plugin-terser';
-import packageJson from './package.json' assert { type: 'json'};
+import packageJson from './package.json' assert { type: 'json' };
 
 const extensions = ['.ts'];
 
