@@ -9,6 +9,8 @@ Get data from patients, clinicians, staff and other stakeholders using custom fo
 
 Medplum supports collecting form data in a standards compliant way and using it to drive automations, enforce QA or ensure conformance. Forms can be completed by patients, practitioners or others, depending on where they are embedded.
 
+![Forms image](../products/img/forms.png)
+
 ## Features
 
 The Medplum Forms implementation is a very standards compliant implementation of the [FHIR Questionnaires](/docs/api/fhir/resources/questionnaire). It has the following features.

@@ -1,4 +1,4 @@
-# Use Cases
+# Blueprints
 
 :::caution Note
 
@@ -6,10 +6,9 @@ This section is under construction. Check back frequently for updates.
 
 :::
 
-Medplum supports a wide array of use cases.  Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly.  Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
+Medplum supports a wide array of use cases. Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly. Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
 
-
-## Telehealth Patient Portal
+## Patient Portal
 
 A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more.
 
@@ -31,7 +30,7 @@ Build an application that reads and writes data to common medical records system
 
 ## Life Sciences
 
-Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/use-cases/life-sciences)
+Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
 
 ## Pediatrics
 

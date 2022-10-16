@@ -29,6 +29,10 @@ Once care plans are designed, the next step is to create all the relevant resour
 - **Simple Care Plans**: are relatively straightforward to create, and we have provided sample implementations for your convenience. [RequestGroup sample in storybook](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple).
 - **Linking objects**: a CarePlan should have a RequestGroup, and the RequestGroup can have one or more actions in an implementation. Commonly, each of the actions in the RequestGroup can drive automations or integrations. Sample code for [creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts).
 
+## Care Plans and Care Teams
+
+CarePlans have roles that help aid in workflow and are used to drive notifications, dashboards and the like. `CarePlan.author`, `CarePlan.contributor`, `CarePlan.careTeam` and `CarePlan.goal` should all be used in service of workflow and to ensure coordination.
+
 ## FHIR Resources for CarePlan Design
 
 | Resource           | App Link                                               | Create New                                                   | API Documentation                                  |
@@ -50,6 +54,7 @@ These are a common subset of objects that can be linked to CarePlans. Complex Ca
 | QuestionnaireResponse | [View All](https://app.medplum.com/QuestionnaireResponse) | Created via API or workflow                            | [API](/docs/api/fhir/resources/questionnaireresponse) |
 | Appointment           | [View All](https://app.medplum.com/Appointment)           | [Create New](https://app.medplum.com/Appointment/new)  | [API](/docs/api/fhir/resources/appointment)           |
 | Medication            | [View All](https://app.medplum.com/Medication)            | [Create New](https://app.medplum.com/Medication/new)   | [API](/docs/api/fhir/resources/medication)            |
+| CareTeam              | [View All](https://app.medplum.com/CareTeam)              | [Create New](https://app.medplum.com/CareTeam/new)     | [API](/docs/api/fhir/resources/careteam)              |
 
 ## Demos and Reference Material
 
