@@ -5,7 +5,7 @@ import typescript from '@rollup/plugin-typescript';
 import { execSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
 import { terser } from 'rollup-plugin-terser';
-import { version } from './package.json';
+import packageJson from './package.json' assert { type: 'json' };
 
 const extensions = ['.ts'];
 
@@ -17,7 +17,7 @@ const globals = {
 const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
 
 const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
-const medplumVersion = version + '-' + gitHash;
+const medplumVersion = packageJson.version + '-' + gitHash;
 
 export default [
   {
