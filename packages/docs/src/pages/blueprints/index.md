@@ -10,11 +10,11 @@ Medplum supports a wide array of use cases. Please look at this section for deta
 
 ## Patient Portal
 
-A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more.
+A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/blueprints/patient-portal)
 
-## Customizable EHR
+## Custom EHR
 
-A simple, highly customizable EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance.
+Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](blueprints/custom-ehr)
 
 ## Provider Portal and FHIR API
 
@@ -22,7 +22,7 @@ Create an intuitive portal for referring physicians and support integrations int
 
 ## LIS/LIMS and Lab Network
 
-Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations, such as routing the request to the right lab geographically, integrating with the logistics provider such as phlebotomy service or clinic that provides the specimens and integrating with the lab LIS for results reporting.
+Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations.
 
 ## Sidecar Application
 
@@ -47,3 +47,11 @@ With standards-compliant data, it is possible to build population health reports
 ## Interoperability Service
 
 Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted.
+
+## Clinical Decision Support
+
+Build clinical decision support applications that are data driven and in context.
+
+## Remote Patient Monitoring
+
+Build and implement a custom, robust remote patient monitoring program.

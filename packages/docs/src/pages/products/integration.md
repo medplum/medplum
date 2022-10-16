@@ -1,20 +1,30 @@
 # Integrations and Interoperability Engine
 
-A powerful integration and interoperability engine that speaks common healthcare "languages" (FHIR, HL7, SFTP, CCD-A and more) is **the most commonly used feature of Medplum**. It can be used to receive data from and send data to other systems medical or cloud based.
+Medplum offers **a powerful integration and interoperability engine** that speaks common healthcare "languages" (FHIR, HL7, SFTP, CCD-A and more). This is **the most commonly used feature of Medplum**. It can be used to receive data from and send data to other systems - medical or cloud based.
 
-:::caution Note
+Medplum integrations and interoperability is an **event-driven** service. It listens to notifications from medical systems like a laboratory information system or EHRs. The service logs data and supports persistence to a FHIR datastore as needed. It is [open source](https://github.com/medplum/medplum).
 
-This section is under construction. Check back frequently for updates.
+## Overview
 
-:::
+Medplum enables many medical and non-medical services to be effectively composed, and so allows a powerful user-facing application to be built on top. Medplum provides the following **event-driven** functionality:
 
-## Understanding Integrations
+- **Listens** to notifications from systems like LIS, EHR, and webhook enabled webapps
+- **Sends** notifications and data to external systems, triggered off events
+- **Transforms** data via a custom scripting engine, enabling bespoke workflows
+- **Stores** data, allowing applications like dashboards to be built
+- **Logs** activity and version history, enabling debugging and traceability
 
-Integrations and interoperability does require writing some code. We provide high level SDKs, testing framework, deployment and provisioning features that **greatly reduce the engineering burden to build, and to maintain integrations**.
+Below is an **example of a medical practice "Foo Medical" with connections** to various systems. This is an example deployment, but can give a sense of what connections might be needed in practice.
+
+TODO: Add graphic.
+
+## Creating Medical Integrations
+
+Creating effective integrations often requires writing some code. We provide pre-built integrations, high level SDKs, testing framework, deployment and provisioning features that **greatly reduce the engineering burden to build, and to maintain integrations**.
 
 Our integration framework is called bots and there are detailed [bots tutorials](/docs/tutorials/bots) in our technical documentation.
 
-Some important considerations as you start your integration journey. We recommend filling out the following checklist for each integration
+Before starting an integration, we recommend filling out the following checklist
 
 - [ ] What system are you trying to connect to?
 - [ ] What type of interfaces are available? (Check multiple if appropriate)
@@ -29,15 +39,9 @@ Some important considerations as you start your integration journey. We recommen
 - [ ] How can you request credentials/access to a test environment?
 - [ ] What process is required to gain access to production?
 
-## Example
-
-As an implementation evolves, many applications are integrated into the same technical infrastructure. This allows for powerful data-driven applications to be built on top.
-
-Below is an example of a medical practice "Foo Medical" with connections to various systems. This is just an example medical practices, but can give a sense of what connections might be needed
-
-TODO: Add graphic.
-
 ## Examples: Integrations by Interface Type
+
+To get started integrating services into Medplum, it can be useful to think about **which type of medical applications have which type of interfaces**. Medplum provides the infrastructure that helps connect systems like these together.
 
 This is by no means a comprehensive list, but we provide this list of interfaces as examples of tools and systems indexed by type of integration is commonly seen.
 
@@ -55,7 +59,9 @@ If you are interested in a specific integration type, please contact us at hello
 
 ## Examples: Integrations by Product Category
 
-This is far from a comprehensive list, but below are examples of common systems to which
+To get a medical application to work as intended often requires many systems to talk to each other, each with a different function. Medplum enables connectivity to various systems, through the [Bot](/docs/tutorials/bots) framework.
+
+Below are some of the classes of applications indexed by common integration methods. Medplum supports building interfaces of this type to enable connectivity.
 
 | Product Category      | Common Integration Method | Comments                                                     |
 | --------------------- | ------------------------- | ------------------------------------------------------------ |
