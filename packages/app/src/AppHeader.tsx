@@ -80,11 +80,14 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
           shadow="xl"
           position="bottom-end"
           transition="pop-top-right"
+          opened={userMenuOpened}
           onClose={() => setUserMenuOpened(false)}
-          onOpen={() => setUserMenuOpened(true)}
         >
           <Menu.Target>
-            <UnstyledButton className={cx(classes.user, { [classes.userActive]: userMenuOpened })}>
+            <UnstyledButton
+              className={cx(classes.user, { [classes.userActive]: userMenuOpened })}
+              onClick={() => setUserMenuOpened((o) => !o)}
+            >
               <Group spacing={7}>
                 <ResourceAvatar value={profile} radius="xl" size={24} />
                 <Text size="sm" className={classes.userName}>

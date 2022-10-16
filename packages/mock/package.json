@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && npm run rollup",
-    "rollup": "rollup --config rollup.config.js",
+    "rollup": "rollup --config rollup.config.mjs",
     "test": "jest"
   },
   "devDependencies": {
