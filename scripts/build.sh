@@ -13,7 +13,7 @@ node --version
 npm --version
 
 # Install
-[ ! -d "node_modules" ] && npm ci
+[ ! -d "node_modules" ] && npm ci --legacy-peer-deps
 
 # Build
 BUILD_ORDER=("definitions" "core" "mock" "react" "app" "graphiql" "server" "infra" "docs" "cli")
