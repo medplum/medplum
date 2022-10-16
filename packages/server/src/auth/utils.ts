@@ -1,14 +1,5 @@
-import { createReference, resolveId } from '@medplum/core';
-import {
-  AccessPolicy,
-  Login,
-  Patient,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { createReference, ProfileResource, resolveId } from '@medplum/core';
+import { AccessPolicy, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
@@ -18,13 +9,13 @@ import { getUserMemberships } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
-  resourceType: 'Patient' | 'Practitioner',
+  resourceType: 'Patient' | 'Person' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
   lastName: string,
   email: string
-): Promise<Patient | Practitioner> {
+): Promise<ProfileResource> {
   logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
-  const result = await systemRepo.createResource<Patient | Practitioner>({
+  const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
       project: project.id,
@@ -50,7 +41,7 @@ export async function createProfile(
 export async function createProjectMembership(
   user: User,
   project: Project,
-  profile: Patient | Practitioner,
+  profile: ProfileResource,
   accessPolicy?: Reference<AccessPolicy>,
   admin?: boolean
 ): Promise<ProjectMembership> {

@@ -1,4 +1,4 @@
-import { CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
+import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -110,6 +110,7 @@ describe('Core Utils', () => {
   test('getImageSrc', () => {
     expect(getImageSrc({ resourceType: 'Observation' })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient' })).toBeUndefined();
+    expect(getImageSrc({ resourceType: 'Patient', photo: null as unknown as Attachment[] })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient', photo: [] })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Patient', photo: [{}] })).toBeUndefined();
     expect(

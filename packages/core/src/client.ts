@@ -9,6 +9,7 @@ import {
   ExtractResource,
   OperationOutcome,
   Patient,
+  Practitioner,
   Project,
   ProjectMembership,
   ProjectSecret,
@@ -1325,7 +1326,7 @@ export class MedplumClient extends EventTarget {
       basedOn: [createReference(resource)],
       encounter,
       subject,
-      sender: profile ? createReference(profile) : undefined,
+      sender: profile ? (createReference(profile) as Reference<Practitioner>) : undefined,
       sent: new Date().toISOString(),
       payload: [{ contentString: text }],
     });

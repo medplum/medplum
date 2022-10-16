@@ -35,6 +35,7 @@ describe('Profile', () => {
 
     const inviteResult = await inviteUser({
       project: registerResult.project,
+      resourceType: 'Practitioner',
       firstName: 'Multi2',
       lastName: 'Multi2',
       email,

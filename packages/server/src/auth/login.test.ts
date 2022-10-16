@@ -36,6 +36,7 @@ describe('Login', () => {
     // Create a test user
     const { user } = await inviteUser({
       project,
+      resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
       email,
@@ -206,6 +207,7 @@ describe('Login', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Member',
         lastName: 'Member',
         email: memberEmail,

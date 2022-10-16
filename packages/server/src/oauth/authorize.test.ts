@@ -27,6 +27,7 @@ describe('OAuth Authorize', () => {
     // Create a test user
     const { user } = await inviteUser({
       project,
+      resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
       email,
