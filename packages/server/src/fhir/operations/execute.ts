@@ -237,6 +237,11 @@ function isJsonContentType(contentType: string): boolean {
  * @param outcomeDesc The outcome description text.
  */
 async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+  const maxDescLength = 1024;
+  if (outcomeDesc.length > maxDescLength) {
+    outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
+  }
+
   await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
