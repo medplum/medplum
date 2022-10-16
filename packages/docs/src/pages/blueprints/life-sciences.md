@@ -89,25 +89,21 @@ You can see a sample of a [SoA in Code here](https://github.com/medplum/medplum/
 
 Exporting the schedule of assessments is possible using the [Bot](/docs/tutorials/bots) framework. A common pattern is to export the protocol to a number of formats like CDISC PRM, CSV, PDF, DOCX, or allow it to be read as FHIR via the API.
 
-## Data Capture
+## Health Records Integration
 
-Coming soon.
+Data capture from legacy EHRs, LIS/LIMS, records request aggregators, COA tools, form builders and digital signatures and more. This is done through the [integration and interoperability engine](../products/integration).
 
 ### Patient-facing tools integration
 
-Coming soon.
-
-### Health Records Integration
-
-Coming soon.
-
-### Patient Submitted Data
-
-Coming soon.
+PRO data comes in from a multitude of systems like Qualtrics, custom mobile applications, and various form builder and survey tools. Integrate, normalize and tag the data using the [integration and interoperability engine](../products/integration) and [bots](/docs/tutorials/bots).
 
 ## Dashboards and Reporting
 
-Coming soon.
+Build a powerful dashboard that can track your workflow and get where you need to quickly. Our admin console [app.medplum.com](https://app.medplum.com) supports building worklists to get you started quickly, for example:
+
+- [Adverse Events](https://app.medplum.com/AdverseEvent?_count=20&_fields=id,date,detected,event,location,outcome,recorder,seriousness,severity,study,subject&_offset=0&_sort=-_lastUpdated) dash
+- [Protocols and SoA Dash](https://app.medplum.com/PlanDefinition?_count=20&_fields=_lastUpdated,author,name,status,subject[x]&_offset=0&_sort=-_lastUpdated)
+- [Per Patient SoA](https://app.medplum.com/RequestGroup?_count=20&_fields=_lastUpdated,groupIdentifier,participant,reasonCode,reasonReference,priority,note&_offset=0&_sort=-_lastUpdated)
 
 ## FHIR Resources
 
@@ -123,6 +119,7 @@ Coming soon.
 | SpecimenDefinition    | [View All](https://app.medplum.com/SpecimenDefinition)    | [Create New](https://app.medplum.com/SpecimenDefinition/new)    | [API](/docs/api/fhir/resources/specimendefinition)    |
 | AdverseEvent          | [View All](https://app.medplum.com/AdverseEvent)          | [Create New](https://app.medplum.com/AdverseEvent/new)          | [API](/docs/api/fhir/resources/adverseevent)          |
 | DiagnosticReport      | [View All](https://app.medplum.com/DiagnosticReport)      | [Create New](https://app.medplum.com/DiagnosticReport/new)      | [API](/docs/api/fhir/resources/diagnosticreport)      |
+| RequestGroup          | [View All](https://app.medplum.com/RequestGroup)          | Created programmatically $apply                                 | [API](/docs/api/fhir/resources/requestgroup)          |
 
 ## Resources and Reference Materials
 

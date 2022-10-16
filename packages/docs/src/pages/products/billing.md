@@ -11,6 +11,7 @@ The Medplum billing and payments implementation is a standards compliant impleme
 - **Connecting to Payors**: Payors often have a FHIR interface, and make it possible for patients to request their financial data. Here's an example from [CMS Blue Button](https://bluebutton.cms.gov/developers/#try-the-api).
 - **Integrations**: Sending claims to various billing systems is a common workflow and clearinghouses and billing providers often have APIs. An integration [like this](https://developers.changehealthcare.com/eligibilityandclaims/reference/processclaim) can be implemented via [bots](/docs/tutorials/bots).
 - **Patient Pay**: Patient payments can be enabled through a payment processor like Stripe. [Invoice](https://app.medplum.com/Invoice) and [PaymentReconciliation](https://app.medplum.com/PaymentReconciliation) are the commonly used resources to manage data associated with use case. [Bots](/docs/tutorials/bots) can be used to consume web hooks or callbacks from payment processors and create the appropriate resources.
+- **Provider/Network Management**:
 
 ## FHIR Resources
 
