@@ -61,6 +61,10 @@ TypeScript SDK that makes the FHIR spec easier to manage. Includes all FHIR type
 
 Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/tutorials/ui-components)
 
+### Search
+
+Enable complex search queries in app or via API. Enable time-aware searches common in healthcare scenarios, such as finding all records that were produced during a specific period. [Learn More](/docs/tutorials/api-basics/basic-fhir-search)
+
 ### Custom domains
 
 Run your custom application on your own domain, giving users a fully branded experience.
