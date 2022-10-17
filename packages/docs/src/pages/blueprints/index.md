@@ -18,7 +18,7 @@ Build a custom EHR to streamline provider workflow. Implement bespoke clinical w
 
 ## Provider Portal and FHIR API
 
-Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients.[Learn More](/blueprints/provider-portal)
+Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/blueprints/provider-portal)
 
 ## LIS/LIMS and Lab Network
 
