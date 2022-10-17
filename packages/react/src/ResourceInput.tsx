@@ -52,7 +52,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
       [searchCode]: encodeURIComponent(input),
       _count: '10',
     });
-    console.debug(searchParams.toString());
+
     const resources = await medplum.searchResources(props.resourceType, searchParams);
     setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
     setLoading(false);
