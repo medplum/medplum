@@ -20,6 +20,10 @@ Build a custom EHR to streamline provider workflow. Implement bespoke clinical w
 
 Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/blueprints/provider-portal)
 
+## Life Sciences
+
+Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
+
 ## LIS/LIMS and Lab Network
 
 Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations.
@@ -27,10 +31,6 @@ Build a custom LIS/LIMS that includes panel management, machine interfacing, qua
 ## Sidecar Application
 
 Build an application that reads and writes data to common medical records systems such as Epic, Cerner or Athena.
-
-## Life Sciences
-
-Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
 
 ## Pediatrics
 
