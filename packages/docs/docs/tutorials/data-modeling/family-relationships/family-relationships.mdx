@@ -1,6 +1,10 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
+import CodeBlock from '@theme/CodeBlock';
+
+import { HomerSimpson, LisaSimpson } from '@medplum/mock';
+
 # Family Relationships
 
 ## Introduction
@@ -37,22 +41,22 @@ In this guide we will use the term "family member" throughout, as the most commo
 | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [**Patient**](/docs/api/fhir/resources/patient)             | This is the resource that models a human who receives clinical services, such as diagnostic labs, medications, and procedures.                                                                                                  |
 | [**RelatedPerson**](/docs/api/fhir/resources/relatedperson) | This models the _relationship between two people_. For simple use cases, you can store demographic and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource itself (see below). |
-| [**Person**](/docs/api/fhir/resources/person)               | This resources can servce as a store for a common set of biographical and contact information about an individual person who is not the subject of any clinical activities.                                                     |
+| [**Person**](/docs/api/fhir/resources/person)               | This resources can serves as a store for a common set of biographical and contact information about an individual person who is not the subject of any clinical activities.                                                     |
 | [**Group**](/docs/api/fhir/resources/group)                 | The [Group](/docs/api/fhir/resources/group) resource provides a single resource to reference a collection of individuals. It can be used to model the family unit as a whole instead of a collection of individual resources.   |
 
 ## Decision Guide
 
 How you decide to model family relationships will depend on your clinical setting, your processes, and your patient population. Below, we provide a few best-practice modeling approaches, as well as some questions you can answer to figure out which approach fits your use case the best.
 
-Note that these are just starting points - you can mix and match these stategies to model your data according to your use case
+Note that these are just starting points - you can mix and match these strategies to model your data according to your use case
 
 |                                                              | [Family members participate in clinical activities?](#family-member-participation) | [Patients share family members?](#are-family-members-shared) | [Family members considered patients?](#are-family-members-patients) | [Focus of treatment](#family-unit-vs-individual-patient) |
-| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :------------------------------------------------------: |
-|     [**Patient** with Contact Information](#approach-1)      |                              No                              |                            Rarely                            |                              No                              |                    Individual Patient                    |
-|        [**RelatedPerson**➡ **Patient**](#approach-2)         |                             Yes                              |                            Rarely                            |                              No                              |                    Individual Patient                    |
-|  [**Person** ➡ **RelatedPerson**➡ **Patient**](#approach-3)  |                             Yes                              |                          Frequently                          |                              No                              |                    Individual Patient                    |
-| [**Patient** ➡ **RelatedPerson** ➡ **Patient**](#approach-4) |                             Yes                              |                          Frequently                          |                             Yes                              |                    Individual Patient                    |
-|           [**Group** of **Patients**](#approach-5)           |                             Yes                              |                          Frequently                          |                             Yes                              |                       Family Unit                        |
+| :----------------------------------------------------------: | :--------------------------------------------------------------------------------: | :----------------------------------------------------------: | :-----------------------------------------------------------------: | :------------------------------------------------------: |
+|     [**Patient** with Contact Information](#approach-1)      |                                         No                                         |                            Rarely                            |                                 No                                  |                    Individual Patient                    |
+|        [**RelatedPerson**➡ **Patient**](#approach-2)         |                                        Yes                                         |                            Rarely                            |                                 No                                  |                    Individual Patient                    |
+|  [**Person** ➡ **RelatedPerson**➡ **Patient**](#approach-3)  |                                        Yes                                         |                          Frequently                          |                                 No                                  |                    Individual Patient                    |
+| [**Patient** ➡ **RelatedPerson** ➡ **Patient**](#approach-4) |                                        Yes                                         |                          Frequently                          |                                 Yes                                 |                    Individual Patient                    |
+|           [**Group** of **Patients**](#approach-5)           |                                        Yes                                         |                          Frequently                          |                                 Yes                                 |                       Family Unit                        |
 
 ### Do family members participate in clinical or financial activities? {#family-member-participation}
 
@@ -77,13 +81,13 @@ In these situations, it is desireable to "factor out" store demographic and cont
 
 The next step is to define who is considered a "patient" in your clinical setting.
 
-In some settings, family members _particpate_ in clinical activities, but they are not patients themselves because they never receive any clinical data about themselves, and they are never treated by any medication or clinical procedures. For example, in an pediatric behavioral therapy, parents may _attend_ counseling sessions, but they are not the beneficiaries of the treatment. In this situations, they would not be considered "patients."
+In some settings, family members _participate_ in clinical activities, but they are not patients themselves because they never receive any clinical data about themselves, and they are never treated by any medication or clinical procedures. For example, in an pediatric behavioral therapy, parents may _attend_ counseling sessions, but they are not the beneficiaries of the treatment. In this situations, they would not be considered "patients."
 
-However, in other settings, multiple family members may be the beneficiaries of clinical information or procedures, so they would all be considered "patients." In maternal care settigns, some medications and treatments may be prescribed for the mother, while additional therapies might be prescribed for the child. In this case, both mother and child would be considered "patients."
+However, in other settings, multiple family members may be the beneficiaries of clinical information or procedures, so they would all be considered "patients." In maternal care settings, some medications and treatments may be prescribed for the mother, while additional therapies might be prescribed for the child. In this case, both mother and child would be considered "patients."
 
 Approaches [#2](#approach-2) and [#3](#approach-3) are applicable for non-patient family members, while [Approach #4](#approach-4) describes how to model relationships between family members who are also patients. If your setting involves some patient and some non-patient family members, you can also combine approaches [#2](#approach-2), [#3](#approach-3), and [#4](#approach-4).
 
-### Is the subject of the treatment an indivdual patient, or a family unit? {#family-unit-vs-individual-patient}
+### Is the subject of the treatment an individual patient, or a family unit? {#family-unit-vs-individual-patient}
 
 In most cases, the focus of each clinical activity will be a single patient, even if an overall care plan involves multiple related patients. However, in some cases, the beneficiary of the treatment is the family unit as a whole, not the individual members. This is most common in family or group counseling scenarios (such as Alcoholics Anonymous), where the clinical objective is to help treat the interpersonal relationships between family members, rather than any specific individual.
 
@@ -98,15 +102,17 @@ After you've answered these questions about your use case, you're ready to make 
 <Tabs>
 <TabItem value="diagram" label="Diagram" default>
 
-:::warning
-:::
+import approach1Diagram from './approach-1.png';
+
+<img alt="Approach #1" src={approach1Diagram} style={{ maxHeight: '400px', width: 'auto' }} />
 
 </TabItem>
+
 <TabItem value="data" label="JSON" >
 
-```json
-
-```
+<CodeBlock language="js">
+  {JSON.stringify(LisaSimpson, ['resourceType', 'name', 'given', 'family', 'contact', 'name', 'address', 'telecom'], 2)}
+</CodeBlock>
 
 </TabItem>
 <TabItem value="query" label="GraphQL" >
@@ -164,7 +170,7 @@ The tradeoff is that if patients share family members (e.g. siblings share the s
 </TabItem>
 </Tabs>
 
-If family memebers _do_ participate in clinical/billing activities, then it might make sense to model them explicitly as a separate resource to track their individual participation.
+If family members _do_ participate in clinical/billing activities, then it might make sense to model them explicitly as a separate resource to track their individual participation.
 
 You can model a family member explicitly as a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource. The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient. The `RelatedPerson.relationship` property is a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) that can be used to specify the relationship type. In simple use cases where patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
 
@@ -174,7 +180,7 @@ The tradeoff is that is that you need to maintain the [RelatedPerson](/docs/api/
 
 :::info Note
 
-Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient assiocated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson) is meant to model the _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new [RelatedPerson](/docs/api/fhir/resources/relatedperson) for each (patient, family member) pair to model each relationship.
+Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient associated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson) is meant to model the _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new [RelatedPerson](/docs/api/fhir/resources/relatedperson) for each (patient, family member) pair to model each relationship.
 
 :::
 
@@ -207,7 +213,7 @@ Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one
 </TabItem>
 </Tabs>
 
-If your practice begins to have patients who share family members, duplicating their contact information across mulitple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
+If your practice begins to have patients who share family members, duplicating their contact information across multiple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
 
 For example, consider two Patients who are siblings and share the same mother. Because a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource models the relationship between a person and a [Patient](/docs/api/fhir/resources/patient), each sibling would need it's own [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource linking them to the mother (as shown the the diagram). However, [Approach #2](#approach-2) duplicates the mother's contact information on each [RelatedPerson](/docs/api/fhir/resources/relatedperson). If the family moves, you will have to ensure that this address information is updated in both places.
 
@@ -262,6 +268,10 @@ This approach _can_ be combined with [Approach #3](#approach-3), with some famil
 
 ### Approach #5: [Group](/docs/api/fhir/resources/group) of Patients {#approach-5}
 
+<CodeBlock language="js">
+  {JSON.stringify(HomerSimpson, ['resourceType', 'id', 'name', 'family', 'given'], 2)}
+</CodeBlock>
+
 <Tabs>
 <TabItem value="diagram" label="Diagram" default>
 
@@ -287,7 +297,7 @@ This approach _can_ be combined with [Approach #3](#approach-3), with some famil
 
 For some use cases, it is useful to keep track of the family unit as a whole, rather than as a web of connected [Patients](/docs/api/fhir/resources/patient), [RelatedPersons](/docs/api/fhir/resources/relatedperson), and [Persons](/docs/api/fhir/resources/person).
 
-The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the of people as a single unit, and in some places can be used inplace of the [Patient](/docs/api/fhir/resources/patient) resource. Some common examples are:
+The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the of people as a single unit, and in some places can be used in place of the [Patient](/docs/api/fhir/resources/patient) resource. Some common examples are:
 
 | Use Case                                                                                                          | [Group](/docs/api/fhir/resources/group) referenced by                            |
 | ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -300,12 +310,12 @@ You can also use the [Group](/docs/api/fhir/resources/group) resource to model a
 
 - A support group like Alcoholics Anonymous.
 - A generalized population of patients for a clinical trial.
-- A herd of animals for vetinary use cases.
+- A herd of animals for veterinary use cases.
 
 Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-4. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as Patients, as in Approach #4, and then referencing them in the `Group.member.entity` array.
 
 In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
 
-| Pros                                                                                                                  | Cons                                                                                                                                                                      | Use If                                                                                           | Example Use Cases                                                                                         |
-| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| <ul><li>Single resource to reference the complete family group</li><li>Can be used to model abstract groups</li></ul> | <ul><li>Doesn't model specific relationships between individuals. Need to supplement with Approaches [#2](#approach-2), [#3](#approach-3), or [#4](#approach-4)</li></ul> | <ul><li>Focus of clinical, billing, or analytic activities is the family unit / group.</li></ul> | <ul><li>Family Counseling</li><li>Group Therapy</li><li>Population Health</li><li>Vetinary Care</li></ul> |
+| Pros                                                                                                                  | Cons                                                                                                                                                                      | Use If                                                                                           | Example Use Cases                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| <ul><li>Single resource to reference the complete family group</li><li>Can be used to model abstract groups</li></ul> | <ul><li>Doesn't model specific relationships between individuals. Need to supplement with Approaches [#2](#approach-2), [#3](#approach-3), or [#4](#approach-4)</li></ul> | <ul><li>Focus of clinical, billing, or analytic activities is the family unit / group.</li></ul> | <ul><li>Family Counseling</li><li>Group Therapy</li><li>Population Health</li><li>Veterinary Care</li></ul> |

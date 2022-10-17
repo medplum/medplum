@@ -449,3 +449,87 @@ export const BartSimpson: Patient = {
     },
   ],
 };
+
+export const LisaSimpson: Patient = {
+  resourceType: 'Patient',
+  id: '444',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
+  birthDate: '1981-05-09',
+  name: [
+    {
+      given: ['Lisa'],
+      family: 'Simpson',
+    },
+  ],
+  photo: [
+    {
+      contentType: 'image/jpeg',
+      url: 'https://example.com/picture.jpg',
+    },
+  ],
+  contact: [
+    {
+      name: { given: ['Homer'], family: 'Simpson' },
+      address: {
+        use: 'home',
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '12345',
+      },
+      telecom: [
+        {
+          system: 'phone',
+          use: 'home',
+          value: '555-1239',
+        },
+        {
+          system: 'email',
+          use: 'home',
+          value: 'homer@thesimpsons.com',
+        },
+      ],
+    },
+    {
+      name: { given: ['Marge'], family: 'Simpson' },
+      address: {
+        use: 'home',
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '12345',
+      },
+      telecom: [
+        {
+          system: 'phone',
+          use: 'mobile',
+          value: '139-1928',
+        },
+        {
+          system: 'email',
+          use: 'home',
+          value: 'marge@thesimpsons.com',
+        },
+      ],
+    },
+  ],
+
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-1239',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'lisa@thesimpsons.com',
+    },
+  ],
+};
