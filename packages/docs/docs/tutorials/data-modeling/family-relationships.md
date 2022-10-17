@@ -1,3 +1,6 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Family Relationships
 
 ## Introduction
@@ -43,13 +46,13 @@ How you decide to model family relationships will depend on your clinical settin
 
 Note that these are just starting points - you can mix and match these stategies to model your data according to your use case
 
-|                                                                                                                                                               | [Family members participate in clinical activities?](#family-member-participation) | [Patients share family members?](#are-family-members-shared) | [Family members considered patients?](#are-family-members-patients) | [Focus of treatment](#family-unit-vs-individual-patient) |
-| :------------------------------------------------------------------------------------------------------------------------------------------------------------ | :--------------------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------- | :------------------------------------------------------- |
-| [**Patient**](/docs/api/fhir/resources/patient) with contact information                                                                                      | No                                                                                 | Rarely                                                       | No                                                                  | Individual Patient                                       |
-| [**Patient**](/docs/api/fhir/resources/patient) + [**RelatedPerson**](/docs/api/fhir/resources/relatedperson)                                                 | Yes                                                                                | Rarely                                                       | No                                                                  | Individual Patient                                       |
-| [**Patient**](/docs/api/fhir/resources/patient)/ [**RelatedPerson**](/docs/api/fhir/resources/relatedperson) /[**Person**](/docs/api/fhir/resources/person)   | Yes                                                                                | Frequently                                                   | No                                                                  | Individual Patient                                       |
-| [**Patient**](/docs/api/fhir/resources/patient)/ [**RelatedPerson**](/docs/api/fhir/resources/relatedperson) /[**Patient**](/docs/api/fhir/resources/patient) | Yes                                                                                | Frequently                                                   | Yes                                                                 | Individual Patient                                       |
-| [**Group**](/docs/api/fhir/resources/group) of Patients                                                                                                       | Yes                                                                                | Frequently                                                   | Yes                                                                 | Family Unit                                              |
+|                                                              | [Family members participate in clinical activities?](#family-member-participation) | [Patients share family members?](#are-family-members-shared) | [Family members considered patients?](#are-family-members-patients) | [Focus of treatment](#family-unit-vs-individual-patient) |
+| :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :------------------------------------------------------: |
+|     [**Patient** with Contact Information](#approach-1)      |                              No                              |                            Rarely                            |                              No                              |                    Individual Patient                    |
+|        [**RelatedPerson**➡ **Patient**](#approach-2)         |                             Yes                              |                            Rarely                            |                              No                              |                    Individual Patient                    |
+|  [**Person** ➡ **RelatedPerson**➡ **Patient**](#approach-3)  |                             Yes                              |                          Frequently                          |                              No                              |                    Individual Patient                    |
+| [**Patient** ➡ **RelatedPerson** ➡ **Patient**](#approach-4) |                             Yes                              |                          Frequently                          |                             Yes                              |                    Individual Patient                    |
+|           [**Group** of **Patients**](#approach-5)           |                             Yes                              |                          Frequently                          |                             Yes                              |                       Family Unit                        |
 
 ### Do family members participate in clinical or financial activities? {#family-member-participation}
 
@@ -92,176 +95,217 @@ After you've answered these questions about your use case, you're ready to make 
 
 ### Approach #1: [Patient](/docs/api/fhir/resources/patient) with Contact Information {#approach-1}
 
-- If your family members **do not** participate in clinical activities, and patients rarely share family members, then the simplest approach is just to store information about family members directly on the[Patient](/docs/api/fhir/resources/patient)resource, using the Patient.contact property.
-- The benefits of this approach is that you only have to deal with one resource type, the Patient, which makes your API calls very simple.
-- The tradeoff is that if patients share family members (e.g. siblings share the same parents), you'll have to duplicate that family's contact information on each Patient.
-- Pros
-  - Simplest data model
-  - Single resource type to manage
-- Cons
-  - Duplication of data for shared family members
-- Use if
-  - Family members **do not** participate in clinical or billing activities
-  - Patients share family members infrequently
-- Example Use Cases
-  - At-home lab testing
-  - Adult mental health therapy
+<Tabs>
+<TabItem value="diagram" label="Diagram" default>
 
-:::warning Example GraphQL query needed
+:::warning
+:::
+
+</TabItem>
+<TabItem value="data" label="JSON" >
+
+```json
+
+```
+
+</TabItem>
+<TabItem value="query" label="GraphQL" >
+
+```ts
+
+```
+
+</TabItem>
+</Tabs>
+
+If your family members do not participate in clinical/billing activities and patients rarely share family members, the simplest approach is just to store information about family members directly on the [Patient](/docs/api/fhir/resources/patient) resource.
+
+The `Patient.contact` property can store a list the following information about each family member:
+
+| Information       | Property                          |
+| ----------------- | --------------------------------- |
+| Name              | `Patient.contact[i].name`         |
+| Gender            | `Patient.contact[i].gender`       |
+| Address           | `Patient.contact[i].address`      |
+| Phone Number      | `Patient.contact[i].telecom`      |
+| Email             | `Patient.contact[i].telecom`      |
+| Relationship Type | `Patient.contact[i].relationship` |
+
+The benefits of this approach is that you only have to manage one resource type, the [Patient](/docs/api/fhir/resources/patient), which makes your API calls very simple.
+
+The tradeoff is that if patients share family members (e.g. siblings share the same parents), you'll have to duplicate that family's contact information on each [Patient](/docs/api/fhir/resources/patient)
+
+| Pros                                                                         | Cons                                                            | Use If                                                                                                                                       | Example Use Cases                                                         |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| <ul><li>Simplest data model</li><li>Single resource type to manage</li></ul> | <ul><li>Duplication of data for shared family members</li></ul> | <ul><li>Family members **do not** participate in clinical or billing activities</li><li>Patients share family members infrequently</li></ul> | <ul><li>At-home lab testing</li><li>Adult mental health therapy</li></ul> |
+
+### Approach #2: [RelatedPerson](/docs/api/fhir/resources/relatedperson) ➡ [Patient](/docs/api/fhir/resources/patient) {#approach-2}
+
+<Tabs>
+<TabItem value="diagram" label="Diagram" default>
+
+:::warning
+:::
+
+</TabItem>
+<TabItem value="data" label="JSON" >
+
+```json
+
+```
+
+</TabItem>
+<TabItem value="query" label="GraphQL" >
+
+```ts
+
+```
+
+</TabItem>
+</Tabs>
+
+If family memebers _do_ participate in clinical/billing activities, then it might make sense to model them explicitly as a separate resource to track their individual participation.
+
+You can model a family member explicitly as a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource. The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient. The `RelatedPerson.relationship` property is a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) that can be used to specify the relationship type. In simple use cases where patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
+
+The benefit of this approach is that you can track the family member's role in clinical and billing activities independently of the patient.
+
+The tradeoff is that is that you need to maintain the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource in addition the [Patient](/docs/api/fhir/resources/patient) Resource.
+
+:::info Note
+
+Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient assiocated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson) is meant to model the _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new [RelatedPerson](/docs/api/fhir/resources/relatedperson) for each (patient, family member) pair to model each relationship.
 
 :::
 
-### Approach #2: [Patient](/docs/api/fhir/resources/patient)⬅ [RelatedPerson](/docs/api/fhir/resources/relatedperson)
+| Pros                                                                                                                                                   | Cons                                                                                                                                                                                                                 | Use If                                                                                                                                                                        | Example Use Cases                                                                                                                                                                                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| <ul><li>Simplest data model _that explicitly models family members_</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Requires maintaining links between [RelatedPersons](/docs/api/fhir/resources/relatedperson) and [Patients](/docs/api/fhir/resources/patient)</li><li>Duplication of data for shared family members</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) share family members infrequently</li></ul> | <ul><li>Insurance coverage where the _beneficiary_ ([Patient](/docs/api/fhir/resources/patient)) is not the insurance _subscriber_ ([RelatedPerson](/docs/api/fhir/resources/relatedperson))</li></ul> |
 
-- If family memebers **do** participate in clinical and billing activities, then it might make sense to model them as a separate resource to track their individual participation
-- If the family members are not the focus of the clinical activity themselves, then they can be modeled with a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
-- The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient
-- The `RelatedPerson.relationship` is a CodeableConcept that allows you to define the relationship type
-- If your patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource, without any more resources
-- The benefit of this approach is that you can track the family member's role in clinical and billing activities independently of the patient
-- The tradeoff is that is that you need to maintain the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource in addition the[Patient](/docs/api/fhir/resources/patient)Resource.
-- Also, you should note that each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient assiocated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson)` is meant to model a specific _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new RelatedePerson for each (patient, family member) pair.
-- Pros
-  - Simplest data model that explicitly models family members
-  - Track the participation of family members in clinical activities
-- Cons
-  - Requires maintaining links between [RelatedPerson](/docs/api/fhir/resources/relatedperson)s and Patients
-  - Duplication of data for shared family members
-- Use if
-  - Family members **do** participate in clinical or billing activities
-  - Patients share family members infrequently
-- Example Use Cases
-  - Modeling insurance coverage where the beneficiary (Patient) is not the insurance subscriber ([RelatedPerson](/docs/api/fhir/resources/relatedperson))
+### Approach #3:[Person](/docs/api/fhir/resources/person) ➡ [RelatedPerson](/docs/api/fhir/resources/relatedperson) ➡ [Patient](/docs/api/fhir/resources/patient) {#approach-3}
 
-:::warning Diagram Needed
+<Tabs>
+<TabItem value="diagram" label="Diagram" default>
+
+:::warning
+:::
+
+</TabItem>
+<TabItem value="data" label="JSON" >
+
+```json
+
+```
+
+</TabItem>
+<TabItem value="query" label="GraphQL" >
+
+```ts
+
+```
+
+</TabItem>
+</Tabs>
+
+If your practice begins to have patients who share family members, duplicating their contact information across mulitple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
+
+For example, consider two Patients who are siblings and share the same mother. Because a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource models the relationship between a person and a [Patient](/docs/api/fhir/resources/patient), each sibling would need it's own [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource linking them to the mother (as shown the the diagram). However, [Approach #2](#approach-2) duplicates the mother's contact information on each [RelatedPerson](/docs/api/fhir/resources/relatedperson). If the family moves, you will have to ensure that this address information is updated in both places.
+
+To avoid this duplication, we can "factor out" the mother's demographic and contact information into a separate [Person](/docs/api/fhir/resources/person) resource. The [Person](/docs/api/fhir/resources/person) is then connected to the [RelatedPerson](/docs/api/fhir/resources/relatedperson) using the `Person.link.target` property. This avoids the data duplication, at the expense of adding one more layer of indirection.
+
+In this model, the [RelatedPerson](/docs/api/fhir/resources/relatedperson) does not store information about the mother, other than how she is related to each sibling.
+
+| Pros                                                                                                                                        | Cons                                                                                       | Use If                                                                                                                                                                                                                           | Example Use Cases                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| <ul><li>Avoid data duplication for shared family members</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Adds another layer of indirection compared to [Approach #2](#approach-2)</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) often share family members </li><li> Family members **are not** considered Patients </li></ul> | <ul><li>Pediatric Virtual Care</li></ul> |
+
+### Approach #4: [Patient](/docs/api/fhir/resources/patient) ➡ [RelatedPerson](/docs/api/fhir/resources/relatedperson) ➡ [Patient](/docs/api/fhir/resources/patient) {#approach-4}
+
+<Tabs>
+<TabItem value="diagram" label="Diagram" default>
+
+:::warning
+:::
+
+</TabItem>
+<TabItem value="data" label="JSON" >
+
+```json
+
+```
+
+</TabItem>
+<TabItem value="query" label="GraphQL" >
+
+```ts
+
+```
+
+</TabItem>
+</Tabs>
+
+This modeling approach is very similar to [Approach #3](#approach-3), except that instead of using the [Person](/docs/api/fhir/resources/person) resource to model the family member, you use a [Patient](/docs/api/fhir/resources/patient) resource. This approach makes sense if family members should also be treated as [Patients](/docs/api/fhir/resources/patient) because they also benefit from clinical information or procedures.
+
+For example, in post-natal care, both mother and child will benefit from clinical activities such as physician visits ([Encounters](/docs/api/fhir/resources/encounter)), medication administration ([MedicationDispense](/docs/api/fhir/resources/medicationdispense)), and laboratory tests ([ServiceRequest](/docs/api/fhir/resources/servicerequest), [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport)).
+
+Similarly to [Approach #3](#approach-3), contact and demographic information can be factored out into another [Patient](/docs/api/fhir/resources/patient) resource, and the new [Patient](/docs/api/fhir/resources/patient) can be linked to to the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource using the `Patient.link.other` property.
+
+:::info Note
+
+This approach _can_ be combined with [Approach #3](#approach-3), with some family being members being modeled by a [Person](/docs/api/fhir/resources/person) , where others are modeled as a [Patient](/docs/api/fhir/resources/patient) . However, to simplify your life, if need to model _some_ family members as [Patients](/docs/api/fhir/resources/patient), we recommend just modelling all family members as [Patients](/docs/api/fhir/resources/patient) to avoid having to deal with too many resource types.
 
 :::
 
-:::warning Example GraphQL query needed
+| Pros                                                                                                                                        | Cons                                                                                  | Use If                                                                                                                                                                                                                             | Example Use Cases                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| <ul><li>Avoid data duplication for shared family members</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Like [Approach #3](#approach-3), adds a second layer of indirection</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) often share family members </li><li> Family members **should be** considered Patients </li></ul> | <ul><li>Maternal Care</li><li>Family Medicine</li></ul> |
 
+### Approach #5: [Group](/docs/api/fhir/resources/group) of Patients {#approach-5}
+
+<Tabs>
+<TabItem value="diagram" label="Diagram" default>
+
+:::warning
 :::
 
-### Approach #3: [Patient](/docs/api/fhir/resources/patient)⬅ [RelatedPerson](/docs/api/fhir/resources/relatedperson) ⬅[Person](/docs/api/fhir/resources/person)
+</TabItem>
+<TabItem value="data" label="JSON" >
 
-- If your practice starts to have patients who share family members, duplicating their contact across mulitple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
-- For example, consider two Patients who are siblings and share the same mother. Each would have a separate [RelatedPerson](/docs/api/fhir/resources/relatedperson) to model their relationship with their mother.
-- However, in approach #2, we duplicate the mother's contact information on each [RelatedPerson](/docs/api/fhir/resources/relatedperson). If the family moves, the information would have to be updated in two places.
-- However, because a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource models the relationship between a person and a patient, each sibling would need it's own [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource linking them to the father
-- Therefore, you will need to model the father as either a[Person](/docs/api/fhir/resources/person) or a Patient, and use either the Patient/[RelatedPerson](/docs/api/fhir/resources/relatedperson)/Person or Patient/[RelatedPerson](/docs/api/fhir/resources/relatedperson)/Patient schemes below to model the family.
+```json
 
-- To avoid this duplication, we can factor the mother's demographic and contact information into a separate `Person` resource.
-- The `Person` is then connected to the [RelatedPerson](/docs/api/fhir/resources/relatedperson) using the `Person.link.target` property
-- This avoids the data duplication, at the expense of adding one more layer of indirection.
-- In this model, the [RelatedPerson](/docs/api/fhir/resources/relatedperson) does not store information about the mother, other than how she is related to each Sibling (child)
-- Pros
-  - Avoid data duplication for shared family members
-  - Track the participation of family members in clinical activities
-- Cons
-  - Adds another layer of indirection compared to Approach #2
-- Use if
-  - Family members **do** participate in clinical or billing activities
-  - Family members **are not** the focus of clincal activities
-  - Patients often share family members.
-- Example Use Cases
-  - Pediatric Virtual Care
+```
 
-:::warning Diagram Needed
+</TabItem>
+<TabItem value="query" label="GraphQL" >
 
-:::
+```ts
 
-:::warning Example GraphQL query needed
+```
 
-:::
+</TabItem>
+</Tabs>
 
-### Approach #4: [Patient](/docs/api/fhir/resources/patient)⬅ [RelatedPerson](/docs/api/fhir/resources/relatedperson) ⬅ [Patient](/docs/api/fhir/resources/patient)
+For some use cases, it is useful to keep track of the family unit as a whole, rather than as a web of connected [Patients](/docs/api/fhir/resources/patient), [RelatedPersons](/docs/api/fhir/resources/relatedperson), and [Persons](/docs/api/fhir/resources/person).
 
-- This modeling approach is very similar to Approach #3, except that instead of using the `Person` resource, you use a `Patient` resource.
+The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the of people as a single unit, and in some places can be used inplace of the [Patient](/docs/api/fhir/resources/patient) resource. Some common examples are:
 
-- This patient resource can be connected to the[RelatedPerson](/docs/api/fhir/resources/relatedperson) resource using the
+| Use Case                                                                                                          | [Group](/docs/api/fhir/resources/group) referenced by                            |
+| ----------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Family therapy office visit where the subject of the visit is the entire family, not just the individual members. | `Encounter.subject`                                                              |
+| Measuring the effects of a drug administered to a patient population during a clinical trial.                     | `Condition.subject`<br />`MedicationDispense.subject`<br />`Observation.subject` |
 
-- This is useful when your family members are themselves the focus of some clinical activities.
+For a group of specific individuals, each group member is referenced in the `Group.member.entity` property.
 
-- For example, in post-natal care, both mother and child will participate in clinical activities such as physician visits (Encounters), receiving medication (MedicationDispense), and laboratory tests (ServiceRequest, DiagnosticReport).
+You can also use the [Group](/docs/api/fhir/resources/group) resource to model abstract groups, where the specific members are not clinically or financially relevant. Some examples of abstract groups are:
 
-- This approach _can_ be combined with Approach #3, with some family being members being modeled by a `Person`, where others are modeled as a `Patient`.
+- A support group like Alcoholics Anonymous.
+- A generalized population of patients for a clinical trial.
+- A herd of animals for vetinary use cases.
 
-- However, to simplify your life, if your use case indicates that family members _may_ participate in clinical activities, it will be easier just to model all family members as `Patient`s.
+Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-4. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as Patients, as in Approach #4, and then referencing them in the `Group.member.entity` array.
 
-- Pros
+In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
 
-  - Track the clinical activities for all family members
-  - Avoid data duplication for shared family members
-
-- Cons
-
-  - Like Approach #3, adds a second layer of indirection
-
-- Use if
-
-  - Family members **do** participate in clinical or billing activities
-  - Family members **are** the focus of clincal activities
-
-- Example Use Cases
-
-  - Maternal Care
-  - Family Medicine
-
-  :::warning Diagram Needed
-
-  :::
-
-  :::warning Example GraphQL query needed
-
-  :::
-
-### Approach #5: [Group](/docs/api/fhir/resources/group) of Patients
-
-- For some use cases, it is useful to keep track of the family unit as a whole, rather than as a web of connected `Patients`, `RelatedPersons`, and `Persons`.
-
-- For example, in family therapy scenarios, the subject of the office visit (`Encounter.subject`) would be the entire family, not just the individual patients
-- In practice, you will typically use the [Group](/docs/api/fhir/resources/group) to set the Encounter.subject or Appointment.subject resources
-
-- The [Group](/docs/api/fhir/resources/group) resources allows you to specify a single resource that represents the of people as a single unit.
-
-- Each member of the group is referenced in the `Group.member.entity` property
-
-- Adding a `Group` resource for your families an orthogonal choice to Approaches #1-4. You may choose to model the individual relationships via `RelatedPersons`, AND also consolidate the entire family into a group.
-
-- If modeling family groups is important, Medplum recommends modeling all the individuals as Patients, as in Approach #4, and then referencing them in the `Group.member.entity` array.
-
-- You can also use the [Group](/docs/api/fhir/resources/group) resource to model abstract groups, where the specific members are not clinically or financially relevant.
-
-- Some examples of abstract groups are:
-
-  - A support group like Alcoholics Anonymous
-  - A generlized population of patients for a clinical trial
-  - A herd of animals for vetinary use cases
-
-- In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
-
-- Pros
-
-  - Single resource to reference the complete family group
-
-- Cons
-
-  - Doesn't model specific relationships between individuals. Need to supplement with Approaches #2-4
-
-- Use if
-
-  - Focus of clinical, billing, or analytic activities is the family unit / group.
-
-- Example Use Cases
-
-  - Family Counseling
-  - Group Therapy
-  - Population Health
-  - Vetinary Care
-
-  :::warning Diagram Needed
-
-  :::
-
-  :::warning Example GraphQL query needed
-
-  :::
+| Pros                                                                                                                  | Cons                                                                                                                                                                      | Use If                                                                                           | Example Use Cases                                                                                         |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| <ul><li>Single resource to reference the complete family group</li><li>Can be used to model abstract groups</li></ul> | <ul><li>Doesn't model specific relationships between individuals. Need to supplement with Approaches [#2](#approach-2), [#3](#approach-3), or [#4](#approach-4)</li></ul> | <ul><li>Focus of clinical, billing, or analytic activities is the family unit / group.</li></ul> | <ul><li>Family Counseling</li><li>Group Therapy</li><li>Population Health</li><li>Vetinary Care</li></ul> |
