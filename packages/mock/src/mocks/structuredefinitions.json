@@ -10737,6 +10737,292 @@
   },
   {
     "resourceType": "StructureDefinition",
+    "id": "Schedule",
+    "name": "Schedule",
+    "type": "Schedule",
+    "snapshot": {
+      "element": [
+        {
+          "id": "Schedule",
+          "path": "Schedule",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Schedule",
+            "min": 0,
+            "max": "*"
+          }
+        },
+        {
+          "id": "Schedule.id",
+          "path": "Schedule.id",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "http://hl7.org/fhirpath/System.String"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.meta",
+          "path": "Schedule.meta",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Meta"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.implicitRules",
+          "path": "Schedule.implicitRules",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "uri"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.language",
+          "path": "Schedule.language",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.text",
+          "path": "Schedule.text",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "DomainResource.text",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Narrative"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.contained",
+          "path": "Schedule.contained",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.contained",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Resource"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.extension",
+          "path": "Schedule.extension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.extension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.modifierExtension",
+          "path": "Schedule.modifierExtension",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "DomainResource.modifierExtension",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Extension"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.identifier",
+          "path": "Schedule.identifier",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Schedule.identifier",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Identifier"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.active",
+          "path": "Schedule.active",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Schedule.active",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.serviceCategory",
+          "path": "Schedule.serviceCategory",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Schedule.serviceCategory",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.serviceType",
+          "path": "Schedule.serviceType",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Schedule.serviceType",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.specialty",
+          "path": "Schedule.specialty",
+          "min": 0,
+          "max": "*",
+          "base": {
+            "path": "Schedule.specialty",
+            "min": 0,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "CodeableConcept"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.actor",
+          "path": "Schedule.actor",
+          "min": 1,
+          "max": "*",
+          "base": {
+            "path": "Schedule.actor",
+            "min": 1,
+            "max": "*"
+          },
+          "type": [
+            {
+              "code": "Reference",
+              "targetProfile": [
+                "http://hl7.org/fhir/StructureDefinition/Patient",
+                "http://hl7.org/fhir/StructureDefinition/Practitioner",
+                "http://hl7.org/fhir/StructureDefinition/PractitionerRole",
+                "http://hl7.org/fhir/StructureDefinition/RelatedPerson",
+                "http://hl7.org/fhir/StructureDefinition/Device",
+                "http://hl7.org/fhir/StructureDefinition/HealthcareService",
+                "http://hl7.org/fhir/StructureDefinition/Location"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "Schedule.planningHorizon",
+          "path": "Schedule.planningHorizon",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Schedule.planningHorizon",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "Period"
+            }
+          ]
+        },
+        {
+          "id": "Schedule.comment",
+          "path": "Schedule.comment",
+          "min": 0,
+          "max": "1",
+          "base": {
+            "path": "Schedule.comment",
+            "min": 0,
+            "max": "1"
+          },
+          "type": [
+            {
+              "code": "string"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "StructureDefinition",
     "id": "ServiceRequest",
     "name": "ServiceRequest",
     "type": "ServiceRequest",

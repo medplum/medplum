@@ -6,6 +6,23 @@ import { useMedplum } from './MedplumProvider';
 import { ResourceAvatar } from './ResourceAvatar';
 import { useResource } from './useResource';
 
+/**
+ * Defines which search parameters will be used by the type ahead to search for each resourceType
+ */
+const SEARCH_CODES: Record<string, string> = {
+  Schedule: '_id',
+  Task: '_id',
+  Patient: 'name',
+  Practitioner: 'name',
+  Questionnaire: 'name',
+  ServiceRequest: '_id',
+  DiagnosticReport: '_id',
+  Specimen: '_id',
+  Observation: 'code',
+  RequestGroup: '_id',
+  ActivityDefinition: 'name',
+};
+
 export interface ResourceInputProps<T extends Resource = Resource> {
   readonly resourceType: ResourceType;
   readonly name: string;
@@ -30,10 +47,13 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 
   async function loadValues(input: string): Promise<void> {
     setLoading(true);
-    const resources = await medplum.searchResources(
-      props.resourceType,
-      'name=' + encodeURIComponent(input) + '&_count=10'
-    );
+    const searchCode = SEARCH_CODES[props.resourceType] || 'name';
+    const searchParams = new URLSearchParams({
+      [searchCode]: encodeURIComponent(input),
+      _count: '10',
+    });
+
+    const resources = await medplum.searchResources(props.resourceType, searchParams);
     setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
     setLoading(false);
   }

@@ -23,6 +23,9 @@ const resourceTypes = [
   'SpecimenDefinition',
   'ObservationDefinition',
   'Media',
+  'Schedule',
+  'Task',
+  'RequestGroup',
 ];
 
 const properties = [
@@ -62,6 +65,10 @@ const searchParams = [
   'Encounter-length',
   'Communication-encounter',
   'Media-encounter',
+  'Questionnaire-name',
+  'ActivityDefinition-name',
+  'Schedule-identifier',
+  'Task-identifier',
 ];
 
 export function main(): void {
