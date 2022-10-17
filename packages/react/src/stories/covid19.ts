@@ -707,6 +707,7 @@ export const Covid19PCRTest: ActivityDefinition = {
   status: 'active',
   kind: 'ServiceRequest',
   title: 'Order SARS-CoV-2 (COVID-19) RNA panel',
+  name: 'Order SARS-CoV-2 (COVID-19) RNA panel',
   description:
     'Order SARS-CoV-2 (COVID-19) RNA panel - Respiratory specimen by NAA with probe detection (Loinc: 94531-1)',
   code: {
@@ -726,6 +727,7 @@ export const Covid19PCRTest: ActivityDefinition = {
 export const Covid19ReviewReport: ActivityDefinition = {
   resourceType: 'ActivityDefinition',
   title: 'Review COVID-19 Report',
+  name: 'Review COVID-19 Report',
   description: 'Review COVID-19 PCR diagnostic results',
   id: 'covid19-review-report',
   status: 'active',

@@ -23,6 +23,9 @@ const resourceTypes = [
   'SpecimenDefinition',
   'ObservationDefinition',
   'Media',
+  'Schedule',
+  'Task',
+  'RequestGroup',
 ];
 
 const properties = [
@@ -64,9 +67,7 @@ const searchParams = [
   'Media-encounter',
   'Questionnaire-name',
   'ActivityDefinition-name',
-  'Schedule-id',
   'Schedule-identifier',
-  'Task-id',
   'Task-identifier',
 ];
 
