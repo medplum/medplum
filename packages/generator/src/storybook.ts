@@ -62,6 +62,12 @@ const searchParams = [
   'Encounter-length',
   'Communication-encounter',
   'Media-encounter',
+  'Questionnaire-name',
+  'ActivityDefinition-name',
+  'Schedule-id',
+  'Schedule-identifier',
+  'Task-id',
+  'Task-identifier',
 ];
 
 export function main(): void {

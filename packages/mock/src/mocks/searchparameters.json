@@ -1,6 +1,17 @@
 [
   {
     "resourceType": "SearchParameter",
+    "id": "ActivityDefinition-name",
+    "name": "name",
+    "code": "name",
+    "base": [
+      "ActivityDefinition"
+    ],
+    "type": "string",
+    "expression": "ActivityDefinition.name"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Communication-encounter",
     "name": "encounter",
     "code": "encounter",
@@ -162,6 +173,28 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "Questionnaire-name",
+    "name": "name",
+    "code": "name",
+    "base": [
+      "Questionnaire"
+    ],
+    "type": "string",
+    "expression": "Questionnaire.name"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": [
+      "Schedule"
+    ],
+    "type": "token",
+    "expression": "Schedule.identifier"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "ServiceRequest-authored",
     "name": "authored",
     "code": "authored",
@@ -181,5 +214,16 @@
     ],
     "type": "reference",
     "expression": "ServiceRequest.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Task-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": [
+      "Task"
+    ],
+    "type": "token",
+    "expression": "Task.identifier"
   }
 ]
