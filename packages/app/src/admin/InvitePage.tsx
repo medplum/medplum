@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, NativeSelect, TextInput } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -8,6 +8,7 @@ import { AccessPolicyInput } from './AccessPolicyInput';
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
+  const [resourceType, setResourceType] = useState<string>('Practitioner');
   const [firstName, setFirstName] = useState<string>('');
   const [lastName, setLastName] = useState<string>('');
   const [email, setEmail] = useState<string>('');
@@ -21,6 +22,7 @@ export function InvitePage(): JSX.Element {
       <Form
         onSubmit={() => {
           const body = {
+            resourceType,
             firstName,
             lastName,
             email,
@@ -35,6 +37,16 @@ export function InvitePage(): JSX.Element {
       >
         {!success && (
           <>
+            <FormSection title="Role" htmlFor="resourceType" outcome={outcome}>
+              <NativeSelect
+                id="resourceType"
+                name="resourceType"
+                defaultValue="Practitioner"
+                data={['Practitioner', 'Patient', 'RelatedPerson']}
+                onChange={(e) => setResourceType(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'resourceType')}
+              />
+            </FormSection>
             <FormSection title="First Name" htmlFor="firstName" outcome={outcome}>
               <TextInput
                 id="firstName"
