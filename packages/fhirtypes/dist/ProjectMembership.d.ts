@@ -8,7 +8,6 @@ import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
 import { Patient } from './Patient';
-import { Person } from './Person';
 import { Practitioner } from './Practitioner';
 import { Project } from './Project';
 import { Reference } from './Reference';
@@ -67,7 +66,7 @@ export interface ProjectMembership {
    * Reference to the resource that represents the user profile within the
    * project.
    */
-  profile?: Reference<Bot | ClientApplication | Patient | Person | Practitioner | RelatedPerson>;
+  profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
    * The access policy for the user within the project memebership.

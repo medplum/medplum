@@ -7,7 +7,6 @@ import {
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
-  Person,
   Practitioner,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
@@ -22,7 +21,7 @@ import { formatHumanName } from './format';
 /**
  * @internal
  */
-export type ProfileResource = Patient | Person | Practitioner | RelatedPerson;
+export type ProfileResource = Patient | Practitioner | RelatedPerson;
 
 /**
  * Creates a reference resource.
@@ -61,7 +60,6 @@ export function resolveId(reference: Reference | undefined): string | undefined 
 export function isProfileResource(resource: Resource): resource is ProfileResource {
   return (
     resource.resourceType === 'Patient' ||
-    resource.resourceType === 'Person' ||
     resource.resourceType === 'Practitioner' ||
     resource.resourceType === 'RelatedPerson'
   );

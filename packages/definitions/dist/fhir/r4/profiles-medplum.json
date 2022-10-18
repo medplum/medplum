@@ -597,7 +597,6 @@
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Bot",
                 "https://medplum.com/fhir/StructureDefinition/ClientApplication",
                 "http://hl7.org/fhir/StructureDefinition/Patient",
-                "http://hl7.org/fhir/StructureDefinition/Person",
                 "http://hl7.org/fhir/StructureDefinition/Practitioner",
                 "http://hl7.org/fhir/StructureDefinition/RelatedPerson"]
             }]

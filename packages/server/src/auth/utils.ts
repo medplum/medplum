@@ -9,7 +9,7 @@ import { getUserMemberships } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
-  resourceType: 'Patient' | 'Person' | 'Practitioner' | 'RelatedPerson',
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
   lastName: string,
   email: string

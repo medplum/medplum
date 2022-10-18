@@ -176,7 +176,7 @@ async function createTask(
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),
-    requester: requester as Reference<Practitioner>,
+    requester,
     for: createReference(params.subject),
     owner: createReference(params.subject),
     description: action.description,

@@ -15,9 +15,7 @@ import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
-  body('resourceType')
-    .isIn(['Patient', 'Person', 'Practitioner', 'RelatedPerson'])
-    .withMessage('Resource type is required'),
+  body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -46,7 +44,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
 export interface InviteRequest {
   readonly project: Project;
-  readonly resourceType: 'Patient' | 'Person' | 'Practitioner' | 'RelatedPerson';
+  readonly resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
   readonly firstName: string;
   readonly lastName: string;
   readonly email: string;
