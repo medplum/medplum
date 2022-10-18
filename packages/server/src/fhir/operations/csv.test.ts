@@ -67,7 +67,7 @@ describe('CSV Export', () => {
     expect(res2.status).toBe(201);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/Patient/$csv`)
+      .get(`/fhir/R4/Patient/$csv?_fields=id,name,address,email,phone`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toContain(res1.body.id);
@@ -111,7 +111,7 @@ describe('CSV Export', () => {
     expect(res1.status).toBe(201);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/ServiceRequest/$csv`)
+      .get(`/fhir/R4/ServiceRequest/$csv?_fields=id,subject,code,orderDetail`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toContain(res1.body.id);
