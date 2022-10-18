@@ -24,7 +24,11 @@ module.exports = (env, argv) => ({
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: '/node_modules/',
-        loader: 'babel-loader',
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx',
+          target: 'es2015'
+        }
       },
       {
         test: /\.css$/,
