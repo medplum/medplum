@@ -16,7 +16,7 @@ Medplum enables many medical and non-medical services to be effectively composed
 
 Below is an **example of a medical practice "Foo Medical" with connections** to various systems. This is an example deployment, but can give a sense of what connections might be needed in practice.
 
-TODO: Add graphic.
+![Sample Integrations for Foo Medical](../products/img/medplum-interop-example.png)
 
 ## Creating Medical Integrations
 

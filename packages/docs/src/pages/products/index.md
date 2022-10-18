@@ -53,13 +53,13 @@ Build your app just the way you want it. Use our Smart-on-FHIR authentication an
 
 Store your data in FHIR, and allow access through a FHIR API. Partition data with access policies to ensure parties only see the data they need to. [Learn More](/docs/tutorials/api-basics)
 
-### TypeScript SDK
-
-TypeScript SDK that makes the FHIR spec easier to manage. Includes all FHIR types and mock data. [Learn More](/docs/sdk)
-
 ### React Components
 
 Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/tutorials/ui-components)
+
+### Search
+
+Enable complex search queries in app or via API. Enable time-aware searches common in healthcare scenarios, such as finding all records that were produced during a specific period. [Learn More](/docs/tutorials/api-basics/basic-fhir-search)
 
 ### Custom domains
 

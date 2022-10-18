@@ -14,11 +14,15 @@ A portal for patients to message their provider, view their records, request med
 
 ## Custom EHR
 
-Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](blueprints/custom-ehr)
+Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/blueprints/custom-ehr)
 
 ## Provider Portal and FHIR API
 
-Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients.
+Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/blueprints/provider-portal)
+
+## Life Sciences
+
+Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
 
 ## LIS/LIMS and Lab Network
 
@@ -27,10 +31,6 @@ Build a custom LIS/LIMS that includes panel management, machine interfacing, qua
 ## Sidecar Application
 
 Build an application that reads and writes data to common medical records systems such as Epic, Cerner or Athena.
-
-## Life Sciences
-
-Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
 
 ## Pediatrics
 

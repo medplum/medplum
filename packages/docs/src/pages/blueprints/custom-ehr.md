@@ -20,6 +20,10 @@ Design your service menu and care plans and track patients across their journey.
 
 Make and manage forms for clinicians and patients. Link them to powerful automations. [Learn more](../products/forms).
 
+## Notes and Charting
+
+Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [forms](../products/forms) to populate the Encounter object via [bot](/docs/tutorials/bots/bot-for-questionnaire-response), or creating the object via the API.
+
 ## Schedules
 
 Create schedules and slots and allow patients to book them. Create schedules that are geographically linked, belong to a specific practitioner or service, or other complex requirements. [Learn more](../products/scheduling).
