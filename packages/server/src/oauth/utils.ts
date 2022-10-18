@@ -22,6 +22,7 @@ export interface LoginRequest {
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
+  readonly resourceType?: string;
   readonly projectId?: string;
   readonly clientId?: string;
   readonly codeChallenge?: string;
@@ -107,7 +108,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getUserMemberships(createReference(user), request.projectId);
+  const memberships = await getUserMemberships(createReference(user), request.projectId, request.resourceType);
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
@@ -183,7 +184,8 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  */
 export async function getUserMemberships(
   user: Reference<ClientApplication | User>,
-  projectId?: string
+  projectId?: string,
+  resourceType?: string
 ): Promise<ProjectMembership[]> {
   if (projectId === 'new') {
     return [];
@@ -209,11 +211,19 @@ export async function getUserMemberships(
     });
   }
 
-  const memberships = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
+    count: 100,
     filters,
   });
-  return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
+
+  let memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map((e) => e.resource as ProjectMembership);
+
+  if (resourceType) {
+    memberships = memberships.filter((m) => m.profile?.reference?.startsWith(resourceType));
+  }
+
+  return memberships;
 }
 
 /**

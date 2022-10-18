@@ -389,4 +389,68 @@ describe('Login', () => {
       ],
     });
   });
+
+  test('Specify resourceType', async () => {
+    const email = `multiple-resource-types-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Practitioner',
+      lastName: 'Practitioner',
+      projectName: 'Multiple Resource Types',
+      email,
+      password,
+    });
+
+    await inviteUser({
+      project,
+      email,
+      resourceType: 'Patient',
+      firstName: 'Patient',
+      lastName: 'Patient',
+    });
+
+    // Try to login without specifying a resourceType
+    // This should succeed with a list of profiles
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid',
+      remember: true,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeUndefined();
+    expect(res1.body.memberships).toHaveLength(2);
+
+    // Try to login as a Practitioner
+    // This should succeed with a code
+    const res2 = await request(app).post('/auth/login').type('json').send({
+      resourceType: 'Practitioner',
+      email,
+      password,
+      scope: 'openid',
+      remember: true,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+
+    // Try to login as a Patient
+    // This should succeed with a code
+    const res3 = await request(app).post('/auth/login').type('json').send({
+      resourceType: 'Patient',
+      email,
+      password,
+      scope: 'openid',
+      remember: true,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res3.status).toBe(200);
+    expect(res3.body.code).toBeDefined();
+  });
 });
