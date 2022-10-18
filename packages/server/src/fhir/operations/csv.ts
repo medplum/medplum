@@ -3,28 +3,9 @@ import { Address, BundleEntry, CodeableConcept, ContactPoint, HumanName, Referen
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
+import { isResourceType } from '../schema';
 import { parseSearchRequest } from '../search';
-
-const resourceTypeColumns: Record<string, Record<string, string>> = {
-  Patient: {
-    ID: 'id',
-    'Last Updated': 'meta.lastUpdated',
-    Name: 'name',
-    'Birth Date': 'birthDate',
-    Gender: 'gender',
-    Address: 'address',
-    Phone: "telecom.where(system='phone')",
-    Email: "telecom.where(system='email')",
-  },
-  ServiceRequest: {
-    ID: 'id',
-    'Last Updated': 'meta.lastUpdated',
-    Patient: 'subject',
-    Code: 'code.coding',
-    Status: 'status',
-    'Order Detail': 'orderDetail',
-  },
-};
+import { getSearchParameter } from '../structure';
 
 /**
  * Handles a CSV export request.
@@ -32,33 +13,51 @@ const resourceTypeColumns: Record<string, Record<string, string>> = {
  * @param res The HTTP response.
  */
 export async function csvHandler(req: Request, res: Response): Promise<void> {
-  const { resourceType } = req.params;
+  const { resourceType } = req.params as { resourceType: string };
+  const query = req.query as Record<string, string[] | string | undefined>;
 
-  const columns = resourceTypeColumns[resourceType];
-  if (!columns) {
+  const fields = query['_fields'] as string;
+  delete query['_fields'];
+
+  if (!fields) {
+    sendOutcome(res, badRequest('Missing _fields parameter'));
+    return;
+  }
+
+  if (!isResourceType(resourceType)) {
     sendOutcome(res, badRequest('Unsupported resource type'));
     return;
   }
 
+  const columnNames: string[] = [];
+  const expressions: string[] = [];
+
+  for (const field of fields.split(',')) {
+    columnNames.push(field);
+    const searchParam = getSearchParameter(resourceType, field);
+    if (searchParam) {
+      expressions.push(searchParam.expression as string);
+    } else {
+      expressions.push(field);
+    }
+  }
+
   const repo = res.locals.repo as Repository;
-  const query = req.query as Record<string, string[] | string | undefined>;
   const searchRequest = parseSearchRequest(resourceType, query);
   searchRequest.count = 10000;
   const bundle = await repo.search(searchRequest);
-
-  const columnEntries = Object.entries(columns);
   const output: string[][] = [];
 
   // Header row
-  output.push(columnEntries.map((entry) => entry[0]));
+  output.push(columnNames);
 
   // For each resource...
   for (const entry of bundle.entry as BundleEntry[]) {
     const row: string[] = [];
 
     // For each column...
-    for (const [_, column] of columnEntries) {
-      const values = evalFhirPath(column, entry.resource);
+    for (const expression of expressions) {
+      const values = evalFhirPath(expression, entry.resource);
       if (values.length > 0) {
         row.push(csvEscape(values[0]));
       } else {
@@ -88,6 +87,10 @@ function csvEscape(input: unknown): string {
     return csvEscapeString(input);
   }
 
+  if (typeof input === 'number' || typeof input === 'boolean') {
+    return input.toString();
+  }
+
   if (typeof input === 'object') {
     if ('city' in input) {
       // Address
@@ -104,6 +107,16 @@ function csvEscape(input: unknown): string {
     if ('display' in input) {
       // Reference
       return csvEscapeString((input as Reference).display as string);
+    }
+    if ('coding' in input) {
+      // CodeableConcept
+      const coding = (input as CodeableConcept).coding;
+      if (coding?.[0]?.display) {
+        return csvEscapeString(coding[0].display);
+      }
+      if (coding?.[0]?.code) {
+        return csvEscapeString(coding[0].code);
+      }
     }
     if ('text' in input) {
       // CodeableConcept
