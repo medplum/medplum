@@ -113,8 +113,40 @@ import approach1Diagram from './approach-1.png';
 </TabItem>
 <TabItem value="query" label="GraphQL" >
 
-```ts
+```graphql
+{
+  # Read the Patient with specific ID
+  Patient(id: "patient-id") {
+    id
+    name {
+      given
+      family
+    }
 
+    # Read the Patient.contact field to get a list of family member contacts
+    contact {
+      relationship {
+        text
+      }
+      name {
+        given
+        family
+      }
+      gender
+      address {
+        line
+        city
+        state
+        country
+      }
+      telecom {
+        use
+        system
+        value
+      }
+    }
+  }
+}
 ```
 
 </TabItem>
@@ -176,8 +208,32 @@ import approach2Diagram from './approach-2.png';
 </TabItem>
 <TabItem value="query" label="GraphQL" >
 
-```ts
+```graphql
+{
+  # Read the Patient with specific ID
+  Patient(id: "patient-id") {
+    id
+    name {
+      given
+      family
+    }
 
+    # Get a list of all RelatedPerson resources whose 'patient'
+    # field points to the above patient (id = 'patient-id)
+    RelatedPersonList(_reference: patient) {
+      id
+      relationship {
+        text
+      }
+      name {
+        given
+        family
+      }
+      gender
+      birthDate
+    }
+  }
+}
 ```
 
 </TabItem>
@@ -243,8 +299,39 @@ import approach3Diagram from './approach-3.png';
 </TabItem>
 <TabItem value="query" label="GraphQL" >
 
-```ts
+```graphql
+{
+  # Read the Patient with specific ID
+  Patient(id: "patient-id") {
+    id
+    name {
+      given
+      family
+    }
 
+    # Get a list of all RelatedPerson resources whose 'patient'
+    # field points to the above patient (id = 'patient-id)
+    RelatedPersonList(_reference: patient) {
+      id
+      relationship {
+        text
+      }
+
+      # Get a list of all the Patients whose "link.other"
+      # field points to the above RelatedPerson
+      # (Creates a nested list inside each RelatedPerson entry)
+      PatientList(_reference: link) {
+        id
+        name {
+          given
+          family
+        }
+        gender
+        birthDate
+      }
+    }
+  }
+}
 ```
 
 </TabItem>
@@ -290,8 +377,38 @@ import approach4Diagram from './approach-4.png';
 </TabItem>
 <TabItem value="query" label="GraphQL" >
 
-```ts
+```graphql
+{
+  # Read the Group with specific ID
+  Group(id: "group-id") {
+    id
+    name
 
+    # Read the list of group members, where each entity
+    # is a reference to a Patient
+    member {
+      entity {
+        reference
+        display
+
+        # Medplum's graphQL implementation allows you to read the resource
+        # referenced by 'entity' using the 'resource' field
+        resource {
+          # The '... on Patient' syntax is needed to tell the graphQL engine
+          # that this field references a Patient resource
+          ... on Patient {
+            id
+            name {
+              given
+              family
+            }
+            gender
+          }
+        }
+      }
+    }
+  }
+}
 ```
 
 </TabItem>
