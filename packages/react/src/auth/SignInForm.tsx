@@ -18,6 +18,7 @@ export interface SignInFormProps {
   readonly nonce?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
+  readonly resourceType?: string;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
@@ -63,6 +64,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
             <AuthenticationForm
               projectId={props.projectId}
               clientId={props.clientId}
+              resourceType={props.resourceType}
               scope={props.scope}
               nonce={props.nonce}
               googleClientId={props.googleClientId}

@@ -196,6 +196,7 @@ export interface LoginRequest {
   readonly remember?: boolean;
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly resourceType?: string;
   readonly scope?: string;
   readonly nonce?: string;
   readonly codeChallenge?: string;
@@ -233,6 +234,7 @@ export interface GoogleLoginRequest {
   readonly googleCredential: string;
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly resourceType?: string;
   readonly scope?: string;
   readonly nonce?: string;
   readonly codeChallenge?: string;
