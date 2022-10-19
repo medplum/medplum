@@ -11,7 +11,7 @@ import { HomerSimpson, LisaSimpson, SimpsonsFamily, HomerLisaRelatedPerson } fro
 
 Delivering healthcare often involves more than a single patient. Spouses, parents, children, siblings, and even friends can be involved in delivering care, participating in clinical activities, and providing financial support.
 
-The FHIR spec provides a number of Resources for modeling a patient's relationship to other individuals, but how you use these tools will depend on your specific clinical setting and workflow.
+The FHIR spec provides a number of Resources for modeling a patient's relationship to other individuals, but how you use these tools will depend on your specific clinical setting and workflow. Having your data well modeled in FHIR is standards compliant and can help you compute compliance metrics such as [CMS queries](https://www.medplum.com/docs/compliance/onc#materials-and-usage).
 
 This guide provides a framework to help you decide which resources to use to model your patients' family relationships, and recommends a few approaches that our users have found useful.
 
@@ -25,7 +25,7 @@ In this guide we will use the term "family member" throughout, as the most commo
 - Pediatric Health
 - Family Medicine
 - Group Therapy
-- Maternal Health
+- Neonatal Health
 - Clinical Trials and Population Health
 
 ## This guide will show you
@@ -50,12 +50,12 @@ How you decide to model family relationships will depend on your clinical settin
 
 Note that these are just starting points - you can mix and match these strategies to model your data according to your use case
 
-|                                                              | [Family members participate in clinical activities?](#family-member-participation) | [Patients share family members?](#are-family-members-shared) | [Focus of treatment](#family-unit-vs-individual-patient) |
-| :----------------------------------------------------------: | :--------------------------------------------------------------------------------: | :----------------------------------------------------------: | :------------------------------------------------------: |
-|     [**Patient** with Contact Information](#approach-1)      |                                         No                                         |                            Rarely                            |                    Individual Patient                    |
-|        [**RelatedPerson** ➡ **Patient**](#approach-2)        |                                        Yes                                         |                            Rarely                            |                    Individual Patient                    |
-| [**Patient** ➡ **RelatedPerson** ➡ **Patient**](#approach-3) |                                        Yes                                         |                          Frequently                          |                    Individual Patient                    |
-|           [**Group** of **Patients**](#approach-4)           |                                        Yes                                         |                          Frequently                          |                       Family Unit                        |
+|                                                              | [Family members participate in clinical activities?](#family-member-participation) | [Patients share family members?](#are-family-members-shared) | [Focus of treatment](#family-unit-vs-individual-patient) | Common Use Cases                                                                                                                                        |
+| :----------------------------------------------------------: | :--------------------------------------------------------------------------------: | :----------------------------------------------------------: | :------------------------------------------------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|     [**Patient** with Contact Information](#approach-1)      |                                         No                                         |                            Rarely                            |                    Individual Patient                    | <ul><li>At-home lab testing</li><li>Adult mental health therapy</li></ul>                                                                               |
+|        [**RelatedPerson** ➡ **Patient**](#approach-2)        |                                        Yes                                         |                            Rarely                            |                    Individual Patient                    | <ul><li>Modeling Insurance coverage where the _beneficiary_ and _subscriber_ are different people </li><li>Parents acting on behalf of minors</li></ul> |
+| [**Patient** ➡ **RelatedPerson** ➡ **Patient**](#approach-3) |                                        Yes                                         |                          Frequently                          |                    Individual Patient                    | <ul><li>Pediatric Care</li><li>Neonatal Care</li><li>Family Medicine</li><li>Parents acting on behalf of minors</li></ul>                               |
+|           [**Group** of **Patients**](#approach-4)           |                                        Yes                                         |                          Frequently                          |                       Family Unit                        | <ul><li>Family Counseling</li><li>Training & Education</li><li>Group Therapy</li><li>Population Health</li><li>Veterinary Care</li></ul>                |
 
 ### Do family members participate in clinical or financial activities? {#family-member-participation}
 
@@ -70,7 +70,7 @@ Some examples of such participation include:
 
 In many use cases, family members _do not_ participate in clinical and financial activities, but rather serve as only points of contact. In those situations, [Approach #1](#approach-1) provides a simple modeling approach that avoids the use of many different resource types.
 
-### How often will Patients share family members? {#are-family-members-shared}
+### How often will multiple Patients (e.g. siblings) share family members? {#are-family-members-shared}
 
 If your patients' family members _do_ participate in clinical/billing activities, the next question is how often patients share family members. This tends to happen more frequently in pediatric and family medicine settings. For example, two siblings might be enrolled as separate patients in a pediatric clinic, but they share the same mother and father.
 
@@ -78,9 +78,11 @@ In these situations, it is desireable to "factor out" store demographic and cont
 
 ### Is the subject of the treatment an individual patient, or a family unit? {#family-unit-vs-individual-patient}
 
-In most cases, the focus of each clinical activity will be a single patient, even if an overall care plan involves multiple related patients. However, in some cases, the beneficiary of the treatment is the family unit as a whole, not the individual members. This is most common in family or group counseling scenarios (such as Alcoholics Anonymous), where the clinical objective is to help treat the interpersonal relationships between family members, rather than any specific individual.
+In most cases, the focus of each clinical activity will be a single patient, even if multiple patients participate in the care plan. However, in some cases, the beneficiary of the treatment is the family unit as a whole, not the individual members. This is most common in family behavioral therapy scenarios, where the clinical objective is to help treat the interpersonal relationships between family members, rather than any specific individual.
 
-In these instances, you can create a [Group](/docs/api/fhir/resources/group) resource with all the Patients who are the focus of the activity, and treat the [Group](/docs/api/fhir/resources/group) as a single clinical  unit, as detailed in [Approach #4](#approach-4).
+Determining whether whether the subject of treatment is an indivdual or a group can be subtle. One way to think about your answer is to think about your common query patterns. If you are frequently querying for all activities related to an individual, it makes more sense to model the subject as a [Patient](/docs/api/fhir/resources/patient), with other [Patients](/docs/api/fhir/resources/patient) as participants.
+
+In contrast, if you're frequently querying the activities of the entire family, you can create a [Group](/docs/api/fhir/resources/group) resource to treat the family as a single clinical  unit, as detailed in [Approach #4](#approach-4).
 
 ## Data Models
 
@@ -247,15 +249,19 @@ The benefit of this approach is that you can track the family member's role in c
 
 The tradeoff is that is that you need to maintain the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource in addition the [Patient](/docs/api/fhir/resources/patient) Resource.
 
+This pattern, along with [Approach #3](#approach-3), is especially useful for situations where parents are logging in on behalf of minors. In these settings, the patient, a minor, can be modeled as a [Patient](/docs/api/fhir/resources/patient), and their parent/legal guardian would be a [RelatedPerson](/docs/api/fhir/resources/relatedperson). Medplum allows users to sign into a project either as a [Patient](/docs/api/fhir/resources/patient) or a [RelatedPerson](/docs/api/fhir/resources/relatedperson), and you can create an [Access Policy](https://www.medplum.com/docs/tutorials/security/access-control#access-policies) to allow the parent access to minor's clinical information.
+
+This approach is also useful to model different insurance converage for dependents. You can model the coverage using the [Coverage](/docs/api/fhir/resources/coverage) resource, with the [Patient](/docs/api/fhir/resources/patient) as the `Coverage.beneficiary` and the [RelatedPerson](/docs/api/fhir/resources/relatedperson) as the `Coverage.subscriber`.
+
 :::info Note
 
 Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one** patient associated with them it. This is because [RelatedPerson](/docs/api/fhir/resources/relatedperson) is meant to model the _relationship_ between a family member and a patient. Even if two patients the same family member, you'll have to create a new [RelatedPerson](/docs/api/fhir/resources/relatedperson) for each (patient, family member) pair to model each relationship.
 
 :::
 
-| Pros                                                                                                                                                   | Cons                                                                                                                                                                                                                 | Use If                                                                                                                                                                        | Example Use Cases                                                                                                                                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| <ul><li>Simplest data model _that explicitly models family members_</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Requires maintaining links between [RelatedPersons](/docs/api/fhir/resources/relatedperson) and [Patients](/docs/api/fhir/resources/patient)</li><li>Duplication of data for shared family members</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) share family members infrequently</li></ul> | <ul><li>Insurance coverage where the _beneficiary_ ([Patient](/docs/api/fhir/resources/patient)) is not the insurance _subscriber_ ([RelatedPerson](/docs/api/fhir/resources/relatedperson))</li></ul> |
+| Pros                                                                                                                                                   | Cons                                                                                                                                                                                                                 | Use If                                                                                                                                                                        | Example Use Cases                                                                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| <ul><li>Simplest data model _that explicitly models family members_</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Requires maintaining links between [RelatedPersons](/docs/api/fhir/resources/relatedperson) and [Patients](/docs/api/fhir/resources/patient)</li><li>Duplication of data for shared family members</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) share family members infrequently</li></ul> | <ul><li>Insurance coverage where the _beneficiary_ ([Patient](/docs/api/fhir/resources/patient)) is not the insurance _subscriber_ ([RelatedPerson](/docs/api/fhir/resources/relatedperson))</li><li>Parents acting on behalf of minors</li></ul> |
 
 ### Approach #3: [Patient](/docs/api/fhir/resources/patient) ➡ [RelatedPerson](/docs/api/fhir/resources/relatedperson) ➡ [Patient](/docs/api/fhir/resources/patient) {#approach-3}
 
@@ -345,15 +351,17 @@ To avoid this duplication, we can "factor out" the mother's demographic and cont
 
 In this model, the [RelatedPerson](/docs/api/fhir/resources/relatedperson) does not store specific information about the mother. It only stores the _relationship_ betwen the mother and child.
 
+Another common use case for this approach is in neonatal care. Many common neonatal workflows, such as newborn hearing tests, postpartum-depression screening, and breastfeeding metrics all require modelign both the mother and child as patients to track their indivdual encounters, medications, labs, and imaging.
+
 :::info Note
 
 The FHIR spec also allows the use of the [Person](/docs/api/fhir/resources/person) resource to factor out demographic information. While this is a reasonable approach in cases where an individual can be both a [Patient](/docs/api/fhir/resources/patient) and a [Practitioner](/docs/api/fhir/resources/practitioner), Medplum generally doesn't recommend the additional complexity of mixing [Patient](/docs/api/fhir/resources/patient) and [Person](/docs/api/fhir/resources/person) resources.
 
 :::
 
-| Pros                                                                                                                                        | Cons                                                                                       | Use If                                                                                                                                                                  | Example Use Cases                                                                      |
-| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| <ul><li>Avoid data duplication for shared family members</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Adds another layer of indirection compared to [Approach #2](#approach-2)</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) often share family members </li></ul> | <ul><li>Pediatric Virtual Care</li><li>Maternal Care</li><li>Family Medicine</li></ul> |
+| Pros                                                                                                                                        | Cons                                                                                       | Use If                                                                                                                                                                  | Example Use Cases                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| <ul><li>Avoid data duplication for shared family members</li><li>Track the participation of family members in clinical activities</li></ul> | <ul><li>Adds another layer of indirection compared to [Approach #2](#approach-2)</li></ul> | <ul><li>Family members **do** participate in clinical or billing activities</li><li> [Patients](/docs/api/fhir/resources/patient) often share family members </li></ul> | <ul><li>Pediatric Care</li><li>Neonatal Care</li><li>Family Medicine</li><li>Parents acting on behalf of minors</li></ul> |
 
 ### Approach #4: [Group](/docs/api/fhir/resources/group) of Patients {#approach-4}
 
@@ -437,9 +445,9 @@ Adding a [Group](/docs/api/fhir/resources/group) resource for your families an o
 
 In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
 
-| Pros                                                                                                                  | Cons                                                                                                                                                  | Use If                                                                                           | Example Use Cases                                                                                           |
-| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
-| <ul><li>Single resource to reference the complete family group</li><li>Can be used to model abstract groups</li></ul> | <ul><li>Doesn't model specific relationships between individuals. Need to supplement with Approaches [#2](#approach-2) or [#3](#approach-3)</li></ul> | <ul><li>Focus of clinical, billing, or analytic activities is the family unit / group.</li></ul> | <ul><li>Family Counseling</li><li>Group Therapy</li><li>Population Health</li><li>Veterinary Care</li></ul> |
+| Pros                                                                                                                  | Cons                                                                                                                                                  | Use If                                                                                           | Example Use Cases                                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| <ul><li>Single resource to reference the complete family group</li><li>Can be used to model abstract groups</li></ul> | <ul><li>Doesn't model specific relationships between individuals. Need to supplement with Approaches [#2](#approach-2) or [#3](#approach-3)</li></ul> | <ul><li>Focus of clinical, billing, or analytic activities is the family unit / group.</li></ul> | <ul><li>Family Counseling</li><li></li>Training & Education<li>Group Therapy</li><li>Population Health</li><li>Veterinary Care</li></ul> |
 
 ## Conclusion
 
