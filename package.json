@@ -29,6 +29,7 @@
     "@typescript-eslint/parser": "5.40.0",
     "babel-jest": "29.2.0",
     "cross-env": "7.0.3",
+    "esbuild-loader": "2.20.0",
     "eslint": "8.25.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-plugin-prettier": "4.2.1",
