@@ -1,14 +1,5 @@
-import { createReference, resolveId } from '@medplum/core';
-import {
-  AccessPolicy,
-  Login,
-  Patient,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { createReference, ProfileResource, resolveId } from '@medplum/core';
+import { AccessPolicy, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
@@ -18,13 +9,13 @@ import { getUserMemberships } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
-  resourceType: 'Patient' | 'Practitioner',
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
   lastName: string,
   email: string
-): Promise<Patient | Practitioner> {
+): Promise<ProfileResource> {
   logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
-  const result = await systemRepo.createResource<Patient | Practitioner>({
+  const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
       project: project.id,
@@ -50,7 +41,7 @@ export async function createProfile(
 export async function createProjectMembership(
   user: User,
   project: Project,
-  profile: Patient | Practitioner,
+  profile: ProfileResource,
   accessPolicy?: Reference<AccessPolicy>,
   admin?: boolean
 ): Promise<ProjectMembership> {
@@ -75,7 +66,12 @@ export async function createProjectMembership(
  * @param login The login details.
  * @param projectId The optional projectId for scoping.
  */
-export async function sendLoginResult(res: Response, login: Login, projectId: string | undefined): Promise<void> {
+export async function sendLoginResult(
+  res: Response,
+  login: Login,
+  projectId: string | undefined,
+  resourceType: string | undefined
+): Promise<void> {
   if (projectId === 'new') {
     // User is creating a new project.
     res.json({ login: login.id });
@@ -95,7 +91,7 @@ export async function sendLoginResult(res: Response, login: Login, projectId: st
   // User has multiple profiles, so the user needs to select
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
-  const memberships = await getUserMemberships(login?.user as Reference<User>, projectId);
+  const memberships = await getUserMemberships(login?.user as Reference<User>, projectId, resourceType);
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
     project: m.project,

@@ -51,6 +51,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -93,6 +94,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -140,6 +142,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -176,6 +179,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Carol',
         lastName: 'Brown',
         email: `carol${randomUUID()}@example.com`,
@@ -203,6 +207,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: '',

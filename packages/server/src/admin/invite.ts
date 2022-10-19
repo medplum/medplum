@@ -1,4 +1,4 @@
-import { Operator } from '@medplum/core';
+import { Operator, ProfileResource } from '@medplum/core';
 import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
@@ -15,6 +15,7 @@ import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
+  body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -43,13 +44,14 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
 export interface InviteRequest {
   readonly project: Project;
+  readonly resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
   readonly firstName: string;
   readonly lastName: string;
   readonly email: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
 }
 
-export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: Practitioner }> {
+export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: ProfileResource }> {
   const project = request.project;
   let user = await getUserByEmailWithoutProject(request.email);
 
@@ -90,11 +92,11 @@ export async function inviteUser(request: InviteRequest): Promise<{ user: User; 
       ].join('\n'),
     });
   }
-  let profile = await searchForExistingPractitioner(project, request.email);
+  let profile = await searchForExistingProfile(project, request.resourceType, request.email);
   if (!profile) {
     profile = (await createProfile(
       project,
-      'Practitioner',
+      request.resourceType,
       request.firstName,
       request.lastName,
       request.email
@@ -120,9 +122,13 @@ async function createUser(request: InviteRequest): Promise<User> {
   return result;
 }
 
-async function searchForExistingPractitioner(project: Project, email: string): Promise<Practitioner | undefined> {
-  const bundle = await systemRepo.search<Practitioner>({
-    resourceType: 'Practitioner',
+async function searchForExistingProfile(
+  project: Project,
+  resourceType: string,
+  email: string
+): Promise<ProfileResource | undefined> {
+  const bundle = await systemRepo.search<ProfileResource>({
+    resourceType,
     filters: [
       {
         code: '_project',
@@ -136,8 +142,5 @@ async function searchForExistingPractitioner(project: Project, email: string): P
       },
     ],
   });
-  if (bundle.entry && bundle.entry.length > 0) {
-    return bundle.entry[0].resource as Practitioner;
-  }
-  return undefined;
+  return bundle.entry?.[0]?.resource;
 }

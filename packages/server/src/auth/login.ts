@@ -20,6 +20,11 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  // Resource type can optionally be specified.
+  // If specified, only memberships of that type will be returned.
+  // If not specified, all memberships will be considered.
+  const resourceType = req.body.resourceType as string | undefined;
+
   // Project ID can come from one of two sources
   // 1) Passed in explicitly as projectId
   // 2) Implicit with clientId
@@ -42,6 +47,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     authMethod: 'password',
     clientId,
     projectId,
+    resourceType,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
     codeChallenge: req.body.codeChallenge,
@@ -52,5 +58,5 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  await sendLoginResult(res, login, projectId);
+  await sendLoginResult(res, login, projectId, resourceType);
 }

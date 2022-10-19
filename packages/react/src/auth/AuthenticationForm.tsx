@@ -10,6 +10,7 @@ import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 export interface AuthenticationFormProps {
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly resourceType?: string;
   readonly scope?: string;
   readonly nonce?: string;
   readonly googleClientId?: string;
@@ -43,6 +44,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
             medplum.startLogin({
               projectId: props.projectId,
               clientId: props.clientId,
+              resourceType: props.resourceType,
               scope: props.scope,
               nonce: props.nonce,
               codeChallenge: props.codeChallenge,
@@ -77,6 +79,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
                     medplum.startGoogleLogin({
                       projectId: props.projectId,
                       clientId: props.clientId,
+                      resourceType: props.resourceType,
                       scope: props.scope,
                       nonce: props.nonce,
                       codeChallenge: props.codeChallenge,

@@ -57,7 +57,7 @@ export function resolveId(reference: Reference | undefined): string | undefined 
  * @param resource The FHIR resource.
  * @returns True if the resource is a "ProfileResource".
  */
-export function isProfileResource(resource: Resource): boolean {
+export function isProfileResource(resource: Resource): resource is ProfileResource {
   return (
     resource.resourceType === 'Patient' ||
     resource.resourceType === 'Practitioner' ||
@@ -72,7 +72,7 @@ export function isProfileResource(resource: Resource): boolean {
  */
 export function getDisplayString(resource: Resource): string {
   if (isProfileResource(resource)) {
-    const profileName = getProfileResourceDisplayString(resource as ProfileResource);
+    const profileName = getProfileResourceDisplayString(resource);
     if (profileName) {
       return profileName;
     }
@@ -84,8 +84,8 @@ export function getDisplayString(resource: Resource): string {
     }
   }
   if (resource.resourceType === 'Observation') {
-    if ('code' in resource && (resource.code as any)?.text) {
-      return (resource.code as any)?.text;
+    if ('code' in resource && resource.code?.text) {
+      return resource.code.text;
     }
   }
   if (resource.resourceType === 'User') {
@@ -131,23 +131,26 @@ function getDeviceDisplayString(device: Device): string | undefined {
  * @returns The image URL for the resource or undefined.
  */
 export function getImageSrc(resource: Resource): string | undefined {
-  if (isProfileResource(resource)) {
-    const photos = (resource as ProfileResource).photo;
-    if (photos) {
-      for (const photo of photos) {
-        const url = getPhotoImageSrc(photo);
-        if (url) {
-          return url;
-        }
+  if (!('photo' in resource)) {
+    return undefined;
+  }
+
+  const photo = resource.photo;
+  if (!photo) {
+    return undefined;
+  }
+
+  if (Array.isArray(photo)) {
+    for (const p of photo) {
+      const url = getPhotoImageSrc(p);
+      if (url) {
+        return url;
       }
     }
+  } else {
+    return getPhotoImageSrc(photo);
   }
-  if (resource.resourceType === 'Bot' && resource.photo) {
-    const url = getPhotoImageSrc(resource.photo);
-    if (url) {
-      return url;
-    }
-  }
+
   return undefined;
 }
 

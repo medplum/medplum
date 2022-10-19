@@ -49,6 +49,7 @@ describe('Project Admin routes', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: `bob${randomUUID()}@example.com`,
@@ -244,6 +245,7 @@ describe('Project Admin routes', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: `bob${randomUUID()}@example.com`,
