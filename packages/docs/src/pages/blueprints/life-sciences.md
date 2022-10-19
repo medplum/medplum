@@ -65,9 +65,13 @@ Lab panels and assays are modeled as [FHIR PlanDefinition](/docs/api/fhir/resour
 - `ActivityDefinition.specimenRequirement` should link to the SpecimenDefinition
 - `ActivityDefinition.observationRequirement` should link to the ObservationDefinition, which should also be tagged with appropriate LOINC, SNOMED and CDISC codes.
 
+You can see an example of a [PlanDefinition for Lab in code](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts#L742) and on [Storybook](https://storybook.medplum.com/?path=/docs/medplum-plandefinitionbuilder--covid-19-pcr-lab-service-story).
+
 You can see an example of a simple [ActivityDefinition for Lab in code](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts#L678) or on [Storybook](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--covid-19-pcr-test-activity).
 
-Here is an [ObservationDefinition on Storybook](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--observation-ignore-empty)
+Here is an [ObservationDefinition for Lab in code](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts#L688) and [ObservationDefinition on Storybook](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--observation-ignore-empty)
+
+Overall, the [COVID-19 Data model sample](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts) can be useful to get a sense of how to represent labs in FHIR.
 
 #### Digital Technologies
 

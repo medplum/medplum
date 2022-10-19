@@ -31,6 +31,10 @@ Drive engagement with integrated chat, reminders and messaging, right from your 
 
 Build or import your care plans and customize them to patient needs. Track patient outcomes and build powerful automations. [Learn More](../products/careplans)
 
+### Medications
+
+Track patient prescription medications and refills. Connect to common e-Prescribe services, or track in-house fulfillment.
+
 ### 💵 Billing and Payments
 
 Send data to your billing provider of choice. Easily connect to physician groups or bill through multiply professional corporations. [Learn More](../products/billing)
