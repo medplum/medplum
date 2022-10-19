@@ -26,7 +26,7 @@ Build a custom experience for clinical research including schedule of assessment
 
 ## LIS/LIMS and Lab Network
 
-Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations.
+Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/blueprints/lab)
 
 ## Sidecar Application
 
