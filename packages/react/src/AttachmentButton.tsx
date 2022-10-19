@@ -5,6 +5,8 @@ import { killEvent } from './utils/dom';
 
 export interface AttachmentButtonProps {
   onUpload: (attachment: Attachment) => void;
+  onUploadStart?: () => void;
+  onUploadProgress?: (e: ProgressEvent) => void;
   children(props: { onClick(e: React.MouseEvent): void }): React.ReactNode;
 }
 
@@ -40,10 +42,14 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
       return;
     }
 
+    if (props.onUploadStart) {
+      props.onUploadStart();
+    }
+
     const filename = file.name;
     const contentType = file.type || 'application/octet-stream';
     medplum
-      .createBinary(file, filename, contentType)
+      .createBinary(file, filename, contentType, props.onUploadProgress)
       .then((binary: Binary) => {
         props.onUpload({
           contentType: binary.contentType,

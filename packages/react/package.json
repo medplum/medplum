@@ -22,6 +22,7 @@
     "@emotion/react": "11.10.4",
     "@mantine/core": "5.5.5",
     "@mantine/hooks": "5.5.5",
+    "@mantine/notifications": "5.5.5",
     "@medplum/core": "0.10.2",
     "@medplum/definitions": "0.10.2",
     "@medplum/fhirtypes": "0.10.2",
@@ -56,11 +57,29 @@
     "@emotion/react": "^11.10.4",
     "@mantine/core": "^5.4.0",
     "@mantine/hooks": "^5.4.0",
+    "@mantine/notifications": "^5.4.0",
     "@medplum/core": "0.10.2",
     "@tabler/icons": "^1.100.0",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0",
     "react-router-dom": "^6.2.2"
+  },
+  "peerDependenciesMeta": {
+    "@emotion/react": {
+      "optional": true
+    },
+    "@mantine/core": {
+      "optional": true
+    },
+    "@mantine/hooks": {
+      "optional": true
+    },
+    "@mantine/notifications": {
+      "optional": true
+    },
+    "@tabler/icons": {
+      "optional": true
+    }
   },
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
