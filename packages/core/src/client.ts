@@ -1269,6 +1269,19 @@ export class MedplumClient extends EventTarget {
       url.searchParams.set('_filename', filename);
     }
 
+    if (onProgress) {
+      return this.uploadwithProgress(url, data, contentType, onProgress);
+    } else {
+      return this.post(url, data, contentType);
+    }
+  }
+
+  uploadwithProgress(
+    url: URL,
+    data: string | File | Blob | Uint8Array,
+    contentType: string,
+    onProgress: (e: ProgressEvent) => void
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.responseType = 'json';
