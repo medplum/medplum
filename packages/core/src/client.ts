@@ -821,7 +821,9 @@ export class MedplumClient extends EventTarget {
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   search<K extends ResourceType>(
@@ -849,7 +851,9 @@ export class MedplumClient extends EventTarget {
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchOne<K extends ResourceType>(
@@ -889,7 +893,9 @@ export class MedplumClient extends EventTarget {
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchResources<K extends ResourceType>(
@@ -919,6 +925,7 @@ export class MedplumClient extends EventTarget {
    * @category Search
    * @param system The ValueSet system url.
    * @param filter The search string.
+   * @param options Optional fetch options.
    * @returns Promise to expanded ValueSet.
    */
   searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
@@ -974,6 +981,7 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readResource<K extends ResourceType>(
@@ -1001,6 +1009,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category Read
    * @param reference The FHIR reference object.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readReference<T extends Resource>(reference: Reference<T>, options: RequestInit = {}): ReadablePromise<T> {
@@ -1020,7 +1029,6 @@ export class MedplumClient extends EventTarget {
    * If the schema is not cached, returns undefined.
    * It is assumed that a client will call requestSchema before using this method.
    * @category Schema
-   * @param resourceType The FHIR resource type.
    * @returns The schema if immediately available, undefined otherwise.
    * @deprecated Use globalSchema instead.
    */
@@ -1100,6 +1108,7 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param options Optional fetch options.
    * @returns Promise to the resource history.
    */
   readHistory<K extends ResourceType>(
@@ -1125,6 +1134,8 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param vid The version ID.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
   readVersion<K extends ResourceType>(
@@ -1140,6 +1151,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category Read
    * @param id The Patient Id
+   * @param options Optional fetch options.
    * @returns A Bundle of all Resources related to the Patient
    */
   readPatientEverything(id: string, options: RequestInit = {}): ReadablePromise<Bundle> {
