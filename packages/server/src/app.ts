@@ -2,7 +2,7 @@ import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, text, urlencoded } from 'express';
+import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
@@ -134,19 +134,24 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: ['x-application/hl7-v2+er7'],
     })
   );
-  app.get('/', (_req, res) => res.sendStatus(200));
-  app.get('/robots.txt', (_req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
-  app.get('/healthcheck', asyncWrap(healthcheckHandler));
-  app.get('/openapi.json', openApiHandler);
-  app.use('/.well-known/', wellKnownRouter);
-  app.use('/admin/', adminRouter);
-  app.use('/auth/', authRouter);
-  app.use('/dicom/PS3/', dicomRouter);
-  app.use('/email/v1/', emailRouter);
-  app.use('/fhir/R4/', fhirRouter);
-  app.use('/oauth2/', oauthRouter);
-  app.use('/scim/v2/', scimRouter);
-  app.use('/storage/', storageRouter);
+
+  const apiRouter = Router();
+  apiRouter.get('/', (_req, res) => res.sendStatus(200));
+  apiRouter.get('/robots.txt', (_req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
+  apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
+  apiRouter.get('/openapi.json', openApiHandler);
+  apiRouter.use('/.well-known/', wellKnownRouter);
+  apiRouter.use('/admin/', adminRouter);
+  apiRouter.use('/auth/', authRouter);
+  apiRouter.use('/dicom/PS3/', dicomRouter);
+  apiRouter.use('/email/v1/', emailRouter);
+  apiRouter.use('/fhir/R4/', fhirRouter);
+  apiRouter.use('/oauth2/', oauthRouter);
+  apiRouter.use('/scim/v2/', scimRouter);
+  apiRouter.use('/storage/', storageRouter);
+
+  app.use('/api/', apiRouter);
+  app.use('/', apiRouter);
   app.use(errorHandler);
   return app;
 }

@@ -88,6 +88,23 @@ export class FrontEnd extends Construct {
       },
     });
 
+    // API Origin Cache Policy
+    const apiOriginCachePolicy = new cloudfront.CachePolicy(this, 'ApiOriginCachePolicy', {
+      cachePolicyName: `${config.stackName}-ApiOriginCachePolicy`,
+      cookieBehavior: cloudfront.CacheCookieBehavior.all(),
+      headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
+        'Authorization',
+        'Content-Encoding',
+        'Content-Type',
+        'If-None-Match',
+        'Origin',
+        'Referer',
+        'User-Agent',
+        'X-Medplum'
+      ),
+      queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+    });
+
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
       defaultRootObject: 'index.html',
@@ -95,6 +112,14 @@ export class FrontEnd extends Construct {
         origin: new origins.S3Origin(appBucket),
         responseHeadersPolicy,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+      },
+      additionalBehaviors: {
+        '/api/*': {
+          origin: new origins.HttpOrigin(config.apiDomainName),
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+          cachePolicy: apiOriginCachePolicy,
+          viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        },
       },
       certificate: acm.Certificate.fromCertificateArn(this, 'AppCertificate', config.appSslCertArn),
       domainNames: [config.appDomainName],
