@@ -13,7 +13,9 @@ In digital health, a common requirement is to upload PDFs or other files from on
 In this guide, we will show you how to:
 
 - Create and upload a PDF file from a Bot to an HTTP endpoint
-- Upload a file form a to an SFTP server (coming soon)
+- Upload a file form a to an SFTP server
+
+You can find complete example bots for these examples in the [Medplum Demo Bots repo](https://github.com/medplum/medplum-demo-bots)
 
 ## HTTP File Uploads
 
@@ -99,6 +101,32 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 ## SFTP Uploads
 
-_Coming Soon_
+Medplum Bots provide the [ssh2-sftp-client](https://www.npmjs.com/package/ssh2-sftp-client) library to connect to SFTP servers. You can reference the library's [github page](https://github.com/theophilusx/ssh2-sftp-client) for detailed documentation on how it works.
 
-_If you need this feature sooner, please reach out to us at [support@medplum.com](mailto:support@medplum.com) or ping us in our [Discord](https://discord.gg/UBAWwvrVeN)_
+Below is an example bot that connects to an SFTP server and returns a list of all available files at the root directory.
+
+```ts
+import { BotEvent, MedplumClient } from '@medplum/core';
+import Client from 'ssh2-sftp-client';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  console.log('SFTP test');
+  let data: any | undefined = undefined;
+  try {
+    const sftp = new Client();
+    // Connect to the SFTP server
+    // 'test.rebex.net' is a publicly available test server
+    await sftp.connect({
+      host: 'test.rebex.net',
+      username: 'demo',
+      password: 'password',
+    });
+    data = await sftp.list('.');
+    console.log('data', data);
+  } catch (err) {
+    console.log('error', err);
+    return false;
+  }
+  return data;
+}
+```
