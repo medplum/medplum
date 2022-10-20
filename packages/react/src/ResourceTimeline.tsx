@@ -212,7 +212,6 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   }
 
   function onUploadProgress(e: ProgressEvent): void {
-    console.log(`Upload progress: ${e.loaded} / ${e.total}`);
     updateNotification({
       id: 'upload-notification',
       loading: true,

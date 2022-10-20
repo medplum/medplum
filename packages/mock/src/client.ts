@@ -125,17 +125,27 @@ export class MockClient extends MedplumClient {
     return super.getActiveLogin();
   }
 
-  createBinary(_data: any, filename: string, contentType: string): Promise<Binary> {
+  async createBinary(
+    data: string | File | Blob | Uint8Array,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
+  ): Promise<Binary> {
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
 
-    return Promise.resolve({
+    if (onProgress) {
+      onProgress({ loaded: 0, lengthComputable: false } as ProgressEvent);
+      onProgress({ loaded: 0, total: 100, lengthComputable: true } as ProgressEvent);
+      onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
+    }
+
+    return {
       resourceType: 'Binary',
-      title: filename,
       contentType,
       url: 'https://example.com/binary/123',
-    });
+    };
   }
 }
 
