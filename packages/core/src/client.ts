@@ -1261,13 +1261,54 @@ export class MedplumClient extends EventTarget {
   createBinary(
     data: string | File | Blob | Uint8Array,
     filename: string | undefined,
-    contentType: string
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
       url.searchParams.set('_filename', filename);
     }
-    return this.post(url, data, contentType);
+
+    if (onProgress) {
+      return this.uploadwithProgress(url, data, contentType, onProgress);
+    } else {
+      return this.post(url, data, contentType);
+    }
+  }
+
+  uploadwithProgress(
+    url: URL,
+    data: string | File | Blob | Uint8Array,
+    contentType: string,
+    onProgress: (e: ProgressEvent) => void
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'json';
+      xhr.onabort = () => reject(new Error('Request aborted'));
+      xhr.onerror = () => reject(new Error('Request error'));
+
+      if (onProgress) {
+        xhr.upload.onprogress = (e) => onProgress(e);
+        xhr.upload.onload = (e) => onProgress(e);
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+        } else {
+          reject(new Error(xhr.statusText));
+        }
+      };
+
+      xhr.open('POST', url);
+      xhr.withCredentials = true;
+      xhr.setRequestHeader('Authorization', 'Bearer ' + this.#accessToken);
+      xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.setRequestHeader('X-Medplum', 'extended');
+      xhr.send(data);
+    });
   }
 
   /**

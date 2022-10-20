@@ -1,5 +1,6 @@
 import { ActionIcon, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
-import { getReferenceString, ProfileResource } from '@medplum/core';
+import { showNotification, updateNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -12,8 +13,10 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import {
+  IconCheck,
   IconCloudUpload,
   IconEdit,
+  IconFileAlert,
   IconListDetails,
   IconMessage,
   IconPin,
@@ -143,10 +146,27 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     medplum
       .createResource(props.createMedia(resource, sender, attachment))
-      .then((result) => {
-        addResources([result]);
-      })
-      .catch(console.log);
+      .then((result) => addResources([result]))
+      .then(() =>
+        updateNotification({
+          id: 'upload-notification',
+          color: 'teal',
+          title: 'Upload complete',
+          message: '',
+          icon: <IconCheck size={16} />,
+          autoClose: 2000,
+        })
+      )
+      .catch((reason) =>
+        updateNotification({
+          id: 'upload-notification',
+          color: 'red',
+          title: 'Upload error',
+          message: normalizeErrorString(reason),
+          icon: <IconFileAlert size={16} />,
+          autoClose: 2000,
+        })
+      );
   }
 
   function setPriority(
@@ -178,6 +198,28 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   function onVersionDetails(version: Resource): void {
     navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
+  }
+
+  function onUploadStart(): void {
+    showNotification({
+      id: 'upload-notification',
+      loading: true,
+      title: 'Initializing upload...',
+      message: 'Please wait...',
+      autoClose: false,
+      disallowClose: true,
+    });
+  }
+
+  function onUploadProgress(e: ProgressEvent): void {
+    updateNotification({
+      id: 'upload-notification',
+      loading: true,
+      title: 'Uploading...',
+      message: getProgressMessage(e),
+      autoClose: false,
+      disallowClose: true,
+    });
   }
 
   if (!resource || !history) {
@@ -212,7 +254,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
                   <IconMessage size={16} />
                 </ActionIcon>
-                <AttachmentButton onUpload={createMedia}>
+                <AttachmentButton
+                  onUpload={createMedia}
+                  onUploadStart={onUploadStart}
+                  onUploadProgress={onUploadProgress}
+                >
                   {(props) => (
                     <ActionIcon {...props} radius="xl" color="blue" variant="filled">
                       <IconCloudUpload size={16} />
@@ -421,4 +467,20 @@ function DiagnosticReportTimelineItem(props: BaseTimelineItemProps<DiagnosticRep
       <DiagnosticReportDisplay value={props.resource} />
     </TimelineItem>
   );
+}
+
+function getProgressMessage(e: ProgressEvent): string {
+  if (e.lengthComputable) {
+    const percent = (100 * e.loaded) / e.total;
+    return `Uploaded: ${formatFileSize(e.loaded)} / ${formatFileSize(e.total)} ${percent.toFixed(2)}%`;
+  }
+  return `Uploaded: ${formatFileSize(e.loaded)}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes == 0) {
+    return '0.00 B';
+  }
+  const e = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, e)).toFixed(2) + ' ' + ' KMGTP'.charAt(e) + 'B';
 }

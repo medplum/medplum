@@ -274,22 +274,34 @@ describe('MockClient', () => {
     expect(result.entry).toHaveLength(2);
   });
 
-  test('Create binary', async () => {
+  test('Create binary success', async () => {
     const client = new MockClient();
+    const result = await client.createBinary('test', 'test.txt', 'text/plain');
+    expect(result).toMatchObject({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+    });
+  });
 
+  test('Create binary with progress listener', async () => {
+    const client = new MockClient();
+    const onProgress = jest.fn();
+    const result = await client.createBinary('test', 'test.txt', 'text/plain', onProgress);
+    expect(result).toMatchObject({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+    });
+    expect(onProgress).toHaveBeenCalled();
+  });
+
+  test('Create binary with error', async () => {
+    const client = new MockClient();
     try {
-      await client.createBinary(null, 'test.exe', 'application/exe');
+      await client.createBinary('test', 'test.exe', 'application/exe');
       fail('Should have failed');
     } catch (err) {
       expect(err).toBeDefined();
     }
-
-    const result = await client.createBinary(null, 'test.txt', 'text/plain');
-    expect(result).toMatchObject({
-      resourceType: 'Binary',
-      title: 'test.txt',
-      contentType: 'text/plain',
-    });
   });
 
   test('Create PDF', async () => {

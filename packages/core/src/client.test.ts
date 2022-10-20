@@ -666,6 +666,38 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
   });
 
+  test('Create binary with progress event listener', async () => {
+    const xhrMock: Partial<XMLHttpRequest> = {
+      open: jest.fn(),
+      send: jest.fn(),
+      setRequestHeader: jest.fn(),
+      upload: {} as XMLHttpRequestUpload,
+      readyState: 4,
+      status: 200,
+      response: {
+        resourceType: 'Binary',
+      },
+    };
+
+    jest.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock as XMLHttpRequest);
+
+    const onProgress = jest.fn();
+
+    const client = new MedplumClient(defaultOptions);
+    const promise = client.createBinary('Hello world', undefined, 'text/plain', onProgress);
+    expect(xhrMock.open).toBeCalled();
+    expect(xhrMock.setRequestHeader).toBeCalled();
+
+    // Emulate xhr progress events
+    (xhrMock.upload?.onprogress as EventListener)(new Event(''));
+    (xhrMock.upload?.onload as EventListener)(new Event(''));
+    (xhrMock.onload as EventListener)(new Event(''));
+
+    const result = await promise;
+    expect(result).toBeDefined();
+    expect(onProgress).toHaveBeenCalledTimes(2);
+  });
+
   test('Create pdf not enabled', async () => {
     expect.assertions(1);
     const client = new MedplumClient(defaultOptions);
