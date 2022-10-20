@@ -201,6 +201,10 @@ const config = {
                 to: '/privacy',
               },
               {
+                label: 'Pricing',
+                to: '/pricing',
+              },
+              {
                 label: 'Blog',
                 to: '/blog',
               },
