@@ -46,7 +46,7 @@ describe('ResetPasswordPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+      fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     });
 
     expect(screen.getByText('Email sent')).toBeInTheDocument();

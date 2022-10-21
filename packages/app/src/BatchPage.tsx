@@ -1,4 +1,4 @@
-import { Button, JsonInput } from '@mantine/core';
+import { Button, Group, JsonInput } from '@mantine/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -40,8 +40,10 @@ export function BatchPage(): JSX.Element {
           medplum.executeBatch(JSON.parse(formData.input)).then(setOutput).catch(console.log);
         }}
       >
-        <JsonInput data-testid="batch-input" name="input" defaultValue={DEFAULT_VALUE} />
-        <Button type="submit">Submit</Button>
+        <JsonInput data-testid="batch-input" name="input" minRows={24} defaultValue={DEFAULT_VALUE} />
+        <Group position="right" mt="xl" noWrap>
+          <Button type="submit">Submit</Button>
+        </Group>
       </Form>
       {output && (
         <>
