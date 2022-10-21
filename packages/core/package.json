@@ -21,7 +21,7 @@
     "@medplum/fhirtypes": "0.10.2"
   },
   "peerDependencies": {
-    "pdfmake": "0.2.5"
+    "pdfmake": "^0.2.5"
   },
   "peerDependenciesMeta": {
     "pdfmake": {
