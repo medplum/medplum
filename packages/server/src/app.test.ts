@@ -16,6 +16,18 @@ describe('App', () => {
     await shutdownApp();
   });
 
+  test('Use /api/', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app).get('/api/');
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toBeDefined();
+    expect(res.headers['content-security-policy']).toBeDefined();
+    expect(res.headers['referrer-policy']).toBeDefined();
+    await shutdownApp();
+  });
+
   test('Get HTTPS config', async () => {
     const app = express();
     const config = await loadTestConfig();
