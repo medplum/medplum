@@ -15,6 +15,7 @@ const extensions = ['.ts', '.tsx'];
 const globals = {
   '@mantine/core': 'mantine.core',
   '@mantine/hooks': 'mantine.hooks',
+  '@mantine/notifications': 'mantine.notifications',
   '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
@@ -33,7 +34,7 @@ export default [
       {
         file: 'dist/cjs/index.js',
         format: 'umd',
-        name: 'medplum.ui',
+        name: 'medplum.react',
         sourcemap: true,
         sourcemapPathTransform,
         globals,
@@ -41,7 +42,7 @@ export default [
       {
         file: 'dist/cjs/index.min.js',
         format: 'umd',
-        name: 'medplum.ui',
+        name: 'medplum.react',
         plugins: [terser()],
         sourcemap: true,
         sourcemapPathTransform,
