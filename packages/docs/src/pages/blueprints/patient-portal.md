@@ -6,7 +6,7 @@ Build a patient facing application that allows users to view their records, fill
 
 The sample application is called [Foo Medical](https://www.foomedical.com). To see the experience you can [register here](https://www.foomedical.com/register). The source code for the application and how to set it up can be found [here](https://github.com/medplum/foomedical).
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/aXKWDJ-GBKk?controls=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+You can view a preview video on [Youtube](https://youtu.be/aXKWDJ-GBKk).
 
 ## Features
 
