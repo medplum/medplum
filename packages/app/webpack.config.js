@@ -86,11 +86,7 @@ export default (env, argv) => ({
       {
         test: /\.(js|jsx|ts|tsx)$/,
         exclude: '/node_modules/',
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'tsx',
-          target: 'es2015'
-        }
+        loader: 'babel-loader',
       },
       {
         test: /\.css$/i,
