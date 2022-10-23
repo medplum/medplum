@@ -1,4 +1,4 @@
-import { Button, JsonInput } from '@mantine/core';
+import { Button, Group, JsonInput } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, Form } from '@medplum/react';
@@ -24,7 +24,9 @@ export function JsonPage(props: JsonPageProps): JSX.Element {
           defaultValue={stringify(props.resource, true)}
           formatOnBlur
         />
-        <Button type="submit">OK</Button>
+        <Group position="right" mt="xl" noWrap>
+          <Button type="submit">OK</Button>
+        </Group>
       </Form>
     </Document>
   );

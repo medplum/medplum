@@ -1,20 +1,13 @@
-import { Button, TextInput } from '@mantine/core';
+import { Anchor, Button, Group, Stack, Text, TextInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import {
-  Document,
-  Form,
-  getErrorsForInput,
-  getRecaptcha,
-  initRecaptcha,
-  Logo,
-  MedplumLink,
-  useMedplum,
-} from '@medplum/react';
+import { Document, Form, getErrorsForInput, getRecaptcha, initRecaptcha, Logo, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
 
 export function ResetPasswordPage(): JSX.Element {
+  const navigate = useNavigate();
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
@@ -34,12 +27,14 @@ export function ResetPasswordPage(): JSX.Element {
             .catch(setOutcome);
         }}
       >
-        <div className="medplum-center">
+        <Stack spacing="lg" mb="xl" align="center">
           <Logo size={32} />
-          <h1>Medplum Password Reset</h1>
-        </div>
+          <Text size="lg" weight={500}>
+            Medplum Password Reset
+          </Text>
+        </Stack>
         {!success && (
-          <>
+          <Stack spacing="xl">
             <TextInput
               name="email"
               type="email"
@@ -48,17 +43,13 @@ export function ResetPasswordPage(): JSX.Element {
               autoFocus={true}
               error={getErrorsForInput(outcome, 'email')}
             />
-            <div className="medplum-signin-buttons">
-              <div>
-                <MedplumLink testid="register" to="/register">
-                  Register
-                </MedplumLink>
-              </div>
-              <div>
-                <Button type="submit">Reset password</Button>
-              </div>
-            </div>
-          </>
+            <Group position="apart" mt="xl" noWrap>
+              <Anchor component="button" type="button" color="dimmed" onClick={() => navigate('/register')} size="xs">
+                Register
+              </Anchor>
+              <Button type="submit">Reset password</Button>
+            </Group>
+          </Stack>
         )}
         {success && <div data-testid="success">Email sent</div>}
       </Form>
