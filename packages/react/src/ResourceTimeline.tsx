@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, createStyles, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
@@ -36,6 +36,12 @@ import { ResourceTable } from './ResourceTable';
 import { Timeline, TimelineItem } from './Timeline';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
+
+const useStyles = createStyles((theme) => ({
+  pinnedComment: {
+    backgroundColor: theme.colors.blue[0],
+  },
+}));
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -418,8 +424,9 @@ function getPrevious(history: Bundle, version: Resource): Resource | undefined {
 }
 
 function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>): JSX.Element {
+  const { classes } = useStyles();
   const routine = !props.resource.priority || props.resource.priority === 'routine';
-  const className = routine ? 'medplum-timeline-item' : 'medplum-timeline-item medplum-timeline-item-pinned';
+  const className = routine ? undefined : classes.pinnedComment;
   return (
     <TimelineItem
       resource={props.resource}
