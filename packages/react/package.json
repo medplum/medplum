@@ -88,10 +88,6 @@
       "require": "./dist/cjs/index.js",
       "import": "./dist/esm/index.js"
     },
-    "./defaulttheme.css": {
-      "require": "./dist/cjs/defaulttheme.css",
-      "import": "./dist/esm/defaulttheme.css"
-    },
     "./styles.css": {
       "require": "./dist/cjs/styles.css",
       "import": "./dist/esm/styles.css"

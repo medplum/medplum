@@ -62,9 +62,6 @@ export default [
       postcss({ extract: 'styles.css' }),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
-      copy({
-        targets: [{ src: 'src/defaulttheme.css', dest: 'dist/cjs/' }],
-      }),
       {
         buildEnd: () => {
           mkdirSync('./dist/cjs', { recursive: true });
@@ -106,9 +103,6 @@ export default [
       postcss({ extract: 'styles.css' }),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
-      copy({
-        targets: [{ src: 'src/defaulttheme.css', dest: 'dist/esm/' }],
-      }),
       {
         buildEnd: () => {
           mkdirSync('./dist/esm', { recursive: true });

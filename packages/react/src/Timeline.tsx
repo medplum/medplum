@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Menu } from '@mantine/core';
+import { ActionIcon, Container, Group, Menu, Paper, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons';
@@ -8,14 +8,12 @@ import { MedplumLink } from './MedplumLink';
 import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
 
-import './Timeline.css';
-
 export interface TimelineProps {
   children?: React.ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
-  return <main className="medplum-document medplum-timeline">{props.children}</main>;
+  return <Container>{props.children}</Container>;
 }
 
 export interface TimelineItemProps {
@@ -30,19 +28,26 @@ export interface TimelineItemProps {
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const author = props.profile ?? props.resource.meta?.author;
+
   return (
-    <article className={props.className || 'medplum-timeline-item'} data-testid="timeline-item">
-      <div className="medplum-timeline-item-header">
-        <div className="medplum-timeline-item-avatar">
-          <ResourceAvatar value={author} link={true} size="md" />
-        </div>
-        <div className="medplum-timeline-item-title">
-          <ResourceName value={author} link={true} />
-          <div className="medplum-timeline-item-subtitle">
-            <MedplumLink to={props.resource}>{formatDateTime(props.resource.meta?.lastUpdated)}</MedplumLink>
-            <span>&middot;</span>
-            <MedplumLink to={props.resource}>{props.resource.resourceType}</MedplumLink>
-          </div>
+    <Paper data-testid="timeline-item" m="lg" p="sm" shadow="xs" radius="sm" withBorder>
+      <Group position="apart" spacing={8}>
+        <ResourceAvatar value={author} link={true} size="md" />
+        <div style={{ flex: 1 }}>
+          <Text size="sm">
+            <ResourceName color="dark" weight={500} value={author} link={true} />
+          </Text>
+          <Text size="xs">
+            <MedplumLink color="dimmed" to={props.resource}>
+              {formatDateTime(props.resource.meta?.lastUpdated)}
+            </MedplumLink>
+            <Text component="span" color="dimmed" mx={8}>
+              &middot;
+            </Text>
+            <MedplumLink color="dimmed" to={props.resource}>
+              {props.resource.resourceType}
+            </MedplumLink>
+          </Text>
         </div>
         {props.popupMenuItems && (
           <Menu position="bottom-end" shadow="md" width={200}>
@@ -54,17 +59,11 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
             {props.popupMenuItems}
           </Menu>
         )}
-      </div>
+      </Group>
       <ErrorBoundary>
         {props.padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
         {!props.padding && <>{props.children}</>}
       </ErrorBoundary>
-      {props.socialEnabled && (
-        <div className="medplum-timeline-item-footer">
-          <Button variant="subtle">Like</Button>
-          <Button variant="subtle">Comment</Button>
-        </div>
-      )}
-    </article>
+    </Paper>
   );
 }

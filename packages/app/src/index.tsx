@@ -28,12 +28,22 @@ const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/signin'),
 });
 
+const theme = {
+  fontSizes: {
+    xs: 11,
+    sm: 14,
+    md: 14,
+    lg: 16,
+    xl: 18,
+  },
+};
+
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <BrowserRouter>
       <MedplumProvider medplum={medplum}>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
           <NotificationsProvider position="bottom-right">
             <App />
           </NotificationsProvider>

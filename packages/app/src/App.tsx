@@ -7,7 +7,6 @@ import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
 import { Loading } from './components/Loading';
 
-import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import './App.css';
 

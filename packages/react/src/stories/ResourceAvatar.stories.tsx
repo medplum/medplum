@@ -23,8 +23,8 @@ export const Letter = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <ResourceAvatar alt="George Wasington" />
-      <ResourceAvatar alt="Mona Lisa" color="var(--medplum-blue-500)" />
-      <ResourceAvatar alt="Elmo" color="var(--medplum-purple-500)" />
+      <ResourceAvatar alt="Mona Lisa" color="blue" />
+      <ResourceAvatar alt="Elmo" color="violet" />
     </div>
   </Document>
 );
@@ -43,8 +43,8 @@ export const LetterSizes = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
       <ResourceAvatar alt="George Wasington" size="sm" />
-      <ResourceAvatar alt="George Wasington" color="var(--medplum-blue-500)" />
-      <ResourceAvatar alt="George Wasington" color="var(--medplum-purple-500)" size="lg" />
+      <ResourceAvatar alt="George Wasington" color="blue" />
+      <ResourceAvatar alt="George Wasington" color="violet" size="lg" />
     </div>
   </Document>
 );

@@ -504,7 +504,7 @@ describe('QuestionnaireBuilder', () => {
       fireEvent.mouseOver(screen.getByText('Question 1'));
     });
 
-    expect(screen.getByTestId('question1')).toHaveClass('hovering');
+    expect(screen.getByTestId('question1')).toHaveStyle('border: 1.5px solid #339af0;');
 
     await act(async () => {
       fireEvent.mouseOver(document.body);

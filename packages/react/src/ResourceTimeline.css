@@ -1,9 +1,0 @@
-.medplum-timeline-item-header > form {
-  display: flex;
-  width: 100%;
-}
-
-.medplum-timeline-item-header > form > input[type='text'] {
-  flex: 1;
-  margin-right: 4px;
-}

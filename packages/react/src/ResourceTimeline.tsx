@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
@@ -36,8 +36,6 @@ import { ResourceTable } from './ResourceTable';
 import { Timeline, TimelineItem } from './Timeline';
 import { useResource } from './useResource';
 import { sortByDateAndPriority } from './utils/date';
-
-import './ResourceTimeline.css';
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
@@ -229,46 +227,44 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   return (
     <Timeline>
       {props.createCommunication && (
-        <article className="medplum-timeline-item">
-          <div className="medplum-timeline-item-header">
-            <Form
-              testid="timeline-form"
-              onSubmit={(formData: Record<string, string>) => {
-                createComment(formData.text);
+        <Paper m="lg" p="sm" shadow="xs" radius="sm" withBorder>
+          <Form
+            testid="timeline-form"
+            onSubmit={(formData: Record<string, string>) => {
+              createComment(formData.text);
 
-                const input = inputRef.current;
-                if (input) {
-                  input.value = '';
-                  input.focus();
-                }
-              }}
-            >
-              <Group spacing="xs" noWrap style={{ width: '100%' }}>
-                <ResourceAvatar value={sender} />
-                <TextInput
-                  name="text"
-                  ref={inputRef}
-                  placeholder="Add comment"
-                  style={{ width: '100%', maxWidth: 300 }}
-                />
-                <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
-                  <IconMessage size={16} />
-                </ActionIcon>
-                <AttachmentButton
-                  onUpload={createMedia}
-                  onUploadStart={onUploadStart}
-                  onUploadProgress={onUploadProgress}
-                >
-                  {(props) => (
-                    <ActionIcon {...props} radius="xl" color="blue" variant="filled">
-                      <IconCloudUpload size={16} />
-                    </ActionIcon>
-                  )}
-                </AttachmentButton>
-              </Group>
-            </Form>
-          </div>
-        </article>
+              const input = inputRef.current;
+              if (input) {
+                input.value = '';
+                input.focus();
+              }
+            }}
+          >
+            <Group spacing="xs" noWrap style={{ width: '100%' }}>
+              <ResourceAvatar value={sender} />
+              <TextInput
+                name="text"
+                ref={inputRef}
+                placeholder="Add comment"
+                style={{ width: '100%', maxWidth: 300 }}
+              />
+              <ActionIcon type="submit" radius="xl" color="blue" variant="filled">
+                <IconMessage size={16} />
+              </ActionIcon>
+              <AttachmentButton
+                onUpload={createMedia}
+                onUploadStart={onUploadStart}
+                onUploadProgress={onUploadProgress}
+              >
+                {(props) => (
+                  <ActionIcon {...props} radius="xl" color="blue" variant="filled">
+                    <IconCloudUpload size={16} />
+                  </ActionIcon>
+                )}
+              </AttachmentButton>
+            </Group>
+          </Form>
+        </Paper>
       )}
       {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {

@@ -1,21 +1,31 @@
+import { Text, TextProps } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { MedplumLink } from './MedplumLink';
 import { useResource } from './useResource';
 
-export interface ResourceNameProps {
+export interface ResourceNameProps extends TextProps {
   value?: Reference | Resource;
   link?: boolean;
 }
 
 export function ResourceName(props: ResourceNameProps): JSX.Element | null {
-  const resource = useResource(props.value);
+  const { value, link, ...rest } = props;
+  const resource = useResource(value);
   if (!resource) {
     return null;
   }
 
   const text = getDisplayString(resource);
 
-  return props.link ? <MedplumLink to={resource}>{text}</MedplumLink> : <span>{text}</span>;
+  return link ? (
+    <MedplumLink to={resource} {...rest}>
+      {text}
+    </MedplumLink>
+  ) : (
+    <Text component="span" {...rest}>
+      {text}
+    </Text>
+  );
 }

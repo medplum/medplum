@@ -1,10 +1,34 @@
+import { createStyles } from '@mantine/core';
 import { getPropertyDisplayName, IndexedStructureDefinition, stringify, toTypedValue } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisplay';
-import './ResourceDiff.css';
-import './ResourceDiffTable.css';
+
+const useStyles = createStyles((theme) => ({
+  root: {
+    borderCollapse: 'collapse',
+    width: '100%',
+
+    '& tr': {
+      borderTop: `0.1px solid ${theme.colors.gray[3]}`,
+    },
+
+    '& th, & td': {
+      padding: `${theme.spacing.sm}px ${theme.spacing.sm}px`,
+      verticalAlign: 'top',
+    },
+  },
+
+  removed: {
+    color: theme.colors.red[7],
+    textDecoration: 'line-through',
+  },
+
+  added: {
+    color: theme.colors.green[7],
+  },
+}));
 
 export interface ResourceDiffTableProps {
   original: Resource;
@@ -12,6 +36,7 @@ export interface ResourceDiffTableProps {
 }
 
 export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | null {
+  const { classes } = useStyles();
   const medplum = useMedplum();
   const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
 
@@ -29,7 +54,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   }
 
   return (
-    <table className="medplum-diff-table">
+    <table className={classes.root}>
       <colgroup>
         <col style={{ width: '30%' }} />
         <col style={{ width: '35%' }} />
@@ -63,7 +88,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
           return (
             <tr key={key}>
               <td>{getPropertyDisplayName(key)}</td>
-              <td className="medplum-diff-removed">
+              <td className={classes.removed}>
                 <ResourcePropertyDisplay
                   property={property}
                   propertyType={originalPropertyType}
@@ -71,7 +96,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
                   ignoreMissingValues={true}
                 />
               </td>
-              <td className="medplum-diff-added">
+              <td className={classes.added}>
                 <ResourcePropertyDisplay
                   property={property}
                   propertyType={revisedPropertyType}

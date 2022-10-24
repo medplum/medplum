@@ -1,45 +1,42 @@
+import { Anchor, TextProps } from '@mantine/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { killEvent } from './utils/dom';
 
-export interface MedplumLinkProps {
+export interface MedplumLinkProps extends TextProps {
   to?: Resource | Reference | string;
   suffix?: string;
   label?: string;
-  id?: string;
-  testid?: string;
-  className?: string;
   onClick?: () => void;
   children: React.ReactNode;
 }
 
 export function MedplumLink(props: MedplumLinkProps): JSX.Element {
   const navigate = useNavigate();
+  const { to, suffix, label, onClick, children, ...rest } = props;
 
-  let href = getHref(props.to);
-  if (props.suffix) {
-    href += '/' + props.suffix;
+  let href = getHref(to);
+  if (suffix) {
+    href += '/' + suffix;
   }
 
   return (
-    <a
+    <Anchor
       href={href}
-      id={props.id}
-      aria-label={props.label}
-      data-testid={props.testid || 'link'}
-      className={props.className}
+      aria-label={label}
       onClick={(e: React.SyntheticEvent) => {
         killEvent(e);
-        if (props.onClick) {
-          props.onClick();
-        } else if (props.to) {
+        if (onClick) {
+          onClick();
+        } else if (to) {
           navigate(href);
         }
       }}
+      {...rest}
     >
-      {props.children}
-    </a>
+      {children}
+    </Anchor>
   );
 }
 

@@ -1,8 +1,9 @@
-import { Button, NativeSelect, TextInput } from '@mantine/core';
+import { Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from './Form';
+import { FormSection } from './FormSection';
 import { useMedplum } from './MedplumProvider';
 import { ReferenceDisplay } from './ReferenceDisplay';
 import { setPropertyValue } from './ResourceForm';
@@ -11,6 +12,37 @@ import { getValueAndType, ResourcePropertyDisplay } from './ResourcePropertyDisp
 import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
+
+const useStyles = createStyles((theme) => ({
+  section: {
+    position: 'relative',
+    margin: '4px 4px 8px 0',
+    padding: '6px 12px 16px 6px',
+    border: `1.5px solid ${theme.colors.gray[1]}`,
+    borderRadius: theme.radius.sm,
+    transition: 'all 0.1s',
+  },
+
+  hovering: {
+    border: `1.5px solid ${theme.colors.blue[5]}`,
+  },
+
+  editing: {
+    border: `1.5px solid ${theme.colors.gray[1]}`,
+    borderLeft: `4px solid ${theme.colors.blue[5]}`,
+  },
+
+  bottomActions: {
+    position: 'absolute',
+    right: 4,
+    bottom: 0,
+    fontSize: theme.fontSizes.xs,
+
+    '& a': {
+      marginLeft: 8,
+    },
+  },
+}));
 
 export interface PlanDefinitionBuilderProps {
   value: PlanDefinition | Reference<PlanDefinition>;
@@ -62,7 +94,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   }
 
   return (
-    <div className="medplum-questionnaire-builder">
+    <div>
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
         <TextInput
           label="Plan Title"
@@ -93,6 +125,7 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
+  const { classes } = useStyles();
   const actionsRef = useRef<PlanDefinitionAction[]>();
   actionsRef.current = props.actions;
 
@@ -112,7 +145,7 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   }
 
   return (
-    <div className="section">
+    <div className={classes.section}>
       {props.actions.map((action) => (
         <div key={action.id}>
           <ActionBuilder
@@ -126,7 +159,7 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
           />
         </div>
       ))}
-      <div className="bottom-actions">
+      <div className={classes.bottomActions}>
         <a
           href="#"
           onClick={(e) => {
@@ -152,6 +185,7 @@ interface ActionBuilderProps {
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
+  const { classes, cx } = useStyles();
   const { action } = props;
   const actionType = getInitialActionType(action);
   const editing = props.selectedKey === props.action.id;
@@ -167,7 +201,11 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     props.setHoverKey(props.action.id);
   }
 
-  const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
+  const className = cx(classes.section, {
+    [classes.editing]: editing,
+    [classes.hovering]: hovering && !editing,
+  });
+
   return (
     <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover}>
       {editing ? (
@@ -184,7 +222,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
       ) : (
         <ActionDisplay action={action} actionType={actionType} />
       )}
-      <div className="bottom-actions">
+      <div className={classes.bottomActions}>
         <a
           href="#"
           onClick={(e) => {
@@ -256,7 +294,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   }
 
   return (
-    <>
+    <Stack spacing="xl">
       <TextInput
         name={`actionTitle-${action.id}`}
         label="Title"
@@ -333,10 +371,10 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
             return null;
         }
       })()}
-      <p>Timing</p>
-      <p>When the action should take place.</p>
-      <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
-    </>
+      <FormSection title="Timing" description="When the action should take place.">
+        <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
+      </FormSection>
+    </Stack>
   );
 }
 

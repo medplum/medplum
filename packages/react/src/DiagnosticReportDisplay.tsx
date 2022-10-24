@@ -1,3 +1,4 @@
+import { createStyles, Group, Stack, Text } from '@mantine/core';
 import { capitalize, formatDateTime } from '@medplum/core';
 import {
   DiagnosticReport,
@@ -14,8 +15,28 @@ import { RangeDisplay } from './RangeDisplay';
 import { ResourceBadge } from './ResourceBadge';
 import { useResource } from './useResource';
 
-import { Table } from '@mantine/core';
-import './DiagnosticReportDisplay.css';
+const useStyles = createStyles((theme) => ({
+  table: {
+    border: `0.1px solid ${theme.colors.gray[5]}`,
+    borderCollapse: 'collapse',
+
+    '& td, & th': {
+      border: `0.1px solid ${theme.colors.gray[5]}`,
+      padding: 4,
+    },
+  },
+
+  criticalRow: {
+    background: theme.colorScheme === 'dark' ? theme.colors.red[7] : theme.colors.red[1],
+    border: `0.1px solid ${theme.colors.red[5]}`,
+    color: theme.colors.red[5],
+    fontWeight: 500,
+
+    '& td': {
+      border: `0.1px solid ${theme.colors.red[5]}`,
+    },
+  },
+}));
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
@@ -44,42 +65,52 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   }
 
   return (
-    <div className="medplum-diagnostic-report">
-      <h1>Diagnostic Report</h1>
-      <div className="medplum-diagnostic-report-header">
+    <Stack>
+      <Text size="lg" weight={500}>
+        Diagnostic Report
+      </Text>
+      <Group mt="md" spacing={30}>
         {diagnosticReport.subject && (
-          <dl>
-            <dt>Subject</dt>
-            <dd>
+          <div>
+            <Text size="xs" transform="uppercase" color="dimmed">
+              Subject
+            </Text>
+            <Text>
               <ResourceBadge value={diagnosticReport.subject} link={true} />
-            </dd>
-          </dl>
+            </Text>
+          </div>
         )}
         {diagnosticReport.resultsInterpreter &&
           diagnosticReport.resultsInterpreter.map((interpreter) => (
-            <dl key={interpreter.reference}>
-              <dt>Interpreter</dt>
-              <dd>
+            <div key={interpreter.reference}>
+              <Text size="xs" transform="uppercase" color="dimmed">
+                Interpreter
+              </Text>
+              <Text>
                 <ResourceBadge value={interpreter} link={true} />
-              </dd>
-            </dl>
+              </Text>
+            </div>
           ))}
         {diagnosticReport.issued && (
-          <dl>
-            <dt>Issued</dt>
-            <dd>{formatDateTime(diagnosticReport.issued)}</dd>
-          </dl>
+          <div>
+            <Text size="xs" transform="uppercase" color="dimmed">
+              Issued
+            </Text>
+            <Text>{formatDateTime(diagnosticReport.issued)}</Text>
+          </div>
         )}
         {diagnosticReport.status && (
-          <dl>
-            <dt>Status</dt>
-            <dd>{capitalize(diagnosticReport.status)}</dd>
-          </dl>
+          <div>
+            <Text size="xs" transform="uppercase" color="dimmed">
+              Status
+            </Text>
+            <Text>{capitalize(diagnosticReport.status)}</Text>
+          </div>
         )}
-      </div>
+      </Group>
       {diagnosticReport.result && <ObservationTable value={diagnosticReport.result} />}
       {textContent && <pre>{textContent.trim()}</pre>}
-    </div>
+    </Stack>
   );
 }
 
@@ -88,8 +119,9 @@ export interface ObservationTableProps {
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
+  const { classes } = useStyles();
   return (
-    <Table withBorder withColumnBorders>
+    <table className={classes.table}>
       <thead>
         <tr>
           <th>Test</th>
@@ -103,7 +135,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
           <ObservationRow key={'obs-' + index} value={observation} />
         ))}
       </tbody>
-    </Table>
+    </table>
   );
 }
 
@@ -112,18 +144,16 @@ interface ObservationRowProps {
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
+  const { classes, cx } = useStyles();
   const observation = useResource(props.value);
   if (!observation) {
     return null;
   }
 
-  let className = undefined;
-  if (isCritical(observation)) {
-    className = 'medplum-critical';
-  }
+  const critical = isCritical(observation);
 
   return (
-    <tr className={className}>
+    <tr className={cx({ [classes.criticalRow]: critical })}>
       <td>
         <MedplumLink to={observation}>
           <CodeableConceptDisplay value={observation.code} />
