@@ -19,6 +19,8 @@
   --ifm-heading-color: #000000;
   --code-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
   --img-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
+  --docusaurus-highlighted-code-line-bg: rgba(72 ,77, 91,  .20);
+
 }
 
 [data-theme='dark'] {
@@ -32,6 +34,7 @@
   --ifm-heading-color: #ffffff;
   --code-block-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
   --img-block-shadow: rgba(0, 0, 0, 0.95) 0 5px 15px;
+  --docusaurus-highlighted-code-line-bg: rgb(100 100 100);
 }
 
 @font-face {
