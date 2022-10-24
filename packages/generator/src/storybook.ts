@@ -20,6 +20,7 @@ const resourceTypes = [
   'Bot',
   'Project',
   'Communication',
+  'SpecimenDefinition',
   'ObservationDefinition',
   'Media',
   'Schedule',
