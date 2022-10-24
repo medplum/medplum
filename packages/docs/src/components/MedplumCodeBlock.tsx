@@ -2,12 +2,11 @@ import CodeBlock, { Props } from '@theme/CodeBlock';
 import * as React from 'react';
 
 const BLOCK_START_PATTERN = new RegExp('^//\\s*start-block\\s+([A-Za-z_-]*)', '');
-// const BLOCK_START_PATTERN = /^\/\/\s*start-block\s+([A-Za-z_-]*)/;
 const BLOCK_END_PATTERN = new RegExp('^//\\s*end-block\\s+([A-Za-z_-]*)', '');
 
 interface MedplumCodeBlockProps extends Props {
   selectLines?: number[][];
-  selectBlocks?: string[] | string;
+  selectBlocks?: string;
 }
 
 export default function MedplumCodeBlock({
@@ -22,7 +21,7 @@ export default function MedplumCodeBlock({
     throw new Error("Only one of 'selectLines' or 'selectBlocks' can be specified");
   }
 
-  let codeLines: (string | null)[] = code.split('\n');
+  let codeLines: string[] = code.split('\n');
 
   // Get the line ranges for all the blocks that have been selected.
   const linesToRemove = new Set<number>();
@@ -33,10 +32,8 @@ export default function MedplumCodeBlock({
     .flat()
     .forEach((lineNumber) => linesToRemove.add(lineNumber));
   if (selectBlocks) {
-    if (typeof selectBlocks === 'string') {
-      selectBlocks = selectBlocks.split(',').map((s) => s.trim());
-    }
-    selectLines = selectBlocks.map((block) => {
+    const selectBlockNames = selectBlocks.split(',').map((s) => s.trim());
+    selectLines = selectBlockNames.map((block) => {
       if (!(block in blockRanges)) {
         throw new Error(`No such code block: '${block}'`);
       }

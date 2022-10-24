@@ -19,8 +19,8 @@ You will need the following to get started and instructions on how to set this u
 
 These three requirements will need to be in place to connect
 
-<MedplumCodeBlock language='ts' selectBlocks='api-keys' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="api-keys" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ## Example App - Simple Lab Results Workflow
@@ -43,8 +43,8 @@ Here is a breakdown of workflow at a high level
 
 The [client credentials](https://oauth.net/2/grant-types/client-credentials/) flow is a type of connection that is used to obtain an access token outside the context of the user.
 
-<MedplumCodeBlock language='ts' selectBlocks='core-imports, create-client' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="core-imports, create-client" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ## Creating the Patient and Service Request
@@ -55,8 +55,8 @@ The [client credentials](https://oauth.net/2/grant-types/client-credentials/) fl
 
 Creating a Patient if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
-<MedplumCodeBlock language='ts' selectBlocks='patient-imports, create-patient' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="patient-imports, create-patient" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [Identifiers](/docs/fhir-basics#identifiers-naming-resources) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
@@ -69,8 +69,8 @@ Creating a new [ServiceRequest](/docs/api/fhir/resources/servicerequest) also ha
 
 Note that there are many fields on the requisition, and filling them in with the right data is crucial. This example is minimal for clarity.
 
-<MedplumCodeBlock language='ts' selectBlocks='service-request-imports, create-service-request' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="service-request-imports, create-service-request" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 If you are using the [hosted Medplum service](https://app.medplum.com) you can see your `ServiceRequest` objects [here](https://app.medplum.com/ServiceRequest). Similarly, you can see `Patients` [here](https://app.medplum.com/Patient).
@@ -85,14 +85,14 @@ You can then create a diagnostic report using the function below.
 
 ### Create the Observations
 
-<MedplumCodeBlock language='ts' selectBlocks='observation-imports, create-observations' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="observation-imports, create-observations" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 ### Create Report
 
-<MedplumCodeBlock language='ts' selectBlocks='report-imports, create-report' showLineNumbers>
-{ExampleCode}
+<MedplumCodeBlock language="ts" selectBlocks="report-imports, create-report" showLineNumbers>
+  {ExampleCode}
 </MedplumCodeBlock>
 
 This will create a `DiagnosticReport` that is linked to the `ServiceRequest` and to the `Patient`. If you are using hosted Medplum, you can view all `DiagnosticReports` [here](https://app.medplum.com/DiagnosticReport).
