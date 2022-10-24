@@ -16,7 +16,7 @@ npm --version
 [ ! -d "node_modules" ] && npm ci --legacy-peer-deps
 
 # Build
-BUILD_ORDER=("definitions" "core" "mock" "react" "app" "graphiql" "server" "infra" "docs" "cli")
+BUILD_ORDER=("definitions" "core" "mock" "react" "app" "graphiql" "server" "infra" "examples" "docs" "cli")
 for PACKAGE in ${BUILD_ORDER[@]}; do
   pushd "packages/$PACKAGE"
   npm run build
