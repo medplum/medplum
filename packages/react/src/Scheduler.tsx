@@ -1,4 +1,4 @@
-import { Button, Stack, Text } from '@mantine/core';
+import { Button, createStyles, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -9,7 +9,23 @@ import { ResourceAvatar } from './ResourceAvatar';
 import { ResourceName } from './ResourceName';
 import { useResource } from './useResource';
 
-import './Scheduler.css';
+const useStyles = createStyles((theme) => ({
+  container: {
+    display: 'flex',
+    minHeight: 400,
+  },
+
+  info: {
+    minWidth: 300,
+    padding: 20,
+    borderRight: `1px solid ${theme.colors.gray[3]}`,
+  },
+
+  selection: {
+    minWidth: 300,
+    padding: 20,
+  },
+}));
 
 export interface SchedulerProps {
   schedule: Schedule | Reference<Schedule>;
@@ -17,6 +33,7 @@ export interface SchedulerProps {
 }
 
 export function Scheduler(props: SchedulerProps): JSX.Element | null {
+  const { classes } = useStyles();
   const medplum = useMedplum();
   const schedule = useResource(props.schedule);
   const questionnaire = useResource(props.questionnaire);
@@ -57,8 +74,8 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
   const actor = schedule.actor?.[0];
 
   return (
-    <div className="medplum-calendar-container" data-testid="scheduler">
-      <div className="medplum-calendar-info-pane">
+    <div className={classes.container} data-testid="scheduler">
+      <div className={classes.info}>
         {actor && <ResourceAvatar value={actor} size="xl" />}
         {actor && (
           <Text size="xl" weight={500}>
@@ -69,7 +86,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         {date && <p>{date.toLocaleDateString()}</p>}
         {slot && <p>{formatTime(new Date(slot.start as string))}</p>}
       </div>
-      <div className="medplum-calendar-selection-pane">
+      <div className={classes.selection}>
         {!date && (
           <div>
             <h3>Select date</h3>

@@ -217,6 +217,28 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "Slot-schedule",
+    "name": "schedule",
+    "code": "schedule",
+    "base": [
+      "Slot"
+    ],
+    "type": "reference",
+    "expression": "Slot.schedule"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Slot-start",
+    "name": "start",
+    "code": "start",
+    "base": [
+      "Slot"
+    ],
+    "type": "date",
+    "expression": "Slot.start"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Task-identifier",
     "name": "identifier",
     "code": "identifier",

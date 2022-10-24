@@ -69,11 +69,8 @@ function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam:
       // We need to maintain this behavior for backwards compatibility
       match = references.some((reference) => reference?.endsWith('/' + filterValue));
     }
-    if (match && !negated) {
-      return true;
-    }
-    if (match && negated) {
-      return false;
+    if (match) {
+      return !negated;
     }
   }
   // If "not equals" and no matches, then return true
@@ -104,11 +101,8 @@ function matchesStringFilter(resource: Resource, filter: Filter, searchParam: Se
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
       const match = matchesStringValue(resourceValue, filter.operator, filterValue);
-      if (match && !negated) {
-        return true;
-      }
-      if (match && negated) {
-        return false;
+      if (match) {
+        return !negated;
       }
     }
   }
@@ -136,11 +130,8 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
       const match = matchesDateValue(resourceValue as string, filter.operator, filterValue);
-      if (match && !negated) {
-        return true;
-      }
-      if (match && negated) {
-        return false;
+      if (match) {
+        return !negated;
       }
     }
   }

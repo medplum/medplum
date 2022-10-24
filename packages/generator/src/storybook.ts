@@ -20,12 +20,11 @@ const resourceTypes = [
   'Bot',
   'Project',
   'Communication',
-  'SpecimenDefinition',
   'ObservationDefinition',
   'Media',
   'Schedule',
   'Task',
-  'RequestGroup',
+  'Slot',
 ];
 
 const properties = [
@@ -69,6 +68,8 @@ const searchParams = [
   'ActivityDefinition-name',
   'Schedule-identifier',
   'Task-identifier',
+  'Slot-schedule',
+  'Slot-start',
 ];
 
 export function main(): void {

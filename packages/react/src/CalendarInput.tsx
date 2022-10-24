@@ -1,8 +1,48 @@
-import { Button, Group } from '@mantine/core';
+import { Button, createStyles, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
 import React, { useMemo, useState } from 'react';
 
-import './CalendarInput.css';
+const useStyles = createStyles((theme) => ({
+  table: {
+    width: 350,
+
+    '& th': {
+      fontWeight: 'normal',
+      fontSize: 11,
+      padding: 8,
+      textAlign: 'center',
+    },
+
+    '& td': {
+      padding: '2px 4px',
+    },
+
+    '& td button': {
+      width: 44,
+      height: 44,
+      color: theme.colors[theme.primaryColor][5],
+      fontSize: 16,
+      fontWeight: 500,
+      textAlign: 'center',
+      padding: 0,
+      backgroundColor: theme.colors[theme.primaryColor][0],
+      border: 0,
+      borderRadius: '50%',
+      cursor: 'pointer',
+    },
+
+    '& td button:hover': {
+      backgroundColor: theme.colors[theme.primaryColor][1],
+    },
+
+    '& td button:disabled': {
+      backgroundColor: 'transparent',
+      cursor: 'default',
+      color: theme.colors.gray[4],
+      fontWeight: 'normal',
+    },
+  },
+}));
 
 export interface CalendarInputProps {
   slots: Slot[];
@@ -27,6 +67,7 @@ interface CalendarCell {
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarInput(props: CalendarInputProps): JSX.Element {
+  const { classes } = useStyles();
   const { onChangeMonth, onClick } = props;
   const [month, setMonth] = useState<Date>(getStartMonth);
 
@@ -54,7 +95,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
           </Button>
         </Group>
       </Group>
-      <table className="medplum-calendar-table">
+      <table className={classes.table}>
         <thead>
           <tr>
             <th>SUN</th>
