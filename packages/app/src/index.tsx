@@ -1,4 +1,4 @@
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
@@ -28,7 +28,16 @@ const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/signin'),
 });
 
-const theme = {
+const theme: MantineThemeOverride = {
+  headings: {
+    sizes: {
+      h1: {
+        fontSize: 18,
+        fontWeight: 500,
+        lineHeight: 2.0,
+      },
+    },
+  },
   fontSizes: {
     xs: 11,
     sm: 14,

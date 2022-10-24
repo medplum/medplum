@@ -1,4 +1,4 @@
-import { Paper, Text } from '@mantine/core';
+import { Paper, Text, Title } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
 import {
   Bundle,
@@ -84,7 +84,7 @@ export function FormPage(): JSX.Element {
   if (result) {
     return (
       <Document>
-        <h1>{questionnaire?.title}</h1>
+        <Title>{questionnaire?.title}</Title>
         <p>Your response has been recorded.</p>
         <ul>
           {result.length === 1 && (

@@ -6,8 +6,6 @@ import { useMedplum } from '../MedplumProvider';
 import { NewProjectForm } from './NewProjectForm';
 import { NewUserForm } from './NewUserForm';
 
-import '../util.css';
-
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';
   readonly projectId?: string;

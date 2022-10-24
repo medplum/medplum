@@ -1,4 +1,4 @@
-import { Button, Group, PasswordInput, Stack, Text } from '@mantine/core';
+import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -20,12 +20,10 @@ export function ChangePasswordPage(): JSX.Element {
             .catch(setOutcome);
         }}
       >
-        <div className="medplum-center">
+        <Center sx={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Text size="lg" weight={500}>
-            Change password
-          </Text>
-        </div>
+          <Title>Change password</Title>
+        </Center>
         {!success && (
           <Stack spacing="xl" mt="xl">
             <PasswordInput

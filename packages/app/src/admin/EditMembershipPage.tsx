@@ -1,4 +1,4 @@
-import { Button, Checkbox } from '@mantine/core';
+import { Button, Checkbox, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -31,7 +31,7 @@ export function EditMembershipPage(): JSX.Element {
 
   return (
     <>
-      <h1>Edit membership</h1>
+      <Title>Edit membership</Title>
       <h3>
         <ResourceBadge value={membership.profile} />
       </h3>

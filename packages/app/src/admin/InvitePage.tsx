@@ -1,4 +1,4 @@
-import { Button, NativeSelect, TextInput } from '@mantine/core';
+import { Button, NativeSelect, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -18,7 +18,7 @@ export function InvitePage(): JSX.Element {
 
   return (
     <>
-      <h1>Invite new member</h1>
+      <Title>Invite new member</Title>
       <Form
         onSubmit={() => {
           const body = {

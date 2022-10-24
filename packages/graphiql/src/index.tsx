@@ -49,9 +49,7 @@ function App(): JSX.Element {
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
-      <Text size="lg" weight={500}>
-        Sign in to Medplum
-      </Text>
+      <Title>Sign in to Medplum</Title>
     </SignInForm>
   );
 }

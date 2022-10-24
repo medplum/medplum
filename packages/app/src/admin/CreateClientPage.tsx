@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, Group, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -17,7 +17,7 @@ export function CreateClientPage(): JSX.Element {
 
   return (
     <>
-      <h1>Create new Client</h1>
+      <Title>Create new Client</Title>
       <Form
         onSubmit={() => {
           const body = {
@@ -64,12 +64,9 @@ export function CreateClientPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="medplum-right">
-              <div></div>
-              <div>
-                <Button type="submit">Create Client</Button>
-              </div>
-            </div>
+            <Group position="right">
+              <Button type="submit">Create Client</Button>
+            </Group>
           </>
         )}
         {success && (

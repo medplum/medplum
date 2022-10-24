@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import React, { ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
@@ -30,7 +31,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render(): ReactNode {
     if (this.state.error) {
-      return <h1>Something went wrong.</h1>;
+      return <Title>Something went wrong.</Title>;
     }
 
     return this.props.children;

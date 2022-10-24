@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { IndexedStructureDefinition } from '@medplum/core';
 import { ProjectSecret } from '@medplum/fhirtypes';
@@ -40,7 +40,7 @@ export function SecretsPage(): JSX.Element {
           .catch(console.log);
       }}
     >
-      <h1>Project Secrets</h1>
+      <Title>Project Secrets</Title>
       <p>Use project secrets to store sensitive information such as API keys or other access credentials.</p>
       <ResourcePropertyInput
         property={schema.types['Project'].properties['secret']}

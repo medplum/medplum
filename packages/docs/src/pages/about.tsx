@@ -7,7 +7,7 @@ export default function AboutPage(): JSX.Element {
     <Layout title="About us">
       <div className={styles.pagePadding}>
         <div className={styles.aboutTitle}>
-          <h1>Trusted Experts</h1>
+          <Title>Trusted Experts</Title>
         </div>
         <div className={styles.section}>
           <div className={styles.cardContainer}>

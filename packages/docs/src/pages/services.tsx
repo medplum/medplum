@@ -30,7 +30,7 @@ export default function ServicesPage(): JSX.Element {
                   Development for
                   <br />
                   Healthcare
-                </h1>
+                </Title>
                 <a href="https://forms.gle/2oetSEZUKxAf5nqP7" className={styles.getStartedButton}>
                   <div>Request a quote</div>
                   <img src="/img/btn-arrow.svg" loading="lazy" alt="Go arrow" />

@@ -1,4 +1,4 @@
-import { Button, Checkbox, NativeSelect, Textarea, TextInput } from '@mantine/core';
+import { Button, Checkbox, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -93,7 +93,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         }
       }}
     >
-      {questionnaire.title && <h1>{questionnaire.title}</h1>}
+      {questionnaire.title && <Title>{questionnaire.title}</Title>}
       {questionnaire.item && (
         <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
       )}

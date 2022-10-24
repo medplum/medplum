@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core';
+import { Title } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { SignInForm } from '../auth/SignInForm';
@@ -13,9 +13,7 @@ export function Basic(): JSX.Element {
   return (
     <SignInForm onSuccess={() => alert('Signed in!')}>
       <Logo size={32} />
-      <Text size="lg" weight={500}>
-        Sign in to Medplum
-      </Text>
+      <Title>Sign in to Medplum</Title>
     </SignInForm>
   );
 }
@@ -28,9 +26,7 @@ export function WithLinks(): JSX.Element {
       onRegister={() => alert('Register')}
     >
       <Logo size={32} />
-      <Text size="lg" weight={500}>
-        Sign in to Medplum
-      </Text>
+      <Title>Sign in to Medplum</Title>
     </SignInForm>
   );
 }
@@ -44,9 +40,7 @@ export function WithFooter(): JSX.Element {
         onRegister={() => alert('Register')}
       >
         <Logo size={32} />
-        <Text size="lg" weight={500}>
-          Sign in to Medplum
-        </Text>
+        <Title>Sign in to Medplum</Title>
       </SignInForm>
     </>
   );
@@ -62,9 +56,7 @@ export function WithGoogle(): JSX.Element {
         googleClientId="xyz"
       >
         <Logo size={32} />
-        <Text size="lg" weight={500}>
-          Sign in to Medplum
-        </Text>
+        <Title>Sign in to Medplum</Title>
       </SignInForm>
     </>
   );

@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core';
+import { Title } from '@mantine/core';
 import { Logo, RegisterForm, useMedplum } from '@medplum/react';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,9 +21,7 @@ export function RegisterPage(): JSX.Element | null {
       recaptchaSiteKey={process.env.RECAPTCHA_SITE_KEY as string}
     >
       <Logo size={32} />
-      <Text size="lg" weight={500}>
-        Create a new account
-      </Text>
+      <Title>Create a new account</Title>
     </RegisterForm>
   );
 }

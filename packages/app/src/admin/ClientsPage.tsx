@@ -1,3 +1,4 @@
+import { Group, Title } from '@mantine/core';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import React from 'react';
 import { getProjectId } from '../utils';
@@ -10,11 +11,11 @@ export function ClientsPage(): JSX.Element {
 
   return (
     <>
-      <h1>Clients</h1>
+      <Title>Clients</Title>
       <MemberTable members={result.members.filter((member: any) => member.role === 'client')} />
-      <div className="medplum-right">
+      <Group position="right">
         <MedplumLink to={`/admin/clients/new`}>Create new client</MedplumLink>
-      </div>
+      </Group>
     </>
   );
 }

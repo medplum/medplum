@@ -1,4 +1,4 @@
-import { Anchor, Button, Group, Stack, Text, TextInput } from '@mantine/core';
+import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, getRecaptcha, initRecaptcha, Logo, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -29,9 +29,7 @@ export function ResetPasswordPage(): JSX.Element {
       >
         <Stack spacing="lg" mb="xl" align="center">
           <Logo size={32} />
-          <Text size="lg" weight={500}>
-            Medplum Password Reset
-          </Text>
+          <Title>Medplum Password Reset</Title>
         </Stack>
         {!success && (
           <Stack spacing="xl">

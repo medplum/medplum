@@ -1,4 +1,4 @@
-import { Button, createStyles, NativeSelect, Textarea, TextInput } from '@mantine/core';
+import { Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -216,7 +216,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         ) : (
           <>
-            {resource.title && <h1>{resource.title}</h1>}
+            {resource.title && <Title>{resource.title}</Title>}
             {item.text && <div>{item.text}</div>}
             {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
           </>
