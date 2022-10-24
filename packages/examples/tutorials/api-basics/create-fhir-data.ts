@@ -1,25 +1,40 @@
+// start-block core-imports
 import fetch from 'node-fetch';
 import { MedplumClient } from '@medplum/core';
 
+// end-block core-imports
+//start-block patient-imports
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
+//end-block patient-imports
+//start-block service-request-imports
 import { ServiceRequest } from '@medplum/fhirtypes';
 import { createReference } from '@medplum/core';
 
+//end-block service-request-imports
+//start-block observation-imports
 import { Observation } from '@medplum/fhirtypes';
 
+//end-block observation-imports
+//start-block report-imports
 import { DiagnosticReport } from '@medplum/fhirtypes';
 
+//end-block report-imports
+// start-block api-keys
 const MY_CLIENT_ID = 'MY_CLIENT_ID';
 const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
+// end-block api-keys
 
+// start-block create-client
 const medplum = new MedplumClient({
   baseUrl: 'https://api.medplum.com/',
   fetch: fetch,
 });
 await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
+// end-block create-client
 
+//start-block create-patient
 // Generate an example MRN (Medical Record Number)
 // We will use this in the "conditional create"
 const exampleMrn = randomUUID();
@@ -41,7 +56,9 @@ const patientData: Patient = {
 // for a conditional create
 const patient = await medplum.createResourceIfNoneExist(patientData, 'identifier=' + exampleMrn);
 console.log('Created Patient', patient.id);
+//end-block create-patient
 
+//start-block create-service-request
 const serviceRequestData: ServiceRequest = {
   resourceType: 'ServiceRequest',
   subject: createReference(patient), // link this ServiceRequest to the Patient
@@ -57,7 +74,9 @@ const serviceRequestData: ServiceRequest = {
 
 const serviceRequest = await medplum.createResource(serviceRequestData);
 console.log('Service Request', serviceRequest.id);
+//end-block create-service-request
 
+//start-block create-observations
 // Create two observations from the array
 const observationData: Observation[] = [
   {
@@ -110,7 +129,9 @@ const observations = await Promise.all(observationData.map(async (data) => medpl
 for (const observation of observations) {
   console.log('Created Observation', observation.id);
 }
+//end-block create-observations
 
+//start-block create-report
 const reportData: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   basedOn: [createReference(serviceRequest)], // Connect this DiagnosticReport to the ServiceRequest
@@ -128,3 +149,4 @@ const reportData: DiagnosticReport = {
 };
 const report = await medplum.createResource(reportData);
 console.log(report);
+//end-block create-report

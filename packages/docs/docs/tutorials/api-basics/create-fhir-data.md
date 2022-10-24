@@ -9,10 +9,6 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 This is a quickstart sample application that introduces some basic FHIR and Medplum concepts.
 
-<MedplumCodeBlock language='ts' showLineNumbers>
-{ExampleCode}
-</MedplumCodeBlock>
-
 ## Prerequisites
 
 You will need the following to get started and instructions on how to set this up were covered in the previous article.
@@ -23,7 +19,7 @@ You will need the following to get started and instructions on how to set this u
 
 These three requirements will need to be in place to connect
 
-<MedplumCodeBlock language='ts' selectLines={[[14, 15]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='api-keys' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
@@ -47,7 +43,7 @@ Here is a breakdown of workflow at a high level
 
 The [client credentials](https://oauth.net/2/grant-types/client-credentials/) flow is a type of connection that is used to obtain an access token outside the context of the user.
 
-<MedplumCodeBlock language='ts' selectLines={[[1, 3], [17, 21]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='core-imports, create-client' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
@@ -59,7 +55,7 @@ The [client credentials](https://oauth.net/2/grant-types/client-credentials/) fl
 
 Creating a Patient if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
-<MedplumCodeBlock language='ts' selectLines={[[4, 6], [23, 43]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='patient-imports, create-patient' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
@@ -73,7 +69,7 @@ Creating a new [ServiceRequest](/docs/api/fhir/resources/servicerequest) also ha
 
 Note that there are many fields on the requisition, and filling them in with the right data is crucial. This example is minimal for clarity.
 
-<MedplumCodeBlock language='ts' selectLines={[[7, 9], [39, 59]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='service-request-imports, create-service-request' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
@@ -89,13 +85,13 @@ You can then create a diagnostic report using the function below.
 
 ### Create the Observations
 
-<MedplumCodeBlock language='ts' selectLines={[[10, 11], [61, 112]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='observation-imports, create-observations' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
 ### Create Report
 
-<MedplumCodeBlock language='ts' selectLines={[[12, 13], [114, 130]]} showLineNumbers>
+<MedplumCodeBlock language='ts' selectBlocks='report-imports, create-report' showLineNumbers>
 {ExampleCode}
 </MedplumCodeBlock>
 
