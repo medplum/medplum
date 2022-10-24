@@ -28,7 +28,7 @@ Highly customizable internal service that supports integrations that are common 
 
 :::caution Note
 
-This the blueprints below are under construction. Check back frequently for updates.
+The blueprints below are under construction. Check back frequently for updates.
 
 :::
 
