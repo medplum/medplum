@@ -1,4 +1,4 @@
-import { Button, NativeSelect, Textarea, TextInput } from '@mantine/core';
+import { Button, createStyles, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -11,7 +11,58 @@ import { ResourcePropertyInput } from './ResourcePropertyInput';
 import { useResource } from './useResource';
 import { killEvent } from './utils/dom';
 
-import './QuestionnaireBuilder.css';
+const useStyles = createStyles((theme) => ({
+  section: {
+    position: 'relative',
+    margin: '4px 4px 8px 0',
+    padding: '6px 12px 16px 6px',
+    border: `1.5px solid ${theme.colors.gray[1]}`,
+    borderRadius: theme.radius.sm,
+    transition: 'all 0.1s',
+  },
+
+  hovering: {
+    border: `1.5px solid ${theme.colors.blue[5]}`,
+  },
+
+  editing: {
+    border: `1.5px solid ${theme.colors.gray[1]}`,
+    borderLeft: `4px solid ${theme.colors.blue[5]}`,
+  },
+
+  questionBody: {
+    maxWidth: 600,
+  },
+
+  topActions: {
+    position: 'absolute',
+    right: 4,
+    top: 1,
+    padding: 4,
+    color: theme.colors.gray[5],
+    fontSize: theme.fontSizes.xs,
+  },
+
+  bottomActions: {
+    position: 'absolute',
+    right: 4,
+    bottom: 0,
+    fontSize: theme.fontSizes.xs,
+
+    '& a': {
+      marginLeft: 8,
+    },
+  },
+
+  linkIdInput: {
+    width: 100,
+    marginBottom: 4,
+  },
+
+  typeSelect: {
+    width: 100,
+  },
+}));
 
 export interface QuestionnaireBuilderProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -53,7 +104,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
   }
 
   return (
-    <div className="medplum-questionnaire-builder">
+    <div>
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
         <ItemBuilder
           item={value}
@@ -80,6 +131,7 @@ interface ItemBuilderProps<T extends Questionnaire | QuestionnaireItem> {
 }
 
 function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBuilderProps<T>): JSX.Element {
+  const { classes, cx } = useStyles();
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
   const isResource = 'resourceType' in props.item;
@@ -130,65 +182,46 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
     } as T);
   }
 
-  const className = editing ? 'section editing' : hovering ? 'section hovering' : 'section';
+  const className = cx(classes.section, {
+    [classes.editing]: editing,
+    [classes.hovering]: hovering && !editing,
+  });
+
   return (
     <div data-testid={item.linkId} className={className} onClick={onClick} onMouseOver={onHover}>
-      {editing ? (
-        <>
-          {isResource && (
-            <div>
+      <div className={classes.questionBody}>
+        {editing ? (
+          <>
+            {isResource && (
               <TextInput
+                size="xl"
                 defaultValue={resource.title}
                 onChange={(e) => changeProperty('title', e.currentTarget.value)}
               />
-            </div>
-          )}
-          {!isContainer && (
-            <div>
-              <NativeSelect
-                defaultValue={item.type}
-                onChange={(e) => changeProperty('type', e.currentTarget.value)}
-                data={[
-                  { value: 'display', label: 'Display' },
-                  { value: 'boolean', label: 'Boolean' },
-                  { value: 'decimal', label: 'Decimal' },
-                  { value: 'integer', label: 'Integer' },
-                  { value: 'date', label: 'Date' },
-                  { value: 'dateTime', label: 'Date/Time' },
-                  { value: 'time', label: 'Time' },
-                  { value: 'string', label: 'String' },
-                  { value: 'text', label: 'Text' },
-                  { value: 'url', label: 'URL' },
-                  { value: 'choice', label: 'Choice' },
-                  { value: 'open-choice', label: 'Open Choice' },
-                  { value: 'attachment', label: 'Attachment' },
-                  { value: 'reference', label: 'Reference' },
-                  { value: 'quantity', label: 'Quantity' },
-                ]}
+            )}
+            {!isResource && (
+              <Textarea
+                autosize
+                minRows={2}
+                defaultValue={item.text}
+                onChange={(e) => changeProperty('text', e.currentTarget.value)}
               />
-            </div>
-          )}
-          {!isResource && (
-            <Textarea
-              style={{ width: '95%', height: '100px', minHeight: '100px', margin: '8px 4px 4px 4px' }}
-              defaultValue={item.text}
-              onChange={(e) => changeProperty('text', e.currentTarget.value)}
-            />
-          )}
-          {isChoiceQuestion(item) && (
-            <AnswerBuilder
-              options={item.answerOption}
-              onChange={(newOptions) => changeProperty('answerOption', newOptions)}
-            />
-          )}
-        </>
-      ) : (
-        <>
-          {resource.title && <h1>{resource.title}</h1>}
-          {item.text && <p>{item.text}</p>}
-          {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
-        </>
-      )}
+            )}
+            {isChoiceQuestion(item) && (
+              <AnswerBuilder
+                options={item.answerOption}
+                onChange={(newOptions) => changeProperty('answerOption', newOptions)}
+              />
+            )}
+          </>
+        ) : (
+          <>
+            {resource.title && <h1>{resource.title}</h1>}
+            {item.text && <div>{item.text}</div>}
+            {!isContainer && <QuestionnaireFormItem item={item} answers={{}} onChange={() => undefined} />}
+          </>
+        )}
+      </div>
       {item.item &&
         item.item.map((i) => (
           <div key={i.id}>
@@ -204,15 +237,47 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </div>
         ))}
       {!isContainer && (
-        <div className="top-actions">
+        <div className={classes.topActions}>
           {editing ? (
-            <TextInput defaultValue={item.linkId} onChange={(e) => changeProperty('linkId', e.currentTarget.value)} />
+            <>
+              <TextInput
+                size="xs"
+                className={classes.linkIdInput}
+                defaultValue={item.linkId}
+                onChange={(e) => changeProperty('linkId', e.currentTarget.value)}
+              />
+              {!isContainer && (
+                <NativeSelect
+                  size="xs"
+                  className={classes.typeSelect}
+                  defaultValue={item.type}
+                  onChange={(e) => changeProperty('type', e.currentTarget.value)}
+                  data={[
+                    { value: 'display', label: 'Display' },
+                    { value: 'boolean', label: 'Boolean' },
+                    { value: 'decimal', label: 'Decimal' },
+                    { value: 'integer', label: 'Integer' },
+                    { value: 'date', label: 'Date' },
+                    { value: 'dateTime', label: 'Date/Time' },
+                    { value: 'time', label: 'Time' },
+                    { value: 'string', label: 'String' },
+                    { value: 'text', label: 'Text' },
+                    { value: 'url', label: 'URL' },
+                    { value: 'choice', label: 'Choice' },
+                    { value: 'open-choice', label: 'Open Choice' },
+                    { value: 'attachment', label: 'Attachment' },
+                    { value: 'reference', label: 'Reference' },
+                    { value: 'quantity', label: 'Quantity' },
+                  ]}
+                />
+              )}
+            </>
           ) : (
             <div>{linkId}</div>
           )}
         </div>
       )}
-      <div className="bottom-actions">
+      <div className={classes.bottomActions}>
         {isContainer && (
           <>
             <a
@@ -245,7 +310,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             </a>
           </>
         )}
-        {!isResource && (
+        {editing && !isResource && (
           <a
             href="#"
             onClick={(e) => {

@@ -7,8 +7,6 @@ import { useMedplum } from './MedplumProvider';
 import { SearchClickEvent } from './SearchControl';
 import { isCheckboxCell, killEvent } from './utils/dom';
 
-import './SearchControl.css';
-
 export interface SmartSearchField {
   readonly propertyType: PropertyType;
   readonly name: string;

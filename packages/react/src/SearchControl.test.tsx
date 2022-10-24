@@ -94,9 +94,9 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('empty-search'));
+    await waitFor(() => screen.getByText('No results'));
 
-    const control = screen.getByTestId('empty-search');
+    const control = screen.getByText('No results');
     expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });
@@ -164,9 +164,9 @@ describe('SearchControl', () => {
 
     await setup(props);
 
-    await waitFor(() => screen.getByTestId('empty-search'));
+    await waitFor(() => screen.getByText('No results'));
 
-    const control = screen.getByTestId('empty-search');
+    const control = screen.getByText('No results');
     expect(control).toBeDefined();
     expect(props.onLoad).toBeCalled();
   });

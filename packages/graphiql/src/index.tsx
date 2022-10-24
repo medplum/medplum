@@ -6,7 +6,6 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime.js';
 
-import '@medplum/react/defaulttheme.css';
 import '@medplum/react/styles.css';
 import 'graphiql/graphiql.css';
 

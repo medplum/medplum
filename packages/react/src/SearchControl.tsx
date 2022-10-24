@@ -1,6 +1,7 @@
 import {
   Button,
   Center,
+  Container,
   createStyles,
   Group,
   Loader,
@@ -38,8 +39,6 @@ import { SearchFilterValueDisplay } from './SearchFilterValueDisplay';
 import { SearchPopupMenu } from './SearchPopupMenu';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
 import { isCheckboxCell, killEvent } from './utils/dom';
-
-import './SearchControl.css';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -98,6 +97,23 @@ interface SearchControlState {
 }
 
 const useStyles = createStyles((theme) => ({
+  root: {
+    maxWidth: '100%',
+    overflow: 'auto',
+    textAlign: 'left',
+    marginBottom: '20px',
+  },
+
+  table: {
+    cursor: 'pointer',
+  },
+
+  tr: {
+    '&:hover': {
+      backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[7] : theme.colors.gray[0],
+    },
+  },
+
   th: {
     padding: '0 !important',
   },
@@ -267,7 +283,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const isMobile = window.innerWidth < 768;
 
   return (
-    <div className="medplum-search-control" data-testid="search-control">
+    <div className={classes.root} data-testid="search-control">
       {!props.hideToolbar && (
         <Group position="apart" mb="xl">
           <Group spacing={2}>
@@ -335,20 +351,18 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             )}
           </Group>
           {lastResult && (
-            <Group spacing={2}>
-              <span className="medplum-search-summary">
-                {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
-                {lastResult.total?.toLocaleString()}
-              </span>
-            </Group>
+            <Text size="xs" color="dimmed">
+              {getStart(search, lastResult.total as number)}-{getEnd(search, lastResult.total as number)} of{' '}
+              {lastResult.total?.toLocaleString()}
+            </Text>
           )}
         </Group>
       )}
-      <Table>
+      <Table className={classes.table}>
         <thead>
           <tr>
             {checkboxColumn && (
-              <th className="medplum-search-icon-cell">
+              <th>
                 <input
                   type="checkbox"
                   value="checked"
@@ -395,7 +409,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           </tr>
           {!props.hideFilters && (
             <tr>
-              {checkboxColumn && <th className="filters medplum-search-icon-cell" />}
+              {checkboxColumn && <th />}
               {fields.map((field) => (
                 <th key={field.name} className="filters">
                   {field.searchParams && (
@@ -416,12 +430,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               resource && (
                 <tr
                   key={resource.id}
+                  className={classes.tr}
                   data-testid="search-control-row"
                   onClick={(e) => handleRowClick(e, resource)}
                   onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
-                    <td className="medplum-search-icon-cell">
+                    <td>
                       <input
                         type="checkbox"
                         value="checked"
@@ -441,9 +456,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </tbody>
       </Table>
       {resources?.length === 0 && (
-        <div data-testid="empty-search" className="medplum-empty-search">
-          No results
-        </div>
+        <Container>
+          <Center>
+            <Text size="xl" color="dimmed">
+              No results
+            </Text>
+          </Center>
+        </Container>
       )}
       {lastResult?.total !== undefined && lastResult.total > 0 && (
         <Center m="md" p="md">

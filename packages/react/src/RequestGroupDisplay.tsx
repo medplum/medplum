@@ -1,13 +1,12 @@
-import { Button } from '@mantine/core';
+import { Button, Grid, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
+import { IconCheckbox, IconSquare } from '@tabler/icons';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from './MedplumProvider';
 import { ResourceName } from './ResourceName';
 import { StatusBadge } from './StatusBadge';
 import { useResource } from './useResource';
-
-import './RequestGroupDisplay.css';
 
 export interface RequestGroupDisplayProps {
   value?: RequestGroup | Reference<RequestGroup>;
@@ -33,16 +32,18 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   }
 
   return (
-    <div className="medplum-request-group">
+    <Grid>
       {requestGroup.action?.map((action, index) => {
         const task = action.resource && findBundleEntry(action.resource as Reference<Task>);
         const taskInput = task?.input?.[0]?.valueReference;
         const taskOutput = task?.output?.[0]?.valueReference;
         return (
-          <div className="medplum-request-group-task" key={`action-${index}`}>
-            <div className="medplum-request-group-task-checkmark">{task?.status === 'completed' ? '🗹' : '☐'}</div>
-            <div className="medplum-request-group-task-details">
-              <div className="medplum-request-group-task-title">{action.title}</div>
+          <React.Fragment key={`action-${index}`}>
+            <Grid.Col span={1} p="md">
+              {task?.status === 'completed' ? <IconCheckbox /> : <IconSquare color="gray" />}
+            </Grid.Col>
+            <Grid.Col span={9} p="xs">
+              <Text weight={500}>{action.title}</Text>
               {action.description && <div>{action.description}</div>}
               <div>
                 Last edited by&nbsp;
@@ -53,17 +54,17 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
               <div>
                 Status: <StatusBadge status={task?.status || 'unknown'} />
               </div>
-            </div>
-            <div className="medplum-request-group-task-actions">
+            </Grid.Col>
+            <Grid.Col span={2} p="md">
               {taskInput && !taskOutput && <Button onClick={() => props.onStart(task, taskInput)}>Start</Button>}
               {taskInput && taskOutput && (
                 <Button onClick={() => props.onEdit(task, taskInput, taskOutput)}>Edit</Button>
               )}
-            </div>
-          </div>
+            </Grid.Col>
+          </React.Fragment>
         );
       })}
-    </div>
+    </Grid>
   );
 
   function buildBatchRequest(request: RequestGroup): Bundle {

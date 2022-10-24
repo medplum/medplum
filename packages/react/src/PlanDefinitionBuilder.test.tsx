@@ -60,7 +60,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.mouseOver(screen.getByText('Example Action'));
     });
 
-    expect(screen.getByTestId('action1')).toHaveClass('hovering');
+    expect(screen.getByTestId('action1')).toHaveStyle('border: 1.5px solid #339af0;');
 
     await act(async () => {
       fireEvent.mouseOver(document.body);

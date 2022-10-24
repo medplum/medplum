@@ -1,5 +1,5 @@
+import { Container, Paper } from '@mantine/core';
 import React from 'react';
-import './Document.css';
 
 export interface DocumentProps {
   width?: number;
@@ -7,9 +7,16 @@ export interface DocumentProps {
 }
 
 export function Document(props: DocumentProps): JSX.Element {
+  let style: React.CSSProperties | undefined = undefined;
+  if (props.width) {
+    style = { maxWidth: props.width };
+  }
+
   return (
-    <main className="medplum-document">
-      <article style={{ maxWidth: props.width }}>{props.children}</article>
-    </main>
+    <Container>
+      <Paper style={style} m="lg" p="lg" shadow="xs" radius="sm" withBorder>
+        {props.children}
+      </Paper>
+    </Container>
   );
 }
