@@ -28,7 +28,7 @@ export default function IndexPage(): JSX.Element {
                   Fast and easy
                   <br />
                   healthcare dev
-                </Title>
+                </h1>
                 <p className={styles.heroText}>
                   Medplum is a headless EHR that makes it easier to build healthcare apps quickly with less code.
                 </p>
