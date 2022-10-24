@@ -112,45 +112,6 @@ import approach1Diagram from './approach-1.png';
 </CodeBlock>
 
 </TabItem>
-<TabItem value="query" label="GraphQL" >
-
-<CodeBlock language="graphql">
-{`{
-  # Read the Patient with specific ID
-  Patient(id: "patient-id") {
-    id
-    name {
-      given
-      family
-    }
-
-    # Read the Patient.contact field to get a list of family member contacts
-    contact {
-      relationship {
-        text
-      }
-      name {
-        given
-        family
-      }
-      gender
-      address {
-        line
-        city
-        state
-        country
-      }
-      telecom {
-        use
-        system
-        value
-      }
-    }
-  }
-}`}
-</CodeBlock>
-
-</TabItem>
 </Tabs>
 
 If your family members do not participate in clinical/billing activities and patients rarely share family members, the simplest approach is just to store information about family members directly on the [Patient](/docs/api/fhir/resources/patient) resource.
@@ -204,37 +165,6 @@ import approach2Diagram from './approach-2.png';
       2
     )}
   }
-</CodeBlock>
-
-</TabItem>
-<TabItem value="query" label="GraphQL" >
-
-<CodeBlock language="graphql">
-{`{
-  # Read the Patient with specific ID
-  Patient(id: "patient-id") {
-    id
-    name {
-      given
-      family
-    }
-
-    # Get a list of all RelatedPerson resources whose 'patient'
-    # field points to the above patient (id = 'patient-id)
-    RelatedPersonList(_reference: patient) {
-      id
-      relationship {
-        text
-      }
-      name {
-        given
-        family
-      }
-      gender
-      birthDate
-    }
-  }
-}`}
 </CodeBlock>
 
 </TabItem>
@@ -302,44 +232,6 @@ import approach3Diagram from './approach-3.png';
 </CodeBlock>
 
 </TabItem>
-<TabItem value="query" label="GraphQL" >
-
-<CodeBlock language="graphql">
-{`{
-  # Read the Patient with specific ID
-  Patient(id: "patient-id") {
-    id
-    name {
-      given
-      family
-    }
-
-    # Get a list of all RelatedPerson resources whose 'patient'
-    # field points to the above patient (id = 'patient-id)
-    RelatedPersonList(_reference: patient) {
-      id
-      relationship {
-        text
-      }
-
-      # Get a list of all the Patients whose "link.other"
-      # field points to the above RelatedPerson
-      # (Creates a nested list inside each RelatedPerson entry)
-      PatientList(_reference: link) {
-        id
-        name {
-          given
-          family
-        }
-        gender
-        birthDate
-      }
-    }
-  }
-}`}
-</CodeBlock>
-
-</TabItem>
 </Tabs>
 
 If your practice begins to have patients who share family members, duplicating their contact information across multiple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
@@ -379,43 +271,6 @@ import approach4Diagram from './approach-4.png';
     ['resourceType', 'id', 'type', 'actual', 'entity', 'member', 'reference', 'display'],
     2
   )}
-</CodeBlock>
-
-</TabItem>
-<TabItem value="query" label="GraphQL" >
-
-<CodeBlock language="graphql">
-{`{
-  # Read the Group with specific ID
-  Group(id: "group-id") {
-    id
-    name
-
-    # Read the list of group members, where each entity
-    # is a reference to a Patient
-    member {
-      entity {
-        reference
-        display
-
-        # Medplum's graphQL implementation allows you to read the resource
-        # referenced by 'entity' using the 'resource' field
-        resource {
-          # The '... on Patient' syntax is needed to tell the graphQL engine
-          # that this field references a Patient resource
-          ... on Patient {
-            id
-            name {
-              given
-              family
-            }
-            gender
-          }
-        }
-      }
-    }
-  }
-}`}
 </CodeBlock>
 
 </TabItem>
