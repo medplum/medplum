@@ -30,7 +30,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const author = props.profile ?? props.resource.meta?.author;
 
   return (
-    <Paper data-testid="timeline-item" m="lg" p="sm" shadow="xs" radius="sm" withBorder>
+    <Paper data-testid="timeline-item" m="lg" p="sm" shadow="xs" radius="sm" withBorder className={props.className}>
       <Group position="apart" spacing={8}>
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
