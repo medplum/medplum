@@ -5,45 +5,41 @@ sidebar_position: 1
 
 # Products
 
-At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly.
+At Medplum, our goal is to help you build a healthcare application quickly, easily and compliantly. Medplum infrastructure is [open source](https://github.com/medplum/medplum) and enables the features seen below. We have sample applications [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/) that can give you a sense of the experiences that can be built on the Medplum platform.
 
-## Features
+## ↔ Integration and Interoperability Engine
 
-Medplum helps you build applications with the following features. Sample applications can be found in our [repository](https://github.com/medplum) and on our reference apps [Foo Medical](https://foomedical.com/) and [Provider Application](https://provider.foomedical.com/).
+Build unlimited interfaces and integrate the advanced capabilities best suited to your needs, enable your organization to optimize interoperability. Connect healthcare system and non-healthcare related services. This is the most popular feature of Medplum. [Learn More](../products/integration)
 
-### ↔ Integration and Interoperability Engine
-
-Build unlimited interfaces, choose the advanced capabilities best suited to your needs, enable your organization to optimize interoperability. Connect healthcare system and non-healthcare related services. This is the most popular feature of Medplum. [Learn More](../products/integration)
-
-### 📝 Forms
+## 📝 Forms
 
 Create custom forms, surveys, and questionnaires quickly to enable engagement, assessment, patient onboarding, provider workflow and retention. [Learn More](../products/forms)
 
-### 📆 Scheduling
+## 📆 Scheduling
 
 Publish scheduling pages customized to practitioners or locations. Patients can self-schedule and change their appointments, designed with pre-built components or fully customizable by API. [Learn More](../products/scheduling)
 
-### 📥 Messaging and Communications
+## 📥 Messaging and Communications
 
 Drive engagement with integrated chat, reminders and messaging, right from your practitioner portal. Easily integrate SMS, custom messaging and automations. [Learn More](../products/communications)
 
-### ➕ Care Plans
+## ➕ Care Plans
 
 Build or import your care plans and customize them to patient needs. Track patient outcomes and build powerful automations. [Learn More](../products/careplans)
 
-### Medications
+## Medications
 
 Track patient prescription medications and refills. Connect to common e-Prescribe services, or track in-house fulfillment.
 
-### 💵 Billing and Payments
+## 💵 Billing and Payments
 
 Send data to your billing provider of choice. Easily connect to physician groups or bill through multiply professional corporations. [Learn More](../products/billing)
 
-### ⚙️ Automation
+## ⚙️ Automation
 
 Build automations that will scale with your organization. Automatically route messages, remind patients, instantiate care plans, ensure correctness, and more. [Learn More](../products/automation)
 
-### 📈 Dashboards and Analytics
+## 📈 Dashboards and Analytics
 
 Dashboards and analytics are at the heart of great clinical workflow. Build a custom dashboard that drives quality and speed, and troubleshoot with advanced analytics.
 
