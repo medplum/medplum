@@ -2,7 +2,7 @@
 sidebar_position: 1
 ---
 
-import ExampleCode from '!!raw-loader!@site/../examples/tutorials/api-basics/create-fhir-data.ts';
+import ExampleCode from '!!raw-loader!@site/../examples/src/tutorials/api-basics/create-fhir-data.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Creating FHIR Data
