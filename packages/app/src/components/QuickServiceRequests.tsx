@@ -1,3 +1,4 @@
+import { createStyles } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
@@ -5,13 +6,37 @@ import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@me
 import React, { useEffect, useState } from 'react';
 import { getPatient } from '../utils';
 
-import './QuickServiceRequests.css';
+const useStyles = createStyles((theme) => ({
+  container: {
+    position: 'fixed',
+    top: 300,
+    left: 0,
+    width: 160,
+    zIndex: 5,
+    fontSize: theme.fontSizes.xs,
+    '@media (max-width: 700px)': {
+      display: 'none',
+    },
+  },
+  entry: {
+    textAlign: 'center',
+    width: 150,
+    backgroundColor: theme.colors.gray[0],
+    border: `1px solid ${theme.colors.gray[3]}`,
+  },
+  active: {
+    width: 160,
+    backgroundColor: theme.colors.yellow[0],
+    border: `1px solid ${theme.colors.yellow[5]}`,
+  },
+}));
 
 export interface QuickServiceRequestsProps {
   value: Resource | Reference;
 }
 
 export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Element | null {
+  const { classes, cx } = useStyles();
   const medplum = useMedplum();
   const resource = useResource(props.value);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>();
@@ -42,9 +67,9 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
   }
 
   return (
-    <div className="medplum-quick-service-request-container">
+    <div className={classes.container}>
       {serviceRequests.map((r) => (
-        <div key={r.id} className={'medplum-quick-service-request' + (r.id === resource?.id ? ' active' : '')}>
+        <div key={r.id} className={cx(classes.entry, { [classes.active]: r.id === resource?.id })}>
           <p>
             <MedplumLink to={r}>{getServiceRequestIdentifier(r)}</MedplumLink>
           </p>
