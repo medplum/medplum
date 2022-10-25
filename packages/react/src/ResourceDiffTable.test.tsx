@@ -45,11 +45,11 @@ describe('ResourceDiffTable', () => {
 
     const removed = screen.getByText('false');
     expect(removed).toBeDefined();
-    expect(removed.parentElement).toHaveStyle('color: rgb(240, 62, 62);');
+    expect(removed).toHaveStyle('color: rgb(240, 62, 62);');
 
     const added = screen.getByText('true');
     expect(added).toBeDefined();
-    expect(added.parentElement).toHaveStyle('color: rgb(55, 178, 77);');
+    expect(added).toHaveStyle('color: rgb(55, 178, 77);');
 
     // ID and meta should not be shown
     expect(screen.queryByText('ID')).toBeNull();
