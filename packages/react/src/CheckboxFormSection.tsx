@@ -1,5 +1,5 @@
+import { Group, Input } from '@mantine/core';
 import React from 'react';
-import './CheckboxFormSection.css';
 
 export interface CheckboxFormSectionProps {
   htmlFor?: string;
@@ -10,12 +10,13 @@ export interface CheckboxFormSectionProps {
 
 export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Element {
   return (
-    <div className="medplum-checkbox-form-section">
-      <div className="medplum-checkbox-form-section-checkbox-container">{props.children}</div>
-      <div className="medplum-checkbox-form-section-details-container">
-        <label htmlFor={props.htmlFor}>{props.title}</label>
-        <p>{props.description}</p>
+    <Group noWrap>
+      <div>{props.children}</div>
+      <div>
+        <Input.Wrapper id={props.htmlFor} label={props.title} description={props.description}>
+          {(() => null)()}
+        </Input.Wrapper>
       </div>
-    </div>
+    </Group>
   );
 }

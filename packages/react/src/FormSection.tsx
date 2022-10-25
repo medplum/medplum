@@ -1,7 +1,7 @@
+import { Input } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React from 'react';
-import { getIssuesForExpression } from './utils/outcomes';
-import './FormSection.css';
+import { getErrorsForInput } from './utils/outcomes';
 
 export interface FormSectionProps {
   title?: string;
@@ -12,22 +12,14 @@ export interface FormSectionProps {
 }
 
 export function FormSection(props: FormSectionProps): JSX.Element {
-  const issues = getIssuesForExpression(props.outcome, props.htmlFor);
-  const invalid = issues && issues.length > 0;
   return (
-    <fieldset className="medplum-form-section">
-      {props.title && <label htmlFor={props.htmlFor}>{props.title}</label>}
-      {props.description && <p>{props.description}</p>}
+    <Input.Wrapper
+      id={props.htmlFor}
+      label={props.title}
+      description={props.description}
+      error={getErrorsForInput(props.outcome, props.htmlFor)}
+    >
       {props.children}
-      {invalid && (
-        <div id={props.htmlFor + '-errors'} className="medplum-input-error">
-          {issues?.map((issue) => (
-            <div data-testid="text-field-error" key={issue.details?.text}>
-              {issue.details?.text}
-            </div>
-          ))}
-        </div>
-      )}
-    </fieldset>
+    </Input.Wrapper>
   );
 }

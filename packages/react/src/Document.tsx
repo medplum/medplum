@@ -14,7 +14,7 @@ export function Document(props: DocumentProps): JSX.Element {
 
   return (
     <Container>
-      <Paper style={style} m="lg" p="lg" shadow="xs" radius="sm" withBorder>
+      <Paper style={style} mx="auto" my="lg" p="lg" shadow="xs" radius="sm" withBorder>
         {props.children}
       </Paper>
     </Container>

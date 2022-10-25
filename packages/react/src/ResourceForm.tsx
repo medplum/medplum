@@ -1,4 +1,4 @@
-import { Button, Group, TextInput } from '@mantine/core';
+import { Button, Group, Stack, TextInput } from '@mantine/core';
 import { capitalize, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
@@ -42,12 +42,14 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         }
       }}
     >
-      <FormSection title="Resource Type" htmlFor="resourceType" outcome={props.outcome}>
-        <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
-      </FormSection>
-      <FormSection title="ID" htmlFor="id" outcome={props.outcome}>
-        <TextInput name="id" defaultValue={value.id} disabled={true} />
-      </FormSection>
+      <Stack mb="xl">
+        <FormSection title="Resource Type" htmlFor="resourceType" outcome={props.outcome}>
+          <TextInput name="resourceType" defaultValue={value.resourceType} disabled={true} />
+        </FormSection>
+        <FormSection title="ID" htmlFor="id" outcome={props.outcome}>
+          <TextInput name="id" defaultValue={value.id} disabled={true} />
+        </FormSection>
+      </Stack>
       <BackboneElementInput
         typeName={value.resourceType}
         defaultValue={value}

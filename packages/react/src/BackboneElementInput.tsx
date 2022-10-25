@@ -1,3 +1,4 @@
+import { Stack } from '@mantine/core';
 import { getPropertyDisplayName, globalSchema } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -34,7 +35,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
   const typedValue = { type: typeName, value };
 
   return (
-    <>
+    <Stack>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
         if (key === 'id' || DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
@@ -90,6 +91,6 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
           </FormSection>
         );
       })}
-    </>
+    </Stack>
   );
 }
