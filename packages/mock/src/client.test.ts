@@ -1,5 +1,6 @@
 import {
   allOk,
+  getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   LoginState,
@@ -20,7 +21,7 @@ import {
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
-import { HomerSimpson } from './mocks';
+import { DrAliceSmithSchedule, HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
   beforeAll(() => {
@@ -456,6 +457,28 @@ describe('MockClient', () => {
     } catch (err) {
       expect((err as OperationOutcome).id).toEqual('not-found');
     }
+  });
+
+  test('Slot search', async () => {
+    const client = new MockClient();
+
+    const startDate = new Date();
+    startDate.setDate(1);
+
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(1);
+
+    const slots = await client.searchResources(
+      'Slot',
+      new URLSearchParams([
+        ['_count', (30 * 24).toString()],
+        ['schedule', getReferenceString(DrAliceSmithSchedule)],
+        ['start', 'gt' + startDate.toISOString()],
+        ['start', 'lt' + endDate.toISOString()],
+      ])
+    );
+    expect(slots.length).toBeGreaterThan(0);
   });
 });
 
