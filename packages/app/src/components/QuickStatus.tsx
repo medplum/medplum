@@ -1,8 +1,18 @@
-import { NativeSelect } from '@mantine/core';
+import { createStyles, NativeSelect } from '@mantine/core';
 import { Reference, ValueSet } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import React from 'react';
-import './QuickStatus.css';
+
+const useStyles = createStyles(() => ({
+  container: {
+    position: 'absolute',
+    top: 65,
+    right: 5,
+    width: 200,
+    height: 50,
+    zIndex: 15,
+  },
+}));
 
 export interface QuickStatusProps {
   valueSet: Reference<ValueSet> | ValueSet;
@@ -11,13 +21,14 @@ export interface QuickStatusProps {
 }
 
 export function QuickStatus(props: QuickStatusProps): JSX.Element | null {
+  const { classes } = useStyles();
   const valueSet = useResource(props.valueSet);
   if (!valueSet) {
     return null;
   }
 
   return (
-    <div className="medplum-quick-status">
+    <div className={classes.container}>
       <NativeSelect
         defaultValue={props.defaultValue}
         onChange={(e) => props.onChange(e.currentTarget.value)}
