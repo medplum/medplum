@@ -89,6 +89,16 @@ const config = {
         },
         items: [
           {
+            to: '/products',
+            label: 'Products',
+            position: 'left',
+          },
+          {
+            to: '/blueprints',
+            label: 'Blueprints',
+            position: 'left',
+          },
+          {
             type: 'doc',
             docId: 'home',
             position: 'left',
@@ -102,16 +112,6 @@ const config = {
           {
             to: '/docs/api',
             label: 'API',
-            position: 'left',
-          },
-          {
-            to: '/docs/contributing',
-            label: 'Contributing',
-            position: 'left',
-          },
-          {
-            to: '/blog',
-            label: 'Blog',
             position: 'left',
           },
           {
