@@ -1,4 +1,4 @@
-import { Button, Checkbox, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
+import { Button, Checkbox, Group, NativeSelect, Radio, Stack, Textarea, TextInput, Title } from '@mantine/core';
 import {
   capitalize,
   createReference,
@@ -35,8 +35,6 @@ import { QuestionnaireItemType } from './QuestionnaireUtils';
 import { ReferenceInput } from './ReferenceInput';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 import { useResource } from './useResource';
-
-import './QuestionnaireForm.css';
 
 export interface QuestionnaireFormProps {
   questionnaire: Questionnaire | Reference<Questionnaire>;
@@ -97,7 +95,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       {questionnaire.item && (
         <QuestionnaireFormItemArray items={questionnaire.item} answers={answers} onChange={setItems} />
       )}
-      <Button type="submit">{props.submitButtonText || 'OK'}</Button>
+      <Group position="right" mt="xl">
+        <Button type="submit">{props.submitButtonText || 'OK'}</Button>
+      </Group>
     </Form>
   );
 }
@@ -121,7 +121,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
   }
 
   return (
-    <>
+    <Stack>
       {props.items.map((item, index) => {
         if (!isQuestionEnabled(item, props.answers)) {
           return null;
@@ -168,7 +168,7 @@ function QuestionnaireFormItemArray(props: QuestionnaireFormItemArrayProps): JSX
           </FormSection>
         );
       })}
-    </>
+    </Stack>
   );
 }
 
@@ -365,7 +365,6 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
     <NativeSelect
       id={name}
       name={name}
-      className="medplum-select"
       onChange={(e: ChangeEvent<HTMLSelectElement>) => {
         const index = e.currentTarget.selectedIndex;
         if (index === 0) {
@@ -405,41 +404,53 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
   const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
     | TypedValue
     | undefined;
+
+  const options: [string, TypedValue][] = [];
+  let defaultValue = undefined;
+  if (item.answerOption) {
+    for (let i = 0; i < item.answerOption.length; i++) {
+      const option = item.answerOption[i];
+      const optionName = `${name}-option-${i}`;
+      const optionValue = getTypedPropertyValue(
+        { type: 'QuestionnaireItemAnswerOption', value: option },
+        'value'
+      ) as TypedValue;
+      if (initialValue && stringify(optionValue) === stringify(initialValue)) {
+        defaultValue = optionName;
+      }
+      options.push([optionName, optionValue]);
+    }
+  }
+
   return (
-    <>
-      {item.answerOption &&
-        item.answerOption.map((option: QuestionnaireItemAnswerOption, index: number) => {
-          const optionValue = getTypedPropertyValue(
-            { type: 'QuestionnaireItemAnswerOption', value: option },
-            'value'
-          ) as TypedValue;
+    <Radio.Group
+      name={name}
+      orientation="vertical"
+      defaultValue={defaultValue}
+      onChange={(newValue) => {
+        const option = options.find((option) => option[0] === newValue);
+        if (option) {
+          const optionValue = option[1];
           const propertyName = 'value' + capitalize(optionValue.type);
-          const optionName = `${name}-option-${index}`;
-          return (
-            <div key={optionName} className="medplum-questionnaire-option-row">
-              <div className="medplum-questionnaire-option-checkbox">
-                <input
-                  type="radio"
-                  id={optionName}
-                  name={name}
-                  value={optionValue.value}
-                  defaultChecked={initialValue && stringify(optionValue) === stringify(initialValue)}
-                  onChange={() => onChangeAnswer({ [propertyName]: optionValue.value })}
-                />
-              </div>
-              <div>
-                <label htmlFor={optionName}>
-                  <ResourcePropertyDisplay
-                    property={valueElementDefinition}
-                    propertyType={optionValue.type as PropertyType}
-                    value={optionValue.value}
-                  />
-                </label>
-              </div>
-            </div>
-          );
-        })}
-    </>
+          onChangeAnswer({ [propertyName]: optionValue.value });
+        }
+      }}
+    >
+      {options.map(([optionName, optionValue]) => (
+        <Radio
+          key={optionName}
+          id={optionName}
+          value={optionName}
+          label={
+            <ResourcePropertyDisplay
+              property={valueElementDefinition}
+              propertyType={optionValue.type as PropertyType}
+              value={optionValue.value}
+            />
+          }
+        />
+      ))}
+    </Radio.Group>
   );
 }
 

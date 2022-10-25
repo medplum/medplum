@@ -54,7 +54,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
 
   switch (propertyType) {
     case PropertyType.boolean:
-      return <div>{value === undefined ? '' : Boolean(value).toString()}</div>;
+      return <>{value === undefined ? '' : Boolean(value).toString()}</>;
     case PropertyType.SystemString:
     case PropertyType.code:
     case PropertyType.date:
@@ -64,18 +64,18 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
-      return <div>{value}</div>;
+      return <>{value}</>;
     case PropertyType.canonical:
       return <ReferenceDisplay value={{ reference: value }} link={props.link} />;
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <div>{formatDateTime(value)}</div>;
+      return <>{formatDateTime(value)}</>;
     case PropertyType.markdown:
       return <pre>{value}</pre>;
     case PropertyType.Address:
       return <AddressDisplay value={value} />;
     case PropertyType.Annotation:
-      return <div>{value?.text}</div>;
+      return <>{value?.text}</>;
     case PropertyType.Attachment:
       return <AttachmentDisplay value={value} maxWidth={props.maxWidth} />;
     case PropertyType.CodeableConcept:
@@ -91,7 +91,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Identifier:
       return <IdentifierDisplay value={value} />;
     case PropertyType.Period:
-      return <div>{formatPeriod(value)}</div>;
+      return <>{formatPeriod(value)}</>;
     case PropertyType.Quantity:
       return <QuantityDisplay value={value} />;
     case PropertyType.Range:
@@ -101,7 +101,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Reference:
       return <ReferenceDisplay value={value} link={props.link} />;
     case PropertyType.Timing:
-      return <div>{formatTiming(value)}</div>;
+      return <>{formatTiming(value)}</>;
     default:
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
