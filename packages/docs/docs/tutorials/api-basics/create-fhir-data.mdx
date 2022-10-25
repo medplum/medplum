@@ -2,6 +2,9 @@
 sidebar_position: 1
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/tutorials/api-basics/create-fhir-data.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Creating FHIR Data
 
 This is a quickstart sample application that introduces some basic FHIR and Medplum concepts.
@@ -16,10 +19,9 @@ You will need the following to get started and instructions on how to set this u
 
 These three requirements will need to be in place to connect
 
-```js
-const MY_CLIENT_ID = 'MY_CLIENT_ID';
-const MY_CLIENT_SECRET = 'MY_CLIENT_SECRET';
-```
+<MedplumCodeBlock language="ts" selectBlocks="api-keys" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Example App - Simple Lab Results Workflow
 
@@ -41,16 +43,9 @@ Here is a breakdown of workflow at a high level
 
 The [client credentials](https://oauth.net/2/grant-types/client-credentials/) flow is a type of connection that is used to obtain an access token outside the context of the user.
 
-```ts
-import fetch from 'node-fetch';
-import { MedplumClient } from '@medplum/core';
-
-const medplum = new MedplumClient({
-  baseUrl: 'https://api.medplum.com/',
-  fetch: fetch,
-});
-await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
-```
+<MedplumCodeBlock language="ts" selectBlocks="core-imports, create-client" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Creating the Patient and Service Request
 
@@ -60,32 +55,9 @@ await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 
 Creating a Patient if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
-```ts
-import { Patient } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-
-// Generate an example MRN (Medical Record Number)
-// We will use this in the "conditional create"
-const exampleMrn = randomUUID();
-const patientData: Patient = {
-  resourceType: 'Patient',
-  name: [{ given: ['Batch'], family: 'Test' }],
-  birthDate: '2020-01-01',
-  gender: 'female',
-  identifier: [
-    {
-      system: 'https://namespace.example.health/',
-      value: exampleMrn,
-    },
-  ],
-};
-
-// When creating an order, and if you don't know if the patient exists,
-// you can use this MRN to check. Use this search criterion to make sure the 'identifier=' criterion
-// for a conditional create
-const patient = await medplum.createResourceIfNoneExist(patientData, 'identifier=' + exampleMrn);
-console.log('Created Patient', patient.id);
-```
+<MedplumCodeBlock language="ts" selectBlocks="patient-imports, create-patient" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 The behavior of the the `Patient.identifier` field is important to note. `Patient.identifier` usually has a reference string or URL that describes which system that identifier came from. [Identifiers](/docs/fhir-basics#identifiers-naming-resources) are a concept in FHIR which describe the context in which that identifier is generated, for example, and identifier could be a Social Security Number (SSN) or be created by a health system for their own internal purposes. Here is an example of an identifier scheme for the [Australian Healthcare system](https://namespaces.digitalhealth.gov.au/id/hi/ihi/1.0/).
 
@@ -97,26 +69,9 @@ Creating a new [ServiceRequest](/docs/api/fhir/resources/servicerequest) also ha
 
 Note that there are many fields on the requisition, and filling them in with the right data is crucial. This example is minimal for clarity.
 
-```ts
-import { ServiceRequest } from '@medplum/fhirtypes';
-import { createReference } from '@medplum/core';
-
-const serviceRequestData: ServiceRequest = {
-  resourceType: 'ServiceRequest',
-  subject: createReference(patient), // link this ServiceRequest to the Patient
-  code: {
-    coding: [
-      {
-        system: 'https://samplelab.com/tests',
-        code: 'SAMPLE_SKU',
-      },
-    ],
-  },
-};
-
-const serviceRequest = await medplum.createResource(serviceRequestData);
-console.log('Service Request', serviceRequest.id);
-```
+<MedplumCodeBlock language="ts" selectBlocks="service-request-imports, create-service-request" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 If you are using the [hosted Medplum service](https://app.medplum.com) you can see your `ServiceRequest` objects [here](https://app.medplum.com/ServiceRequest). Similarly, you can see `Patients` [here](https://app.medplum.com/Patient).
 
@@ -130,85 +85,15 @@ You can then create a diagnostic report using the function below.
 
 ### Create the Observations
 
-```ts
-import { Observation } from '@medplum/fhirtypes';
-
-// Create two observations from the array
-const observationData: Observation[] = [
-  {
-    resourceType: 'Observation',
-    basedOn: [createReference(serviceRequest)], // Connect this Observation to the ServiceRequest
-    subject: createReference(patient), // Connect this Observation to the Patient
-    status: 'preliminary',
-    code: {
-      coding: [
-        {
-          system: 'https://samplelabtests.com/tests',
-          code: 'A1c',
-          display: 'A1c',
-        },
-      ],
-    },
-    valueQuantity: {
-      value: 5.7,
-      unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
-      code: 'mg/dL',
-    },
-  },
-  {
-    resourceType: 'Observation',
-    basedOn: [createReference(serviceRequest)], // Connect this Observation to the ServiceRequest
-    subject: createReference(patient), // Connect this Observation to the Patient
-    status: 'preliminary',
-    code: {
-      coding: [
-        {
-          system: 'https://samplelabtests.com/tests',
-          code: 'blood_glucose',
-          display: 'Blood Glucose',
-        },
-      ],
-    },
-    valueQuantity: {
-      value: 100,
-      unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
-      code: 'mg/dL',
-    },
-  },
-];
-
-// Map through the observation data to create all the observations
-const observations = await Promise.all(observationData.map(async (data) => medplum.createResource(data)));
-
-for (const observation of observations) {
-  console.log('Created Observation', observation.id);
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="observation-imports, create-observations" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Create Report
 
-```ts
-import { DiagnosticReport } from '@medplum/fhirtypes';
-
-const reportData: DiagnosticReport = {
-  resourceType: 'DiagnosticReport',
-  basedOn: [createReference(serviceRequest)], // Connect this DiagnosticReport to the ServiceRequest
-  subject: createReference(patient), // Connect this DiagnosticReport to the Patient,
-  status: 'preliminary',
-  code: {
-    coding: [
-      {
-        system: 'https://samplelab.com/testpanels',
-        code: 'SAMPLE_SKU',
-      },
-    ],
-  },
-  result: observations.map(createReference), // Create an array of references to the relevant observations
-};
-const report = await medplum.createResource(reportData);
-```
+<MedplumCodeBlock language="ts" selectBlocks="report-imports, create-report" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 This will create a `DiagnosticReport` that is linked to the `ServiceRequest` and to the `Patient`. If you are using hosted Medplum, you can view all `DiagnosticReports` [here](https://app.medplum.com/DiagnosticReport).
 
