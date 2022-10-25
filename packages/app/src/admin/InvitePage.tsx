@@ -1,4 +1,4 @@
-import { Button, NativeSelect, TextInput, Title } from '@mantine/core';
+import { Button, Group, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -36,7 +36,7 @@ export function InvitePage(): JSX.Element {
         }}
       >
         {!success && (
-          <>
+          <Stack>
             <FormSection title="Role" htmlFor="resourceType" outcome={outcome}>
               <NativeSelect
                 id="resourceType"
@@ -81,13 +81,10 @@ export function InvitePage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="medplum-signin-buttons">
-              <div></div>
-              <div>
-                <Button type="submit">Invite</Button>
-              </div>
-            </div>
-          </>
+            <Group position="right">
+              <Button type="submit">Invite</Button>
+            </Group>
+          </Stack>
         )}
         {success && (
           <div data-testid="success">

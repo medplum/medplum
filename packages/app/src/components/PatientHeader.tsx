@@ -1,10 +1,8 @@
-import { ScrollArea } from '@mantine/core';
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
 import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
 import React from 'react';
-
-import './PatientHeader.css';
+import { InfoBar } from './InfoBar';
 
 export interface PatientHeaderProps {
   patient: Patient | Reference<Patient>;
@@ -16,51 +14,47 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <ScrollArea>
-      <div className="medplum-patient-header">
-        <ResourceAvatar value={patient} size="lg" color={getDefaultColor(patient)} />
-        <dl>
-          <dt>Name</dt>
-          <dd>
-            <MedplumLink to={patient}>
-              {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
-            </MedplumLink>
-          </dd>
-        </dl>
-        {patient.birthDate && (
-          <>
-            <dl>
-              <dt>DoB</dt>
-              <dd>{patient.birthDate}</dd>
-            </dl>
-            <dl>
-              <dt>Age</dt>
-              <dd>{calculateAgeString(patient.birthDate)}</dd>
-            </dl>
-          </>
-        )}
-        {patient.gender && (
-          <dl>
-            <dt>Gender</dt>
-            <dd>{patient.gender}</dd>
-          </dl>
-        )}
-        {patient.address && (
-          <>
-            <dl>
-              <dt>State</dt>
-              <dd>{patient.address?.[0]?.state}</dd>
-            </dl>
-          </>
-        )}
-        {patient.identifier?.map((identifier, index) => (
-          <dl key={`${index}-${patient.identifier?.length}`}>
-            <dt>{identifier?.system}</dt>
-            <dd>{identifier?.value}</dd>
-          </dl>
-        ))}
-      </div>
-    </ScrollArea>
+    <InfoBar>
+      <ResourceAvatar value={patient} size="lg" color={getDefaultColor(patient)} />
+      <InfoBar.Entry>
+        <InfoBar.Key>Name</InfoBar.Key>
+        <InfoBar.Value>
+          <MedplumLink to={patient}>
+            {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
+          </MedplumLink>
+        </InfoBar.Value>
+      </InfoBar.Entry>
+      {patient.birthDate && (
+        <>
+          <InfoBar.Entry>
+            <InfoBar.Key>DoB</InfoBar.Key>
+            <InfoBar.Value>{patient.birthDate}</InfoBar.Value>
+          </InfoBar.Entry>
+          <InfoBar.Entry>
+            <InfoBar.Key>Age</InfoBar.Key>
+            <InfoBar.Value>{calculateAgeString(patient.birthDate)}</InfoBar.Value>
+          </InfoBar.Entry>
+        </>
+      )}
+      {patient.gender && (
+        <InfoBar.Entry>
+          <InfoBar.Key>Gender</InfoBar.Key>
+          <InfoBar.Value>{patient.gender}</InfoBar.Value>
+        </InfoBar.Entry>
+      )}
+      {patient.address && (
+        <InfoBar.Entry>
+          <InfoBar.Key>State</InfoBar.Key>
+          <InfoBar.Value>{patient.address?.[0]?.state}</InfoBar.Value>
+        </InfoBar.Entry>
+      )}
+      {patient.identifier?.map((identifier, index) => (
+        <InfoBar.Entry key={`${index}-${patient.identifier?.length}`}>
+          <InfoBar.Key>{identifier?.system}</InfoBar.Key>
+          <InfoBar.Value>{identifier?.value}</InfoBar.Value>
+        </InfoBar.Entry>
+      ))}
+    </InfoBar>
   );
 }
 

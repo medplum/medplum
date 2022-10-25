@@ -1,4 +1,4 @@
-import { Button, Checkbox, Title } from '@mantine/core';
+import { Button, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -51,7 +51,7 @@ export function EditMembershipPage(): JSX.Element {
         }}
       >
         {!success && (
-          <>
+          <Stack>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" defaultValue={accessPolicy} onChange={setAccessPolicy} />
             </FormSection>
@@ -70,19 +70,13 @@ export function EditMembershipPage(): JSX.Element {
                 onChange={(e) => setAdmin(e.currentTarget.checked)}
               />
             </FormSection>
-            <div className="medplum-signin-buttons">
-              <div></div>
-              <div>
-                <Button type="submit">Save</Button>
-              </div>
-            </div>
-            <hr />
-            <div style={{ textAlign: 'right' }}>
-              <Button type="button" color="red" onClick={deleteMembership}>
+            <Group position="right" mt="xl">
+              <Button type="submit">Save</Button>
+              <Button type="button" color="red" variant="outline" onClick={deleteMembership}>
                 Remove user
               </Button>
-            </div>
-          </>
+            </Group>
+          </Stack>
         )}
         {success && (
           <div data-testid="success">

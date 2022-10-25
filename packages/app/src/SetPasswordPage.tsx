@@ -1,4 +1,4 @@
-import { Button, Center, PasswordInput, Title } from '@mantine/core';
+import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, MedplumLink, useMedplum } from '@medplum/react';
@@ -37,7 +37,7 @@ export function SetPasswordPage(): JSX.Element {
           <Title>Set password</Title>
         </Center>
         {!success && (
-          <>
+          <Stack>
             <PasswordInput
               name="password"
               label="New password"
@@ -50,13 +50,10 @@ export function SetPasswordPage(): JSX.Element {
               required={true}
               error={getErrorsForInput(outcome, 'confirmPassword')}
             />
-            <div className="medplum-signin-buttons">
-              <div></div>
-              <div>
-                <Button type="submit">Set password</Button>
-              </div>
-            </div>
-          </>
+            <Group position="right" mt="xl">
+              <Button type="submit">Set password</Button>
+            </Group>
+          </Stack>
         )}
         {success && (
           <div data-testid="success">
