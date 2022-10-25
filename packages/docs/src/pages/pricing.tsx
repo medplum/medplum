@@ -342,13 +342,12 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note8">
                 Bots and automation refer to custom logic written by customers to execute their workflow.{' '}
-                <a href="https://www.medplum.com/products/automation">Automation</a>
-                documentation and <a href="https://www.medplum.com/products/integration">integration</a> are a good
-                place to learn more.
+                <a href="https://www.medplum.com/products/automation">Automation</a> documentation and{' '}
+                <a href="https://www.medplum.com/products/integration">integration</a> are a good place to learn more.
               </li>
               <li id="note9">Organizations can require that all logins go through Google Authentication.</li>
               <li id="note10">
-                Many complex compliance scenarios can be supported with this infrastructure. You can read more on the
+                Many complex compliance scenarios can be supported with this infrastructure. You can read more on the{' '}
                 <a href="https://www.medplum.com/docs/compliance">compliance page</a>.
               </li>
             </ol>
