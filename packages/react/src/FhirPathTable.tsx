@@ -131,12 +131,12 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const checkboxColumn = props.checkboxesEnabled;
 
   return (
-    <div className="medplum-search-control" onContextMenu={(e) => killEvent(e)} data-testid="search-control">
+    <div onContextMenu={(e) => killEvent(e)} data-testid="search-control">
       <Table>
         <thead>
           <tr>
             {checkboxColumn && (
-              <th className="medplum-search-icon-cell">
+              <th>
                 <input
                   type="checkbox"
                   value="checked"
@@ -163,7 +163,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
                   onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
-                    <td className="medplum-search-icon-cell">
+                    <td>
                       <input
                         type="checkbox"
                         value="checked"
@@ -186,13 +186,9 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
           )}
         </tbody>
       </Table>
-      {response?.data?.ResourceList?.length === 0 && (
-        <div data-testid="empty-search" className="medplum-empty-search">
-          No results
-        </div>
-      )}
+      {response?.data?.ResourceList?.length === 0 && <div data-testid="empty-search">No results</div>}
       {outcome && (
-        <div data-testid="search-error" className="medplum-empty-search">
+        <div data-testid="search-error">
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
         </div>
       )}

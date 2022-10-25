@@ -87,10 +87,6 @@
     ".": {
       "require": "./dist/cjs/index.js",
       "import": "./dist/esm/index.js"
-    },
-    "./styles.css": {
-      "require": "./dist/cjs/styles.css",
-      "import": "./dist/esm/styles.css"
     }
   },
   "types": "dist/esm/index.d.ts",
