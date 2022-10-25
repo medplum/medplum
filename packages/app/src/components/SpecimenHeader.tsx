@@ -1,8 +1,8 @@
-import { ScrollArea } from '@mantine/core';
 import { formatDateTime } from '@medplum/core';
 import { Reference, Specimen } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import React from 'react';
+import { InfoBar } from './InfoBar';
 
 export interface SpecimenHeaderProps {
   specimen: Specimen | Reference<Specimen>;
@@ -14,22 +14,20 @@ export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {
     return null;
   }
   return (
-    <ScrollArea>
-      <div className="medplum-resource-header">
-        <dl>
-          <dt>Type</dt>
-          <dd>Specimen</dd>
-        </dl>
-        <dl>
-          <dt>Collected</dt>
-          <dd>{formatDateTime(specimen?.collection?.collectedDateTime)}</dd>
-        </dl>
-        <dl>
-          <dt>Age</dt>
-          <dd>{getAge(specimen)}</dd>
-        </dl>
-      </div>
-    </ScrollArea>
+    <InfoBar>
+      <InfoBar.Entry>
+        <InfoBar.Key>Type</InfoBar.Key>
+        <InfoBar.Value>Specimen</InfoBar.Value>
+      </InfoBar.Entry>
+      <InfoBar.Entry>
+        <InfoBar.Key>Collected</InfoBar.Key>
+        <InfoBar.Value>{formatDateTime(specimen.collection?.collectedDateTime)}</InfoBar.Value>
+      </InfoBar.Entry>
+      <InfoBar.Entry>
+        <InfoBar.Key>Age</InfoBar.Key>
+        <InfoBar.Value>{getAge(specimen)}</InfoBar.Value>
+      </InfoBar.Entry>
+    </InfoBar>
   );
 }
 

@@ -3,9 +3,7 @@ import replace from '@rollup/plugin-replace';
 import typescript from '@rollup/plugin-typescript';
 import dotenv from 'dotenv';
 import { mkdirSync, writeFileSync } from 'fs';
-import copy from 'rollup-plugin-copy';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
-import postcss from 'rollup-plugin-postcss';
 import { terser } from 'rollup-plugin-terser';
 
 dotenv.config();
@@ -59,7 +57,6 @@ export default [
         },
       }),
       peerDepsExternal(),
-      postcss({ extract: 'styles.css' }),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
       {
@@ -100,7 +97,6 @@ export default [
         },
       }),
       peerDepsExternal(),
-      postcss({ extract: 'styles.css' }),
       resolve({ extensions }),
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
       {

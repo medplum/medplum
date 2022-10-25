@@ -1,4 +1,4 @@
-import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
+import { Alert, Anchor, Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
@@ -31,6 +31,7 @@ import {
   ServiceRequestTimeline,
   useMedplum,
 } from '@medplum/react';
+import { IconAlertCircle } from '@tabler/icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';
@@ -326,11 +327,11 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
     case 'preview':
       return (
         <Document>
-          <p className="medplum-alert">
+          <Alert icon={<IconAlertCircle size={16} />} mb="xl">
             This is just a preview! Access your form here:
             <br />
-            <a href={`/forms/${props.resource.id}`}>{`/forms/${props.resource.id}`}</a>
-          </p>
+            <Anchor href={`/forms/${props.resource.id}`}>{`/forms/${props.resource.id}`}</Anchor>
+          </Alert>
           <QuestionnaireForm
             questionnaire={props.resource as Questionnaire}
             onSubmit={() => alert('You submitted the preview')}

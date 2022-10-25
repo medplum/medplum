@@ -2,6 +2,7 @@ import { Paper, ScrollArea, Tabs } from '@mantine/core';
 import { Document, useMedplum } from '@medplum/react';
 import React, { useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { InfoBar } from '../components/InfoBar';
 import { getProjectId } from '../utils';
 
 const tabs = ['Details', 'Users', 'Patients', 'Clients', 'Bots', 'Secrets', 'Sites'];
@@ -25,14 +26,12 @@ export function ProjectPage(): JSX.Element {
   return (
     <>
       <Paper>
-        <ScrollArea>
-          <div className="medplum-resource-header">
-            <dl>
-              <dt>Project</dt>
-              <dd>{result.project.name}</dd>
-            </dl>
-          </div>
-        </ScrollArea>
+        <InfoBar>
+          <InfoBar.Entry>
+            <InfoBar.Key>Project</InfoBar.Key>
+            <InfoBar.Value>{result.project.name}</InfoBar.Value>
+          </InfoBar.Entry>
+        </InfoBar>
         <ScrollArea>
           <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
             <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>

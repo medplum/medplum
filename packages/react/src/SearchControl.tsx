@@ -411,7 +411,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             <tr>
               {checkboxColumn && <th />}
               {fields.map((field) => (
-                <th key={field.name} className="filters">
+                <th key={field.name}>
                   {field.searchParams && (
                     <FilterDescription
                       resourceType={resourceType}
@@ -484,7 +484,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </Center>
       )}
       {outcome && (
-        <div data-testid="search-error" className="medplum-empty-search">
+        <div data-testid="search-error">
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
         </div>
       )}

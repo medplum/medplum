@@ -1,9 +1,8 @@
-import { ScrollArea } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
 import React from 'react';
-import './ResourceHeader.css';
+import { InfoBar } from './InfoBar';
 
 export interface ResourceHeaderProps {
   resource: Resource | Reference<Resource>;
@@ -71,15 +70,13 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
   }
 
   return (
-    <ScrollArea>
-      <div className="medplum-resource-header">
-        {entries.map((entry) => (
-          <dl key={entry.key}>
-            <dt>{entry.key}</dt>
-            <dd>{entry.value}</dd>
-          </dl>
-        ))}
-      </div>
-    </ScrollArea>
+    <InfoBar>
+      {entries.map((entry) => (
+        <InfoBar.Entry key={entry.key}>
+          <InfoBar.Key>{entry.key}</InfoBar.Key>
+          <InfoBar.Value>{entry.value}</InfoBar.Value>
+        </InfoBar.Entry>
+      ))}
+    </InfoBar>
   );
 }

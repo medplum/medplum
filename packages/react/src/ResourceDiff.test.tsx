@@ -21,10 +21,10 @@ describe('ResourceDiff', () => {
 
     const removed = screen.getByText('"active": false');
     expect(removed).toBeDefined();
-    expect(removed.className).toEqual('medplum-diff-removed');
+    expect(removed).toHaveStyle('color: rgb(240, 62, 62);');
 
     const added = screen.getByText('"active": true');
     expect(added).toBeDefined();
-    expect(added.className).toEqual('medplum-diff-added');
+    expect(added).toHaveStyle('color: rgb(55, 178, 77);');
   });
 });

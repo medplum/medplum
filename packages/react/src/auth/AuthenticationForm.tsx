@@ -1,6 +1,18 @@
-import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Anchor,
+  Button,
+  Center,
+  Checkbox,
+  Divider,
+  Group,
+  PasswordInput,
+  Stack,
+  TextInput,
+} from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { IconAlertCircle } from '@tabler/icons';
 import React, { useState } from 'react';
 import { Form } from '../Form';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton';
@@ -60,13 +72,13 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
     >
       <Center sx={{ flexDirection: 'column' }}>{props.children}</Center>
       {issues && (
-        <div className="medplum-input-error">
+        <Alert icon={<IconAlertCircle size={16} />} color="red">
           {issues.map((issue) => (
             <div data-testid="text-field-error" key={issue.details?.text}>
               {issue.details?.text}
             </div>
           ))}
-        </div>
+        </Alert>
       )}
       {googleClientId && (
         <>
