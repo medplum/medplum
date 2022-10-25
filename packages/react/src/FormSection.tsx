@@ -14,6 +14,7 @@ export interface FormSectionProps {
 export function FormSection(props: FormSectionProps): JSX.Element {
   return (
     <Input.Wrapper
+      id={props.htmlFor}
       label={props.title}
       description={props.description}
       error={getErrorsForInput(props.outcome, props.htmlFor)}

@@ -13,7 +13,7 @@ export function CheckboxFormSection(props: CheckboxFormSectionProps): JSX.Elemen
     <Group noWrap>
       <div>{props.children}</div>
       <div>
-        <Input.Wrapper label={props.title} description={props.description}>
+        <Input.Wrapper id={props.htmlFor} label={props.title} description={props.description}>
           {(() => null)()}
         </Input.Wrapper>
       </div>
