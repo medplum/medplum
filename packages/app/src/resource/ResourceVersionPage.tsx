@@ -1,4 +1,4 @@
-import { Container, Paper, Tabs, Text } from '@mantine/core';
+import { Container, Paper, Tabs, Text, Title } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -38,7 +38,7 @@ export function ResourceVersionPage(): JSX.Element {
   if (!historyBundle) {
     return (
       <Document>
-        <h1>Resource not found</h1>
+        <Title>Resource not found</Title>
         <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );
@@ -49,7 +49,7 @@ export function ResourceVersionPage(): JSX.Element {
   if (index === -1) {
     return (
       <Document>
-        <h1>Version not found</h1>
+        <Title>Version not found</Title>
         <MedplumLink to={`/${resourceType}/${id}`}>Return to resource</MedplumLink>
       </Document>
     );

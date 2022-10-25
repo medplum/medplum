@@ -1,4 +1,4 @@
-import { Text } from '@mantine/core';
+import { Title } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
 import { RegisterForm } from '../auth/RegisterForm';
@@ -15,9 +15,7 @@ export function Basic(): JSX.Element {
   return (
     <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
       <Logo size={32} />
-      <Text size="lg" weight={500}>
-        Register new account
-      </Text>
+      <Title>Register new account</Title>
     </RegisterForm>
   );
 }
@@ -27,9 +25,7 @@ export function WithFooter(): JSX.Element {
     <>
       <RegisterForm type="project" recaptchaSiteKey={recaptchaSiteKey} onSuccess={() => alert('Registered!')}>
         <Logo size={32} />
-        <Text size="lg" weight={500}>
-          Register new account
-        </Text>
+        <Title>Register new account</Title>
       </RegisterForm>
     </>
   );
@@ -45,9 +41,7 @@ export function WithGoogle(): JSX.Element {
         googleClientId="xyz"
       >
         <Logo size={32} />
-        <Text size="lg" weight={500}>
-          Register new account
-        </Text>
+        <Title>Register new account</Title>
       </RegisterForm>
     </>
   );

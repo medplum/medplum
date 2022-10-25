@@ -1,4 +1,4 @@
-import { Anchor, Button, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -58,7 +58,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
           .catch(setOutcome);
       }}
     >
-      <div className="medplum-center">{props.children}</div>
+      <Center sx={{ flexDirection: 'column' }}>{props.children}</Center>
       {issues && (
         <div className="medplum-input-error">
           {issues.map((issue) => (

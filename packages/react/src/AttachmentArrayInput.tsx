@@ -38,7 +38,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             <td>
               <AttachmentDisplay value={v} maxWidth={200} />
             </td>
-            <td className="medplum-right">
+            <td>
               <ActionIcon
                 title="Remove"
                 size="sm"
@@ -56,7 +56,7 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
         ))}
         <tr>
           <td></td>
-          <td className="medplum-right">
+          <td>
             <AttachmentButton
               onUpload={(attachment: Attachment) => {
                 setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);

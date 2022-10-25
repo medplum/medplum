@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -25,7 +26,7 @@ export function BulkAppPage(): JSX.Element {
   if (questionnaires.length === 0) {
     return (
       <Document>
-        <h1>No apps for {resourceType}</h1>
+        <Title>No apps for {resourceType}</Title>
         <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );

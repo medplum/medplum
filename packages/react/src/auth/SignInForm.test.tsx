@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
@@ -150,7 +151,7 @@ async function setup(args?: SignInFormProps): Promise<void> {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <SignInForm {...props}>
-            <h1>Sign in to Medplum</h1>
+            <Title>Sign in to Medplum</Title>
           </SignInForm>
         </MedplumProvider>
       </MemoryRouter>

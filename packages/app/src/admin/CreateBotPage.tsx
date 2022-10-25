@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, Group, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -16,7 +16,7 @@ export function CreateBotPage(): JSX.Element {
 
   return (
     <>
-      <h1>Create new Bot</h1>
+      <Title>Create new Bot</Title>
       <Form
         onSubmit={() => {
           const body = {
@@ -54,12 +54,9 @@ export function CreateBotPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="medplum-right">
-              <div></div>
-              <div>
-                <Button type="submit">Create Bot</Button>
-              </div>
-            </div>
+            <Group position="right">
+              <Button type="submit">Create Bot</Button>
+            </Group>
           </>
         )}
         {success && (

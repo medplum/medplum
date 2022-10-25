@@ -1,4 +1,4 @@
-import { Button, Group, Stack, Text, TextInput } from '@mantine/core';
+import { Button, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
@@ -31,10 +31,10 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         }
       }}
     >
-      <div className="medplum-center">
+      <Center sx={{ flexDirection: 'column' }}>
         <Logo size={32} />
-        <h1>Create project</h1>
-      </div>
+        <Title>Create project</Title>
+      </Center>
       <Stack spacing="xl">
         <TextInput
           name="projectName"

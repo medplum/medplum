@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { Document, MedplumLink, useMedplum } from '@medplum/react';
@@ -14,7 +15,7 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
   if (questionnaires.length === 0) {
     return (
       <Document>
-        <h1>Apps</h1>
+        <Title>Apps</Title>
         <p>
           No apps found. Contact your administrator or <a href="mailto:support@medplum.com">Medplum Support</a> to add
           automation here.

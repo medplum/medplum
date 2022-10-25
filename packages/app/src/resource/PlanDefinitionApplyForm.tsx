@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Title } from '@mantine/core';
 import { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -48,7 +48,7 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
           .catch(console.log);
       }}
     >
-      <h1>Start "{props.planDefinition.title}"</h1>
+      <Title>Start "{props.planDefinition.title}"</Title>
       <p>
         Use the <strong>Apply</strong> operation to create a group of tasks for a workflow.
       </p>

@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { DescriptionList, DescriptionListEntry, useMedplum } from '@medplum/react';
 import React from 'react';
 import { getProjectId } from '../utils';
@@ -9,7 +10,7 @@ export function ProjectDetailsPage(): JSX.Element {
 
   return (
     <>
-      <h1>Details</h1>
+      <Title>Details</Title>
       <DescriptionList>
         <DescriptionListEntry term="ID">{result.project.id}</DescriptionListEntry>
         <DescriptionListEntry term="Name">{result.project.name}</DescriptionListEntry>

@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID, webcrypto } from 'crypto';
@@ -118,7 +119,7 @@ async function setup(props: RegisterFormProps): Promise<void> {
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
           <RegisterForm {...props}>
-            <h1>My Register Form</h1>
+            <Title>My Register Form</Title>
           </RegisterForm>
         </MedplumProvider>
       </MemoryRouter>

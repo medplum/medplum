@@ -1,4 +1,4 @@
-import { Button, Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
@@ -178,7 +178,7 @@ export function ResourcePage(): JSX.Element {
   if (error && isGone(error)) {
     return (
       <Document>
-        <h1>Deleted</h1>
+        <Title>Deleted</Title>
         <p>The resource was deleted.</p>
         <Button color="red" onClick={restoreResource}>
           Restore
@@ -190,7 +190,7 @@ export function ResourcePage(): JSX.Element {
   if (!value || !historyBundle) {
     return (
       <Document>
-        <h1>Resource not found</h1>
+        <Title>Resource not found</Title>
         <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );

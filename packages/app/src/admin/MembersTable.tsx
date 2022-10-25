@@ -43,8 +43,8 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
       <thead>
         <tr>
           <th>Name</th>
-          {props.showRole && <th className="medplum-center">Role</th>}
-          <th className="medplum-center">Actions</th>
+          {props.showRole && <th>Role</th>}
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -53,8 +53,8 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
             <td>
               <ResourceBadge value={member.profile} link={true} />
             </td>
-            {props.showRole && <td className="medplum-center">{member.role}</td>}
-            <td className="medplum-center">
+            {props.showRole && <td>{member.role}</td>}
+            <td>
               <MedplumLink to={`/admin/members/${member.id}`}>Access</MedplumLink>
             </td>
           </tr>

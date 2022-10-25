@@ -1,4 +1,4 @@
-import { createStyles, Group, Stack, Text } from '@mantine/core';
+import { createStyles, Group, Stack, Text, Title } from '@mantine/core';
 import { capitalize, formatDateTime } from '@medplum/core';
 import {
   DiagnosticReport,
@@ -66,9 +66,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
   return (
     <Stack>
-      <Text size="lg" weight={500}>
-        Diagnostic Report
-      </Text>
+      <Title>Diagnostic Report</Title>
       <Group mt="md" spacing={30}>
         {diagnosticReport.subject && (
           <div>

@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { IndexedStructureDefinition } from '@medplum/core';
 import { OperationOutcome, ProjectSite } from '@medplum/fhirtypes';
@@ -47,7 +47,7 @@ export function SitesPage(): JSX.Element {
           });
       }}
     >
-      <h1>Project Sites</h1>
+      <Title>Project Sites</Title>
       <p>Use project sites configure your project on a separate domain.</p>
       <ResourcePropertyInput
         property={schema.types['Project'].properties['site']}

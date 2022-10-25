@@ -1,3 +1,4 @@
+import { Group, Title } from '@mantine/core';
 import { MedplumLink, useMedplum } from '@medplum/react';
 import React from 'react';
 import { getProjectId } from '../utils';
@@ -11,14 +12,14 @@ export function UsersPage(): JSX.Element {
 
   return (
     <>
-      <h1>Users</h1>
+      <Title>Users</Title>
       <MemberTable
         members={result.members.filter((member: ProjectMember) => roles.includes(member.role))}
         showRole={true}
       />
-      <div className="medplum-right">
+      <Group position="right">
         <MedplumLink to={`/admin/invite`}>Invite new user</MedplumLink>
-      </div>
+      </Group>
     </>
   );
 }

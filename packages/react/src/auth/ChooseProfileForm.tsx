@@ -1,4 +1,4 @@
-import { Avatar, Group, Stack, Text, UnstyledButton } from '@mantine/core';
+import { Avatar, Center, Group, Stack, Text, Title, UnstyledButton } from '@mantine/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React from 'react';
 import { Logo } from '../Logo';
@@ -14,12 +14,10 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
     <Stack>
-      <div className="medplum-center">
+      <Center sx={{ flexDirection: 'column' }}>
         <Logo size={32} />
-        <Text size="lg" weight={500}>
-          Choose profile
-        </Text>
-      </div>
+        <Title>Choose profile</Title>
+      </Center>
       {props.memberships.map((membership: ProjectMembership) => (
         <UnstyledButton
           key={membership.id}

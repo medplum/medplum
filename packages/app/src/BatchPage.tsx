@@ -1,4 +1,4 @@
-import { Button, Group, JsonInput } from '@mantine/core';
+import { Button, Group, JsonInput, Title } from '@mantine/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -28,7 +28,7 @@ export function BatchPage(): JSX.Element {
   const [output, setOutput] = useState<Bundle>();
   return (
     <Document>
-      <h1>Batch Create</h1>
+      <Title>Batch Create</Title>
       <p>
         Use this page to create, read, or update multiple resources. For more details, see&nbsp;
         <a href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</a>.

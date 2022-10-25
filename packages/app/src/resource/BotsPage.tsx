@@ -1,4 +1,4 @@
-import { Button, Group } from '@mantine/core';
+import { Button, Group, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
@@ -43,7 +43,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
 
   return (
     <Document>
-      <h1>Bots</h1>
+      <Title>Bots</Title>
       {subscriptions.length === 0 && <p>No bots found.</p>}
       {subscriptions.map((subscription) => (
         <div key={subscription.id}>
@@ -54,7 +54,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
         </div>
       ))}
       <hr />
-      <h1>Connect to bot</h1>
+      <Title>Connect to bot</Title>
       <Group>
         <ResourceInput name="bot" resourceType="Bot" onChange={setConnectBot} />
         <Button onClick={connectToBot}>Connect</Button>

@@ -1,4 +1,4 @@
-import { Button, TextInput } from '@mantine/core';
+import { Button, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, Form, FormSection, useMedplum } from '@medplum/react';
@@ -38,7 +38,7 @@ export function SuperAdminPage(): JSX.Element {
 
   return (
     <Document width={600}>
-      <h1>Super Admin</h1>
+      <Title>Super Admin</Title>
       <hr />
       <h2>Structure Definitions</h2>
       <p>
