@@ -1480,6 +1480,27 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Executes the validate operation with the provided resource.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.validateResource({
+   *   resourceType: 'Patient',
+   *   name: [{ given: ['Alice'], family: 'Smith' }],
+   * });
+   * ```
+   *
+   * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
+   *
+   * @param resource The FHIR resource.
+   * @returns The validate operation outcome.
+   */
+  validateResource<T extends Resource>(resource: T): Promise<OperationOutcome> {
+    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource);
+  }
+
+  /**
    * Executes a batch or transaction of FHIR operations.
    *
    * Example:
