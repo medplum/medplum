@@ -2,6 +2,9 @@
 sidebar_position: 2
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/validate-a-resource.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Validate a resource
 
 Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
@@ -26,12 +29,9 @@ curl 'https://api.medplum.com/fhir/R4/Patient/$validate' \
 
 The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `validateResource` convenience method:
 
-```ts
-const result = await medplum.validateResource({
-  resourceType: 'Patient',
-  name: [{ given: ['Alice'], family: 'Smith' }],
-});
-```
+<MedplumCodeBlock language="ts" selectBlocks="validate" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ### Valid Response
 
