@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "0.10.2",
+  "version": "1.0.0",
   "description": "Medplum Code Examples",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -15,7 +15,7 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "0.10.2",
-    "@medplum/core": "0.10.2"
+    "@medplum/fhirtypes": "1.0.0",
+    "@medplum/core": "1.0.0"
   }
 }
