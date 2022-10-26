@@ -1,13 +1,14 @@
 import {
   badRequest,
   Filter,
+  forbidden,
   getReferenceString,
   LRUCache,
   normalizeErrorString,
   Operator,
   SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { OperationOutcome, Project, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import {
@@ -111,33 +112,33 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    const introspection = isIntrospectionQuery(query);
-    let result = introspection && introspectionResults.get(query);
-    if (!result) {
-      result = await execute({
-        schema,
-        document,
-        contextValue: { res },
-        operationName,
-        variableValues: variables,
-      });
-    }
-
-    if (introspection) {
-      introspectionResults.set(query, result);
-      res.set('Cache-Control', 'public, max-age=31536000');
-    } else {
-      const repo = res.locals.repo as Repository;
-      result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
-    }
-
-    const status = result.data ? 200 : 400;
-    res.status(status).json(result);
-  } catch (err) {
-    console.log('Unhandled graphql error', err);
-    res.sendStatus(500);
+  const introspection = isIntrospectionQuery(query);
+  if (introspection && !(res.locals.project as Project).features?.includes('graphql-introspection')) {
+    sendOutcome(res, forbidden);
+    return;
   }
+
+  let result = introspection && introspectionResults.get(query);
+  if (!result) {
+    result = await execute({
+      schema,
+      document,
+      contextValue: { res },
+      operationName,
+      variableValues: variables,
+    });
+  }
+
+  if (introspection) {
+    introspectionResults.set(query, result);
+    res.set('Cache-Control', 'public, max-age=31536000');
+  } else {
+    const repo = res.locals.repo as Repository;
+    result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
+  }
+
+  const status = result.data ? 200 : 400;
+  res.status(status).json(result);
 });
 
 /**
