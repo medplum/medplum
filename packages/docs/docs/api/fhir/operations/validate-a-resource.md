@@ -4,4 +4,70 @@ sidebar_position: 2
 
 # Validate a resource
 
-_Coming Soon_
+Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
+
+> This operation may be used during design and development to validate application design. It can also be used at run-time. One possible use might be that a client asks the server whether a proposed update is valid as the user is editing a dialog and displays an updated error to the user. The operation can be used as part of a light-weight two phase commit protocol but there is no expectation that the server will hold the content of the resource after this operation is used, or that the server guarantees to successfully perform an actual create, update or delete after the validation operation completes.
+
+## Invoke the validate operation
+
+```
+[base]/[Resource]/$validate
+```
+
+For example:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Patient/$validate' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"resourceType":"Patient"}'
+```
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `validateResource` convenience method:
+
+```ts
+const result = await medplum.validateResource({
+  resourceType: 'Patient',
+  name: [{ given: ['Alice'], family: 'Smith' }],
+});
+```
+
+### Valid Response
+
+Example outcome when the resource is valid:
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "id": "ok",
+  "issue": [
+    {
+      "severity": "information",
+      "code": "informational",
+      "details": {
+        "text": "All OK"
+      }
+    }
+  ]
+}
+```
+
+### Invalid Response
+
+Example outcome when the resource is not valid:
+
+```json
+{
+  "resourceType": "OperationOutcome",
+  "id": "3820fda7-c6d4-4207-b597-90631f0881f9",
+  "issue": [
+    {
+      "severity": "error",
+      "code": "structure",
+      "details": { "text": "Invalid additional property \"Patient.foo\"" },
+      "expression": ["Patient.foo"]
+    }
+  ]
+}
+```

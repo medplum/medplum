@@ -791,6 +791,14 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/xyz');
   });
 
+  test('Validate resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.validateResource({ resourceType: 'Patient' });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/$validate');
+  });
+
   test('Request schema', async () => {
     const client = new MedplumClient(defaultOptions);
     expect(client.getSchema()).toBeDefined();
