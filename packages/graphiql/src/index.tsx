@@ -1,9 +1,11 @@
+import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+
 import 'regenerator-runtime/runtime.js';
 
 import 'graphiql/graphiql.css';
@@ -57,13 +59,17 @@ const theme: MantineThemeOverride = {
   },
 };
 
+function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+  if (params.operationName === 'IntrospectionQuery') {
+    return fetch('/schema/schema-v1.json').then((res) => res.json());
+  }
+  return medplum.graphql(params.query, params.operationName, params.variables);
+}
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL
-      fetcher={async (params) => medplum.graphql(params.query, params.operationName, params.variables)}
-      defaultQuery={HELP_TEXT}
-    />
+    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />

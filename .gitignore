@@ -19,6 +19,7 @@ packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
 packages/generator/dist/
 packages/graphiql/dist/
+packages/graphiql/public/
 packages/infra/dist/
 packages/mock/dist/
 packages/seeder/dist/
