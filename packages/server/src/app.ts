@@ -39,6 +39,7 @@ import { closeWorkers, initWorkers } from './workers';
 function standardHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Disables all caching
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
 
   if (getConfig().baseUrl.startsWith('https://')) {
     // Only connect to this site and subdomains via HTTPS for the next two years

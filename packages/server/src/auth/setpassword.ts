@@ -6,6 +6,7 @@ import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { timingSafeEqualStr } from '../oauth/utils';
 
 export const setPasswordValidators = [
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -27,7 +28,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
     return;
   }
 
-  if (pcr.secret !== req.body.secret) {
+  if (!timingSafeEqualStr(pcr.secret as string, req.body.secret)) {
     sendOutcome(res, badRequest('Incorrect secret'));
     return;
   }
