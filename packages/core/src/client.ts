@@ -355,6 +355,10 @@ interface RequestCacheEntry {
 }
 
 /**
+ *  <head>
+ *    <meta name="algolia:pageRank" content="100" />
+ *  </head>
+ *
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
  * The client can be used in the browser, in a NodeJS application, or in a Medplum Bot.
