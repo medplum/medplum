@@ -174,7 +174,7 @@ The example `Patient` below has three identifiers: **an SSN and two MRN identifi
 
 ## Search Parameters: Querying Resources
 
-There are many caeses in which a client would like to query resources that fulfill certain criteria. **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification **defines specific search parameters for each resource** that can be used for queries.
+There are many cases in which a client would like to query resources by a certain field value. **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification **defines specific search parameters for each resource** that can be used for queries.
 
 You can find the search parameters on the [reference page](./api/fhir/resources) for each resource. **Refer to the [FHIR Search](https://www.hl7.org/fhir/search.html) documentation** for how construct search queries using these parameters.
 
