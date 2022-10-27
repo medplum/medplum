@@ -61,18 +61,33 @@ publicRoutes.get('/metadata', (_req: Request, res: Response) => {
 });
 
 // SMART-on-FHIR configuration
-// See:
-// 1) https://www.hl7.org/fhir/smart-app-launch/conformance/index.html
-// 2) https://www.hl7.org/fhir/uv/bulkdata/authorization/index.html
+// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
 publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Response) => {
   const config = getConfig();
   res
     .status(200)
     .contentType('application/json')
     .json({
+      issuer: config.issuer,
+      jwks_uri: config.jwksUrl,
       authorization_endpoint: config.authorizeUrl,
+      grant_types_supported: ['authorization_code', 'client_credentials'],
       token_endpoint: config.tokenUrl,
+      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+      scopes_supported: [
+        'patient/*.rs',
+        'user/*.cruds',
+        'openid',
+        'fhirUser',
+        'launch',
+        'launch/patient',
+        'offline_access',
+        'online_access',
+      ],
+      response_types_supported: ['code'],
       capabilities: [
+        'authorize-post',
+        'permission-v2',
         'client-confidential-symmetric',
         'client-public',
         'context-banner',
@@ -88,6 +103,7 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
       ],
       token_endpoint_auth_methods: ['private_key_jwt'],
       token_endpoint_auth_signing_alg_values_supported: ['RS256'],
+      code_challenge_methods_supported: ['S256'],
     });
 });
 

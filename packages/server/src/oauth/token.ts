@@ -102,14 +102,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     scope: scope,
   });
 
-  res.status(200).json({
-    token_type: 'Bearer',
-    access_token: accessToken,
-    expires_in: 3600,
-    project: membership.project,
-    profile: membership.profile,
-    scope,
-  });
+  sendTokenResponse(res, membership, scope, accessToken);
 }
 
 /**
@@ -196,16 +189,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
 
   const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
 
-  res.status(200).json({
-    token_type: 'Bearer',
-    scope: login.scope,
-    expires_in: 3600,
-    id_token: token.idToken,
-    access_token: token.accessToken,
-    refresh_token: token.refreshToken,
-    project: membership.project,
-    profile: membership.profile,
-  });
+  sendTokenResponse(res, membership, login.scope as string, token.accessToken, token.idToken, token.refreshToken);
 }
 
 /**
@@ -213,47 +197,53 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-6
  * @param req The HTTP request.
  * @param res The HTTP response.
- * @returns Async promise to the response.
  */
-async function handleRefreshToken(req: Request, res: Response): Promise<Response> {
+async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   const refreshToken = req.body.refresh_token;
   if (!refreshToken) {
-    return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
+    sendTokenError(res, 'invalid_request', 'Invalid refresh token');
+    return;
   }
 
   let claims: MedplumRefreshTokenClaims;
   try {
     claims = (await verifyJwt(refreshToken)).payload as MedplumRefreshTokenClaims;
   } catch (err) {
-    return sendTokenError(res, 'invalid_request', 'Invalid refresh token');
+    sendTokenError(res, 'invalid_request', 'Invalid refresh token');
+    return;
   }
 
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined) {
     // This token does not have a refresh available
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
+    sendTokenError(res, 'invalid_request', 'Invalid token');
+    return;
   }
 
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
   if (!timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
+    sendTokenError(res, 'invalid_request', 'Invalid token');
+    return;
   }
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
     if (!authHeader.startsWith('Basic ')) {
-      return sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+      sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+      return;
     }
     const base64Credentials = authHeader.split(' ')[1];
     const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
     const [clientId, clientSecret] = credentials.split(':');
     if (clientId !== resolveId(login.client)) {
-      return sendTokenError(res, 'invalid_grant', 'Incorrect client');
+      sendTokenError(res, 'invalid_grant', 'Incorrect client');
+      return;
     }
     if (!clientSecret) {
-      return sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
+      sendTokenError(res, 'invalid_grant', 'Incorrect client secret');
+      return;
     }
   }
 
@@ -273,19 +263,11 @@ async function handleRefreshToken(req: Request, res: Response): Promise<Response
   const token = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
 
   if (!token) {
-    return sendTokenError(res, 'invalid_request', 'Invalid token');
+    sendTokenError(res, 'invalid_request', 'Invalid token');
+    return;
   }
 
-  return res.status(200).json({
-    token_type: 'Bearer',
-    scope: login.scope,
-    expires_in: 3600,
-    id_token: token.idToken,
-    access_token: token.accessToken,
-    refresh_token: token.refreshToken,
-    project: membership.project,
-    profile: membership.profile,
-  });
+  sendTokenResponse(res, membership, login.scope as string, token.accessToken, token.idToken, token.refreshToken);
 }
 
 function getClientIdAndSecret(req: Request): { invalidAuthHeader?: boolean; clientId?: string; clientSecret?: string } {
@@ -331,6 +313,32 @@ async function validateClientIdAndSecret(
   }
 
   return client;
+}
+
+function sendTokenResponse(
+  res: Response,
+  membership: ProjectMembership,
+  scope: string,
+  accessToken: string,
+  idToken?: string,
+  refreshToken?: string
+): void {
+  let patient = undefined;
+  if (membership.profile?.reference?.startsWith('Patient/')) {
+    patient = membership.profile.reference.replace('Patient/', '');
+  }
+
+  res.status(200).json({
+    token_type: 'Bearer',
+    expires_in: 3600,
+    scope,
+    id_token: idToken,
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    project: membership.project,
+    profile: membership.profile,
+    patient,
+  });
 }
 
 /**

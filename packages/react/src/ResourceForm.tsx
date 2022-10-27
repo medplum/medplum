@@ -56,7 +56,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
         outcome={props.outcome}
         onChange={setValue}
       />
-      <Group>
+      <Group position="right" mt="xl">
         <Button type="submit">OK</Button>
         {props.onDelete && (
           <Button
