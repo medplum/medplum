@@ -266,6 +266,7 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     entity: [
       {
         what: createReference(bot),
+        role: { code: '9', display: 'Subscriber' },
       },
     ],
     outcome,
