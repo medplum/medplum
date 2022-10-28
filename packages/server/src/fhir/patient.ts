@@ -1,6 +1,7 @@
-import { createReference, evalFhirPath } from '@medplum/core';
+import { createReference, evalFhirPath, resolveId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { CompartmentDefinition, CompartmentDefinitionResource, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import validator from 'validator';
 import { getSearchParameter } from './structure';
 
 /**
@@ -87,7 +88,10 @@ function getPatientFromUnknownValue(value: unknown): Reference<Patient> | undefi
  */
 function getPatientIdFromReference(reference: Reference): Reference<Patient> | undefined {
   if (reference.reference?.startsWith('Patient/')) {
-    return reference as Reference<Patient>;
+    const patientId = resolveId(reference);
+    if (patientId && validator.isUUID(patientId)) {
+      return reference as Reference<Patient>;
+    }
   }
   return undefined;
 }
