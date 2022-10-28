@@ -63,6 +63,12 @@ describe('OAuthPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
+    await waitFor(() => expect(screen.getByText('Choose scope')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set scope' }));
+    });
+
     await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
     expect(window.location.assign).toHaveBeenCalled();
   });
