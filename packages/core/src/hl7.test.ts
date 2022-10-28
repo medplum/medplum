@@ -1,6 +1,15 @@
-import { Hl7Message, Hl7Segment } from './hl7';
+import { Hl7Field, Hl7Message, Hl7Segment } from './hl7';
 
 describe('HL7', () => {
+  test('Unsupported encoding', () => {
+    expect(() => Hl7Message.parse('xyz')).toThrow();
+  });
+
+  test('Default context', () => {
+    expect(Hl7Segment.parse('MSA|AA|123').toString()).toBe('MSA|AA|123');
+    expect(Hl7Field.parse('x1^x2^x3~y1^y2^y3').toString()).toBe('x1^x2^x3~y1^y2^y3');
+  });
+
   test('Minimal', () => {
     const text = 'MSH|^~\\&';
     const msg = Hl7Message.parse(text);
