@@ -12,6 +12,12 @@ export interface SmartScope {
   readonly scope: string;
 }
 
+/**
+ * Parses an OAuth scope string into a list of SMART scopes.
+ * Only includes SMART scopes, all other scopes are ignored.
+ * @param scope The OAuth scope string.
+ * @returns Array of SMART scopes.
+ */
 export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   const result: SmartScope[] = [];
 
@@ -31,6 +37,15 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   return result;
 }
 
+/**
+ * Applies SMART scopes to an AccessPolicy.
+ * If there are no SMART scopes, the AccessPolicy is returned unmodified.
+ * If there is no access policy, a new one is created.
+ * Otherwise, the AccessPolicy is modified to only include the SMART scopes.
+ * @param accessPolicy The original access policy.
+ * @param scope The OAuth scope string.
+ * @returns Updated access policy with the OAuth scope applied.
+ */
 export function applySmartScopes(
   accessPolicy: AccessPolicy | undefined,
   scope: string | undefined
