@@ -1,11 +1,11 @@
-import { createReference, getReferenceString, Operator, ProfileResource, resolveId } from '@medplum/core';
+import { createReference, Operator, ProfileResource, resolveId } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { systemRepo } from '../fhir/repo';
-import { generateAccessToken, generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
+import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
+import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr, TokenResult } from './utils';
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -80,7 +80,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
 
   const membership = memberships[0];
 
-  const scope = req.body.scope as string;
+  const scope = (req.body.scope || 'openid') as string;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -91,18 +91,11 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authTime: new Date().toISOString(),
     granted: true,
     scope,
+    refreshSecret: generateSecret(48),
   });
 
-  const accessToken = await generateAccessToken({
-    login_id: login?.id as string,
-    client_id: client.id as string,
-    sub: client.id as string,
-    username: client.id as string,
-    profile: getReferenceString(client),
-    scope: scope,
-  });
-
-  sendTokenResponse(res, membership, scope, accessToken);
+  const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
+  sendTokenResponse(res, membership, scope, token);
 }
 
 /**
@@ -186,10 +179,8 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-
   const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
-
-  sendTokenResponse(res, membership, login.scope as string, token.accessToken, token.idToken, token.refreshToken);
+  sendTokenResponse(res, membership, login.scope as string, token);
 }
 
 /**
@@ -261,13 +252,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   );
 
   const token = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
-
-  if (!token) {
-    sendTokenError(res, 'invalid_request', 'Invalid token');
-    return;
-  }
-
-  sendTokenResponse(res, membership, login.scope as string, token.accessToken, token.idToken, token.refreshToken);
+  sendTokenResponse(res, membership, login.scope as string, token);
 }
 
 function getClientIdAndSecret(req: Request): { invalidAuthHeader?: boolean; clientId?: string; clientSecret?: string } {
@@ -315,14 +300,14 @@ async function validateClientIdAndSecret(
   return client;
 }
 
-function sendTokenResponse(
-  res: Response,
-  membership: ProjectMembership,
-  scope: string,
-  accessToken: string,
-  idToken?: string,
-  refreshToken?: string
-): void {
+/**
+ * Sends a successful token response.
+ * @param res The HTTP response.
+ * @param membership The project membership.
+ * @param scope The OAuth2 scope string.
+ * @param tokens The tokens to send.
+ */
+function sendTokenResponse(res: Response, membership: ProjectMembership, scope: string, tokens: TokenResult): void {
   let patient = undefined;
   if (membership.profile?.reference?.startsWith('Patient/')) {
     patient = membership.profile.reference.replace('Patient/', '');
@@ -332,9 +317,9 @@ function sendTokenResponse(
     token_type: 'Bearer',
     expires_in: 3600,
     scope,
-    id_token: idToken,
-    access_token: accessToken,
-    refresh_token: refreshToken,
+    id_token: tokens.idToken,
+    access_token: tokens.accessToken,
+    refresh_token: tokens.refreshToken,
     project: membership.project,
     profile: membership.profile,
     patient,

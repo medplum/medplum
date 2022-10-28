@@ -5,6 +5,7 @@ import { Document } from '../Document';
 import { useMedplum } from '../MedplumProvider';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
+import { ChooseScopeForm } from './ChooseScopeForm';
 import { NewProjectForm } from './NewProjectForm';
 
 export interface SignInFormProps {
@@ -17,6 +18,7 @@ export interface SignInFormProps {
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly resourceType?: string;
+  readonly chooseScopes?: boolean;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
@@ -39,18 +41,30 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     }
 
     if (response.code) {
-      if (props.onCode) {
-        props.onCode(response.code);
+      if (props.chooseScopes) {
+        setMemberships(undefined);
       } else {
-        medplum
-          .processCode(response.code)
-          .then(() => {
-            if (props.onSuccess) {
-              props.onSuccess();
-            }
-          })
-          .catch(console.log);
+        handleCode(response.code as string);
       }
+    }
+  }
+
+  function handleScopeResponse(response: LoginAuthenticationResponse): void {
+    handleCode(response.code as string);
+  }
+
+  function handleCode(code: string): void {
+    if (props.onCode) {
+      props.onCode(code);
+    } else {
+      medplum
+        .processCode(code)
+        .then(() => {
+          if (props.onSuccess) {
+            props.onSuccess();
+          }
+        })
+        .catch(console.log);
     }
   }
 
@@ -80,6 +94,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
           return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.projectId === 'new') {
           return <NewProjectForm login={login} handleAuthResponse={handleAuthResponse} />;
+        } else if (props.chooseScopes) {
+          return <ChooseScopeForm login={login} scope={props.scope} handleAuthResponse={handleScopeResponse} />;
         } else {
           return <div>Success</div>;
         }
