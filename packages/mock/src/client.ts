@@ -232,6 +232,8 @@ class MockFetchClient {
   }
 
   private mockAuthHandler(method: string, path: string, options: any): any {
+    console.log('CODY mockAuthHandler', method, path);
+
     if (path.startsWith('auth/changepassword')) {
       return this.mockChangePasswordHandler(method, path, options);
     }
