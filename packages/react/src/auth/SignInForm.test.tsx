@@ -79,7 +79,7 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
-  } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
+  } else if (options.method === 'POST' && (url.endsWith('auth/profile') || url.endsWith('auth/scope'))) {
     status = 200;
     result = {
       login: '1',
@@ -288,6 +288,42 @@ describe('SignInForm', () => {
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(success).toBe(true);
+  });
+
+  test('Choose scope', async () => {
+    let success = false;
+
+    await setup({
+      chooseScopes: true,
+      scope: 'openid profile',
+      onSuccess: () => (success = true),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'admin@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'admin' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Choose scope')).toBeDefined());
+    expect(screen.getByText('openid')).toBeInTheDocument();
+    expect(screen.getByText('profile')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Set scope'));
+    });
 
     expect(success).toBe(true);
   });

@@ -248,8 +248,9 @@ class MockFetchClient {
       return this.mockNewUserHandler(method, path, options);
     }
 
-    if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient')) {
+    if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient') || path.startsWith('auth/scope')) {
       return {
+        login: '123',
         code: 'xyz',
       };
     }
@@ -292,6 +293,7 @@ class MockFetchClient {
     const { password } = JSON.parse(body);
     if (password === 'password') {
       return {
+        login: '123',
         code: 'xyz',
       };
     } else {

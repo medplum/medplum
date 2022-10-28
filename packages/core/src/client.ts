@@ -36,7 +36,6 @@ import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
-const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_CACHE_TIME = 60000; // 60 seconds
 const JSON_CONTENT_TYPE = 'application/json';
@@ -670,7 +669,7 @@ export class MedplumClient extends EventTarget {
     return this.post('auth/login', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
-      scope: loginRequest.scope ?? DEFAULT_SCOPE,
+      scope: loginRequest.scope,
       codeChallengeMethod,
       codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
@@ -689,7 +688,7 @@ export class MedplumClient extends EventTarget {
     return this.post('auth/google', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
-      scope: loginRequest.scope ?? DEFAULT_SCOPE,
+      scope: loginRequest.scope,
       codeChallengeMethod,
       codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
@@ -1958,7 +1957,6 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', this.#clientId);
     url.searchParams.set('redirect_uri', getBaseUrl());
-    url.searchParams.set('scope', DEFAULT_SCOPE);
     url.searchParams.set('code_challenge_method', 'S256');
     url.searchParams.set('code_challenge', sessionStorage.getItem('codeChallenge') as string);
     window.location.assign(url.toString());
