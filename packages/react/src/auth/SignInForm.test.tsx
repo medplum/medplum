@@ -325,8 +325,6 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Set scope'));
     });
 
-    // await waitFor(() => expect(medplum.getProfile()).toBeDefined());
-
     expect(success).toBe(true);
   });
 
