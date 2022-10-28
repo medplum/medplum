@@ -1,12 +1,4 @@
-import {
-  Account,
-  CarePlan,
-  Encounter,
-  ExplanationOfBenefit,
-  Observation,
-  Patient,
-  Reference,
-} from '@medplum/fhirtypes';
+import { Account, CarePlan, ExplanationOfBenefit, Observation, Patient, Reference } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getPatientCompartmentParams, getPatient } from './patient';
