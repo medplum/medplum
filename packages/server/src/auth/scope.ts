@@ -4,7 +4,6 @@ import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { setLoginScope } from '../oauth/utils';
-import { sendLoginCookie } from './utils';
 
 /*
  * The scope handler is used during login to allow a user to select the scope of the login.
@@ -27,9 +26,6 @@ export async function scopeHandler(req: Request, res: Response): Promise<void> {
 
   // Update the login
   const updated = await setLoginScope(login, req.body.scope);
-
-  // Send login cookie
-  sendLoginCookie(res, login);
 
   // Send code
   res.status(200).json({
