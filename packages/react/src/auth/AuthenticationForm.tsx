@@ -63,7 +63,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
               codeChallengeMethod: props.codeChallengeMethod,
               email: formData.email,
               password: formData.password,
-              remember: formData.remember === 'true',
+              remember: formData.remember === 'on',
             })
           )
           .then(props.handleAuthResponse)
@@ -138,7 +138,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
             Register
           </Anchor>
         )}
-        <Checkbox name="remember" label="Remember me" size="xs" />
+        <Checkbox id="remember" name="remember" label="Remember me" size="xs" />
         <Button type="submit">Sign in</Button>
       </Group>
     </Form>

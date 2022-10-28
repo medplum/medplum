@@ -17,15 +17,24 @@ import { MedplumIdTokenClaims, verifyJwt } from './keys';
  * HTTP GET handler for /oauth2/authorize endpoint.
  */
 export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response) => {
-  const validateResult = await validateAuthorizeRequest(req, res);
+  const validateResult = await validateAuthorizeRequest(req, res, req.query);
   if (!validateResult) {
     return;
   }
 
-  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
-  const redirectUrl = new URL(getConfig().appBaseUrl + 'oauth');
-  requestUrl.searchParams.forEach((value: string, name: string) => redirectUrl.searchParams.set(name, value));
-  res.redirect(redirectUrl.toString());
+  sendSuccessRedirect(req, res, req.query);
+});
+
+/**
+ * HTTP POST handler for /oauth2/authorize endpoint.
+ */
+export const authorizePostHandler = asyncWrap(async (req: Request, res: Response) => {
+  const validateResult = await validateAuthorizeRequest(req, res, req.body);
+  if (!validateResult) {
+    return;
+  }
+
+  sendSuccessRedirect(req, res, req.body);
 });
 
 /**
@@ -34,47 +43,47 @@ export const authorizeGetHandler = asyncWrap(async (req: Request, res: Response)
  * We currently only support query string parameters.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
  */
-async function validateAuthorizeRequest(req: Request, res: Response): Promise<boolean> {
+async function validateAuthorizeRequest(req: Request, res: Response, params: Record<string, any>): Promise<boolean> {
   // First validate the client and the redirect URI.
   // If these are invalid, then show an error page.
   let client = undefined;
   try {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', req.query.client_id as string);
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', params.client_id as string);
   } catch (err) {
     res.status(400).send('Client not found');
     return false;
   }
 
-  if (client.redirectUri !== req.query.redirect_uri) {
+  if (client.redirectUri !== params.redirect_uri) {
     res.status(400).send('Incorrect redirect_uri');
     return false;
   }
 
-  const state = req.query.state as string;
+  const state = params.state as string;
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  const scope = req.query.scope as string | undefined;
+  const scope = params.scope as string | undefined;
   if (!scope) {
     sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
     return false;
   }
 
-  const responseType = req.query.response_type;
+  const responseType = params.response_type;
   if (responseType !== 'code') {
     sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', state);
     return false;
   }
 
-  const requestObject = req.query.request as string | undefined;
+  const requestObject = params.request as string | undefined;
   if (requestObject) {
     sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', state);
     return false;
   }
 
-  const codeChallenge = req.query.code_challenge;
+  const codeChallenge = params.code_challenge;
   if (codeChallenge) {
-    const codeChallengeMethod = req.query.code_challenge_method;
+    const codeChallengeMethod = params.code_challenge_method;
     if (!codeChallengeMethod) {
       sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
       return false;
@@ -83,7 +92,7 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
 
   const existingLogin = await getExistingLogin(req, client);
 
-  const prompt = req.query.prompt as string | undefined;
+  const prompt = params.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
     sendErrorRedirect(res, client.redirectUri as string, 'login_required', state);
     return false;
@@ -92,11 +101,11 @@ async function validateAuthorizeRequest(req: Request, res: Response): Promise<bo
   if (prompt !== 'login' && existingLogin) {
     await systemRepo.updateResource<Login>({
       ...existingLogin,
-      nonce: req.query.nonce as string,
+      nonce: params.nonce as string,
       granted: false,
     });
 
-    const redirectUrl = new URL(req.query.redirect_uri as string);
+    const redirectUrl = new URL(params.redirect_uri as string);
     redirectUrl.searchParams.append('code', existingLogin?.code as string);
     redirectUrl.searchParams.append('state', state);
     res.redirect(redirectUrl.toString());
@@ -196,4 +205,18 @@ function sendErrorRedirect(res: Response, redirectUri: string, error: string, st
   url.searchParams.append('error', error);
   url.searchParams.append('state', state);
   res.redirect(url.toString());
+}
+
+/**
+ * Sends a successful redirect.
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @param params The redirect parameters.
+ */
+function sendSuccessRedirect(req: Request, res: Response, params: Record<string, any>): void {
+  const redirectUrl = new URL(getConfig().appBaseUrl + 'oauth');
+  for (const [name, value] of Object.entries(params)) {
+    redirectUrl.searchParams.set(name, value);
+  }
+  res.redirect(redirectUrl.toString());
 }

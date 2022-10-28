@@ -87,11 +87,13 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
       response_types_supported: ['code'],
       capabilities: [
         'authorize-post',
+        'permission-v1',
         'permission-v2',
         'client-confidential-symmetric',
         'client-public',
         'context-banner',
         'context-ehr-patient',
+        'context-ehr-encounter',
         'context-standalone-patient',
         'context-style',
         'launch-ehr',
