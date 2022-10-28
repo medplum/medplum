@@ -1155,7 +1155,10 @@ export class Repository {
 
     const patient = getPatient(resource);
     if (patient) {
-      result.push(patient);
+      const patientId = resolveId(patient);
+      if (patientId && validator.isUUID(patientId)) {
+        result.push(patient);
+      }
     }
 
     return result;
