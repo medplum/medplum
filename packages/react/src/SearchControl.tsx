@@ -267,7 +267,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   const typeSchema = schemaLoaded && globalSchema?.types?.[props.search.resourceType];
   if (!typeSchema) {
-    return <Loader />;
+    return (
+      <Center style={{ width: '100%', height: '100%' }}>
+        <Loader />
+      </Center>
+    );
   }
 
   const checkboxColumn = props.checkboxesEnabled;
