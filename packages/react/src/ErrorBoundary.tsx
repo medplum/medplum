@@ -1,4 +1,6 @@
-import { Title } from '@mantine/core';
+import { Alert } from '@mantine/core';
+import { normalizeErrorString } from '@medplum/core';
+import { IconAlertCircle } from '@tabler/icons';
 import React, { ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
@@ -31,7 +33,11 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   render(): ReactNode {
     if (this.state.error) {
-      return <Title>Something went wrong.</Title>;
+      return (
+        <Alert icon={<IconAlertCircle size={16} />} title="Something went wrong" color="red">
+          {normalizeErrorString(this.state.error)}
+        </Alert>
+      );
     }
 
     return this.props.children;

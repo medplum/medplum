@@ -185,7 +185,7 @@ describe('Admin Invite', () => {
         email: `carol${randomUUID()}@example.com`,
       });
 
-    expect(res3.status).toBe(404);
+    expect(res3.status).toBe(403);
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });

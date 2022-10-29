@@ -1,4 +1,4 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, forbidden } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -25,7 +25,8 @@ projectAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      return res.sendStatus(404);
+      sendOutcome(res, forbidden);
+      return;
     }
 
     const memberships = await getProjectMemberships(project.id as string);
@@ -58,7 +59,7 @@ projectAdminRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -76,7 +77,7 @@ projectAdminRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -94,7 +95,7 @@ projectAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -109,13 +110,13 @@ projectAdminRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
     const resource = req.body;
     if (resource?.resourceType !== 'ProjectMembership' || resource.id !== req.params.membershipId) {
-      res.sendStatus(400);
+      sendOutcome(res, forbidden);
       return;
     }
 
@@ -129,7 +130,7 @@ projectAdminRouter.delete(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 

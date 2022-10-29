@@ -33,7 +33,7 @@ describe('ErrorBoundary', () => {
     );
     expect(screen.getByText('outside')).toBeInTheDocument();
     expect(screen.queryByText('inside')).toBeNull();
-    expect(screen.getByText('Something went wrong.')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
     expect(console.error).toHaveBeenCalled();
   });
 });
