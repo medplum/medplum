@@ -16,20 +16,10 @@ npm --version
 [ ! -d "node_modules" ] && npm ci --legacy-peer-deps
 
 # Build
-BUILD_ORDER=("definitions" "core" "mock" "react" "app" "graphiql" "server" "infra" "examples" "docs" "cli")
-for PACKAGE in ${BUILD_ORDER[@]}; do
-  pushd "packages/$PACKAGE"
-  npm run build
-  popd
-done
+npx turbo run build
 
 # Test
-TEST_ORDER=("core" "mock" "react" "app" "infra" "cli" "server")
-for PACKAGE in ${TEST_ORDER[@]}; do
-  pushd "packages/$PACKAGE"
-  node --expose-gc --trace-uncaught --max_old_space_size=4096 ../../node_modules/jest/bin/jest.js --runInBand --logHeapUsage --coverage
-  popd
-done
+npx turbo run test -- --coverage
 
 # Combine test coverage
 rm -rf coverage

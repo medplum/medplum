@@ -17,8 +17,8 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "1.0.0",
-    "@medplum/fhirtypes": "1.0.0"
+    "@medplum/definitions": "*",
+    "@medplum/fhirtypes": "*"
   },
   "peerDependencies": {
     "pdfmake": "^0.2.5"

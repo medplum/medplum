@@ -17,14 +17,14 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "1.0.0",
-    "@medplum/definitions": "1.0.0",
-    "@medplum/fhirtypes": "1.0.0",
+    "@medplum/core": "*",
+    "@medplum/definitions": "*",
+    "@medplum/fhirtypes": "*",
     "@types/pdfmake": "0.1.21"
   },
   "peerDependencies": {
-    "@medplum/core": "1.0.0",
-    "@medplum/definitions": "1.0.0",
+    "@medplum/core": "*",
+    "@medplum/definitions": "*",
     "fast-json-patch": "^3.1.1"
   },
   "peerDependenciesMeta": {
