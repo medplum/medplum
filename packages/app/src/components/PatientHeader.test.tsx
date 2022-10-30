@@ -127,7 +127,7 @@ describe('PatientHeader', () => {
     const birthDate = new Date();
     birthDate.setUTCHours(0, 0, 0, 0);
     birthDate.setUTCMonth(birthDate.getUTCMonth() - 20);
-    birthDate.setUTCDate(birthDate.getUTCDate() - 1);
+    birthDate.setUTCDate(birthDate.getUTCDate() - 15);
 
     setup({
       resourceType: 'Patient',
@@ -147,7 +147,7 @@ describe('PatientHeader', () => {
     const birthDate = new Date();
     birthDate.setUTCHours(0, 0, 0, 0);
     birthDate.setUTCMonth(birthDate.getUTCMonth() - 20);
-    birthDate.setUTCDate(birthDate.getUTCDate() + 2);
+    birthDate.setUTCDate(birthDate.getUTCDate() + 15);
 
     setup({
       resourceType: 'Patient',

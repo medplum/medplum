@@ -1,4 +1,4 @@
-import { Operator, ProfileResource } from '@medplum/core';
+import { forbidden, Operator, ProfileResource } from '@medplum/core';
 import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
@@ -24,7 +24,7 @@ export const inviteValidators = [
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
-    res.sendStatus(404);
+    sendOutcome(res, forbidden);
     return;
   }
 

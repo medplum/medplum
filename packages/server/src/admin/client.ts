@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { createReference, forbidden } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -12,7 +12,7 @@ export const createClientValidators = [body('name').notEmpty().withMessage('Clie
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
-    res.sendStatus(404);
+    sendOutcome(res, forbidden);
     return;
   }
 
