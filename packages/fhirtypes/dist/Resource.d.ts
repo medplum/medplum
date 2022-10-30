@@ -16,6 +16,7 @@ import { Binary } from './Binary';
 import { BiologicallyDerivedProduct } from './BiologicallyDerivedProduct';
 import { BodyStructure } from './BodyStructure';
 import { Bot } from './Bot';
+import { BulkDataExport } from './BulkDataExport';
 import { Bundle } from './Bundle';
 import { CapabilityStatement } from './CapabilityStatement';
 import { CarePlan } from './CarePlan';
@@ -173,6 +174,7 @@ export type Resource = AccessPolicy
   | BiologicallyDerivedProduct
   | BodyStructure
   | Bot
+  | BulkDataExport
   | Bundle
   | CapabilityStatement
   | CarePlan

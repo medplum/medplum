@@ -65787,5 +65787,24 @@
       "xpath" : "f:AccessPolicy/f:name",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/BulkDataExport-status",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "BulkDataExport-status",
+      "url" : "https://medplum.com/fhir/SearchParameter/BulkDataExport-status",
+      "version" : "4.0.1",
+      "name" : "name",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The name of the access policy",
+      "code" : "status",
+      "base" : ["BulkDataExport"],
+      "type" : "token",
+      "expression" : "BulkDataExport.status",
+      "xpath" : "f:BulkDataExport/f:status",
+      "xpathUsage" : "normal"
+    }
   }]
 }

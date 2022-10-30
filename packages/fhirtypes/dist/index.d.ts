@@ -21,6 +21,7 @@ export * from './Binary';
 export * from './BiologicallyDerivedProduct';
 export * from './BodyStructure';
 export * from './Bot';
+export * from './BulkDataExport';
 export * from './Bundle';
 export * from './CapabilityStatement';
 export * from './CarePlan';
