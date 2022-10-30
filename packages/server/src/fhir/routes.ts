@@ -129,7 +129,7 @@ protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // Group $export operation
-protectedRoutes.get('/Group/:id/([$]|%24)export', groupExportHandler);
+protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
