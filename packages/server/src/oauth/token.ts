@@ -1,11 +1,4 @@
-import {
-  createReference,
-  normalizeErrorString,
-  Operator,
-  parseJWTPayload,
-  ProfileResource,
-  resolveId,
-} from '@medplum/core';
+import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
