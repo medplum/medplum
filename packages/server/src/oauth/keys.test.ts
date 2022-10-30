@@ -187,6 +187,6 @@ describe('Keys', () => {
 
   test('Generate secret', () => {
     expect(generateSecret(16)).toHaveLength(32);
-    expect(generateSecret(48)).toHaveLength(96);
+    expect(generateSecret(32)).toHaveLength(64);
   });
 });

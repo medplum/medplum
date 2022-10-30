@@ -175,7 +175,7 @@ describe('Auth middleware', () => {
     const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
-      secret: generateSecret(48),
+      secret: generateSecret(32),
     });
 
     const res = await request(app)

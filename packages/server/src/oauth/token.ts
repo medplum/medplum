@@ -1,4 +1,11 @@
-import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
+import {
+  createReference,
+  normalizeErrorString,
+  Operator,
+  parseJWTPayload,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
@@ -95,7 +102,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authTime: new Date().toISOString(),
     granted: true,
     scope,
-    refreshSecret: generateSecret(48),
+    refreshSecret: generateSecret(32),
   });
 
   const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
@@ -246,7 +253,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   // Generate a new refresh secret and update the login
   const updatedLogin = await systemRepo.updateResource<Login>({
     ...login,
-    refreshSecret: generateSecret(48),
+    refreshSecret: generateSecret(32),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });

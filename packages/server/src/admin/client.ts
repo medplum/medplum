@@ -45,7 +45,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     },
     resourceType: 'ClientApplication',
     name: request.name,
-    secret: generateSecret(48),
+    secret: generateSecret(32),
     description: request.description,
     redirectUri: request.redirectUri,
   });
