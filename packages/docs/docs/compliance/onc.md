@@ -10,28 +10,40 @@ This section is under construction.
 
 :::
 
-The following tutorial for building an app that meets the requirements for ONC certification.
+The following materials are related to ONC Certification.
 
 ## Materials and Usage
 
-The materials below can help you scope your certification program.
+| Resource Name                 | Description                                          | Access                                                                                                                                                        |
+| ----------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Checklist                     | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
+| Decision Guide                | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
+| Certified Product List (CHPL) | Search tool for certified products                   | [HealthIT.gov](https://chpl.healthit.gov/#/search)                                                                                                            |
+| ONC 2015E Cures Base EHR      | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
+| CMS-specific CEHRT            | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
+| Reference Implementation      | Sample EHR code                                      | [Github](https://github.com/medplum/foomedical-provider)                                                                                                      |
+| Account Setup                 | Example account setup bot                            | [Github](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)                                                         |
+| CMS Queries                   | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
 
-| Resource Name            | Description                                          | Access                                                                                                                                                        |
-| ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Checklist                | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
-| Decision Guide           | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
-| Certified Product List   | Search tool for certified products                   | [HealthIT.gov](https://chpl.healthit.gov/#/search)                                                                                                            |
-| ONC 2015E Cures Base EHR | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
-| CMS-specific CEHRT       | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
-| Reference Implementation | Sample EHR code                                      | [Github](https://github.com/medplum/foomedical-provider)                                                                                                      |
-| Account Setup            | Example account setup bot                            | [Github](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)                                                         |
-| CMS Queries              | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
+## Criteria Shortlist
 
-## Checklist
+This is the list of criteria that are already complete or are in active development. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
 
-Below is a checklist of criteria for ONC Certification. These are the resources for [Medplum Team Only](https://drive.google.com/file/d/1eABY-Bu8ZHpQHfS1JimZ4waHfX1p1EtL/view?usp=sharing)
+| Criteria                                                                      | Description                                                   |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| [a1](#cpoe-medication-a1)                                                     | Computerized Provider Order Entry (CPOE) - Medication         |
+| [a2](#cpoe-laboratory-a2)                                                     | CPOE - Laboratory Orders                                      |
+| [a3](#cpoe-imaging-a3)                                                        | Computerized Provider Order Entry (CPOE) – Diagnostic Imaging |
+| [d1](#authentication-access-control-authorization-d1)                         | Authentication, Access Control, Authorization                 |
+| [d2](#auditable-events-and-tamper-resistant-d2)                               | Auditable events and tamper resistant                         |
+| [d10](#auditing-actions-on-health-information-d10)                            | Auditing actions on Health Information                        |
+| [d12](#encrypt-authentication-credentials-d12)                                | Encrypt Authentication Credentials                            |
+| [d13](#multi-factor-authentication-d13)                                       | Multi-factor Authentication                                   |
+| [g4](#quality-management-system-g4)                                           | Quality Management System                                     |
+| [g5](#accessibility-centered-design-g5)                                       | Accessibility-Centered Design                                 |
+| [g10](#standardized-api-for-patient-and-population-services-cures-update-g10) | Standardized API for Patient and Population Services          |
 
-The following criteria are required for listing: d12, d13, g4, g5.
+The following criteria are required for CHPL listing: [d12](#encrypt-authentication-credentials-d12), [d13](#multi-factor-authentication-d13), [g4](#quality-management-system-g4), [g5](#accessibility-centered-design-g5).
 
 ## Self-Attested Criteria
 
@@ -40,15 +52,15 @@ The following criteria are required for listing: d12, d13, g4, g5.
 - [HealthIt.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications)
 - [Medplum App CPOE](https://app.medplum.com/MedicationRequest/new)
 
-### CPOE Imaging (a3)
-
-- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-diagnostic-imaging)
-- [Medplum App CPOE Imaging](https://app.medplum.com/ImagingStudy/new)
-
 ### CPOE Laboratory (a2)
 
 - [Medplum App CPOE Lab](https://app.medplum.com/ServiceRequest/new)
 - [Lab order form in account setup](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)
+
+### CPOE Imaging (a3)
+
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-diagnostic-imaging)
+- [Medplum App CPOE Imaging](https://app.medplum.com/ImagingStudy/new)
 
 ### Drug-drug, Drug-allergy Interaction Checks (a4)
 
@@ -97,11 +109,25 @@ The following criteria are required for listing: d12, d13, g4, g5.
 
 ### Authentication, Access Control, Authorization (d1)
 
-- [Overview](https://www.medplum.com/docs/tutorials/authentication-and-security)
+To attest to d1, Medplum attests to the following.
+
+- The ability to authenticate the user (authentication)
+- Ability to establish permitted user access (authorization)
+- Related Materials: [Overview](/docs/tutorials/authentication-and-security)
+- Related Materials: [Access Policies](/docs/tutorials/security/access-control)
+- Related Materials: [Inviting a user](/docs/tutorials/app/invite)
 
 ### Auditable Events and Tamper Resistant (d2)
 
-- [Audit Events](https://app.medplum.com/AuditEvent)
+To attest to d2, Medplum attests to the following.
+
+- Demonstrates synchronization to a configured NTP server through use of Amazon Time Sync Service.
+- Audit log records actions related to electronic health information, audit log status, and encryption status.
+- Audit log records the audit log status and/or the encryption status.
+- Audit logging is based off of [AuditEvent] FHIR resources which are written to AWS CloudWatch, write to which is limited to the Medplum team only and to which access and edits are logged.
+- [Audit Log Link](https://app.medplum.com/AuditEvent)
+- Related Material: [Amazon Time Sync Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html)
+- Related Material: [Audit Log Commits and Issues on Github](https://github.com/medplum/medplum/issues?q=label%3Aaudit-logging+)
 - Logging - TODO: Tutorial
 
 ### Audit Report(s) (d3)
@@ -187,6 +213,8 @@ The following criteria are required for listing: d12, d13, g4, g5.
 - [Medplum Terms](https://www.medplum.com/terms)
 
 ## Live Tested Criteria
+
+As it relates to Live Testing, these are the resources for [Medplum team only](https://drive.google.com/file/d/1eABY-Bu8ZHpQHfS1JimZ4waHfX1p1EtL/view?usp=sharing).
 
 ### Transition of Care (b1)
 
