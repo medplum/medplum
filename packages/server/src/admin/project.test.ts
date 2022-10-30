@@ -228,6 +228,49 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res11.status).toBe(403);
+
+    // Try to create a bot using Bob's access token
+    // Should fail
+    const res12 = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/bot')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+      });
+
+    expect(res12.status).toBe(403);
+
+    // Try to update secrets using Bob's access token
+    // Should fail
+    const res13 = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/secrets')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .type('json')
+      .send([
+        {
+          name: 'test_secret',
+          valueString: 'test_value',
+        },
+      ]);
+
+    expect(res13.status).toBe(403);
+
+    // Try to update sites using Bob's access token
+    // Should fail
+    const res14 = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/sites')
+      .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
+      .type('json')
+      .send([
+        {
+          name: 'test_site',
+          domain: ['example.com'],
+        },
+      ]);
+
+    expect(res14.status).toBe(403);
   });
 
   test('Delete membership', async () => {
@@ -370,7 +413,7 @@ describe('Project Admin routes', () => {
       password: 'password!@#',
     });
 
-    // Add a secret
+    // Add a site
     const res2 = await request(app)
       .post('/admin/projects/' + project.id + '/sites')
       .set('Authorization', 'Bearer ' + accessToken)
