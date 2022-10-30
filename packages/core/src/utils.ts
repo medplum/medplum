@@ -8,6 +8,7 @@ import {
   ObservationDefinitionQualifiedInterval,
   Patient,
   Practitioner,
+  Quantity,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
@@ -713,4 +714,56 @@ function toPreciseInteger(a: number, precision?: number): number {
     return a;
   }
   return Math.round(a * Math.pow(10, precision));
+}
+
+/**
+ * Returns a human-readable string for a FHIR Range datatype, taking into account comparators and one-sided ranges
+ * @param range A FHIR Range element
+ * @returns A human-readable string representation of the Range
+ */
+export function formatRangeString(range: Range | undefined): string {
+  if (!range || (!range.low && !range.high)) {
+    return '';
+  }
+
+  if (range.low && !range.high) {
+    return `>= ${formatQuantityString(range.low)}`;
+  }
+
+  if (!range.low && range.high) {
+    return `<= ${formatQuantityString(range.high)}`;
+  }
+
+  return `${formatQuantityString(range.low)} - ${formatQuantityString(range.high)}`;
+}
+
+/**
+ * Returns a human-readable string for a FHIR Quantity datatype, taking into account units and comparators
+ * @param quantity A FHIR Quantity element
+ * @returns A human-readable string representation of the Quantity
+ */
+export function formatQuantityString(quantity: Quantity | undefined): string {
+  if (!quantity) {
+    return '';
+  }
+
+  const result = [];
+
+  if (quantity.comparator) {
+    result.push(quantity.comparator);
+    result.push(' ');
+  }
+
+  if (quantity.value !== undefined) {
+    result.push(quantity.value);
+  }
+
+  if (quantity.unit) {
+    if (quantity.unit !== '%') {
+      result.push(' ');
+    }
+    result.push(quantity.unit);
+  }
+
+  return result.join('');
 }

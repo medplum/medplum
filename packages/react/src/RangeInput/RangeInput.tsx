@@ -37,6 +37,7 @@ export function RangeInput(props: RangeInputProps): JSX.Element {
           })
         }
       />
+
       <QuantityInput
         name={props.name + '-high'}
         defaultValue={value?.high}
