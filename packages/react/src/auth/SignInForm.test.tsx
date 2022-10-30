@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { MedplumProvider } from '../MedplumProvider';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { SignInForm, SignInFormProps } from './SignInForm';
 
 function mockFetch(url: string, options: any): Promise<any> {

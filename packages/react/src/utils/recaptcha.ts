@@ -1,4 +1,4 @@
-import { createScriptTag } from '../utils';
+import { createScriptTag } from './script';
 
 /**
  * Dynamically loads the recaptcha script.

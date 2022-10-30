@@ -2,9 +2,9 @@ import { Button, Center, Group, Stack, Text, TextInput, Title } from '@mantine/c
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Form } from '../Form';
-import { Logo } from '../Logo';
-import { useMedplum } from '../MedplumProvider';
+import { Form } from '../Form/Form';
+import { Logo } from '../Logo/Logo';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { getErrorsForInput } from '../utils/outcomes';
 
 export interface NewProjectFormProps {
