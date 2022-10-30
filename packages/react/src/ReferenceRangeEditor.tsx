@@ -9,18 +9,14 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import {
-  ObservationDefinition,
-  ObservationDefinitionQualifiedInterval,
-  ObservationDefinitionQuantitativeDetails,
-} from '@medplum/fhirtypes';
+import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
 import { killEvent } from './utils/dom';
 
+import { formatRangeString, getCodeBySystem } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Form } from './Form';
 import { RangeInput } from './RangeInput';
-import { formatRangeString } from '@medplum/core';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -117,7 +113,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
         <Stack>
           {intervalGroups.map((intervalGroup) => (
             <ReferenceRangeGroupEditor
-              unit={defaultDefinition.quantitativeDetails?.unit}
+              unit={getUnitString(defaultDefinition.quantitativeDetails?.unit)}
               onChange={changeInterval}
               onAdd={addInterval}
               onRemove={removeInterval}
@@ -181,6 +177,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }
 
   function addInterval(groupId: string, addedInterval: ObservationDefinitionQualifiedInterval): void {
+    console.debug('Added interval', addedInterval);
     setIntervalGroups((groups) => {
       groups = [...groups];
       const currentGroup = groups.find((g) => g.id === groupId);
@@ -206,7 +203,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
 
 export interface ReferenceRangeGroupEditorProps {
   intervalGroup: IntervalGroup;
-  unit: ObservationDefinitionQuantitativeDetails['unit'];
+  unit: string | undefined;
   onChange: (groupId: string, changed: ObservationDefinitionQualifiedInterval) => void;
   onAdd: (groupId: string, added: ObservationDefinitionQualifiedInterval) => void;
   onRemove: (groupId: string, removed: ObservationDefinitionQualifiedInterval) => void;
@@ -214,7 +211,7 @@ export interface ReferenceRangeGroupEditorProps {
 }
 
 export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps): JSX.Element {
-  const { intervalGroup } = props;
+  const { intervalGroup, unit } = props;
   const { classes } = useStyles();
   return (
     <Container className={classes.section}>
@@ -239,10 +236,13 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
             label="Gender:"
             onChange={(e) => {
               for (const interval of intervalGroup.intervals) {
-                const newGender = e.currentTarget.value as ObservationDefinitionQualifiedInterval['gender'];
+                let newGender: string | undefined = e.currentTarget?.value;
+                if (newGender === '') {
+                  newGender = undefined;
+                }
                 props.onChange(intervalGroup.id, {
                   ...interval,
-                  gender: newGender,
+                  gender: newGender as ObservationDefinitionQualifiedInterval['gender'],
                 });
               }
             }}
@@ -289,7 +289,13 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
           size="sm"
           onClick={(e: React.MouseEvent) => {
             killEvent(e);
-            props.onAdd(intervalGroup.id, { id: generateId() });
+            props.onAdd(intervalGroup.id, {
+              id: generateId(),
+              range: {
+                low: { unit },
+                high: { unit },
+              },
+            });
           }}
         >
           <IconCirclePlus />
@@ -373,4 +379,8 @@ function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): str
   ];
 
   return results.join(':');
+}
+
+function getUnitString(unit: CodeableConcept | undefined): string | undefined {
+  return unit && (getCodeBySystem(unit, 'http://unitsofmeasure.org') || unit.text);
 }
