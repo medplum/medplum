@@ -1,5 +1,9 @@
 {
   "name": "root",
+  "engines": {
+    "npm": ">=8.0.0",
+    "node": ">=16.0.0"
+  },
   "scripts": {
     "build": "sh ./scripts/build.sh",
     "test": "jest",
