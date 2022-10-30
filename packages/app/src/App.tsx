@@ -1,7 +1,6 @@
 import { AppShell, useMantineTheme } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { ErrorBoundary, useMedplum, useMedplumProfile } from '@medplum/react';
-import React, { Suspense } from 'react';
+import React, { Suspense, useState } from 'react';
 import { AppHeader } from './AppHeader';
 import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
@@ -11,9 +10,22 @@ import './App.css';
 
 export function App(): JSX.Element {
   const theme = useMantineTheme();
-  const [navbarOpen, { toggle, close }] = useDisclosure(false);
+  const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+
+  function setNavbarOpenWrapper(open: boolean): void {
+    localStorage['navbarOpen'] = open.toString();
+    setNavbarOpen(open);
+  }
+
+  function closeNavbar(): void {
+    setNavbarOpenWrapper(false);
+  }
+
+  function toggleNavbar(): void {
+    setNavbarOpenWrapper(!navbarOpen);
+  }
 
   if (medplum.isLoading()) {
     return <Loading />;
@@ -28,8 +40,8 @@ export function App(): JSX.Element {
       }}
       padding={0}
       fixed={true}
-      navbar={(profile && navbarOpen && <AppNavbar closeNavbar={close} />) as React.ReactElement | undefined}
-      header={profile && <AppHeader navbarToggle={toggle} />}
+      navbar={(profile && navbarOpen && <AppNavbar closeNavbar={closeNavbar} />) as React.ReactElement | undefined}
+      header={profile && <AppHeader navbarToggle={toggleNavbar} />}
     >
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
