@@ -1,4 +1,4 @@
-import { ActionIcon, createStyles, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Center, createStyles, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
@@ -227,7 +227,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   }
 
   if (!resource || !history) {
-    return <Loader />;
+    return (
+      <Center style={{ width: '100%', height: '100%' }}>
+        <Loader />
+      </Center>
+    );
   }
 
   return (
