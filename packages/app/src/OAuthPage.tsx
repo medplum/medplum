@@ -34,6 +34,7 @@ export function OAuthPage(): JSX.Element | null {
       nonce={params.get('nonce') || undefined}
       codeChallenge={params.get('code_challenge') || undefined}
       codeChallengeMethod={params.get('code_challenge_method') || undefined}
+      chooseScopes={true}
     >
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>

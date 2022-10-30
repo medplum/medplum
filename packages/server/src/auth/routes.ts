@@ -11,6 +11,7 @@ import { newProjectHandler, newProjectValidators } from './newproject';
 import { newUserHandler, newUserValidators } from './newuser';
 import { profileHandler, profileValidators } from './profile';
 import { resetPasswordHandler, resetPasswordValidators } from './resetpassword';
+import { scopeHandler, scopeValidators } from './scope';
 import { setPasswordHandler, setPasswordValidators } from './setpassword';
 
 export const authRouter = Router();
@@ -21,6 +22,7 @@ authRouter.post('/newproject', newProjectValidators, asyncWrap(newProjectHandler
 authRouter.post('/newpatient', newPatientValidators, asyncWrap(newPatientHandler));
 authRouter.post('/login', loginValidators, asyncWrap(loginHandler));
 authRouter.post('/profile', profileValidators, asyncWrap(profileHandler));
+authRouter.post('/scope', scopeValidators, asyncWrap(scopeHandler));
 authRouter.post('/changepassword', changePasswordValidators, asyncWrap(changePasswordHandler));
 authRouter.post('/resetpassword', resetPasswordValidators, asyncWrap(resetPasswordHandler));
 authRouter.post('/setpassword', setPasswordValidators, asyncWrap(setPasswordHandler));

@@ -47,6 +47,7 @@ const baseStmt: CapabilityStatement = {
     },
   ],
   kind: 'instance',
+  instantiates: ['http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server'],
   fhirVersion: '4.0.1',
   format: ['json'],
   patchFormat: ['application/json-patch+json'],

@@ -277,6 +277,42 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   });
 }
 
+/**
+ * Sets the login scope.
+ * Ensures that the scope is the same or a subset of the originally requested scope.
+ * @param login The login before the membership is set.
+ * @param scope The scope to set.
+ * @returns The updated login.
+ */
+export async function setLoginScope(login: Login, scope: string): Promise<Login> {
+  if (login.revoked) {
+    throw badRequest('Login revoked');
+  }
+
+  if (login.granted) {
+    throw badRequest('Login granted');
+  }
+
+  // Get existing scope
+  const existingScopes = login.scope?.split(' ') || [];
+
+  // Get submitted scope
+  const submittedScopes = scope.split(' ');
+
+  // If user requests any scope that is not in existing scope, then reject
+  for (const scope of submittedScopes) {
+    if (!existingScopes.includes(scope)) {
+      throw badRequest('Invalid scope');
+    }
+  }
+
+  // Otherwise update scope
+  return systemRepo.updateResource<Login>({
+    ...login,
+    scope: submittedScopes.join(' '),
+  });
+}
+
 export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);

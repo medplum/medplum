@@ -405,7 +405,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
     logResult = (error as Error).message;
   }
 
-  await createSubscriptionEvent(subscription, resource, startTime, outcome, logResult);
+  await createSubscriptionEvent(subscription, resource, startTime, outcome, logResult, bot);
 }
 
 async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
@@ -435,14 +435,34 @@ async function findProjectMembership(project: string, profile: Reference): Promi
  * @param startTime The time the subscription attempt started.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
+ * @param bot Optional bot that was executed.
  */
 async function createSubscriptionEvent(
   subscription: Subscription,
   resource: Resource,
   startTime: string,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string
+  outcomeDesc?: string,
+  bot?: Bot
 ): Promise<void> {
+  const entity = [
+    {
+      what: createReference(resource),
+      role: { code: '4', display: 'Domain' },
+    },
+    {
+      what: createReference(subscription),
+      role: { code: '9', display: 'Subscriber' },
+    },
+  ];
+
+  if (bot) {
+    entity.push({
+      what: createReference(bot),
+      role: { code: '9', display: 'Subscriber' },
+    });
+  }
+
   await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
@@ -470,22 +490,7 @@ async function createSubscriptionEvent(
       // observer: createReference(subscription)
       observer: createReference(subscription) as Reference as Reference<Practitioner>,
     },
-    entity: [
-      {
-        what: createReference(resource),
-        role: {
-          code: '4',
-          display: 'Domain',
-        },
-      },
-      {
-        what: createReference(subscription),
-        role: {
-          code: '9',
-          display: 'Subscriber',
-        },
-      },
-    ],
+    entity,
     outcome,
     outcomeDesc,
   });

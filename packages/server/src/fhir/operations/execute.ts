@@ -237,7 +237,7 @@ function isJsonContentType(contentType: string): boolean {
  * @param outcomeDesc The outcome description text.
  */
 async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
-  const maxDescLength = 1024;
+  const maxDescLength = 10 * 1024;
   if (outcomeDesc.length > maxDescLength) {
     outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
   }
@@ -266,6 +266,7 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
     entity: [
       {
         what: createReference(bot),
+        role: { code: '9', display: 'Subscriber' },
       },
     ],
     outcome,

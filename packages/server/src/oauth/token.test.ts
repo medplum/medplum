@@ -825,4 +825,48 @@ describe('OAuth2 Token', () => {
     expect(res5.status).toBe(400);
     expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
   });
+
+  test('Patient in token response', async () => {
+    const patientEmail = `test-patient-${randomUUID()}@example.com`;
+    const patientPassword = 'test-patient-password';
+
+    // Invite a test patient
+    const testPatient = await inviteUser({
+      project,
+      resourceType: 'Patient',
+      firstName: 'Test',
+      lastName: 'Patient',
+      email: patientEmail,
+    });
+    expect(testPatient.user).toBeDefined();
+    expect(testPatient.profile).toBeDefined();
+
+    // Force set the password
+    await setPassword(testPatient.user, patientPassword);
+
+    // Authenticate
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        email: patientEmail,
+        password: patientPassword,
+        clientId: client.id as string,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+        remember: true,
+      });
+    expect(res.status).toBe(200);
+
+    // Get tokens
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.patient).toEqual(testPatient.profile.id);
+  });
 });

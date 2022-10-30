@@ -59,8 +59,13 @@ describe('FHIR Routes', () => {
     const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
+
+    // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
     expect(res.body.authorization_endpoint).toBeDefined();
+    expect(res.body.grant_types_supported).toBeDefined();
     expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.capabilities).toBeDefined();
+    expect(res.body.code_challenge_methods_supported).toBeDefined();
   });
 
   test('Invalid JSON', async () => {

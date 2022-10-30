@@ -68,6 +68,7 @@ import { getPatient } from './patient';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
+import { applySmartScopes } from './smart';
 import {
   Column,
   Condition,
@@ -1155,7 +1156,10 @@ export class Repository {
 
     const patient = getPatient(resource);
     if (patient) {
-      result.push(patient);
+      const patientId = resolveId(patient);
+      if (patientId && validator.isUUID(patientId)) {
+        result.push(patient);
+      }
     }
 
     return result;
@@ -1833,6 +1837,12 @@ export async function getRepoForLogin(
 
   if (membership.accessPolicy) {
     accessPolicy = await systemRepo.readReference(membership.accessPolicy);
+  }
+
+  if (login.scope) {
+    // If the login specifies SMART scopes,
+    // then set the access policy to use those scopes
+    accessPolicy = applySmartScopes(accessPolicy, login.scope);
   }
 
   return new Repository({

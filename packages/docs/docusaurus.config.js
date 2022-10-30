@@ -175,6 +175,10 @@ const config = {
                 label: 'GitHub',
                 to: 'https://github.com/medplum/medplum',
               },
+              {
+                label: 'Contributing',
+                to: '/docs/contributing',
+              },
             ],
           },
           {
