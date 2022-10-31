@@ -24,9 +24,17 @@ export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {
         <InfoBar.Value>{formatDateTime(specimen.collection?.collectedDateTime)}</InfoBar.Value>
       </InfoBar.Entry>
       <InfoBar.Entry>
-        <InfoBar.Key>Age</InfoBar.Key>
+        <InfoBar.Key>Specimen Age</InfoBar.Key>
         <InfoBar.Value>{getAge(specimen)}</InfoBar.Value>
       </InfoBar.Entry>
+      {specimen.collection?.collectedDateTime && specimen.receivedTime ? (
+        <InfoBar.Entry>
+          <InfoBar.Key>Specimen Stability</InfoBar.Key>
+          <InfoBar.Value>{getStability(specimen)}</InfoBar.Value>
+        </InfoBar.Entry>
+      ) : (
+        <></>
+      )}
     </InfoBar>
   );
 }
@@ -39,7 +47,24 @@ function getAge(specimen: Specimen): string | undefined {
 
   const collectedDate = new Date(collectedDateStr);
   const now = new Date();
-  const diffInTime = now.getTime() - collectedDate.getTime();
-  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
+  return formatDaysBetween(daysBetween(collectedDate, now));
+}
+
+function getStability(specimen: Specimen): string | undefined {
+  if (!specimen.collection?.collectedDateTime || !specimen.receivedTime) {
+    return undefined;
+  }
+  const collectedDate = new Date(specimen.collection.collectedDateTime);
+  const receivedDate = new Date(specimen.receivedTime);
+  return formatDaysBetween(daysBetween(collectedDate, receivedDate));
+}
+
+function formatDaysBetween(diffInDays: number): string {
   return diffInDays.toString().padStart(3, '0') + 'D';
+}
+
+function daysBetween(start: Date, end: Date): number {
+  const diffInTime = end.getTime() - start.getTime();
+  const diffInDays = Math.floor(diffInTime / (1000 * 3600 * 24));
+  return diffInDays;
 }
