@@ -23,6 +23,7 @@
   "devDependencies": {
     "@emotion/react": "11.10.5",
     "@mantine/core": "5.6.3",
+    "@mantine/dropzone": "5.6.3",
     "@mantine/hooks": "5.6.3",
     "@mantine/notifications": "5.6.3",
     "@medplum/core": "*",
