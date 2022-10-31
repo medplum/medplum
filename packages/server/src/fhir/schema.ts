@@ -48,6 +48,7 @@ const fhirTypeToJsType: Record<string, string> = {
 
 const baseResourceProperties = new Set<string>([
   // Resource
+  'resourceType',
   'id',
   'meta',
   'implicitRules',
