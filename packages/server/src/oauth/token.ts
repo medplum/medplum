@@ -1,11 +1,15 @@
-import { createReference, Operator, ProfileResource, resolveId } from '@medplum/core';
+import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
 import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
+import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
+import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
 import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr, TokenResult } from './utils';
+
+type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -51,9 +55,9 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
  * @param res The HTTP response.
  */
 async function handleClientCredentials(req: Request, res: Response): Promise<void> {
-  const { clientId, clientSecret, invalidAuthHeader } = getClientIdAndSecret(req);
-  if (invalidAuthHeader) {
-    sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+  const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
+  if (error) {
+    sendTokenError(res, 'invalid_request', error);
     return;
   }
 
@@ -91,7 +95,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authTime: new Date().toISOString(),
     granted: true,
     scope,
-    refreshSecret: generateSecret(48),
+    refreshSecret: generateSecret(32),
   });
 
   const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
@@ -105,9 +109,9 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
  * @param res The HTTP response.
  */
 async function handleAuthorizationCode(req: Request, res: Response): Promise<void> {
-  const { clientId, clientSecret, invalidAuthHeader } = getClientIdAndSecret(req);
-  if (invalidAuthHeader) {
-    sendTokenError(res, 'invalid_request', 'Invalid authorization header');
+  const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
+  if (error) {
+    sendTokenError(res, 'invalid_request', error);
     return;
   }
 
@@ -242,7 +246,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   // Generate a new refresh secret and update the login
   const updatedLogin = await systemRepo.updateResource<Login>({
     ...login,
-    refreshSecret: generateSecret(48),
+    refreshSecret: generateSecret(32),
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
@@ -255,20 +259,108 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   sendTokenResponse(res, membership, login.scope as string, token);
 }
 
-function getClientIdAndSecret(req: Request): { invalidAuthHeader?: boolean; clientId?: string; clientSecret?: string } {
-  let clientId = req.body.client_id;
-  let clientSecret = req.body.client_secret;
+/**
+ * Tries to extract the client ID and secret from the request.
+ *
+ * Possible methods:
+ * 1. Client assertion (private_key_jwt)
+ * 2. Basic auth header (client_secret_basic)
+ * 3. Form body (client_secret_post)
+ *
+ * See SMART "token_endpoint_auth_methods_supported"
+ *
+ * @param req The HTTP request.
+ * @returns The client ID and secret on success, or an error message on failure.
+ */
+async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
+  if (req.body.client_assertion_type === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
+    return parseClientAssertion(req.body.client_assertion);
+  }
 
   const authHeader = req.headers.authorization;
   if (authHeader) {
-    if (!authHeader.startsWith('Basic ')) {
-      return { invalidAuthHeader: true };
-    }
-    const base64Credentials = authHeader.split(' ')[1];
-    const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
-    [clientId, clientSecret] = credentials.split(':');
+    return parseAuthorizationHeader(authHeader);
   }
 
+  return {
+    clientId: req.body.client_id,
+    clientSecret: req.body.client_secret,
+  };
+}
+
+/**
+ * Parses a client assertion credential.
+ *
+ * Client assertion works like this:
+ * 1. Client creates a self signed JWT with required fields.
+ * 2. Client must have a configured JWK Set URL.
+ * 3. Server first parses the JWT to get the client ID.
+ * 4. Server looks up the client by ID.
+ * 5. Server verifies the JWT signature using the JWK Set URL.
+ *
+ * References:
+ * 1. https://www.rfc-editor.org/rfc/rfc7523
+ * 2. https://www.hl7.org/fhir/smart-app-launch/example-backend-services.html#step-2-discovery
+ * 3. https://docs.oracle.com/en/cloud/get-started/subscriptions-cloud/csimg/obtaining-access-token-using-self-signed-client-assertion.html
+ * 4. https://darutk.medium.com/oauth-2-0-client-authentication-4b5f929305d4
+ *
+ * @param clientAssertion The client assertion JWT.
+ * @returns
+ */
+async function parseClientAssertion(clientAssertion: string): Promise<ClientIdAndSecret> {
+  const { tokenUrl } = getConfig();
+  const claims = parseJWTPayload(clientAssertion);
+
+  if (claims.aud !== tokenUrl) {
+    return { error: 'Invalid client assertion audience' };
+  }
+
+  if (claims.iss !== claims.sub) {
+    return { error: 'Invalid client assertion issuer' };
+  }
+
+  const clientId = claims.iss as string;
+  let client: ClientApplication;
+  try {
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  } catch (err) {
+    return { error: 'Client not found' };
+  }
+
+  if (!client.jwksUri) {
+    return { error: 'Client must have a JWK Set URL' };
+  }
+
+  const JWKS = createRemoteJWKSet(new URL(client.jwksUri));
+
+  const verifyOptions: JWTVerifyOptions = {
+    issuer: clientId,
+    algorithms: ['RS256', 'RS384', 'RS512', 'ES256', 'ES384', 'ES512'],
+    audience: tokenUrl,
+  };
+
+  try {
+    await jwtVerify(clientAssertion, JWKS, verifyOptions);
+  } catch (err) {
+    return { error: 'Invalid client assertion signature' };
+  }
+
+  // Successfully validated the client assertion
+  return { clientId, clientSecret: client.secret };
+}
+
+/**
+ * Tries to parse the client ID and secret from the Authorization header.
+ * @param authHeader The Authorizaiton header string.
+ * @returns Client ID and secret on success, or an error message on failure.
+ */
+async function parseAuthorizationHeader(authHeader: string): Promise<ClientIdAndSecret> {
+  if (!authHeader.startsWith('Basic ')) {
+    return { error: 'Invalid authorization header' };
+  }
+  const base64Credentials = authHeader.split(' ')[1];
+  const credentials = Buffer.from(base64Credentials, 'base64').toString('ascii');
+  const [clientId, clientSecret] = credentials.split(':');
   return { clientId, clientSecret };
 }
 

@@ -85,7 +85,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 
   await authenticate(request, user);
 
-  const refreshSecret = request.remember ? generateSecret(48) : undefined;
+  const refreshSecret = request.remember ? generateSecret(32) : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',

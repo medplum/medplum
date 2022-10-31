@@ -209,3 +209,8 @@ Launch parameters:
 - "state" - Must be unique random state
 
 http://localhost:4567/inferno/oauth2/static/launch?iss=http%3A%2F%2Fhost.docker.internal%3A8103%2Ffhir%2FR4&launch=xyz1234
+
+Launch URI: https://inferno.healthit.gov/suites/custom/smart/launch
+Redirect URI: https://inferno.healthit.gov/suites/custom/smart/redirect
+
+https://inferno.healthit.gov/suites/custom/smart/launch?iss=https%3A%2F%2Fcody.medplum.dev%2Ffhir%2FR4&launch=xyz1234

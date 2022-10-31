@@ -6,12 +6,14 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { authenticateToken } from '../oauth/middleware';
 import { processBatch } from './batch';
+import { bulkDataRouter } from './bulkdata';
 import { getCapabilityStatement } from './metadata';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { graphqlHandler } from './operations/graphql';
+import { groupExportHandler } from './operations/groupexport';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
@@ -73,7 +75,8 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
       authorization_endpoint: config.authorizeUrl,
       grant_types_supported: ['authorization_code', 'client_credentials'],
       token_endpoint: config.tokenUrl,
-      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'private_key_jwt'],
+      token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],
       scopes_supported: [
         'patient/*.rs',
         'user/*.cruds',
@@ -89,6 +92,7 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
         'authorize-post',
         'permission-v1',
         'permission-v2',
+        'client-confidential-asymmetric',
         'client-confidential-symmetric',
         'client-public',
         'context-banner',
@@ -103,8 +107,6 @@ publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Respon
         'permission-user',
         'sso-openid-connect',
       ],
-      token_endpoint_auth_methods: ['private_key_jwt'],
-      token_endpoint_auth_signing_alg_values_supported: ['RS256'],
       code_challenge_methods_supported: ['S256'],
     });
 });
@@ -125,6 +127,12 @@ protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 
 // Bot $deploy operation
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
+
+// Group $export operation
+protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
+
+// Bulk Data
+protectedRoutes.use('/bulkdata', bulkDataRouter);
 
 // GraphQL
 protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);

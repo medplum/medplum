@@ -1,7 +1,9 @@
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
+import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
@@ -10,6 +12,21 @@ import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
+
+jest.mock('jose', () => {
+  const core = jest.requireActual('@medplum/core');
+  const original = jest.requireActual('jose');
+  return {
+    ...original,
+    jwtVerify: jest.fn((credential: string) => {
+      const payload = core.parseJWTPayload(credential);
+      if (payload.invalid) {
+        throw new Error('Verification failed');
+      }
+      return { payload };
+    }),
+  };
+});
 
 const app = express();
 const email = randomUUID() + '@example.com';
@@ -172,7 +189,7 @@ describe('OAuth2 Token', () => {
     const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
-      secret: generateSecret(48),
+      secret: generateSecret(32),
     });
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -868,5 +885,185 @@ describe('OAuth2 Token', () => {
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
     expect(res2.body.patient).toEqual(testPatient.profile.id);
+  });
+
+  test('Client assertion success', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Client assertion client not found', async () => {
+    const fakeClientId = randomUUID();
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(fakeClientId)
+      .setSubject(fakeClientId)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Client not found',
+    });
+  });
+
+  test('Client assertion missing jwks URL', async () => {
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client.id as string)
+      .setSubject(client.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Client must have a JWK Set URL',
+    });
+  });
+
+  test('Client assertion invalid audience', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('https://invalid-audience.com')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion audience',
+    });
+  });
+
+  test('Client assertion invalid issuer', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer('invalid-issuer')
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion issuer',
+    });
+  });
+
+  test('Client assertion invalid signature', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ invalid: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion signature',
+    });
   });
 });

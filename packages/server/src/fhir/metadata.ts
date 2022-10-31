@@ -3,6 +3,7 @@ import {
   CapabilityStatement,
   CapabilityStatementRest,
   CapabilityStatementRestResource,
+  CapabilityStatementRestResourceOperation,
   CapabilityStatementRestResourceSearchParam,
   CapabilityStatementRestSecurity,
   ResourceType,
@@ -47,7 +48,10 @@ const baseStmt: CapabilityStatement = {
     },
   ],
   kind: 'instance',
-  instantiates: ['http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server'],
+  instantiates: [
+    'http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server',
+    'http://hl7.org/fhir/uv/bulkdata/CapabilityStatement/bulk-data',
+  ],
   fhirVersion: '4.0.1',
   format: ['json'],
   patchFormat: ['application/json-patch+json'],
@@ -100,6 +104,15 @@ const supportedProfiles: Record<string, string[]> = {
   PractitionerRole: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole'],
   Procedure: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-procedure'],
   Provenance: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-provenance'],
+};
+
+const supportedOperations: Record<string, CapabilityStatementRestResourceOperation[]> = {
+  Group: [
+    {
+      name: 'export',
+      definition: 'http://hl7.org/fhir/uv/bulkdata/OperationDefinition/group-export',
+    },
+  ],
 };
 
 let capabilityStatement: CapabilityStatement | undefined = undefined;
@@ -195,6 +208,7 @@ function buildResourceTypes(): CapabilityStatementRestResource[] {
       conditionalDelete: 'not-supported',
       referencePolicy: ['literal', 'logical', 'local'],
       searchParam: buildSearchParameters(typeSchema),
+      operation: supportedOperations[resourceType] || undefined,
     }));
 }
 
