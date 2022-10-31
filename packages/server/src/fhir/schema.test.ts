@@ -428,6 +428,15 @@ describe('FHIR schema', () => {
       console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
     }
   });
+
+  test('Patient.multipleBirthBoolean', () => {
+    expect.assertions(1);
+    validateResource({
+      resourceType: 'Patient',
+      multipleBirthBoolean: true,
+    });
+    expect(true).toBeTruthy();
+  });
 });
 
 function fail(reason: string): never {

@@ -230,7 +230,7 @@ export class FhirSchemaValidator<T extends Resource> {
       if (!(key in propertyDefinitions)) {
         // Try to find a "choice of type" property (e.g., "value[x]")
         // TODO: Consolidate this logic with FHIRPath lookup
-        const choiceOfTypeKey = key.replace(/[A-Z].+/, '[x]');
+        const choiceOfTypeKey = key.replace(/[A-Z][a-z]+$/, '[x]');
         if (!(choiceOfTypeKey in propertyDefinitions)) {
           const expression = `${path}.${key}`;
           this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
