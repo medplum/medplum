@@ -1,8 +1,8 @@
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
-import { Document } from '../Document';
-import { useMedplum } from '../MedplumProvider';
+import { Document } from '../Document/Document';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';

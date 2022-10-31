@@ -2,7 +2,7 @@ import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import { MedplumProvider } from '../src/MedplumProvider';
+import { MedplumProvider } from '../src/MedplumProvider/MedplumProvider';
 
 export const parameters = {
   layout: 'fullscreen',

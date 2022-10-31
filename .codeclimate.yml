@@ -3,7 +3,7 @@ exclude_patterns:
 - "**/node_modules/"
 - "**/coverage/"
 - "**/dist/"
-- "**/stories/"
+- "**/*.stories.tsx"
 - "**/babel.config.js"
 - "**/rollup.config.js"
 - "**/webpack.config.js"

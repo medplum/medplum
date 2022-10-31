@@ -1,8 +1,8 @@
 import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
 import React from 'react';
-import { Form } from '../Form';
-import { Logo } from '../Logo';
-import { useMedplum } from '../MedplumProvider';
+import { Form } from '../Form/Form';
+import { Logo } from '../Logo/Logo';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
 export interface ChooseScopeFormProps {
   login: string;

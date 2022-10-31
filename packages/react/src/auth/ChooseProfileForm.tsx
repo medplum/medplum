@@ -1,8 +1,8 @@
 import { Avatar, Center, Group, Stack, Text, Title, UnstyledButton } from '@mantine/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React from 'react';
-import { Logo } from '../Logo';
-import { useMedplum } from '../MedplumProvider';
+import { Logo } from '../Logo/Logo';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
 export interface ChooseProfileFormProps {
   login: string;

@@ -3,9 +3,9 @@ import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons';
 import React, { useEffect, useState } from 'react';
-import { Form } from '../Form';
-import { getGoogleClientId, GoogleButton } from '../GoogleButton';
-import { useMedplum } from '../MedplumProvider';
+import { Form } from '../Form/Form';
+import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
