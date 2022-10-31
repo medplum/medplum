@@ -15,7 +15,7 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "1.0.0",
-    "@medplum/core": "1.0.0"
+    "@medplum/fhirtypes": "*",
+    "@medplum/core": "*"
   }
 }

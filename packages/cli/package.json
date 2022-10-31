@@ -16,13 +16,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "1.0.0",
+    "@medplum/core": "*",
     "dotenv": "16.0.3",
     "node-fetch": "2.6.7"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "1.0.0",
-    "@medplum/mock": "1.0.0"
+    "@medplum/fhirtypes": "*",
+    "@medplum/mock": "*"
   },
   "bin": {
     "medplum": "./dist/index.js"

@@ -107,8 +107,17 @@ function buildDocsDefinition(
 
   if (searchParameters) {
     result.searchParameters = (searchParameters || []).map((param) => ({
-      name: param.name || '',
-      type: param.type || '',
+      name: param.name as string,
+      type: param.type as
+        | 'string'
+        | 'number'
+        | 'uri'
+        | 'date'
+        | 'token'
+        | 'reference'
+        | 'composite'
+        | 'quantity'
+        | 'special',
       description: getSearchParamDescription(param, result.name),
       expression: getExpressionForResourceType(result.name, param.expression || '') || '',
     }));
