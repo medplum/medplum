@@ -1,4 +1,5 @@
 import {
+  capitalize,
   getExtensionValue,
   getTypedPropertyValue,
   IndexedStructureDefinition,
@@ -44,6 +45,24 @@ const fhirTypeToJsType: Record<string, string> = {
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string',
 };
+
+const baseResourceProperties = new Set<string>([
+  // Resource
+  'resourceType',
+  'id',
+  'meta',
+  'implicitRules',
+  'language',
+
+  // DomainResource
+  'text',
+  'contained',
+  'extension',
+  'modifierExtension',
+
+  // Other
+  '_baseDefinition',
+]);
 
 export function isResourceType(resourceType: string): boolean {
   const typeSchema = getStructureDefinitions().types[resourceType];
@@ -224,14 +243,11 @@ export class FhirSchemaValidator<T extends Resource> {
   ): void {
     const object = typedValue.value as Record<string, unknown>;
     for (const key of Object.keys(object)) {
-      if (key === 'resourceType' || key === 'id' || key === 'meta' || key === '_baseDefinition') {
+      if (baseResourceProperties.has(key)) {
         continue;
       }
       if (!(key in propertyDefinitions)) {
-        // Try to find a "choice of type" property (e.g., "value[x]")
-        // TODO: Consolidate this logic with FHIRPath lookup
-        const choiceOfTypeKey = key.replace(/[A-Z].+/, '[x]');
-        if (!(choiceOfTypeKey in propertyDefinitions)) {
+        if (!isChoiceOfType(key, typedValue, propertyDefinitions)) {
           const expression = `${path}.${key}`;
           this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
         }
@@ -250,4 +266,31 @@ function isIntegerType(propertyType: PropertyType): boolean {
     propertyType === PropertyType.positiveInt ||
     propertyType === PropertyType.unsignedInt
   );
+}
+
+function isChoiceOfType(
+  key: string,
+  typedValue: TypedValue,
+  propertyDefinitions: Record<string, ElementDefinition>
+): boolean {
+  for (const propertyName of Object.keys(propertyDefinitions)) {
+    if (!propertyName.endsWith('[x]')) {
+      continue;
+    }
+    const basePropertyName = propertyName.replace('[x]', '');
+    if (!key.startsWith(basePropertyName)) {
+      continue;
+    }
+    let typedPropertyValue = getTypedPropertyValue(typedValue, propertyName);
+    if (!typedPropertyValue) {
+      continue;
+    }
+    if (Array.isArray(typedPropertyValue)) {
+      typedPropertyValue = typedPropertyValue[0];
+    }
+    if (typedPropertyValue && key === basePropertyName + capitalize(typedPropertyValue.type)) {
+      return true;
+    }
+  }
+  return false;
 }
