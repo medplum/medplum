@@ -1147,6 +1147,16 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Executes the Patient "everything" operation for a patient.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const bundle = await medplum.readPatientEverything('123');
+   * console.log(bundle);
+   * ```
+   *
+   * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
    *
    * @category Read
    * @param id The Patient Id
