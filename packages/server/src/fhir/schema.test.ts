@@ -429,13 +429,27 @@ describe('FHIR schema', () => {
     }
   });
 
-  test('Patient.multipleBirthBoolean', () => {
-    expect.assertions(1);
-    validateResource({
-      resourceType: 'Patient',
-      multipleBirthBoolean: true,
-    });
-    expect(true).toBeTruthy();
+  test('Choice of type', () => {
+    // Observation.value[x]
+    expect(() =>
+      validateResource({ resourceType: 'Observation', status: 'final', code: { text: 'x' }, valueString: 'xyz' })
+    ).not.toThrow();
+    expect(() =>
+      validateResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'x' },
+        valueDateTime: '2020-01-01T00:00:00Z',
+      })
+    ).not.toThrow();
+    expect(() =>
+      validateResource({ resourceType: 'Observation', status: 'final', code: { text: 'x' }, valueXyz: 'xyz' })
+    ).toThrow();
+
+    // Patient.multipleBirth[x] is a choice of boolean or integer
+    expect(() => validateResource({ resourceType: 'Patient', multipleBirthBoolean: true })).not.toThrow();
+    expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
+    expect(() => validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' })).toThrow();
   });
 });
 
