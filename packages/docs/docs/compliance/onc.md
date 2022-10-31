@@ -201,11 +201,12 @@ To attest to d2, Medplum attests to the following.
 
 ### Quality Management System (g4)
 
-- Not included in ONC 2015E Cures Base EHR
+- [Guidance on HealthIT.gov](https://www.healthit.gov/test-method/quality-management-system)
+- Agile practices as mapped to ISO 9001 are general methodology for this criteria for web applications.
 
 ### Accessibility-Centered Design (g5)
 
-- Not included in ONC 2015E Cures Base EHR
+- [Guidance on HealthIT.gov](https://www.healthit.gov/test-method/accessibility-centered-design)
 
 ### Application Access – Patient Selection (g7)
 
