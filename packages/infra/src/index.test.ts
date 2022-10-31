@@ -30,6 +30,7 @@ describe('Infra', () => {
         maxAzs: 2,
         rdsInstances: 1,
         desiredServerCount: 1,
+        serverImage: 'medplum/medplum-server:staging',
         serverMemory: 512,
         serverCpu: 256,
         loadBalancerLoggingBucket: 'medplum-logs-us-east-1',
