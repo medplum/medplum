@@ -44,4 +44,5 @@ medplum-server.tar.gz
 .vscode/
 
 # Turborepo
-.turbo/
+.turbo
+

@@ -19,7 +19,7 @@ npm --version
 npx turbo run build
 
 # Test
-npx turbo run test -- --coverage
+npx turbo run test --force -- --coverage
 
 # Combine test coverage
 rm -rf coverage

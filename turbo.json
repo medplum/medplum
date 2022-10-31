@@ -3,11 +3,11 @@
   "pipeline": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["build/**", "coverage/**", "dist/**"]
+      "outputs": ["build/**", "dist/**"]
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": [],
+      "outputs": ["coverage/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"]
     }
   }
