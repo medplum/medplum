@@ -355,9 +355,7 @@ interface RequestCacheEntry {
 }
 
 /**
- *  <head>
- *    <meta name="algolia:pageRank" content="100" />
- *  </head>
+ *
  *
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
@@ -404,6 +402,11 @@ interface RequestCacheEntry {
  * const bundle = await medplum.search('Patient', 'name=Alice');
  * console.log(bundle.total);
  * ```
+ *
+ *  <head>
+ *    <meta name="algolia:pageRank" content="100" />
+ *  </head>
+
  */
 export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
