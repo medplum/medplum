@@ -48,6 +48,29 @@ describe('SpecimenHeader', () => {
       },
     });
 
+    expect(screen.getByText('Specimen Age')).toBeInTheDocument();
+    expect(screen.queryByText('Specimen Stability')).toBeNull();
     expect(screen.getByText('005D')).toBeInTheDocument();
+  });
+
+  test('Renders specimen  stability ', async () => {
+    const birthDate = new Date();
+    birthDate.setUTCHours(0, 0, 0, 0);
+    birthDate.setUTCDate(birthDate.getUTCDate() - 5);
+
+    const receivedTime = new Date(birthDate);
+    receivedTime.setUTCDate(receivedTime.getUTCDate() + 2);
+
+    setup({
+      resourceType: 'Specimen',
+      collection: {
+        collectedDateTime: birthDate.toISOString(),
+      },
+      receivedTime: receivedTime.toISOString(),
+    });
+
+    expect(screen.getByText('Specimen Age')).toBeInTheDocument();
+    expect(screen.getByText('005D')).toBeInTheDocument();
+    expect(screen.getByText('002D')).toBeInTheDocument();
   });
 });
