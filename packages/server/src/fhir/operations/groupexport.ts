@@ -1,4 +1,4 @@
-import { getReferenceString, resolveId } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { Binary, BulkDataExport, Bundle, Group, Patient, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -45,12 +45,18 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   // Read all patients in the group
   if (group.member) {
     for (const member of group.member) {
+      if (!member.entity?.reference) {
+        continue;
+      }
+      const [resourceType, memberId] = member.entity.reference.split('/') as [string, string];
       try {
-        const patientId = resolveId(member.entity);
-        if (patientId) {
-          const patient = await repo.readResource<Patient>('Patient', patientId);
+        if (resourceType === 'Patient') {
+          const patient = await repo.readResource<Patient>('Patient', memberId);
           const bundle = await getPatientEverything(repo, patient);
-          await exporter.write(bundle);
+          await exporter.writeBundle(bundle);
+        } else {
+          const resource = await repo.readResource(resourceType, memberId);
+          await exporter.writeResource(resource);
         }
       } catch (err) {
         logger.warn('Unable to read patient: ' + member.entity?.reference);
@@ -137,15 +143,19 @@ class BulkExporter {
     return writer;
   }
 
-  async write(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
-          const writer = await this.getWriter(entry.resource.resourceType);
-          writer.write(entry.resource);
+          await this.writeResource(entry.resource);
         }
       }
     }
+  }
+
+  async writeResource(resource: Resource): Promise<void> {
+    const writer = await this.getWriter(resource.resourceType);
+    writer.write(resource);
   }
 
   async close(): Promise<void> {

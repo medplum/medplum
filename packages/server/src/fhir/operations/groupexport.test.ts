@@ -1,3 +1,4 @@
+import { BulkDataExportOutput } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -35,7 +36,7 @@ describe('Group Export', () => {
       });
     expect(res1.status).toBe(201);
 
-    // Create first patient
+    // Create second patient
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -51,8 +52,31 @@ describe('Group Export', () => {
       });
     expect(res2.status).toBe(201);
 
-    // Create a group
+    // Create observation
     const res3 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: `Patient/${res1.body.id}` },
+      });
+    expect(res3.status).toBe(201);
+
+    // Create device
+    const res4 = await request(app)
+      .post(`/fhir/R4/Device`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Device',
+      });
+    expect(res4.status).toBe(201);
+
+    // Create a group
+    const res5 = await request(app)
       .post(`/fhir/R4/Group`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
@@ -63,30 +87,37 @@ describe('Group Export', () => {
         member: [
           { entity: { reference: `Patient/${res1.body.id}` } },
           { entity: { reference: `Patient/${res2.body.id}` } },
+          { entity: { reference: `Device/${res4.body.id}` } },
         ],
       });
-    expect(res3.status).toBe(201);
+    expect(res5.status).toBe(201);
 
     // Start the export
-    const res4 = await request(app)
-      .get(`/fhir/R4/Group/${res3.body.id}/$export`)
+    const res6 = await request(app)
+      .get(`/fhir/R4/Group/${res5.body.id}/$export`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(202);
-    expect(res4.headers['content-location']).toBeDefined();
+    expect(res6.status).toBe(202);
+    expect(res6.headers['content-location']).toBeDefined();
 
     // Check the export status
-    const contentLocation = new URL(res4.headers['content-location']);
-    const res5 = await request(app)
+    const contentLocation = new URL(res6.headers['content-location']);
+    const res7 = await request(app)
       .get(contentLocation.pathname)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res5.status).toBe(200);
-    expect(res5.body.output).toHaveLength(1);
+    expect(res7.status).toBe(200);
+
+    const output = res7.body.output as BulkDataExportOutput[];
+    expect(output).toHaveLength(4);
+    expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
+    expect(output.some((o) => o.type === 'Device')).toBeTruthy();
+    expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
+    expect(output.some((o) => o.type === 'Group')).toBeTruthy();
 
     // Get the export content
-    const outputLocation = new URL(res5.body.output[0].url);
-    const res6 = await request(app)
+    const outputLocation = new URL(output[0].url as string);
+    const res8 = await request(app)
       .get(outputLocation.pathname + outputLocation.search)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
+    expect(res8.status).toBe(200);
   });
 });
