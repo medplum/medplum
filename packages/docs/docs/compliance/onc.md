@@ -124,8 +124,8 @@ To attest to d2, Medplum attests to the following.
 - Demonstrates synchronization to a configured NTP server through use of Amazon Time Sync Service.
 - Audit log records actions related to electronic health information, audit log status, and encryption status.
 - Audit log records the audit log status and/or the encryption status.
-- Audit logging is based off of [AuditEvent] FHIR resources which are written to AWS CloudWatch, write to which is limited to the Medplum team only and to which access and edits are logged.
-- [Audit Log Link](https://app.medplum.com/AuditEvent)
+- Audit logging is based off of [AuditEvent](/docs/api/fhir/resources/auditevent) FHIR resources which are written to AWS CloudWatch, write to which is limited to the Medplum team only and to which access and edits are logged.
+- [Audit Log Link](https://app.medplum.com/AuditEvent) on Medplum app
 - Related Material: [Amazon Time Sync Service](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html)
 - Related Material: [Audit Log Commits and Issues on Github](https://github.com/medplum/medplum/issues?q=label%3Aaudit-logging+)
 - Logging - TODO: Tutorial
@@ -162,8 +162,10 @@ To attest to d2, Medplum attests to the following.
 
 ### Auditing actions on health information (d10)
 
-- Medplum attests to this material.
+- Medplum attests to this criteria. Medplum does not support disabling audit logging for end users.
+- Medplum uses [Cloudwatch logging](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection.html), and only Medplum team members have access to the environment which contains the logs.
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/auditing-actions-health-information)
+- Related Material: [Audit Log Commits and Issues on Github](https://github.com/medplum/medplum/issues?q=label%3Aaudit-logging+)
 
 ### Accounting of Disclosures (d11)
 
