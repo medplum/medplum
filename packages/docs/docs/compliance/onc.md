@@ -162,8 +162,8 @@ To attest to d2, Medplum attests to the following.
 
 ### Auditing actions on health information (d10)
 
-- Not included in ONC 2015E Cures Base EHR
-- Implemented by Medplum
+- Medplum attests to this material.
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/auditing-actions-health-information)
 
 ### Accounting of Disclosures (d11)
 
@@ -171,13 +171,14 @@ To attest to d2, Medplum attests to the following.
 
 ### Encrypt Authentication Credentials (d12)
 
-- Not included in ONC 2015E Cures Base EHR
-- Implemented by Medplum
+- Medplum attests to this criteria.
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/encrypt-authentication-credentials-0)
 
 ### Multi-factor Authentication (d13)
 
-- Not included in ONC 2015E Cures Base EHR
-- Medplum supports Google Authentication
+- Medplum attests to this criteria.
+- Medplum supports multi-factor authentication through Google single sign on, which you can see on the [signin page](https://app.medplum.com/signin)
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/multi-factor-authentication)
 
 ### Secure Messaging (e2)
 
@@ -201,8 +202,8 @@ To attest to d2, Medplum attests to the following.
 
 ### Quality Management System (g4)
 
+- Medplum maps Agile development to [ISO 9001](iso9001.md)
 - [Guidance on HealthIT.gov](https://www.healthit.gov/test-method/quality-management-system)
-- Agile practices as mapped to ISO 9001 are general methodology for this criteria for web applications.
 
 ### Accessibility-Centered Design (g5)
 
