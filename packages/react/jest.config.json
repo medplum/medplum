@@ -15,6 +15,6 @@
   "collectCoverageFrom": [
     "**/src/**/*",
     "!**/stories",
-    "!**/stories.tsx"
+    "!**/*.stories.tsx"
   ]
 }
