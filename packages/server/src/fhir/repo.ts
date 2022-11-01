@@ -1026,10 +1026,14 @@ export class Repository {
    */
   #addReferenceSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
     // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
+    let value = filter.value;
+    if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
+      value = 'Patient/' + value;
+    }
     if (details.array) {
-      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, filter.value);
+      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, value);
     } else {
-      predicate.where(details.columnName, Operator.EQUALS, filter.value);
+      predicate.where(details.columnName, Operator.EQUALS, value);
     }
   }
 
