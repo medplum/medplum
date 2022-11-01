@@ -22,7 +22,6 @@ import {
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { logger } from '../../logger';
-
 import { Repository } from '../repo';
 import { sendResponse } from '../routes';
 

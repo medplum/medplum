@@ -14,6 +14,7 @@ import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
 import { graphqlHandler } from './operations/graphql';
 import { groupExportHandler } from './operations/groupexport';
+import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
@@ -142,6 +143,9 @@ protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinit
 
 // Resource $graph operation
 protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraphHandler));
+
+// Patient $everything operation
+protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEverythingHandler));
 
 // Execute batch
 protectedRoutes.post(

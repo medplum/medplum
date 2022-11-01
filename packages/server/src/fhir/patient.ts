@@ -13,7 +13,7 @@ let patientCompartment: CompartmentDefinition | undefined = undefined;
  * Lazy load the patient compartment definitions.
  * @returns The patient compartment definitions.
  */
-function getPatientCompartments(): CompartmentDefinition {
+export function getPatientCompartments(): CompartmentDefinition {
   if (!patientCompartment) {
     patientCompartment = readJson('fhir/r4/compartmentdefinition-patient.json') as CompartmentDefinition;
   }
