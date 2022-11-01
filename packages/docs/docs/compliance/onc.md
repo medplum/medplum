@@ -245,19 +245,16 @@ As it relates to Live Testing, these are the resources for [Medplum team only](h
 Technical outcome – The health IT must be able to record all data necessary to calculate CQMs presented for certification.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-record-and-export)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 
 ### Clinical Quality Measures – import and calculate (c2)
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-import-and-calculate)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 - [Medplum App Import Data](https://app.medplum.com/batch)
 - [Test FHIR Batch Data for Import](https://drive.google.com/drive/folders/1-tpx7lHSDjc8lG3ZTVox0ndLnbCgx_t2?usp=sharing)
 
 ### Clinical Quality Measures - report (c3)
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/clinical-quality-measures-cqms-report)
-- Medplum stores all data in a FHIR R4 format and therefore implements this criteria. [Aegis Report](https://drive.google.com/file/d/1-uvf4-SSvA96ULn6wxGWHTJmBIiBj8NL/view?usp=sharing)
 
 ### Clinical Quality Measures – filter (c4)
 
