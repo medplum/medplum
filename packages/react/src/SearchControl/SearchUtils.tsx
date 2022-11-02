@@ -298,28 +298,6 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
 }
 
 /**
- * Adds a filter for a field equaling a specified date.
- *
- * @param {string} field The field key name.
- * @param {Date} value The date.
- */
-export function addDateEqualsFilter(definition: SearchRequest, field: string, value: Date): SearchRequest {
-  return addDateFilterBetween(definition, field, value, value);
-}
-
-/**
- * Adds a filter for a date before a certain date/time.
- *
- * @param {string} field The field key name.
- * @param {Operator} op The date/time operation.
- * @param {Date} value The date.
- */
-export function addDateFilter(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
-  definition = clearFiltersOnField(definition, field);
-  return addDateFilterImpl(definition, field, op, value);
-}
-
-/**
  * Adds a filter for a date between two dates (inclusive of both dates).
  *
  * @param {string} field The field key name.
@@ -351,18 +329,6 @@ function addDateFilterImpl(definition: SearchRequest, field: string, op: Operato
  */
 export function addMissingFilter(definition: SearchRequest, field: string, value = true): SearchRequest {
   return addFilter(definition, field, Operator.MISSING, value.toString());
-}
-
-/**
- * Returns true if the search has any filters on the specified field.
- *
- * @param {string} code The field key name.
- */
-export function hasFilterOnField(definition: SearchRequest, code: string): boolean {
-  if (!definition.filters) {
-    return false;
-  }
-  return definition.filters.find((f) => f.code === code) !== undefined;
 }
 
 /**
