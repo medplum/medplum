@@ -65806,5 +65806,44 @@
       "xpath" : "f:BulkDataExport/f:status",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ObservationDefinition-code",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "OperationDefinition-code",
+      "url" : "https://medplum.com/fhir/SearchParameter/ObservationDefinition-code",
+      "version" : "4.0.1",
+      "name" : "code",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The code of the observation definition.",
+      "code" : "code",
+      "base" : ["ObservationDefinition"],
+      "type" : "token",
+      "expression" : "ObservationDefinition.code",
+      "xpath" : "f:ObservationDefinition/f:code",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/ObservationDefinition-publisher",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "OperationDefinition-publisher",
+      "url" : "https://medplum.com/fhir/SearchParameter/ObservationDefinition-publisher",
+      "version" : "4.0.1",
+      "name" : "publisher",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The publisher of the observation definition.",
+      "code" : "publisher",
+      "base" : ["ObservationDefinition"],
+      "type" : "reference",
+      "expression" : "ObservationDefinition.publisher",
+      "xpath" : "f:ObservationDefinition/f:publisher",
+      "xpathUsage" : "normal",
+      "target" : ["Practitioner", "PractitionerRole", "Organization"]
+    }
   }]
 }
