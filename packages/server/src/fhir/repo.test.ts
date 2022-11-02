@@ -2119,4 +2119,16 @@ describe('FHIR Repo', () => {
     });
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
   });
+
+  test('Reverse include Provenance', async () => {
+    const searchResult = await systemRepo.search({
+      resourceType: 'Practitioner',
+      revInclude: 'Provenance:target',
+    });
+    expect(searchResult.entry).not.toHaveLength(0);
+
+    const provenanceEntry = searchResult.entry?.find((entry) => entry.resource?.resourceType === 'Provenance');
+    expect(provenanceEntry).toBeDefined();
+    expect(provenanceEntry?.search?.mode).toEqual('include');
+  });
 });

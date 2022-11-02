@@ -508,4 +508,12 @@ describe('FHIR Search Utils', () => {
       ],
     });
   });
+
+  test('_revinclude', () => {
+    expect(parseSearchRequest('Patient', { _revinclude: 'Provenance:target' })).toMatchObject({
+      resourceType: 'Patient',
+      revInclude: 'Provenance:target',
+    });
+    expect(() => parseSearchRequest('Patient', { _revinclude: 'Observation:subject' })).toThrow();
+  });
 });

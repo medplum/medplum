@@ -178,6 +178,22 @@ protectedRoutes.get(
   })
 );
 
+// Search by POST
+protectedRoutes.post(
+  '/:resourceType/_search',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!req.is('application/x-www-form-urlencoded')) {
+      res.status(400).send('Unsupported content type');
+      return;
+    }
+    const { resourceType } = req.params;
+    const repo = res.locals.repo as Repository;
+    const query = req.body as Record<string, string[] | string | undefined>;
+    const bundle = await repo.search(parseSearchRequest(resourceType, query));
+    await sendResponse(res, allOk, bundle);
+  })
+);
+
 // Create resource
 protectedRoutes.post(
   '/:resourceType',

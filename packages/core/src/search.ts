@@ -11,6 +11,7 @@ export interface SearchRequest {
   fields?: string[];
   name?: string;
   total?: 'none' | 'estimate' | 'accurate';
+  revInclude?: string;
 }
 
 export interface Filter {
