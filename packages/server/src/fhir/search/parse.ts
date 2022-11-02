@@ -76,6 +76,7 @@ class SearchParser implements SearchRequest {
   count?: number;
   offset?: number;
   total?: 'none' | 'estimate' | 'accurate';
+  revInclude?: string;
 
   constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
     this.resourceType = resourceType;
@@ -154,6 +155,13 @@ class SearchParser implements SearchRequest {
       case '_summary':
         this.total = 'estimate';
         this.count = 0;
+        break;
+
+      case '_revinclude':
+        this.revInclude = value;
+        if (this.revInclude !== 'Provenance:target') {
+          throw badRequest('Unsupported revinclude: ' + code);
+        }
         break;
 
       default: {

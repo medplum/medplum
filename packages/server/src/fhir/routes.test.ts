@@ -431,6 +431,22 @@ describe('FHIR Routes', () => {
     expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
   });
 
+  test('Search by POST', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/_search`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('form');
+    expect(res.status).toBe(200);
+  });
+
+  test('Search by POST wrong content-type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/_search`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('application/json');
+    expect(res.status).toBe(400);
+  });
+
   test('Validate create success', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/$validate`)

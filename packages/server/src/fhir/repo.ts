@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  createReference,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
@@ -17,6 +18,7 @@ import {
   normalizeErrorString,
   notFound,
   Operator as FhirOperator,
+  ProfileResource,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -733,11 +735,33 @@ export class Repository {
     builder.offset(searchRequest.offset || 0);
 
     const rows = await builder.execute(client);
+    const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
+    const entry = resources.map(
+      (resource) =>
+        ({
+          fullUrl: this.#getFullUrl(resourceType, resource.id as string),
+          resource: this.#removeHiddenFields(resource),
+        } as BundleEntry)
+    );
+
+    if (searchRequest.revInclude === 'Provenance:target') {
+      for (const resource of resources) {
+        entry.push({
+          search: {
+            mode: 'include',
+          },
+          resource: {
+            resourceType: 'Provenance',
+            target: [createReference(resource)],
+            recorded: resource.meta?.lastUpdated,
+            agent: [{ who: resource.meta?.author as Reference<ProfileResource> | undefined }],
+          },
+        });
+      }
+    }
+
     return {
-      entry: rows.slice(0, count).map((row) => ({
-        fullUrl: this.#getFullUrl(resourceType, row.id),
-        resource: this.#removeHiddenFields(JSON.parse(row.content as string)),
-      })),
+      entry: entry as BundleEntry<T>[],
       hasMore: rows.length > count,
     };
   }
