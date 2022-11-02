@@ -25,6 +25,7 @@ import {
   preciseGreaterThanOrEquals,
   preciseLessThan,
   preciseLessThanOrEquals,
+  preciseRound,
   resolveId,
   setCodeBySystem,
   stringify,
@@ -651,6 +652,11 @@ describe('Core Utils', () => {
     expect(findObservationReferenceRange(def, homer, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, marge, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, bart, ['N'])?.range?.low?.value).toBe(3);
+  });
+
+  test('preciseRound', () => {
+    expect(preciseRound(1, 0)).toBe(1);
+    expect(preciseRound(0.1 + 0.2, 1)).toBe(0.3);
   });
 
   test('preciseEquals', () => {
