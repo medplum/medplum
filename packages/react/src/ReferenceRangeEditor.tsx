@@ -3,9 +3,11 @@ import {
   Button,
   Container,
   createStyles,
+  Divider,
   Group,
   NativeSelect,
   Stack,
+  Text,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -23,7 +25,7 @@ const useStyles = createStyles((theme) => ({
     position: 'relative',
     margin: '4px 4px 8px 0',
     padding: '6px 12px 16px 6px',
-    border: `1.5px solid ${theme.colors.gray[1]}`,
+    border: `1.5px solid ${theme.colors.gray[3]}`,
     borderRadius: theme.radius.sm,
     transition: 'all 0.1s',
   },
@@ -71,7 +73,7 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const intervalFilters = ['gender', 'age', 'gestationalAge', 'appliesTo'] as const;
+const intervalFilters = ['gender', 'age', 'gestationalAge', 'context'] as const;
 
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
@@ -99,17 +101,16 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
 
   // const [definition, setDefinition] = useState<ObservationDefinition>(defaultDefinition);
   const [intervalGroups, setIntervalGroups] = useState<IntervalGroup[]>([]);
+  const [groupId, setGroupId] = useState(1);
 
   useEffect(() => {
     const definition = ensureQualifiedIntervalKeys(defaultDefinition);
-    setIntervalGroups(groupQualifiedIntervals(definition.qualifiedInterval || []));
-  }, [defaultDefinition]);
-
-  console.debug('Main Definition', intervalGroups);
+    setIntervalGroups(groupQualifiedIntervals(definition.qualifiedInterval || [], 1, setGroupId));
+  }, [defaultDefinition, setGroupId]);
 
   return (
     <>
-      <Form onSubmit={submitDefinition}>
+      <Form testid="reference-range-editor" onSubmit={submitDefinition}>
         <Stack>
           {intervalGroups.map((intervalGroup) => (
             <ReferenceRangeGroupEditor
@@ -124,11 +125,12 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
           ))}
         </Stack>
         <ActionIcon
-          title="Add Groups"
+          title="Add Group"
           size="sm"
           onClick={(e: React.MouseEvent) => {
             killEvent(e);
-            addGroup({ id: generateGroupId(), filters: {} as IntervalGroup['filters'], intervals: [] });
+            addGroup({ id: `group-id-${groupId}`, filters: {} as IntervalGroup['filters'], intervals: [] });
+            setGroupId((id) => id + 1);
           }}
         >
           <IconCirclePlus />
@@ -177,7 +179,6 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }
 
   function addInterval(groupId: string, addedInterval: ObservationDefinitionQualifiedInterval): void {
-    console.debug('Added interval', addedInterval);
     setIntervalGroups((groups) => {
       groups = [...groups];
       const currentGroup = groups.find((g) => g.id === groupId);
@@ -189,7 +190,6 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }
 
   function removeInterval(groupId: string, removedInterval: ObservationDefinitionQualifiedInterval): void {
-    console.debug('Removing interval', removedInterval);
     setIntervalGroups((groups) => {
       groups = [...groups];
       const currentGroup = groups.find((g) => g.id === groupId);
@@ -214,12 +214,13 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
   const { intervalGroup, unit } = props;
   const { classes } = useStyles();
   return (
-    <Container className={classes.section}>
+    <Container data-testid={intervalGroup.id} className={classes.section}>
       <Stack spacing={'lg'}>
         <Group>
           <Title order={3}>{intervalGroup.id}</Title>
           <ActionIcon
             title="Remove Group"
+            data-testid={`remove-group-button-${intervalGroup.id}`}
             key={`remove-group-button-${intervalGroup.id}`}
             size="sm"
             onClick={(e: React.MouseEvent) => {
@@ -230,41 +231,27 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
             <IconCircleMinus />
           </ActionIcon>
         </Group>
-        <Stack style={{ maxWidth: '25%' }}>
-          <NativeSelect
-            data={['', 'male', 'female']}
-            label="Gender:"
-            onChange={(e) => {
-              for (const interval of intervalGroup.intervals) {
-                let newGender: string | undefined = e.currentTarget?.value;
-                if (newGender === '') {
-                  newGender = undefined;
-                }
-                props.onChange(intervalGroup.id, {
-                  ...interval,
-                  gender: newGender as ObservationDefinitionQualifiedInterval['gender'],
-                });
-              }
-            }}
-          />
-        </Stack>
-        {intervalGroup.intervals.map((interval, index) => (
+        <ReferenceRangeGroupFilters intervalGroup={intervalGroup} onChange={props.onChange} />
+        <Divider />
+        {intervalGroup.intervals.map((interval) => (
           <Stack key={interval.id} spacing={'xs'}>
             <Group>
               <TextInput
                 key={`condition-${interval.id}`}
+                data-testid={`condition-${interval.id}`}
                 defaultValue={interval.condition}
                 label={'Condition: '}
                 size={'sm'}
                 onChange={(e) => {
                   killEvent(e);
                   props.onChange(intervalGroup.id, { ...interval, condition: e.currentTarget.value });
-                  console.debug('Condition changed', e.currentTarget.value);
                 }}
               />
               <ActionIcon
-                title="Remove"
+                title="Remove Interval"
                 size="sm"
+                key={`remove-interval-${interval.id}`}
+                data-testid={`remove-interval-${interval.id}`}
                 onClick={(e: React.MouseEvent) => {
                   killEvent(e);
                   props.onRemove(intervalGroup.id, interval);
@@ -279,13 +266,13 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
                 props.onChange(intervalGroup.id, { ...interval, range });
               }}
               key={`range-${interval.id}`}
-              name={`range-${index}`}
+              name={`range-${interval.id}`}
               defaultValue={interval.range}
             />
           </Stack>
         ))}
         <ActionIcon
-          title="Add"
+          title="Add Interval"
           size="sm"
           onClick={(e: React.MouseEvent) => {
             killEvent(e);
@@ -305,6 +292,74 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
   );
 }
 
+interface ReferenceRangeGroupFiltersProps {
+  intervalGroup: IntervalGroup;
+  onChange: ReferenceRangeGroupEditorProps['onChange'];
+}
+function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
+  const { intervalGroup, onChange } = props;
+  return (
+    <Stack style={{ maxWidth: '50%' }}>
+      <Group>
+        <NativeSelect
+          data={['', 'male', 'female']}
+          label="Gender:"
+          onChange={(e) => {
+            for (const interval of intervalGroup.intervals) {
+              let newGender: string | undefined = e.currentTarget?.value;
+              if (newGender === '') {
+                newGender = undefined;
+              }
+              onChange(intervalGroup.id, {
+                ...interval,
+                gender: newGender as ObservationDefinitionQualifiedInterval['gender'],
+              });
+            }
+          }}
+        />
+        <NativeSelect
+          data={['', 'pre-puberty', 'follicular', 'midcycle', 'luteal', 'postmenopausal']}
+          label="Endocrine:"
+          onChange={(e) => {
+            for (const interval of intervalGroup.intervals) {
+              let newEndocrine: string | undefined = e.currentTarget?.value;
+              if (newEndocrine === '') {
+                newEndocrine = undefined;
+              }
+              onChange(intervalGroup.id, {
+                ...interval,
+                context: {
+                  text: newEndocrine,
+                  coding: [
+                    { code: newEndocrine, system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' },
+                  ],
+                },
+              });
+            }
+          }}
+        />
+      </Group>
+      <Group spacing={'xs'}>
+        <Text component="label" htmlFor={`div-age-${intervalGroup.id}`}>
+          Age:
+        </Text>
+        <div id={`div-age-${intervalGroup.id}`}>
+          <RangeInput
+            key={`age-${intervalGroup.id}`}
+            name={`age-${intervalGroup.id}`}
+            defaultValue={intervalGroup.filters['age']}
+            onChange={(ageRange) => {
+              for (const interval of intervalGroup.intervals) {
+                onChange(intervalGroup.id, { ...interval, age: ageRange });
+              }
+            }}
+          />
+        </div>
+      </Group>
+    </Stack>
+  );
+}
+
 function ensureQualifiedIntervalKeys(definition: ObservationDefinition): ObservationDefinition {
   const intervals = definition.qualifiedInterval || [];
   return {
@@ -316,13 +371,17 @@ function ensureQualifiedIntervalKeys(definition: ObservationDefinition): Observa
   };
 }
 
-function groupQualifiedIntervals(intervals: ObservationDefinitionQualifiedInterval[]): IntervalGroup[] {
+function groupQualifiedIntervals(
+  intervals: ObservationDefinitionQualifiedInterval[],
+  groupId: number,
+  setGroupId: (id: number) => void
+): IntervalGroup[] {
   const groups: Record<string, IntervalGroup> = {};
   for (const interval of intervals) {
     const groupKey = generateGroupKey(interval);
     if (!(groupKey in groups)) {
       groups[groupKey] = {
-        id: generateGroupId(),
+        id: `group-id-${groupId++}`,
         filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])) as Record<
           typeof intervalFilters[number],
           any
@@ -332,6 +391,7 @@ function groupQualifiedIntervals(intervals: ObservationDefinitionQualifiedInterv
     }
     groups[groupKey].intervals.push(interval);
   }
+  setGroupId(groupId);
   return Object.values(groups);
 }
 
@@ -356,26 +416,13 @@ function generateId(existing?: string): string {
   return 'id-' + nextId++;
 }
 
-let nextGroupId = 1;
-function generateGroupId(existing?: string): string {
-  if (existing) {
-    if (existing.startsWith('group-id-')) {
-      const existingNum = parseInt(existing.substring(3));
-      if (!isNaN(existingNum)) {
-        nextGroupId = Math.max(nextGroupId, existingNum + 1);
-      }
-    }
-    return existing;
-  }
-  return 'group-id-' + nextGroupId++;
-}
-
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {
   const results = [
     `gender=${interval.gender}`,
     `age=${formatRangeString(interval.age)}`,
     `gestationalAge=${formatRangeString(interval.gestationalAge)}`,
-    `appliesTo=${interval.appliesTo?.[0]?.text}`,
+    `context=${interval.context?.text}`,
+    `appliesTo=${interval.appliesTo?.map((c) => c.text).join('+')}`,
   ];
 
   return results.join(':');
