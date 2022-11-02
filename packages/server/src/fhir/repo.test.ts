@@ -1,5 +1,6 @@
 import { createReference, getReferenceString, isOk, normalizeErrorString, Operator } from '@medplum/core';
 import {
+  AllergyIntolerance,
   Appointment,
   AuditEvent,
   Bundle,
@@ -2063,5 +2064,59 @@ describe('FHIR Repo', () => {
       const outcome = err as OperationOutcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
     }
+  });
+
+  test('Patient search without resource type', async () => {
+    // Create Patient
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    // Create AllergyIntolerance
+    const allergyIntolerance = await systemRepo.createResource<AllergyIntolerance>({
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(patient),
+    });
+
+    // Search by patient
+    const searchResult = await systemRepo.search({
+      resourceType: 'AllergyIntolerance',
+      filters: [
+        {
+          code: 'patient',
+          operator: Operator.EQUALS,
+          value: patient.id as string,
+        },
+      ],
+    });
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(allergyIntolerance.id);
+  });
+
+  test('Subject search without resource type', async () => {
+    // Create Patient
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    // Create Observation
+    const observation = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+
+    // Search by patient
+    const searchResult = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'subject',
+          operator: Operator.EQUALS,
+          value: patient.id as string,
+        },
+      ],
+    });
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
   });
 });
