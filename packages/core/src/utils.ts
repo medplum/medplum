@@ -637,6 +637,16 @@ export function matchesRange(value: number, range: Range, precision?: number): b
 }
 
 /**
+ * Returns the input number rounded to the specified number of digits.
+ * @param a The input number.
+ * @param precision The precision in number of digits.
+ * @returns The number rounded to the specified number of digits.
+ */
+export function preciseRound(a: number, precision: number): number {
+  return parseFloat(a.toFixed(precision));
+}
+
+/**
  * Returns true if the two numbers are equal to the given precision.
  * @param a The first number.
  * @param b The second number.
