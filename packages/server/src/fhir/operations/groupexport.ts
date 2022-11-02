@@ -1,5 +1,5 @@
-import { getReferenceString, resolveId } from '@medplum/core';
-import { Binary, BulkDataExport, Group, Project } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import { Binary, BulkDataExport, Bundle, Group, Patient, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { PassThrough } from 'stream';
@@ -7,6 +7,9 @@ import { getConfig } from '../../config';
 import { logger } from '../../logger';
 import { Repository, systemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { getPatientEverything } from './patienteverything';
+
+const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
 /**
  * Handles a Group export request.
@@ -36,28 +39,24 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
     requestTime: new Date().toISOString(),
   });
 
-  // Create a Binary placeholder
-  const contentType = 'application/fhir+ndjson';
-  const filename = `export-${bulkDataExport.id}.ndjson`;
-  const binary = await repo.createResource<Binary>({
-    resourceType: 'Binary',
-    contentType,
-  });
-
-  // Create the stream
-  const stream = new PassThrough();
-
-  // Start writing the stream to binary storage
-  const writerPromise = getBinaryStorage().writeBinary(binary, filename, contentType, stream);
+  // Start the exporter
+  const exporter = new BulkExporter(repo);
 
   // Read all patients in the group
   if (group.member) {
     for (const member of group.member) {
+      if (!member.entity?.reference) {
+        continue;
+      }
+      const [resourceType, memberId] = member.entity.reference.split('/') as [string, string];
       try {
-        const patientId = resolveId(member.entity);
-        if (patientId) {
-          const patient = await repo.readResource('Patient', patientId);
-          stream.write(JSON.stringify(patient) + '\n');
+        if (resourceType === 'Patient') {
+          const patient = await repo.readResource<Patient>('Patient', memberId);
+          const bundle = await getPatientEverything(repo, patient);
+          await exporter.writeBundle(bundle);
+        } else {
+          const resource = await repo.readResource(resourceType, memberId);
+          await exporter.writeResource(resource);
         }
       } catch (err) {
         logger.warn('Unable to read patient: ' + member.entity?.reference);
@@ -65,11 +64,8 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
     }
   }
 
-  // Write end of stream
-  stream.push(null);
-
-  // Wait for the stream to finish writing
-  await writerPromise;
+  // Close the exporter
+  await exporter.close();
 
   // Update the BulkDataExport
   await systemRepo.updateResource<BulkDataExport>({
@@ -78,12 +74,10 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
       project: (res.locals.project as Project).id,
     },
     transactionTime: new Date().toISOString(),
-    output: [
-      {
-        type: 'Patient',
-        url: getReferenceString(binary),
-      },
-    ],
+    output: Object.entries(exporter.writers).map(([resourceType, writer]) => ({
+      type: resourceType as ResourceType,
+      url: getReferenceString(writer.binary),
+    })),
   });
 
   // Send the response
@@ -103,4 +97,70 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
         },
       ],
     });
+}
+
+class BulkFileWriter {
+  readonly binary: Binary;
+  private readonly stream: PassThrough;
+  private readonly writerPromise: Promise<void>;
+
+  constructor(binary: Binary) {
+    this.binary = binary;
+
+    const filename = `export.ndjson`;
+    this.stream = new PassThrough();
+    this.writerPromise = getBinaryStorage().writeBinary(binary, filename, NDJSON_CONTENT_TYPE, this.stream);
+  }
+
+  write(resource: Resource): void {
+    this.stream.write(JSON.stringify(resource) + '\n');
+  }
+
+  close(): Promise<void> {
+    this.stream.push(null);
+    return this.writerPromise;
+  }
+}
+
+class BulkExporter {
+  readonly repo: Repository;
+  readonly writers: Record<string, BulkFileWriter> = {};
+
+  constructor(repo: Repository) {
+    this.repo = repo;
+  }
+
+  async getWriter(resourceType: string): Promise<BulkFileWriter> {
+    let writer = this.writers[resourceType];
+    if (!writer) {
+      const binary = await this.repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: NDJSON_CONTENT_TYPE,
+      });
+      writer = new BulkFileWriter(binary);
+      this.writers[resourceType] = writer;
+    }
+    return writer;
+  }
+
+  async writeBundle(bundle: Bundle): Promise<void> {
+    if (bundle.entry) {
+      for (const entry of bundle.entry) {
+        if (entry.resource) {
+          await this.writeResource(entry.resource);
+        }
+      }
+    }
+  }
+
+  async writeResource(resource: Resource): Promise<void> {
+    const writer = await this.getWriter(resource.resourceType);
+    writer.write(resource);
+  }
+
+  async close(): Promise<void> {
+    for (const writer of Object.values(this.writers)) {
+      await writer.close();
+    }
+  }
 }
