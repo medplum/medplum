@@ -225,5 +225,5 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
  */
 function isCritical(observation: Observation): boolean {
   const code = observation.interpretation?.[0]?.coding?.[0]?.code;
-  return code === 'AA' || code === 'LL' || code === 'HH' || code === 'RR';
+  return code === 'AA' || code === 'LL' || code === 'HH' || code === 'A';
 }
