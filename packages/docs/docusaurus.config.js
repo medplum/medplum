@@ -154,6 +154,10 @@ const config = {
                 label: 'Documentation',
                 to: '/docs',
               },
+              {
+                label: 'Search',
+                to: '/search',
+              },
             ],
           },
           {
