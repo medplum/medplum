@@ -527,6 +527,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterValueDialog
+        key={state.filterDialogSearchParam?.code}
         visible={stateRef.current.filterDialogVisible}
         title={'Input'}
         resourceType={resourceType}
