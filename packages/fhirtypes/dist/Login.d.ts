@@ -8,6 +8,7 @@ import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
 import { ProjectMembership } from './ProjectMembership';
 import { Reference } from './Reference';
+import { SmartAppLaunch } from './SmartAppLaunch';
 import { User } from './User';
 
 /**
@@ -139,6 +140,11 @@ export interface Login {
    * Whether this login has super administrator privileges.
    */
   superAdmin?: boolean;
+
+  /**
+   * Optional SMART App Launch context for this login.
+   */
+  launch?: Reference<SmartAppLaunch>;
 
   /**
    * The Internet Protocol (IP) address of the client or last proxy that

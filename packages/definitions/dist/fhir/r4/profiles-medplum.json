@@ -1014,6 +1014,17 @@
             }]
           },
           {
+            "id" : "Login.launch",
+            "path" : "Login.launch",
+            "definition" : "Optional SMART App Launch context for this login.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/SmartAppLaunch"]
+            }]
+          },
+          {
             "id" : "Login.remoteAddress",
             "path" : "Login.remoteAddress",
             "definition" : "The Internet Protocol (IP) address of the client or last proxy that sent the request.",
@@ -2010,6 +2021,95 @@
             "max" : "1",
             "type" : [{
               "code" : "uri"
+            }]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/SmartAppLaunch",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "SmartAppLaunch",
+      "name" : "SmartAppLaunch",
+      "url" : "https://medplum.com/fhir/StructureDefinition/SmartAppLaunch",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "SmartAppLaunch",
+      "description" : "User specific configuration for the Medplum application.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "SmartAppLaunch",
+            "path" : "SmartAppLaunch",
+            "short" : "User specific configuration for the Medplum application.",
+            "definition" : "User specific configuration for the Medplum application.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
+            "id" : "SmartAppLaunch.id",
+            "path" : "SmartAppLaunch.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.meta",
+            "path" : "SmartAppLaunch.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.implicitRules",
+            "path" : "SmartAppLaunch.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.language",
+            "path" : "SmartAppLaunch.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.patient",
+            "path" : "SmartAppLaunch.patient",
+            "definition" : "Optional patient indicating that the app was launched in the patient context.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Patient"]
+            }]
+          },
+          {
+            "id" : "SmartAppLaunch.encounter",
+            "path" : "SmartAppLaunch.encounter",
+            "definition" : "Optional encounter indicating that the app was launched in the encounter context.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/Encounter"]
             }]
           }
         ]

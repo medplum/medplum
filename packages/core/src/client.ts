@@ -189,10 +189,7 @@ export interface CreatePdfFunction {
   ): Promise<any>;
 }
 
-export interface LoginRequest {
-  readonly email: string;
-  readonly password: string;
-  readonly remember?: boolean;
+export interface BaseLoginRequest {
   readonly projectId?: string;
   readonly clientId?: string;
   readonly resourceType?: string;
@@ -200,6 +197,14 @@ export interface LoginRequest {
   readonly nonce?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
+  readonly googleClientId?: string;
+  readonly launch?: string;
+}
+
+export interface EmailPasswordLoginRequest extends BaseLoginRequest {
+  readonly email: string;
+  readonly password: string;
+  readonly remember?: boolean;
 }
 
 export interface NewUserRequest {
@@ -228,16 +233,9 @@ export interface GoogleCredentialResponse {
   readonly credential: string;
 }
 
-export interface GoogleLoginRequest {
+export interface GoogleLoginRequest extends BaseLoginRequest {
   readonly googleClientId: string;
   readonly googleCredential: string;
-  readonly projectId?: string;
-  readonly clientId?: string;
-  readonly resourceType?: string;
-  readonly scope?: string;
-  readonly nonce?: string;
-  readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
   readonly createUser?: boolean;
 }
 
@@ -669,7 +667,7 @@ export class MedplumClient extends EventTarget {
    * @param loginRequest Login request including email and password.
    * @returns Promise to the authentication response.
    */
-  async startLogin(loginRequest: LoginRequest): Promise<LoginAuthenticationResponse> {
+  async startLogin(loginRequest: EmailPasswordLoginRequest): Promise<LoginAuthenticationResponse> {
     const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/login', {
       ...loginRequest,
@@ -699,7 +697,7 @@ export class MedplumClient extends EventTarget {
     }) as Promise<LoginAuthenticationResponse>;
   }
 
-  getCodeChallenge(loginRequest: LoginRequest | GoogleLoginRequest): {
+  getCodeChallenge(loginRequest: BaseLoginRequest): {
     codeChallenge?: string;
     codeChallengeMethod?: string;
   } {

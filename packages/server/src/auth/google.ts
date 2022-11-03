@@ -131,6 +131,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     resourceType,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
+    launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,

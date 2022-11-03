@@ -137,6 +137,7 @@ import { Schedule } from './Schedule';
 import { SearchParameter } from './SearchParameter';
 import { ServiceRequest } from './ServiceRequest';
 import { Slot } from './Slot';
+import { SmartAppLaunch } from './SmartAppLaunch';
 import { Specimen } from './Specimen';
 import { SpecimenDefinition } from './SpecimenDefinition';
 import { StructureDefinition } from './StructureDefinition';
@@ -295,6 +296,7 @@ export type Resource = AccessPolicy
   | SearchParameter
   | ServiceRequest
   | Slot
+  | SmartAppLaunch
   | Specimen
   | SpecimenDefinition
   | StructureDefinition

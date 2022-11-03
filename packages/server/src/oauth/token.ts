@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr, TokenResult } from './utils';
+import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -98,8 +98,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     refreshSecret: generateSecret(32),
   });
 
-  const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
-  sendTokenResponse(res, membership, scope, token);
+  await sendTokenResponse(res, login, membership);
 }
 
 /**
@@ -183,8 +182,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-  const token = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
-  sendTokenResponse(res, membership, login.scope as string, token);
+  await sendTokenResponse(res, login, membership);
 }
 
 /**
@@ -255,8 +253,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     login.membership as Reference<ProjectMembership>
   );
 
-  const token = await getAuthTokens(updatedLogin, membership.profile as Reference<ProfileResource>);
-  sendTokenResponse(res, membership, login.scope as string, token);
+  await sendTokenResponse(res, updatedLogin, membership);
 }
 
 /**
@@ -395,12 +392,21 @@ async function validateClientIdAndSecret(
 /**
  * Sends a successful token response.
  * @param res The HTTP response.
+ * @param login The user login.
  * @param membership The project membership.
- * @param scope The OAuth2 scope string.
- * @param tokens The tokens to send.
  */
-function sendTokenResponse(res: Response, membership: ProjectMembership, scope: string, tokens: TokenResult): void {
+async function sendTokenResponse(res: Response, login: Login, membership: ProjectMembership): Promise<void> {
+  const config = getConfig();
+  const tokens = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
   let patient = undefined;
+  let encounter = undefined;
+
+  if (login.launch) {
+    const launch = await systemRepo.readReference(login.launch);
+    patient = resolveId(launch.patient);
+    encounter = resolveId(launch.encounter);
+  }
+
   if (membership.profile?.reference?.startsWith('Patient/')) {
     patient = membership.profile.reference.replace('Patient/', '');
   }
@@ -408,13 +414,16 @@ function sendTokenResponse(res: Response, membership: ProjectMembership, scope: 
   res.status(200).json({
     token_type: 'Bearer',
     expires_in: 3600,
-    scope,
+    scope: login.scope,
     id_token: tokens.idToken,
     access_token: tokens.accessToken,
     refresh_token: tokens.refreshToken,
     project: membership.project,
     profile: membership.profile,
     patient,
+    encounter,
+    smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
+    need_patient_banner: !!patient,
   });
 }
 
