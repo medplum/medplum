@@ -306,7 +306,7 @@ describe('ReferenceRangeEditor', () => {
   });
 
   /**
-   * Test existing ids (numeric). Create an interval 'hole'. Make sure ids are monotonic
+   * Test existing ids (numeric + non-numeric).
    */
   test('Interval Ids', async () => {
     const definition = JSON.parse(JSON.stringify(HDLDefinition));
@@ -338,6 +338,34 @@ describe('ReferenceRangeEditor', () => {
     const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;
     const checkIntervalIds = checkSubmission.qualifiedInterval?.map((interval) => interval.id);
     expect(checkIntervalIds).toMatchObject(['id-66', 'id-foo', 'id-21', 'id-67', 'id-68']);
+  });
+
+  /**
+   * Test existing ids (numeric + non-numeric).
+   */
+  test('Interval Ids with "hole"', async () => {
+    const definition = JSON.parse(JSON.stringify(HDLDefinition));
+    if (definition.qualifiedInterval?.[0]) {
+      definition.qualifiedInterval[0].id = 'id-1';
+    }
+    if (definition.qualifiedInterval?.[1]) {
+      delete definition.qualifiedInterval[1].id;
+    }
+    if (definition.qualifiedInterval?.[2]) {
+      definition.qualifiedInterval[2].id = 'id-2';
+    }
+    const onSubmit = jest.fn();
+
+    await setup({
+      definition,
+      onSubmit,
+    });
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    const checkIntervalIds = checkSubmission.qualifiedInterval?.map((interval) => interval.id);
+    expect(new Set(checkIntervalIds).size).toBe(3);
+    expect(checkIntervalIds).toMatchObject(['id-1', 'id-3', 'id-2']);
   });
 
   /**

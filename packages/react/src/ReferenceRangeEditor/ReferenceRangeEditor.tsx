@@ -30,13 +30,14 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-const intervalFilters = ['gender', 'age', 'gestationalAge', 'context'] as const;
-
+// Properties of qualified intervals used for grouping
+const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo'] as const;
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
   onSubmit: (result: ObservationDefinition) => void;
 }
 
+// Helper type that groups of qualified intervals by equal filter criteria
 type IntervalGroup = {
   id: string;
   filters: Record<typeof intervalFilters[number], any>;
@@ -45,7 +46,6 @@ type IntervalGroup = {
 
 const defaultProps: ReferenceRangeEditorProps = {
   definition: { resourceType: 'ObservationDefinition' },
-
   onSubmit: () => {
     return;
   },
@@ -65,36 +65,34 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }, [defaultDefinition]);
 
   return (
-    <>
-      <Form testid="reference-range-editor" onSubmit={submitDefinition}>
-        <Stack>
-          {intervalGroups.map((intervalGroup) => (
-            <ReferenceRangeGroupEditor
-              unit={getUnitString(defaultDefinition.quantitativeDetails?.unit)}
-              onChange={changeInterval}
-              onAdd={addInterval}
-              onRemove={removeInterval}
-              onRemoveGroup={removeGroup}
-              key={`group-${intervalGroup.id}`}
-              intervalGroup={intervalGroup}
-            />
-          ))}
-        </Stack>
-        <ActionIcon
-          title="Add Group"
-          size="sm"
-          onClick={(e: React.MouseEvent) => {
-            killEvent(e);
-            addGroup({ id: `group-id-${groupId}`, filters: {} as IntervalGroup['filters'], intervals: [] });
-            setGroupId((id) => id + 1);
-          }}
-        >
-          <IconCirclePlus />
-        </ActionIcon>
+    <Form testid="reference-range-editor" onSubmit={submitDefinition}>
+      <Stack>
+        {intervalGroups.map((intervalGroup) => (
+          <ReferenceRangeGroupEditor
+            unit={getUnitString(defaultDefinition.quantitativeDetails?.unit)}
+            onChange={changeInterval}
+            onAdd={addInterval}
+            onRemove={removeInterval}
+            onRemoveGroup={removeGroup}
+            key={`group-${intervalGroup.id}`}
+            intervalGroup={intervalGroup}
+          />
+        ))}
+      </Stack>
+      <ActionIcon
+        title="Add Group"
+        size="sm"
+        onClick={(e: React.MouseEvent) => {
+          killEvent(e);
+          addGroup({ id: `group-id-${groupId}`, filters: {} as IntervalGroup['filters'], intervals: [] });
+          setGroupId((id) => id + 1);
+        }}
+      >
+        <IconCirclePlus />
+      </ActionIcon>
 
-        <Button type="submit">Save</Button>
-      </Form>
-    </>
+      <Button type="submit">Save</Button>
+    </Form>
   );
 
   /**
@@ -167,6 +165,10 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }
 }
 
+/**
+ * Helper component that renders an "interval group", which is a set of ObservationDefinitionQualifiedIntervals
+ * that have the same filter values
+ */
 export interface ReferenceRangeGroupEditorProps {
   intervalGroup: IntervalGroup;
   unit: string | undefined;
@@ -263,8 +265,6 @@ interface ReferenceRangeGroupFiltersProps {
 
 /**
  * Render the "filters" section of the IntervalGroup
- * @param props
- * @returns
  */
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
   const { intervalGroup, onChange } = props;
@@ -345,32 +345,35 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
   );
 }
 
+/**
+ * Helper function that assigns ids to each qualifiedInterval of an ObservationDefinition
+ * @param definition An ObservationDefinition
+ * @param setIntervalId React setState function for the intervalId
+ * @returns
+ */
 function ensureQualifiedIntervalKeys(
   definition: ObservationDefinition,
   setIntervalId: (id: number) => void
 ): ObservationDefinition {
-  let nextId = 1;
+  const intervals = definition.qualifiedInterval || [];
+  // Set the nextId to the max of any existing numeric id
+  let nextId =
+    Math.max(
+      ...intervals.map((interval) => {
+        const existingNum = parseInt(interval.id?.substring(3) || '');
+        return !isNaN(existingNum) ? existingNum : Number.NEGATIVE_INFINITY;
+      })
+    ) + 1;
 
-  function generateId(existing: string | undefined): string {
-    if (existing) {
-      if (existing.startsWith('id-')) {
-        const existingNum = parseInt(existing.substring(3));
-        if (!isNaN(existingNum)) {
-          nextId = Math.max(nextId, existingNum + 1);
-        }
-      }
-      return existing;
-    }
-
-    return `id-${nextId++}`;
+  if (!Number.isFinite(nextId)) {
+    nextId = 1;
   }
 
-  const intervals = definition.qualifiedInterval || [];
   definition = {
     ...definition,
     qualifiedInterval: intervals.map((interval) => ({
       ...interval,
-      id: generateId(interval.id),
+      id: interval.id || `id-${nextId++}`,
     })),
   };
   setIntervalId(nextId);
