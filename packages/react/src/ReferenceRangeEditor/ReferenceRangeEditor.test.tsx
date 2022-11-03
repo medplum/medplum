@@ -75,6 +75,7 @@ describe('ReferenceRangeEditor', () => {
 
     const addGroupButton = screen.getByTitle('Add Group');
     fireEvent.click(addGroupButton);
+    fireEvent.click(screen.getByTitle('Add Interval'));
     const genderDropdown = screen.getByLabelText('Gender:');
     expect(genderDropdown).toBeDefined();
 
@@ -328,6 +329,10 @@ describe('ReferenceRangeEditor', () => {
     // Add an interval and submit. The id should be one more than the highest existing interval
     fireEvent.click(screen.getByTitle('Add Interval'));
     fireEvent.click(screen.getByTitle('Add Interval'));
+
+    fireEvent.change(screen.getByTestId('range-id-67-low-value'), { target: { value: 2 } });
+    fireEvent.change(screen.getByTestId('range-id-68-low-value'), { target: { value: 8 } });
+
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;

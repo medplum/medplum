@@ -102,7 +102,9 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
    */
 
   function submitDefinition(): void {
-    const qualifiedInterval = intervalGroups.flatMap((group) => group.intervals);
+    const qualifiedInterval = intervalGroups
+      .flatMap((group) => group.intervals)
+      .filter((interval) => !isEmptyInterval(interval));
     props.onSubmit({ ...defaultDefinition, qualifiedInterval });
   }
 
@@ -417,4 +419,8 @@ function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): str
 
 function getUnitString(unit: CodeableConcept | undefined): string | undefined {
   return unit && (getCodeBySystem(unit, 'http://unitsofmeasure.org') || unit.text);
+}
+
+function isEmptyInterval(interval: ObservationDefinitionQualifiedInterval): boolean {
+  return interval.range?.low?.value === undefined && interval.range?.high?.value === undefined;
 }
