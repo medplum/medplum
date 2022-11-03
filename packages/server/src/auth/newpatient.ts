@@ -1,14 +1,5 @@
-import { badRequest, createReference, formatHumanName, getReferenceString } from '@medplum/core';
-import {
-  AccessPolicy,
-  HumanName,
-  Login,
-  Patient,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { badRequest, createReference } from '@medplum/core';
+import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -85,9 +76,7 @@ export async function createPatient(
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
 
-  const template = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-
-  const policy = await systemRepo.createResource<AccessPolicy>(buildAccessPolicy(template, profile));
+  const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
 
   const membership = await createProjectMembership(user, project, profile, createReference(policy));
 
@@ -97,16 +86,4 @@ export async function createPatient(
   });
 
   return membership;
-}
-
-function buildAccessPolicy(template: AccessPolicy, patient: Patient): AccessPolicy {
-  const templateJson = JSON.stringify(template);
-  const policyJson = templateJson
-    .replaceAll('%patient.id', patient.id as string)
-    .replaceAll('%patient', getReferenceString(patient));
-
-  return {
-    ...JSON.parse(policyJson),
-    name: formatHumanName(patient.name?.[0] as HumanName) + ' Access Policy',
-  };
 }

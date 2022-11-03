@@ -1,5 +1,5 @@
 import { createReference, Operator, resolveId } from '@medplum/core';
-import { AccessPolicy, BundleEntry, Patient } from '@medplum/fhirtypes';
+import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -126,6 +126,7 @@ describe('New patient', () => {
       projectId,
     });
     expect(res7.status).toBe(200);
+    expect(res7.body.code).toBeDefined();
 
     // Try to reuse the login
     // (This should fail)
@@ -150,23 +151,6 @@ describe('New patient', () => {
 
     const patient = res10.body.entry[0].resource as Patient;
 
-    // Get the AccessPolicy
-    const res11 = await request(app)
-      .get(`/fhir/R4/AccessPolicy`)
-      .set('Authorization', 'Bearer ' + res3.body.access_token);
-    expect(res11.status).toBe(200);
-
-    const accessPolicies = (res11.body.entry as BundleEntry<AccessPolicy>[]).map((e) => e.resource) as AccessPolicy[];
-    expect(accessPolicies).toHaveLength(2);
-    expect(accessPolicies.some((p) => p.name === 'Default Patient Policy')).toBe(true);
-    expect(accessPolicies.some((p) => p.name === 'Peggy Patient Access Policy')).toBe(true);
-
-    const peggyPolicy = accessPolicies.find((p) => p.name === 'Peggy Patient Access Policy');
-    expect(peggyPolicy).toBeDefined();
-    expect(peggyPolicy?.compartment?.reference).toEqual('Patient/' + patient.id);
-    expect(peggyPolicy?.resource?.[0]?.criteria).toEqual('Patient?_id=' + patient.id);
-    expect(peggyPolicy?.resource?.[1]?.criteria).toEqual('Observation?subject=Patient/' + patient.id);
-
     // Get the ProjectMembership
     const membershipBundle = await systemRepo.search({
       resourceType: 'ProjectMembership',
@@ -175,5 +159,47 @@ describe('New patient', () => {
     expect(membershipBundle).toBeDefined();
     expect(membershipBundle.entry).toBeDefined();
     expect(membershipBundle.entry).toHaveLength(1);
+
+    // Create an observation for the new patient
+    const res11 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token)
+      .type('json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+    expect(res11.status).toBe(201);
+
+    // Create an observation for a different patient
+    const res12 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token)
+      .type('json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: randomUUID() },
+      });
+    expect(res12.status).toBe(201);
+
+    // Login as the patient
+    const res13 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res7.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res13.status).toBe(200);
+
+    // Make sure that the patient can only access their observations
+    const res14 = await request(app)
+      .get(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res13.body.access_token);
+    expect(res14.status).toBe(200);
+    expect(res14.body.entry).toHaveLength(1);
+    expect(res14.body.entry[0].resource.id).toEqual(res11.body.id);
   });
 });

@@ -1865,6 +1865,7 @@ export async function getRepoForLogin(
 
   if (membership.accessPolicy) {
     accessPolicy = await systemRepo.readReference(membership.accessPolicy);
+    accessPolicy = setupAccessPolicy(accessPolicy, membership.profile as Reference<ProfileResource>);
   }
 
   if (login.scope) {
@@ -1882,6 +1883,24 @@ export async function getRepoForLogin(
     strictMode,
     extendedMode,
   });
+}
+
+/**
+ * Sets up an AccessPolicy by resolving variables.
+ * @param original The original AccessPolicy.
+ * @param profile The user profile.
+ * @returns The AccessPolicy with variables resolved.
+ */
+function setupAccessPolicy(original: AccessPolicy, profile: Reference<ProfileResource>): AccessPolicy {
+  const profileReference = profile.reference as string;
+  const profileId = resolveId(profile) as string;
+  const templateJson = JSON.stringify(original);
+  const policyJson = templateJson
+    .replaceAll('%patient.id', profileId)
+    .replaceAll('%profile.id', profileId)
+    .replaceAll('%patient', profileReference)
+    .replaceAll('%profile', profileReference);
+  return JSON.parse(policyJson) as AccessPolicy;
 }
 
 export const systemRepo = new Repository({
