@@ -1,9 +1,9 @@
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Document } from '../Document';
-import { ErrorBoundary } from '../ErrorBoundary';
-import { ReferenceRangeEditor } from '../ReferenceRangeEditor';
-import { HDLDefinition, TestosteroneDefinition } from './referenceLab';
+import { Document } from '../Document/Document';
+import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
+import { ReferenceRangeEditor } from './ReferenceRangeEditor';
+import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 
 export default {
   title: 'Medplum/ReferenceRangeEditor',

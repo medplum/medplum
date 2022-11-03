@@ -3,9 +3,9 @@ import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from './MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
-import { HDLDefinition } from './stories/referenceLab';
+import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 
 const medplum = new MockClient();
 
@@ -373,32 +373,114 @@ describe('ReferenceRangeEditor', () => {
       'Negative risk',
     ]);
   });
-});
 
-/**
- * Tests:
- * Add/Remove/Change Groups:
- * [x] Render empty object
- * [x] Add group with no filters. Make sure value looks ok
- * [x] Add and remove groups. Make sure the original value looks like the original
- * [x] Create a group 'hole'. Make sure ids are monotonic
- * [x] Modify HDL gender filter. Make sure submitted value reflects gender filter
- * [ ] Modify HDL age filter. Make sure submitted value reflects age filter
- * [ ] Modify HDL endocrine filter. Make sure submitted value reflects endocrine filter
- * [x] Modify null HDL filter to a value to something and back to null. Make sure resulting values are "undefined"
- *
- *
- * Add/Remove/Change Intervals:
- * [x] Create an interval 'hole'. Make sure ids are monotonic
- * [x] Test existing ids (numeric)
- * [x] Test existing ids (non-numeric)
- * [x] Modify HDL value. Make sure submitted interval reflects change
- * [x] Modify HDL condition name. Make sure submitted interval reflects change
- * [x] Add an interval, check units
- * [x] remove an interval. Test Submitted Observation def
- *
- * Multiple Groups:
- * [ ] Change one testosterone filter to make sure it gets set only to a single group
- * [ ] Change one testosterone filter to match another group
- *
- */
+  /**
+   * Make sure updating one group's filters does not affect the others
+   */
+  test('Update Multiple Group Filters', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      definition: JSON.parse(JSON.stringify(TestosteroneDefinition)),
+      onSubmit,
+    });
+
+    const groups = screen.getAllByTestId(/^group-id-\d+/);
+    expect(groups).toHaveLength(7);
+
+    const ageHighInput = screen.getByTestId('age-group-id-1-high-value');
+    const ageLowInput = screen.getByTestId('age-group-id-2-low-value');
+    fireEvent.change(ageHighInput, { target: { value: '16' } });
+    fireEvent.change(ageLowInput, { target: { value: '17' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.low?.value)).toMatchObject([
+      11, 11, 17, 17, 17, 20, 20, 20, 50, 50, 50, 11, 11, 20, 20, 20, 50, 50, 50,
+    ]);
+
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.high?.value)).toMatchObject([
+      16,
+      16,
+      19,
+      19,
+      19,
+      49,
+      49,
+      49,
+      undefined,
+      undefined,
+      undefined,
+      19,
+      19,
+      49,
+      49,
+      49,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+
+  /**
+   * Update one group's filters to match another group. Make sure no other groups are affected
+   */
+  test('Overlapping Group Filters', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      definition: JSON.parse(JSON.stringify(TestosteroneDefinition)),
+      onSubmit,
+    });
+
+    const groups = screen.getAllByTestId(/^group-id-\d+/);
+    expect(groups).toHaveLength(7);
+
+    const ageLowInput = screen.getByTestId('age-group-id-2-low-value');
+    fireEvent.change(ageLowInput, { target: { value: '11' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.gender)).toMatchObject([
+      ...Array(11).fill('male'),
+      ...Array(8).fill('female'),
+    ]);
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.low?.value)).toMatchObject([
+      ...Array(5).fill(11),
+      20,
+      20,
+      20,
+      50,
+      50,
+      50,
+      11,
+      11,
+      20,
+      20,
+      20,
+      50,
+      50,
+      50,
+    ]);
+
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.high?.value)).toMatchObject([
+      14,
+      14,
+      19,
+      19,
+      19,
+      49,
+      49,
+      49,
+      undefined,
+      undefined,
+      undefined,
+      19,
+      19,
+      49,
+      49,
+      49,
+      undefined,
+      undefined,
+      undefined,
+    ]);
+  });
+});

@@ -9,16 +9,15 @@ import {
   Stack,
   Text,
   TextInput,
-  Title,
 } from '@mantine/core';
 import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
-import { killEvent } from './utils/dom';
+import { killEvent } from '../utils/dom';
 
 import { formatRangeString, getCodeBySystem } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import { Form } from './Form/Form';
-import { RangeInput } from './RangeInput/RangeInput';
+import { Form } from '../Form/Form';
+import { RangeInput } from '../RangeInput/RangeInput';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -29,55 +28,12 @@ const useStyles = createStyles((theme) => ({
     borderRadius: theme.radius.sm,
     transition: 'all 0.1s',
   },
-
-  hovering: {
-    border: `1.5px solid ${theme.colors.blue[5]}`,
-  },
-
-  editing: {
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderLeft: `4px solid ${theme.colors.blue[5]}`,
-  },
-
-  questionBody: {
-    maxWidth: 600,
-  },
-
-  topActions: {
-    position: 'absolute',
-    right: 4,
-    top: 1,
-    padding: 4,
-    color: theme.colors.gray[5],
-    fontSize: theme.fontSizes.xs,
-  },
-
-  bottomActions: {
-    position: 'absolute',
-    right: 4,
-    bottom: 0,
-    fontSize: theme.fontSizes.xs,
-
-    '& a': {
-      marginLeft: 8,
-    },
-  },
-
-  linkIdInput: {
-    width: 100,
-    marginBottom: 4,
-  },
-
-  typeSelect: {
-    width: 100,
-  },
 }));
 
 const intervalFilters = ['gender', 'age', 'gestationalAge', 'context'] as const;
 
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
-  groupBy?: typeof intervalFilters[number][];
   onSubmit: (result: ObservationDefinition) => void;
 }
 
@@ -89,7 +45,7 @@ type IntervalGroup = {
 
 const defaultProps: ReferenceRangeEditorProps = {
   definition: { resourceType: 'ObservationDefinition' },
-  groupBy: ['gender', 'age'],
+
   onSubmit: () => {
     return;
   },
@@ -106,7 +62,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   useEffect(() => {
     const definition = ensureQualifiedIntervalKeys(defaultDefinition, setIntervalId);
     setIntervalGroups(groupQualifiedIntervals(definition.qualifiedInterval || [], setGroupId));
-  }, [defaultDefinition, setGroupId, setIntervalId]);
+  }, [defaultDefinition]);
 
   return (
     <>
@@ -221,7 +177,6 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
     <Container data-testid={intervalGroup.id} className={classes.section}>
       <Stack spacing={'lg'}>
         <Group>
-          <Title order={3}>{intervalGroup.id}</Title>
           <ActionIcon
             title="Remove Group"
             data-testid={`remove-group-button-${intervalGroup.id}`}
