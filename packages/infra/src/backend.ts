@@ -59,7 +59,7 @@ export class BackEnd extends Construct {
       instanceProps: {
         vpc: vpc,
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
       },
       backup: {
@@ -184,7 +184,7 @@ export class BackEnd extends Construct {
       taskDefinition: taskDefinition,
       assignPublicIp: false,
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       desiredCount: config.desiredServerCount,
       securityGroups: [fargateSecurityGroup],
