@@ -1,11 +1,11 @@
+import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { HDLDefinition, TestosteroneDefinition } from './stories/referenceLab';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from './MedplumProvider';
+import { MedplumProvider } from './MedplumProvider/MedplumProvider';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
-import { ObservationDefinition } from '@medplum/fhirtypes';
+import { HDLDefinition } from './stories/referenceLab';
 
 const medplum = new MockClient();
 
@@ -151,7 +151,7 @@ describe('ReferenceRangeEditor', () => {
   /**
    * Modify HDL age filter. Make sure submitted value reflects filter
    */
-  test('Set Gender Filter', async () => {
+  test('Set Age Filter', async () => {
     const onSubmit = jest.fn();
     await setup({
       definition: HDLDefinition,
@@ -182,6 +182,41 @@ describe('ReferenceRangeEditor', () => {
         age: {
           low: { value: 10, unit: 'years', system: 'http://unitsofmeasure.org' },
           high: { value: 18, unit: 'years', system: 'http://unitsofmeasure.org' },
+        },
+      },
+    ]);
+  });
+
+  /**
+   * Modify HDL endocrine filter. Make sure submitted value reflects filter
+   */
+  test('Set Endocrine Filter', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      definition: HDLDefinition,
+      onSubmit,
+    });
+
+    const endocrineInput = screen.getByLabelText('Endocrine:');
+
+    fireEvent.change(endocrineInput, { target: { value: 'luteal' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    expect(checkSubmitted?.qualifiedInterval).toMatchObject([
+      {
+        context: {
+          text: 'luteal',
+        },
+      },
+      {
+        context: {
+          text: 'luteal',
+        },
+      },
+      {
+        context: {
+          text: 'luteal',
         },
       },
     ]);
@@ -231,7 +266,73 @@ describe('ReferenceRangeEditor', () => {
       .getAllByTestId(/range-id-\d+-low-unit/)
       .map((element) => (element as HTMLInputElement).value);
     expect(unitInputs).toHaveLength(4);
-    expect(unitInputs[3]).toEqual('mg/dL');
+    const lastUnitInput = screen.getByTestId('range-id-4-low-unit') as HTMLInputElement;
+    expect(lastUnitInput.value).toEqual('mg/dL');
+  });
+
+  /**
+   * Remove an interval. Test Submitted Observation def
+   */
+  test('Remove Interval', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      definition: HDLDefinition,
+      onSubmit,
+    });
+
+    fireEvent.click(screen.getAllByTitle('Remove Interval')[1]);
+
+    fireEvent.click(screen.getByText('Save'));
+    const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    const checkIntervalIds = checkSubmission.qualifiedInterval?.map((interval) => interval.id);
+    expect(checkSubmission.qualifiedInterval).toHaveLength(2);
+    expect(checkSubmission.qualifiedInterval?.[0].range).toMatchObject({
+      high: {
+        value: 39,
+        unit: 'mg/dL',
+        system: 'http://unitsofmeasure.org',
+      },
+    });
+    expect(checkSubmission.qualifiedInterval?.[1].range).toMatchObject({
+      low: {
+        value: 61,
+        unit: 'mg/dL',
+        system: 'http://unitsofmeasure.org',
+      },
+    });
+
+    expect(checkIntervalIds).toMatchObject(['id-1', 'id-3']);
+  });
+
+  /**
+   * Test existing ids (numeric). Create an interval 'hole'. Make sure ids are monotonic
+   */
+  test('Interval Ids', async () => {
+    const definition = JSON.parse(JSON.stringify(HDLDefinition));
+    if (definition.qualifiedInterval?.[0]) {
+      definition.qualifiedInterval[0].id = 'id-66';
+    }
+    if (definition.qualifiedInterval?.[1]) {
+      definition.qualifiedInterval[1].id = 'id-foo';
+    }
+    if (definition.qualifiedInterval?.[2]) {
+      definition.qualifiedInterval[2].id = 'id-21';
+    }
+    const onSubmit = jest.fn();
+
+    await setup({
+      definition,
+      onSubmit,
+    });
+
+    // Add an interval and submit. The id should be one more than the highest existing interval
+    fireEvent.click(screen.getByTitle('Add Interval'));
+    fireEvent.click(screen.getByTitle('Add Interval'));
+    fireEvent.click(screen.getByText('Save'));
+
+    const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    const checkIntervalIds = checkSubmission.qualifiedInterval?.map((interval) => interval.id);
+    expect(checkIntervalIds).toMatchObject(['id-66', 'id-foo', 'id-21', 'id-67', 'id-68']);
   });
 
   /**
@@ -244,8 +345,8 @@ describe('ReferenceRangeEditor', () => {
       onSubmit,
     });
 
-    const valueInputs = screen.getAllByTestId(/range-id-\d+-low-value/);
-    fireEvent.change(valueInputs[0], { target: { value: '3' } });
+    const valueInput = screen.getByTestId('range-id-1-low-value');
+    fireEvent.change(valueInput, { target: { value: '3' } });
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
@@ -261,8 +362,8 @@ describe('ReferenceRangeEditor', () => {
       onSubmit,
     });
 
-    const conditionInputs = screen.getAllByTestId(/condition-id-\d+/);
-    fireEvent.change(conditionInputs[0], { target: { value: 'Very Low' } });
+    const conditionInput = screen.getByTestId('condition-id-1');
+    fireEvent.change(conditionInput, { target: { value: 'Very Low' } });
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
@@ -288,13 +389,13 @@ describe('ReferenceRangeEditor', () => {
  *
  *
  * Add/Remove/Change Intervals:
- * [ ] Create an interval 'hole'. Make sure ids are monotonic
- * [ ] Test existing ids (numeric)
- * [ ] Test existing ids (non-numeric)
+ * [x] Create an interval 'hole'. Make sure ids are monotonic
+ * [x] Test existing ids (numeric)
+ * [x] Test existing ids (non-numeric)
  * [x] Modify HDL value. Make sure submitted interval reflects change
  * [x] Modify HDL condition name. Make sure submitted interval reflects change
  * [x] Add an interval, check units
- * [ ] remove an interval. Test Submitted Observation def
+ * [x] remove an interval. Test Submitted Observation def
  *
  * Multiple Groups:
  * [ ] Change one testosterone filter to make sure it gets set only to a single group

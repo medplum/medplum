@@ -17,8 +17,8 @@ import { killEvent } from './utils/dom';
 
 import { formatRangeString, getCodeBySystem } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
-import { Form } from './Form';
-import { RangeInput } from './RangeInput';
+import { Form } from './Form/Form';
+import { RangeInput } from './RangeInput/RangeInput';
 
 const useStyles = createStyles((theme) => ({
   section: {
@@ -99,14 +99,14 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   props = Object.assign(defaultProps, props);
   const defaultDefinition = props.definition;
 
-  // const [definition, setDefinition] = useState<ObservationDefinition>(defaultDefinition);
   const [intervalGroups, setIntervalGroups] = useState<IntervalGroup[]>([]);
   const [groupId, setGroupId] = useState(1);
+  const [intervalId, setIntervalId] = useState(1);
 
   useEffect(() => {
-    const definition = ensureQualifiedIntervalKeys(defaultDefinition);
-    setIntervalGroups(groupQualifiedIntervals(definition.qualifiedInterval || [], 1, setGroupId));
-  }, [defaultDefinition, setGroupId]);
+    const definition = ensureQualifiedIntervalKeys(defaultDefinition, setIntervalId);
+    setIntervalGroups(groupQualifiedIntervals(definition.qualifiedInterval || [], setGroupId));
+  }, [defaultDefinition, setGroupId, setIntervalId]);
 
   return (
     <>
@@ -179,6 +179,10 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
   }
 
   function addInterval(groupId: string, addedInterval: ObservationDefinitionQualifiedInterval): void {
+    if (addedInterval.id === undefined) {
+      addedInterval.id = `id-${intervalId}`;
+      setIntervalId((id) => id + 1);
+    }
     setIntervalGroups((groups) => {
       groups = [...groups];
       const currentGroup = groups.find((g) => g.id === groupId);
@@ -277,7 +281,6 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
           onClick={(e: React.MouseEvent) => {
             killEvent(e);
             props.onAdd(intervalGroup.id, {
-              id: generateId(),
               range: {
                 low: { unit },
                 high: { unit },
@@ -296,8 +299,29 @@ interface ReferenceRangeGroupFiltersProps {
   intervalGroup: IntervalGroup;
   onChange: ReferenceRangeGroupEditorProps['onChange'];
 }
+
+/**
+ * Render the "filters" section of the IntervalGroup
+ * @param props
+ * @returns
+ */
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
   const { intervalGroup, onChange } = props;
+
+  // Pre-populate the units of the age filter
+  if (!intervalGroup.filters.age) {
+    intervalGroup.filters.age = {};
+  }
+  for (const key of ['low', 'high']) {
+    if (!intervalGroup.filters.age[key]?.unit) {
+      intervalGroup.filters.age[key] = {
+        ...intervalGroup.filters.age[key],
+        unit: 'years',
+        system: 'http://unitsofmeasure.org',
+      };
+    }
+  }
+
   return (
     <Stack style={{ maxWidth: '50%' }}>
       <Group>
@@ -313,27 +337,6 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
               onChange(intervalGroup.id, {
                 ...interval,
                 gender: newGender as ObservationDefinitionQualifiedInterval['gender'],
-              });
-            }
-          }}
-        />
-        <NativeSelect
-          data={['', 'pre-puberty', 'follicular', 'midcycle', 'luteal', 'postmenopausal']}
-          label="Endocrine:"
-          onChange={(e) => {
-            for (const interval of intervalGroup.intervals) {
-              let newEndocrine: string | undefined = e.currentTarget?.value;
-              if (newEndocrine === '') {
-                newEndocrine = undefined;
-              }
-              onChange(intervalGroup.id, {
-                ...interval,
-                context: {
-                  text: newEndocrine,
-                  coding: [
-                    { code: newEndocrine, system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' },
-                  ],
-                },
               });
             }
           }}
@@ -356,26 +359,68 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
           />
         </div>
       </Group>
+      <NativeSelect
+        data={['', 'pre-puberty', 'follicular', 'midcycle', 'luteal', 'postmenopausal']}
+        label="Endocrine:"
+        onChange={(e) => {
+          for (const interval of intervalGroup.intervals) {
+            let newEndocrine: string | undefined = e.currentTarget?.value;
+            if (newEndocrine === '') {
+              newEndocrine = undefined;
+            }
+            onChange(intervalGroup.id, {
+              ...interval,
+              context: {
+                text: newEndocrine,
+                coding: [
+                  { code: newEndocrine, system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' },
+                ],
+              },
+            });
+          }
+        }}
+      />
     </Stack>
   );
 }
 
-function ensureQualifiedIntervalKeys(definition: ObservationDefinition): ObservationDefinition {
+function ensureQualifiedIntervalKeys(
+  definition: ObservationDefinition,
+  setIntervalId: (id: number) => void
+): ObservationDefinition {
+  let nextId = 1;
+
+  function generateId(existing: string | undefined): string {
+    if (existing) {
+      if (existing.startsWith('id-')) {
+        const existingNum = parseInt(existing.substring(3));
+        if (!isNaN(existingNum)) {
+          nextId = Math.max(nextId, existingNum + 1);
+        }
+      }
+      return existing;
+    }
+
+    return `id-${nextId++}`;
+  }
+
   const intervals = definition.qualifiedInterval || [];
-  return {
+  definition = {
     ...definition,
     qualifiedInterval: intervals.map((interval) => ({
       ...interval,
       id: generateId(interval.id),
     })),
   };
+  setIntervalId(nextId);
+  return definition;
 }
 
 function groupQualifiedIntervals(
   intervals: ObservationDefinitionQualifiedInterval[],
-  groupId: number,
   setGroupId: (id: number) => void
 ): IntervalGroup[] {
+  let groupId = 1;
   const groups: Record<string, IntervalGroup> = {};
   for (const interval of intervals) {
     const groupKey = generateGroupKey(interval);
@@ -402,19 +447,6 @@ function groupQualifiedIntervals(
  * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
  * @return A unique key.
  */
-let nextId = 1;
-function generateId(existing?: string): string {
-  if (existing) {
-    if (existing.startsWith('id-')) {
-      const existingNum = parseInt(existing.substring(3));
-      if (!isNaN(existingNum)) {
-        nextId = Math.max(nextId, existingNum + 1);
-      }
-    }
-    return existing;
-  }
-  return 'id-' + nextId++;
-}
 
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {
   const results = [
