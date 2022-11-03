@@ -264,7 +264,7 @@ interface ReferenceRangeGroupFiltersProps {
 }
 
 /**
- * Render the "filters" section of the IntervalGroup
+ * Render the "filters" section of the IntervalGroup. Also populates some initial
  */
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
   const { intervalGroup, onChange } = props;
@@ -369,6 +369,7 @@ function ensureQualifiedIntervalKeys(
     nextId = 1;
   }
 
+  // If an interval doesn't have an id, set it to the nextId
   definition = {
     ...definition,
     qualifiedInterval: intervals.map((interval) => ({
@@ -380,6 +381,10 @@ function ensureQualifiedIntervalKeys(
   return definition;
 }
 
+/**
+ * Group all ObservationDefinitionQualifiedIntervals based on the values of their "filter" properties,
+ * so that similar ranges can be grouped together
+ */
 function groupQualifiedIntervals(
   intervals: ObservationDefinitionQualifiedInterval[],
   setGroupId: (id: number) => void
@@ -405,11 +410,8 @@ function groupQualifiedIntervals(
 }
 
 /**
- * Generates a unique ID.
- * React needs unique IDs for components for rendering performance.
- * All of the important components in the questionnaire builder have id properties for this:
- * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
- * @return A unique key.
+ * Generates a unique string for each set of filter values, so that similarly filtered intervals can be grouped together
+ * @return A "group key" that corresponds to the value of the interval filter properties.
  */
 
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {
