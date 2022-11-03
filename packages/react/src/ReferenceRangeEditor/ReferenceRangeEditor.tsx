@@ -143,10 +143,14 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
     }
     setIntervalGroups((groups) => {
       groups = [...groups];
-      const currentGroup = groups.find((g) => g.id === groupId);
-      if (currentGroup) {
+      const currentGroupIndex = groups.findIndex((g) => g.id === groupId);
+
+      if (currentGroupIndex != -1) {
+        const currentGroup = { ...groups[currentGroupIndex] };
         currentGroup.intervals = [...currentGroup.intervals, addedInterval];
+        groups[currentGroupIndex] = currentGroup;
       }
+
       return groups;
     });
   }
@@ -195,7 +199,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
         <ReferenceRangeGroupFilters intervalGroup={intervalGroup} onChange={props.onChange} />
         <Divider />
         {intervalGroup.intervals.map((interval) => (
-          <Stack key={interval.id} spacing={'xs'}>
+          <Stack key={`interval-${interval.id}`} spacing={'xs'}>
             <Group>
               <TextInput
                 key={`condition-${interval.id}`}
