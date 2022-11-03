@@ -39,6 +39,7 @@ export * from './QuestionnaireForm/QuestionnaireForm';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';
 export * from './ReferenceInput/ReferenceInput';
+export * from './ReferenceRangeEditor/ReferenceRangeEditor';
 export * from './RequestGroupDisplay/RequestGroupDisplay';
 export * from './ResourceArrayDisplay/ResourceArrayDisplay';
 export * from './ResourceArrayInput/ResourceArrayInput';
