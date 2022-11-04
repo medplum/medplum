@@ -43,6 +43,7 @@ medplum.graphql = jest.fn((query: string) => {
       name: [
         {
           family: '__Many__',
+          given: [randomUUID()],
         },
       ],
     }));
@@ -209,7 +210,7 @@ describe('HeaderSearchInput', () => {
     });
 
     // There should only be 5 results displayed
-    const elements = screen.getAllByText('__Many__');
+    const elements = screen.getAllByText('__Many__', { exact: false });
     expect(elements.length).toBe(5);
   });
 
@@ -234,7 +235,7 @@ describe('HeaderSearchInput', () => {
     });
 
     // There should only be 5 results displayed
-    const elements = screen.getAllByText('__Many__');
+    const elements = screen.getAllByText('__Many__', { exact: false });
     expect(elements.length).toBe(5);
   });
 
