@@ -201,15 +201,15 @@ export function formatTiming(timing: Timing | undefined): string {
  * @returns A human-readable string representation of the Range
  */
 export function formatRange(range: Range | undefined): string {
-  if (!range || (!range.low?.value && !range.high?.value)) {
+  if (!range || (range.low?.value === undefined && range.high?.value === undefined)) {
     return '';
   }
 
-  if (range.low?.value && !range.high?.value) {
+  if (range.low?.value !== undefined && range.high?.value === undefined) {
     return `>= ${formatQuantity(range.low)}`;
   }
 
-  if (!range.low?.value && range.high?.value) {
+  if (range.low?.value === undefined && range.high?.value !== undefined) {
     return `<= ${formatQuantity(range.high)}`;
   }
 

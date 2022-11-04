@@ -294,6 +294,8 @@ test('Format Range', () => {
   expect(formatRange({})).toBe('');
   expect(formatRange({ low: {}, high: {} })).toBe('');
 
+  expect(formatRange({ low: { value: 0 }, high: { value: 0 } })).toBe('0 - 0');
+
   expect(formatRange({ low: { unit: 'mg/dL' } })).toBe('');
   expect(formatRange({ low: { value: 20 } })).toBe('>= 20');
   expect(formatRange({ low: { value: 20, unit: 'mg/dL' } })).toBe('>= 20 mg/dL');
@@ -310,6 +312,7 @@ test('Format Range', () => {
     '20 mg/dL - 30 mg/dL'
   );
   expect(formatRange({ low: { value: 20, unit: '%' }, high: { value: 30, unit: '%' } })).toBe('20% - 30%');
+  expect(formatRange({ low: { value: 0, unit: '%' }, high: { value: 100, unit: '%' } })).toBe('0% - 100%');
 });
 
 test('Format Quantity', () => {
