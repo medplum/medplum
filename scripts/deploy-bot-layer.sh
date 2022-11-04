@@ -25,7 +25,7 @@ cp -r packages/bot-layer/fonts tmp/
 cd tmp/nodejs/
 
 # Install dependencies
-npm install --legacy-peer-deps --omit=dev --omit=optional
+npm install --omit=dev --omit=optional
 
 # Go up one directory to the temp directory
 # The zip file must be in the parent directory.

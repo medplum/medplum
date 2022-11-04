@@ -1,8 +1,8 @@
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import { mkdirSync, writeFileSync } from 'fs';
-import { terser } from 'rollup-plugin-terser';
 
 const extensions = ['.ts'];
 

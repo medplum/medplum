@@ -24,7 +24,7 @@ Our monorepo uses [npm workspaces](https://docs.npmjs.com/cli/v7/using-npm/works
 
 ```sh
 cd medplum
-npm ci --legacy-peer-deps
+npm ci
 ```
 
 ## Background services
