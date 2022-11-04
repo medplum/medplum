@@ -3,12 +3,12 @@
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
 - **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-- **Medplum Clinical Data Repository (CDR)** - This is the backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
-- **Medplum API** - The Medplum CDR also exposes a FHIR-based API for sending, receiving, and manipulating data.
-- **Medplum SDK** - This is a set of client libraries that simplify the process of interacting with the **Medplum API**.
-- **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
+- **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
+- **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
+- **Medplum App** - Web application where you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
 - **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
-- **UI Component Library** - Medplum ships with a system of React components designed to help you quickly develop custom healthcare applications
+- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
 
 ## Docs
 
@@ -19,8 +19,6 @@ Medplum is a developer platform that enables flexible and rapid development of h
     - [Folder Structure](#folder-structure)
     - [Code Style](#code-style)
   - [First time setup](#first-time-setup)
-  - [Running the app locally](#running-the-app-locally)
-  - [Roadmap](https://github.com/medplum/medplum/projects/19)
 
 ## Contributing
 
@@ -77,6 +75,7 @@ medplum/
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
 │   ├── docs         # Documentation
+│   ├── examples     # Example code used in documentation
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL

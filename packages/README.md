@@ -12,6 +12,7 @@ medplum/
 │   ├── cli          # Command line interface
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
+│   ├── examples     # Example code used in documentation
 │   ├── docs         # Documentation
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
