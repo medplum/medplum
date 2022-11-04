@@ -14,7 +14,7 @@ import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedI
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
 import { killEvent } from '../utils/dom';
 
-import { formatRangeString, getCodeBySystem } from '@medplum/core';
+import { formatRange, getCodeBySystem } from '@medplum/core';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { RangeInput } from '../RangeInput/RangeInput';
@@ -211,7 +211,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
                 size={'sm'}
                 onChange={(e) => {
                   killEvent(e);
-                  props.onChange(intervalGroup.id, { ...interval, condition: e.currentTarget.value });
+                  props.onChange(intervalGroup.id, { ...interval, condition: e.currentTarget.value.trim() });
                 }}
               />
               <ActionIcon
@@ -421,8 +421,8 @@ function groupQualifiedIntervals(
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {
   const results = [
     `gender=${interval.gender}`,
-    `age=${formatRangeString(interval.age)}`,
-    `gestationalAge=${formatRangeString(interval.gestationalAge)}`,
+    `age=${formatRange(interval.age)}`,
+    `gestationalAge=${formatRange(interval.gestationalAge)}`,
     `context=${interval.context?.text}`,
     `appliesTo=${interval.appliesTo?.map((c) => c.text).join('+')}`,
   ];

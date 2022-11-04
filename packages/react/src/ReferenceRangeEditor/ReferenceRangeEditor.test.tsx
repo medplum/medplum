@@ -396,7 +396,7 @@ describe('ReferenceRangeEditor', () => {
     });
 
     const conditionInput = screen.getByTestId('condition-id-1');
-    fireEvent.change(conditionInput, { target: { value: 'Very Low' } });
+    fireEvent.change(conditionInput, { target: { value: 'Very Low ' } });
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;

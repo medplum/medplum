@@ -1,4 +1,4 @@
-import { formatQuantityString } from '@medplum/core';
+import { formatQuantity } from '@medplum/core';
 import { Quantity } from '@medplum/fhirtypes';
 import React from 'react';
 
@@ -7,5 +7,5 @@ export interface QuantityDisplayProps {
 }
 
 export function QuantityDisplay(props: QuantityDisplayProps): JSX.Element | null {
-  return <>{formatQuantityString(props.value)}</>;
+  return <>{formatQuantity(props.value)}</>;
 }
