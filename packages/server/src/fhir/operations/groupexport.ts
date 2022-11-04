@@ -125,6 +125,7 @@ class BulkFileWriter {
 class BulkExporter {
   readonly repo: Repository;
   readonly writers: Record<string, BulkFileWriter> = {};
+  readonly resourceSet: Set<string> = new Set();
 
   constructor(repo: Repository) {
     this.repo = repo;
@@ -154,8 +155,15 @@ class BulkExporter {
   }
 
   async writeResource(resource: Resource): Promise<void> {
-    const writer = await this.getWriter(resource.resourceType);
-    writer.write(resource);
+    if (resource.resourceType === 'AuditEvent') {
+      return;
+    }
+    const ref = getReferenceString(resource);
+    if (!this.resourceSet.has(ref)) {
+      const writer = await this.getWriter(resource.resourceType);
+      writer.write(resource);
+      this.resourceSet.add(ref);
+    }
   }
 
   async close(): Promise<void> {
