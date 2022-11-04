@@ -28,10 +28,10 @@ function valueSetElementToAutocompleteItem(element: ValueSetExpansionContains): 
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
   const { property, defaultValue } = props;
-  const [textValues, setTextValues] = useState<string[]>(defaultValue ? [defaultValue.code as string] : []);
+  const [textValues, setTextValues] = useState<string[]>(defaultValue?.code ? [defaultValue.code as string] : []);
 
   const [data, setData] = useState<ValueSetAutocompleteItem[]>(
-    defaultValue ? [valueSetElementToAutocompleteItem(defaultValue)] : []
+    defaultValue?.code ? [valueSetElementToAutocompleteItem(defaultValue)] : []
   );
 
   const dataRef = useRef<ValueSetAutocompleteItem[]>();
@@ -45,7 +45,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       const newData = [...(dataRef.current as ValueSetAutocompleteItem[])];
 
       for (const valueSetElement of valueSetElements) {
-        if (!newData.some((item) => item.value === valueSetElement.code)) {
+        if (valueSetElement.code && !newData.some((item) => item.value === valueSetElement.code)) {
           newData.push(valueSetElementToAutocompleteItem(valueSetElement));
         }
       }
