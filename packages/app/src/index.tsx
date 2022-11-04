@@ -25,7 +25,11 @@ if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
 const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL as string,
   clientId: process.env.MEDPLUM_CLIENT_ID as string,
-  onUnauthenticated: () => (window.location.href = '/signin'),
+  onUnauthenticated: () => {
+    if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {
+      window.location.href = '/signin';
+    }
+  },
 });
 
 const theme: MantineThemeOverride = {

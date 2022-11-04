@@ -5,11 +5,89 @@
 
 import { deepClone } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
+import { Request, Response } from 'express';
+import { getConfig } from '../config';
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
   readonly resourceType: string;
   readonly scope: string;
+}
+
+/**
+ * Handles requests for the SMART configuration.
+ * See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
+ * See: https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
+ * @param _req The HTTP request.
+ * @param res The HTTP response.
+ */
+export function smartConfigurationHandler(_req: Request, res: Response): void {
+  const config = getConfig();
+  res
+    .status(200)
+    .contentType('application/json')
+    .json({
+      issuer: config.issuer,
+      jwks_uri: config.jwksUrl,
+      authorization_endpoint: config.authorizeUrl,
+      grant_types_supported: ['authorization_code', 'client_credentials'],
+      token_endpoint: config.tokenUrl,
+      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'private_key_jwt'],
+      token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],
+      scopes_supported: [
+        'patient/*.rs',
+        'user/*.cruds',
+        'openid',
+        'fhirUser',
+        'launch',
+        'launch/patient',
+        'offline_access',
+        'online_access',
+      ],
+      response_types_supported: ['code'],
+      capabilities: [
+        'authorize-post',
+        'permission-v1',
+        'permission-v2',
+        'client-confidential-asymmetric',
+        'client-confidential-symmetric',
+        'client-public',
+        'context-banner',
+        'context-ehr-patient',
+        'context-ehr-encounter',
+        'context-standalone-patient',
+        'context-style',
+        'launch-ehr',
+        'launch-standalone',
+        'permission-offline',
+        'permission-patient',
+        'permission-user',
+        'sso-openid-connect',
+      ],
+      code_challenge_methods_supported: ['S256'],
+    });
+}
+
+/**
+ * Handles requests for the SMART App Styling.
+ * See: https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html#styling
+ * @param _req The HTTP request.
+ * @param res The HTTP response.
+ */
+export function smartStylingHandler(_req: Request, res: Response): void {
+  res.status(200).contentType('application/json').json({
+    color_background: '#edeae3',
+    color_error: '#9e2d2d',
+    color_highlight: '#69b5ce',
+    color_modal_backdrop: '',
+    color_success: '#498e49',
+    color_text: '#303030',
+    dim_border_radius: '6px',
+    dim_font_size: '13px',
+    dim_spacing_size: '20px',
+    font_family_body: "Georgia, Times, 'Times New Roman', serif",
+    font_family_heading: "'HelveticaNeue-Light', Helvetica, Arial, 'Lucida Grande', sans-serif;",
+  });
 }
 
 /**

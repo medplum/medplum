@@ -50,6 +50,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     resourceType,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
+    launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
     codeChallengeMethod: req.body.codeChallengeMethod,
     email: req.body.email,

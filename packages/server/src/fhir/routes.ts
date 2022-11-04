@@ -3,7 +3,6 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
 import { authenticateToken } from '../oauth/middleware';
 import { processBatch } from './batch';
 import { bulkDataRouter } from './bulkdata';
@@ -22,6 +21,7 @@ import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource } from './schema';
 import { parseSearchRequest } from './search';
+import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
 
@@ -64,53 +64,8 @@ publicRoutes.get('/metadata', (_req: Request, res: Response) => {
 });
 
 // SMART-on-FHIR configuration
-// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html
-publicRoutes.get('/.well-known/smart-configuration', (_req: Request, res: Response) => {
-  const config = getConfig();
-  res
-    .status(200)
-    .contentType('application/json')
-    .json({
-      issuer: config.issuer,
-      jwks_uri: config.jwksUrl,
-      authorization_endpoint: config.authorizeUrl,
-      grant_types_supported: ['authorization_code', 'client_credentials'],
-      token_endpoint: config.tokenUrl,
-      token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'private_key_jwt'],
-      token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],
-      scopes_supported: [
-        'patient/*.rs',
-        'user/*.cruds',
-        'openid',
-        'fhirUser',
-        'launch',
-        'launch/patient',
-        'offline_access',
-        'online_access',
-      ],
-      response_types_supported: ['code'],
-      capabilities: [
-        'authorize-post',
-        'permission-v1',
-        'permission-v2',
-        'client-confidential-asymmetric',
-        'client-confidential-symmetric',
-        'client-public',
-        'context-banner',
-        'context-ehr-patient',
-        'context-ehr-encounter',
-        'context-standalone-patient',
-        'context-style',
-        'launch-ehr',
-        'launch-standalone',
-        'permission-offline',
-        'permission-patient',
-        'permission-user',
-        'sso-openid-connect',
-      ],
-      code_challenge_methods_supported: ['S256'],
-    });
-});
+publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
+publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 
 // Protected routes require authentication
 const protectedRoutes = Router();

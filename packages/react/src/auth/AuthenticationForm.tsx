@@ -10,7 +10,12 @@ import {
   Stack,
   TextInput,
 } from '@mantine/core';
-import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
+import {
+  BaseLoginRequest,
+  GoogleCredentialResponse,
+  GoogleLoginRequest,
+  LoginAuthenticationResponse,
+} from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons';
 import React, { useState } from 'react';
@@ -19,16 +24,8 @@ import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
-export interface AuthenticationFormProps {
-  readonly projectId?: string;
-  readonly clientId?: string;
-  readonly resourceType?: string;
-  readonly scope?: string;
-  readonly nonce?: string;
-  readonly googleClientId?: string;
+export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly generatePkce?: boolean;
-  readonly codeChallenge?: string;
-  readonly codeChallengeMethod?: string;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -36,13 +33,14 @@ export interface AuthenticationFormProps {
 }
 
 export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
+  const { generatePkce, onForgotPassword, onRegister, handleAuthResponse, children, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = getGoogleClientId(props.googleClientId);
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const issues = getIssuesForExpression(outcome, undefined);
 
   async function startPkce(): Promise<void> {
-    if (props.generatePkce) {
+    if (generatePkce) {
       await medplum.startPkce();
     }
   }
@@ -54,23 +52,17 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
         startPkce()
           .then(() =>
             medplum.startLogin({
-              projectId: props.projectId,
-              clientId: props.clientId,
-              resourceType: props.resourceType,
-              scope: props.scope,
-              nonce: props.nonce,
-              codeChallenge: props.codeChallenge,
-              codeChallengeMethod: props.codeChallengeMethod,
+              ...baseLoginRequest,
               email: formData.email,
               password: formData.password,
               remember: formData.remember === 'on',
             })
           )
-          .then(props.handleAuthResponse)
+          .then(handleAuthResponse)
           .catch(setOutcome);
       }}
     >
-      <Center sx={{ flexDirection: 'column' }}>{props.children}</Center>
+      <Center sx={{ flexDirection: 'column' }}>{children}</Center>
       {issues && (
         <Alert icon={<IconAlertCircle size={16} />} color="red">
           {issues.map((issue) => (
@@ -89,16 +81,9 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
                 startPkce()
                   .then(() =>
                     medplum.startGoogleLogin({
-                      projectId: props.projectId,
-                      clientId: props.clientId,
-                      resourceType: props.resourceType,
-                      scope: props.scope,
-                      nonce: props.nonce,
-                      codeChallenge: props.codeChallenge,
-                      codeChallengeMethod: props.codeChallengeMethod,
-                      googleClientId: response.clientId,
+                      ...baseLoginRequest,
                       googleCredential: response.credential,
-                    })
+                    } as GoogleLoginRequest)
                   )
                   .then(props.handleAuthResponse)
                   .catch(setOutcome);
@@ -128,13 +113,13 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
         />
       </Stack>
       <Group position="apart" mt="xl" noWrap>
-        {props.onForgotPassword && (
-          <Anchor component="button" type="button" color="dimmed" onClick={props.onForgotPassword} size="xs">
+        {onForgotPassword && (
+          <Anchor component="button" type="button" color="dimmed" onClick={onForgotPassword} size="xs">
             Forgot password
           </Anchor>
         )}
-        {props.onRegister && (
-          <Anchor component="button" type="button" color="dimmed" onClick={props.onRegister} size="xs">
+        {onRegister && (
+          <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
             Register
           </Anchor>
         )}

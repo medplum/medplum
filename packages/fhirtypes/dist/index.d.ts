@@ -176,6 +176,7 @@ export * from './SearchParameter';
 export * from './ServiceRequest';
 export * from './Signature';
 export * from './Slot';
+export * from './SmartAppLaunch';
 export * from './Specimen';
 export * from './SpecimenDefinition';
 export * from './StructureDefinition';

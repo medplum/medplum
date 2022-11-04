@@ -7,7 +7,16 @@ import {
   ProfileResource,
   resolveId,
 } from '@medplum/core';
-import { BundleEntry, ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import {
+  BundleEntry,
+  ClientApplication,
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  SmartAppLaunch,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
@@ -25,6 +34,7 @@ export interface LoginRequest {
   readonly resourceType?: string;
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly launchId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
@@ -78,6 +88,11 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
   }
 
+  let launch: SmartAppLaunch | undefined;
+  if (request.launchId) {
+    launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
+  }
+
   const user = await getUserByEmail(request.email, request.projectId);
   if (!user) {
     throw badRequest('Email or password is invalid');
@@ -90,6 +105,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: client && createReference(client),
+    launch: launch && createReference(launch),
     user: createReference(user),
     authMethod: request.authMethod,
     authTime: new Date().toISOString(),
