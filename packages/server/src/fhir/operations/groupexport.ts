@@ -2,7 +2,6 @@ import { getReferenceString } from '@medplum/core';
 import { Binary, BulkDataExport, Bundle, Group, Patient, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { writeFileSync } from 'fs';
 import { PassThrough } from 'stream';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
@@ -127,7 +126,6 @@ class BulkExporter {
   readonly repo: Repository;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet: Set<string> = new Set();
-  readonly resources: Resource[] = [];
 
   constructor(repo: Repository) {
     this.repo = repo;
@@ -164,7 +162,6 @@ class BulkExporter {
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);
       writer.write(resource);
-      this.resources.push(resource);
       this.resourceSet.add(ref);
     }
   }
@@ -173,6 +170,5 @@ class BulkExporter {
     for (const writer of Object.values(this.writers)) {
       await writer.close();
     }
-    writeFileSync('cody-export.json', JSON.stringify(this.resources, null, 2));
   }
 }
