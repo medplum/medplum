@@ -1,10 +1,10 @@
 import json from '@rollup/plugin-json';
 import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
+import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
 import { execSync } from 'child_process';
 import { mkdirSync, writeFileSync } from 'fs';
-import { terser } from 'rollup-plugin-terser';
 import packageJson from './package.json' assert { type: 'json' };
 
 const extensions = ['.ts'];
