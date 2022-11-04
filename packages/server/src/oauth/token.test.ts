@@ -1,4 +1,4 @@
-import { ClientApplication, Project } from '@medplum/fhirtypes';
+import { ClientApplication, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, SignJWT } from 'jose';
@@ -1065,5 +1065,32 @@ describe('OAuth2 Token', () => {
       error: 'invalid_request',
       error_description: 'Invalid client assertion signature',
     });
+  });
+
+  test('Smart App Launch tokens', async () => {
+    // Create a SmartAppLaunch
+    const launch = await systemRepo.createResource<SmartAppLaunch>({
+      resourceType: 'SmartAppLaunch',
+      patient: { reference: `Patient/${randomUUID()}` },
+      encounter: { reference: `Patient/${randomUUID()}` },
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      launch: launch.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.patient).toBeDefined();
+    expect(res2.body.encounter).toBeDefined();
   });
 });
