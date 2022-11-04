@@ -1,5 +1,5 @@
 import { Address, HumanName, Period, Timing, Range, Quantity } from '@medplum/fhirtypes';
-import { capitalize } from './utils';
+import { capitalize, preciseRound } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -235,7 +235,8 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
 
   if (quantity.value !== undefined) {
     if (precision !== undefined) {
-      result.push(quantity.value.toFixed(precision));
+      const roundedValue = preciseRound(quantity.value, precision);
+      result.push(roundedValue.toFixed(Math.max(precision, 0)));
     } else {
       result.push(quantity.value);
     }
