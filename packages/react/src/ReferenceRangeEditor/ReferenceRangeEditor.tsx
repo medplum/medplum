@@ -289,6 +289,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
         <NativeSelect
           data={['', 'male', 'female']}
           label="Gender:"
+          defaultValue={intervalGroup.filters.gender || ''}
           onChange={(e) => {
             for (const interval of intervalGroup.intervals) {
               let newGender: string | undefined = e.currentTarget?.value;
@@ -323,21 +324,24 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
       <NativeSelect
         data={['', 'pre-puberty', 'follicular', 'midcycle', 'luteal', 'postmenopausal']}
         label="Endocrine:"
+        defaultValue={intervalGroup.filters.context?.text || ''}
         onChange={(e) => {
           for (const interval of intervalGroup.intervals) {
             let newEndocrine: string | undefined = e.currentTarget?.value;
             if (newEndocrine === '') {
               newEndocrine = undefined;
+              onChange(intervalGroup.id, { ...interval, context: undefined });
+            } else {
+              onChange(intervalGroup.id, {
+                ...interval,
+                context: {
+                  text: newEndocrine,
+                  coding: [
+                    { code: newEndocrine, system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' },
+                  ],
+                },
+              });
             }
-            onChange(intervalGroup.id, {
-              ...interval,
-              context: {
-                text: newEndocrine,
-                coding: [
-                  { code: newEndocrine, system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning' },
-                ],
-              },
-            });
           }
         }}
       />
