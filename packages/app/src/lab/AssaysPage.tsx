@@ -1,7 +1,7 @@
 import { Table } from '@mantine/core';
-import { capitalize } from '@medplum/core';
+import { capitalize, formatRange } from '@medplum/core';
 import { ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
-import { CodeableConceptDisplay, formatRangeString, RangeDisplay, useMedplum } from '@medplum/react';
+import { CodeableConceptDisplay, RangeDisplay, useMedplum } from '@medplum/react';
 import React, { Fragment } from 'react';
 
 export function AssaysPage(): JSX.Element {
@@ -71,7 +71,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
     );
   }
 
-  const ages = getUnique(ranges.map((r) => r.age && formatRangeString(r.age)));
+  const ages = getUnique(ranges.map((r) => r.age && formatRange(r.age)));
   if (ages.length > 1) {
     ages.sort();
     return (
@@ -81,7 +81,7 @@ function IntervalsDisplay(props: IntervalsDisplayProps): JSX.Element | null {
             <div>
               <strong>{capitalize(age)}</strong>
             </div>
-            <IntervalsDisplay ranges={props.ranges?.filter((r) => formatRangeString(r.age) === age)} />
+            <IntervalsDisplay ranges={props.ranges?.filter((r) => formatRange(r.age) === age)} />
           </Fragment>
         ))}
       </>
