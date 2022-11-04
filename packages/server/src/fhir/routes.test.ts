@@ -66,6 +66,10 @@ describe('FHIR Routes', () => {
     expect(res.body.token_endpoint).toBeDefined();
     expect(res.body.capabilities).toBeDefined();
     expect(res.body.code_challenge_methods_supported).toBeDefined();
+
+    const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
+    expect(res2.status).toBe(200);
+    expect(res2.headers['content-type']).toEqual('application/json; charset=utf-8');
   });
 
   test('Invalid JSON', async () => {
