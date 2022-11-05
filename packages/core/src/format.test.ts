@@ -325,7 +325,6 @@ test('Format Quantity', () => {
 
   // Test Precision
   expect(formatQuantity({ value: 10, unit: '%' }, 1)).toBe('10.0%');
-  // expect(formatQuantity({ value: 123, unit: '%' }, -1)).toBe('120%')
   expect(formatQuantity({ value: 10, unit: '%' }, 3)).toBe('10.000%');
 
   // Edge cases with missing value

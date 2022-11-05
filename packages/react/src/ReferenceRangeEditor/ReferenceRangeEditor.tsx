@@ -91,7 +91,9 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
         <IconCirclePlus />
       </ActionIcon>
 
-      <Button type="submit">Save</Button>
+      <Group position="right">
+        <Button type="submit">Save</Button>
+      </Group>
     </Form>
   );
 
@@ -184,7 +186,7 @@ export function ReferenceRangeGroupEditor(props: ReferenceRangeGroupEditorProps)
   return (
     <Container data-testid={intervalGroup.id} className={classes.section}>
       <Stack spacing={'lg'}>
-        <Group>
+        <Group position="right">
           <ActionIcon
             title="Remove Group"
             data-testid={`remove-group-button-${intervalGroup.id}`}
