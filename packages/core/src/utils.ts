@@ -638,13 +638,12 @@ export function matchesRange(value: number, range: Range, precision?: number): b
 
 /**
  * Returns the input number rounded to the specified number of digits.
- * Negative precision indicates rounding to whole numbers. For example preciseRound(123, -1) === 120
  * @param a The input number.
  * @param precision The precision in number of digits.
  * @returns The number rounded to the specified number of digits.
  */
 export function preciseRound(a: number, precision: number): number {
-  return toPreciseInteger(a, precision) / Math.pow(10, precision);
+  return parseFloat(a.toFixed(precision));
 }
 
 /**

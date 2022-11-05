@@ -657,7 +657,6 @@ describe('Core Utils', () => {
   test('preciseRound', () => {
     expect(preciseRound(1, 0)).toBe(1);
     expect(preciseRound(0.1 + 0.2, 1)).toBe(0.3);
-    expect(preciseRound(123.1234, -1)).toBe(120);
   });
 
   test('preciseEquals', () => {
