@@ -49,15 +49,23 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 ### CPOE Medication (a1)
 
-- [HealthIt.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications)
-- [Medplum App CPOE](https://app.medplum.com/MedicationRequest/new)
+Medplum attests to this criteria, links provided below.
+
+- [Medplum App CPOE Medication](https://app.medplum.com/MedicationRequest/new)
+- [Medplum App Medication Requests](https://app.medplum.com/MedicationRequest)
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications)
 
 ### CPOE Laboratory (a2)
 
+Medplum attests to this criteria, links provided below.
+
 - [Medplum App CPOE Lab](https://app.medplum.com/ServiceRequest/new)
-- [Lab order form in account setup](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)
+- [Medplum App Service Requests](https://app.medplum.com/ServiceRequest)
+- [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-laboratory)
 
 ### CPOE Imaging (a3)
+
+Medplum attests to this criteria, links provided below.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-diagnostic-imaging)
 - [Medplum App CPOE Imaging](https://app.medplum.com/ImagingStudy/new)
@@ -109,7 +117,7 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 ### Authentication, Access Control, Authorization (d1)
 
-To attest to d1, Medplum attests to the following.
+Medplum attests to this criteria. Links provided below.
 
 - The ability to authenticate the user (authentication)
 - Ability to establish permitted user access (authorization)
@@ -119,7 +127,7 @@ To attest to d1, Medplum attests to the following.
 
 ### Auditable Events and Tamper Resistant (d2)
 
-To attest to d2, Medplum attests to the following.
+Medplum attests to this criteria. Links and description provided below.
 
 - Demonstrates synchronization to a configured NTP server through use of Amazon Time Sync Service.
 - Audit log records actions related to electronic health information, audit log status, and encryption status.
@@ -162,7 +170,9 @@ To attest to d2, Medplum attests to the following.
 
 ### Auditing actions on health information (d10)
 
-- Medplum attests to this criteria. Medplum does not support disabling audit logging for end users.
+Medplum attests to this criteria. Links and description provided below.
+
+- Medplum does not support disabling audit logging for end users.
 - Medplum uses [Cloudwatch logging](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/data-protection.html), and only Medplum team members have access to the environment which contains the logs.
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/auditing-actions-health-information)
 - Related Material: [Audit Log Commits and Issues on Github](https://github.com/medplum/medplum/issues?q=label%3Aaudit-logging+)
@@ -178,7 +188,8 @@ To attest to d2, Medplum attests to the following.
 
 ### Multi-factor Authentication (d13)
 
-- Medplum attests to this criteria.
+Medplum attests to this criteria. Links and description provided below.
+
 - Medplum supports multi-factor authentication through Google single sign on, which you can see on the [signin page](https://app.medplum.com/signin)
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/multi-factor-authentication)
 
@@ -204,10 +215,14 @@ To attest to d2, Medplum attests to the following.
 
 ### Quality Management System (g4)
 
+Medplum attests to this criteria. Medplum practices Agile development.
+
 - Medplum maps Agile development to [ISO 9001](iso9001.md)
 - [Guidance on HealthIT.gov](https://www.healthit.gov/test-method/quality-management-system)
 
 ### Accessibility-Centered Design (g5)
+
+With regard to application development, no accessibility-centered design standard or law was applied.
 
 - [Guidance on HealthIT.gov](https://www.healthit.gov/test-method/accessibility-centered-design)
 
@@ -235,7 +250,6 @@ As it relates to Live Testing, these are the resources for [Medplum team only](h
 
 ### Care Plan (b9)
 
-- Not included in ONC 2015E Cures Base EHR
 - [Medplum App CarePlan](https://app.medplum.com/CarePlan)
 - [Medplum App Request Group](https://app.medplum.com/RequestGroup)
 - [Medplum Request Group Example](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple)
