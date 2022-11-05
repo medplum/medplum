@@ -1,4 +1,4 @@
-import { Address, HumanName, Period, Timing } from '@medplum/fhirtypes';
+import { Address, HumanName, Period, Timing, Range, Quantity } from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
 export interface AddressFormatOptions {
@@ -193,4 +193,60 @@ export function formatTiming(timing: Timing | undefined): string {
   }
 
   return capitalize(builder.join(' ').trim());
+}
+
+/**
+ * Returns a human-readable string for a FHIR Range datatype, taking into account comparators and one-sided ranges
+ * @param range A FHIR Range element
+ * @returns A human-readable string representation of the Range
+ */
+export function formatRange(range: Range | undefined): string {
+  if (!range || (range.low?.value === undefined && range.high?.value === undefined)) {
+    return '';
+  }
+
+  if (range.low?.value !== undefined && range.high?.value === undefined) {
+    return `>= ${formatQuantity(range.low)}`;
+  }
+
+  if (range.low?.value === undefined && range.high?.value !== undefined) {
+    return `<= ${formatQuantity(range.high)}`;
+  }
+
+  return `${formatQuantity(range.low)} - ${formatQuantity(range.high)}`;
+}
+
+/**
+ * Returns a human-readable string for a FHIR Quantity datatype, taking into account units and comparators
+ * @param quantity A FHIR Quantity element
+ * @returns A human-readable string representation of the Quantity
+ */
+export function formatQuantity(quantity: Quantity | undefined, precision?: number): string {
+  if (!quantity) {
+    return '';
+  }
+
+  const result = [];
+
+  if (quantity.comparator) {
+    result.push(quantity.comparator);
+    result.push(' ');
+  }
+
+  if (quantity.value !== undefined) {
+    if (precision !== undefined) {
+      result.push(quantity.value.toFixed(precision));
+    } else {
+      result.push(quantity.value);
+    }
+  }
+
+  if (quantity.unit) {
+    if (quantity.unit !== '%' && result[result.length - 1] !== ' ') {
+      result.push(' ');
+    }
+    result.push(quantity.unit);
+  }
+
+  return result.join('').trim();
 }

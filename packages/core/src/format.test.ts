@@ -8,6 +8,8 @@ import {
   formatPeriod,
   formatTime,
   formatTiming,
+  formatRange,
+  formatQuantity,
 } from './format';
 
 test('Format Address', () => {
@@ -286,4 +288,47 @@ test('Format timing', () => {
       },
     })
   ).toEqual('2 times per 3 hours');
+});
+
+test('Format Range', () => {
+  expect(formatRange({})).toBe('');
+  expect(formatRange({ low: {}, high: {} })).toBe('');
+
+  expect(formatRange({ low: { value: 0 }, high: { value: 0 } })).toBe('0 - 0');
+
+  expect(formatRange({ low: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ low: { value: 20 } })).toBe('>= 20');
+  expect(formatRange({ low: { value: 20, unit: 'mg/dL' } })).toBe('>= 20 mg/dL');
+  expect(formatRange({ low: { value: 20, unit: '%' } })).toBe('>= 20%');
+
+  expect(formatRange({ high: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ high: { value: 20 } })).toBe('<= 20');
+  expect(formatRange({ high: { value: 20, unit: 'mg/dL' } })).toBe('<= 20 mg/dL');
+  expect(formatRange({ high: { value: 20, unit: '%' } })).toBe('<= 20%');
+
+  expect(formatRange({ low: { unit: 'mg/dL' }, high: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ low: { value: 20 }, high: { value: 30 } })).toBe('20 - 30');
+  expect(formatRange({ low: { value: 20, unit: 'mg/dL' }, high: { value: 30, unit: 'mg/dL' } })).toBe(
+    '20 mg/dL - 30 mg/dL'
+  );
+  expect(formatRange({ low: { value: 20, unit: '%' }, high: { value: 30, unit: '%' } })).toBe('20% - 30%');
+  expect(formatRange({ low: { value: 0, unit: '%' }, high: { value: 100, unit: '%' } })).toBe('0% - 100%');
+});
+
+test('Format Quantity', () => {
+  expect(formatQuantity({})).toBe('');
+  expect(formatQuantity({ value: 10.1, unit: 'pg/mL' })).toBe('10.1 pg/mL');
+  expect(formatQuantity({ comparator: '>', value: 10.1, unit: 'pg/mL' })).toBe('> 10.1 pg/mL');
+  expect(formatQuantity({ value: 10.1, unit: '%' })).toBe('10.1%');
+  expect(formatQuantity({ comparator: '>', value: 10.1, unit: '%' })).toBe('> 10.1%');
+  expect(formatQuantity({ comparator: '>', value: 10.1 })).toBe('> 10.1');
+
+  // Test Precision
+  expect(formatQuantity({ value: 10, unit: '%' }, 1)).toBe('10.0%');
+  expect(formatQuantity({ value: 10, unit: '%' }, 3)).toBe('10.000%');
+
+  // Edge cases with missing value
+  expect(formatQuantity({ unit: 'pg/mL' })).toBe('pg/mL');
+  expect(formatQuantity({ comparator: '<' })).toBe('<');
+  expect(formatQuantity({ comparator: '<', unit: 'pg/mL' })).toBe('< pg/mL');
 });

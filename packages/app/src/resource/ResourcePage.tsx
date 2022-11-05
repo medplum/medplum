@@ -5,6 +5,7 @@ import {
   Bot,
   Bundle,
   DiagnosticReport,
+  ObservationDefinition,
   OperationOutcome,
   PlanDefinition,
   Questionnaire,
@@ -24,6 +25,7 @@ import {
   QuestionnaireBuilder,
   QuestionnaireForm,
   RequestGroupDisplay,
+  ReferenceRangeEditor,
   ResourceBlame,
   ResourceForm,
   ResourceHistoryTable,
@@ -69,6 +71,10 @@ function getTabs(resourceType: string): string[] {
 
   if (resourceType === 'RequestGroup') {
     result.push('Checklist');
+  }
+
+  if (resourceType === 'ObservationDefinition') {
+    result.push('Ranges');
   }
 
   result.push('Details', 'Edit', 'History', 'Blame', 'JSON', 'Apps');
@@ -352,6 +358,12 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
       return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
     case 'bots':
       return <BotsPage resource={props.resource} />;
+    case 'ranges':
+      return (
+        <Document>
+          <ReferenceRangeEditor onSubmit={props.onSubmit} definition={props.resource as ObservationDefinition} />
+        </Document>
+      );
   }
   return null;
 }

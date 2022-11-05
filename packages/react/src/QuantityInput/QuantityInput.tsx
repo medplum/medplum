@@ -35,7 +35,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       <TextInput
         id={props.name}
         name={props.name}
-        data-testid={props.name}
+        data-testid={props.name + '-value'}
         type="number"
         step="any"
         placeholder="Value"
@@ -49,6 +49,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       />
       <TextInput
         placeholder="Unit"
+        data-testid={props.name + '-unit'}
         defaultValue={value?.unit}
         onChange={(e) =>
           setValueWrapper({
