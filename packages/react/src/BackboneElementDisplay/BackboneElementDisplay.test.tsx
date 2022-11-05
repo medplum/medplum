@@ -65,6 +65,21 @@ describe('BackboneElementDisplay', () => {
     expect(screen.getByText('Simple Name')).toBeInTheDocument();
   });
 
+  test('Handles name object value', () => {
+    setup({
+      value: {
+        type: 'OrganizationContact',
+        value: {
+          name: {
+            given: ['John'],
+            family: 'Doe',
+          },
+        },
+      },
+    });
+    expect(screen.getByText('John Doe')).toBeInTheDocument();
+  });
+
   test('Not implemented', () => {
     setup({
       value: {

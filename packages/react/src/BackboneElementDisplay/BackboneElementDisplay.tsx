@@ -24,7 +24,12 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
     return <div>{typeName}&nbsp;not implemented</div>;
   }
 
-  if (typeof value === 'object' && 'name' in value && Object.keys(value).length === 1) {
+  if (
+    typeof value === 'object' &&
+    'name' in value &&
+    Object.keys(value).length === 1 &&
+    typeof value.name === 'string'
+  ) {
     // Special case for common BackboneElement pattern
     // Where there is an object with a single property 'name'
     // Just display the name value.
