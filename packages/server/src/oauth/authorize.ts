@@ -81,6 +81,12 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
 
+  const aud = params.aud as string | undefined;
+  if (aud !== undefined && aud !== getConfig().baseUrl + 'fhir/R4') {
+    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+    return false;
+  }
+
   const codeChallenge = params.code_challenge;
   if (codeChallenge) {
     const codeChallengeMethod = params.code_challenge_method;
