@@ -214,6 +214,11 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  if (login.revoked) {
+    sendTokenError(res, 'invalid_grant', 'Token revoked');
+    return;
+  }
+
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
   if (!timingSafeEqualStr(login.refreshSecret, claims.refresh_secret)) {
