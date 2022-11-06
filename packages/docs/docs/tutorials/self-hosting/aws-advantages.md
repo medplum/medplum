@@ -20,12 +20,16 @@ The following diagram roughly represents the AWS architecture:
 
 ![Medplum AWS Architecture](./medplum-aws-architecture.png)
 
+The following AWS services are setup automatically with no extra engineering required:
+
 - **[AWS CDK](https://aws.amazon.com/cdk/)** - Infrastructure as code (IaC). Medplum provides CDK code that can create the entire AWS environment from scratch.
   - Alternatives: [Terraform](https://www.terraform.io/), [Microsoft Resource Manager](https://learn.microsoft.com/en-us/azure/azure-resource-manager/)
 - **[AWS VPC](https://aws.amazon.com/vpc/)** - Private cloud and network firewall.
   - Alternatives: [Azure Virtual Network](https://learn.microsoft.com/en-us/azure/virtual-network/), [Google Cloud VPC](https://cloud.google.com/vpc)
 - **[AWS Fargate/ECS](https://aws.amazon.com/fargate/)** - Server orchestration for high availability and zero downtime deployments. Medplum deployment scripts use Fargate features to follow AWS best practices for smooth deployment.
   - Alternatives: [Kubernetes](https://kubernetes.io/), [Azure Container Instances](https://azure.microsoft.com/en-us/products/container-instances/), [Google Cloud Run](https://cloud.google.com/run)
+- **[AWS Elastic Load Balancing](https://aws.amazon.com/elasticloadbalancing/)** - Distribute network traffic to improve application scalability and availability.
+  - Alternatives: [Azure Load Balancer](https://azure.microsoft.com/en-us/products/load-balancer/), [Google Cloud Load Balancing](https://cloud.google.com/load-balancing)
 - **[AWS Aurora](https://aws.amazon.com/rds/aurora/)** - Managed PostgreSQL database with monitoring, redundancy, patch maintenance, backups, and more.
   - Alternatives: [Azure Cosmos DB](https://azure.microsoft.com/en-us/products/cosmos-db/), [Google Cloud SQL for PostgreSQL](https://cloud.google.com/sql/docs/postgres), self managed
 - **[AWS ElastiCache](https://aws.amazon.com/elasticache/)** - Managed Redis cache for resource caching and asynchronous job queues.
