@@ -7,16 +7,14 @@ toc_max_heading_level: 4
 
 Follow these instructions to get the complete Medplum stack running directly on your host machine.
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/nf6OElRWOJ4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 ## Prerequisites
 
-1. **Npm**: See [the npm documentation](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) for instructions on installing it with your OS.
-2. [Clone the Medplum repo](./clone-the-repo)
-
-:::note Note for windows Users
-
-Running on Windows is supported, but several build tools use bash scripts. We recommend [MSYS2](https://www.msys2.org/) to run them.
-
-:::
+1. **[Git](https://git-scm.com/)**
+2. **[npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)**
+3. **[Docker](https://docs.docker.com/engine/install/)**
+4. [Clone the Medplum repo](./clone-the-repo)
 
 ## Install
 
@@ -27,6 +25,16 @@ cd medplum
 npm ci
 ```
 
+## Build
+
+Use Turborepo to build all packages.
+
+From your root medplum directory run:
+
+```sh
+npm run build
+```
+
 ## Background services
 
 The Medplum Stack requires the following services to be running in your environment:
@@ -34,9 +42,9 @@ The Medplum Stack requires the following services to be running in your environm
 - [PostgreSQL](https://www.postgresql.org/) for the primary database
 - [Redis](https://redis.com/) for caching and job queueing
 
-When running this services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
+When running these services on your local machine you can either use Docker (recommended) or install them directly onto your machine.
 
-#### Using Docker (Recommended)
+### Using Docker (Recommended)
 
 Use the supplied `docker-compose.yml` file to run PostgreSQL and Redis background services. These services will be deployed with all necessary medplum configurations and database migrations.
 
@@ -73,7 +81,7 @@ docker exec -it medplum-postgres-1 psql -U medplum
 
 Where `medplum-postgres-1` can be replaced with the name of your postgres docker container.
 
-#### Deploying manually
+### Deploying manually
 
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
@@ -97,20 +105,15 @@ After that, you will have to update the file `packages/server/medplum.config.jso
   }
 ```
 
-## Build and Test
+## Run tests (optional)
 
-We provide convenience scripts to perform a full build and test:
+Use Turborepo to run all tests across all packages.
+
+From your root medplum directory run:
 
 ```sh
-./scripts/build.sh
+npm t
 ```
-
-This will do the following:
-
-- Install npm dependencies if not already installed
-- Build all packages
-- Run all tests
-- Run linter
 
 ## Run
 
