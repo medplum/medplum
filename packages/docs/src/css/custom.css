@@ -17,8 +17,8 @@
   --ifm-color-primary-lighter: #cab6fa;
   --ifm-color-primary-lightest: #f4f0fe;
   --ifm-heading-color: #000000;
-  --code-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
-  --img-block-shadow: rgba(0, 0, 0, 0.15) 0 5px 15px;
+  --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
+  --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --docusaurus-highlighted-code-line-bg: rgba(72 ,77, 91,  .20);
 
 }
@@ -32,8 +32,8 @@
   --ifm-color-primary-lighter: #ba9ff9;
   --ifm-color-primary-lightest: #ded1fc;
   --ifm-heading-color: #ffffff;
-  --code-block-shadow: rgba(0, 0, 0, 0.35) 0 5px 15px;
-  --img-block-shadow: rgba(0, 0, 0, 0.95) 0 5px 15px;
+  --code-block-shadow: rgba(0, 0, 0, 0.35) 0 2px 4px;
+  --img-block-shadow: rgba(0, 0, 0, 0.95) 0 2px 4px;
   --docusaurus-highlighted-code-line-bg: rgb(100 100 100);
 }
 
