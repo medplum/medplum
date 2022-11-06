@@ -1,4 +1,5 @@
-import { ClientApplication, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import { parseSearchDefinition } from '@medplum/core';
+import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, SignJWT } from 'jose';
@@ -346,6 +347,36 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeUndefined();
   });
 
+  test('Authorization code revoked', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Revoke the login
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    await systemRepo.updateResource({
+      ...login,
+      revoked: true,
+    });
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_grant');
+    expect(res2.body.error_description).toBe('Token revoked');
+  });
+
   test('Authorization code token success with refresh', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
@@ -607,6 +638,49 @@ describe('OAuth2 Token', () => {
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
     expect(res3.body.refresh_token).toBeDefined();
+  });
+
+  test('Refresh token revoked', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Revoke the login
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    await systemRepo.updateResource({
+      ...login,
+      revoked: true,
+    });
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error_description).toBe('Token revoked');
   });
 
   test('Refresh token Basic auth success', async () => {
