@@ -47,6 +47,8 @@ function mockFetch(url: string, options: any): Promise<any> {
       code: '1',
     };
   } else if (options.method === 'POST' && url.endsWith('auth/google')) {
+    const body = JSON.parse(options.body);
+    expect(body.codeChallenge).toBeDefined();
     status = 200;
     result = {
       login: '1',

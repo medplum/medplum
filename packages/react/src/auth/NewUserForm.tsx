@@ -66,6 +66,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
                 try {
+                  await medplum.startPkce();
                   props.handleAuthResponse(
                     await medplum.startGoogleLogin({
                       googleClientId: response.clientId,
