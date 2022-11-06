@@ -1,9 +1,9 @@
 ---
-sidebar_label: Forms
+sidebar_label: Questionnaires
 sidebar_position: 2
 ---
 
-# Forms
+# Questionnaires
 
 Get data from patients, clinicians, staff and other stakeholders using custom forms. Forms go by many names, questionnaires, surveys, ePRO, and more, but they have the same function: to collect data from a user in a standard way.
 

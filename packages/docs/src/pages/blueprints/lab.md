@@ -4,7 +4,7 @@ Support **a wide variety of lab use cases** on a unified service. Medplum implem
 
 ## Overview and Problem Space
 
-Diagnostic data is critical to patient care, but due to the human elements like specimen collection and the physician interpretation workflows, lab scenarios require precision and automation. In the lab context, Medplum is used in a number of ways.
+Diagnostic data is critical to patient care, but due to the human elements like specimen collection and the physician interpretation workflows, lab scenarios require precision and bots. In the lab context, Medplum is used in a number of ways.
 
 - **Primary LIS:** used to power the experience of physicians and lab staff and core to clinical workflow in a CLIA Lab, or multiple CLIA labs
 - **Lab Network:** used to send orders to and receive results from multiple labs, but provide a unified interface to customers and partners
@@ -16,7 +16,7 @@ Recommended reading to enable these use cases is [custom EHR](../blueprints/cust
 
 ## Features
 
-Medplum provides the following features to enable all of the scenarios described in the previous section. To get the data flow to be automated and customized to your workflow the [automation](../products/automation) feature and the [forms](../products/forms) features do the heavy lifting.
+Medplum provides the following features to enable all of the scenarios described in the previous section. To get the data flow to be automated and customized to your workflow the [bots](../products/bots) feature and the [questionnaires](../products/questionnaires) feature does the heavy lifting.
 
 - **Lab panel management:** this is represented in FHIR as a [PlanDefinition](/docs/api/fhir/resources/plandefinition) and you can see a detailed example in our [github repo](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts).
 - **Machine and middleware interfacing:** machines and middleware (e.g. [Data Innovations](https://datainnovations.com/)) run off of HL7 interfaces
@@ -25,7 +25,7 @@ Medplum provides the following features to enable all of the scenarios described
 
 ## Enabling Common Lab Integrations
 
-Labs often require multiple integrations to work well, and are high leverage for automation. Below are some examples of services that are integrated to enable sample processing for clinical lab. These integrations are handled through the [integration engine](../products/integration).
+Labs often require multiple integrations to work well, and are high leverage for bots. Below are some examples of services that are integrated to enable sample processing for clinical lab. These integrations are handled through the [integration engine](../products/integration).
 
 - Analyzers (e.g. Roche Cobas Pro)
 - Lab middleware (e.g. [Data Innovations](https://datainnovations.com/))

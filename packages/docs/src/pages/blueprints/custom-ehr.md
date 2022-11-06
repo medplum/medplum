@@ -4,7 +4,7 @@ Providers often want a custom experience to help smooth workflow, productivity a
 
 ## Sample Application
 
-The Medplum custom EHR sample application is called [Foo Medical provider](https://provider.foomedical.com/). You can [request access](https://forms.gle/c41NddaDroCU88yt7) to view the application, or view the [source code](https://github.com/medplum/foomedical-provider).
+The Medplum custom EHR sample application is called [Foo Medical provider](https://provider.foomedical.com/). You can [request access](https://questionnaires.gle/c41NddaDroCU88yt7) to view the application, or view the [source code](https://github.com/medplum/foomedical-provider).
 
 Foo Medical Provider is intended as a sample, and the experience is truly up to the developer to determine. It is built off of the Medplum API, and is HIPAA compliant and SOC 2 Type 2 certified. Detailed compliance information can be found on our [compliance portal](../docs/compliance).
 
@@ -16,13 +16,13 @@ The homepage is customizable, and can be a great place to communicate the most i
 
 Design your service menu and care plans and track patients across their journey. Custom reports and analytics are available as well. [Learn more](../products/careplans).
 
-## Forms
+## Questionnaires
 
-Make and manage forms for clinicians and patients. Link them to powerful automations. [Learn more](../products/forms).
+Make and manage questionnaires for clinicians and patients. Link them to powerful automations. [Learn more](../products/questionnaires).
 
 ## Notes and Charting
 
-Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [forms](../products/forms) to populate the Encounter object via [bot](/docs/tutorials/bots/bot-for-questionnaire-response), or creating the object via the API.
+Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [questionnaires](../products/questionnaires) to populate the Encounter object via [bot](/docs/tutorials/bots/bot-for-questionnaire-response), or creating the object via the API.
 
 ## Schedules
 
@@ -48,7 +48,7 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Demos and Resources
 
-- Sample application [Foo Medical provider](https://provider.foomedical.com/), [request access](https://forms.gle/c41NddaDroCU88yt7) or run the application off of your own Medplum project.
+- Sample application [Foo Medical provider](https://provider.foomedical.com/), [request access](https://questionnaires.gle/c41NddaDroCU88yt7) or run the application off of your own Medplum project.
 - Source code for [Foo Medical Provider](https://github.com/medplum/foomedical-provider)
 - [Compliance](https://www.medplum.com/docs/compliance) portal with guides and resources.
 - [CMS Definition of Electronic Health Record](https://www.cms.gov/Medicare/E-Health/EHealthRecords)

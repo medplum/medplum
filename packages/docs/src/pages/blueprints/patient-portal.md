@@ -1,6 +1,6 @@
 # Patient Portal
 
-Build a patient facing application that allows users to view their records, fill out forms, schedule appointments, message their provider, view care plans, manage coverage and more. Medplum provides a starter kit that accelerates development, is easy to customize and will scale with your organization.
+Build a patient facing application that allows users to view their records, fill out questionnaires, schedule appointments, message their provider, view care plans, manage coverage and more. Medplum provides a starter kit that accelerates development, is easy to customize and will scale with your organization.
 
 ## Sample Application
 
@@ -12,9 +12,9 @@ The sample application is called [Foo Medical](https://www.foomedical.com). To s
 
 [Foo Medical](https://www.foomedical.com) shows the basics that are very common to medical practices, both in person and virtual care. You will notice that the application is completely white-label and is operating under a single domain.
 
-### Onboarding forms and paperwork
+### Onboarding questionnaires and paperwork
 
-Create forms for users, and put them in the app for them to fill out as needed. You can see an example on [Foo Medical](https://www.foomedical.com) and read in depth on [forms](../products/forms). You can see some sample forms on our [storybook](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--us-surgeon-general-family-health-portrait).
+Create questionnaires for users, and put them in the app for them to fill out as needed. You can see an example on [Foo Medical](https://www.foomedical.com) and read in depth on [questionnaires](../products/questionnaires). You can see some sample questionnaires on our [storybook](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--us-surgeon-general-family-health-portrait).
 
 ### Scheduling
 
