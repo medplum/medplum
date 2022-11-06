@@ -21,7 +21,7 @@ import {
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
-import { DrAliceSmithSchedule, HomerSimpson } from './mocks';
+import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
   beforeAll(() => {
@@ -179,7 +179,17 @@ describe('MockClient', () => {
 
   test('Who am i', async () => {
     const client = new MockClient();
-    expect(await client.get('auth/me')).toMatchObject({ profile: { reference: 'Practitioner/123' } });
+    expect(await client.get('auth/me')).toMatchObject({ profile: DrAliceSmith });
+  });
+
+  test('MFA status', async () => {
+    const client = new MockClient();
+    expect(await client.get('auth/mfa/status')).toMatchObject({ enrolled: false });
+  });
+
+  test('MFA enroll', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/enroll', { token: 'foo' })).toMatchObject(allOk);
   });
 
   test('Batch request', async () => {

@@ -65694,6 +65694,26 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Login-user",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Login-user",
+      "url" : "https://medplum.com/fhir/SearchParameter/Login-user",
+      "version" : "4.0.1",
+      "name" : "code",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The user of the login",
+      "code" : "user",
+      "base" : ["Login"],
+      "type" : "reference",
+      "expression" : "Login.user",
+      "xpath" : "f:Login/f:user",
+      "xpathUsage" : "normal",
+      "target" : ["Bot", "ClientApplication", "User"]
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/Login-code",
     "resource" : {
       "resourceType" : "SearchParameter",

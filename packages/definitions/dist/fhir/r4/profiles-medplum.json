@@ -516,6 +516,26 @@
             }]
           },
           {
+            "id" : "User.authenticatorSecret",
+            "path" : "User.authenticatorSecret",
+            "definition" : "Shared secret for MFA authenticator.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.authenticatorEnrolled",
+            "path" : "User.authenticatorEnrolled",
+            "definition" : "Whether the user has completed authenticator enrollment.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
             "id" : "User.project",
             "path" : "User.project",
             "definition" : "Optional project if the user only exists for the project. This is used for the project-specific user database.",
@@ -982,6 +1002,16 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "Login.authenticatorVerified",
+            "path" : "Login.authenticatorVerified",
+            "definition" : "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.authenticatorEnrolled).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
             }]
           },
           {

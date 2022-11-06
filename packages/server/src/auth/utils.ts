@@ -63,6 +63,7 @@ export async function createProjectMembership(
  * If the user has multiple profiles, sends the list of profiles to choose from.
  * Otherwise, sends the authorization code.
  * @param res The response object.
+ * @param user The user.
  * @param login The login details.
  * @param projectId The optional projectId for scoping.
  */
@@ -72,6 +73,12 @@ export async function sendLoginResult(
   projectId: string | undefined,
   resourceType: string | undefined
 ): Promise<void> {
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  if (user.authenticatorEnrolled && !login.authenticatorVerified) {
+    res.json({ login: login.id, authenticatorEnrolled: true });
+    return;
+  }
+
   if (projectId === 'new') {
     // User is creating a new project.
     res.json({ login: login.id });

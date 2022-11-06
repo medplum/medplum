@@ -122,6 +122,13 @@ export interface Login {
   nonce?: string;
 
   /**
+   * Whether the user has verified using multi-factor authentication (MFA).
+   * This will only be set is the user has MFA enabled (see
+   * User.authenticatorEnrolled).
+   */
+  authenticatorVerified?: boolean;
+
+  /**
    * Whether a token has been granted for this login.
    */
   granted?: boolean;

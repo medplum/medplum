@@ -1,0 +1,64 @@
+import { MantineProvider } from '@mantine/core';
+import { NotificationsProvider } from '@mantine/notifications';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
+
+const medplum = new MockClient();
+
+async function setup(): Promise<void> {
+  await act(async () => {
+    render(
+      <MemoryRouter initialEntries={['/security']} initialIndex={0}>
+        <MedplumProvider medplum={medplum}>
+          <MantineProvider>
+            <NotificationsProvider>
+              <AppRoutes />
+            </NotificationsProvider>
+          </MantineProvider>
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  });
+}
+
+describe('SecurityPage', () => {
+  test('Renders', async () => {
+    await setup();
+    expect(screen.getByText('Sessions')).toBeInTheDocument();
+  });
+
+  test('Click change password', async () => {
+    await setup();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Change password' }));
+    });
+    expect(screen.getByLabelText('Old password *')).toBeInTheDocument();
+    expect(screen.getByLabelText('New password *')).toBeInTheDocument();
+  });
+
+  test('Click MFA enroll', async () => {
+    await setup();
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Enroll' }));
+    });
+    expect(screen.getByText('Multi Factor Auth Setup')).toBeInTheDocument();
+  });
+
+  test('Revoke session', async () => {
+    await setup();
+
+    const revokeLinks = screen.getAllByText('Revoke');
+    expect(revokeLinks).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.click(revokeLinks[1]);
+    });
+
+    await waitFor(() => screen.getByText('Login revoked'));
+    expect(screen.getByText('Login revoked')).toBeInTheDocument();
+  });
+});

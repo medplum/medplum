@@ -1,5 +1,5 @@
 import { createReference, ProfileResource } from '@medplum/core';
-import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { systemRepo } from '../fhir/repo';
@@ -18,12 +18,15 @@ export interface RegisterRequest {
   readonly projectName: string;
   readonly email: string;
   readonly password: string;
+  readonly remoteAddress?: string;
+  readonly userAgent?: string;
 }
 
 export interface RegisterResponse {
   readonly accessToken: string;
   readonly user: User;
   readonly project: Project;
+  readonly login: Login;
   readonly membership: ProjectMembership;
   readonly profile: ProfileResource;
   readonly client: ClientApplication;
@@ -52,6 +55,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     email: request.email,
     password: request.password,
     remember: true,
+    remoteAddress: request.remoteAddress,
+    userAgent: request.userAgent,
   });
 
   const { membership, client } = await createProject(login, projectName, firstName, lastName);
@@ -72,6 +77,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     accessToken: token.accessToken,
     user,
     project,
+    login,
     membership,
     profile,
     client,

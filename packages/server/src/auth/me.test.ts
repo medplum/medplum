@@ -44,6 +44,8 @@ describe('Me', () => {
       projectName: 'Hamilton Project',
       email: `alex${randomUUID()}@example.com`,
       password: 'password!@#',
+      remoteAddress: '5.5.5.5',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
     });
 
     // Get the user profile with default user configuration
@@ -98,5 +100,9 @@ describe('Me', () => {
     expect(res6.status).toBe(200);
     expect(res6.body).toBeDefined();
     expect(res6.body.config).toMatchObject(config);
+    expect(res6.body.security).toBeDefined();
+    expect(res6.body.security.sessions).toBeDefined();
+    expect(res6.body.security.sessions[0].browser).toBeDefined();
+    expect(res6.body.security.sessions[0].os).toBeDefined();
   });
 });

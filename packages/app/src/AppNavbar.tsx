@@ -5,13 +5,12 @@ import {
   IconBuilding,
   IconForms,
   IconId,
+  IconLock,
   IconLockAccess,
   IconPackages,
   IconReceipt,
   IconReportMedical,
-  IconSquareAsterisk,
   IconStar,
-  IconUserCircle,
   IconWebhook,
   TablerIcon,
 } from '@tabler/icons';
@@ -80,7 +79,6 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
   const { classes, cx } = useStyles();
   const navigate = useNavigate();
   const context = useMedplumContext();
-  const profile = context.profile;
   const config = context.medplum.getUserConfiguration();
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
@@ -112,19 +110,9 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
           </React.Fragment>
         ))}
         <Text className={classes.menuTitle}>Settings</Text>
-        <NavLink
-          to={`/${profile?.resourceType}/${profile?.id}`}
-          className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
-        >
-          <IconUserCircle className={classes.linkIcon} />
-          <span>Profile</span>
-        </NavLink>
-        <NavLink
-          to="/changepassword"
-          className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
-        >
-          <IconSquareAsterisk className={classes.linkIcon} />
-          <span>Change password</span>
+        <NavLink to="/security" className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}>
+          <IconLock className={classes.linkIcon} />
+          <span>Security</span>
         </NavLink>
       </Navbar.Section>
     </Navbar>

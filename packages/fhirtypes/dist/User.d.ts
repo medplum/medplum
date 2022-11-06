@@ -77,6 +77,16 @@ export interface User {
   passwordHash?: string;
 
   /**
+   * Shared secret for MFA authenticator.
+   */
+  authenticatorSecret?: string;
+
+  /**
+   * Whether the user has completed authenticator enrollment.
+   */
+  authenticatorEnrolled?: boolean;
+
+  /**
    * Optional project if the user only exists for the project. This is used
    * for the project-specific user database.
    */

@@ -261,8 +261,40 @@ class MockFetchClient {
 
     if (path.startsWith('auth/me')) {
       return {
-        profile: { reference: 'Practitioner/123' },
+        profile: DrAliceSmith,
+        security: {
+          mfaEnrolled: false,
+          sessions: [
+            {
+              id: '123',
+              lastUpdated: new Date().toISOString(),
+              authMethod: 'password',
+              remoteAddress: '5.5.5.5',
+              browser: 'Chrome',
+              os: 'Linux',
+            },
+            {
+              id: '456',
+              lastUpdated: new Date().toISOString(),
+              authMethod: 'password',
+              remoteAddress: '6.6.6.6',
+              browser: 'Chrome',
+              os: 'Android',
+            },
+          ],
+        },
       };
+    }
+
+    if (path.startsWith('auth/mfa/status')) {
+      return {
+        enrolled: false,
+        enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      };
+    }
+
+    if (path.startsWith('auth/mfa/enroll')) {
+      return allOk;
     }
 
     return null;
