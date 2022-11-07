@@ -1,5 +1,5 @@
 import { Address, HumanName, Period, Timing, Range, Quantity } from '@medplum/fhirtypes';
-import { capitalize, preciseDecrement, preciseIncrement } from './utils';
+import { capitalize } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -267,4 +267,38 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   return result.join('').trim();
+}
+
+/**
+ * Returns the input number increased by the `n` units of the specified precision
+ * @param a The input number
+ * @param precision The precision in number of digits.
+ * @param n (default 1) The number of units to add
+ */
+function preciseIncrement(a: number, precision: number, n = 1): number {
+  return (toPreciseInteger(a, precision) + n) * Math.pow(10, -precision);
+}
+
+/**
+ * Returns the input number decreased by the `n` units of the specified precision
+ * @param a The input number
+ * @param precision The precision in number of digits.
+ * @param n (default 1) The number of units to subtract
+ */
+function preciseDecrement(a: number, precision: number, n = 1): number {
+  return (toPreciseInteger(a, precision) - n) * Math.pow(10, -precision);
+}
+
+/**
+ * Returns an integer representation of the number with the given precision.
+ * For example, if precision is 2, then 1.2345 will be returned as 123.
+ * @param a The number.
+ * @param precision Optional precision in number of digits.
+ * @returns The integer with the given precision.
+ */
+function toPreciseInteger(a: number, precision?: number): number {
+  if (precision === undefined) {
+    return a;
+  }
+  return Math.round(a * Math.pow(10, precision));
 }

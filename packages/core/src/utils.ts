@@ -647,26 +647,6 @@ export function preciseRound(a: number, precision: number): number {
 }
 
 /**
- * Returns the input number increased by the `n` units of the specified precision
- * @param a The input number
- * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to add
- */
-export function preciseIncrement(a: number, precision: number, n = 1): number {
-  return (toPreciseInteger(a, precision) + n) * Math.pow(10, -precision);
-}
-
-/**
- * Returns the input number decreased by the `n` units of the specified precision
- * @param a The input number
- * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to subtract
- */
-export function preciseDecrement(a: number, precision: number, n = 1): number {
-  return (toPreciseInteger(a, precision) - n) * Math.pow(10, -precision);
-}
-
-/**
  * Returns true if the two numbers are equal to the given precision.
  * @param a The first number.
  * @param b The second number.

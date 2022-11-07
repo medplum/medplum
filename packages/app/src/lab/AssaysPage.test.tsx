@@ -46,7 +46,7 @@ describe('AssaysPage', () => {
 
     await setup();
     expect(screen.getByText('Assay 1')).toBeInTheDocument();
-    expect(screen.getByText('0 mg/dL - 100 mg/dL')).toBeInTheDocument();
+    expect(screen.getByText('0 - 100 mg/dL')).toBeInTheDocument();
   });
 
   test('Qualified range', async () => {

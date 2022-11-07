@@ -20,11 +20,9 @@ import {
   isLowerCase,
   isProfileResource,
   isUUID,
-  preciseDecrement,
   preciseEquals,
   preciseGreaterThan,
   preciseGreaterThanOrEquals,
-  preciseIncrement,
   preciseLessThan,
   preciseLessThanOrEquals,
   preciseRound,
@@ -659,29 +657,6 @@ describe('Core Utils', () => {
   test('preciseRound', () => {
     expect(preciseRound(1, 0)).toBe(1);
     expect(preciseRound(0.1 + 0.2, 1)).toBe(0.3);
-  });
-
-  test('preciseIncrement', () => {
-    expect(preciseIncrement(1, 0)).toBe(2);
-    expect(preciseIncrement(1, 0, 0)).toBe(1);
-    expect(preciseIncrement(1, 1)).toBe(1.1);
-    expect(preciseEquals(preciseIncrement(3.3, 1), 3.4, 1)).toBe(true);
-
-    expect(preciseEquals(preciseIncrement(1, 10), 1.0000000001, 10)).toBe(true);
-    expect(preciseEquals(preciseIncrement(1, 10), 1.0000000002, 10)).toBe(false);
-    expect(preciseEquals(preciseIncrement(1, 10, 2), 1.0000000002, 10)).toBe(true);
-    expect(preciseEquals(preciseIncrement(1, 10, 10), 1.000000001, 10)).toBe(true);
-  });
-
-  test('preciseDecrement', () => {
-    expect(preciseDecrement(1, 0)).toBe(0);
-    expect(preciseDecrement(1, 0, 0)).toBe(1);
-    expect(preciseDecrement(1, 1)).toBe(0.9);
-    expect(preciseEquals(preciseDecrement(3.3, 1), 3.2, 1)).toBe(true);
-    expect(preciseEquals(preciseDecrement(1, 10), 0.9999999999, 10)).toBe(true);
-    expect(preciseEquals(preciseDecrement(1, 10), 0.9999999998, 10)).toBe(false);
-    expect(preciseEquals(preciseDecrement(1, 10, 2), 0.9999999998, 10)).toBe(true);
-    expect(preciseEquals(preciseDecrement(1, 10, 10), 0.999999999, 10)).toBe(true);
   });
 
   test('preciseEquals', () => {
