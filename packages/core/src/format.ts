@@ -1,5 +1,5 @@
 import { Address, HumanName, Period, Timing, Range, Quantity } from '@medplum/fhirtypes';
-import { capitalize } from './utils';
+import { capitalize, preciseDecrement, preciseIncrement } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -198,22 +198,40 @@ export function formatTiming(timing: Timing | undefined): string {
 /**
  * Returns a human-readable string for a FHIR Range datatype, taking into account comparators and one-sided ranges
  * @param range A FHIR Range element
+ * @param exclusive If true, one-sided ranges will be rendered with the '>' or '<' bounds rather than '>=' or '<='
  * @returns A human-readable string representation of the Range
  */
-export function formatRange(range: Range | undefined): string {
-  if (!range || (range.low?.value === undefined && range.high?.value === undefined)) {
+export function formatRange(range: Range | undefined, precision?: number, exclusive = false): string {
+  if (exclusive && precision === undefined) {
+    throw new Error('Precision must be specified for exclusive ranges');
+  }
+
+  const low = range?.low && { ...range.low };
+  const high = range?.high && { ...range.high };
+  if (!range || (low?.value === undefined && high?.value === undefined)) {
     return '';
   }
 
   if (range.low?.value !== undefined && range.high?.value === undefined) {
-    return `>= ${formatQuantity(range.low)}`;
+    if (exclusive && precision !== undefined) {
+      range.low.value = preciseDecrement(range.low.value, precision);
+      return `> ${formatQuantity(range.low, precision)}`;
+    }
+    return `>= ${formatQuantity(range.low, precision)}`;
   }
 
   if (range.low?.value === undefined && range.high?.value !== undefined) {
-    return `<= ${formatQuantity(range.high)}`;
+    if (exclusive && precision !== undefined) {
+      range.high.value = preciseIncrement(range.high.value, precision);
+      return `< ${formatQuantity(range.high, precision)}`;
+    }
+    return `<= ${formatQuantity(range.high, precision)}`;
   }
 
-  return `${formatQuantity(range.low)} - ${formatQuantity(range.high)}`;
+  if (low?.unit === high?.unit) {
+    delete low?.unit;
+  }
+  return `${formatQuantity(low, precision)} - ${formatQuantity(high, precision)}`;
 }
 
 /**
