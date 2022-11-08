@@ -5,6 +5,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Questionnaire,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -1120,5 +1121,38 @@ describe('AccessPolicy', () => {
     expect(historyBundle.entry?.[0]?.resource?.subject).toBeDefined();
     expect(historyBundle.entry?.[0]?.resource?.subject?.reference).toBeDefined();
     expect(historyBundle.entry?.[0]?.resource?.subject?.display).toBeUndefined();
+  });
+
+  test('Identifier criteria', async () => {
+    const questionnaire = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      identifier: [{ system: 'https://example.com', value: randomUUID() }],
+    });
+
+    // AccessPolicy that only allows one specific Questionnaire
+    const accessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Questionnaire',
+          criteria: 'Questionnaire?identifier=' + questionnaire.identifier?.[0].value,
+        },
+      ],
+    };
+
+    const repo2 = new Repository({
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy,
+    });
+
+    const readResource = await repo2.readResource<Questionnaire>('Questionnaire', questionnaire?.id as string);
+    expect(readResource.id).toBe(questionnaire.id);
+
+    const historyBundle = await repo2.readHistory<Questionnaire>('Questionnaire', questionnaire?.id as string);
+    expect(historyBundle.entry).toHaveLength(1);
+    expect(historyBundle.entry?.[0]?.resource?.id).toBe(questionnaire.id);
   });
 });

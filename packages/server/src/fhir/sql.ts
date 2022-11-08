@@ -234,7 +234,7 @@ export abstract class BaseQuery {
   }
 
   where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
-    this.predicate.where(column, operator, value, type);
+    this.predicate.where(getColumn(column, this.tableName), operator, value, type);
     return this;
   }
 
@@ -268,7 +268,7 @@ export class SelectQuery extends BaseQuery {
   }
 
   column(column: Column | string): this {
-    this.columns.push(getColumn(column));
+    this.columns.push(getColumn(column, this.tableName));
     return this;
   }
 
@@ -284,7 +284,7 @@ export class SelectQuery extends BaseQuery {
   }
 
   orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(getColumn(column), descending));
+    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
     return this;
   }
 
@@ -461,9 +461,9 @@ export class DeleteQuery extends BaseQuery {
   }
 }
 
-function getColumn(column: Column | string): Column {
+function getColumn(column: Column | string, defaultTableName?: string): Column {
   if (typeof column === 'string') {
-    return new Column(undefined, column);
+    return new Column(defaultTableName, column);
   } else {
     return column;
   }
