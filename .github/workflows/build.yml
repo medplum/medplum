@@ -49,8 +49,6 @@ jobs:
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
-          REGISTER_DISABLED: ${{ secrets.REGISTER_DISABLED }}
-          REGISTER_DISABLED_MESSAGE: ${{ secrets.REGISTER_DISABLED_MESSAGE }}
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@master
         with:
