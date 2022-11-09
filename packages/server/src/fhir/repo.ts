@@ -893,14 +893,15 @@ export class Repository {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
-        }
-
-        if (policy.criteria) {
+        } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = this.#parseCriteriaAsSearchRequest(policy.criteria);
           const accessPolicyConjunction = new Conjunction([]);
           this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
           expressions.push(accessPolicyConjunction);
+        } else {
+          // Allow access to all resources in the compartment.
+          return;
         }
       }
     }
@@ -1630,12 +1631,11 @@ export class Repository {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (
           (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
-          !resourcePolicy.readonly
+          !resourcePolicy.readonly &&
+          (!resourcePolicy.criteria ||
+            matchesSearchRequest(resource, this.#parseCriteriaAsSearchRequest(resourcePolicy.criteria)))
         ) {
-          return (
-            !resourcePolicy.criteria ||
-            matchesSearchRequest(resource, this.#parseCriteriaAsSearchRequest(resourcePolicy.criteria))
-          );
+          return true;
         }
       }
     }
