@@ -156,3 +156,5 @@ npm run dev
 ```
 
 You can access the app at <http://localhost:3000/>
+
+The default username is admin@example.com, default password medplum_admin.
