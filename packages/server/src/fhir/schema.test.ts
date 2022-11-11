@@ -451,6 +451,22 @@ describe('FHIR schema', () => {
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthInteger: 2 })).not.toThrow();
     expect(() => validateResource({ resourceType: 'Patient', multipleBirthXyz: 'xyz' })).toThrow();
   });
+
+  test('Primitive element', () => {
+    expect(() => validateResource({ resourceType: 'Patient', birthDate: '1990-01-01', _birthDate: {} })).not.toThrow();
+    expect(() =>
+      validateResource({ resourceType: 'Patient', birthDate: '1990-01-01', _birthDate: '1990-01-01' })
+    ).toThrow();
+    expect(() => validateResource({ resourceType: 'Patient', _birthDate: {} })).toThrow();
+    expect(() => validateResource({ resourceType: 'Patient', _xyz: {} } as unknown as Patient)).toThrow();
+    expect(() =>
+      validateResource({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [{ linkId: 'test', type: 'string', text: 'test', _text: { extension: [] } }],
+      })
+    ).not.toThrow();
+  });
 });
 
 function fail(reason: string): never {
