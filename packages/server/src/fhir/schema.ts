@@ -59,9 +59,6 @@ const baseResourceProperties = new Set<string>([
   'contained',
   'extension',
   'modifierExtension',
-
-  // Other
-  '_baseDefinition',
 ]);
 
 export function isResourceType(resourceType: string): boolean {
@@ -243,16 +240,62 @@ export class FhirSchemaValidator<T extends Resource> {
   ): void {
     const object = typedValue.value as Record<string, unknown>;
     for (const key of Object.keys(object)) {
-      if (baseResourceProperties.has(key)) {
-        continue;
-      }
-      if (!(key in propertyDefinitions)) {
-        if (!isChoiceOfType(key, typedValue, propertyDefinitions)) {
-          const expression = `${path}.${key}`;
-          this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
-        }
-      }
+      this.#checkAdditionalProperty(path, key, typedValue, propertyDefinitions);
     }
+  }
+
+  /**
+   * Checks if the given property is allowed on the given object.
+   * @param path The path of the current object.
+   * @param key The key of a property to check.
+   * @param typedValue The current object.
+   * @param propertyDefinitions The property definitions of the current object.
+   */
+  #checkAdditionalProperty(
+    path: string,
+    key: string,
+    typedValue: TypedValue,
+    propertyDefinitions: Record<string, ElementDefinition>
+  ): void {
+    if (
+      !baseResourceProperties.has(key) &&
+      !(key in propertyDefinitions) &&
+      !isChoiceOfType(key, typedValue, propertyDefinitions) &&
+      !this.#checkPrimitiveElement(path, key, typedValue)
+    ) {
+      const expression = `${path}.${key}`;
+      this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
+    }
+  }
+
+  /**
+   * Checks the element for a primitive.
+   *
+   * FHIR elements with primitive data types are represented in two parts:
+   *   1) A JSON property with the name of the element, which has a JSON type of number, boolean, or string
+   *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
+   *
+   * See: https://hl7.org/fhir/json.html#primitive
+   *
+   * @param path The path to the property
+   * @param key
+   * @param typedValue
+   */
+  #checkPrimitiveElement(path: string, key: string, typedValue: TypedValue): boolean {
+    // Primitive element starts with underscore
+    if (!key.startsWith('_')) {
+      return false;
+    }
+
+    // Validate the non-underscore property exists
+    const primitiveKey = key.slice(1);
+    if (!(primitiveKey in typedValue.value)) {
+      return false;
+    }
+
+    // Then validate the element
+    this.#validateObject({ type: 'Element', value: typedValue.value[key] }, path);
+    return true;
   }
 
   #createIssue(elementDefinition: ElementDefinition, message: string): void {
