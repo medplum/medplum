@@ -165,6 +165,10 @@ When running in AWS, Medplum server loads config settings from AWS Parameter Sto
 
 Some configuration settings are created automatically by the CDK deployment (for example, database and redis connection details). Other settings must be created manually before the first deploy.
 
+When creating a parameter in AWS Parameter Store, you will be prompted for the parameter **Name**. The parameter **Name** uses the convention `/medplum/{environmentName}/{key}`.
+
+For example, if your environment name is "prod", then the "baseUrl" parameter name is `/medplum/prod/baseUrl`.
+
 | Key                    | Description                                                                                                                                                                       | Automatic |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | `port`                 | The port number that the API server binds to inside the Docker image. By default, you should use `8103`. In some cases, you may need to use `5000`.                               | no        |
