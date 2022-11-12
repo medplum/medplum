@@ -165,6 +165,10 @@ When running in AWS, Medplum server loads config settings from AWS Parameter Sto
 
 Some configuration settings are created automatically by the CDK deployment (for example, database and redis connection details). Other settings must be created manually before the first deploy.
 
+When creating a parameter in AWS Parameter Store, you will be prompted for the parameter **Name**. The parameter **Name** uses the convention `/medplum/{environmentName}/{key}`.
+
+For example, if your environment name is "prod", then the "baseUrl" parameter name is `/medplum/prod/baseUrl`.
+
 | Key                    | Description                                                                                                                                                                       | Automatic |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | `port`                 | The port number that the API server binds to inside the Docker image. By default, you should use `8103`. In some cases, you may need to use `5000`.                               | no        |
@@ -172,9 +176,9 @@ Some configuration settings are created automatically by the CDK deployment (for
 | `issuer`               | The JWK issuer. By default, Medplum server uses built in OAuth, so `issuer` should be the same as `baseUrl`.                                                                      | no        |
 | `audience`             | The JWK audience. By default, Medplum server uses built in OAuth, so `audience` should be the same as `baseUrl`.                                                                  | no        |
 | `jwksUrl`              | The JWKS URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `.well-known/jwks.json`.                                                         | no        |
-| `authorizeUrl`         | The OAuth authorize URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/authorize`.                                                   | no        |
-| `tokenUrl`             | The OAuth token URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/token`.                                                           | no        |
-| `userInfoUrl`          | The OAuth userinfo URL. By default, Medplum server uses built in OAuth, so `jwksUrl` should be `baseUrl` + `oauth2/userinfo`.                                                     | no        |
+| `authorizeUrl`         | The OAuth authorize URL. By default, Medplum server uses built in OAuth, so `authorizeUrl` should be `baseUrl` + `oauth2/authorize`.                                              | no        |
+| `tokenUrl`             | The OAuth token URL. By default, Medplum server uses built in OAuth, so `tokenUrl` should be `baseUrl` + `oauth2/token`.                                                          | no        |
+| `userInfoUrl`          | The OAuth userinfo URL. By default, Medplum server uses built in OAuth, so `userInfoUrl` should be `baseUrl` + `oauth2/userinfo`.                                                 | no        |
 | `appBaseUrl`           | The fully qualified URL of the user-facing app. This is used for CORS and system generated emails. For example, `https://app.example.com/`.                                       | no        |
 | `binaryStorage`        | Where to store binary contents. This should be the CDK config `storageBucketName` with `s3:` prefix. For example, `s3:medplum-storage`.                                           | no        |
 | `storageBaseUrl`       | The fully qualified base URL of the binary storage. This should be the CDK config `storageDomainName` with `https://` prefix. For example, `https://storage.medplum.com/binary/`. | no        |
