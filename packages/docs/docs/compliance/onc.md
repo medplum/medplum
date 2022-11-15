@@ -24,6 +24,7 @@ The following materials are related to ONC Certification.
 | Reference Implementation      | Sample EHR code                                      | [Github](https://github.com/medplum/foomedical-provider)                                                                                                      |
 | Account Setup                 | Example account setup bot                            | [Github](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)                                                         |
 | CMS Queries                   | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
+| EHR Definition                | Description of what defines an EHR                   | [ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                                  |
 
 ## Criteria Shortlist
 
@@ -44,6 +45,20 @@ This is the list of criteria that are already complete or are in active developm
 | [g10](#standardized-api-for-patient-and-population-services-cures-update-g10) | Standardized API for Patient and Population Services          |
 
 The following criteria are required for CHPL listing: [d12](#encrypt-authentication-credentials-d12), [d13](#multi-factor-authentication-d13), [g4](#quality-management-system-g4), [g5](#accessibility-centered-design-g5).
+
+## Criteria Extended List
+
+This is the list of criteria extended criteria that will follow the above.
+
+| Criteria                                               | Description                                   |
+| ------------------------------------------------------ | --------------------------------------------- |
+| [a9](#clinical-decision-support-a9)                    | Clinical Decision Support                     |
+| [a14](#implantable-device-list-a14)                    | Implantable device list                       |
+| [b1](#transition-of-care-b1)                           | Transition of Care                            |
+| [c1](#clinical-quality-measures--record-and-export-c1) | Clinical Quality Measures - record and export |
+| [g7](#application-access--patient-selection-g7)        | Application Access Patient Selection          |
+| [g9](#application-access--all-data-request-g9)         | Application Access All Data Request           |
+| [h1](#direct-project-edge-protocol-and-xdrxdm-h1)      | Direct Project, Edge Protocol and XDR/XDM     |
 
 ## Self-Attested Criteria
 
