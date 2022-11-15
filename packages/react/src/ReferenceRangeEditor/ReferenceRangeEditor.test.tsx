@@ -6,17 +6,20 @@ import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
+import { deepClone } from '@medplum/core';
 
 const medplum = new MockClient();
 
 async function setup(args: ReferenceRangeEditorProps): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <ReferenceRangeEditor {...args} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <React.StrictMode>
+        <MemoryRouter>
+          <MedplumProvider medplum={medplum}>
+            <ReferenceRangeEditor {...args} />
+          </MedplumProvider>
+        </MemoryRouter>
+      </React.StrictMode>
     );
   });
 }
@@ -136,17 +139,11 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject([
-      {
+    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+      Array(3).fill({
         gender: 'female',
-      },
-      {
-        gender: 'female',
-      },
-      {
-        gender: 'female',
-      },
-    ]);
+      })
+    );
   });
 
   /**
@@ -166,26 +163,14 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject([
-      {
+    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+      Array(3).fill({
         age: {
           low: { value: 10, unit: 'years', system: 'http://unitsofmeasure.org' },
           high: { value: 18, unit: 'years', system: 'http://unitsofmeasure.org' },
         },
-      },
-      {
-        age: {
-          low: { value: 10, unit: 'years', system: 'http://unitsofmeasure.org' },
-          high: { value: 18, unit: 'years', system: 'http://unitsofmeasure.org' },
-        },
-      },
-      {
-        age: {
-          low: { value: 10, unit: 'years', system: 'http://unitsofmeasure.org' },
-          high: { value: 18, unit: 'years', system: 'http://unitsofmeasure.org' },
-        },
-      },
-    ]);
+      })
+    );
   });
 
   /**
@@ -204,23 +189,13 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject([
-      {
+    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+      Array(3).fill({
         context: {
           text: 'luteal',
         },
-      },
-      {
-        context: {
-          text: 'luteal',
-        },
-      },
-      {
-        context: {
-          text: 'luteal',
-        },
-      },
-    ]);
+      })
+    );
   });
 
   /**
@@ -239,17 +214,11 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject([
-      {
+    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+      Array(3).fill({
         gender: undefined,
-      },
-      {
-        gender: undefined,
-      },
-      {
-        gender: undefined,
-      },
-    ]);
+      })
+    );
   });
 
   /**
@@ -269,6 +238,41 @@ describe('ReferenceRangeEditor', () => {
     expect(unitInputs).toHaveLength(4);
     const lastUnitInput = screen.getByTestId('range-id-4-low-unit') as HTMLInputElement;
     expect(lastUnitInput.value).toEqual('mg/dL');
+  });
+
+  /**
+   * Add an interval with existing filters, and ensure that filters propagate
+   */
+  test('Add Interval w/ filters', async () => {
+    const onSubmit = jest.fn();
+    const definition = deepClone(HDLDefinition);
+    definition.qualifiedInterval = definition.qualifiedInterval?.map((interval) => ({
+      ...interval,
+      gender: 'female',
+      age: { low: { value: 10 }, high: { value: 15 } },
+    }));
+
+    await setup({
+      definition: definition,
+      onSubmit,
+    });
+
+    // Add a new interval
+    fireEvent.click(screen.getByTitle('Add Interval'));
+    fireEvent.change(screen.getByTestId('range-id-4-low-value'), { target: { value: 99 } });
+
+    // Save all intervals
+    fireEvent.click(screen.getByText('Save'));
+
+    // Ensure that all intervals receive the filters
+    const checkSubmission = onSubmit.mock.calls[0][0] as ObservationDefinition;
+    expect(checkSubmission.qualifiedInterval?.map((interval) => interval.gender)).toMatchObject(
+      Array(4).fill('female')
+    );
+
+    expect(checkSubmission.qualifiedInterval?.map((interval) => interval.age)).toMatchObject(
+      Array(4).fill({ low: { value: 10 }, high: { value: 15 } })
+    );
   });
 
   /**
