@@ -5,7 +5,7 @@ import { RangeDisplay } from './RangeDisplay';
 describe('RangeDisplay', () => {
   test('Renders', () => {
     render(<RangeDisplay value={{ low: { value: 5, unit: 'mg' }, high: { value: 10, unit: 'mg' } }} />);
-    expect(screen.getByText('5 mg - 10 mg')).toBeInTheDocument();
+    expect(screen.getByText('5 - 10 mg')).toBeInTheDocument();
   });
 
   test('Renders low only', () => {
