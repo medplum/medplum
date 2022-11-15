@@ -272,7 +272,7 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
-export interface BotEvent<T = Resource | Hl7Message | string> {
+export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
   readonly contentType: string;
   readonly input: T;
   readonly secrets: Record<string, ProjectSecret>;
