@@ -341,7 +341,7 @@ describe('ResourcePropertyDisplay', () => {
       />
     );
 
-    expect(screen.getByText('5 mg - 10 mg')).toBeInTheDocument();
+    expect(screen.getByText('5 - 10 mg')).toBeInTheDocument();
   });
 
   test('Renders Ratio', () => {
