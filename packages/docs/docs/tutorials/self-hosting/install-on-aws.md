@@ -75,10 +75,6 @@ Follow the [Creating key pairs for your signers](https://docs.aws.amazon.com/Ama
 
 Make note of the key ID for future steps.
 
-### Create a S3 bucket for file storage
-
-Follow the [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) guide to create an S3 bucket for file storage. All file uploads such as images, videos, and documents will be stored in this bucket.
-
 ### Create a S3 bucket for logging
 
 Follow the [Creating a bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/create-bucket-overview.html) guide to create an S3 bucket for logging. All log backups will be stored in this directory.
