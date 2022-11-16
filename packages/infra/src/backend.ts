@@ -212,11 +212,13 @@ export class BackEnd extends Construct {
       http2Enabled: true,
     });
 
-    // Load Balancer logging
-    loadBalancer.logAccessLogs(
-      s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-      config.loadBalancerLoggingPrefix
-    );
+    if (config.loadBalancerLoggingEnabled) {
+      // Load Balancer logging
+      loadBalancer.logAccessLogs(
+        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
+        config.loadBalancerLoggingPrefix
+      );
+    }
 
     // HTTPS Listener
     // Forward to the target group
