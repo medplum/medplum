@@ -13,7 +13,7 @@ node --version
 npm --version
 
 # Install
-[ ! -d "node_modules" ] && npm ci
+[ ! -d "node_modules" ] && npm ci --legacy-peer-deps
 
 # Build
 npx turbo run build
