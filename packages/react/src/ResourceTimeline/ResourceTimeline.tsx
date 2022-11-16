@@ -226,7 +226,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     });
   }
 
-  if (!resource || !history) {
+  if (!resource) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
