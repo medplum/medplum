@@ -19,8 +19,10 @@ export interface MedplumInfraConfig {
   readonly serverImage: string;
   readonly serverMemory: number;
   readonly serverCpu: number;
+  readonly loadBalancerLoggingEnabled: boolean;
   readonly loadBalancerLoggingBucket: string;
   readonly loadBalancerLoggingPrefix: string;
+  readonly clamscanEnabled: boolean;
   readonly clamscanLoggingBucket: string;
   readonly clamscanLoggingPrefix: string;
 }

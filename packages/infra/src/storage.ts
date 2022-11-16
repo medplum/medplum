@@ -33,14 +33,16 @@ export class Storage extends Construct {
       enforceSSL: true,
     });
 
-    // ClamAV serverless scan
-    const sc = new ServerlessClamscan(this, 'ServerlessClamscan', {
-      defsBucketAccessLogsConfig: {
-        logsBucket: s3.Bucket.fromBucketName(this, 'LoggingBucket', config.clamscanLoggingBucket),
-        logsPrefix: config.clamscanLoggingPrefix,
-      },
-    });
-    sc.addSourceBucket(storageBucket);
+    if (config.clamscanEnabled) {
+      // ClamAV serverless scan
+      const sc = new ServerlessClamscan(this, 'ServerlessClamscan', {
+        defsBucketAccessLogsConfig: {
+          logsBucket: s3.Bucket.fromBucketName(this, 'LoggingBucket', config.clamscanLoggingBucket),
+          logsPrefix: config.clamscanLoggingPrefix,
+        },
+      });
+      sc.addSourceBucket(storageBucket);
+    }
 
     // Public key in PEM format
     const publicKey = new cloudfront.PublicKey(this, 'StoragePublicKey', {
