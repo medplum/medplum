@@ -4,7 +4,6 @@ import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -141,7 +140,7 @@ class S3Storage implements BinaryStorage {
         Key: this.#getKey(binary),
         CacheControl: 'max-age=3600, s-maxage=86400',
         ContentType: contentType || 'application/octet-stream',
-        Body: stream as Readable | ReadableStream<any>,
+        Body: stream as Readable | ReadableStream,
       },
       client: this.#client,
       queueSize: 3,

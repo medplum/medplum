@@ -1,6 +1,6 @@
 {
   "name": "@medplum/infra",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Medplum Infra as Code",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -19,8 +19,8 @@
   "dependencies": {
     "aws-cdk-lib": "2.50.0",
     "cdk": "2.50.0",
-    "cdk-nag": "2.20.3",
-    "cdk-serverless-clamscan": "2.4.76",
-    "constructs": "10.1.152"
+    "cdk-nag": "2.21.1",
+    "cdk-serverless-clamscan": "2.4.86",
+    "constructs": "10.1.161"
   }
 }
