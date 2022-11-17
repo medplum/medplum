@@ -22,6 +22,9 @@ describe('Super Admin routes', () => {
 
     ({ project, client } = await createTestProject());
 
+    // Mark the project as a "Super Admin" project
+    await systemRepo.updateResource({ ...project, superAdmin: true });
+
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
     const practitioner2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
@@ -32,7 +35,6 @@ describe('Super Admin routes', () => {
       lastName: 'Admin',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: true,
     });
 
     const user2 = await systemRepo.createResource<User>({
@@ -41,7 +43,6 @@ describe('Super Admin routes', () => {
       lastName: 'Admin',
       email: `normie${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: false,
     });
 
     const membership1 = await systemRepo.createResource<ProjectMembership>({
@@ -66,7 +67,7 @@ describe('Super Admin routes', () => {
       membership: createReference(membership1),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      admin: true,
+      superAdmin: true,
     });
 
     const login2 = await systemRepo.createResource<Login>({
@@ -77,7 +78,7 @@ describe('Super Admin routes', () => {
       membership: createReference(membership2),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      admin: false,
+      superAdmin: false,
     });
 
     adminAccessToken = await generateAccessToken({

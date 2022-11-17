@@ -23,19 +23,19 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
 
   const profile = await systemRepo.readReference(res.locals.profile as Reference<ProfileResource>);
 
-  if (res.locals.scope.includes('profile')) {
+  if (res.locals.login.scope.includes('profile')) {
     buildProfile(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('email')) {
+  if (res.locals.login.scope.includes('email')) {
     buildEmail(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('phone')) {
+  if (res.locals.login.scope.includes('phone')) {
     buildPhone(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('address')) {
+  if (res.locals.login.scope.includes('address')) {
     buildAddress(userInfo, profile);
   }
 

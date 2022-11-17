@@ -116,7 +116,6 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
-    admin: user.admin,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });
