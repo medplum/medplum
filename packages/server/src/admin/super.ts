@@ -1,5 +1,4 @@
 import { allOk, forbidden } from '@medplum/core';
-import { User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { sendOutcome } from '../fhir/outcomes';
@@ -19,8 +18,7 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (_req: Request, res: Response) => {
-    const user = await systemRepo.readResource<User>('User', res.locals.user);
-    if (!user.admin) {
+    if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
       return;
     }
@@ -36,8 +34,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/structuredefinitions',
   asyncWrap(async (_req: Request, res: Response) => {
-    const user = await systemRepo.readResource<User>('User', res.locals.user);
-    if (!user.admin) {
+    if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
       return;
     }
@@ -53,8 +50,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/searchparameters',
   asyncWrap(async (_req: Request, res: Response) => {
-    const user = await systemRepo.readResource<User>('User', res.locals.user);
-    if (!user.admin) {
+    if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
       return;
     }
@@ -70,8 +66,7 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    const user = await systemRepo.readResource<User>('User', res.locals.user);
-    if (!user.admin) {
+    if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
       return;
     }

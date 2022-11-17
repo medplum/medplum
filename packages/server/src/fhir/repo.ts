@@ -1878,7 +1878,7 @@ export async function getRepoForLogin(
     project: resolveId(membership.project) as string,
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
-    superAdmin: login.admin || login.superAdmin,
+    superAdmin: login.superAdmin,
     accessPolicy,
     strictMode,
     extendedMode,
