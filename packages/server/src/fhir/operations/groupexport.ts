@@ -26,6 +26,8 @@ const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 export async function groupExportHandler(req: Request, res: Response): Promise<void> {
   const { baseUrl } = getConfig();
   const { id } = req.params;
+  const query = req.query as Record<string, string | undefined>;
+  const since = query._since;
   const repo = res.locals.repo as Repository;
 
   // First read the group as the user to verify access
@@ -40,7 +42,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   });
 
   // Start the exporter
-  const exporter = new BulkExporter(repo);
+  const exporter = new BulkExporter(repo, since);
 
   // Read all patients in the group
   if (group.member) {
@@ -124,11 +126,13 @@ class BulkFileWriter {
 
 class BulkExporter {
   readonly repo: Repository;
+  readonly since: string | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet: Set<string> = new Set();
 
-  constructor(repo: Repository) {
+  constructor(repo: Repository, since: string | undefined) {
     this.repo = repo;
+    this.since = since;
   }
 
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
@@ -156,6 +160,9 @@ class BulkExporter {
 
   async writeResource(resource: Resource): Promise<void> {
     if (resource.resourceType === 'AuditEvent') {
+      return;
+    }
+    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
       return;
     }
     const ref = getReferenceString(resource);
