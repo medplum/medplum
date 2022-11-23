@@ -148,10 +148,12 @@ describe('Group Export', () => {
     expect(res1.status).toBe(201);
 
     // Create observation
+    // (Use extended mode to get the project metadata)
     const res2 = await request(app)
       .post(`/fhir/R4/Observation`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
       .send({
         resourceType: 'Observation',
         status: 'final',
@@ -164,9 +166,11 @@ describe('Group Export', () => {
     // (Use systemRepo to set meta.lastUpdated)
     await systemRepo.createResource({
       ...res2.body,
+      id: undefined,
       meta: {
         ...res2.body.meta,
         lastUpdated: before.toISOString(),
+        versionId: undefined,
       },
     });
 
