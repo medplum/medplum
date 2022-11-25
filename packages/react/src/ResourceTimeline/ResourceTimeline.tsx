@@ -281,7 +281,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           return (
             <HistoryTimelineItem
               key={item.meta?.versionId}
-              history={history}
+              history={history as Bundle<Resource>}
               resource={item}
               onDetails={onVersionDetails}
             />

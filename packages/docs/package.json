@@ -30,7 +30,7 @@
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@svgr/webpack": "6.5.1",
-    "@medplum/mock": "1.0.1",
+    "@medplum/mock": "1.0.2",
     "@tsconfig/docusaurus": "1.0.6",
     "clsx": "1.2.1",
     "docusaurus-plugin-typedoc": "0.17.5",
