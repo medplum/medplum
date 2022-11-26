@@ -1,15 +1,18 @@
 import {
   formatAddress,
+  formatCodeableConcept,
+  formatCoding,
   formatDate,
   formatDateTime,
   formatFamilyName,
   formatGivenName,
   formatHumanName,
+  formatObservationValue,
   formatPeriod,
+  formatQuantity,
+  formatRange,
   formatTime,
   formatTiming,
-  formatRange,
-  formatQuantity,
 } from './format';
 
 test('Format Address', () => {
@@ -47,6 +50,20 @@ test('Format Address', () => {
       postalCode: '97403',
     })
   ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403');
+
+  expect(
+    formatAddress(
+      {
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'OR',
+        postalCode: '97403',
+      },
+      {
+        lineSeparator: '\n',
+      }
+    )
+  ).toEqual('742 Evergreen Terrace\nSpringfield, OR, 97403');
 
   expect(
     formatAddress(
@@ -222,7 +239,7 @@ test('Format date', () => {
   expect(formatDate(undefined)).toEqual('');
   expect(formatDate('')).toEqual('');
   expect(formatDate('xyz')).toEqual('');
-  expect(formatDate('2021-06-01')).toMatch(/2021/);
+  expect(formatDate('2021-06-01')).toEqual('6/1/2021');
 });
 
 test('Format time', () => {
@@ -322,6 +339,7 @@ test('Format Range', () => {
 });
 
 test('Format Quantity', () => {
+  expect(formatQuantity(undefined)).toBe('');
   expect(formatQuantity({})).toBe('');
   expect(formatQuantity({ value: 10.1, unit: 'pg/mL' })).toBe('10.1 pg/mL');
   expect(formatQuantity({ comparator: '>', value: 10.1, unit: 'pg/mL' })).toBe('> 10.1 pg/mL');
@@ -337,4 +355,49 @@ test('Format Quantity', () => {
   expect(formatQuantity({ unit: 'pg/mL' })).toBe('pg/mL');
   expect(formatQuantity({ comparator: '<' })).toBe('<');
   expect(formatQuantity({ comparator: '<', unit: 'pg/mL' })).toBe('< pg/mL');
+});
+
+test('Format CodeableConcept', () => {
+  expect(formatCodeableConcept(undefined)).toBe('');
+  expect(formatCodeableConcept({})).toBe('');
+  expect(formatCodeableConcept({ text: 'foo' })).toBe('foo');
+  expect(formatCodeableConcept({ coding: [{ display: 'foo' }] })).toBe('foo');
+});
+
+test('Format Coding', () => {
+  expect(formatCoding(undefined)).toBe('');
+  expect(formatCoding({})).toBe('');
+  expect(formatCoding({ display: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: 'foo' })).toBe('foo');
+});
+
+test('Format Observation value', () => {
+  expect(formatObservationValue(undefined)).toBe('');
+  expect(formatObservationValue({})).toBe('');
+  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' })).toBe('foo');
+  expect(formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } })).toBe('foo');
+  expect(formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } })).toBe(
+    '123 mg'
+  );
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      component: [
+        {
+          valueQuantity: {
+            value: 110,
+            unit: 'mmHg',
+            system: 'http://unitsofmeasure.org',
+          },
+        },
+        {
+          valueQuantity: {
+            value: 75,
+            unit: 'mmHg',
+            system: 'http://unitsofmeasure.org',
+          },
+        },
+      ],
+    })
+  ).toBe('110 mmHg / 75 mmHg');
 });

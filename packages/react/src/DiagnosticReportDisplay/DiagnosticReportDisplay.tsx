@@ -1,5 +1,5 @@
 import { createStyles, Group, Stack, Text, Title } from '@mantine/core';
-import { capitalize, formatDateTime } from '@medplum/core';
+import { capitalize, formatDateTime, formatObservationValue } from '@medplum/core';
 import {
   DiagnosticReport,
   Observation,
@@ -10,7 +10,6 @@ import {
 import React from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { useResource } from '../useResource/useResource';
@@ -178,28 +177,7 @@ interface ObservationValueDisplayProps {
 
 function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Element | null {
   const obs = props.value;
-
-  if (obs?.valueQuantity) {
-    return <QuantityDisplay value={props.value?.valueQuantity} />;
-  }
-
-  if (obs?.valueString) {
-    return <>{obs.valueString}</>;
-  }
-
-  if (obs && 'component' in obs && obs?.component) {
-    return (
-      <>
-        {obs.component
-          .map<React.ReactNode>((component: ObservationComponent, index: number) => (
-            <ObservationValueDisplay key={`obs-${index}`} value={component} />
-          ))
-          .reduce((prev, curr) => [prev, ' / ', curr])}
-      </>
-    );
-  }
-
-  return null;
+  return <>{formatObservationValue(obs)}</>;
 }
 
 interface ReferenceRangeProps {
