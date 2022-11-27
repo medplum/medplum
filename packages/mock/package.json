@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Medplum Mock Client",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
