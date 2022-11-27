@@ -410,7 +410,7 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
   }
 
   if (obs.valueCodeableConcept) {
-    return obs.valueCodeableConcept.text || '';
+    return formatCodeableConcept(obs.valueCodeableConcept);
   }
 
   if (obs.valueString) {
