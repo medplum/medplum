@@ -1,9 +1,21 @@
-import { Address, HumanName, Period, Timing, Range, Quantity } from '@medplum/fhirtypes';
+import {
+  Address,
+  CodeableConcept,
+  Coding,
+  HumanName,
+  Observation,
+  ObservationComponent,
+  Period,
+  Quantity,
+  Range,
+  Timing,
+} from '@medplum/fhirtypes';
 import { capitalize } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
   use?: boolean;
+  lineSeparator?: string;
 }
 
 export interface HumanNameFormatOptions {
@@ -13,6 +25,12 @@ export interface HumanNameFormatOptions {
   use?: boolean;
 }
 
+/**
+ * Formats a FHIR Address as a string.
+ * @param address The address to format.
+ * @param options Optional address format options.
+ * @returns The formatted address string.
+ */
 export function formatAddress(address: Address, options?: AddressFormatOptions): string {
   const builder = [];
 
@@ -20,25 +38,33 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
     builder.push(...address.line);
   }
 
-  if (address.city) {
-    builder.push(address.city);
-  }
-
-  if (address.state) {
-    builder.push(address.state);
-  }
-
-  if (address.postalCode) {
-    builder.push(address.postalCode);
+  if (address.city || address.state || address.postalCode) {
+    const cityStateZip = [];
+    if (address.city) {
+      cityStateZip.push(address.city);
+    }
+    if (address.state) {
+      cityStateZip.push(address.state);
+    }
+    if (address.postalCode) {
+      cityStateZip.push(address.postalCode);
+    }
+    builder.push(cityStateZip.join(', '));
   }
 
   if (address.use && (options?.all || options?.use)) {
     builder.push('[' + address.use + ']');
   }
 
-  return builder.join(', ').trim();
+  return builder.join(options?.lineSeparator || ', ').trim();
 }
 
+/**
+ * Formats a FHIR HumanName as a string.
+ * @param name The name to format.
+ * @param options Optional name format options.
+ * @returns The formatted name string.
+ */
 export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
   const builder = [];
 
@@ -65,6 +91,11 @@ export function formatHumanName(name: HumanName, options?: HumanNameFormatOption
   return builder.join(' ').trim();
 }
 
+/**
+ * Formats the given name portion of a FHIR HumanName element.
+ * @param name The name to format.
+ * @returns The formatted given name string.
+ */
 export function formatGivenName(name: HumanName): string {
   const builder: string[] = [];
   if (name.given) {
@@ -73,15 +104,38 @@ export function formatGivenName(name: HumanName): string {
   return builder.join(' ').trim();
 }
 
+/**
+ * Formats the family name portion of a FHIR HumanName element.
+ * @param name The name to format.
+ * @returns The formatted family name string.
+ */
 export function formatFamilyName(name: HumanName): string {
   return name.family || '';
 }
 
+/**
+ * Returns true if the given date object is a valid date.
+ * Dates can be invalid if created by parsing an invalid string.
+ * @param date A date object.
+ * @returns Returns true if the date is a valid date.
+ */
 export function isValidDate(date: Date): boolean {
   return date instanceof Date && !isNaN(date.getTime());
 }
 
-export function formatDate(date: string | undefined, options?: Intl.DateTimeFormatOptions): string {
+/**
+ * Formats a FHIR date string as a human readable string.
+ * Handles missing values and invalid dates.
+ * @param date The date to format.
+ * @param locales Optional locales.
+ * @param options Optional date format options.
+ * @returns The formatted date string.
+ */
+export function formatDate(
+  date: string | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions | undefined
+): string {
   if (!date) {
     return '';
   }
@@ -89,10 +143,23 @@ export function formatDate(date: string | undefined, options?: Intl.DateTimeForm
   if (!isValidDate(d)) {
     return '';
   }
-  return d.toLocaleDateString(undefined, options);
+  d.setUTCHours(0, 0, 0, 0);
+  return d.toLocaleDateString(locales, { timeZone: 'UTC', ...options });
 }
 
-export function formatTime(time: string | undefined, options?: Intl.DateTimeFormatOptions): string {
+/**
+ * Formats a FHIR time string as a human readable string.
+ * Handles missing values and invalid dates.
+ * @param time The date to format.
+ * @param locales Optional locales.
+ * @param options Optional time format options.
+ * @returns The formatted time string.
+ */
+export function formatTime(
+  time: string | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions | undefined
+): string {
   if (!time) {
     return '';
   }
@@ -100,10 +167,22 @@ export function formatTime(time: string | undefined, options?: Intl.DateTimeForm
   if (!isValidDate(d)) {
     return '';
   }
-  return d.toLocaleTimeString(undefined, options);
+  return d.toLocaleTimeString(locales, options);
 }
 
-export function formatDateTime(dateTime: string | undefined, options?: Intl.DateTimeFormatOptions): string {
+/**
+ * Formats a FHIR dateTime string as a human readable string.
+ * Handles missing values and invalid dates.
+ * @param dateTime The dateTime to format.
+ * @param locales Optional locales.
+ * @param options Optional dateTime format options.
+ * @returns The formatted dateTime string.
+ */
+export function formatDateTime(
+  dateTime: string | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions | undefined
+): string {
   if (!dateTime) {
     return '';
   }
@@ -111,14 +190,25 @@ export function formatDateTime(dateTime: string | undefined, options?: Intl.Date
   if (!isValidDate(d)) {
     return '';
   }
-  return d.toLocaleString(undefined, options);
+  return d.toLocaleString(locales, options);
 }
 
-export function formatPeriod(period: Period | undefined): string {
+/**
+ * Formats a FHIR Period as a human readable string.
+ * @param period The period to format.
+ * @param locales Optional locales.
+ * @param options Optional period format options.
+ * @returns The formatted period string.
+ */
+export function formatPeriod(
+  period: Period | undefined,
+  locales?: Intl.LocalesArgument,
+  options?: Intl.DateTimeFormatOptions | undefined
+): string {
   if (!period || (!period.start && !period.end)) {
     return '';
   }
-  return formatDateTime(period.start) + ' - ' + formatDateTime(period.end);
+  return formatDateTime(period.start, locales, options) + ' - ' + formatDateTime(period.end, locales, options);
 }
 
 const unitAdverbForm: Record<string, string> = {
@@ -151,6 +241,11 @@ const pluralUnits: Record<string, string> = {
   a: 'years',
 };
 
+/**
+ * Formats a FHIR Timing as a human readable string.
+ * @param timing The timing to format.
+ * @returns The formatted timing string.
+ */
 export function formatTiming(timing: Timing | undefined): string {
   if (!timing) {
     return '';
@@ -267,6 +362,62 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   return result.join('').trim();
+}
+
+/**
+ * Formats a CodeableConcept element as a string.
+ * @param codeableConcept A FHIR CodeableConcept element
+ * @returns The codeable concept as a string.
+ */
+export function formatCodeableConcept(codeableConcept: CodeableConcept | undefined): string {
+  if (!codeableConcept) {
+    return '';
+  }
+  if (codeableConcept.text) {
+    return codeableConcept.text;
+  }
+  if (codeableConcept.coding) {
+    return codeableConcept.coding.map((c) => formatCoding(c)).join(', ');
+  }
+  return '';
+}
+
+/**
+ * Formats a Coding element as a string.
+ * @param coding A FHIR Coding element
+ * @returns The coding as a string.
+ */
+export function formatCoding(coding: Coding | undefined): string {
+  return coding?.display || coding?.code || '';
+}
+
+/**
+ * Formats a FHIR Observation resource value as a string.
+ * @param obs A FHIR Observation resource.
+ * @returns A human-readable string representation of the Observation.
+ */
+export function formatObservationValue(obs: Observation | ObservationComponent | undefined): string {
+  if (!obs) {
+    return '';
+  }
+
+  if ('component' in obs) {
+    return (obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / ');
+  }
+
+  if (obs?.valueQuantity) {
+    return formatQuantity(obs.valueQuantity);
+  }
+
+  if (obs.valueCodeableConcept) {
+    return formatCodeableConcept(obs.valueCodeableConcept);
+  }
+
+  if (obs.valueString) {
+    return obs.valueString;
+  }
+
+  return '';
 }
 
 /**
