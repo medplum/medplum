@@ -1,6 +1,7 @@
 ---
 title: CoverageEligibilityResponse
 sidebar_position: 32
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/coverageeligibilityresponse.json';
@@ -12,7 +13,9 @@ This resource provides eligibility and plan details from the processing of an Co
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource provides eligibility and plan details from the processing of an Co
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

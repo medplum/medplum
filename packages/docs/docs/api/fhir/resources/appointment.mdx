@@ -1,6 +1,7 @@
 ---
 title: Appointment
 sidebar_position: 4
+tags: [scheduling]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/appointment.json';
@@ -12,7 +13,9 @@ A booking of a healthcare event among patient(s), practitioner(s), related perso
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A booking of a healthcare event among patient(s), practitioner(s), related perso
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

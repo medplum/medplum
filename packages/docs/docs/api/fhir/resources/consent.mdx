@@ -1,6 +1,7 @@
 ---
 title: Consent
 sidebar_position: 28
+tags: [communications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/consent.json';
@@ -8,11 +9,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Consent
 
-A record of a healthcare consumer’s  choices, which permits or denies identified recipient(s) or recipient role(s) to perform one or more actions within a given policy context, for specific purposes and periods of time.
+A record of a healthcare consumer’s choices, which permits or denies identified recipient(s) or recipient role(s) to perform one or more actions within a given policy context, for specific purposes and periods of time.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A record of a healthcare consumer’s  choices, which permits or denies identifi
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

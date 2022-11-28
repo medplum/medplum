@@ -60,19 +60,15 @@ Summarize a patient’s past and current medical history, in a unified and intui
 
 Send data to your billing provider of choice. Easily connect to physician groups or bill through multiply professional corporations. [Learn More](../products/billing)
 
-## ⚙️ Automation through Bots {#bots}
-
-Build automations that will scale with your organization. Automatically route messages, remind patients, instantiate care plans, ensure correctness, and more. [Learn More](../products/bots)
-
 ## 📈 Analytics and Dashboards {#analytics}
 
 Dashboards and analytics are at the heart of great clinical workflow. Build a custom dashboard that drives quality and speed, and troubleshoot with advanced analytics.
 
+## Infrastructure
+
 ## Medplum App {#medplum-app}
 
 Medplum app is an administrative tool designed for developers to browse, troubleshoot and edit data and bots. [Learn more](//docs/tutorials/app)
-
-## Infrastructure
 
 ### Authentication and Authorization {#auth}
 
@@ -82,6 +78,14 @@ Build your app just the way you want it. Use our Smart-on-FHIR authentication an
 
 Store your data in FHIR, and allow access through a FHIR API. Partition data with access policies to ensure parties only see the data they need to. [Learn More](/docs/tutorials/api-basics)
 
+### Typescript SDK {#typescript-sdk}
+
+Medplum offers a Typescript SDK that simplifies the interaction with the Medplum API. [Learn More](/docs/sdk)
+
+## ⚙️ Automation through Bots {#bots}
+
+Build automations that will scale with your organization. Automatically route messages, remind patients, instantiate care plans, ensure correctness, and more. [Learn More](../products/bots)
+
 ### React UI Components {#react}
 
 Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/tutorials/ui-components)
@@ -89,6 +93,10 @@ Build apps quickly with a ready to integrate react component library. Enable a c
 ### Search {#search}
 
 Enable complex search queries in app or via API. Enable time-aware searches common in healthcare scenarios, such as finding all records that were produced during a specific period. [Learn More](/docs/tutorials/api-basics/basic-fhir-search)
+
+### Subscriptions {#subscriptions}
+
+Subscriptions are event-driven notifications, like webhooks, are are commonly used for integrations and automations. Medplum supports subscribing to changes on FHIR resources. [Learn More](/docs/tutorials/api-basics/publish-and-subscribe)
 
 ### Self-Hosting and Open Source {#self-host}
 

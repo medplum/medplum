@@ -1,6 +1,7 @@
 ---
 title: Account
 sidebar_position: 0
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/account.json';
@@ -8,11 +9,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Account
 
-A financial tool for tracking value accrued for a particular purpose.  In the healthcare field, used to track charges for a patient, cost centers, etc.
+A financial tool for tracking value accrued for a particular purpose. In the healthcare field, used to track charges for a patient, cost centers, etc.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A financial tool for tracking value accrued for a particular purpose.  In the he
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

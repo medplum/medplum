@@ -1,6 +1,7 @@
 ---
 title: CapabilityStatement
 sidebar_position: 12
+tags: [fhir-datastore]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/capabilitystatement.json';
@@ -12,7 +13,9 @@ A Capability Statement documents a set of capabilities (behaviors) of a FHIR Ser
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A Capability Statement documents a set of capabilities (behaviors) of a FHIR Ser
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+tags: [auth, security]
 ---
 
 import Tabs from '@theme/Tabs';

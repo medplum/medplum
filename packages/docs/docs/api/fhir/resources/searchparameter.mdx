@@ -1,6 +1,7 @@
 ---
 title: SearchParameter
 sidebar_position: 122
+tags: [search]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/searchparameter.json';
@@ -12,7 +13,9 @@ A search parameter that defines a named search item that can be used to search/f
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A search parameter that defines a named search item that can be used to search/f
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -6,7 +6,7 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [fhir, questionnaires, healthcare, api]
+tags: [fhir-datastore, questionnaires, medplum-app]
 ---
 
 # Easy Custom Forms for Your Healthcare App

@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 slug: /api/fhir
+tags: [fhir-datastore]
 ---
 
 # Overview

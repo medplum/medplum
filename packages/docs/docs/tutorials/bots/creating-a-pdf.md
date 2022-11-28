@@ -1,5 +1,6 @@
 ---
 sidebar_position: 5
+tags: [bots, integration]
 ---
 
 # Create a PDF

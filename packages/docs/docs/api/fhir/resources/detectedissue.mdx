@@ -1,6 +1,7 @@
 ---
 title: DetectedIssue
 sidebar_position: 33
+tags: [charting, medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/detectedissue.json';
@@ -12,7 +13,9 @@ Indicates an actual or potential clinical issue with or between one or more acti
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Indicates an actual or potential clinical issue with or between one or more acti
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

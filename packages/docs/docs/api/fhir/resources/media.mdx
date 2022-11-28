@@ -1,6 +1,7 @@
 ---
 title: Media
 sidebar_position: 73
+tags: [integration]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/media.json';
@@ -12,7 +13,9 @@ A photo, video, or audio recording acquired or used in healthcare. The actual co
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A photo, video, or audio recording acquired or used in healthcare. The actual co
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

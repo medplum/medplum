@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+tags: [medplum-app]
 ---
 
 # Invite a user

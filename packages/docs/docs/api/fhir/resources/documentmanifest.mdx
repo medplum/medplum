@@ -1,6 +1,7 @@
 ---
 title: DocumentManifest
 sidebar_position: 40
+tags: [communications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/documentmanifest.json';
@@ -12,7 +13,9 @@ A collection of documents compiled for a purpose together with metadata that app
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A collection of documents compiled for a purpose together with metadata that app
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

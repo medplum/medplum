@@ -1,6 +1,7 @@
 ---
 sidebar_position: 3
 toc_max_heading_level: 2
+tags: [bots, integration]
 ---
 
 # Uploading Files

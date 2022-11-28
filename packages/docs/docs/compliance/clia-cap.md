@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+tags: [compliance]
 ---
 
 # CLIA/CAP Certification
@@ -16,15 +17,15 @@ The following tutorial helps a CLIA/CAP lab that is using Medplum for their prim
 
 The materials below can help prepare for your inspection.
 
-| Resource Name  | Description  | Access  |
-|---|---|---|
-| Checklist  | General Lab checklist  | [Request Access](https://drive.google.com/file/d/1Km-VLLV4HJ0ZcL51rkQoY4MnxUHlSTKt/view?usp=sharing)  |
-| Security Overview  | General information on Medplum security practices | [medplum.com](https://www.medplum.com/security)  |
+| Resource Name     | Description                                       | Access                                                                                               |
+| ----------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Checklist         | General Lab checklist                             | [Request Access](https://drive.google.com/file/d/1Km-VLLV4HJ0ZcL51rkQoY4MnxUHlSTKt/view?usp=sharing) |
+| Security Overview | General information on Medplum security practices | [medplum.com](https://www.medplum.com/security)                                                      |
 
 ## Checklist
 
 :::caution Note
 
-Checklist materials coming soon.  Contact hello@medplum.com for immediate support.
+Checklist materials coming soon. Contact hello@medplum.com for immediate support.
 
 :::

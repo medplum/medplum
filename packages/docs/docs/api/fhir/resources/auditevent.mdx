@@ -1,6 +1,7 @@
 ---
 title: AuditEvent
 sidebar_position: 6
+tags: [audit-logging]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/auditevent.json';
@@ -12,7 +13,9 @@ A record of an event made for purposes of maintaining a security log. Typical us
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A record of an event made for purposes of maintaining a security log. Typical us
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -1,6 +1,7 @@
 ---
 title: ClaimResponse
 sidebar_position: 19
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/claimresponse.json';
@@ -12,7 +13,9 @@ This resource provides the adjudication details from the processing of a Claim r
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource provides the adjudication details from the processing of a Claim r
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

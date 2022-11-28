@@ -1,6 +1,7 @@
 ---
 title: Flag
 sidebar_position: 54
+tags: [charting]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/flag.json';
@@ -12,7 +13,9 @@ Prospective warnings of potential issues when providing care to the patient.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Prospective warnings of potential issues when providing care to the patient.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

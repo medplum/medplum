@@ -1,6 +1,7 @@
 ---
 title: Observation
 sidebar_position: 95
+tags: [charting]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/observation.json';
@@ -12,7 +13,9 @@ Measurements and simple assertions made about a patient, device or other subject
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Measurements and simple assertions made about a patient, device or other subject
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

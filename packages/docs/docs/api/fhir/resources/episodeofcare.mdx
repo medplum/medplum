@@ -1,6 +1,7 @@
 ---
 title: EpisodeOfCare
 sidebar_position: 47
+tags: [charting]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/episodeofcare.json';
@@ -12,7 +13,9 @@ An association between a patient and an organization / healthcare provider(s) du
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ An association between a patient and an organization / healthcare provider(s) du
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

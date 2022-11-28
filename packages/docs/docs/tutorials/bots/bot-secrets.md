@@ -1,6 +1,7 @@
 ---
 sidebar_position: 4
 toc_max_heading_level: 2
+tags: [bots]
 ---
 
 # Bot Secrets

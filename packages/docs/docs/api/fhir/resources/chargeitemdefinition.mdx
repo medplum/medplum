@@ -1,6 +1,7 @@
 ---
 title: ChargeItemDefinition
 sidebar_position: 17
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/chargeitemdefinition.json';
@@ -12,7 +13,9 @@ The ChargeItemDefinition resource provides the properties that apply to the (bil
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ The ChargeItemDefinition resource provides the properties that apply to the (bil
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

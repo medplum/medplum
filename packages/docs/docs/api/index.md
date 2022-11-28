@@ -1,5 +1,6 @@
 ---
 sidebar_position: 0
+tags: [fhir-datastore]
 ---
 
 # API Overview

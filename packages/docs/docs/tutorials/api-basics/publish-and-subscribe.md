@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+tags: [subscriptions, integration]
 ---
 
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';

@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+tags: [self-host]
 ---
 
 # Install on Ubuntu
@@ -110,6 +111,6 @@ Run the build script
 ./scripts/build.sh
 ```
 
-(This will take a while.  It downloads all dependencies, performs a full build, and runs all tests.)
+(This will take a while. It downloads all dependencies, performs a full build, and runs all tests.)
 
 Update the server config at packages/server/medplum.config.json with your configuration

@@ -16,15 +16,16 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 
 ## What is Medplum?
 
-Medplum is a **developer platform** that enables **flexible and rapid development** of healthcare apps. In consists of the following components:
+Medplum is a **developer platform** that enables **flexible and rapid development** of healthcare web apps. Medplum is [open source](https://github.com/medplum/medplum), and we provide a [compliant](/docs/compliance) hosted service on https://app.medplum.com.
 
-1. **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-2. **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
-3. **Medplum API** - **[FHIR-based API](./docs/api)** for sending, receiving, and manipulating data.
-4. **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**. Currently, we only offer a **Typescript** library, but are planning to support more languages in the future. If there's a language you'd like supported, feel free to open a [Github Issue](https://github.com/medplum/medplum/issues).
-5. **Medplum App** - Web application where you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
-6. **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
-7. **UI Component Library** - [React components](./docs/tutorials/ui-components/hello-world-part-1) designed to help you quickly develop custom healthcare applications.
+- [Products](/products) page describes all of our products, which are the building blocks of healthcare apps
+- [Blueprints](/blueprints) page describes how to compose products to build an end-to-end solution.
+
+## System Overview
+
+The following diagram shows an overview of Medplum, and outlines developer touch points.
+
+![Medplum system overview](/img/medplum-overview.svg)
 
 ## Getting Started
 
@@ -32,31 +33,6 @@ Medplum is a **developer platform** that enables **flexible and rapid developmen
 - The [Basic Concepts](./docs/fhir-basics) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
 - If you're ready to start coding, use our [Quickstart Guide](./docs/tutorials/api-basics/create-fhir-data) to get up and running
 - Our detailed tutorials go step-by-step through specific use cases. Don't see a tutorial you need? Reach out on our [Discord](https://discord.gg/UBAWwvrVeN) or send us an email at [support@medplum.com](mailto:support@medplum.com)
-
-## Common Use Cases
-
-These building blocks enable a large number of potential applications. For example:
-
-- At home lab testing service, with results reporting via API
-- Telemedicine web and mobile app
-- Population health analysis, clinical research and HEDIS reporting
-- External data warehousing
-- Synthetic data set showcasing for partnership and prototyping
-- Adding a FHIR API to an existing medical application
-
-Stay tuned: we will post detailed implementation guides for all of these scenarios, including sample code.
-
-## Key Features
-
-- **[Subscriptions](./docs/fhir-basics#subscriptions-listening-for-changes)**: notifications when objects are created or updated, this is implemented using the FHIRPath spec
-- **[Identity Management and Access Policies](./docs/tutorials/security/access-control)**: manage user identities and access to data
-- **[Integration and Workflow Automation](./docs/tutorials/bots)**: Bots are powerful automation and interoperability tools for sending data to and from other applications
-
-## System Overview
-
-The following diagram shows how all of these pieces fit together.
-
-![Medplum system overview](/img/medplum-overview.svg)
 
 ## Community
 

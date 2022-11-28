@@ -1,6 +1,7 @@
 ---
 sidebar_position: 3
 toc_max_heading_level: 2
+tags: [auth, security]
 ---
 
 # OAuth2 Authorization
@@ -29,8 +30,8 @@ The first step is to configure a [Medplum Client Application](https://app.medplu
 
 Next your application will need to make an `HTTPS GET` request to the Medplum Server's [`/oauth2/authorize`](../../api/oauth/authorize) endpoint wth the following URL parameters:
 
-| Parameter                                                             | Value                                                                                                                                                                                                     |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parameter                                                          | Value                                                                                                                                                                                                     |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`client_id`](../../api/oauth/authorize#clientid-required)         | The ID of your new Client Application                                                                                                                                                                     |
 | [`redirect_uri`](../../api/oauth/authorize#redirecturi-required)   | **Must match exactly** to the uri registered in the Medplum App (including trailing slashes, punctuation, etc.), as detailed in the [OAuth2 Spec](https://www.rfc-editor.org/rfc/rfc6749#section-3.1.2.3) |
 | [`response_type`](../../api/oauth/authorize#responsetype-required) | Fixed value: `code`                                                                                                                                                                                       |

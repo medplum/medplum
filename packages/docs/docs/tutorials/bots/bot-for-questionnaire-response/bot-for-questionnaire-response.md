@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+tags: [questionnaires, bots]
 ---
 
 # Bot for QuestionnaireResponse

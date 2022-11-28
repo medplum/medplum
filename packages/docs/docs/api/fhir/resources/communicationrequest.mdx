@@ -1,6 +1,7 @@
 ---
 title: CommunicationRequest
 sidebar_position: 23
+tags: [communications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/communicationrequest.json';
@@ -12,7 +13,9 @@ A request to convey information; e.g. the CDS system proposes that an alert be s
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A request to convey information; e.g. the CDS system proposes that an alert be s
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

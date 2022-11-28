@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+tags: [medplum-app]
 ---
 
 # Medplum App

@@ -1,6 +1,6 @@
 ---
 authors: reshma
-tags: [fhir, medplum, devtools, infrastructure]
+tags: [fhir-datastore, search]
 ---
 
 # Learning FHIR Quickly

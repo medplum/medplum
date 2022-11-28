@@ -1,6 +1,7 @@
 ---
 title: Subscription
 sidebar_position: 129
+tags: [subscriptions]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/subscription.json';
@@ -12,7 +13,9 @@ The subscription resource is used to define a push-based subscription from a ser
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ The subscription resource is used to define a push-based subscription from a ser
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

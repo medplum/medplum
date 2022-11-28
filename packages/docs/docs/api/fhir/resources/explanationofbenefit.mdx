@@ -1,6 +1,7 @@
 ---
 title: ExplanationOfBenefit
 sidebar_position: 52
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/explanationofbenefit.json';
@@ -12,7 +13,9 @@ This resource provides: the claim details; adjudication details from the process
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource provides: the claim details; adjudication details from the process
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -1,6 +1,7 @@
 ---
 title: DocumentReference
 sidebar_position: 41
+tags: [communications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/documentreference.json';
@@ -12,7 +13,9 @@ A reference to a document of any kind for any purpose. Provides metadata about t
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A reference to a document of any kind for any purpose. Provides metadata about t
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

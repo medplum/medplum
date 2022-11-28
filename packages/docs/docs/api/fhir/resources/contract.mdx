@@ -1,6 +1,7 @@
 ---
 title: Contract
 sidebar_position: 29
+tags: [communications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/contract.json';
@@ -12,7 +13,9 @@ Legally enforceable, formally recorded unilateral or bilateral directive i.e., a
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Legally enforceable, formally recorded unilateral or bilateral directive i.e., a
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

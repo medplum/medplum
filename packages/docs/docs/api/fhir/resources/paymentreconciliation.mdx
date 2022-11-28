@@ -1,6 +1,7 @@
 ---
 title: PaymentReconciliation
 sidebar_position: 104
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/paymentreconciliation.json';
@@ -12,7 +13,9 @@ This resource provides the details including amount of a payment and allocates t
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource provides the details including amount of a payment and allocates t
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

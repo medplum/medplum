@@ -1,5 +1,6 @@
 ---
 sidebar_position: 3
+tags: [self-host]
 ---
 
 # Install on AWS

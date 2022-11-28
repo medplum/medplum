@@ -1,6 +1,7 @@
 ---
 title: FamilyMemberHistory
 sidebar_position: 53
+tags: [charting]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/familymemberhistory.json';
@@ -12,7 +13,9 @@ Significant health conditions for a person related to the patient relevant in th
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Significant health conditions for a person related to the patient relevant in th
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-
