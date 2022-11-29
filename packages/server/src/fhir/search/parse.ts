@@ -63,8 +63,8 @@ export function parseSearchRequest(
  */
 export function parseSearchUrl(url: URL): SearchRequest {
   let resourceType = url.pathname;
-  if (resourceType.startsWith('/')) {
-    resourceType = resourceType.substring(1);
+  if (resourceType.includes('/')) {
+    resourceType = resourceType.split('/').pop() as string;
   }
   return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
 }
@@ -106,15 +106,6 @@ class SearchParser implements SearchRequest {
     }
 
     switch (code) {
-      case '_id':
-      case 'id':
-        this.filters.push({
-          code: '_id',
-          operator: Operator.EQUALS,
-          value,
-        });
-        break;
-
       case '_account':
       case '_compartment':
       case '_project':
@@ -123,17 +114,6 @@ class SearchParser implements SearchRequest {
           operator: Operator.EQUALS,
           value,
         });
-        break;
-
-      case '_lastUpdated':
-      case 'meta.lastUpdated':
-        {
-          const parsed = parsePrefix(value);
-          this.filters.push({
-            code: '_lastUpdated',
-            ...parsed,
-          });
-        }
         break;
 
       case '_sort':
