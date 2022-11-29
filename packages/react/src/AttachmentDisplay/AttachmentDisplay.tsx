@@ -1,3 +1,4 @@
+import { Anchor } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import React from 'react';
 
@@ -37,9 +38,9 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
         </div>
       )}
       <div data-testid="download-link" style={{ padding: '2px 16px 16px 16px' }}>
-        <a href={value?.url} data-testid="attachment-details" target="_blank" rel="noopener noreferrer">
+        <Anchor href={value?.url} data-testid="attachment-details" target="_blank" rel="noopener noreferrer">
           {value?.title || 'Download'}
-        </a>
+        </Anchor>
       </div>
     </div>
   );

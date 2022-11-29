@@ -1,4 +1,16 @@
-import { Alert, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
+import {
+  Alert,
+  Anchor,
+  Button,
+  Center,
+  Checkbox,
+  Divider,
+  Group,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons';
@@ -117,15 +129,16 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
         />
         <Text color="dimmed" size="xs">
-          By clicking submit you agree to the Medplum <a href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</a>
+          By clicking submit you agree to the Medplum{' '}
+          <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
-          <a href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</a>.
+          <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
         </Text>
         <Text color="dimmed" size="xs">
           This site is protected by reCAPTCHA and the Google{' '}
-          <a href="https://policies.google.com/privacy">Privacy&nbsp;Policy</a>
+          <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
-          <a href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</a> apply.
+          <Anchor href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</Anchor> apply.
         </Text>
       </Stack>
       <Group position="apart" mt="xl" noWrap>
