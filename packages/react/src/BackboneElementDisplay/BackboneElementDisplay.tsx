@@ -44,6 +44,9 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
           return null;
         }
         const property = entry[1];
+        if (!property.path) {
+          property.path = typeName + '.' + key;
+        }
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
         if (
           props.ignoreMissingValues &&
