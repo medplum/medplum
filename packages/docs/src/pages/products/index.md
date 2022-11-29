@@ -82,7 +82,7 @@ Store your data in FHIR, and allow access through a FHIR API. Partition data wit
 
 Medplum offers a Typescript SDK that simplifies the interaction with the Medplum API. [Learn More](/docs/sdk)
 
-## ⚙️ Automation through Bots {#bots}
+### ⚙️ Automation through Bots {#bots}
 
 Build automations that will scale with your organization. Automatically route messages, remind patients, instantiate care plans, ensure correctness, and more. [Learn More](../products/bots)
 
