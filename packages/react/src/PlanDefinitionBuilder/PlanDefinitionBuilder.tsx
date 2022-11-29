@@ -1,4 +1,4 @@
-import { Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
 import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -160,15 +160,15 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
         </div>
       ))}
       <div className={classes.bottomActions}>
-        <a
+        <Anchor
           href="#"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             killEvent(e);
             addAction({ id: generateId() });
           }}
         >
           Add action
-        </a>
+        </Anchor>
       </div>
     </div>
   );
@@ -223,15 +223,15 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         <ActionDisplay action={action} actionType={actionType} />
       )}
       <div className={classes.bottomActions}>
-        <a
+        <Anchor
           href="#"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.preventDefault();
             props.onRemove();
           }}
         >
           Remove
-        </a>
+        </Anchor>
       </div>
     </div>
   );

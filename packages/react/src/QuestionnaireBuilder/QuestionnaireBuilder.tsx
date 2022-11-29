@@ -1,4 +1,4 @@
-import { Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
+import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
 import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
@@ -280,9 +280,9 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
       <div className={classes.bottomActions}>
         {isContainer && (
           <>
-            <a
+            <Anchor
               href="#"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
                 addItem({
                   id: generateId(),
@@ -293,10 +293,10 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               }}
             >
               Add item
-            </a>
-            <a
+            </Anchor>
+            <Anchor
               href="#"
-              onClick={(e) => {
+              onClick={(e: React.MouseEvent) => {
                 e.preventDefault();
                 addItem({
                   id: generateId(),
@@ -307,13 +307,13 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               }}
             >
               Add group
-            </a>
+            </Anchor>
           </>
         )}
         {editing && !isResource && (
-          <a
+          <Anchor
             href="#"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.preventDefault();
               if (props.onRemove) {
                 props.onRemove();
@@ -321,7 +321,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
             }}
           >
             Remove
-          </a>
+          </Anchor>
         )}
       </div>
     </div>
@@ -370,7 +370,7 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
               />
             </div>
             <div>
-              <a
+              <Anchor
                 href="#"
                 onClick={(e: React.SyntheticEvent) => {
                   killEvent(e);
@@ -378,12 +378,12 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
                 }}
               >
                 Remove
-              </a>
+              </Anchor>
             </div>
           </div>
         );
       })}
-      <a
+      <Anchor
         href="#"
         onClick={(e: React.SyntheticEvent) => {
           killEvent(e);
@@ -396,7 +396,7 @@ function AnswerBuilder(props: AnswerBuilderProps): JSX.Element {
         }}
       >
         Add choice
-      </a>
+      </Anchor>
     </div>
   );
 }

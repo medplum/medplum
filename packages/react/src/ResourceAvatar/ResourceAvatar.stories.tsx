@@ -1,3 +1,4 @@
+import { Anchor } from '@mantine/core';
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React from 'react';
@@ -57,20 +58,20 @@ export const Resource = (): JSX.Element => (
 
 export const WithText = (): JSX.Element => (
   <Document>
-    <a href="#">
+    <Anchor href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <ResourceAvatar alt="George Washington" src="/avatars/1.jpg" />
         George Washington
       </div>
-    </a>
+    </Anchor>
     <hr />
-    <a href="#">
+    <Anchor href="#">
       <div style={{ display: 'flex', width: 180, justifyContent: 'space-between' }}>
         <ResourceAvatar alt="George Washington" src="/avatars/1.jpg" />
         George Washington
         <br />
         View profile
       </div>
-    </a>
+    </Anchor>
   </Document>
 );
