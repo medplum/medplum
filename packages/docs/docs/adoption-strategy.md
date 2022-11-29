@@ -14,6 +14,12 @@ Consider the following common scenario:
 
 While this is a common scenario, it is not an easy one. System migrations are hard and require careful planning.
 
+:::info
+
+System migrations are challenging concepts. Please [contact us](/services) to learn how Medplum can help with your migration.
+
+:::
+
 ## Planning
 
 The key to success for any data migration is planning. It is critical to know the data, know the systems, and communication with all stakeholders. The planning process begins before you write a single line of code.
