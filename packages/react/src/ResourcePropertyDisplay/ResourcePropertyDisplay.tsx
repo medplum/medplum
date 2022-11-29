@@ -93,6 +93,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.Period:
       return <>{formatPeriod(value)}</>;
     case PropertyType.Quantity:
+    case PropertyType.Duration:
       return <QuantityDisplay value={value} />;
     case PropertyType.Range:
       return <RangeDisplay value={value} />;
@@ -102,6 +103,15 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <ReferenceDisplay value={value} link={props.link} />;
     case PropertyType.Timing:
       return <>{formatTiming(value)}</>;
+    case PropertyType.Dosage:
+    case PropertyType.UsageContext:
+      return (
+        <BackboneElementDisplay
+          value={{ type: propertyType, value }}
+          compact={true}
+          ignoreMissingValues={props.ignoreMissingValues}
+        />
+      );
     default:
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);

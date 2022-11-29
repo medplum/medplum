@@ -228,6 +228,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Period:
       return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Duration:
     case PropertyType.Quantity:
       return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Range:
@@ -245,6 +246,16 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       );
     case PropertyType.Timing:
       return <TimingInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Dosage:
+    case PropertyType.UsageContext:
+      return (
+        <BackboneElementInput
+          typeName={propertyType}
+          defaultValue={value}
+          onChange={props.onChange}
+          outcome={props.outcome}
+        />
+      );
     default:
       return (
         <BackboneElementInput
