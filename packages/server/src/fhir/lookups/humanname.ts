@@ -1,6 +1,7 @@
 import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@medplum/core';
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -46,10 +47,11 @@ export class HumanNameTable extends LookupTable<HumanName> {
   /**
    * Indexes a resource HumanName values.
    * Attempts to reuse existing identifiers if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     if (
       resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
@@ -87,7 +89,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
         });
       }
 
-      await this.insertValuesForResource(values);
+      await this.insertValuesForResource(client, values);
     }
   }
 }

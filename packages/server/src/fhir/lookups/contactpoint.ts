@@ -1,6 +1,7 @@
 import { Filter, stringify } from '@medplum/core';
 import { ContactPoint, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { Column, Condition, Conjunction, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -46,10 +47,11 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
   /**
    * Indexes a resource ContactPoint values.
    * Attempts to reuse existing identifiers if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     if (
       resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
@@ -86,7 +88,7 @@ export class ContactPointTable extends LookupTable<ContactPoint> {
         });
       }
 
-      await this.insertValuesForResource(values);
+      await this.insertValuesForResource(client, values);
     }
   }
 
