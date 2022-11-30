@@ -1,6 +1,7 @@
 ---
 title: MedicationDispense
 sidebar_position: 76
+tags: [medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/medicationdispense.json';
@@ -8,11 +9,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # MedicationDispense
 
-Indicates that a medication product is to be or has been dispensed for a named person/patient.  This includes a description of the medication product (supply) provided and the instructions for administering the medication.  The medication dispense is the result of a pharmacy system responding to a medication order.
+Indicates that a medication product is to be or has been dispensed for a named person/patient. This includes a description of the medication product (supply) provided and the instructions for administering the medication. The medication dispense is the result of a pharmacy system responding to a medication order.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Indicates that a medication product is to be or has been dispensed for a named p
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

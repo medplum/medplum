@@ -1,6 +1,7 @@
 ---
 title: QuestionnaireResponse
 sidebar_position: 112
+tags: [questionnaires]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/questionnaireresponse.json';
@@ -12,7 +13,9 @@ A structured set of questions and their answers. The questions are ordered and g
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ A structured set of questions and their answers. The questions are ordered and g
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

@@ -1,6 +1,7 @@
 ---
 title: PlanDefinition
 sidebar_position: 106
+tags: [careplans]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/plandefinition.json';
@@ -12,7 +13,9 @@ This resource allows for the definition of various types of plans as a sharable,
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource allows for the definition of various types of plans as a sharable,
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

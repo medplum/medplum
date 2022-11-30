@@ -1,6 +1,7 @@
 ---
 title: MedicinalProductIndication
 sidebar_position: 83
+tags: [medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/medicinalproductindication.json';
@@ -12,7 +13,9 @@ Indication for the Medicinal Product.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Indication for the Medicinal Product.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-
