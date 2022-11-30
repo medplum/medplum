@@ -41,7 +41,7 @@ export enum RewriteMode {
  * @returns The rewritten value.
  */
 export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
-  return await new Rewriter(mode, repo).rewriteValue(input);
+  return new Rewriter(mode, repo).rewriteValue(input);
 }
 
 /**
