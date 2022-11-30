@@ -41,123 +41,121 @@ export enum RewriteMode {
  * @returns The rewritten value.
  */
 export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
-  if (input === null || input === undefined) {
-    return input;
-  }
+  return new Rewriter(mode, repo).rewriteValue(input);
+}
 
-  if (Array.isArray(input)) {
-    const result = [];
-    for (const entry of input) {
-      result.push(await rewriteAttachments(mode, repo, entry));
-    }
-    return result as unknown as T;
-  }
+/**
+ * The Rewriter class rewrites attachments in a resource.
+ * It uses an internal cache to assure that each attachment is only rewritten once.
+ */
+class Rewriter {
+  readonly cache: Record<string, string> = {};
 
-  if (typeof input === 'object') {
-    if ((input as unknown as Resource).resourceType === 'Binary') {
-      // Be careful to never rewrite URLs within a Binary resource.
-      // Even though Binary does not have a URL property,
-      // it could have a url property within an extension or other nonstandard property.
-      // Rewritting urls within a Binary could cause an infinite loop.
+  constructor(private readonly mode: RewriteMode, private readonly repo: Repository) {}
+
+  /**
+   * Rewrites an object to replace any attachment references with signed URLs.
+   * @param input The input value (object, array, or primitive).
+   * @returns The rewritten value.
+   */
+  async rewriteValue<T>(input: T): Promise<T> {
+    if (input === null || input === undefined) {
       return input;
     }
 
-    const entries = [];
-    for (const entry of Object.entries(input)) {
-      entries.push(await rewriteAttachmentProperty(mode, repo, entry));
+    if (Array.isArray(input)) {
+      const result = [];
+      for (const entry of input) {
+        result.push(await this.rewriteValue(entry));
+      }
+      return result as unknown as T;
     }
-    return Object.fromEntries(entries) as unknown as T;
+
+    if (typeof input === 'object') {
+      if ((input as unknown as Resource).resourceType === 'Binary') {
+        // Be careful to never rewrite URLs within a Binary resource.
+        // Even though Binary does not have a URL property,
+        // it could have a url property within an extension or other nonstandard property.
+        // Rewritting urls within a Binary could cause an infinite loop.
+        return input;
+      }
+
+      const entries = [];
+      for (const entry of Object.entries(input)) {
+        entries.push(await this.rewriteProperty(entry));
+      }
+      return Object.fromEntries(entries) as unknown as T;
+    }
+
+    return input;
   }
 
-  return input;
-}
+  /**
+   * Rewrites an object property.
+   * @param keyValue The key/value pair to rewrite.
+   * @returns The rewritten key/value pair.
+   */
+  async rewriteProperty([key, value]: [string, any]): Promise<[string, any]> {
+    const url = await this.rewriteAttachmentUrl([key, value]);
+    if (url) {
+      return [key, url];
+    }
 
-/**
- * Rewrites an object property.
- *
- * @param mode The rewrite mode.
- * @param repo The repository configured for the current user.
- * @param keyValue The key/value pair to rewrite.
- * @returns The rewritten key/value pair.
- */
-async function rewriteAttachmentProperty(
-  mode: RewriteMode,
-  repo: Repository,
-  [key, value]: [string, any]
-): Promise<[string, any]> {
-  const url = await rewriteAttachmentUrl(mode, repo, [key, value]);
-  if (url) {
-    return [key, url];
+    return [key, await this.rewriteValue(value)];
   }
 
-  return [key, await rewriteAttachments(mode, repo, value)];
-}
+  /**
+   * Tries to rewrite an attachment URL property.
+   * If successful, returns the rewritten URL.
+   * Otherwise, returns undefined.
+   * @param keyValue The key/value pair to rewrite.
+   * @returns The rewritten URL or undefined.
+   */
+  async rewriteAttachmentUrl([key, value]: [string, any]): Promise<string | boolean | undefined> {
+    if ((key !== 'url' && key !== 'path') || typeof value !== 'string') {
+      // Not a URL property or not a string value.
+      return undefined;
+    }
 
-/**
- * Tries to rewrite an attachment URL property.
- * If successful, returns the rewritten URL.
- * Otherwise, returns undefined.
- *
- * @param mode The rewrite mode.
- * @param repo The repository configured for the current user.
- * @param keyValue The key/value pair to rewrite.
- * @returns The rewritten URL or undefined.
- */
-async function rewriteAttachmentUrl(
-  mode: RewriteMode,
-  repo: Repository,
-  [key, value]: [string, any]
-): Promise<string | boolean | undefined> {
-  if ((key !== 'url' && key !== 'path') || typeof value !== 'string') {
-    // Not a URL property or not a string value.
-    return undefined;
+    const { id, versionId } = normalizeBinaryUrl(value);
+    if (!id) {
+      // Not a binary URL.
+      return value;
+    }
+
+    let result = this.cache[value];
+    if (!result) {
+      if (this.mode === RewriteMode.REFERENCE) {
+        // Return the canononical reference string.
+        result = `Binary/${id}`;
+      } else {
+        // Try to return the presigned URL
+        result = await this.getAttachmentPresignedUrl(id, versionId);
+      }
+      this.cache[value] = result;
+    }
+    return result;
   }
 
-  const { id, versionId } = normalizeBinaryUrl(value);
-  if (!id) {
-    // Not a binary URL.
-    return undefined;
-  }
-
-  if (mode === RewriteMode.REFERENCE) {
-    // Return the canononical reference string.
-    return `Binary/${id}`;
-  }
-
-  if (mode === RewriteMode.PRESIGNED_URL) {
-    // Try to return the presigned URL
-    return getAttachmentPresignedUrl(repo, id, versionId);
-  }
-
-  // Could not rewrite for other reason:
-  //   1) Unrecognized mode.
-  //   2) Current user does not have access to the binary.
-  return undefined;
-}
-
-/**
- * Tries to generate a presigned URL for the binary.
- * @param repo
- * @param id
- * @param versionId
- * @returns
- */
-async function getAttachmentPresignedUrl(
-  repo: Repository,
-  id: string,
-  versionId?: string
-): Promise<string | boolean | undefined> {
-  try {
-    let binary: Binary | undefined;
-    if (versionId) {
-      binary = await repo.readVersion<Binary>('Binary', id, versionId);
-    } else {
-      binary = await repo.readResource<Binary>('Binary', id);
+  /**
+   * Tries to generate a presigned URL for the binary.
+   * @param id
+   * @param versionId
+   * @returns
+   */
+  async getAttachmentPresignedUrl(id: string, versionId?: string): Promise<string> {
+    let binary: Binary;
+    try {
+      if (versionId) {
+        binary = await this.repo.readVersion<Binary>('Binary', id, versionId);
+      } else {
+        binary = await this.repo.readResource<Binary>('Binary', id);
+      }
+    } catch (err) {
+      logger.debug('Error reading binary to generate presigned URL:', err);
+      return `Binary/${id}`;
     }
     return getPresignedUrl(binary);
-  } catch (err) {
-    logger.debug('Error reading binary to generate presigned URL:', err);
-    return `Binary/${id}`;
   }
 }
 
@@ -175,12 +173,13 @@ async function getAttachmentPresignedUrl(
  * @returns
  */
 function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
+  const config = getConfig();
   let refStr: string | undefined;
 
-  if (url.startsWith(getConfig().baseUrl + 'fhir/R4/Binary/')) {
-    refStr = url.substring(getConfig().baseUrl.length + 'fhir/R4/Binary/'.length);
-  } else if (url.startsWith(getConfig().storageBaseUrl)) {
-    refStr = url.substring(getConfig().storageBaseUrl.length);
+  if (url.startsWith(config.baseUrl + 'fhir/R4/Binary/')) {
+    refStr = url.substring(config.baseUrl.length + 'fhir/R4/Binary/'.length);
+  } else if (url.startsWith(config.storageBaseUrl)) {
+    refStr = url.substring(config.storageBaseUrl.length);
   } else if (url.startsWith('Binary/')) {
     refStr = url.substring('Binary/'.length);
   }
