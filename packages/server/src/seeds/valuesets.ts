@@ -40,9 +40,7 @@ class ValueSystemImporter {
   }
 
   async #importResource(resource: CodeSystem | ValueSet): Promise<void> {
-    if (resource?.resourceType === 'CodeSystem') {
-      await this.#importCodeSystem(resource);
-    } else if (resource?.resourceType === 'ValueSet') {
+    if (resource?.resourceType === 'ValueSet') {
       await this.#importValueSet(resource);
     }
   }
@@ -50,24 +48,13 @@ class ValueSystemImporter {
   /**
    * Imports all value set elements from a CodeSystem.
    * See: https://www.hl7.org/fhir/codesystem.html
+   * @param valueSet The ValueSet URL.
    * @param codeSystem The FHIR CodeSystem resource.
    */
-  async #importCodeSystem(codeSystem: CodeSystem): Promise<void> {
-    if (codeSystem.valueSet) {
-      await this.#importCodeSystemAs(codeSystem, codeSystem.valueSet);
-    }
-  }
-
-  /**
-   * Imports all value set elements from a CodeSystem.
-   * See: https://www.hl7.org/fhir/codesystem.html
-   * @param codeSystem The FHIR CodeSystem resource.
-   * @param system The ValueSet system.
-   */
-  async #importCodeSystemAs(codeSystem: CodeSystem, system: string): Promise<void> {
+  async #importCodeSystemAs(valueSet: string, codeSystem: CodeSystem): Promise<void> {
     if (codeSystem.concept) {
       for (const concept of codeSystem.concept) {
-        await this.#importCodeSystemConcept(system, concept);
+        await this.#importCodeSystemConcept(valueSet, codeSystem, concept);
       }
     }
   }
@@ -75,16 +62,16 @@ class ValueSystemImporter {
   /**
    * Recursively imports CodeSystem concepts.
    * See: https://www.hl7.org/fhir/codesystem-definitions.html#CodeSystem.concept
-   * @param system The ValueSet system.
+   * @param valueSet The ValueSet URL.
    * @param concept The CodeSystem concept.
    */
-  async #importCodeSystemConcept(system: string, concept: CodeSystemConcept): Promise<void> {
+  async #importCodeSystemConcept(valueSet: string, codeSystem: CodeSystem, concept: CodeSystemConcept): Promise<void> {
     if (concept.code && concept.display) {
-      await this.#insertValueSetElement(system, concept.code, concept.display);
+      await this.#insertValueSetElement(valueSet, codeSystem.url as string, concept.code, concept.display);
     }
     if (concept.concept) {
       for (const child of concept.concept) {
-        await this.#importCodeSystemConcept(system, child);
+        await this.#importCodeSystemConcept(valueSet, codeSystem, child);
       }
     }
   }
@@ -104,29 +91,35 @@ class ValueSystemImporter {
 
   /**
    * Imports one set of ValueSet included elements.
-   * @param system The ValueSet system.
+   * @param valueSet The ValueSet URL.
    * @param include The included codes or system references.
    */
-  async #importValueSetInclude(system: string, include: ValueSetComposeInclude): Promise<void> {
+  async #importValueSetInclude(valueSet: string, include: ValueSetComposeInclude): Promise<void> {
     if (include.concept) {
-      await this.#importValueSetConcepts(system, include.concept);
-    } else if (include.system) {
+      await this.#importValueSetConcepts(valueSet, include.system || valueSet, include.concept);
+    }
+    if (include.system) {
       const includedResource = this.#getByUrl(include.system);
-      if (includedResource && includedResource.valueSet !== system) {
-        await this.#importCodeSystemAs(includedResource, system);
+      if (includedResource) {
+        await this.#importCodeSystemAs(valueSet, includedResource);
       }
     }
   }
 
   /**
    * Imports a collection of ValueSet concepts into the system.
-   * @param system The ValueSet system.
+   * @param valueSet The ValueSet URL.
+   * @param system The concept system.
    * @param concepts The included concepts.
    */
-  async #importValueSetConcepts(system: string, concepts: ValueSetComposeIncludeConcept[]): Promise<void> {
+  async #importValueSetConcepts(
+    valueSet: string,
+    system: string,
+    concepts: ValueSetComposeIncludeConcept[]
+  ): Promise<void> {
     for (const concept of concepts) {
       if (concept.code && concept.display) {
-        await this.#insertValueSetElement(system, concept.code, concept.display);
+        await this.#insertValueSetElement(valueSet, system, concept.code, concept.display);
       }
     }
   }
@@ -152,14 +145,15 @@ class ValueSystemImporter {
     ];
 
     for (const value of values) {
-      await this.#insertValueSetElement(system, value.id, value.name);
+      await this.#insertValueSetElement(system, system, value.id, value.name);
     }
   }
 
-  async #insertValueSetElement(system: string, code: string, display: string): Promise<void> {
+  async #insertValueSetElement(valueSet: string, system: string, code: string, display: string): Promise<void> {
     await new InsertQuery('ValueSetElement', [
       {
         id: randomUUID(),
+        valueSet,
         system,
         code,
         display,

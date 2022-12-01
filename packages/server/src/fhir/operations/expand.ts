@@ -43,9 +43,10 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const client = getClient();
   const elements = await new SelectQuery('ValueSetElement')
+    .column('system')
     .column('code')
     .column('display')
-    .where('system', Operator.EQUALS, url)
+    .where('valueSet', Operator.EQUALS, url)
     .where('display', Operator.LIKE, '%' + filter + '%')
     .orderBy('display')
     .offset(offset)
@@ -53,7 +54,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .execute(client)
     .then((result) =>
       result.map((row) => ({
-        system: url,
+        system: row.system,
         code: row.code,
         display: row.display,
       }))
