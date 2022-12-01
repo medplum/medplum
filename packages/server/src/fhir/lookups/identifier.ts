@@ -1,6 +1,7 @@
 import { Filter, Operator as FhirOperator, stringify } from '@medplum/core';
 import { Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { Column, Condition, Conjunction, Disjunction, Expression, Negation, Operator, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
@@ -40,10 +41,11 @@ export class IdentifierTable extends LookupTable<Identifier> {
   /**
    * Indexes a resource identifier values.
    * Attempts to reuse existing identifiers if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     const identifiers = this.#getIdentifiers(resource);
     const resourceId = resource.id as string;
     const existing = await this.getExistingValues(resourceId);
@@ -67,7 +69,7 @@ export class IdentifierTable extends LookupTable<Identifier> {
         });
       }
 
-      await this.insertValuesForResource(values);
+      await this.insertValuesForResource(client, values);
     }
   }
 

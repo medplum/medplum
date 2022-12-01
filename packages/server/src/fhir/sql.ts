@@ -1,4 +1,4 @@
-import { Client, Pool } from 'pg';
+import { Client, Pool, PoolClient } from 'pg';
 
 const DEBUG = false;
 
@@ -201,7 +201,7 @@ export class SqlBuilder {
     return this.#sql.join('');
   }
 
-  async execute(conn: Client | Pool): Promise<any[]> {
+  async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
     const sql = this.toString();
     let startTime = 0;
     if (DEBUG) {
@@ -379,7 +379,7 @@ export class InsertQuery extends BaseQuery {
     return this;
   }
 
-  async execute(conn: Pool): Promise<any[]> {
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
