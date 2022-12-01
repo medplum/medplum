@@ -47,6 +47,11 @@ export class BackEnd extends Construct {
       },
     });
 
+    // Bot Lambda Role
+    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
     // RDS
     const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
@@ -177,7 +182,7 @@ export class BackEnd extends Construct {
         new iam.PolicyStatement({
           effect: iam.Effect.ALLOW,
           actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
-          resources: ['*'],
+          resources: [botLambdaRole.roleArn],
         }),
 
         // Lambda: Create, read, update, delete, and invoke functions
@@ -335,11 +340,6 @@ export class BackEnd extends Construct {
       recordName: config.apiDomainName,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
       zone: zone,
-    });
-
-    // Bot Lambda Role
-    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
     // SSM Parameters
