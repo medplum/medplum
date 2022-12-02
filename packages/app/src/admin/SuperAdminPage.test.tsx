@@ -67,4 +67,22 @@ describe('SuperAdminPage', () => {
 
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
+
+  test('Force set password', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'alice@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'override123' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Force Set Password' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
 });

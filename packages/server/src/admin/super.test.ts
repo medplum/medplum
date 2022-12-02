@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateAccessToken } from '../oauth/keys';
@@ -198,5 +199,69 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  test('Set password access denied', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Set password missing password', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: '',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+  });
+
+  test('Set password user not found', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email: 'user-not-found@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password success', async () => {
+    const email = `alice${randomUUID()}@example.com`;
+
+    await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email,
+      password: 'password!@#',
+    });
+
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(200);
   });
 });
