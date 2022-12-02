@@ -30,8 +30,8 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const author = profile ?? resource.meta?.author;
 
   return (
-    <Panel data-testid="timeline-item" {...others}>
-      <Group position="apart" spacing={8}>
+    <Panel data-testid="timeline-item" fill={true} {...others}>
+      <Group position="apart" spacing={8} mx="xs" my="sm">
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
           <Text size="sm">
@@ -61,7 +61,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         )}
       </Group>
       <ErrorBoundary>
-        {padding && <div style={{ padding: '2px 16px 16px 16px' }}>{props.children}</div>}
+        {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}
         {!padding && <>{props.children}</>}
       </ErrorBoundary>
     </Panel>
