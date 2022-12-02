@@ -47,6 +47,11 @@ export class BackEnd extends Construct {
       },
     });
 
+    // Bot Lambda Role
+    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
     // RDS
     const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
@@ -124,22 +129,89 @@ export class BackEnd extends Construct {
       vpc: vpc,
     });
 
+    // Task Policies
+    const taskRolePolicies = new iam.PolicyDocument({
+      statements: [
+        // CloudWatch Logs: Create streams and put events
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          resources: ['arn:aws:logs:*'],
+        }),
+
+        // Secrets Manager: Read only access to secrets
+        // https://docs.aws.amazon.com/mediaconnect/latest/ug/iam-policy-examples-asm-secrets.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'secretsmanager:GetResourcePolicy',
+            'secretsmanager:GetSecretValue',
+            'secretsmanager:DescribeSecret',
+            'secretsmanager:ListSecrets',
+            'secretsmanager:ListSecretVersionIds',
+          ],
+          resources: ['arn:aws:secretsmanager:*'],
+        }),
+
+        // Parameter Store: Read only access
+        // https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-access.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ssm:GetParametersByPath', 'ssm:GetParameters', 'ssm:GetParameter', 'ssm:DescribeParameters'],
+          resources: ['arn:aws:ssm:*'],
+        }),
+
+        // SES: Send emails
+        // https://docs.aws.amazon.com/ses/latest/dg/sending-authorization-policy-examples.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+          resources: ['arn:aws:ses:*'],
+        }),
+
+        // S3: Read and write access to buckets
+        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+          resources: ['arn:aws:s3:::*'],
+        }),
+
+        // IAM: Pass role to innvoke lambda functions
+        // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
+          resources: [botLambdaRole.roleArn],
+        }),
+
+        // Lambda: Create, read, update, delete, and invoke functions
+        // https://docs.aws.amazon.com/lambda/latest/dg/access-control-identity-based.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'lambda:CreateFunction',
+            'lambda:GetFunction',
+            'lambda:GetFunctionConfiguration',
+            'lambda:UpdateFunctionCode',
+            'lambda:UpdateFunctionConfiguration',
+            'lambda:ListLayerVersions',
+            'lambda:GetLayerVersion',
+            'lambda:InvokeFunction',
+          ],
+          resources: ['arn:aws:lambda:*'],
+        }),
+      ],
+    });
+
     // Task Role
     const taskRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      description: 'Medplum Server Task Execution Role',
+      inlinePolicies: {
+        TaskExecutionPolicies: taskRolePolicies,
+      },
     });
-
-    // Task Policies
-    const policies = [
-      'service-role/AmazonECSTaskExecutionRolePolicy',
-      'AmazonSSMReadOnlyAccess', // Read SSM parameters
-      'SecretsManagerReadWrite', // Read RDS secrets
-      'AmazonCognitoPowerUser', // Authenticate users with Cognito
-      'AmazonSESFullAccess', // Send emails with SES
-      'AmazonS3FullAccess', // Upload content to content bucket
-      'AWSLambda_FullAccess', // Create and execute lambdas
-    ];
-    policies.forEach((policy) => taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policy)));
 
     // Task Definitions
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
@@ -268,11 +340,6 @@ export class BackEnd extends Construct {
       recordName: config.apiDomainName,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
       zone: zone,
-    });
-
-    // Bot Lambda Role
-    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
     // SSM Parameters
