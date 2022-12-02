@@ -49,49 +49,21 @@ export interface InviteRequest {
   readonly lastName: string;
   readonly email: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
+  readonly sendEmail?: boolean;
 }
 
 export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: ProfileResource }> {
   const project = request.project;
   let user = await getUserByEmailWithoutProject(request.email);
+  let existingUser = true;
+  let passwordResetUrl = undefined;
 
-  if (user) {
-    // Existing user
-    await sendEmail({
-      to: user.email,
-      subject: `Medplum: Welcome to ${request.project.name}`,
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        `The next time you sign-in, you will see ${request.project.name} as an option.`,
-        '',
-        `You can sign in here: ${getConfig().appBaseUrl}signin`,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
-  } else {
-    // New user
+  if (!user) {
+    existingUser = false;
     user = await createUser(request);
-    const url = await resetPassword(user);
-    await sendEmail({
-      to: user.email,
-      subject: 'Welcome to Medplum',
-      text: [
-        `You were invited to ${request.project.name}`,
-        '',
-        'Please click on the following link to create your account:',
-        '',
-        url,
-        '',
-        'Thank you,',
-        'Medplum',
-        '',
-      ].join('\n'),
-    });
+    passwordResetUrl = await resetPassword(user);
   }
+
   let profile = await searchForExistingProfile(project, request.resourceType, request.email);
   if (!profile) {
     profile = (await createProfile(
@@ -103,6 +75,11 @@ export async function inviteUser(request: InviteRequest): Promise<{ user: User; 
     )) as Practitioner;
   }
   await createProjectMembership(user, project, profile, request.accessPolicy);
+
+  if (request.sendEmail !== false) {
+    await sendInviteEmail(request, user, existingUser, passwordResetUrl);
+  }
+
   return { user, profile };
 }
 
@@ -143,4 +120,47 @@ async function searchForExistingProfile(
     ],
   });
   return bundle.entry?.[0]?.resource;
+}
+
+async function sendInviteEmail(
+  request: InviteRequest,
+  user: User,
+  existing: boolean,
+  resetPasswordUrl: string | undefined
+): Promise<void> {
+  if (existing) {
+    // Existing user
+    await sendEmail({
+      to: user.email,
+      subject: `Medplum: Welcome to ${request.project.name}`,
+      text: [
+        `You were invited to ${request.project.name}`,
+        '',
+        `The next time you sign-in, you will see ${request.project.name} as an option.`,
+        '',
+        `You can sign in here: ${getConfig().appBaseUrl}signin`,
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    });
+  } else {
+    // New user
+    await sendEmail({
+      to: user.email,
+      subject: 'Welcome to Medplum',
+      text: [
+        `You were invited to ${request.project.name}`,
+        '',
+        'Please click on the following link to create your account:',
+        '',
+        resetPasswordUrl,
+        '',
+        'Thank you,',
+        'Medplum',
+        '',
+      ].join('\n'),
+    });
+  }
 }
