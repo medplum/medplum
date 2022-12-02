@@ -3,22 +3,31 @@ import React from 'react';
 
 export interface PanelStylesParams {
   width?: number;
+  fill?: boolean;
 }
 
-const useStyles = createStyles((theme, { width }: PanelStylesParams) => ({
+const useStyles = createStyles((theme, { width, fill }: PanelStylesParams) => ({
   paper: {
     maxWidth: width,
     margin: `${theme.spacing.xl}px auto`,
-    padding: theme.spacing.lg,
+    padding: fill ? 0 : theme.spacing.md,
     '@media (max-width: 800px)': {
-      paddingLeft: 8,
-      paddingRight: 8,
+      padding: fill ? 0 : 8,
+    },
+    '& img': {
+      width: '100%',
+      maxWidth: '100%',
+    },
+    '& video': {
+      width: '100%',
+      maxWidth: '100%',
     },
   },
 }));
 
 export interface PanelProps extends PaperProps {
   width?: number;
+  fill?: boolean;
 }
 
 const defaultProps: Partial<PanelProps> = {
@@ -28,8 +37,12 @@ const defaultProps: Partial<PanelProps> = {
 };
 
 export function Panel(props: PanelProps): JSX.Element {
-  const { className, children, width, unstyled, ...others } = useComponentDefaultProps('Panel', defaultProps, props);
-  const { classes, cx } = useStyles({ width }, { name: 'Panel', unstyled });
+  const { className, children, width, fill, unstyled, ...others } = useComponentDefaultProps(
+    'Panel',
+    defaultProps,
+    props
+  );
+  const { classes, cx } = useStyles({ width, fill }, { name: 'Panel', unstyled });
 
   return (
     <Paper className={cx(classes.paper, className)} {...others}>
