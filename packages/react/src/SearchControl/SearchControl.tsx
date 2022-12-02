@@ -1,7 +1,6 @@
 import {
   Button,
   Center,
-  Container,
   createStyles,
   Group,
   Loader,
@@ -30,6 +29,7 @@ import {
   IconTrash,
 } from '@tabler/icons';
 import React, { useEffect, useRef, useState } from 'react';
+import { Container } from '../Container/Container';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';

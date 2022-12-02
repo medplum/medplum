@@ -112,7 +112,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
           error={getErrorsForInput(outcome, 'password')}
         />
       </Stack>
-      <Group position="apart" mt="xl" noWrap>
+      <Group position="apart" mt="xl" spacing={0} noWrap>
         {onForgotPassword && (
           <Anchor component="button" type="button" color="dimmed" onClick={onForgotPassword} size="xs">
             Forgot password
@@ -123,7 +123,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
             Register
           </Anchor>
         )}
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" />
+        <Checkbox id="remember" name="remember" label="Remember me" size="xs" sx={{ lineHeight: 1 }} />
         <Button type="submit">Sign in</Button>
       </Group>
     </Form>
