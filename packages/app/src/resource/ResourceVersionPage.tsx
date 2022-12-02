@@ -1,6 +1,6 @@
-import { Container, Paper, Tabs, Text, Title } from '@mantine/core';
+import { Paper, Tabs, Text, Title } from '@mantine/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
+import { Container, Document, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';

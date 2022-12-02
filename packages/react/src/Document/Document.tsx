@@ -1,22 +1,12 @@
-import { Container, Paper } from '@mantine/core';
 import React from 'react';
+import { Container } from '../Container/Container';
+import { Panel, PanelProps } from '../Panel/Panel';
 
-export interface DocumentProps {
-  width?: number;
-  children?: React.ReactNode;
-}
-
-export function Document(props: DocumentProps): JSX.Element {
-  let style: React.CSSProperties | undefined = undefined;
-  if (props.width) {
-    style = { maxWidth: props.width };
-  }
-
+export function Document(props: PanelProps): JSX.Element {
+  const { children, ...others } = props;
   return (
     <Container>
-      <Paper style={style} mx="auto" my="lg" p="lg" shadow="xs" radius="sm" withBorder>
-        {props.children}
-      </Paper>
+      <Panel {...others}>{children}</Panel>
     </Container>
   );
 }
