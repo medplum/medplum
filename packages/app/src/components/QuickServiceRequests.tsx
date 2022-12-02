@@ -67,7 +67,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
   }
 
   return (
-    <div className={classes.container}>
+    <div data-testid="quick-service-requests" className={classes.container}>
       {serviceRequests.map((r) => (
         <div key={r.id} className={cx(classes.entry, { [classes.active]: r.id === resource?.id })}>
           <p>

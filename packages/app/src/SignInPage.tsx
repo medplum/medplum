@@ -9,7 +9,7 @@ export function SignInPage(): JSX.Element {
 
   return (
     <SignInForm
-      onSuccess={() => navigate('/')}
+      onSuccess={() => navigate(searchParams.get('next') || '/')}
       onForgotPassword={() => navigate('/resetpassword')}
       onRegister={() => navigate('/register')}
       googleClientId={process.env.GOOGLE_CLIENT_ID}
