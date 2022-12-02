@@ -38,7 +38,7 @@ describe('CORS', () => {
   });
 
   test('Open', () => {
-    getConfig().corsMode = 'open';
+    getConfig().allowedOrigins = '*';
     const req = {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
@@ -49,6 +49,28 @@ describe('CORS', () => {
   });
 
   test('Closed', () => {
+    const req = {
+      header: () => 'https://example.com',
+      path: '/fhir/R4/Patient',
+    } as unknown as Request;
+    const callback = jest.fn();
+    corsOptions(req, callback);
+    expect(callback).toBeCalledWith(null, { origin: false });
+  });
+
+  test('Allowed origins ', () => {
+    getConfig().allowedOrigins = 'https://abc.com,https://example.com';
+    const req = {
+      header: () => 'https://example.com',
+      path: '/fhir/R4/Patient',
+    } as unknown as Request;
+    const callback = jest.fn();
+    corsOptions(req, callback);
+    expect(callback).toBeCalledWith(null, { credentials: true, origin: 'https://example.com' });
+  });
+
+  test('Disallowed origins ', () => {
+    getConfig().allowedOrigins = 'https://abc.com,https://def.com';
     const req = {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',
