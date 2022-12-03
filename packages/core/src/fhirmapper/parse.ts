@@ -222,6 +222,12 @@ class StructureMapParser {
       result.condition = whereFhirPath.toString();
     }
 
+    if (this.parser.peek()?.value === 'check') {
+      this.parser.consume('Symbol', 'check');
+      const checkFhirPath = this.parser.consumeAndParse(OperatorPrecedence.Arrow);
+      result.check = checkFhirPath.toString();
+    }
+
     return result;
   }
 

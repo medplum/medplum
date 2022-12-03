@@ -33,7 +33,7 @@ export class Tokenizer {
   readonly #keywords: string[];
   readonly #operators: string[];
   readonly #result: Token[] = [];
-  readonly #pos: Marker = { index: 0, line: 0, column: 0 };
+  readonly #pos: Marker = { index: 0, line: 1, column: 0 };
   readonly #markStack: Marker[] = [];
 
   constructor(str: string, keywords: string[], operators: string[]) {

@@ -85,6 +85,58 @@ describe('FHIR Mapping Language parser', () => {
     expect(parseMappingLanguage(input)).toMatchObject(expected);
   });
 
+  test('Embedded concept map', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/Claim4to3" = "R4 to R3 Conversion for Claim"
+
+    conceptmap "Use" {
+      prefix s = "http://hl7.org/fhir/claim-use"
+      prefix t = "http://hl7.org/fhir/claim-use"
+
+      s:claim - t:complete
+      s:preauthorization - t:proposed
+      s:predetermination - t:exploratory
+    }`;
+
+    expect(() => parseMappingLanguage(input)).not.toThrow();
+  });
+
+  test('Check clause', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.dependency as vs0 check type = 'reference' -> tgt.dependsOn as vt0 then dependency(vs0, vt0);
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toEqual("type = 'reference'");
+  });
+
+  test('Rule source list mode', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.coding first as vs0 then Coding(vs0, tgt);
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toEqual('first');
+  });
+
+  test('Multiple rule targets', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+
+    group tutorial(source src : TLeft, target tgt : TRight) {
+      src.author as vs ->  tgt.contributor as vt,  vt.type = 'author' then Contributor(vs, vt);
+    }`;
+
+    const result = parseMappingLanguage(input);
+    expect(result.group?.[0]?.rule?.[0]?.target).toHaveLength(2);
+  });
+
   test('ValueSet R4 to R3', () => {
     // Source: https://hl7.org/fhir/valueset-version-maps.html#4.9.17.2
     const input = `map "http://hl7.org/fhir/StructureMap/ValueSet4to3" = "R4 to R3 Conversion for ValueSet"
