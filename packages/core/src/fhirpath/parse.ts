@@ -33,7 +33,7 @@ import { toTypedValue } from './utils';
  * Operator precedence
  * See: https://hl7.org/fhirpath/#operator-precedence
  */
-export const enum FhirPathPrecedence {
+export const enum OperatorPrecedence {
   FunctionCall = 0,
   Dot = 1,
   Indexer = 2,
@@ -63,6 +63,8 @@ export const enum FhirPathPrecedence {
   Xor = 12,
   Or = 12,
   Implies = 13,
+  Arrow = 100,
+  Semicolon = 200,
 }
 
 const PARENTHESES_PARSELET: PrefixParselet = {
@@ -84,7 +86,7 @@ const INDEXER_PARSELET: InfixParselet = {
     return new IndexerAtom(left, expr);
   },
 
-  precedence: FhirPathPrecedence.Indexer,
+  precedence: OperatorPrecedence.Indexer,
 };
 
 const FUNCTION_CALL_PARSELET: InfixParselet = {
@@ -101,7 +103,7 @@ const FUNCTION_CALL_PARSELET: InfixParselet = {
 
     return new FunctionAtom(left.name, args); //, functions[left.name]);
   },
-  precedence: FhirPathPrecedence.FunctionCall,
+  precedence: OperatorPrecedence.FunctionCall,
 };
 
 function parseQuantity(str: string): Quantity {
@@ -137,72 +139,72 @@ export function initFhirPathParserBuilder(): ParserBuilder {
     .registerPrefix('(', PARENTHESES_PARSELET)
     .registerInfix('[', INDEXER_PARSELET)
     .registerInfix('(', FUNCTION_CALL_PARSELET)
-    .prefix('+', FhirPathPrecedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
-    .prefix('-', FhirPathPrecedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
-    .infixLeft('.', FhirPathPrecedence.Dot, (left, _, right) => new DotAtom(left, right))
+    .prefix('+', OperatorPrecedence.UnaryAdd, (_, right) => new UnaryOperatorAtom(right, (x) => x))
+    .prefix('-', OperatorPrecedence.UnarySubtract, (_, right) => new ArithemticOperatorAtom(right, right, (_, y) => -y))
+    .infixLeft('.', OperatorPrecedence.Dot, (left, _, right) => new DotAtom(left, right))
     .infixLeft(
       '/',
-      FhirPathPrecedence.Divide,
+      OperatorPrecedence.Divide,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x / y)
     )
     .infixLeft(
       '*',
-      FhirPathPrecedence.Multiply,
+      OperatorPrecedence.Multiply,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x * y)
     )
     .infixLeft(
       '+',
-      FhirPathPrecedence.Add,
+      OperatorPrecedence.Add,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x + y)
     )
     .infixLeft(
       '-',
-      FhirPathPrecedence.Subtract,
+      OperatorPrecedence.Subtract,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x - y)
     )
-    .infixLeft('|', FhirPathPrecedence.Union, (left, _, right) => new UnionAtom(left, right))
-    .infixLeft('=', FhirPathPrecedence.Equals, (left, _, right) => new EqualsAtom(left, right))
-    .infixLeft('!=', FhirPathPrecedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
-    .infixLeft('~', FhirPathPrecedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
-    .infixLeft('!~', FhirPathPrecedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
+    .infixLeft('|', OperatorPrecedence.Union, (left, _, right) => new UnionAtom(left, right))
+    .infixLeft('=', OperatorPrecedence.Equals, (left, _, right) => new EqualsAtom(left, right))
+    .infixLeft('!=', OperatorPrecedence.Equals, (left, _, right) => new NotEqualsAtom(left, right))
+    .infixLeft('~', OperatorPrecedence.Equivalent, (left, _, right) => new EquivalentAtom(left, right))
+    .infixLeft('!~', OperatorPrecedence.NotEquivalent, (left, _, right) => new NotEquivalentAtom(left, right))
     .infixLeft(
       '<',
-      FhirPathPrecedence.LessThan,
+      OperatorPrecedence.LessThan,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x < y)
     )
     .infixLeft(
       '<=',
-      FhirPathPrecedence.LessThanOrEquals,
+      OperatorPrecedence.LessThanOrEquals,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x <= y)
     )
     .infixLeft(
       '>',
-      FhirPathPrecedence.GreaterThan,
+      OperatorPrecedence.GreaterThan,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x > y)
     )
     .infixLeft(
       '>=',
-      FhirPathPrecedence.GreaterThanOrEquals,
+      OperatorPrecedence.GreaterThanOrEquals,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x >= y)
     )
-    .infixLeft('&', FhirPathPrecedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
-    .infixLeft('and', FhirPathPrecedence.Is, (left, _, right) => new AndAtom(left, right))
-    .infixLeft('as', FhirPathPrecedence.Is, (left, _, right) => new AsAtom(left, right))
-    .infixLeft('contains', FhirPathPrecedence.Is, (left, _, right) => new ContainsAtom(left, right))
+    .infixLeft('&', OperatorPrecedence.Ampersand, (left, _, right) => new ConcatAtom(left, right))
+    .infixLeft('and', OperatorPrecedence.Is, (left, _, right) => new AndAtom(left, right))
+    .infixLeft('as', OperatorPrecedence.Is, (left, _, right) => new AsAtom(left, right))
+    .infixLeft('contains', OperatorPrecedence.Is, (left, _, right) => new ContainsAtom(left, right))
     .infixLeft(
       'div',
-      FhirPathPrecedence.Is,
+      OperatorPrecedence.Is,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => (x / y) | 0)
     )
-    .infixLeft('in', FhirPathPrecedence.Is, (left, _, right) => new InAtom(left, right))
-    .infixLeft('is', FhirPathPrecedence.Is, (left, _, right) => new IsAtom(left, right))
+    .infixLeft('in', OperatorPrecedence.Is, (left, _, right) => new InAtom(left, right))
+    .infixLeft('is', OperatorPrecedence.Is, (left, _, right) => new IsAtom(left, right))
     .infixLeft(
       'mod',
-      FhirPathPrecedence.Is,
+      OperatorPrecedence.Is,
       (left, _, right) => new ArithemticOperatorAtom(left, right, (x, y) => x % y)
     )
-    .infixLeft('or', FhirPathPrecedence.Is, (left, _, right) => new OrAtom(left, right))
-    .infixLeft('xor', FhirPathPrecedence.Is, (left, _, right) => new XorAtom(left, right));
+    .infixLeft('or', OperatorPrecedence.Is, (left, _, right) => new OrAtom(left, right))
+    .infixLeft('xor', OperatorPrecedence.Is, (left, _, right) => new XorAtom(left, right));
 }
 
 const fhirPathParserBuilder = initFhirPathParserBuilder();

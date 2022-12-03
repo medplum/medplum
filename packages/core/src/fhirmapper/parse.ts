@@ -9,7 +9,7 @@ import {
   StructureMapStructure,
 } from '@medplum/fhirtypes';
 import { Parser } from '../fhirlexer';
-import { FhirPathPrecedence, FunctionAtom, initFhirPathParserBuilder, LiteralAtom, SymbolAtom } from '../fhirpath';
+import { FunctionAtom, initFhirPathParserBuilder, LiteralAtom, OperatorPrecedence, SymbolAtom } from '../fhirpath';
 import { tokenize } from './tokenize';
 
 class StructureMapParser {
@@ -215,7 +215,7 @@ class StructureMapParser {
 
     if (parser.peek()?.value === 'where') {
       parser.consume('Symbol', 'where');
-      const whereFhirPath = parser.consumeAndParse(100);
+      const whereFhirPath = parser.consumeAndParse(OperatorPrecedence.Arrow);
       result.condition = whereFhirPath.toString();
     }
 
@@ -248,7 +248,7 @@ class StructureMapParser {
       parser.consume('=');
       result.transform = 'copy';
 
-      const transformFhirPath = parser.consumeAndParse(FhirPathPrecedence.As);
+      const transformFhirPath = parser.consumeAndParse(OperatorPrecedence.As);
       if (transformFhirPath instanceof SymbolAtom) {
         result.parameter = [
           {
@@ -321,7 +321,7 @@ class StructureMapParser {
   }
 
   parseRuleDependents(parser: Parser): StructureMapGroupRuleDependent[] | undefined {
-    const atom = parser.consumeAndParse(100) as FunctionAtom;
+    const atom = parser.consumeAndParse(OperatorPrecedence.Arrow) as FunctionAtom;
     return [
       {
         name: atom.name,
@@ -331,7 +331,9 @@ class StructureMapParser {
   }
 }
 
-const fhirPathParserBuilder = initFhirPathParserBuilder();
+const fhirPathParserBuilder = initFhirPathParserBuilder()
+  .registerInfix('->', { precedence: OperatorPrecedence.Arrow })
+  .registerInfix(';', { precedence: OperatorPrecedence.Semicolon });
 
 /**
  * Parses a FHIR Mapping Language document into an AST.

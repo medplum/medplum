@@ -13,7 +13,7 @@ export interface PrefixParselet {
 
 export interface InfixParselet {
   precedence: number;
-  parse(parser: Parser, left: Atom, token: Token): Atom;
+  parse?(parser: Parser, left: Atom, token: Token): Atom;
 }
 
 export class ParserBuilder {
@@ -101,7 +101,7 @@ export class Parser {
     while (precedence > this.getPrecedence()) {
       const next = this.consume();
       const infix = this.getInfixParselet(next) as InfixParselet;
-      left = infix.parse(this, left, next);
+      left = (infix.parse as (parser: Parser, left: Atom, token: Token) => Atom)(this, left, next);
     }
 
     return left;
@@ -111,12 +111,6 @@ export class Parser {
     const nextToken = this.peek();
     if (!nextToken) {
       return Infinity;
-    }
-    if (nextToken.id === '->') {
-      return 500;
-    }
-    if (nextToken.id === ';') {
-      return 1000;
     }
     const parser = this.getInfixParselet(nextToken);
     if (parser) {
@@ -151,6 +145,6 @@ export class Parser {
   }
 
   getInfixParselet(token: Token): InfixParselet | undefined {
-    return this.#infixParselets[token.id] || this.#infixParselets[token.value];
+    return this.#infixParselets[token.id === 'Symbol' ? token.value : token.id];
   }
 }
