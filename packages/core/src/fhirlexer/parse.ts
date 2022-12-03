@@ -3,8 +3,6 @@ import { Token } from './tokenize';
 
 export interface Atom {
   eval(context: TypedValue[]): TypedValue[];
-
-  toString(): string;
 }
 
 export interface PrefixParselet {
