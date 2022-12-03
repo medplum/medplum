@@ -2,7 +2,7 @@ import { readJson } from '@medplum/definitions';
 import { Bundle, Observation } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle, PropertyType } from '../types';
 import { LiteralAtom, SymbolAtom } from './atoms';
-import { evalFhirPath } from './parse';
+import { evalFhirPath, parseFhirPath } from './parse';
 
 describe('Atoms', () => {
   beforeAll(() => {
@@ -30,6 +30,12 @@ describe('Atoms', () => {
   test('SymbolAtom', () => {
     const symbol = new SymbolAtom('symbol');
     expect(symbol.toString()).toEqual('symbol');
+  });
+
+  test('EmptySetAtom', () => {
+    const atom = parseFhirPath('{}');
+    expect(atom.eval([])).toEqual([]);
+    expect(atom.toString()).toEqual('{}');
   });
 
   test('ConcatAtom', () => {

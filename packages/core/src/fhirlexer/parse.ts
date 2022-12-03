@@ -5,6 +5,26 @@ export interface Atom {
   eval(context: TypedValue[]): TypedValue[];
 }
 
+export abstract class PrefixOperatorAtom implements Atom {
+  constructor(public readonly operator: string, public readonly child: Atom) {}
+
+  abstract eval(context: TypedValue[]): TypedValue[];
+
+  toString(): string {
+    return `${this.operator}(${this.child.toString()})`;
+  }
+}
+
+export abstract class InfixOperatorAtom implements Atom {
+  constructor(public readonly operator: string, public readonly left: Atom, public readonly right: Atom) {}
+
+  abstract eval(context: TypedValue[]): TypedValue[];
+
+  toString(): string {
+    return `${this.left.toString()} ${this.operator} ${this.right.toString()}`;
+  }
+}
+
 export interface PrefixParselet {
   parse(parser: Parser, token: Token): Atom;
 }
