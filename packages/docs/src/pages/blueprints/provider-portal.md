@@ -21,11 +21,11 @@ A provider portal is optimized for the experience of the referring physician and
 
 ### Notifications
 
-Sending notifications via email, SMS or via integration into tools is a common need for referring provider portals. For example, a referring physician might receive an email when the results of a diagnostic report for a patient are available. Medplum [bots](/docs/tutorials/bots) support building notifications with custom logic, including deep linking to specific records on the provider portal so that referring physicians can have save time and clicks.
+Sending notifications via email, SMS or via integration into tools is a common need for referring provider portals. For example, a referring physician might receive an email when the results of a diagnostic report for a patient are available. Medplum [bots](/docs/bots) support building notifications with custom logic, including deep linking to specific records on the provider portal so that referring physicians can have save time and clicks.
 
 ### Search
 
-Sophisticated records search helps providers get to clarity on what's needed for patients. Medplum has a powerful [search API](/docs/tutorials/api-basics/basic-fhir-search) and [search SDK](/docs/sdk/classes/MedplumClient), [search input](https://storybook.medplum.com/?path=/docs/medplum-resourceinput--practitioners) and [search results control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes)
+Sophisticated records search helps providers get to clarity on what's needed for patients. Medplum has a powerful [search API](/docs/fhir-datastore/basic-fhir-search) and [search SDK](/docs/sdk/classes/MedplumClient), [search input](https://storybook.medplum.com/?path=/docs/medplum-resourceinput--practitioners) and [search results control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes)
 
 ### Collaboration and Messaging
 
@@ -41,7 +41,7 @@ Because the provider portal is built off of the Medplum backend, it inherits all
 
 ## Access Controls
 
-Medplum supports sophisticated access controls, allowing administrators to control physician access to certain FHIR resources, for example only DiagnosticReports, or only specific groups of patients. [Learn More](/docs/tutorials/security/access-control)
+Medplum supports sophisticated access controls, allowing administrators to control physician access to certain FHIR resources, for example only DiagnosticReports, or only specific groups of patients. [Learn More](/docs/auth)
 
 ## API Access
 
@@ -49,15 +49,15 @@ Giving partner institutions access via API is a common scenario. Medplum support
 
 ## Billing and Revenue Cycle Scenarios
 
-Commonly in diagnostics and specialty care providers are not part of the same professional corporation due to geographic or institutional restrictions. Data can be routed and tagged for [billing](../products/billing) using [bots](/docs/tutorials/bots).
+Commonly in diagnostics and specialty care providers are not part of the same professional corporation due to geographic or institutional restrictions. Data can be routed and tagged for [billing](../products/billing) using [bots](/docs/bots).
 
 ## Demos and Resources
 
 - Sample application [Foo Medical provider](https://provider.foomedical.com/), [request access](https://forms.gle/c41NddaDroCU88yt7) is a starter kit for a provider portal.
 - Source code for [Foo Medical Provider](https://github.com/medplum/foomedical-provider)
 - [Compliance](/docs/compliance) portal with guides and resources.
-- [Access Controls](/docs/tutorials/security/access-control)
-- [Authentication Methods](/docs/tutorials/authentication-and-security)
+- [Access Controls](/docs/auth/access-control)
+- [Authentication Methods](/docs/auth)
 - [Communications Product](../products/communications)
-- [Search API](/docs/tutorials/api-basics/basic-fhir-search)
-- [Bots for custom notifications](/docs/tutorials/bots)
+- [Search API](/docs/search)
+- [Bots for custom notifications](/docs/bots)

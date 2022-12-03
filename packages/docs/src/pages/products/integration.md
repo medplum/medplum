@@ -22,7 +22,7 @@ Below is an **example of a medical practice "Foo Medical" with connections** to 
 
 Creating effective integrations often requires writing some code. We provide pre-built integrations, high level SDKs, testing framework, deployment and provisioning features that **greatly reduce the engineering burden to build, and to maintain integrations**.
 
-Our integration framework is called bots and there are detailed [bots tutorials](/docs/tutorials/bots) in our technical documentation.
+Our integration framework is called bots and there are detailed [bots tutorials](/docs/bots) in our technical documentation.
 
 Before starting an integration, we recommend filling out the following checklist
 
@@ -59,7 +59,7 @@ If you are interested in a specific integration type, please contact us at hello
 
 ## Examples: Integrations by Product Category
 
-To get a medical application to work as intended often requires many systems to talk to each other, each with a different function. Medplum enables connectivity to various systems, through the [Bot](/docs/tutorials/bots) framework.
+To get a medical application to work as intended often requires many systems to talk to each other, each with a different function. Medplum enables connectivity to various systems, through the [Bot](/docs/bots) framework.
 
 Below are some of the classes of applications indexed by common integration methods. Medplum supports building interfaces of this type to enable connectivity.
 
@@ -92,7 +92,7 @@ Below is a system diagram that shows, at a high level all of the systems working
 ## Reference Material
 
 - [Sample bots](https://github.com/medplum/medplum-demo-bots) these are a quickstart for building your integrations
-- [Bot tutorials](/docs/tutorials/bots)
-- [Authentication](/docs/tutorials/authentication-and-security)
+- [Bot tutorials](/docs/bots)
+- [Authentication, Authorization and Identity](/docs/auth)
 - [Compliance Portal](/docs/compliance)
 - [All Epic FHIR Endpoints](https://open.epic.com/MyApps/Endpoints)

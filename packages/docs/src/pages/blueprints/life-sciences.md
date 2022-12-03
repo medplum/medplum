@@ -37,7 +37,7 @@ One of the common planning scenarios is designing the Schedule of Assessments, a
 
 #### Survey Based Instruments
 
-Survey based instruments are modeled using the [FHIR Questionnaires](/docs/api/fhir/resources/questionnaire). View questionnaires [here](https://app.medplum.com/Questionnaire), and create new ones [here](https://app.medplum.com/Questionnaire/new). The representation of the COA in the library is independent from its use in practice. Surveys can be collected on iOS, Android or using a system like Qualtrics and synchronized back as a [FHIR QuestionnareResponse](/docs/api/fhir/resources/questionnaireresponse) via [Bots](/docs/tutorials/bots). If the data is structured and tagged correctly, reporting and validation will remain intact.
+Survey based instruments are modeled using the [FHIR Questionnaires](/docs/api/fhir/resources/questionnaire). View questionnaires [here](https://app.medplum.com/Questionnaire), and create new ones [here](https://app.medplum.com/Questionnaire/new). The representation of the COA in the library is independent from its use in practice. Surveys can be collected on iOS, Android or using a system like Qualtrics and synchronized back as a [FHIR QuestionnareResponse](/docs/api/fhir/resources/questionnaireresponse) via [Bots](/docs/bots). If the data is structured and tagged correctly, reporting and validation will remain intact.
 
 To effectively manage your survey based instrument, you'll want to ensure that each is represented as a FHIR Questionnaire and is tagged with the appropriate Metadata, specifically:
 
@@ -91,7 +91,7 @@ You can see a sample of a [SoA in Code here](https://github.com/medplum/medplum/
 
 #### Exporting your Schedule of Assessments
 
-Exporting the schedule of assessments is possible using the [Bot](/docs/tutorials/bots) framework. A common pattern is to export the protocol to a number of formats like CDISC PRM, CSV, PDF, DOCX, or allow it to be read as FHIR via the API.
+Exporting the schedule of assessments is possible using the [Bot](/docs/bots) framework. A common pattern is to export the protocol to a number of formats like CDISC PRM, CSV, PDF, DOCX, or allow it to be read as FHIR via the API.
 
 ## Health Records Integration
 
@@ -99,7 +99,7 @@ Data capture from legacy EHRs, LIS/LIMS, records request aggregators, COA tools,
 
 ### Patient-facing tools integration
 
-PRO data comes in from a multitude of systems like Qualtrics, custom mobile applications, and various form builder and survey tools. Integrate, normalize and tag the data using the [integration and interoperability engine](../products/integration) and [bots](/docs/tutorials/bots).
+PRO data comes in from a multitude of systems like Qualtrics, custom mobile applications, and various form builder and survey tools. Integrate, normalize and tag the data using the [integration and interoperability engine](../products/integration) and [bots](/docs/bots).
 
 ## Dashboards and Reporting
 

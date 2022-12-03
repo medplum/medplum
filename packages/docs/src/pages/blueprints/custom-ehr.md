@@ -22,7 +22,7 @@ Make and manage questionnaires for clinicians and patients. Link them to powerfu
 
 ## Notes and Charting
 
-Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [questionnaires](../products/questionnaires) to populate the Encounter object via [bot](/docs/tutorials/bots/bot-for-questionnaire-response), or creating the object via the API.
+Physician notes are represented in FHIR by the [Encounter](/docs/api/fhir/resources/encounter) object. Common implementations involve using custom [questionnaires](../products/questionnaires) to populate the Encounter object via [bot](/docs/bots/bot-for-questionnaire-response), or creating the object via the API.
 
 ## Schedules
 
@@ -38,7 +38,7 @@ Medplum data model is based on FHIR and has data structures and ontologies that 
 
 ## API Access
 
-All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/tutorials/security/access-control).
+All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/auth/access-control).
 
 ## Certification and Scope
 

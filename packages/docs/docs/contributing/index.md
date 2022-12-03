@@ -6,7 +6,7 @@ sidebar_position: 1
 
 Medplum is an open-source project, and we love developer contributions! This section provides instructions on how to get started developing new features for Medplum.
 
-If you're looking to _use_ Medplum, check out the [App](./tutorials/app) or [API](./api) docs instead.
+If you're looking to _use_ Medplum, check out the [App](./app) or [API](./api) docs instead.
 
 **Ready to get started? First things first, you need to [Clone the repo](./contributing/clone-the-repo).**
 

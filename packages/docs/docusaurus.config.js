@@ -139,10 +139,6 @@ const config = {
             items: [
               {
                 label: 'Getting started',
-                to: '/docs/tutorials/api-basics/create-fhir-data',
-              },
-              {
-                label: 'Playing with Medplum',
                 to: '/docs/tutorials',
               },
               {

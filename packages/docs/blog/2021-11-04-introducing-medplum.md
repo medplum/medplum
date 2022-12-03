@@ -1,6 +1,5 @@
 ---
 authors: cody
-tags: [fhir, medplum, devtools, infrastructure]
 ---
 
 # Introducing Medplum

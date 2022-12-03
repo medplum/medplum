@@ -32,11 +32,11 @@ This example will illustrate how to create FHIR object, how to update them, how 
 Here is a breakdown of workflow at a high level
 
 - Authenticate with the server using OAuth client credentials flow
-- Use FHIR batch request to create a [Patient](../../api/fhir/resources/patient) and a [ServiceRequest](../../api/fhir/resources/servicerequest)
+- Use FHIR batch request to create a [Patient](../api/fhir/resources/patient) and a [ServiceRequest](../api/fhir/resources/servicerequest)
   - The example will use a conditional to only create the Patient if it does not already exist
   - The example will link the ServiceRequest to the Patient
-- Create an [Observation](../../api/fhir/resources/observation) and DiagnosticReport resources
-- Read back the [DiagnosticReport](../../api/fhir/resources/diagnosticreport) and [Observations](../../api/fhir/resources/observation)
+- Create an [Observation](../api/fhir/resources/observation) and DiagnosticReport resources
+- Read back the [DiagnosticReport](../api/fhir/resources/diagnosticreport) and [Observations](../api/fhir/resources/observation)
   - Use a batch request to read all Observations in one go, versus making multiple requests
 
 ## Authenticating using OAuth client credentials flow
@@ -49,7 +49,7 @@ The [client credentials](https://oauth.net/2/grant-types/client-credentials/) fl
 
 ## Creating the Patient and Service Request
 
-[Patient](../../api/fhir/resources/patient) and a [ServiceRequest](../../api/fhir/resources/servicerequest) sounds simple, but there are several nuances. If the [Patient](../../api/fhir/resources/patient) already exists, a new one should not be created. We also need to ensure that the [ServiceRequest](../../api/fhir/resources/servicerequest) is linked to the correct patient.
+[Patient](../api/fhir/resources/patient) and a [ServiceRequest](../api/fhir/resources/servicerequest) sounds simple, but there are several nuances. If the [Patient](../api/fhir/resources/patient) already exists, a new one should not be created. We also need to ensure that the [ServiceRequest](../api/fhir/resources/servicerequest) is linked to the correct patient.
 
 ### Creating Patient
 

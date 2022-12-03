@@ -10,7 +10,7 @@ import adminUsersPage from './admin-users-page.png'
 
 <img alt="Admin Users Page" src={adminUsersPage} style={{maxWidth: "75%"}}/>
 
-1. Open the Medplum app in your browser: https://app.medplum.com/. If you don't have an account yet, see the [Register](./register) page.
+1. Open the Medplum app in your browser: https://app.medplum.com/. If you don't have an account yet, see the [Register](../tutorials/register) page.
 2. Navigate to the [Project Admin](https://app.medplum.com/admin/project) page at [https://app.medplum.com/admin/project](https://app.medplum.com/admin/project).
 3. Click on the "Users" tab.
 4. Click on the "Invite new user" link at the bottom of the screen.
@@ -24,7 +24,7 @@ import inviteNewUser from './invite-new-user.png'
    2. **Patient:** This is the profile for any users who are the beneficiary of care.
    3. **RelatedPerson:** This profile represents users who are related to a patient and need access to some of their clinical data, but who don't benefit directly from care. This is typically used for parents/guardians for pediatric patients, or spouses of patients who aren't being treated themselves.
 6. Fill in the user details such as first name, last name, and email address.
-7. For advanced security features, you can configure an [AccessPolicy](../security/access-control). An AccessPolicy allows you to specify which resource types users can read and write.
+7. For advanced security features, you can configure an [AccessPolicy](../auth/access-control). An AccessPolicy allows you to specify which resource types users can read and write.
 8. Click "Invite" when the user details are ready.
 
 When you click "Invite", the system will send an email to the user with instructions how to activate their new account.

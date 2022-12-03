@@ -5,7 +5,7 @@ import TabItem from '@theme/TabItem';
 
 ## Upload via URL
 
-For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
+For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
 
 <Tabs groupId="language">
   <TabItem value="typescript" label="Typescript">
@@ -62,4 +62,4 @@ requests.post(f'{API_URL}/Media', json=media, headers={
   </TabItem>
 </Tabs>
 
-See the [**Client Credentials tutorial**](../../tutorials/security/client-credentials) guide for how to obtain an access token
+See the [**Client Credentials tutorial**](../auth/client-credentials) guide for how to obtain an access token

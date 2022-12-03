@@ -9,8 +9,8 @@ The Medplum billing and payments implementation is a standards compliant impleme
 - **Data Management**: create and update FHIR resources related to billing and payments. See the list of FHIR resources below.
 - **Representing Insurance Coverage**: the [Coverage](/docs/api/fhir/resources/coverage) FHIR resource represents patient insurance and is a major driver of workflow.
 - **Connecting to Payors**: Payors often have a FHIR interface, and make it possible for patients to request their financial data. Here's an example from [CMS Blue Button](https://bluebutton.cms.gov/developers/#try-the-api).
-- **Integrations**: Sending claims to various billing systems is a common workflow and clearinghouses and billing providers often have APIs. An integration [like this](https://developers.changehealthcare.com/eligibilityandclaims/reference/processclaim) can be implemented via [bots](/docs/tutorials/bots).
-- **Patient Pay**: Patient payments can be enabled through a payment processor like Stripe. [Invoice](https://app.medplum.com/Invoice) and [PaymentReconciliation](https://app.medplum.com/PaymentReconciliation) are the commonly used resources to manage data associated with use case. [Bots](/docs/tutorials/bots) can be used to consume web hooks or callbacks from payment processors and create the appropriate resources.
+- **Integrations**: Sending claims to various billing systems is a common workflow and clearinghouses and billing providers often have APIs. An integration [like this](https://developers.changehealthcare.com/eligibilityandclaims/reference/processclaim) can be implemented via [bots](/docs/bots).
+- **Patient Pay**: Patient payments can be enabled through a payment processor like Stripe. [Invoice](https://app.medplum.com/Invoice) and [PaymentReconciliation](https://app.medplum.com/PaymentReconciliation) are the commonly used resources to manage data associated with use case. [Bots](/docs/bots) can be used to consume web hooks or callbacks from payment processors and create the appropriate resources.
 - **Provider/Network Management**: Having excellent record-keeping on which organizations are in-network and change history is useful for implementing billing logic. `Organization.type` is the recommended field in which to store this data.
 
 ## FHIR Resources
@@ -34,7 +34,7 @@ The Medplum billing and payments implementation is a standards compliant impleme
 
 ## Demos and Tutorials
 
-- [Sample Insurance Eligibility Check](/docs/tutorials/bots/insurance-eligibility-check)
+- [Sample Insurance Eligibility Check](/docs/bots/insurance-eligibility-check)
 - [Foo Medical Billing Page](https://foomedical.com/account/membership-and-billing) sample patient portal with financial data.
 - [Provider Demo](https://provider.foomedical.com) including credential management.
 
