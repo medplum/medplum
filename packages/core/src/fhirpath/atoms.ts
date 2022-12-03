@@ -1,7 +1,7 @@
 import { Resource } from '@medplum/fhirtypes';
 import { Atom } from '../fhirlexer';
 import { PropertyType, TypedValue } from '../types';
-import { FhirPathFunction, functions } from './functions';
+import { functions } from './functions';
 import {
   booleanToTypedValue,
   fhirPathArrayEquals,
@@ -29,12 +29,24 @@ export class FhirPathAtom implements Atom {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
     }
   }
+
+  toString(): string {
+    return this.child.toString();
+  }
 }
 
 export class LiteralAtom implements Atom {
   constructor(public readonly value: TypedValue) {}
   eval(): TypedValue[] {
     return [this.value];
+  }
+
+  toString(): string {
+    const value = this.value.value;
+    if (typeof value === 'string') {
+      return `'${value}'`;
+    }
+    return value.toString();
   }
 }
 
@@ -62,11 +74,19 @@ export class SymbolAtom implements Atom {
 
     return getTypedPropertyValue(typedValue, this.name);
   }
+
+  toString(): string {
+    return this.name;
+  }
 }
 
 export class EmptySetAtom implements Atom {
   eval(): [] {
     return [];
+  }
+
+  toString(): string {
+    return '{}';
   }
 }
 
@@ -76,6 +96,10 @@ export class UnaryOperatorAtom implements Atom {
   eval(context: TypedValue[]): TypedValue[] {
     return this.impl(this.child.eval(context));
   }
+
+  toString(): string {
+    return this.child.toString();
+  }
 }
 
 export class AsAtom implements Atom {
@@ -83,6 +107,10 @@ export class AsAtom implements Atom {
 
   eval(context: TypedValue[]): TypedValue[] {
     return functions.ofType(this.left.eval(context), this.right);
+  }
+
+  toString(): string {
+    return `${this.left.toString()} as ${this.right.toString()}`;
   }
 }
 
@@ -115,6 +143,10 @@ export class ArithemticOperatorAtom implements Atom {
       return [toTypedValue(result)];
     }
   }
+
+  toString(): string {
+    return `${this.left.toString()} op ${this.right.toString()}`;
+  }
 }
 
 export class ConcatAtom implements Atom {
@@ -129,6 +161,10 @@ export class ConcatAtom implements Atom {
     }
     return result;
   }
+
+  toString(): string {
+    return `${this.left.toString()} concat ${this.right.toString()}`;
+  }
 }
 
 export class ContainsAtom implements Atom {
@@ -138,6 +174,10 @@ export class ContainsAtom implements Atom {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     return booleanToTypedValue(leftValue.some((e) => e.value === rightValue[0].value));
+  }
+
+  toString(): string {
+    return `${this.left.toString()} contains ${this.right.toString()}`;
   }
 }
 
@@ -149,12 +189,20 @@ export class InAtom implements Atom {
     const rightValue = this.right.eval(context);
     return booleanToTypedValue(rightValue.some((e) => e.value === leftValue[0].value));
   }
+
+  toString(): string {
+    return `${this.left.toString()} in ${this.right.toString()}`;
+  }
 }
 
 export class DotAtom implements Atom {
   constructor(public readonly left: Atom, public readonly right: Atom) {}
   eval(context: TypedValue[]): TypedValue[] {
     return this.right.eval(this.left.eval(context));
+  }
+
+  toString(): string {
+    return `${this.left.toString()}.${this.right.toString()}`;
   }
 }
 
@@ -164,6 +212,10 @@ export class UnionAtom implements Atom {
     const leftResult = this.left.eval(context);
     const rightResult = this.right.eval(context);
     return removeDuplicates([...leftResult, ...rightResult]);
+  }
+
+  toString(): string {
+    return `${this.left.toString()} union ${this.right.toString()}`;
   }
 }
 
@@ -175,6 +227,10 @@ export class EqualsAtom implements Atom {
     const rightValue = this.right.eval(context);
     return fhirPathArrayEquals(leftValue, rightValue);
   }
+
+  toString(): string {
+    return `${this.left.toString()} = ${this.right.toString()}`;
+  }
 }
 
 export class NotEqualsAtom implements Atom {
@@ -184,6 +240,10 @@ export class NotEqualsAtom implements Atom {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     return fhirPathNot(fhirPathArrayEquals(leftValue, rightValue));
+  }
+
+  toString(): string {
+    return `${this.left.toString()} != ${this.right.toString()}`;
   }
 }
 
@@ -195,6 +255,10 @@ export class EquivalentAtom implements Atom {
     const rightValue = this.right.eval(context);
     return fhirPathArrayEquivalent(leftValue, rightValue);
   }
+
+  toString(): string {
+    return `${this.left.toString()} ~ ${this.right.toString()}`;
+  }
 }
 
 export class NotEquivalentAtom implements Atom {
@@ -204,6 +268,10 @@ export class NotEquivalentAtom implements Atom {
     const leftValue = this.left.eval(context);
     const rightValue = this.right.eval(context);
     return fhirPathNot(fhirPathArrayEquivalent(leftValue, rightValue));
+  }
+
+  toString(): string {
+    return `${this.left.toString()} !~ ${this.right.toString()}`;
   }
 }
 
@@ -217,6 +285,10 @@ export class IsAtom implements Atom {
     }
     const typeName = (this.right as SymbolAtom).name;
     return booleanToTypedValue(fhirPathIs(leftValue[0], typeName));
+  }
+
+  toString(): string {
+    return `${this.left.toString()} is ${this.right.toString()}`;
   }
 }
 
@@ -240,6 +312,10 @@ export class AndAtom implements Atom {
     }
     return [];
   }
+
+  toString(): string {
+    return `${this.left.toString()} and ${this.right.toString()}`;
+  }
 }
 
 export class OrAtom implements Atom {
@@ -257,6 +333,10 @@ export class OrAtom implements Atom {
     }
 
     return [];
+  }
+
+  toString(): string {
+    return `${this.left.toString()} or ${this.right.toString()}`;
   }
 }
 
@@ -285,12 +365,24 @@ export class XorAtom implements Atom {
     }
     return [];
   }
+
+  toString(): string {
+    return `${this.left.toString()} xor ${this.right.toString()}`;
+  }
 }
 
 export class FunctionAtom implements Atom {
-  constructor(public readonly name: string, public readonly args: Atom[], public readonly impl: FhirPathFunction) {}
+  constructor(public readonly name: string, public readonly args: Atom[]) {}
   eval(context: TypedValue[]): TypedValue[] {
-    return this.impl(context, ...this.args);
+    const impl = functions[this.name];
+    if (!impl) {
+      throw new Error('Unrecognized function: ' + this.name);
+    }
+    return impl(context, ...this.args);
+  }
+
+  toString(): string {
+    return `${this.name}(${this.args.map((arg) => arg.toString()).join(', ')})`;
   }
 }
 
@@ -310,5 +402,9 @@ export class IndexerAtom implements Atom {
       return [];
     }
     return [leftResult[index]];
+  }
+
+  toString(): string {
+    return `${this.left.toString()}[${this.expr.toString()}]`;
   }
 }

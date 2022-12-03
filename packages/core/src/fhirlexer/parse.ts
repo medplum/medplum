@@ -3,6 +3,8 @@ import { Token } from './tokenize';
 
 export interface Atom {
   eval(context: TypedValue[]): TypedValue[];
+
+  toString(): string;
 }
 
 export interface PrefixParselet {
@@ -98,7 +100,7 @@ export class Parser {
 
     while (precedence > this.getPrecedence()) {
       const next = this.consume();
-      const infix = this.#infixParselets[next.id];
+      const infix = this.getInfixParselet(next) as InfixParselet;
       left = infix.parse(this, left, next);
     }
 
@@ -110,20 +112,32 @@ export class Parser {
     if (!nextToken) {
       return Infinity;
     }
-    const parser = this.#infixParselets[nextToken.id];
+    if (nextToken.id === '->') {
+      return 500;
+    }
+    if (nextToken.id === ';') {
+      return 1000;
+    }
+    const parser = this.getInfixParselet(nextToken);
     if (parser) {
       return parser.precedence;
     }
     return Infinity;
   }
 
-  consume(expected?: string): Token {
+  consume(expectedId?: string, expectedValue?: string): Token {
     if (!this.#tokens.length) {
       throw Error('Cant consume unknown more tokens.');
     }
-    if (expected && this.peek()?.id !== expected) {
+    if (expectedId && this.peek()?.id !== expectedId) {
       const actual = this.peek() as Token;
-      throw Error(`Expected ${expected} but got "${actual.value}" at line ${actual.line} column ${actual.column}.`);
+      throw Error(`Expected ${expectedId} but got "${actual.id}" at line ${actual.line} column ${actual.column}.`);
+    }
+    if (expectedValue && this.peek()?.value !== expectedValue) {
+      const actual = this.peek() as Token;
+      throw Error(
+        `Expected "${expectedValue}" but got "${actual.value}" at line ${actual.line} column ${actual.column}.`
+      );
     }
     return this.#tokens.shift() as Token;
   }
@@ -134,5 +148,9 @@ export class Parser {
 
   removeComments(): void {
     this.#tokens = this.#tokens.filter((t) => t.id !== 'Comment');
+  }
+
+  getInfixParselet(token: Token): InfixParselet | undefined {
+    return this.#infixParselets[token.id] || this.#infixParselets[token.value];
   }
 }
