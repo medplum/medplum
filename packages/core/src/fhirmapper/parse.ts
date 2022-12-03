@@ -1,53 +1,80 @@
+import {
+  StructureMap,
+  StructureMapGroup,
+  StructureMapGroupInput,
+  StructureMapGroupRule,
+  StructureMapGroupRuleSource,
+  StructureMapGroupRuleTarget,
+  StructureMapStructure,
+} from '@medplum/fhirtypes';
 import { Atom, Parser, PrefixParselet } from '../fhirlexer';
 import { initFhirPathParserBuilder } from '../fhirpath';
-import {
-  GroupAtom,
-  MapAtom,
-  ParameterAtom,
-  RuleAtom,
-  RuleDependentAtom,
-  RuleSourceAtom,
-  RuleTargetAtom,
-  UsesAtom,
-} from './atoms';
 import { tokenize } from './tokenize';
 
-class MapParser implements PrefixParselet {
-  parse(parser: Parser): MapAtom {
+export class StructureMapAtom implements Atom {
+  constructor(public readonly structureMap: StructureMap) {}
+
+  eval(): never {
+    throw new Error('Not implemented');
+  }
+}
+
+class StructureMapParser implements PrefixParselet {
+  parse(parser: Parser): StructureMapAtom {
     // 'map' url '=' identifier
     // map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
-    const url = parser.consume('String');
+    const url = parser.consume('String').value;
     parser.consume('=');
-    const identifier = parser.consume('Symbol');
-    return new MapAtom(url.value, identifier.value);
-  }
-}
+    const name = parser.consume('Symbol').value;
 
-class UsesParser implements PrefixParselet {
-  parse(parser: Parser): UsesAtom {
+    const result: StructureMap = {
+      resourceType: 'StructureMap',
+      url,
+      name,
+    };
+
+    while (parser.hasMore()) {
+      if (parser.peek()?.value === 'uses') {
+        if (!result.structure) {
+          result.structure = [];
+        }
+        result.structure.push(this.parseUses(parser));
+      } else if (parser.peek()?.value === 'group') {
+        if (!result.group) {
+          result.group = [];
+        }
+        result.group.push(this.parseGroup(parser));
+      }
+    }
+
+    return new StructureMapAtom(result);
+  }
+
+  parseUses(parser: Parser): StructureMapStructure {
     // 'uses' url structureAlias? 'as' modelMode
     // uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
-    const url = parser.consume('String');
+    parser.consume('uses');
+    const url = parser.consume('String').value;
     parser.consume('as');
-    const modelMode = parser.consume();
-    return new UsesAtom(url.value, modelMode.value);
+    const mode = parser.consume().value as 'source' | 'queried' | 'target' | 'produced';
+    return { url, mode };
   }
-}
 
-class GroupParser implements PrefixParselet {
-  parse(parser: Parser): GroupAtom {
+  parseGroup(parser: Parser): StructureMapGroup {
     // 'group' identifier parameters extends? typeMode? rules
     // group tutorial(source src : TLeft, target tgt : TRight) {
-    const identifier = parser.consume('Symbol');
-    const parameters = this.parseParameters(parser);
+    parser.consume('group');
+    const name = parser.consume('Symbol').value;
+    const input = this.parseParameters(parser);
     // TODO: extends
     // TODO: typeMode
-    const rules = this.parseRules(parser);
-    return new GroupAtom(identifier.value, parameters, rules);
+    const typeMode = 'none';
+    const rule = this.parseRules(parser);
+    return { name, input, typeMode, rule };
   }
 
-  parseParameters(parser: Parser): ParameterAtom[] {
-    const parameters: ParameterAtom[] = [];
+  parseParameters(parser: Parser): StructureMapGroupInput[] {
+    const parameters: StructureMapGroupInput[] = [];
     parser.consume('(');
     while (parser.hasMore() && parser.peek()?.value !== ')') {
       parameters.push((this as any).parseParameter(parser));
@@ -59,18 +86,18 @@ class GroupParser implements PrefixParselet {
     return parameters;
   }
 
-  parseParameter(parser: Parser): ParameterAtom {
+  parseParameter(parser: Parser): StructureMapGroupInput {
     // inputMode identifier type?
     // ':' identifier
     // source src : TLeft
-    const inputMode = parser.consume();
-    const identifier = parser.consume('Symbol');
+    const mode = parser.consume().value as 'source' | 'target';
+    const name = parser.consume('Symbol').value;
     parser.consume(':');
-    const type = parser.consume('Symbol');
-    return new ParameterAtom(inputMode.value, identifier.value, type.value);
+    const type = parser.consume('Symbol').value;
+    return { mode, name, type };
   }
 
-  parseRules(parser: Parser): RuleAtom[] {
+  parseRules(parser: Parser): StructureMapGroupRule[] {
     const rules = [];
     parser.consume('{');
     while (parser.hasMore() && parser.peek()?.value !== '}') {
@@ -80,31 +107,31 @@ class GroupParser implements PrefixParselet {
     return rules;
   }
 
-  parseRule(parser: Parser): RuleAtom {
-    const sources = this.parseRuleSources(parser);
+  parseRule(parser: Parser): StructureMapGroupRule {
+    const result: StructureMapGroupRule = {
+      source: this.parseRuleSources(parser),
+    };
 
-    let targets = undefined;
     if (parser.peek()?.value === '->') {
       parser.consume('->');
-      targets = this.parseRuleTargets(parser);
+      result.target = this.parseRuleTargets(parser);
     }
 
-    let dependent = undefined;
     if (parser.peek()?.value === 'then') {
       parser.consume('then');
-      dependent = parser.consumeAndParse();
+      // dependent = parser.consumeAndParse();
+      parser.consumeAndParse();
     }
 
-    let name = undefined;
     if (parser.peek()?.id === 'String') {
-      name = parser.consume();
+      result.name = parser.consume().value;
     }
 
     parser.consume(';');
-    return new RuleAtom(sources, targets, dependent as RuleDependentAtom | undefined, name?.value);
+    return result;
   }
 
-  parseRuleSources(parser: Parser): RuleSourceAtom[] {
+  parseRuleSources(parser: Parser): StructureMapGroupRuleSource[] {
     const sources = [this.parseRuleSource(parser)];
     while (parser.hasMore() && parser.peek()?.value === ',') {
       parser.consume(',');
@@ -113,22 +140,28 @@ class GroupParser implements PrefixParselet {
     return sources;
   }
 
-  parseRuleSource(parser: Parser): RuleSourceAtom {
-    const context = this.parseRuleContext(parser);
+  parseRuleSource(parser: Parser): StructureMapGroupRuleSource {
+    const result: StructureMapGroupRuleSource = {};
 
-    let sourceType = undefined;
+    const context = this.parseRuleContext(parser);
+    if (context.includes('.')) {
+      const parts = context.split('.');
+      result.context = parts[0];
+      result.element = parts[1];
+    } else {
+      result.context = context;
+    }
+
     if (parser.hasMore() && parser.peek()?.value === ':') {
       parser.consume(':');
-      sourceType = parser.consume();
+      result.type = parser.consume().value;
     }
 
-    let sourceDefault = undefined;
     if (parser.hasMore() && parser.peek()?.value === 'default') {
       parser.consume('default');
-      sourceDefault = parser.consumeAndParse();
+      parser.consumeAndParse();
     }
 
-    let sourceListMode = undefined;
     if (
       parser.peek()?.value === 'first' ||
       parser.peek()?.value === 'not_first' ||
@@ -136,28 +169,18 @@ class GroupParser implements PrefixParselet {
       parser.peek()?.value === 'not_last' ||
       parser.peek()?.value === 'only_one'
     ) {
-      sourceListMode = parser.consume();
+      result.listMode = parser.consume().value as 'first' | 'not_first' | 'last' | 'not_last' | 'only_one';
     }
 
-    let alias = undefined;
     if (parser.peek()?.value === 'as') {
       parser.consume('as');
-      alias = parser.consume();
+      result.variable = parser.consume().value;
     }
 
-    return new RuleSourceAtom(
-      context,
-      sourceType?.value,
-      sourceDefault,
-      sourceListMode?.value,
-      alias?.value,
-      undefined,
-      undefined,
-      undefined
-    );
+    return result;
   }
 
-  parseRuleTargets(parser: Parser): RuleTargetAtom[] {
+  parseRuleTargets(parser: Parser): StructureMapGroupRuleTarget[] {
     const targets = [this.parseRuleTarget(parser)];
     while (parser.hasMore() && parser.peek()?.value === ',') {
       parser.consume(',');
@@ -166,32 +189,44 @@ class GroupParser implements PrefixParselet {
     return targets;
   }
 
-  parseRuleTarget(parser: Parser): RuleTargetAtom {
-    const context = this.parseRuleContext(parser);
+  parseRuleTarget(parser: Parser): StructureMapGroupRuleTarget {
+    const result: StructureMapGroupRuleTarget = {};
 
-    let transform = undefined;
+    const context = this.parseRuleContext(parser);
+    if (context.includes('.')) {
+      const parts = context.split('.');
+      result.contextType = 'variable';
+      result.context = parts[0];
+      result.element = parts[1];
+    } else {
+      result.context = context;
+    }
+
     if (parser.peek()?.value === '=') {
       parser.consume('=');
-      transform = this.parseTransform(parser);
+      result.transform = 'copy';
+      result.parameter = [
+        {
+          valueId: parser.consume().value,
+        },
+      ];
     }
 
-    let alias = undefined;
     if (parser.peek()?.value === 'as') {
       parser.consume('as');
-      alias = parser.consume();
+      result.variable = parser.consume().value;
     }
 
-    let targetListMode = undefined;
     if (
       parser.peek()?.value === 'first' ||
       parser.peek()?.value === 'share' ||
       parser.peek()?.value === 'last' ||
       parser.peek()?.value === 'collate'
     ) {
-      targetListMode = parser.consume();
+      result.listMode = [parser.consume().value as 'first' | 'share' | 'last' | 'collate'];
     }
 
-    return new RuleTargetAtom(context, transform, alias?.value, targetListMode?.value);
+    return result;
   }
 
   parseRuleContext(parser: Parser): string {
@@ -202,28 +237,19 @@ class GroupParser implements PrefixParselet {
     }
     return identifier;
   }
-
-  parseTransform(parser: Parser): Atom {
-    return parser.consumeAndParse();
-  }
 }
 
-const fhirPathParserBuilder = initFhirPathParserBuilder()
-  .registerPrefix('map', new MapParser())
-  .registerPrefix('uses', new UsesParser())
-  .registerPrefix('group', new GroupParser());
+const fhirPathParserBuilder = initFhirPathParserBuilder().registerPrefix('map', new StructureMapParser());
 
 /**
  * Parses a FHIR Mapping Language document into an AST.
  * @param input The FHIR Mapping Language document to parse.
  * @returns The AST representing the document.
  */
-export function parseMappingLanguage(input: string): Atom[] {
+export function parseMappingLanguage(input: string): StructureMap {
   const parser = fhirPathParserBuilder.construct(tokenize(input));
   parser.removeComments();
-  const atoms = [];
-  while (parser.hasMore()) {
-    atoms.push(parser.consumeAndParse());
-  }
-  return atoms;
+
+  const atom = parser.consumeAndParse() as StructureMapAtom;
+  return atom.structureMap;
 }
