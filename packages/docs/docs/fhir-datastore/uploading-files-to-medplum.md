@@ -1,7 +1,7 @@
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Uploading Files to Medplum
+# Upload Files to Medplum
 
 ## Upload via URL
 

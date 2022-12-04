@@ -1,26 +1,26 @@
-# Blueprints
+# Solutions
 
 Medplum supports a wide array of use cases. Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly. Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
 
 ## Patient Portal
 
-A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/blueprints/patient-portal)
+A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/solutions/patient-portal)
 
 ## Custom EHR
 
-Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/blueprints/custom-ehr)
+Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/solutions/custom-ehr)
 
 ## Provider Portal and FHIR API
 
-Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/blueprints/provider-portal)
+Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/solutions/provider-portal)
 
 ## Life Sciences
 
-Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/blueprints/life-sciences)
+Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/solutions/life-sciences)
 
 ## LIS/LIMS and Lab Network
 
-Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/blueprints/lab)
+Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/solutions/lab)
 
 ## Interoperability Service
 
@@ -28,7 +28,7 @@ Highly customizable internal service that supports integrations that are common 
 
 :::caution Note
 
-The blueprints below are under construction. Check back frequently for updates.
+The solutions below are under construction. Check back frequently for updates.
 
 :::
 

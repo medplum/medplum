@@ -12,7 +12,7 @@ Diagnostic data is critical to patient care, but due to the human elements like 
 - **Power a patient portal:** used to give patients access to their records, or let them schedule appointments or phlebotomist visits
 - **Power a provider portal:** used to give referring physicians access, both for results review and to place orders.
 
-Recommended reading to enable these use cases is [custom EHR](../blueprints/custom-ehr), [provider portal and API](../blueprints/provider-portal) and [integrations](../products/integration).
+Recommended reading to enable these use cases is [custom EHR](../solutions/custom-ehr), [provider portal and API](../solutions/provider-portal) and [integrations](../products/integration).
 
 ## Features
 

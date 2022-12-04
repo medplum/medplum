@@ -94,8 +94,8 @@ const config = {
             position: 'left',
           },
           {
-            to: '/blueprints',
-            label: 'Blueprints',
+            to: '/solutions',
+            label: 'Solutions',
             position: 'left',
           },
           {
