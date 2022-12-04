@@ -6,12 +6,7 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
-  // await client.query(`ALTER TABLE "ValueSetElement" ADD COLUMN "projectId" UUID`);
-  // await client.query('CREATE INDEX ON "ValueSetElement" ("projectId")');
-
   await client.query(`ALTER TABLE "ValueSetElement" ADD COLUMN "resourceId" UUID`);
   await client.query(`ALTER TABLE "ValueSetElement" ADD COLUMN "index" INTEGER`);
-  // await client.query('CREATE INDEX ON "ValueSetElement" ("projectId")');
-  // "index" INTEGER NOT NULL,
   await client.query('CREATE INDEX ON "ValueSetElement" ("resourceId")');
 }
