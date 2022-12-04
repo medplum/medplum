@@ -61,8 +61,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const client = getClient();
   const query = new SelectQuery('ValueSetElement')
+    .raw('DISTINCT "code"')
     .column('system')
-    .column('code')
     .column('display')
     .where('system', Operator.IN, systems)
     .where('display', Operator.LIKE, '%' + filter + '%')
