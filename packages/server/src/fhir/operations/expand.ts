@@ -1,9 +1,10 @@
-import { badRequest } from '@medplum/core';
+import { badRequest, Operator as SearchOperator } from '@medplum/core';
 import { ValueSet } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
+import { systemRepo } from '../repo';
 import { Operator, SelectQuery } from '../sql';
 
 // Implements FHIR "Value Set Expansion"
@@ -24,9 +25,26 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     sendOutcome(res, badRequest('Missing url'));
     return;
   }
+
   const pipeIndex = url.indexOf('|');
   if (pipeIndex >= 0) {
     url = url.substring(0, pipeIndex);
+  }
+
+  // First, get the ValueSet resource
+  const rootValueSet = await getValueSetByUrl(url);
+  if (!rootValueSet) {
+    sendOutcome(res, badRequest('ValueSet not found'));
+    return;
+  }
+
+  // Build a collection of all systems to include
+  const systems = new Set<string>();
+  const codes = new Set<string>();
+  buildValueSetSystems(rootValueSet, systems, codes);
+  if (systems.size === 0) {
+    sendOutcome(res, badRequest('No systems found'));
+    return;
   }
 
   const filter = req.query.filter || '';
@@ -42,23 +60,26 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const client = getClient();
-  const elements = await new SelectQuery('ValueSetElement')
+  const query = new SelectQuery('ValueSetElement')
     .column('system')
     .column('code')
     .column('display')
-    .where('valueSet', Operator.EQUALS, url)
+    .where('system', Operator.IN, systems)
     .where('display', Operator.LIKE, '%' + filter + '%')
     .orderBy('display')
     .offset(offset)
-    .limit(count)
-    .execute(client)
-    .then((result) =>
-      result.map((row) => ({
-        system: row.system,
-        code: row.code,
-        display: row.display,
-      }))
-    );
+    .limit(count);
+
+  if (codes.size > 0) {
+    query.where('code', Operator.IN, codes);
+  }
+
+  const rows = await query.execute(client);
+  const elements = rows.map((row) => ({
+    system: row.system,
+    code: row.code,
+    display: row.display,
+  }));
 
   return res.status(200).json({
     resourceType: 'ValueSet',
@@ -69,3 +90,29 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     },
   } as ValueSet);
 });
+
+async function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
+  const result = await systemRepo.search({
+    resourceType: 'ValueSet',
+    count: 1,
+    filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],
+  });
+  return result?.entry?.[0]?.resource as ValueSet | undefined;
+}
+
+function buildValueSetSystems(valueSet: ValueSet, systems: Set<string>, codes: Set<string>): void {
+  if (valueSet.compose?.include) {
+    for (const include of valueSet.compose.include) {
+      if (include.system) {
+        systems.add(include.system);
+      }
+      if (include.concept) {
+        for (const concept of include.concept) {
+          if (concept.code) {
+            codes.add(concept.code);
+          }
+        }
+      }
+    }
+  }
+}

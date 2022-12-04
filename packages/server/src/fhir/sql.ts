@@ -17,6 +17,7 @@ export enum Operator {
   LESS_THAN_OR_EQUALS = '<=',
   GREATER_THAN = '>',
   GREATER_THAN_OR_EQUALS = '>=',
+  IN = ' IN ',
   ARRAY_CONTAINS = 'ARRAY_CONTAINS',
 }
 
@@ -63,20 +64,7 @@ export class Condition implements Expression {
     sql.append(' IS NOT NULL AND ');
     sql.appendColumn(this.column);
     sql.append('&&ARRAY[');
-
-    if (Array.isArray(this.parameter)) {
-      let first = true;
-      for (const value of this.parameter) {
-        if (!first) {
-          sql.append(',');
-        }
-        sql.param(value);
-        first = false;
-      }
-    } else {
-      sql.param(this.parameter);
-    }
-
+    this.appendParameters(sql, false);
     sql.append(']');
     if (this.parameterType) {
       sql.append('::' + this.parameterType);
@@ -100,6 +88,27 @@ export class Condition implements Expression {
     } else {
       sql.appendColumn(this.column);
       sql.append(this.operator);
+      this.appendParameters(sql, true);
+    }
+  }
+
+  private appendParameters(sql: SqlBuilder, addParens: boolean): void {
+    if (Array.isArray(this.parameter) || this.parameter instanceof Set) {
+      if (addParens) {
+        sql.append('(');
+      }
+      let first = true;
+      for (const value of this.parameter) {
+        if (!first) {
+          sql.append(',');
+        }
+        sql.param(value);
+        first = false;
+      }
+      if (addParens) {
+        sql.append(')');
+      }
+    } else {
       sql.param(this.parameter);
     }
   }
@@ -452,7 +461,7 @@ export class InsertQuery extends BaseQuery {
 }
 
 export class DeleteQuery extends BaseQuery {
-  async execute(conn: Pool): Promise<any> {
+  async execute(conn: Pool | PoolClient): Promise<any> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);

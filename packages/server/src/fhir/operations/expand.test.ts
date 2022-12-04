@@ -29,29 +29,39 @@ describe('Expand', () => {
 
   test('No filter', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/observation-codes')}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains.length).toBe(4);
+    expect(res.body.expansion.contains.length).toBe(10);
+    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
   });
 
   test('Success', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=left`)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=left`
+      )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.expansion.contains.length).toBe(2);
+    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
   });
 
   test('Success with count and offset', async () => {
     const res = await request(app)
       .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('https://snomed.info/sct')}&filter=left&offset=1&count=1`
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=left&offset=1&count=1`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body.expansion.offset).toBe(1);
     expect(res.body.expansion.contains.length).toBe(1);
+    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
   });
 
   test('Resource types', async () => {
