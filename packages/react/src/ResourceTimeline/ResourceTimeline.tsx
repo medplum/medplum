@@ -1,4 +1,4 @@
-import { ActionIcon, Center, createStyles, Group, Loader, Menu, Paper, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Center, createStyles, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, ProfileResource } from '@medplum/core';
 import {
@@ -30,6 +30,7 @@ import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
@@ -237,7 +238,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   return (
     <Timeline>
       {props.createCommunication && (
-        <Paper m="lg" p="sm" shadow="xs" radius="sm" withBorder>
+        <Panel>
           <Form
             testid="timeline-form"
             onSubmit={(formData: Record<string, string>) => {
@@ -274,7 +275,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               </AttachmentButton>
             </Group>
           </Form>
-        </Paper>
+        </Panel>
       )}
       {items.map((item) => {
         if (item.resourceType === resource.resourceType && item.id === resource.id) {

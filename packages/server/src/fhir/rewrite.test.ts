@@ -1,4 +1,5 @@
-import { Binary, Practitioner } from '@medplum/fhirtypes';
+import { deepClone } from '@medplum/core';
+import { Binary, Bundle, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
@@ -169,5 +170,66 @@ describe('URL rewrite', () => {
 
     const url = new URL(result.photo?.[0]?.url as string);
     expect(url.searchParams.has('Expires')).toBe(true);
+  });
+
+  test('FHIR URL to reference', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.baseUrl}fhir/R4/Binary/${binary.id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+  });
+
+  test('Storage URL to reference', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.storageBaseUrl}${binary.id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+  });
+
+  test('Consistent results', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${binary.id}`,
+        },
+      ],
+    };
+
+    const bundle: Bundle = deepClone({
+      resourceType: 'Bundle',
+      entry: [{ resource: practitioner }, { resource: practitioner }],
+    });
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, bundle);
+    const url1 = (result.entry?.[0]?.resource as Practitioner).photo?.[0]?.url;
+    const url2 = (result.entry?.[1]?.resource as Practitioner).photo?.[0]?.url;
+    expect(url1).toBeDefined();
+    expect(url1).toBe(url2);
   });
 });

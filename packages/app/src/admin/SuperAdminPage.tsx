@@ -1,4 +1,4 @@
-import { Button, TextInput, Title } from '@mantine/core';
+import { Button, Divider, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, Form, FormSection, useMedplum } from '@medplum/react';
@@ -36,11 +36,18 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
+  function forceSetPassword(formData: Record<string, string>): void {
+    medplum
+      .post('admin/super/setpassword', formData)
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }
+
   return (
     <Document width={600}>
-      <Title>Super Admin</Title>
-      <hr />
-      <h2>Structure Definitions</h2>
+      <Title order={1}>Super Admin</Title>
+      <Divider my="lg" />
+      <Title order={2}>Structure Definitions</Title>
       <p>
         StructureDefinition resources contain the metadata about resource types. They are provided with the FHIR
         specification. Medplum also includes some custom StructureDefinition resources for internal data types. Press
@@ -49,8 +56,8 @@ export function SuperAdminPage(): JSX.Element {
       <Form>
         <Button onClick={rebuildStructureDefinitions}>Rebuild StructureDefinitions</Button>
       </Form>
-      <hr />
-      <h2>Search Parameters</h2>
+      <Divider my="lg" />
+      <Title order={2}>Search Parameters</Title>
       <p>
         SearchParameter resources contain the metadata about filters and sorting. They are provided with the FHIR
         specification. Medplum also includes some custom SearchParameter resources for internal data types. Press this
@@ -59,8 +66,8 @@ export function SuperAdminPage(): JSX.Element {
       <Form>
         <Button onClick={rebuildSearchParameters}>Rebuild SearchParameters</Button>
       </Form>
-      <hr />
-      <h2>Value Sets</h2>
+      <Divider my="lg" />
+      <Title order={2}>Value Sets</Title>
       <p>
         ValueSet resources enum values for a wide variety of use cases. Press this button to update the database
         ValueSets from the FHIR specification.
@@ -68,22 +75,38 @@ export function SuperAdminPage(): JSX.Element {
       <Form>
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
       </Form>
-      <hr />
-      <h2>Reindex Resources</h2>
+      <Divider my="lg" />
+      <Title order={2}>Reindex Resources</Title>
       <p>
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
         properly.
       </p>
       <Form>
-        <FormSection title="Resource Type">
-          <TextInput
-            name="resourceType"
-            placeholder="Resource Type"
-            defaultValue={resourceType}
-            onChange={(e) => setResourceType(e.currentTarget.value)}
-          />
-        </FormSection>
-        <Button onClick={reindexResourceType}>Reindex</Button>
+        <Stack>
+          <FormSection title="Resource Type">
+            <TextInput
+              name="resourceType"
+              placeholder="Resource Type"
+              defaultValue={resourceType}
+              onChange={(e) => setResourceType(e.currentTarget.value)}
+            />
+          </FormSection>
+          <Button onClick={reindexResourceType}>Reindex</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Force Set Password</Title>
+      <p>
+        Note that this applies to all projects for the user. Therefore, this should only be used in extreme
+        circumstances. Always prefer to use the "Forgot Password" flow first.
+      </p>
+      <Form onSubmit={forceSetPassword}>
+        <Stack>
+          <TextInput name="email" label="Email" required />
+          <PasswordInput name="password" label="Password" required />
+          <TextInput name="projectId" label="Project ID" />
+          <Button type="submit">Force Set Password</Button>
+        </Stack>
       </Form>
     </Document>
   );

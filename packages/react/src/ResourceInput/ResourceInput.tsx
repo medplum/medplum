@@ -21,6 +21,7 @@ const SEARCH_CODES: Record<string, string> = {
   Observation: 'code',
   RequestGroup: '_id',
   ActivityDefinition: 'name',
+  User: 'email',
 };
 
 export interface ResourceInputProps<T extends Resource = Resource> {

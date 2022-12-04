@@ -43,6 +43,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
+import { PoolClient } from 'pg';
 import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
@@ -461,10 +462,24 @@ export class Repository {
       throw forbidden;
     }
 
+    // Note: We don't try/catch this because if connecting throws an exception.
+    // We don't need to dispose of the client (it will be undefined).
+    // https://node-postgres.com/features/transactions
+    const client = await getClient().connect();
+    try {
+      await client.query('BEGIN');
+      await this.#writeResource(client, result);
+      await this.#writeResourceVersion(client, result);
+      await this.#writeLookupTables(client, result);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
     await setCacheEntry(result);
-    await this.#writeResource(result);
-    await this.#writeResourceVersion(result);
-    await this.#writeLookupTables(result);
     await addBackgroundJobs(result);
     this.#removeHiddenFields(result);
     return result;
@@ -584,8 +599,23 @@ export class Repository {
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
     (resource.meta as Meta).compartment = this.#getCompartments(resource);
-    await this.#writeResource(resource as T);
-    await this.#writeLookupTables(resource as T);
+
+    // Note: We don't try/catch this because if connecting throws an exception.
+    // We don't need to dispose of the client (it will be undefined).
+    // https://node-postgres.com/features/transactions
+    const client = await getClient().connect();
+    try {
+      await client.query('BEGIN');
+      await this.#writeResource(client, resource as T);
+      await this.#writeLookupTables(client, resource as T);
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
     return resource as T;
   }
 
@@ -1117,10 +1147,10 @@ export class Repository {
    * Writes the resource to the resource table.
    * This builds all search parameter columns.
    * This does *not* write the version to the history table.
+   * @param client The database client inside the transaction.
    * @param resource The resource.
    */
-  async #writeResource(resource: Resource): Promise<void> {
-    const client = getClient();
+  async #writeResource(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const compartments = meta.compartment?.map((ref) => resolveId(ref));
@@ -1146,10 +1176,10 @@ export class Repository {
 
   /**
    * Writes a version of the resource to the resource history table.
+   * @param client The database client inside the transaction.
    * @param resource The resource.
    */
-  async #writeResourceVersion(resource: Resource): Promise<void> {
-    const client = getClient();
+  async #writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const content = stringify(resource);
@@ -1393,9 +1423,14 @@ export class Repository {
     return undefined;
   }
 
-  async #writeLookupTables(resource: Resource): Promise<void> {
+  /**
+   *
+   * @param client The database client inside the transaction.
+   * @param resource
+   */
+  async #writeLookupTables(client: PoolClient, resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.indexResource(resource);
+      await lookupTable.indexResource(client, resource);
     }
   }
 

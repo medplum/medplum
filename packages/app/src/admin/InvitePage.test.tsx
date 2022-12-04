@@ -58,13 +58,13 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name'), {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByLabelText('Last Name'), {
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByLabelText('Email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
     });
@@ -74,6 +74,7 @@ describe('InvitePage', () => {
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Email sent')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
@@ -83,13 +84,13 @@ describe('InvitePage', () => {
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('First Name'), {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByLabelText('Last Name'), {
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByLabelText('Email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
     });
@@ -133,13 +134,13 @@ describe('InvitePage', () => {
       fireEvent.change(screen.getByLabelText('Role'), {
         target: { value: 'Patient' },
       });
-      fireEvent.change(screen.getByLabelText('First Name'), {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
         target: { value: 'Peggy' },
       });
-      fireEvent.change(screen.getByLabelText('Last Name'), {
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
         target: { value: 'Patient' },
       });
-      fireEvent.change(screen.getByLabelText('Email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'peggypatient@example.com' },
       });
     });
@@ -149,5 +150,35 @@ describe('InvitePage', () => {
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Do not send email', async () => {
+    await setup('/admin/invite');
+    await waitFor(() => screen.getByText('Invite'));
+
+    expect(screen.getByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'George' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Washington' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'george@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Send email'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.queryByText('Email sent')).not.toBeInTheDocument();
   });
 });

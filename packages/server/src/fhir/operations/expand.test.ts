@@ -55,9 +55,9 @@ describe('Expand', () => {
   });
 
   test('Resource types', async () => {
-    const system = 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1';
+    const valueSet = 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1';
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(system)}&filter=Patient`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet)}&filter=Patient`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -67,7 +67,7 @@ describe('Expand', () => {
         offset: 0,
         contains: [
           {
-            system: 'http://hl7.org/fhir/ValueSet/resource-types',
+            system: 'http://hl7.org/fhir/resource-types',
             code: 'Patient',
             display: 'Patient',
           },
@@ -77,9 +77,9 @@ describe('Expand', () => {
   });
 
   test('No duplicates', async () => {
-    const system = 'http://hl7.org/fhir/ValueSet/subscription-status|4.0.1';
+    const valueSet = 'http://hl7.org/fhir/ValueSet/subscription-status|4.0.1';
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(system)}&filter=active`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet)}&filter=active`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -89,7 +89,7 @@ describe('Expand', () => {
         offset: 0,
         contains: [
           {
-            system: 'http://hl7.org/fhir/ValueSet/subscription-status',
+            system: 'http://hl7.org/fhir/subscription-status',
             code: 'active',
             display: 'Active',
           },
@@ -97,5 +97,28 @@ describe('Expand', () => {
       },
     });
     expect(res.body.expansion.contains.length).toBe(1);
+  });
+
+  test('External system', async () => {
+    const valueSet = 'http://hl7.org/fhir/ValueSet/servicerequest-category';
+    const filter = 'imaging';
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet)}&filter=${encodeURIComponent(filter)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      resourceType: 'ValueSet',
+      url: 'http://hl7.org/fhir/ValueSet/servicerequest-category',
+      expansion: {
+        offset: 0,
+        contains: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '363679005',
+            display: 'Imaging',
+          },
+        ],
+      },
+    });
   });
 });

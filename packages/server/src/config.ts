@@ -28,7 +28,7 @@ export interface MedplumServerConfig {
   recaptchaSecretKey?: string;
   adminClientId?: string;
   maxJsonSize: string;
-  corsMode: string;
+  allowedOrigins?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
 }

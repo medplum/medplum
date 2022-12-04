@@ -1,5 +1,6 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { PoolClient } from 'pg';
 import { getClient } from '../../database';
 import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
 
@@ -27,16 +28,16 @@ export abstract class LookupTable<T> {
   /**
    * Determines if the search parameter is indexed by this index table.
    * @param searchParam The search parameter.
-   * @param resourceType The resource type.
    * @returns True if the search parameter is indexed.
    */
   abstract isIndexed(searchParam: SearchParameter): boolean;
 
   /**
    * Indexes the resource in the lookup table.
+   * @param client The database client.
    * @param resource The resource to index.
    */
-  abstract indexResource(resource: Resource): Promise<void>;
+  abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
 
   /**
    * Adds "where" conditions to the select query builder.
@@ -103,14 +104,14 @@ export abstract class LookupTable<T> {
 
   /**
    * Inserts values into the lookup table for a resource.
+   * @param client The database client.
    * @param values The values to insert.
    */
-  async insertValuesForResource(values: Record<string, any>[]): Promise<void> {
+  async insertValuesForResource(client: PoolClient, values: Record<string, any>[]): Promise<void> {
     if (values.length === 0) {
       return;
     }
     const tableName = this.getTableName();
-    const client = getClient();
     await new InsertQuery(tableName, values).execute(client);
   }
 

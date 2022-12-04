@@ -1,6 +1,7 @@
 import { formatAddress, stringify } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -75,10 +76,11 @@ export class AddressTable extends LookupTable<Address> {
   /**
    * Indexes a resource Address values.
    * Attempts to reuse existing Addresses if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     const addresses = this.#getIncomingAddresses(resource);
     if (!addresses || !Array.isArray(addresses)) {
       return;
@@ -110,7 +112,7 @@ export class AddressTable extends LookupTable<Address> {
         });
       }
 
-      await this.insertValuesForResource(values);
+      await this.insertValuesForResource(client, values);
     }
   }
 

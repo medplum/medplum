@@ -18,6 +18,14 @@ const useStyles = createStyles(() => {
       'input:focus': {
         width: 400,
       },
+      '@media (max-width: 800px)': {
+        input: {
+          width: 150,
+        },
+        'input:focus': {
+          width: 150,
+        },
+      },
     },
   };
 });
