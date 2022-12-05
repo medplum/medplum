@@ -1,9 +1,11 @@
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
+import { systemRepo } from '../repo';
 
 const app = express();
 let accessToken: string;
@@ -25,6 +27,28 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Missing url');
+  });
+
+  test('ValueSet not found', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://example.com/ValueSet/123')}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('ValueSet not found');
+  });
+
+  test('No systems', async () => {
+    const url = 'https://example.com/ValueSet/' + randomUUID();
+    await systemRepo.createResource({
+      resourceType: 'ValueSet',
+      status: 'active',
+      url,
+    });
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('No systems found');
   });
 
   test('No filter', async () => {

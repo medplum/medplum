@@ -1,5 +1,5 @@
 import { badRequest, Operator as SearchOperator } from '@medplum/core';
-import { ValueSet } from '@medplum/fhirtypes';
+import { ValueSet, ValueSetComposeInclude } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getClient } from '../../database';
@@ -21,7 +21,7 @@ import { Operator, SelectQuery } from '../sql';
 
 export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   let url = req.query.url as string | undefined;
-  if (!url) {
+  if (typeof url !== 'string') {
     sendOutcome(res, badRequest('Missing url'));
     return;
   }
@@ -92,26 +92,30 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 });
 
 async function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
-  const result = await systemRepo.search({
+  const result = await systemRepo.search<ValueSet>({
     resourceType: 'ValueSet',
     count: 1,
     filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],
   });
-  return result?.entry?.[0]?.resource as ValueSet | undefined;
+  return result?.entry?.[0]?.resource;
 }
 
 function buildValueSetSystems(valueSet: ValueSet, systems: Set<string>, codes: Set<string>): void {
   if (valueSet.compose?.include) {
     for (const include of valueSet.compose.include) {
-      if (include.system) {
-        systems.add(include.system);
-      }
-      if (include.concept) {
-        for (const concept of include.concept) {
-          if (concept.code) {
-            codes.add(concept.code);
-          }
-        }
+      processInclude(include, systems, codes);
+    }
+  }
+}
+
+function processInclude(include: ValueSetComposeInclude, systems: Set<string>, codes: Set<string>): void {
+  if (include.system) {
+    systems.add(include.system);
+  }
+  if (include.concept) {
+    for (const concept of include.concept) {
+      if (concept.code) {
+        codes.add(concept.code);
       }
     }
   }
