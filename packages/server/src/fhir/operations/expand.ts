@@ -10,9 +10,6 @@ import { Operator, SelectQuery } from '../sql';
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
 
-// Follows IHTSDO Snowstorm reference implementation
-// https://github.com/IHTSDO/snowstorm/blob/master/docs/fhir-resources/valueset-expansion.md
-
 // Currently only supports a limited subset
 // 1) The "url" parameter to identify the value set
 // 2) The "filter" parameter for text search
@@ -32,8 +29,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // First, get the ValueSet resource
-  const rootValueSet = await getValueSetByUrl(url);
-  if (!rootValueSet) {
+  const valueSet = await getValueSetByUrl(url);
+  if (!valueSet) {
     sendOutcome(res, badRequest('ValueSet not found'));
     return;
   }
@@ -41,7 +38,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   // Build a collection of all systems to include
   const systems = new Set<string>();
   const codes = new Set<string>();
-  buildValueSetSystems(rootValueSet, systems, codes);
+  buildValueSetSystems(valueSet, systems, codes);
   if (systems.size === 0) {
     sendOutcome(res, badRequest('No systems found'));
     return;
