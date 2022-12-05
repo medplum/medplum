@@ -8,9 +8,9 @@ Communications in FHIR supports many common scenarios and can be used in concert
 
 There are three top level considerations when designing communications:
 
-- Who (groups or individuals) should be the sender and recipient? (Identities)
-- Why was this communication initiated? (References)
-- What status is this communication in? (Status/workflow)
+1. Who (groups or individuals) should be the sender and recipient? (Identities)
+2. Why was this communication initiated? (References)
+3. What status is this communication in? (Status/workflow)
 
 ## Who should receive communications
 

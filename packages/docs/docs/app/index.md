@@ -6,7 +6,7 @@ sidebar_position: 1
 
 The Medplum App is the user-facing web application available at <https://app.medplum.com/>. The app is a quick way to administer projects, manage users, and inspect resources.
 
-The Medplum app also is a way to configure or view resources required for application development like credentials, automations and more.
+You can use the Medplum app to configure or view resources required for application development like credentials, automations and more.
 
 ## Getting Started
 
