@@ -27,7 +27,7 @@ When enabling scheduling by patients or referring physicians, it's critical that
 - **Scheduling for a specific doctor or practitioner**: schedule search can ensure that a patient only meets with their practitioner or [CareTeam](https://app.medplum.com/CareTeam). (See `Schedule.actor` in documentation.)
 - Requiring a form, payment active insurance to be filled out before scheduling an appointment can be accomplished by showing users schedules or allowing them to book slots only when data is complete and verified.
 - Best Practices for billing include tagging schedules and appointments with the appropriate [service type](https://x12.org/codes/service-type-codes)
-- **Reminders and communications** regarding scheduling can be implemented using [bots](/docs/tutorials/bots), and SMS reminders, emails, and calendar appointments are common.
+- **Reminders and communications** regarding scheduling can be implemented using [bots](/docs/bots), and SMS reminders, emails, and calendar appointments are common.
 - Video conferencing for virtual care is common and providers use the a one "meeting room with waiting area" per schedule model to provide a streamlined experience for providers, for example one [Zoom Meeting Room](https://support.zoom.us/hc/en-us/articles/204772869-Zoom-Rooms-User-Guide) per [schedule](https://app.medplum.com/Schedule).
 
 ## FHIR Resources

@@ -1,6 +1,7 @@
 ---
 title: MedicinalProductInteraction
 sidebar_position: 85
+tags: [medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/medicinalproductinteraction.json';
@@ -12,7 +13,9 @@ The interactions of the medicinal product with other medicinal products, or othe
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ The interactions of the medicinal product with other medicinal products, or othe
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

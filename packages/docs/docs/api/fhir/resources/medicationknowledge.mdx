@@ -1,6 +1,7 @@
 ---
 title: MedicationKnowledge
 sidebar_position: 77
+tags: [medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/medicationknowledge.json';
@@ -12,7 +13,9 @@ Information about a medication that is used to support knowledge.
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ Information about a medication that is used to support knowledge.
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

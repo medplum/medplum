@@ -17,6 +17,7 @@ tags:
   - fhir-datastore
   - react
   - search
+  - subscriptions
   - self-host
   - audit-logging
   - compliance
@@ -70,42 +71,36 @@ Dashboards and analytics are at the heart of great clinical workflow. Build a cu
 
 ## Medplum App {#medplum-app}
 
-Medplum app is an administrative tool designed for developers to browse, troubleshoot and edit data and bots. [Learn more](//docs/tutorials/app)
+Medplum app is an administrative tool designed for developers to browse, troubleshoot and edit data and bots. [Learn more](/docs/app)
 
-## Infrastructure
+## Authentication and Authorization {#auth}
 
-### Authentication and Authorization {#auth}
+Build your app just the way you want it. Use our Smart-on-FHIR authentication and authorization service, use Google auth, SAML or bring your own. [Learn More](/docs/auth)
 
-Build your app just the way you want it. Use our Smart-on-FHIR authentication and authorization service, use Google auth, SAML or bring your own. [Learn More](/docs/tutorials/authentication-and-security)
+## FHIR Datastore and API {#fhir-datastore}
 
-### FHIR Datastore and API {#fhir-datastore}
+Store your data in FHIR, and allow access through a FHIR API. Partition data with access policies to ensure parties only see the data they need to. [Learn More](/docs/fhir-datastore)
 
-Store your data in FHIR, and allow access through a FHIR API. Partition data with access policies to ensure parties only see the data they need to. [Learn More](/docs/tutorials/api-basics)
+## Subscriptions {#subscriptions}
 
-### React UI Components {#react}
+Subscriptions are event-driven notifications, like webhooks, are are commonly used for integrations and automations. Medplum supports subscribing to changes on FHIR resources. [Learn More](/docs/subscriptions)
 
-Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/tutorials/ui-components)
+## React UI Components {#react}
 
-### Search {#search}
+Build apps quickly with a ready to integrate react component library. Enable a custom experience for both customers and patients. [Learn More](/docs/ui-components)
 
-Enable complex search queries in app or via API. Enable time-aware searches common in healthcare scenarios, such as finding all records that were produced during a specific period. [Learn More](/docs/tutorials/api-basics/basic-fhir-search)
+## Search {#search}
 
-### Self-Hosting and Open Source {#self-host}
+Enable complex search queries in app or via API. Enable time-aware searches common in healthcare scenarios, such as finding all records that were produced during a specific period. [Learn More](/docs/search)
 
-Deploy your application in your own private cloud, or use our hosted option. Audit ready code you can trust in your environment. [Learn More](/docs/tutorials/self-hosting)
+## Self-Hosting and Open Source {#self-host}
 
-### Auditing and Logging {#audit-logging}
+Deploy your application in your own private cloud, or use our hosted option. Audit ready code you can trust in your environment. [Learn More](/docs/self-hosting)
+
+## Auditing and Logging {#audit-logging}
 
 Audit activity through built in audit trails and logs, or connect your enterprise observability suite.
 
-### Compliance {#compliance}
+## Compliance {#compliance}
 
 HIPAA compliance and SOC 2 Type 2 certified. We provide in-depth guides, content and code to drive industry and domain specific compliance programs like ONC, CLIA/CAP certification and more. [Learn More](/docs/compliance)
-
-### Security {#security}
-
-Medplum's hosted service follows all security best practices, and comes with HIPAA and SOC2 compliance out of the box. We follow all OWASP security guidelines, and have been verified by multiple penetration tests. [Learn More](/security)
-
-### Documentation {#documentation}
-
-Medplum treats documentation as a product and strives to maintain updated and relevant documentation that is the single source of truth. [Learn More](/docs)

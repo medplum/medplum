@@ -124,7 +124,7 @@ Medplum attests to this criteria, links provided below.
 ### Social, Psychological, and Behavioral Data (a15)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implementation via Medplum Questionnaires ([tutorial here](https://www.medplum.com/docs/tutorials/bots/bot-for-questionnaire-response))
+- Implementation via Medplum Questionnaires ([tutorial here](https://www.medplum.com/docs/bots/bot-for-questionnaire-response))
 
 ### EHI Export (b10)
 
@@ -136,9 +136,9 @@ Medplum attests to this criteria. Links provided below.
 
 - The ability to authenticate the user (authentication)
 - Ability to establish permitted user access (authorization)
-- Related Materials: [Overview](/docs/tutorials/authentication-and-security)
-- Related Materials: [Access Policies](/docs/tutorials/security/access-control)
-- Related Materials: [Inviting a user](/docs/tutorials/app/invite)
+- Related Materials: [Overview](/docs/auth)
+- Related Materials: [Access Policies](/docs/auth/access-control)
+- Related Materials: [Inviting a user](/docs/app/invite)
 
 ### Auditable Events and Tamper Resistant (d2)
 
@@ -365,4 +365,4 @@ This relates to the parsing and handling of CCD-A.
 ### Access Control
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/authentication-access-control-authorization)
-- [Medplum Access Control](https://www.medplum.com/docs/tutorials/security/access-control)
+- [Medplum Access Control](https://www.medplum.com/docs/auth/access-control)

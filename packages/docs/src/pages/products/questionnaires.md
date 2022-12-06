@@ -23,7 +23,7 @@ The Medplum Forms implementation is a very standards compliant implementation of
 
 - **API and SDK**: Ability to search, create and update questionnaires and responses via API.
 
-- **Response Management**: Automatically trigger emails, notifications and workflows after a user submits a form. View [tutorial](/docs/tutorials/bots/bot-for-questionnaire-response)
+- **Response Management**: Automatically trigger emails, notifications and workflows after a user submits a form. View [tutorial](/docs/bots/bot-for-questionnaire-response)
 
 - **Version history and tagging**: Add metadata such as category or intended audience to questionnaires as well as track version history.
 
@@ -41,4 +41,4 @@ The Medplum Forms implementation is a very standards compliant implementation of
 - [Storybook Social Determinants of Health (SDH)](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--ahchrsn-screening)
 - [Foo Medical](https://foomedical.com/) sample patient portal with questionnaires
 - [Provider Demo](https://provider.foomedical.com/) sample simple EHR with questionnaires
-- [Questionnaire Automation Tutorial](/docs/tutorials/bots) shows how to build automations on questionnaire submission
+- [Questionnaire Automation Tutorial](/docs/bots) shows how to build automations on questionnaire submission

@@ -12,12 +12,6 @@ This is a living document, and we continually update our resources. We welcome f
 
 ## Compliance Resources
 
-:::caution Note
-
-This section is under construction. Please check back frequently for updates. If you would like to receive updates in your inbox, please contact us at info@medplum.com.
-
-:::
-
 - [ONC Certification](onc.md)
 - [CLIA/CAP](clia-cap.md)
 - [SOC2 Type 2](soc2.md)

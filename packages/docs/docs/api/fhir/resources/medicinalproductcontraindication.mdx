@@ -1,6 +1,7 @@
 ---
 title: MedicinalProductContraindication
 sidebar_position: 82
+tags: [medications]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/medicinalproductcontraindication.json';
@@ -12,7 +13,9 @@ The clinical particulars - indications, contraindications etc. of a medicinal pr
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ The clinical particulars - indications, contraindications etc. of a medicinal pr
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

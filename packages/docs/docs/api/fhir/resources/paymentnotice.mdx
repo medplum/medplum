@@ -1,6 +1,7 @@
 ---
 title: PaymentNotice
 sidebar_position: 103
+tags: [billing]
 ---
 
 import definition from '@site/static/data/resourceDefinitions/paymentnotice.json';
@@ -12,7 +13,9 @@ This resource provides the status of the payment for goods and services rendered
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +24,3 @@ This resource provides the status of the payment for goods and services rendered
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

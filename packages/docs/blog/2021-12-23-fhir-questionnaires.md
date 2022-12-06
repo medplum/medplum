@@ -6,7 +6,6 @@ authors:
   title: Medplum Core Team
   url: https://github.com/reshmakh
   image_url: https://github.com/reshmakh.png
-tags: [fhir, questionnaires, healthcare, api]
 ---
 
 # Easy Custom Forms for Your Healthcare App
@@ -23,13 +22,13 @@ Here is a 2 minute video introducing the product.
 
 ## Here's how to get FHIR Questionnaires set up
 
-0. This tutorial assumes you have registered for an account. If you have not, you can do so [here](/docs/tutorials/app/register).
+0. This tutorial assumes you have registered for an account. If you have not, you can do so [here](/docs/tutorials/register).
 1. You can create new questionnaires using the [Questionnaire Tool](https://app.medplum.com/Questionnaire/new) on Medplum. (Here are all [Questionnaires](https://app.medplum.com/Questionnaire) in your account.)
 2. You can use the Builder to add questions that have different types, and they can be common types like `strings` or `integers`, or they can be FHIR objects like `Organizations` or `Patients`
 3. Each questionnaire has one or more `Subject`s, which will link the Questionnaire in the tool to the `Subject` data type. For example if the `Subject` is a `Patient`, then the Questionnaire can be found in the `Apps` tab on the `Patient` object (see video to get a visual).
 4. Once the `Form` is filled out a [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) will be created with all the appropriate data.
-5. This is an advanced topic which will be covered in another tutorial, but you can use [Bots](/docs/tutorials/bots/bot-for-questionnaire-response) to create new FHIR objects and execute an advanced workflows.
-6. Questionnaires can be embedded in applications such as your webapp, this is also an advanced topic for another time but if you want to get started building app [start here](/docs/tutorials/ui-components/hello-world-part-1)
+5. This is an advanced topic which will be covered in another tutorial, but you can use [Bots](/docs/bots) to create new FHIR objects and execute an advanced workflows.
+6. Questionnaires can be embedded in applications such as your webapp, this is also an advanced topic for another time but if you want to get started building app [start here](/docs/questionnaires)
 
 ## Open Source Questionnaires
 

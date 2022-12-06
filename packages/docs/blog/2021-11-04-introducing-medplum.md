@@ -1,6 +1,5 @@
 ---
 authors: cody
-tags: [fhir, medplum, devtools, infrastructure]
 ---
 
 # Introducing Medplum
@@ -13,7 +12,7 @@ Delivering healthcare is very complicated - lives are at stake and tools and tre
 
 Medplum approaches this complex environment from the developer perspective. **We believe that a toolset that abstracts data, identity management, user interface and reporting will allow healthcare apps can be built quickly, and more importantly flexibly** - i.e. they won't need to be re-written when new stakeholders are introduced. That's what we are building.
 
-Our open source model is critical to building extensible, flexible apps. In healthcare, it is extremely common for vendors to lock in data. In the US - interoperability is regulated for this reason. Storing data natively in FHIR, and showing exacly how it is done, we believe, will prevent the rot that is so common in the industry.
+Our open source model is critical to building extensible, flexible apps. In healthcare, it is extremely common for vendors to lock in data. In the US - interoperability is regulated for this reason. Storing data natively in FHIR, and showing exactly how it is done, we believe, will prevent the rot that is so common in the industry.
 
 Thank you for taking the time to check out Medplum. Please try it. We welcome your feedback.
 
