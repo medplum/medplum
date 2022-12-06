@@ -1,4 +1,4 @@
-import { MemoizedFhirPathTable, SmartSearchField } from '@medplum/react';
+import { MemoizedFhirPathTable, FhirPathTableField } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -7,7 +7,7 @@ export function SmartSearchPage(): JSX.Element | null {
   const location = useLocation();
   const [resourceType, setResourceType] = useState<string>();
   const [query, setQuery] = useState<string>();
-  const [fields, setFields] = useState<SmartSearchField[]>();
+  const [fields, setFields] = useState<FhirPathTableField[]>();
 
   useEffect(() => {
     const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;

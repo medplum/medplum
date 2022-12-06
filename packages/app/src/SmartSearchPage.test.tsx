@@ -1,6 +1,6 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider, SmartSearchField } from '@medplum/react';
+import { MedplumProvider, FhirPathTableField } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -51,7 +51,7 @@ ResourceList: ServiceRequestList {
 }
 }`;
 
-const fields: SmartSearchField[] = [
+const fields: FhirPathTableField[] = [
   {
     name: 'ID',
     fhirPath: 'id',

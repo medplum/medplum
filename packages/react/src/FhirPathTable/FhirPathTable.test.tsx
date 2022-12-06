@@ -4,7 +4,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { FhirPathTable, FhirPathTableProps, SmartSearchField } from './FhirPathTable';
+import { FhirPathTable, FhirPathTableProps, FhirPathTableField } from './FhirPathTable';
 
 const query = `{
   ResourceList: ServiceRequestList {
@@ -51,7 +51,7 @@ const query = `{
   }
   }`;
 
-const fields: SmartSearchField[] = [
+const fields: FhirPathTableField[] = [
   {
     name: 'ID',
     fhirPath: 'id',

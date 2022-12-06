@@ -7,7 +7,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 
-export interface SmartSearchField {
+export interface FhirPathTableField {
   readonly propertyType: PropertyType;
   readonly name: string;
   readonly fhirPath: string;
@@ -16,7 +16,7 @@ export interface SmartSearchField {
 export interface FhirPathTableProps {
   resourceType: string;
   query: string;
-  fields: SmartSearchField[];
+  fields: FhirPathTableField[];
   checkboxesEnabled?: boolean;
   onClick?: (e: SearchClickEvent) => void;
   onAuxClick?: (e: SearchClickEvent) => void;
