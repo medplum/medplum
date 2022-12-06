@@ -92,7 +92,13 @@ async function setupLocals(req: Request, res: Response, login: Login, membership
   locals.user = resolveId(membership.user as Reference<User>);
   locals.profile = membership.profile;
   locals.project = await systemRepo.readReference(membership.project as Reference<Project>);
-  locals.repo = await getRepoForLogin(login, membership, locals.project.strictMode, isExtendedMode(req));
+  locals.repo = await getRepoForLogin(
+    login,
+    membership,
+    locals.project.strictMode,
+    isExtendedMode(req),
+    locals.project.checkReferencesOnWrite
+  );
 }
 
 function isExtendedMode(req: Request): boolean {
