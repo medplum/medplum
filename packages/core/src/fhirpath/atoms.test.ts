@@ -1,8 +1,8 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle, PropertyType } from '../types';
-import { LiteralAtom } from './atoms';
-import { evalFhirPath } from './parse';
+import { LiteralAtom, SymbolAtom } from './atoms';
+import { evalFhirPath, parseFhirPath } from './parse';
 
 describe('Atoms', () => {
   beforeAll(() => {
@@ -11,8 +11,31 @@ describe('Atoms', () => {
   });
 
   test('LiteralAtom', () => {
-    const a = { type: PropertyType.string, value: 'a' };
-    expect(new LiteralAtom(a).eval()).toEqual([a]);
+    const str = { type: PropertyType.string, value: 'a' };
+    const strLiteral = new LiteralAtom(str);
+    expect(strLiteral.eval()).toEqual([str]);
+    expect(strLiteral.toString()).toEqual("'a'");
+
+    const num = { type: PropertyType.decimal, value: 1 };
+    const numLiteral = new LiteralAtom(num);
+    expect(numLiteral.eval()).toEqual([num]);
+    expect(numLiteral.toString()).toEqual('1');
+
+    const bool = { type: PropertyType.boolean, value: true };
+    const boolLiteral = new LiteralAtom(bool);
+    expect(boolLiteral.eval()).toEqual([bool]);
+    expect(boolLiteral.toString()).toEqual('true');
+  });
+
+  test('SymbolAtom', () => {
+    const symbol = new SymbolAtom('symbol');
+    expect(symbol.toString()).toEqual('symbol');
+  });
+
+  test('EmptySetAtom', () => {
+    const atom = parseFhirPath('{}');
+    expect(atom.eval([])).toEqual([]);
+    expect(atom.toString()).toEqual('{}');
   });
 
   test('ConcatAtom', () => {
