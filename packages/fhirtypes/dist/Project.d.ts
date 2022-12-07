@@ -67,6 +67,12 @@ export interface Project {
   strictMode?: boolean;
 
   /**
+   * Whether this project uses referential integrity on write operations
+   * such as 'create' and 'update'.
+   */
+  checkReferencesOnWrite?: boolean;
+
+  /**
    * The user who owns the project.
    */
   owner?: Reference<User>;

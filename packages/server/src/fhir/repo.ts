@@ -68,6 +68,7 @@ import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
 import { getPatient } from './patient';
+import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
@@ -130,6 +131,13 @@ export interface RepositoryContext {
    * significantly more relaxed.
    */
   strictMode?: boolean;
+
+  /**
+   * Optional flag to validate references on write operations.
+   * If enabled, the repository will check that all references are valid,
+   * and that the current user has access to the referenced resource.
+   */
+  checkReferencesOnWrite?: boolean;
 
   /**
    * Optional flag to include Medplum extended meta fields.
@@ -398,6 +406,10 @@ export class Repository {
       validateResource(resource);
     } else {
       validateResourceWithJsonSchema(resource);
+    }
+
+    if (this.#context.checkReferencesOnWrite) {
+      await validateReferences(this, resource);
     }
 
     const { resourceType, id } = resource;
@@ -1888,13 +1900,15 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
  * @param membership The active project membership.
  * @param strictMode Optional flag to enable strict mode for in-depth FHIR schema validation.
  * @param extendedMode Optional flag to enable extended mode for custom Medplum properties.
+ * @param checkReferencesOnWrite Optional flag to enable reference checking on write.
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(
   login: Login,
   membership: ProjectMembership,
   strictMode?: boolean,
-  extendedMode?: boolean
+  extendedMode?: boolean,
+  checkReferencesOnWrite?: boolean
 ): Promise<Repository> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
@@ -1917,6 +1931,7 @@ export async function getRepoForLogin(
     accessPolicy,
     strictMode,
     extendedMode,
+    checkReferencesOnWrite,
   });
 }
 

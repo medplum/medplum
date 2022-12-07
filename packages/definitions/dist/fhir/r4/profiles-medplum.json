@@ -110,6 +110,17 @@
             }]
           },
           {
+            "id" : "Project.checkReferencesOnWrite",
+            "path" : "Project.checkReferencesOnWrite",
+            "short" : "Whether this project uses referential integrity on write operations such as 'create' and 'update'.",
+            "definition" : "Whether this project uses referential integrity on write operations such as 'create' and 'update'.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
             "id" : "Project.owner",
             "path" : "Project.owner",
             "definition" : "The user who owns the project.",
