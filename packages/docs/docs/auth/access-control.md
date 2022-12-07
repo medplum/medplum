@@ -2,7 +2,7 @@
 sidebar_position: 4
 ---
 
-# Access Policies
+# Enable Access Controls
 
 ## Introduction
 

@@ -32,4 +32,4 @@ Placing orders requires constructing the right resources, for example [CarePlans
 
 ## Reference
 
-- [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting+) on Github
+- [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on Github

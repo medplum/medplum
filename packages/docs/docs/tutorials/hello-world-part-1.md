@@ -3,7 +3,7 @@ sidebar_position: 4
 sidebar_label: Hello World App
 ---
 
-# Hello World Part
+# Hello World App
 
 Welcome to Part 1 of the Medplum Hello World series.
 
