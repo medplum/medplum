@@ -20,7 +20,7 @@ Medplum provides the following features to enable all of the scenarios described
 
 - **Lab panel management:** this is represented in FHIR as a [PlanDefinition](/docs/api/fhir/resources/plandefinition) and you can see a detailed example in our [github repo](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts).
 - **Machine and middleware interfacing:** machines and middleware (e.g. [Data Innovations](https://datainnovations.com/)) run off of HL7 interfaces
-- Traditional LIS interfacing: connect to a legacy LIS to receive results, most have an HL7 interface, connected via [bots](https://www.medplum.com/docs/bots/hl7-into-fhir)
+- Traditional LIS interfacing: connect to a legacy LIS to receive results, most have an HL7 interface, connected via [bots](/docs/bots/hl7-into-fhir)
 - **Diagnostic report PDF and FHIR resource:** are used to deliver results, with custom PDF built via [bots](/docs/bots/creating-a-pdf).
 
 ## Enabling Common Lab Integrations
@@ -36,8 +36,8 @@ Labs often require multiple integrations to work well, and are high leverage for
 
 ## Demos and Reference Material
 
-- [CLIA/CAP Checklist](https://www.medplum.com/docs/compliance/clia-cap)
+- [CLIA/CAP Checklist](/docs/compliance/clia-cap)
 - [Lab Data Model Examples](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts) on Github
 - Live Example: [Kit.com developer documentation](https://docs.kit.com/docs/overview)
-- [HL7 Bots Tutorial](https://www.medplum.com/docs/tutorials/bots/hl7-into-fhir) this is the common interface for lab and LIS systems.
+- [HL7 Bots Tutorial](/docs/bots/hl7-into-fhir) this is the common interface for lab and LIS systems.
 - Lab Data Modeling Tutorial (Coming Soon)

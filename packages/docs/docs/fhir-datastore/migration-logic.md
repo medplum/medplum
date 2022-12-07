@@ -58,7 +58,7 @@ Cons:
 
 If it is too difficult to create `.toJSON()` / `.fromJSON()` methods in the existing system, the next best option is to send events in the native format of the existing system.
 
-Medplum [Bots](https://www.medplum.com/docs/tutorials/bots/bot-basics) can be used to receive the original data, and transform it into FHIR resources.
+Medplum [Bots](docs/bots/bot-basics) can be used to receive the original data, and transform it into FHIR resources.
 
 Pros:
 

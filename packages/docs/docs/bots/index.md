@@ -34,3 +34,7 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 1. Coming Soon: Verifying that all Lab Results are present on a DiagnosticReport before sending it for physician review
 
 If you need any of these guides immediately, please contact us at info@medplum.com.
+
+## Reference
+
+- [Bot Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Abots) on Github

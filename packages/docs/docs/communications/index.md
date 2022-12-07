@@ -31,3 +31,7 @@ There are special resources for distinct communication types like `Consent` and 
 ## What is the status of this communication
 
 Knowing whether a communication needs a response or follow up aids workflow. In this case `Communication.status` and `Communication.statusReason` are the appropriate fields.
+
+## Reference
+
+- [Communications Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acommunications) on Github includes sample data.

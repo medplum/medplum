@@ -124,7 +124,7 @@ Medplum attests to this criteria, links provided below.
 ### Social, Psychological, and Behavioral Data (a15)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implementation via Medplum Questionnaires ([tutorial here](https://www.medplum.com/docs/bots/bot-for-questionnaire-response))
+- Implementation via Medplum Questionnaires ([tutorial here](/docs/bots/bot-for-questionnaire-response))
 
 ### EHI Export (b10)
 
@@ -172,7 +172,7 @@ Medplum attests to this criteria. Links and description provided below.
 ### End-user Device Encryption (d7)
 
 - Not included in ONC 2015E Cures Base EHR
-- [Medplum Security](https://www.medplum.com/security)
+- [Medplum Security](/security)
 
 ### Integrity (d8)
 
@@ -222,7 +222,7 @@ Medplum attests to this criteria. Links and description provided below.
 ### Transmit to Public Health Agencies – case reporting (f5)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Safety-enhanced Design (g3)
 
@@ -244,7 +244,7 @@ With regard to application development, no accessibility-centered design standar
 ### Application Access – Patient Selection (g7)
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/application-access-patient-selection)
-- [Medplum Terms](https://www.medplum.com/terms)
+- [Medplum Terms](/terms)
 
 ## Live Tested Criteria
 
@@ -295,37 +295,37 @@ This relates to the parsing and handling of CCD-A.
 
 - HealthIT [CCD-A Validation Tool](https://ett.healthit.gov/ett/#/validators/ccdar3)
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Immunization Registries (f1)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Public Health Agencies – syndromic surveillance (f2)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Public Health Agencies – reportable laboratory tests (f3)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Cancer Registries (f4)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Public Health Agencies – antimicrobial use and resistance reporting (f6)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Transmit to Public Health Agencies – health care surveys (f7)
 
 - Not included in ONC 2015E Cures Base EHR
-- Implement using Medplum Bots ([tutorials](https://www.medplum.com/docs/tutorials/bots))
+- Implement using Medplum Bots ([tutorials](/docs/bots))
 
 ### Automated Numerator / Measure Calculation (g1-g2)
 
@@ -365,4 +365,4 @@ This relates to the parsing and handling of CCD-A.
 ### Access Control
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/authentication-access-control-authorization)
-- [Medplum Access Control](https://www.medplum.com/docs/auth/access-control)
+- [Medplum Access Control](/docs/auth/access-control)

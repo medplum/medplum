@@ -337,12 +337,12 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note7">
                 Data usage refers to the creation of{' '}
-                <a href="https://www.medplum.com/docs/tutorials/api-basics/create-fhir-data">FHIR Resources</a>. This
-                figure is cumulative.
+                <a href="https://www.medplum.com/docs/fhir-datastore/create-fhir-data">FHIR Resources</a>. This figure
+                is cumulative.
               </li>
               <li id="note8">
                 Bots and automation refer to custom logic written by customers to execute their workflow.{' '}
-                <a href="https://www.medplum.com/products/automation">Automation</a> documentation and{' '}
+                <a href="https://www.medplum.com/products/bots">Automation</a> documentation and{' '}
                 <a href="https://www.medplum.com/products/integration">integration</a> are a good place to learn more.
               </li>
               <li id="note9">Organizations can require that all logins go through Google Authentication.</li>

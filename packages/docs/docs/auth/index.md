@@ -20,3 +20,4 @@ Users are the representation of identities in Medplum, and each user belongs to 
 - [Medplum resources](./api/fhir/medplum) related to authentication and authorization
 - [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component
 - [Sign in form](https://storybook.medplum.com/?path=/docs/medplum-signinform--basic) react component
+- [Auth Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth) on Github
