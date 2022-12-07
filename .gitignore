@@ -19,6 +19,7 @@ packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
 packages/examples/dist/
 packages/generator/dist/
+packages/generator/output/
 packages/graphiql/dist/
 packages/graphiql/public/
 packages/infra/dist/

@@ -96,8 +96,10 @@ See developer setup documentation: https://www.medplum.com/docs/contributing
 
 Copyright &copy; Medplum 2022
 
-FHIR &reg; is a registered trademark of HL7.
+FHIR&reg; is a registered trademark of HL7.
 
-SNOMED &reg; is a registered trademark of the International Health Terminology Standards Development Organisation.
+SNOMED&reg; is a registered trademark of the International Health Terminology Standards Development Organisation.
 
-DICOM &reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).
+LOINC&reg; is a registered trademark of Regenstrief Institute, Inc.
+
+DICOM&reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).
