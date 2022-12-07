@@ -180,6 +180,11 @@ div.theme-code-block {
   font-size: 0.8rem;
 }
 
+.sidebar-title {
+  font-size: 1rem;
+  margin-top: 1rem;
+}
+
 /* Footer styles */
 
 .medplum-soc-compliance-image {
