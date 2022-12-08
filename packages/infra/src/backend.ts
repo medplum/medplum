@@ -213,10 +213,16 @@ export class BackEnd extends Construct {
       },
     });
 
+    const taskDefinitionRole = new iam.Role(this, 'TaskDefinitionRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AmazonECSTaskExecutionRolePolicy')],
+    });
+
     // Task Definitions
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
       memoryLimitMiB: config.serverMemory,
       cpu: config.serverCpu,
+      executionRole: taskDefinitionRole,
       taskRole: taskRole,
     });
 
