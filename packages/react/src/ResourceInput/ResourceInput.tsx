@@ -21,7 +21,7 @@ const SEARCH_CODES: Record<string, string> = {
   Observation: 'code',
   RequestGroup: '_id',
   ActivityDefinition: 'name',
-  User: 'email',
+  User: 'email:contains',
 };
 
 export interface ResourceInputProps<T extends Resource = Resource> {
@@ -50,7 +50,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     setLoading(true);
     const searchCode = SEARCH_CODES[props.resourceType] || 'name';
     const searchParams = new URLSearchParams({
-      [searchCode]: encodeURIComponent(input),
+      [searchCode]: input,
       _count: '10',
     });
 
