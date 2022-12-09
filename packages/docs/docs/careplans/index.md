@@ -26,3 +26,4 @@ Care planning can range from very simple - for example, a single prescription, t
 - [RequestGroup on Medplum App](https://app.medplum.com/RequestGroup)
 - [PlanDefinition Builder sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-plandefinitionbuilder--basic)
 - [RequestGroup sample on Storybook](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple)
+- [Care Plan Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acareplans) on Github

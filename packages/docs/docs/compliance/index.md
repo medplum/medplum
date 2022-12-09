@@ -29,3 +29,8 @@ The materials in this section can be used in multiple contexts, and depend on yo
 - When engaging a customer or partner, you may need to answer their security questionnaire or vendor qualification process. Materials here can help.
 - When pursuing certification, for example SOC2, or CLIA/CAP Accreditation you may use materials here and submit them as part of your process.
 - To eligible for use in a clinical or research setting, you may need to demonstrate certain capabilities or conformance to market or sell a product.
+
+## Reference
+
+- [Medplum Compliance](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acompliance) on Github
+- [Medplum Audit and Logging](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) on Github

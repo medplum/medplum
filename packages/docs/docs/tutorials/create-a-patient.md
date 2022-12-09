@@ -4,13 +4,21 @@ sidebar_position: 3
 
 # Create a patient
 
-This guide explains how to create a [Patient](../api/fhir/resources/patient) in the Medplum app.
+This tutorial explains how to create a [Patient](../api/fhir/resources/patient) in the Medplum app.
 
 Open the Medplum app in your browser: https://app.medplum.com/ If you don't have an account yet, see the [Register](./register) page.
 
-When you sign in to Medplum, you will see a Patient list by default.
+Click on the menu button in the top left corner
 
-Click on the "New" button to start creating a new Patient.
+![Top left menu](/img/hello-world/top-left-menu.png)
+
+Click on "Patients"
+
+![Patients menu item](/img/hello-world/patients-menu-item.png)
+
+Click on "New" in the toolbar
+
+![New Patient button](/img/hello-world/new-patient-button.png)
 
 Let's create a patient with only a few fields. We can always add more later. We will add:
 
@@ -28,6 +36,12 @@ Scroll down to "Gender". Start typing a gender such as "male", "female", or "oth
 
 Scroll down to "Birth Date". Enter a date of birth.
 
-Scroll all the way to the bottom and click "OK".
+![Patient name](/img/hello-world/patient-name.png)
 
-You now have a FHIR Patient resource.
+Scroll to the bottom and click "OK"
+
+![OK Button](/img/hello-world/ok-button.png)
+
+Congrats, you created a patient!
+
+Copy the "ID" field, because we will need it later. Patients often have many identifiers: MRN (medical record number), SSN (social security number), drivers' license, etc. The primary "ID" is a special ID that we will use in the Medplum API.

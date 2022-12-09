@@ -17,3 +17,7 @@ These are advanced guides, and intended for developers and sys admins with exper
 
 1. Securing your environment - Follow this guide to ensure HIPAA compliance
 2. Logging and monitoring - Follow these best practices for optimal uptime
+
+## Reference
+
+See [self-hosting features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on Github.

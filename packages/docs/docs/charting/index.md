@@ -29,3 +29,7 @@ Some implementations have a library of [Questionnaires](/docs/questionnaires/) t
 ## Placing Orders
 
 Placing orders requires constructing the right resources, for example [CarePlans](/docs/api/fhir/resources/careplan.mdx) and [MedicationRequests](/docs/api/fhir/resources/medicationrequest.mdx) or others. Similar to notes, ordering workflows can be done by creating resources directly, or using [Questionnaires](/docs/questionnaires/) that practitioners fill out and use [Bots](/docs/bots/) to drive workflow and integrations.
+
+## Reference
+
+- [Charting Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acharting) on Github

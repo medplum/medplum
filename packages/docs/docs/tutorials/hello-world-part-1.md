@@ -3,59 +3,30 @@ sidebar_position: 4
 sidebar_label: Hello World App
 ---
 
-# Hello World Part 1
+# Hello World App
 
 Welcome to Part 1 of the Medplum Hello World series.
 
-In Part 1, we will go through the basics of registering a new account and creating a minimal Medplum application.
+This tutorial assumes you have already:
 
-## Register for a Medplum account
+- Registered for a Medplum account. (If not [registration instructions](./register.md))
+- Created a sample patient. (If not [create patient instructions](./create-a-patient.md))
 
-Open the Medplum register page in your browser: https://app.medplum.com/register
-
-Fill in your account details and click "Create account"
-
-Congrats, you now have a Medplum account!
-
-## Create a patient
-
-Click on the menu button in the top left corner
-
-![Top left menu](/img/hello-world/top-left-menu.png)
-
-Click on "Patients"
-
-![Patients menu item](/img/hello-world/patients-menu-item.png)
-
-Click on "New" in the toolbar
-
-![New Patient button](/img/hello-world/new-patient-button.png)
-
-Add a patient name
-
-![Patient name](/img/hello-world/patient-name.png)
-
-Scroll to the bottom and click "OK"
-
-![OK Button](/img/hello-world/ok-button.png)
-
-Congrats, you created a patient!
-
-Go to the "Details" tab:
-
-Copy the "ID" field, because we will need it later. Patients often have many identifiers: MRN (medical record number), SSN (social security number), drivers' license, etc. The primary "ID" is a special ID that we will use in the Medplum API.
+Sign into the [Medplum App](https://app.medplum.com). When you sign in to Medplum, you will see a Patient list by default.
 
 ## Find Client Application ID
 
 Now let's get our Client Application ID, because we will also need that later. Click on the menu button in the top left corner:
 
-Click on "Client Applications":
+![Top left menu](/img/hello-world/top-left-menu.png)
+
+Click on Project -> [Clients](https://app.medplum.com/admin/clients)":
 
 When you registered your account, Medplum automatically created a default client. Click on that row:
 
 And copy the Client Application ID:
 
-To recap: You registered a new account, created a patient, and should have a Patient ID and a Client Application ID.
+**To recap:** You registered a new account, created a patient, and should have a Patient ID and a Client Application ID.
 
 ## Create a React app
 
