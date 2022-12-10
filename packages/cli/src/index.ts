@@ -125,7 +125,7 @@ function readFileContents(fileName: string): string | undefined {
 
 if (require.main === module) {
   dotenv.config();
-  const medplum = new MedplumClient({ fetch });
+  const medplum = new MedplumClient({ fetch, baseUrl: process.env['MEDPLUM_BASE_URL'] });
   medplum
     .startClientLogin(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
     .then(() => main(medplum, process.argv))

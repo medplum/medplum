@@ -160,6 +160,17 @@ MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
 
 :::
 
+If you are self-hosting Medplum, set `MEDPLUM_BASE_URL` to the base URL of your Medplum server as an environment variable or in your .env file.
+
+```bash
+export MEDPLUM_BASE_URL=https://api.example.com/
+```
+
+```bash
+# .env
+MEDPLUM_BASE_URL=https://api.example.com/
+```
+
 ## Deploying your Bot
 
 Now that your Bot is written and compiled, the [resource](/docs/api/fhir/medplum/bot) is created, and your credentials are set, we can finally deploy our Bot to production using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
