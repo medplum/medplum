@@ -1,5 +1,5 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -12,13 +12,13 @@ export interface AsyncAutocompleteProps<T>
   toKey: (item: T) => string;
   toOption: (item: T) => AsyncAutocompleteOption<T>;
   loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
-  onChange?: (item: T[]) => void;
+  onChange: (item: T[]) => void;
   onCreate?: (input: string) => T;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
   const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, ...rest } = props;
-  const defaultItems = defaultValue ? (Array.isArray(defaultValue) ? defaultValue : [defaultValue]) : [];
+  const defaultItems = toDefaultItems(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const [lastValue, setLastValue] = useState<string | undefined>(undefined);
   const [timer, setTimer] = useState<number>();
@@ -41,42 +41,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const optionsRef = useRef<AsyncAutocompleteOption<T>[]>();
   optionsRef.current = options;
 
-  function handleSearchChange(): void {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setAbortController(undefined);
-    }
-
-    if (timerRef.current !== undefined) {
-      window.clearTimeout(timerRef.current);
-    }
-
-    const newTimer = window.setTimeout(() => handleTimer(), 100);
-    setTimer(newTimer);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent): void {
-    if (e.key === 'Enter') {
-      if (!timerRef.current && !abortControllerRef.current) {
-        killEvent(e);
-        if (options.length > 0) {
-          setOptions(options.slice(0, 1));
-          handleChange([options[0].value]);
-        }
-      } else {
-        // The user pressed enter, but we don't have results yet.
-        // We need to wait for the results to come in.
-        setAutoSubmit(true);
-      }
-    }
-  }
-
-  /**
-   * Handles a timer tick event.
-   * If the contents of the input have changed, sends xhr to the server
-   * for updated contents.
-   */
-  function handleTimer(): void {
+  const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
     const value = inputRef.current?.value?.trim() || '';
@@ -97,17 +62,31 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           setAbortController(undefined);
           if (autoSubmitRef.current) {
             if (newValues.length > 0) {
-              emitChange(newValues.slice(0, 1) as T[]);
+              onChange(newValues.slice(0, 1));
             }
             setAutoSubmit(false);
           }
         }
       })
       .catch(console.log);
-  }
+  }, [loadOptions, onChange, toOption]);
 
-  function handleChange(values: string[]): void {
-    if (onChange) {
+  const handleSearchChange = useCallback((): void => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setAbortController(undefined);
+    }
+
+    if (timerRef.current !== undefined) {
+      window.clearTimeout(timerRef.current);
+    }
+
+    const newTimer = window.setTimeout(() => handleTimer(), 100);
+    setTimer(newTimer);
+  }, [handleTimer]);
+
+  const handleChange = useCallback(
+    (values: string[]): void => {
       const result: T[] = [];
       for (const value of values) {
         let item = optionsRef.current?.find((option) => option.value === value)?.resource;
@@ -116,21 +95,40 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
         result.push(item);
       }
-      emitChange(result);
-    }
-  }
+      onChange(result);
+    },
+    [onChange, onCreate]
+  );
 
-  function emitChange(selectedValues: T[]): void {
-    if (onChange) {
-      onChange(selectedValues);
-    }
-  }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent): void => {
+      if (e.key === 'Enter') {
+        if (!timerRef.current && !abortControllerRef.current) {
+          killEvent(e);
+          if (optionsRef.current && optionsRef.current.length > 0) {
+            setOptions(optionsRef.current.slice(0, 1));
+            handleChange([optionsRef.current[0].value]);
+          }
+        } else {
+          // The user pressed enter, but we don't have results yet.
+          // We need to wait for the results to come in.
+          setAutoSubmit(true);
+        }
+      }
+    },
+    [handleChange]
+  );
 
-  function handleCreate(input: string): AsyncAutocompleteOption<T> {
-    const option = toOption((onCreate as (input: string) => T)(input));
-    setOptions([...(optionsRef.current as AsyncAutocompleteOption<T>[]), option]);
-    return option;
-  }
+  const handleCreate = useCallback(
+    (input: string): AsyncAutocompleteOption<T> => {
+      const option = toOption((onCreate as (input: string) => T)(input));
+      setOptions([...(optionsRef.current as AsyncAutocompleteOption<T>[]), option]);
+      return option;
+    },
+    [onCreate, setOptions, toOption]
+  );
+
+  const handleFilter = useCallback((_value: string, selected: boolean) => !selected, []);
 
   useEffect(() => {
     return () => {
@@ -154,7 +152,17 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       onCreate={handleCreate}
       rightSectionWidth={40}
       rightSection={abortController ? <Loader size={16} /> : null}
-      filter={(_value: string, selected: boolean) => !selected}
+      filter={handleFilter}
     />
   );
+}
+
+function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
+  if (!defaultValue) {
+    return [];
+  }
+  if (Array.isArray(defaultValue)) {
+    return defaultValue;
+  }
+  return [defaultValue];
 }

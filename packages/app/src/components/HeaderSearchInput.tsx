@@ -3,7 +3,7 @@ import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { AsyncAutocomplete, AsyncAutocompleteOption, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
@@ -56,18 +56,24 @@ export function HeaderSearchInput(): JSX.Element {
   const medplum = useMedplum();
   const location = useLocation();
 
-  async function loadData(input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> {
-    const query = buildGraphQLQuery(input);
-    const options = { signal };
-    const response = (await medplum.graphql(query, undefined, undefined, options)) as SearchGraphQLResponse;
-    return getResourcesFromResponse(response, input);
-  }
+  const loadData = useCallback(
+    async (input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> => {
+      const query = buildGraphQLQuery(input);
+      const options = { signal };
+      const response = (await medplum.graphql(query, undefined, undefined, options)) as SearchGraphQLResponse;
+      return getResourcesFromResponse(response, input);
+    },
+    [medplum]
+  );
 
-  function handleSelect(item: HeaderSearchTypes[]): void {
-    if (item.length > 0) {
-      navigate(`/${getReferenceString(item[0])}`);
-    }
-  }
+  const handleSelect = useCallback(
+    (item: HeaderSearchTypes[]): void => {
+      if (item.length > 0) {
+        navigate(`/${getReferenceString(item[0])}`);
+      }
+    },
+    [navigate]
+  );
 
   return (
     <AsyncAutocomplete
