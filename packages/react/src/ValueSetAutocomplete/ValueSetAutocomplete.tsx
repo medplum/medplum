@@ -1,5 +1,5 @@
 import { ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,
@@ -35,20 +35,23 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
   const medplum = useMedplum();
   const { elementDefinition, ...rest } = props;
 
-  async function loadValues(input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> {
-    const system = elementDefinition.binding?.valueSet as string;
-    const valueSet = await medplum.searchValueSet(system, input, { signal });
-    const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
-    const newData: ValueSetExpansionContains[] = [];
+  const loadValues = useCallback(
+    async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
+      const system = elementDefinition.binding?.valueSet as string;
+      const valueSet = await medplum.searchValueSet(system, input, { signal });
+      const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
+      const newData: ValueSetExpansionContains[] = [];
 
-    for (const valueSetElement of valueSetElements) {
-      if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
-        newData.push(valueSetElement);
+      for (const valueSetElement of valueSetElements) {
+        if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
+          newData.push(valueSetElement);
+        }
       }
-    }
 
-    return newData;
-  }
+      return newData;
+    },
+    [medplum, elementDefinition]
+  );
 
   return (
     <AsyncAutocomplete
