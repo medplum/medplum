@@ -10,7 +10,7 @@ import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
-import { createValueSetElements } from '../seeds/valuesets';
+import { createValueSets } from '../seeds/valuesets';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -26,7 +26,7 @@ superAdminRouter.post(
       return;
     }
 
-    await createValueSetElements();
+    await createValueSets();
     sendOutcome(res, allOk);
   })
 );

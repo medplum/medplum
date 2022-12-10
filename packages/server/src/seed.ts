@@ -5,7 +5,7 @@ import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
 import { createStructureDefinitions } from './seeds/structuredefinitions';
-import { createValueSetElements } from './seeds/valuesets';
+import { createValueSets } from './seeds/valuesets';
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
@@ -63,7 +63,7 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
-  await createValueSetElements();
+  await createValueSets();
   await createSearchParameters();
   await createStructureDefinitions();
 }

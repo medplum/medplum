@@ -67,6 +67,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { AddressTable, ContactPointTable, HumanNameTable, IdentifierTable, LookupTable } from './lookups';
+import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
@@ -181,6 +182,7 @@ const lookupTables: LookupTable<unknown>[] = [
   new ContactPointTable(),
   new HumanNameTable(),
   new IdentifierTable(),
+  new ValueSetElementTable(),
 ];
 
 /**
