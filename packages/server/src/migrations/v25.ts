@@ -9,4 +9,5 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query(`ALTER TABLE "ValueSetElement" ADD COLUMN "resourceId" UUID`);
   await client.query(`ALTER TABLE "ValueSetElement" ADD COLUMN "index" INTEGER`);
   await client.query('CREATE INDEX ON "ValueSetElement" ("resourceId")');
+  await client.query('CREATE INDEX ON "ValueSet" ("url")');
 }

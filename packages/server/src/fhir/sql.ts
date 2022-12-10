@@ -117,6 +117,15 @@ export class Condition implements Expression {
 export abstract class Connective implements Expression {
   constructor(readonly keyword: string, readonly expressions: Expression[]) {}
 
+  whereExpr(expression: Expression): this {
+    this.expressions.push(expression);
+    return this;
+  }
+
+  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+  }
+
   buildSql(builder: SqlBuilder): void {
     if (this.expressions.length > 1) {
       builder.append('(');
@@ -138,15 +147,6 @@ export abstract class Connective implements Expression {
 export class Conjunction extends Connective {
   constructor(expressions: Expression[]) {
     super(' AND ', expressions);
-  }
-
-  whereExpr(expression: Expression): this {
-    this.expressions.push(expression);
-    return this;
-  }
-
-  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
-    return this.whereExpr(new Condition(column, operator as Operator, value, type));
   }
 }
 

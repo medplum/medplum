@@ -5,7 +5,7 @@ import { asyncWrap } from '../../async';
 import { getClient } from '../../database';
 import { sendOutcome } from '../outcomes';
 import { systemRepo } from '../repo';
-import { Operator, SelectQuery } from '../sql';
+import { Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
 
 // Implements FHIR "Value Set Expansion"
 // https://www.hl7.org/fhir/operation-valueset-expand.html
@@ -36,10 +36,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
   }
 
   // Build a collection of all systems to include
-  const systems = new Set<string>();
-  const codes = new Set<string>();
-  buildValueSetSystems(valueSet, systems, codes);
-  if (systems.size === 0) {
+  const systemExpressions = buildValueSetSystems(valueSet);
+  if (systemExpressions.length === 0) {
     sendOutcome(res, badRequest('No systems found'));
     return;
   }
@@ -58,17 +56,16 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const client = getClient();
   const query = new SelectQuery('ValueSetElement')
-    .raw('DISTINCT "code"')
     .column('system')
+    .column('code')
     .column('display')
-    .where('system', Operator.IN, systems)
-    .where('display', Operator.LIKE, '%' + filter + '%')
+    .whereExpr(new Disjunction(systemExpressions))
     .orderBy('display')
     .offset(offset)
     .limit(count);
 
-  if (codes.size > 0) {
-    query.where('code', Operator.IN, codes);
+  if (filter) {
+    query.where('display', Operator.LIKE, '%' + filter + '%');
   }
 
   const rows = await query.execute(client);
@@ -97,23 +94,30 @@ async function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
   return result?.entry?.[0]?.resource;
 }
 
-function buildValueSetSystems(valueSet: ValueSet, systems: Set<string>, codes: Set<string>): void {
+function buildValueSetSystems(valueSet: ValueSet): Expression[] {
+  const result: Expression[] = [];
   if (valueSet.compose?.include) {
     for (const include of valueSet.compose.include) {
-      processInclude(include, systems, codes);
+      processInclude(result, include);
     }
   }
+  return result;
 }
 
-function processInclude(include: ValueSetComposeInclude, systems: Set<string>, codes: Set<string>): void {
-  if (include.system) {
-    systems.add(include.system);
+function processInclude(systemExpressions: Expression[], include: ValueSetComposeInclude): void {
+  if (!include.system) {
+    return;
   }
+
+  const systemExpression = new Condition('system', Operator.EQUALS, include.system as string);
+
   if (include.concept) {
+    const codeExpressions: Expression[] = [];
     for (const concept of include.concept) {
-      if (concept.code) {
-        codes.add(concept.code);
-      }
+      codeExpressions.push(new Condition('code', Operator.EQUALS, concept.code as string));
     }
+    systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
+  } else {
+    systemExpressions.push(systemExpression);
   }
 }
