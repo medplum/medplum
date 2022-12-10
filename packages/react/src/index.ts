@@ -1,6 +1,7 @@
 export * from './AddressDisplay/AddressDisplay';
 export * from './AddressInput/AddressInput';
 export * from './AnnotationInput/AnnotationInput';
+export * from './AsyncAutocomplete/AsyncAutocomplete';
 export * from './AttachmentArrayDisplay/AttachmentArrayDisplay';
 export * from './AttachmentArrayInput/AttachmentArrayInput';
 export * from './AttachmentButton/AttachmentButton';

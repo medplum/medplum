@@ -119,6 +119,8 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
     // Press the down arrow
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -129,7 +131,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
+    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
   });
 
   test('Search by UUID', async () => {
@@ -147,6 +149,8 @@ describe('HeaderSearchInput', () => {
       jest.advanceTimersByTime(1000);
     });
 
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
     // Press the down arrow
     await act(async () => {
       fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
@@ -157,7 +161,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
+    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
   });
 
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {

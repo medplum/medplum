@@ -13,7 +13,8 @@ export interface CodeInputProps {
 export function CodeInput(props: CodeInputProps): JSX.Element {
   const [value, setValue] = useState<string | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
+  function handleChange(newValues: ValueSetExpansionContains[]): void {
+    const newValue = newValues[0];
     const newCode = valueSetElementToCode(newValue);
     setValue(newCode);
     if (props.onChange) {
@@ -23,7 +24,7 @@ export function CodeInput(props: CodeInputProps): JSX.Element {
 
   return (
     <ValueSetAutocomplete
-      property={props.property}
+      elementDefinition={props.property}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={codeToValueSetElement(value)}

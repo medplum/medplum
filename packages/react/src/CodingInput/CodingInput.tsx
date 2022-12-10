@@ -13,7 +13,8 @@ export interface CodingInputProps {
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const [value, setValue] = useState<Coding | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
+  function handleChange(newValues: ValueSetExpansionContains[]): void {
+    const newValue = newValues[0];
     const newConcept = newValue && valueSetElementToCoding(newValue);
     setValue(newConcept);
     if (props.onChange) {
@@ -23,7 +24,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
 
   return (
     <ValueSetAutocomplete
-      property={props.property}
+      elementDefinition={props.property}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={value && codingToValueSetElement(value)}
