@@ -13,8 +13,8 @@ export interface CodeableConceptInputProps {
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
   const [value, setValue] = useState<CodeableConcept | undefined>(props.defaultValue);
 
-  function handleChange(newValue: ValueSetExpansionContains | undefined): void {
-    const newConcept = newValue && valueSetElementToCodeableConcept(newValue);
+  function handleChange(newValues: ValueSetExpansionContains[]): void {
+    const newConcept = valueSetElementToCodeableConcept(newValues);
     setValue(newConcept);
     if (props.onChange) {
       props.onChange(newConcept);
@@ -23,7 +23,7 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
 
   return (
     <ValueSetAutocomplete
-      property={props.property}
+      elementDefinition={props.property}
       name={props.name}
       placeholder={props.placeholder}
       defaultValue={value && codeableConceptToValueSetElement(value)}
@@ -32,23 +32,23 @@ export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Elem
   );
 }
 
-function codeableConceptToValueSetElement(concept: CodeableConcept): ValueSetExpansionContains {
-  return {
-    system: concept.coding?.[0]?.system,
-    code: concept.coding?.[0]?.code,
-    display: concept.coding?.[0]?.display,
-  };
+function codeableConceptToValueSetElement(concept: CodeableConcept): ValueSetExpansionContains[] | undefined {
+  return concept.coding?.map((c) => ({
+    system: c.system,
+    code: c.code,
+    display: c.display,
+  }));
 }
 
-function valueSetElementToCodeableConcept(element: ValueSetExpansionContains): CodeableConcept {
+function valueSetElementToCodeableConcept(elements: ValueSetExpansionContains[]): CodeableConcept | undefined {
+  if (elements.length === 0) {
+    return undefined;
+  }
   return {
-    text: element.display,
-    coding: [
-      {
-        system: element.system,
-        code: element.code,
-        display: element.display,
-      },
-    ],
+    coding: elements.map((e) => ({
+      system: e.system,
+      code: e.code,
+      display: e.display,
+    })),
   };
 }

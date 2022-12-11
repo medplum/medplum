@@ -2,8 +2,8 @@ import { CodeableConcept, ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { CodeableConceptInput } from './CodeableConceptInput';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { CodeableConceptInput } from './CodeableConceptInput';
 
 const statusProperty: ElementDefinition = {
   binding: {
@@ -91,10 +91,14 @@ describe('CodeableConceptInput', () => {
       fireEvent.change(input, { target: { value: 'XYZ' } });
     });
 
+    await waitFor(() => screen.getByText('+ Create XYZ'));
+
     // Press down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+      });
+    }
 
     // Press "Enter"
     await act(async () => {
@@ -104,7 +108,6 @@ describe('CodeableConceptInput', () => {
     await waitFor(() => screen.getByText('XYZ'));
 
     expect(currValue).toMatchObject({
-      text: 'XYZ',
       coding: [
         {
           code: 'XYZ',

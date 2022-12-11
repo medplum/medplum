@@ -1,10 +1,10 @@
-import { Autocomplete, AutocompleteItem, createStyles, Group, Loader, Text } from '@mantine/core';
-import { formatHumanName, getDisplayString, isUUID } from '@medplum/core';
+import { createStyles, Group, Text } from '@mantine/core';
+import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { ResourceAvatar, useMedplum } from '@medplum/react';
+import { AsyncAutocomplete, AsyncAutocompleteOption, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons';
-import React, { forwardRef, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { forwardRef, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
 
@@ -38,90 +38,85 @@ interface SearchGraphQLResponse {
   };
 }
 
+function toKey(resource: HeaderSearchTypes): string {
+  return resource.id as string;
+}
+
+function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSearchTypes> {
+  return {
+    value: resource.id as string,
+    label: getDisplayString(resource),
+    resource,
+  };
+}
+
 export function HeaderSearchInput(): JSX.Element {
   const { classes } = useStyles();
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const [loadingPromise, setLoadingPromise] = useState<Promise<void> | undefined>();
-  const [data, setData] = useState<AutocompleteItem[]>([]);
+  const location = useLocation();
 
-  const currDataRef = useRef<AutocompleteItem[]>();
-  currDataRef.current = data;
+  const loadData = useCallback(
+    async (input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> => {
+      const query = buildGraphQLQuery(input);
+      const options = { signal };
+      const response = (await medplum.graphql(query, undefined, undefined, options)) as SearchGraphQLResponse;
+      return getResourcesFromResponse(response, input);
+    },
+    [medplum]
+  );
 
-  async function loadData(input: string): Promise<void> {
-    const response = (await medplum.graphql(buildGraphQLQuery(input))) as SearchGraphQLResponse;
-    const resources = getResourcesFromResponse(response, input);
-    setData(resources.map((resource) => ({ value: getDisplayString(resource), resource })));
-  }
-
-  async function handleChange(input: string): Promise<void> {
-    const promise = loadData(input);
-    setLoadingPromise(promise);
-    await promise;
-    setLoadingPromise(undefined);
-  }
-
-  function handleSelect(item: AutocompleteItem): void {
-    setData([]);
-    navigate(`/${item.resource.resourceType}/${item.resource.id}`);
-  }
-
-  async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>): Promise<void> {
-    if (e.key === 'Enter') {
-      // If loading, wait for the next results
-      if (loadingPromise) {
-        await loadingPromise;
+  const handleSelect = useCallback(
+    (item: HeaderSearchTypes[]): void => {
+      if (item.length > 0) {
+        navigate(`/${getReferenceString(item[0])}`);
       }
-
-      // Select the first result
-      if (currDataRef.current && currDataRef.current.length > 0) {
-        handleSelect(currDataRef.current[0]);
-      }
-    }
-  }
+    },
+    [navigate]
+  );
 
   return (
-    <Autocomplete
+    <AsyncAutocomplete
+      key={location.pathname}
       size="sm"
       radius="md"
       className={classes.searchInput}
       icon={<IconSearch size={16} />}
       placeholder="Search"
-      data={data}
       itemComponent={ItemComponent}
-      onChange={handleChange}
-      onItemSubmit={handleSelect}
-      onKeyDown={handleKeyDown}
-      rightSectionWidth={40}
-      rightSection={loadingPromise ? <Loader size={16} /> : null}
-      filter={() => true}
+      toKey={toKey}
+      toOption={toOption}
+      onChange={handleSelect}
+      loadOptions={loadData}
     />
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(({ value, resource, ...others }: any, ref) => {
-  let helpText: string | undefined = undefined;
+const ItemComponent = forwardRef<HTMLDivElement, any>(
+  ({ resource, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
+    let helpText: string | undefined = undefined;
 
-  if (resource.resourceType === 'Patient') {
-    helpText = resource.birthDate;
-  } else if (resource.resourceType === 'ServiceRequest') {
-    helpText = resource.subject?.display;
+    if (resource.resourceType === 'Patient') {
+      helpText = resource.birthDate;
+    } else if (resource.resourceType === 'ServiceRequest') {
+      helpText = resource.subject?.display;
+    }
+
+    return (
+      <div ref={ref} {...others}>
+        <Group noWrap>
+          <ResourceAvatar value={resource} />
+          <div>
+            <Text>{getDisplayString(resource)}</Text>
+            <Text size="xs" color="dimmed">
+              {helpText}
+            </Text>
+          </div>
+        </Group>
+      </div>
+    );
   }
-
-  return (
-    <div ref={ref} {...others}>
-      <Group noWrap>
-        <ResourceAvatar value={resource} />
-        <div>
-          <Text>{value}</Text>
-          <Text size="xs" color="dimmed">
-            {helpText}
-          </Text>
-        </div>
-      </Group>
-    </div>
-  );
-});
+);
 
 function buildGraphQLQuery(input: string): string {
   const escaped = JSON.stringify(input);
