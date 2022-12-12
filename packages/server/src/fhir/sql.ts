@@ -19,6 +19,7 @@ export enum Operator {
   GREATER_THAN_OR_EQUALS = '>=',
   IN = ' IN ',
   ARRAY_CONTAINS = 'ARRAY_CONTAINS',
+  TSVECTOR_MATCH = '@@',
 }
 
 export class Column {
@@ -79,6 +80,11 @@ export class Condition implements Expression {
       sql.append(')');
       sql.append(this.operator);
       sql.param((this.parameter as string).toLowerCase());
+    } else if (this.operator === Operator.TSVECTOR_MATCH) {
+      sql.appendColumn(this.column);
+      sql.append(" @@ to_tsquery('english',");
+      sql.param(this.parameter);
+      sql.append(')');
     } else if (this.operator === Operator.EQUALS && this.parameter === null) {
       sql.appendColumn(this.column);
       sql.append(' IS NULL');

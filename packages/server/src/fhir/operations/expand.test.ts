@@ -60,6 +60,18 @@ describe('Expand', () => {
     expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
   });
 
+  test('Invalid filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=a&filter=b`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0].details?.text).toContain('Invalid filter');
+  });
+
   test('Success', async () => {
     const res = await request(app)
       .get(
@@ -182,11 +194,6 @@ describe('Expand', () => {
             system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
             code: 'S',
             display: 'Never Married',
-          },
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
-            code: 'U',
-            display: 'unmarried',
           },
         ],
       },

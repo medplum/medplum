@@ -23,6 +23,12 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     return;
   }
 
+  const filter = req.query.filter;
+  if (filter !== undefined && typeof filter !== 'string') {
+    sendOutcome(res, badRequest('Invalid filter'));
+    return;
+  }
+
   const pipeIndex = url.indexOf('|');
   if (pipeIndex >= 0) {
     url = url.substring(0, pipeIndex);
@@ -41,8 +47,6 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     sendOutcome(res, badRequest('No systems found'));
     return;
   }
-
-  const filter = req.query.filter || '';
 
   let offset = 0;
   if (req.query.offset) {
@@ -65,7 +69,14 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     .limit(count);
 
   if (filter) {
-    query.where('display', Operator.LIKE, '%' + filter + '%');
+    query.where(
+      'display_tsv',
+      Operator.TSVECTOR_MATCH,
+      filter
+        .split(/\s+/)
+        .map((token) => token + ':*')
+        .join(' & ')
+    );
   }
 
   const rows = await query.execute(client);
