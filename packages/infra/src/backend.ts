@@ -15,6 +15,7 @@ import {
   Duration,
   RemovalPolicy,
 } from 'aws-cdk-lib';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
 import { awsManagedRules } from './waf';
@@ -232,8 +233,28 @@ export class BackEnd extends Construct {
     });
 
     // Task Containers
+    let serverImage: ecs.ContainerImage | undefined = undefined;
+    // Pull out the image name and tag from the image URI if it's an ECR image
+    const ecrImageUriRegex = new RegExp(
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+    );
+    const nameTagMatches = config.serverImage.match(ecrImageUriRegex);
+    const serverImageName = nameTagMatches?.[1];
+    const serverImageTag = nameTagMatches?.[2];
+    if (serverImageName && serverImageTag) {
+      // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
+      const ecrRepo = Repository.fromRepositoryArn(
+        this,
+        'ServerImageRepo',
+        `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
+      );
+      serverImage = ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
+    } else {
+      // Otherwise, use the standard container image
+      serverImage = ecs.ContainerImage.fromRegistry(config.serverImage);
+    }
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: ecs.ContainerImage.fromRegistry(config.serverImage),
+      image: serverImage,
       command: [`aws:/medplum/${name}/`],
       logging: logDriver,
     });
