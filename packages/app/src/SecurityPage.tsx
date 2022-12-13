@@ -35,6 +35,13 @@ export function SecurityPage(): JSX.Element | null {
   const medplum = useMedplum();
   const [details, setDetails] = useState<SecurityDetails | undefined>();
 
+  useEffect(() => {
+    medplum
+      .get('auth/me')
+      .then(setDetails)
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [medplum]);
+
   function revokeLogin(loginId: string): void {
     medplum
       .post('auth/revoke', { loginId })
@@ -43,13 +50,6 @@ export function SecurityPage(): JSX.Element | null {
       .then(() => showNotification({ color: 'green', message: 'Login revoked' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
-
-  useEffect(() => {
-    medplum
-      .get('auth/me')
-      .then(setDetails)
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-  }, [medplum]);
 
   if (!details) {
     return null;

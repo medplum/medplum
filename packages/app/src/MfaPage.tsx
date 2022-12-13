@@ -2,7 +2,7 @@ import { Button, Center, Group, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Document, Form, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -24,6 +24,23 @@ export function MfaPage(): JSX.Element | null {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }, [medplum]);
 
+  const enableMfa = useCallback(
+    (formData: Record<string, string>) => {
+      medplum
+        .post('auth/mfa/enroll', formData)
+        .then(() => {
+          setEnrolled(true);
+          showNotification({ color: 'green', message: 'Success' });
+        })
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    },
+    [medplum]
+  );
+
+  const disableMfa = useCallback(() => {
+    medplum.post('auth/mfa/disable', {}).catch(console.log);
+  }, [medplum]);
+
   if (enrolled === undefined) {
     return null;
   }
@@ -32,24 +49,14 @@ export function MfaPage(): JSX.Element | null {
     return (
       <Group>
         <Title>MFA is enabled</Title>
-        <Button onClick={() => medplum.post('auth/mfa/disable', {}).catch(console.log)}>Disable MFA</Button>
+        <Button onClick={disableMfa}>Disable MFA</Button>
       </Group>
     );
   }
 
   return (
     <Document width={400}>
-      <Form
-        onSubmit={(formData: Record<string, string>) => {
-          medplum
-            .post('auth/mfa/enroll', formData)
-            .then(() => {
-              setEnrolled(true);
-              showNotification({ color: 'green', message: 'Success' });
-            })
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-        }}
-      >
+      <Form onSubmit={enableMfa}>
         <Title>Multi Factor Auth Setup</Title>
         <Center>
           <img src={qrCodeUrl as string} />
