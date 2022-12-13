@@ -516,9 +516,9 @@
             }]
           },
           {
-            "id" : "User.authenticatorSecret",
-            "path" : "User.authenticatorSecret",
-            "definition" : "Shared secret for MFA authenticator.",
+            "id" : "User.mfaSecret",
+            "path" : "User.mfaSecret",
+            "definition" : "Shared secret for MFA authenticator applications.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -526,9 +526,9 @@
             }]
           },
           {
-            "id" : "User.authenticatorEnrolled",
-            "path" : "User.authenticatorEnrolled",
-            "definition" : "Whether the user has completed authenticator enrollment.",
+            "id" : "User.mfaEnrolled",
+            "path" : "User.mfaEnrolled",
+            "definition" : "Whether the user has completed MFA enrollment.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -1030,9 +1030,9 @@
             }]
           },
           {
-            "id" : "Login.authenticatorVerified",
-            "path" : "Login.authenticatorVerified",
-            "definition" : "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.authenticatorEnrolled).",
+            "id" : "Login.mfaVerified",
+            "path" : "Login.mfaVerified",
+            "definition" : "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
             "min" : 0,
             "max" : "1",
             "type" : [{

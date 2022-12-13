@@ -136,9 +136,9 @@ export interface Login {
   /**
    * Whether the user has verified using multi-factor authentication (MFA).
    * This will only be set is the user has MFA enabled (see
-   * User.authenticatorEnrolled).
+   * User.mfaEnrolled).
    */
-  authenticatorVerified?: boolean;
+  mfaVerified?: boolean;
 
   /**
    * Whether a token has been granted for this login.

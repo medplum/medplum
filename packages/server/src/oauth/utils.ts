@@ -211,23 +211,23 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
     throw badRequest('Login granted');
   }
 
-  if (login.authenticatorVerified) {
+  if (login.mfaVerified) {
     throw badRequest('Login already verified');
   }
 
   const user = await systemRepo.readReference(login.user as Reference<User>);
-  if (!user.authenticatorEnrolled) {
+  if (!user.mfaEnrolled) {
     throw badRequest('User not enrolled in MFA');
   }
 
-  const secret = user.authenticatorSecret as string;
+  const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
     throw badRequest('Invalid MFA token');
   }
 
   return systemRepo.updateResource<Login>({
     ...login,
-    authenticatorVerified: true,
+    mfaVerified: true,
   });
 }
 

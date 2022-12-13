@@ -29,7 +29,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     profile,
     config,
     security: {
-      mfaEnrolled: !!user.authenticatorEnrolled,
+      mfaEnrolled: !!user.mfaEnrolled,
       sessions,
     },
   };

@@ -21,21 +21,21 @@ mfaRouter.get(
   authenticateToken,
   asyncWrap(async (_req: Request, res: Response) => {
     let user = await systemRepo.readResource<User>('User', res.locals.user as string);
-    if (user.authenticatorEnrolled) {
+    if (user.mfaEnrolled) {
       res.json({ enrolled: true });
       return;
     }
 
-    if (!user.authenticatorSecret) {
+    if (!user.mfaSecret) {
       user = await systemRepo.updateResource({
         ...user,
-        authenticatorSecret: authenticator.generateSecret(),
+        mfaSecret: authenticator.generateSecret(),
       });
     }
 
     const accountName = `Medplum - ${user.email}`;
     const issuer = 'medplum.com';
-    const secret = user.authenticatorSecret as string;
+    const secret = user.mfaSecret as string;
     const otp = authenticator.keyuri(accountName, issuer, secret);
 
     res.json({
@@ -52,17 +52,17 @@ mfaRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const user = await systemRepo.readResource<User>('User', res.locals.user as string);
 
-    if (user.authenticatorEnrolled) {
+    if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));
       return;
     }
 
-    if (!user.authenticatorSecret) {
+    if (!user.mfaSecret) {
       sendOutcome(res, badRequest('Secret not found'));
       return;
     }
 
-    const secret = user.authenticatorSecret as string;
+    const secret = user.mfaSecret as string;
     const token = req.body.token as string;
     if (!authenticator.check(token, secret)) {
       sendOutcome(res, badRequest('Invalid token'));
@@ -71,7 +71,7 @@ mfaRouter.post(
 
     await systemRepo.updateResource({
       ...user,
-      authenticatorEnrolled: true,
+      mfaEnrolled: true,
     });
     sendOutcome(res, allOk);
   })

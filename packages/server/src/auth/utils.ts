@@ -68,8 +68,8 @@ export async function createProjectMembership(
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
-  if (user.authenticatorEnrolled && !login.authenticatorVerified) {
-    res.json({ login: login.id, authenticatorRequired: true });
+  if (user.mfaEnrolled && login.authMethod === 'password' && !login.mfaVerified) {
+    res.json({ login: login.id, mfaRequired: true });
     return;
   }
 
