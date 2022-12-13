@@ -7,9 +7,6 @@ import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
 
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
 const password = randomUUID();

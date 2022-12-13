@@ -6,9 +6,6 @@ import { loadTestConfig } from '../config';
 import { tryLogin } from '../oauth/utils';
 import { registerNew } from './register';
 
-// jest.mock('hibp');
-// jest.mock('node-fetch');
-
 const app = express();
 
 describe('Revoke', () => {
@@ -20,13 +17,6 @@ describe('Revoke', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
-  // beforeEach(async () => {
-  //   (fetch as unknown as jest.Mock).mockClear();
-  //   (pwnedPassword as unknown as jest.Mock).mockClear();
-  //   setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-  //   setupRecaptchaMock(fetch as unknown as jest.Mock, true);
-  // });
 
   test('Unauthenticated', async () => {
     const res = await request(app).post('/auth/revoke').type('json').send({ loginId: randomUUID() });
