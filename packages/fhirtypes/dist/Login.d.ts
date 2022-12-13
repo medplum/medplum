@@ -6,8 +6,10 @@
 import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
+import { Project } from './Project';
 import { ProjectMembership } from './ProjectMembership';
 import { Reference } from './Reference';
+import { ResourceType } from './ResourceType';
 import { SmartAppLaunch } from './SmartAppLaunch';
 import { User } from './User';
 
@@ -51,6 +53,16 @@ export interface Login {
    * The client requesting the code.
    */
   client?: Reference<ClientApplication>;
+
+  /**
+   * Optional required profile resource type.
+   */
+  profileType?: ResourceType;
+
+  /**
+   * Optional required project for the login.
+   */
+  project?: Reference<Project>;
 
   /**
    * The user requesting the code.

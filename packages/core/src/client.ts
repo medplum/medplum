@@ -241,6 +241,7 @@ export interface GoogleLoginRequest extends BaseLoginRequest {
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly authenticatorRequired?: boolean;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }

@@ -1,11 +1,14 @@
 import { allOk, badRequest } from '@medplum/core';
-import { User } from '@medplum/fhirtypes';
+import { Login, User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
 import { asyncWrap } from '../async';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { authenticateToken } from '../oauth/middleware';
+import { verifyMfaToken } from '../oauth/utils';
+import { sendLoginResult } from './utils';
 
 authenticator.options = {
   window: 1,
@@ -15,6 +18,7 @@ export const mfaRouter = Router();
 
 mfaRouter.get(
   '/status',
+  authenticateToken,
   asyncWrap(async (_req: Request, res: Response) => {
     let user = await systemRepo.readResource<User>('User', res.locals.user as string);
     if (user.authenticatorEnrolled) {
@@ -43,6 +47,7 @@ mfaRouter.get(
 
 mfaRouter.post(
   '/enroll',
+  authenticateToken,
   [body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
     const user = await systemRepo.readResource<User>('User', res.locals.user as string);
@@ -74,7 +79,7 @@ mfaRouter.post(
 
 mfaRouter.post(
   '/verify',
-  [body('token').notEmpty().withMessage('Missing token')],
+  [body('login').notEmpty().withMessage('Missing login'), body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -82,21 +87,8 @@ mfaRouter.post(
       return;
     }
 
-    const user = await systemRepo.readResource<User>('User', res.locals.user as string);
-
-    if (!user.authenticatorEnrolled) {
-      sendOutcome(res, badRequest('Not enrolled'));
-      return;
-    }
-
-    const secret = user.authenticatorSecret as string;
-    const token = req.body.token as string;
-
-    if (!authenticator.check(token, secret)) {
-      sendOutcome(res, badRequest('Invalid token'));
-      return;
-    }
-
-    sendOutcome(res, allOk);
+    const login = await systemRepo.readResource<Login>('Login', req.body.login);
+    const result = await verifyMfaToken(login, req.body.token);
+    return sendLoginResult(res, result);
   })
 );

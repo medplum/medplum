@@ -47,10 +47,12 @@ export function MfaPage(): JSX.Element | null {
 
   if (enrolled) {
     return (
-      <Group>
-        <Title>MFA is enabled</Title>
-        <Button onClick={disableMfa}>Disable MFA</Button>
-      </Group>
+      <Document>
+        <Group>
+          <Title>MFA is enabled</Title>
+          <Button onClick={disableMfa}>Disable MFA</Button>
+        </Group>
+      </Document>
     );
   }
 

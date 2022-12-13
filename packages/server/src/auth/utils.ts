@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
-import { getUserMemberships } from '../oauth/utils';
+import { getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
   project: Project,
@@ -65,21 +65,15 @@ export async function createProjectMembership(
  * @param res The response object.
  * @param user The user.
  * @param login The login details.
- * @param projectId The optional projectId for scoping.
  */
-export async function sendLoginResult(
-  res: Response,
-  login: Login,
-  projectId: string | undefined,
-  resourceType: string | undefined
-): Promise<void> {
+export async function sendLoginResult(res: Response, login: Login): Promise<void> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   if (user.authenticatorEnrolled && !login.authenticatorVerified) {
-    res.json({ login: login.id, authenticatorEnrolled: true });
+    res.json({ login: login.id, authenticatorRequired: true });
     return;
   }
 
-  if (projectId === 'new') {
+  if (login.project?.reference === 'Project/new') {
     // User is creating a new project.
     res.json({ login: login.id });
     return;
@@ -98,7 +92,7 @@ export async function sendLoginResult(
   // User has multiple profiles, so the user needs to select
   // Safe to rewrite attachments,
   // because we know that these are all resources that the user has access to
-  const memberships = await getUserMemberships(login?.user as Reference<User>, projectId, resourceType);
+  const memberships = await getMembershipsForLogin(login);
   const redactedMemberships = memberships.map((m) => ({
     id: m.id,
     project: m.project,

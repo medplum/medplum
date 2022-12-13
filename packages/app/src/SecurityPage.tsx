@@ -107,7 +107,7 @@ export function SecurityPage(): JSX.Element | null {
       <Document>
         <Title>Multi Factor Auth</Title>
         <p>Enrolled: {details.security.mfaEnrolled.toString()}</p>
-        <Button onClick={() => navigate('/mfa')}>Enroll</Button>
+        {!details.security.mfaEnrolled && <Button onClick={() => navigate('/mfa')}>Enroll</Button>}
       </Document>
     </>
   );

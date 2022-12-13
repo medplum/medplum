@@ -18,7 +18,7 @@ import { setPasswordHandler, setPasswordValidators } from './setpassword';
 
 export const authRouter = Router();
 authRouter.use(getRateLimiter());
-authRouter.use('/mfa', authenticateToken, mfaRouter);
+authRouter.use('/mfa', mfaRouter);
 authRouter.get('/me', authenticateToken, asyncWrap(meHandler));
 authRouter.post('/newuser', newUserValidators, asyncWrap(newUserHandler));
 authRouter.post('/newproject', newProjectValidators, asyncWrap(newProjectHandler));

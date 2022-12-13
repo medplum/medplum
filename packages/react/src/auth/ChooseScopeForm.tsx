@@ -1,4 +1,5 @@
 import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
+import { LoginAuthenticationResponse } from '@medplum/core';
 import React from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
@@ -7,7 +8,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
 export interface ChooseScopeFormProps {
   login: string;
   scope: string | undefined;
-  handleAuthResponse: (response: any) => void;
+  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
