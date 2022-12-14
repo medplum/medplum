@@ -92,4 +92,20 @@ describe('Me', () => {
     expect(res6.body.security.sessions[0].browser).toBeDefined();
     expect(res6.body.security.sessions[0].os).toBeDefined();
   });
+
+  test('Get me as ClientApplication', async () => {
+    const { client } = await registerNew({
+      firstName: 'Client',
+      lastName: 'Test',
+      projectName: 'Client Test',
+      email: `client${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    const res = await request(app)
+      .get('/auth/me')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+  });
 });
