@@ -75,7 +75,7 @@ Cons:
 
 ![Medplum Bot pulls data](./migration-medplum-bot-pulls.png)
 
-Medplum [Bots](https://www.medplum.com/docs/tutorials/bots/bot-basics) is a built-in automation framework. Medplum Bots can make outbound HTTPS requests on a fixed timer to pull data from the existing system.
+Medplum [Bots](/docs/bots/bot-basics) is a built-in automation framework. Medplum Bots can make outbound HTTPS requests on a fixed timer to pull data from the existing system.
 
 Pros:
 
