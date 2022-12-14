@@ -630,8 +630,8 @@ export class Repository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.#writeResource(client, resource as T);
-      await this.#writeLookupTables(client, resource as T);
+      await this.#writeResource(client, resource);
+      await this.#writeLookupTables(client, resource);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -640,7 +640,7 @@ export class Repository {
       client.release();
     }
 
-    return resource as T;
+    return resource;
   }
 
   /**
