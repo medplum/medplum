@@ -1,5 +1,5 @@
 import { badRequest } from '@medplum/core';
-import { ClientApplication } from '@medplum/fhirtypes';
+import { ClientApplication, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -23,7 +23,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   // Resource type can optionally be specified.
   // If specified, only memberships of that type will be returned.
   // If not specified, all memberships will be considered.
-  const resourceType = req.body.resourceType as string | undefined;
+  const resourceType = req.body.resourceType as ResourceType | undefined;
 
   // Project ID can come from one of two sources
   // 1) Passed in explicitly as projectId
@@ -59,5 +59,5 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  await sendLoginResult(res, login, projectId, resourceType);
+  await sendLoginResult(res, login);
 }

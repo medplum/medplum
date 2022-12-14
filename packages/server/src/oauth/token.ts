@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getUserMemberships, revokeLogin, timingSafeEqualStr } from './utils';
+import { getAuthTokens, getClientApplicationMembership, revokeLogin, timingSafeEqualStr } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -76,13 +76,11 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const memberships = await getUserMemberships(createReference(client));
-  if (!memberships || memberships.length !== 1) {
+  const membership = await getClientApplicationMembership(client);
+  if (!membership) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
-
-  const membership = memberships[0];
 
   const scope = (req.body.scope || 'openid') as string;
 

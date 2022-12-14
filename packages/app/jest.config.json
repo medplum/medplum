@@ -1,6 +1,6 @@
 {
   "testEnvironment": "jsdom",
-  "testTimeout": 60000,
+  "testTimeout": 120000,
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },

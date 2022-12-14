@@ -21,11 +21,13 @@ import { FormPage } from './FormPage';
 import { HomePage } from './HomePage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
+import { MfaPage } from './MfaPage';
 import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
+import { SecurityPage } from './SecurityPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 import { SmartSearchPage } from './SmartSearchPage';
@@ -39,6 +41,8 @@ export function AppRoutes(): JSX.Element {
       <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/changepassword" element={<ChangePasswordPage />} />
+      <Route path="/security" element={<SecurityPage />} />
+      <Route path="/mfa" element={<MfaPage />} />
       <Route path="/batch" element={<BatchPage />} />
       <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
       <Route path="/smart" element={<SmartSearchPage />} />

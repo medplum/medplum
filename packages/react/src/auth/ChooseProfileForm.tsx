@@ -1,4 +1,5 @@
 import { Avatar, Center, Group, Stack, Text, Title, UnstyledButton } from '@mantine/core';
+import { LoginAuthenticationResponse } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React from 'react';
 import { Logo } from '../Logo/Logo';
@@ -7,7 +8,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
 export interface ChooseProfileFormProps {
   login: string;
   memberships: ProjectMembership[];
-  handleAuthResponse: (response: any) => void;
+  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {

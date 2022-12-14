@@ -2,16 +2,10 @@ import { createReference } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
-
-jest.mock('hibp');
-jest.mock('node-fetch');
 
 const app = express();
 
@@ -23,13 +17,6 @@ describe('Me', () => {
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  beforeEach(async () => {
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
   test('Unauthenticated', async () => {
@@ -44,6 +31,8 @@ describe('Me', () => {
       projectName: 'Hamilton Project',
       email: `alex${randomUUID()}@example.com`,
       password: 'password!@#',
+      remoteAddress: '5.5.5.5',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
     });
 
     // Get the user profile with default user configuration
@@ -98,5 +87,9 @@ describe('Me', () => {
     expect(res6.status).toBe(200);
     expect(res6.body).toBeDefined();
     expect(res6.body.config).toMatchObject(config);
+    expect(res6.body.security).toBeDefined();
+    expect(res6.body.security.sessions).toBeDefined();
+    expect(res6.body.security.sessions[0].browser).toBeDefined();
+    expect(res6.body.security.sessions[0].os).toBeDefined();
   });
 });

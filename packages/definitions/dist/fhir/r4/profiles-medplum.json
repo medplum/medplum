@@ -516,6 +516,26 @@
             }]
           },
           {
+            "id" : "User.mfaSecret",
+            "path" : "User.mfaSecret",
+            "definition" : "Shared secret for MFA authenticator applications.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "User.mfaEnrolled",
+            "path" : "User.mfaEnrolled",
+            "definition" : "Whether the user has completed MFA enrollment.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
             "id" : "User.project",
             "path" : "User.project",
             "definition" : "Optional project if the user only exists for the project. This is used for the project-specific user database.",
@@ -871,6 +891,31 @@
             }]
           },
           {
+            "id" : "Login.profileType",
+            "path" : "Login.profileType",
+            "definition" : "Optional required profile resource type.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "http://hl7.org/fhir/ValueSet/resource-types|4.0.1"
+            }
+          },
+          {
+            "id" : "Login.project",
+            "path" : "Login.project",
+            "definition" : "Optional required project for the login.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/Project"]
+            }]
+          },
+          {
             "id" : "Login.user",
             "path" : "Login.user",
             "definition" : "The user requesting the code.",
@@ -982,6 +1027,16 @@
             "max" : "1",
             "type" : [{
               "code" : "string"
+            }]
+          },
+          {
+            "id" : "Login.mfaVerified",
+            "path" : "Login.mfaVerified",
+            "definition" : "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
             }]
           },
           {

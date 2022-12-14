@@ -1,10 +1,10 @@
-import { createReference, resolveId, unauthorized } from '@medplum/core';
+import { resolveId, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
-import { getUserMemberships, timingSafeEqualStr } from './utils';
+import { getClientApplicationMembership, timingSafeEqualStr } from './utils';
 
 export function authenticateToken(req: Request, res: Response, next: NextFunction): Promise<void> {
   return authenticateTokenImpl(req, res).then(next).catch(next);
@@ -77,12 +77,12 @@ async function authenticateBasicAuth(req: Request, res: Response, token: string)
     authMethod: 'client',
   };
 
-  const memberships = await getUserMemberships(createReference(client));
-  if (memberships.length !== 1) {
+  const membership = await getClientApplicationMembership(client);
+  if (!membership) {
     throw unauthorized;
   }
 
-  await setupLocals(req, res, login, memberships[0]);
+  await setupLocals(req, res, login, membership);
 }
 
 async function setupLocals(req: Request, res: Response, login: Login, membership: ProjectMembership): Promise<void> {

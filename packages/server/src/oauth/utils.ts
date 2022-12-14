@@ -3,6 +3,7 @@ import {
   createReference,
   Filter,
   getDateProperty,
+  getReferenceString,
   Operator,
   ProfileResource,
   resolveId,
@@ -14,12 +15,14 @@ import {
   Project,
   ProjectMembership,
   Reference,
+  ResourceType,
   SmartAppLaunch,
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
+import { authenticator } from 'otplib';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -31,7 +34,7 @@ export interface LoginRequest {
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
-  readonly resourceType?: string;
+  readonly resourceType?: ResourceType;
   readonly projectId?: string;
   readonly clientId?: string;
   readonly launchId?: string;
@@ -106,6 +109,8 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     resourceType: 'Login',
     client: client && createReference(client),
     launch: launch && createReference(launch),
+    project: request.projectId ? { reference: 'Project/' + request.projectId } : undefined,
+    profileType: request.resourceType,
     user: createReference(user),
     authMethod: request.authMethod,
     authTime: new Date().toISOString(),
@@ -123,7 +128,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getUserMemberships(createReference(user), request.projectId, request.resourceType);
+  const memberships = await getMembershipsForLogin(login);
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
@@ -189,24 +194,57 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
 }
 
 /**
+ * Verifies the MFA token for a login.
+ * Ensures that the login is valid.
+ * Ensures that the token is valid.
+ * On success, updates the login with the MFA status.
+ * On error, throws an error.
+ * @param login The login resource.
+ * @param token The user supplied MFA token.
+ */
+export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+  if (login.revoked) {
+    throw badRequest('Login revoked');
+  }
+
+  if (login.granted) {
+    throw badRequest('Login granted');
+  }
+
+  if (login.mfaVerified) {
+    throw badRequest('Login already verified');
+  }
+
+  const user = await systemRepo.readReference(login.user as Reference<User>);
+  if (!user.mfaEnrolled) {
+    throw badRequest('User not enrolled in MFA');
+  }
+
+  const secret = user.mfaSecret as string;
+  if (!authenticator.check(token, secret)) {
+    throw badRequest('Invalid MFA token');
+  }
+
+  return systemRepo.updateResource<Login>({
+    ...login,
+    mfaVerified: true,
+  });
+}
+
+/**
  * Returns a list of profiles that the user has access to.
  * When a user logs in, gather all the available profiles.
  * If there is only one profile, then automatically select it.
  * Otherwise, the user must select a profile.
- * @param user Reference to the user.
- * @param projectId Optional project ID.
+ * @param login The login resource.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getUserMemberships(
-  user: Reference<ClientApplication | User>,
-  projectId?: string,
-  resourceType?: string
-): Promise<ProjectMembership[]> {
-  if (projectId === 'new') {
+export async function getMembershipsForLogin(login: Login): Promise<ProjectMembership[]> {
+  if (login.project?.reference === 'Project/new') {
     return [];
   }
 
-  if (!user.reference) {
+  if (!login.user?.reference) {
     throw new Error('User reference is missing');
   }
 
@@ -214,15 +252,15 @@ export async function getUserMemberships(
     {
       code: 'user',
       operator: Operator.EQUALS,
-      value: user.reference,
+      value: login.user.reference,
     },
   ];
 
-  if (projectId) {
+  if (login.project?.reference) {
     filters.push({
       code: 'project',
       operator: Operator.EQUALS,
-      value: 'Project/' + projectId,
+      value: login.project.reference,
     });
   }
 
@@ -234,11 +272,35 @@ export async function getUserMemberships(
 
   let memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map((e) => e.resource as ProjectMembership);
 
-  if (resourceType) {
-    memberships = memberships.filter((m) => m.profile?.reference?.startsWith(resourceType));
+  const profileType = login.profileType;
+  if (profileType) {
+    memberships = memberships.filter((m) => m.profile?.reference?.startsWith(profileType));
   }
 
   return memberships;
+}
+
+/**
+ * Returns the project membership for the client application.
+ * @param client The client application.
+ * @returns The project membership for the client application if found; otherwise undefined.
+ */
+export async function getClientApplicationMembership(
+  client: ClientApplication
+): Promise<ProjectMembership | undefined> {
+  const bundle = await systemRepo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    count: 1,
+    filters: [
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: getReferenceString(client),
+      },
+    ],
+  });
+
+  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as ProjectMembership) : undefined;
 }
 
 /**
