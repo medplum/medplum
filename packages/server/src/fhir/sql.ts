@@ -1,4 +1,5 @@
 import { Client, Pool, PoolClient } from 'pg';
+import Cursor from 'pg-cursor';
 
 const DEBUG = false;
 
@@ -216,6 +217,10 @@ export class SqlBuilder {
     return this.#sql.join('');
   }
 
+  getValues(): any[] {
+    return this.#values;
+  }
+
   async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
     const sql = this.toString();
     let startTime = 0;
@@ -334,6 +339,32 @@ export class SelectQuery extends BaseQuery {
     const sql = new SqlBuilder();
     this.buildSql(sql);
     return sql.execute(conn);
+  }
+
+  async executeCursor(pool: Pool, callback: (row: any) => Promise<void>): Promise<void> {
+    const BATCH_SIZE = 100;
+
+    const sql = new SqlBuilder();
+    this.buildSql(sql);
+
+    const client = await pool.connect();
+    try {
+      const cursor = client.query(new Cursor(sql.toString(), sql.getValues()));
+      try {
+        let hasMore = true;
+        while (hasMore) {
+          const rows = await cursor.read(BATCH_SIZE);
+          for (const row of rows) {
+            await callback(row);
+          }
+          hasMore = rows.length === BATCH_SIZE;
+        }
+      } finally {
+        await cursor.close();
+      }
+    } finally {
+      client.release();
+    }
   }
 
   #buildSelect(sql: SqlBuilder): void {
