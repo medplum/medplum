@@ -1,4 +1,4 @@
-import { Button, Title } from '@mantine/core';
+import { Button, Group, Stack, Text, Title } from '@mantine/core';
 import { PlanDefinition, Reference, RequestGroup } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Form, FormSection, MedplumLink, ReferenceInput, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -48,29 +48,33 @@ export function PlanDefinitionApplyForm(props: PlanDefinitionApplyFormProps): JS
           .catch(console.log);
       }}
     >
-      <Title>Start "{props.planDefinition.title}"</Title>
-      <p>
-        Use the <strong>Apply</strong> operation to create a group of tasks for a workflow.
-      </p>
-      <p>The following tasks will be created:</p>
-      <ul>
-        {props.planDefinition.action?.map((action, index) => (
-          <li key={`action-${index}`}>
-            {action.definitionCanonical?.startsWith('Questionnaire/') && 'Questionnaire request: '}
-            {action.title && <>{action.title}</>}
-            {action.code && <CodeableConceptDisplay value={action.code[0]} />}
-          </li>
-        ))}
-      </ul>
-      <FormSection title="Subject">
-        <ReferenceInput
-          name="subject"
-          targetTypes={['Patient', 'Practitioner']}
-          defaultValue={subject}
-          onChange={setSubject}
-        />
-      </FormSection>
-      <Button type="submit">Go</Button>
+      <Stack>
+        <Title>Start "{props.planDefinition.title}"</Title>
+        <Text>
+          Use the <strong>Apply</strong> operation to create a group of tasks for a workflow.
+        </Text>
+        <Text>The following tasks will be created:</Text>
+        <ul>
+          {props.planDefinition.action?.map((action, index) => (
+            <li key={`action-${index}`}>
+              {action.definitionCanonical?.startsWith('Questionnaire/') && 'Questionnaire request: '}
+              {action.title && <>{action.title}</>}
+              {action.code && <CodeableConceptDisplay value={action.code[0]} />}
+            </li>
+          ))}
+        </ul>
+        <FormSection title="Subject">
+          <ReferenceInput
+            name="subject"
+            targetTypes={['Patient', 'Practitioner']}
+            defaultValue={subject}
+            onChange={setSubject}
+          />
+        </FormSection>
+        <Group position="right" mt="xl">
+          <Button type="submit">Go</Button>
+        </Group>
+      </Stack>
     </Form>
   );
 }
