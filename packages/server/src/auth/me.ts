@@ -14,24 +14,32 @@ interface UserSession {
   os?: string;
 }
 
-export async function meHandler(req: Request, res: Response): Promise<void> {
-  const user = await systemRepo.readResource<User>('User', res.locals.user as string);
+interface UserSecurity {
+  mfaEnrolled: boolean;
+  sessions: UserSession[];
+}
 
+export async function meHandler(req: Request, res: Response): Promise<void> {
   const membership = res.locals.membership as ProjectMembership;
 
   const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
 
   const config = await getUserConfiguration(membership);
 
-  const sessions = await getSessions(user);
+  let security: UserSecurity | undefined = undefined;
+  if (membership.user?.reference?.startsWith('User/')) {
+    const user = await systemRepo.readResource<User>('User', res.locals.user as string);
+    const sessions = await getSessions(user);
+    security = {
+      mfaEnrolled: !!user.mfaEnrolled,
+      sessions,
+    };
+  }
 
   const result = {
     profile,
     config,
-    security: {
-      mfaEnrolled: !!user.mfaEnrolled,
-      sessions,
-    },
+    security,
   };
 
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
