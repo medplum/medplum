@@ -2031,6 +2031,9 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
+    this.#clientId = clientId;
+    this.#clientSecret = clientSecret;
+
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'client_credentials');
     formBody.set('client_id', clientId);
