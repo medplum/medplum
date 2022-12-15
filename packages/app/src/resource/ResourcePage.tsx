@@ -24,8 +24,8 @@ import {
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
   QuestionnaireForm,
-  RequestGroupDisplay,
   ReferenceRangeEditor,
+  RequestGroupDisplay,
   ResourceBlame,
   ResourceForm,
   ResourceHistoryTable,
@@ -345,17 +345,27 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
         </Document>
       );
     case 'report':
-      return <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />;
+      return (
+        <Document>
+          <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />
+        </Document>
+      );
     case 'checklist':
       return (
-        <RequestGroupDisplay
-          value={props.resource as RequestGroup}
-          onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)}
-          onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)}
-        />
+        <Document>
+          <RequestGroupDisplay
+            value={props.resource as RequestGroup}
+            onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)}
+            onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)}
+          />
+        </Document>
       );
     case 'apply':
-      return <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />;
+      return (
+        <Document>
+          <PlanDefinitionApplyForm planDefinition={props.resource as PlanDefinition} />
+        </Document>
+      );
     case 'bots':
       return <BotsPage resource={props.resource} />;
     case 'ranges':
