@@ -172,14 +172,6 @@ describe('ResourcePage', () => {
     expect(screen.getByText('456')).toBeInTheDocument();
   });
 
-  test('Patient apps', async () => {
-    await setup('/Patient/123/apps');
-    await waitFor(() => screen.getByText('Apps'));
-
-    expect(screen.getByText('Apps')).toBeInTheDocument();
-    expect(screen.getByText('Vitals')).toBeInTheDocument();
-  });
-
   test('Encounter timeline', async () => {
     await setup('/Encounter/123/timeline');
     await waitFor(() => screen.getByText('Timeline'));
@@ -293,5 +285,64 @@ describe('ResourcePage', () => {
 
     // Do not open a new browser tab
     expect(window.open).not.toHaveBeenCalled();
+  });
+
+  test('No apps found', async () => {
+    await setup('/Bot/123/apps');
+    await waitFor(() => screen.getByText('No apps found.', { exact: false }));
+
+    expect(screen.getByText('No apps found.', { exact: false })).toBeInTheDocument();
+  });
+
+  test('Patient apps', async () => {
+    await setup('/Patient/123/apps');
+    await waitFor(() => screen.getByText('Apps'));
+
+    expect(screen.getByText('Apps')).toBeInTheDocument();
+    expect(screen.getByText('Vitals')).toBeInTheDocument();
+  });
+
+  test('Patient Smart App Launch', async () => {
+    global.window = Object.create(window);
+    Object.defineProperty(window, 'location', {
+      value: {
+        assign: jest.fn(),
+      },
+      writable: true,
+    });
+
+    await setup('/Patient/123/apps');
+    await waitFor(() => screen.getByText('Apps'));
+
+    expect(screen.getByText('Inferno Client')).toBeInTheDocument();
+    expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Inferno Client'));
+    });
+
+    expect(window.location.assign).toBeCalled();
+  });
+
+  test('Encounter Smart App Launch', async () => {
+    global.window = Object.create(window);
+    Object.defineProperty(window, 'location', {
+      value: {
+        assign: jest.fn(),
+      },
+      writable: true,
+    });
+
+    await setup('/Encounter/123/apps');
+    await waitFor(() => screen.getByText('Apps'));
+
+    expect(screen.getByText('Inferno Client')).toBeInTheDocument();
+    expect(screen.getByText('Client application used for Inferno ONC compliance testing')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Inferno Client'));
+    });
+
+    expect(window.location.assign).toBeCalled();
   });
 });

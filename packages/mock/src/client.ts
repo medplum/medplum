@@ -46,6 +46,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import { ExampleSmartClientApplication } from './mocks/smart';
 import {
   ExampleWorkflowPlanDefinition,
   ExampleWorkflowQuestionnaire1,
@@ -452,6 +453,7 @@ class MockFetchClient {
     this.mockRepo.createResource(ExampleWorkflowTask2);
     this.mockRepo.createResource(ExampleWorkflowTask3);
     this.mockRepo.createResource(ExampleWorkflowRequestGroup);
+    this.mockRepo.createResource(ExampleSmartClientApplication);
 
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
