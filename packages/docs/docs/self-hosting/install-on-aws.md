@@ -256,3 +256,22 @@ Run CDK diff:
 ```bash
 npx cdk diff -c config=my-config.json
 ```
+
+## Deploy the app
+
+After the AWS infrastructure is setup, you need to deploy the front-end web application.
+
+Use the `deploy-app.sh` script with a `APP_BUCKET` environment variable:
+
+> **_TODO:_** Update the script to pull from a centralized config file rather than environment variable.
+
+```bash
+export APP_BUCKET=app.example.com
+./scripts/deploy-app.sh
+```
+
+or
+
+```bash
+APP_BUCKET=app.example.com ./scripts/deploy-app.sh
+```
