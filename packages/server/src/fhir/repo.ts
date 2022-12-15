@@ -590,13 +590,12 @@ export class Repository {
     }
 
     const client = getClient();
-    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'id' });
+    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
     this.#addDeletedFilter(builder);
 
-    const rows = await builder.execute(client);
-    for (const { id } of rows) {
-      await this.reindexResource(resourceType, id);
-    }
+    await builder.executeCursor(client, async (row: any) => {
+      await this.#reindexResourceImpl(JSON.parse(row.content) as Resource);
+    });
   }
 
   /**
@@ -612,6 +611,17 @@ export class Repository {
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
+    return this.#reindexResourceImpl(resource);
+  }
+
+  /**
+   * Internal implementation of reindexing a resource.
+   * This accepts a resource as a parameter, rather than a resource type and ID.
+   * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
+   * @param resource The resource.
+   * @returns The reindexed resource.
+   */
+  async #reindexResourceImpl<T extends Resource>(resource: T): Promise<T> {
     (resource.meta as Meta).compartment = this.#getCompartments(resource);
 
     // Note: We don't try/catch this because if connecting throws an exception.
@@ -620,8 +630,8 @@ export class Repository {
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.#writeResource(client, resource as T);
-      await this.#writeLookupTables(client, resource as T);
+      await this.#writeResource(client, resource);
+      await this.#writeLookupTables(client, resource);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -630,7 +640,7 @@ export class Repository {
       client.release();
     }
 
-    return resource as T;
+    return resource;
   }
 
   /**
