@@ -735,5 +735,19 @@
       "comment": "",
       "inherited": false
     }
+  ],
+  "searchParameters": [
+    {
+      "name": "code",
+      "type": "token",
+      "description": "The code of the observation definition.",
+      "expression": "ObservationDefinition.code"
+    },
+    {
+      "name": "publisher",
+      "type": "reference",
+      "description": "The publisher of the observation definition.",
+      "expression": "ObservationDefinition.publisher"
+    }
   ]
 }

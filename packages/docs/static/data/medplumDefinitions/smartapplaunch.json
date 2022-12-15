@@ -1,21 +1,21 @@
 {
-  "name": "PasswordChangeRequest",
+  "name": "SmartAppLaunch",
   "location": "medplum",
-  "description": "Password change request for the 'forgot password' flow.",
+  "description": "User specific configuration for the Medplum application.",
   "properties": [
     {
-      "name": "PasswordChangeRequest",
+      "name": "SmartAppLaunch",
       "depth": 0,
       "types": [
         {
           "datatype": ""
         }
       ],
-      "path": "PasswordChangeRequest",
+      "path": "SmartAppLaunch",
       "min": 0,
       "max": "*",
-      "short": "Password change request for the 'forgot password' flow.",
-      "definition": "Password change request for the 'forgot password' flow.",
+      "short": "User specific configuration for the Medplum application.",
+      "definition": "User specific configuration for the Medplum application.",
       "comment": "",
       "inherited": false
     },
@@ -27,7 +27,7 @@
           "datatype": "string"
         }
       ],
-      "path": "PasswordChangeRequest.id",
+      "path": "SmartAppLaunch.id",
       "min": 0,
       "max": "1",
       "short": "Logical id of this artifact",
@@ -45,7 +45,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "PasswordChangeRequest.meta",
+      "path": "SmartAppLaunch.meta",
       "min": 0,
       "max": "1",
       "short": "",
@@ -62,7 +62,7 @@
           "datatype": "uri"
         }
       ],
-      "path": "PasswordChangeRequest.implicitRules",
+      "path": "SmartAppLaunch.implicitRules",
       "min": 0,
       "max": "1",
       "short": "",
@@ -79,17 +79,16 @@
           "datatype": "code"
         }
       ],
-      "path": "PasswordChangeRequest.language",
+      "path": "SmartAppLaunch.language",
       "min": 0,
       "max": "1",
       "short": "",
       "definition": "The base language in which the resource is written.",
       "comment": "",
-      "inherited": true,
-      "base": "Resource"
+      "inherited": false
     },
     {
-      "name": "user",
+      "name": "patient",
       "depth": 1,
       "types": [
         {
@@ -99,63 +98,38 @@
       ],
       "referenceTypes": [
         {
-          "datatype": "User",
-          "documentLocation": "medplum"
+          "datatype": "Patient",
+          "documentLocation": "resource"
         }
       ],
-      "path": "PasswordChangeRequest.user",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "The user requesting the password change.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "secret",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "PasswordChangeRequest.secret",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "Secret string used to verify the identity of the user.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "used",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "boolean"
-        }
-      ],
-      "path": "PasswordChangeRequest.used",
+      "path": "SmartAppLaunch.patient",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Whether this request has been used, and is therefore no longer valid.",
+      "definition": "Optional patient indicating that the app was launched in the patient context.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "redirectUri",
+      "name": "encounter",
       "depth": 1,
       "types": [
         {
-          "datatype": "uri"
+          "datatype": "Reference",
+          "documentLocation": "datatype"
         }
       ],
-      "path": "PasswordChangeRequest.redirectUri",
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SmartAppLaunch.encounter",
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "Redirect URI used when redirecting a client back to the client application.",
+      "definition": "Optional encounter indicating that the app was launched in the encounter context.",
       "comment": "",
       "inherited": false
     }
