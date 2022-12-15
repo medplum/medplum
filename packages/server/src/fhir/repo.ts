@@ -125,6 +125,12 @@ export interface RepositoryContext {
   superAdmin?: boolean;
 
   /**
+   * Optional flag for project administrators,
+   * which grants additional project-level access.
+   */
+  projectAdmin?: boolean;
+
+  /**
    * Optional flag to validate resources in strict mode.
    * Strict mode validates resources against StructureDefinition resources,
    * which includes strict date validation, backbone elements, and more.
@@ -645,13 +651,13 @@ export class Repository {
 
   /**
    * Resends subscriptions for the resource.
-   * This is only available to the system and super admin accounts.
+   * This is only available to the admin accounts.
    * This should not result in any change to the resource or its history.
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!this.#isSuperAdmin()) {
+    if (!this.#isSuperAdmin() && !this.#context.projectAdmin) {
       throw forbidden;
     }
 
@@ -1940,6 +1946,7 @@ export async function getRepoForLogin(
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: login.superAdmin,
+    projectAdmin: membership.admin,
     accessPolicy,
     strictMode,
     extendedMode,
