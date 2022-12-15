@@ -403,6 +403,10 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startClientLogin('test-client-id', 'test-client-secret');
     expect(result1).toBeDefined();
+
+    tokenExpired = true;
+    const result2 = await client.get('expired');
+    expect(result2).toBeDefined();
   });
 
   test('HTTP GET', async () => {
@@ -437,7 +441,7 @@ describe('Client', () => {
     await expect(client.processCode(loginResponse.code as string)).rejects.toThrow('Failed to fetch tokens');
 
     const result = client.get('expired');
-    await expect(result).rejects.toThrow('Invalid refresh token');
+    await expect(result).rejects.toThrow('Unauthenticated');
     expect(onUnauthenticated).toBeCalled();
   });
 

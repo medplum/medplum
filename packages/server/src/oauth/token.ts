@@ -93,7 +93,6 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     authTime: new Date().toISOString(),
     granted: true,
     scope,
-    refreshSecret: generateSecret(32),
   });
 
   await sendTokenResponse(res, login, membership);
