@@ -63,7 +63,7 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
         <div key={questionnaire.id}>
           <Title order={3}>
             <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(props.resource)}`}>
-              {questionnaire.name}
+              {questionnaire.title || questionnaire.name}
             </MedplumLink>
           </Title>
           <Text>{questionnaire?.description}</Text>
