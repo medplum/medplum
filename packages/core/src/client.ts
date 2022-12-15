@@ -411,11 +411,12 @@ export class MedplumClient extends EventTarget {
   readonly #requestCache: LRUCache<RequestCacheEntry>;
   readonly #cacheTime: number;
   readonly #baseUrl: string;
-  readonly #clientId: string;
   readonly #authorizeUrl: string;
   readonly #tokenUrl: string;
   readonly #logoutUrl: string;
   readonly #onUnauthenticated?: () => void;
+  #clientId?: string;
+  #clientSecret?: string;
   #accessToken?: string;
   #refreshToken?: string;
   #refreshPromise?: Promise<any>;
@@ -1930,16 +1931,15 @@ export class MedplumClient extends EventTarget {
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
    */
-  async #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
-    return this.#refresh()
-      .then(() => this.#request(method, url, options))
-      .catch((error) => {
-        this.clear();
-        if (this.#onUnauthenticated) {
-          this.#onUnauthenticated();
-        }
-        return Promise.reject(error);
-      });
+  #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
+    if (this.#refresh()) {
+      return this.#request(method, url, options);
+    }
+    this.clear();
+    if (this.#onUnauthenticated) {
+      this.#onUnauthenticated();
+    }
+    return Promise.reject(new Error('Unauthenticated'));
   }
 
   /**
@@ -1969,7 +1969,7 @@ export class MedplumClient extends EventTarget {
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', this.#clientId);
+    url.searchParams.set('client_id', this.#clientId as string);
     url.searchParams.set('redirect_uri', getBaseUrl());
     url.searchParams.set('code_challenge_method', 'S256');
     url.searchParams.set('code_challenge', sessionStorage.getItem('codeChallenge') as string);
@@ -1984,7 +1984,7 @@ export class MedplumClient extends EventTarget {
   processCode(code: string): Promise<ProfileResource> {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
-    formBody.set('client_id', this.#clientId);
+    formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
     formBody.set('redirect_uri', getBaseUrl());
 
@@ -2000,22 +2000,26 @@ export class MedplumClient extends EventTarget {
    * Tries to refresh the auth tokens.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  async #refresh(): Promise<void> {
+  #refresh(): Promise<void> | undefined {
     if (this.#refreshPromise) {
       return this.#refreshPromise;
     }
 
-    if (!this.#refreshToken) {
-      this.clear();
-      throw new Error('Invalid refresh token');
+    if (this.#refreshToken) {
+      const formBody = new URLSearchParams();
+      formBody.set('grant_type', 'refresh_token');
+      formBody.set('client_id', this.#clientId as string);
+      formBody.set('refresh_token', this.#refreshToken);
+      this.#refreshPromise = this.#fetchTokens(formBody);
+      return this.#refreshPromise;
     }
 
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', 'refresh_token');
-    formBody.set('client_id', this.#clientId);
-    formBody.set('refresh_token', this.#refreshToken);
-    this.#refreshPromise = this.#fetchTokens(formBody);
-    await this.#refreshPromise;
+    if (this.#clientId && this.#clientSecret) {
+      this.#refreshPromise = this.startClientLogin(this.#clientId, this.#clientSecret);
+      return this.#refreshPromise;
+    }
+
+    return undefined;
   }
 
   /**
@@ -2027,6 +2031,9 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
+    this.#clientId = clientId;
+    this.#clientSecret = clientSecret;
+
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'client_credentials');
     formBody.set('client_id', clientId);

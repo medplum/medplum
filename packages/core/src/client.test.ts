@@ -2,6 +2,7 @@ import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { ProfileResource, stringify } from './utils';
@@ -122,10 +123,14 @@ function mockFetch(url: string, options: any): Promise<any> {
     };
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
+      let clientId = defaultOptions.clientId;
+      if (options.body && options.body.get) {
+        clientId = options.body.get('client_id') || defaultOptions.clientId;
+      }
       result = {
         status: 200,
-        access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
-        refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
+        access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+        refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
       };
     } else {
       result = {
@@ -403,6 +408,10 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startClientLogin('test-client-id', 'test-client-secret');
     expect(result1).toBeDefined();
+
+    tokenExpired = true;
+    const result2 = await client.get('expired');
+    expect(result2).toBeDefined();
   });
 
   test('HTTP GET', async () => {
@@ -437,7 +446,7 @@ describe('Client', () => {
     await expect(client.processCode(loginResponse.code as string)).rejects.toThrow('Failed to fetch tokens');
 
     const result = client.get('expired');
-    await expect(result).rejects.toThrow('Invalid refresh token');
+    await expect(result).rejects.toThrow('Unauthenticated');
     expect(onUnauthenticated).toBeCalled();
   });
 
