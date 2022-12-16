@@ -9,7 +9,7 @@ import React from 'react';
  * draft, active, retired, unknown
  *
  * Observation status: https://www.hl7.org/fhir/valueset-observation-status.html
- * registered, preliminary, final, amended, cancelled, entered-in-error, unknown
+ * registered, preliminary, final, amended,  corrected, cancelled, entered-in-error, unknown
  *
  * DiagnosticReport status: https://hl7.org/fhir/valueset-diagnostic-report-status.html
  * registered, preliminary, final, amended, corrected, appended, cancelled, entered-in-error, unknown
@@ -34,6 +34,7 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   preliminary: 'blue',
   final: 'green',
   amended: 'yellow',
+  corrected: 'yellow',
   cancelled: 'red',
   requested: 'blue',
   received: 'blue',
