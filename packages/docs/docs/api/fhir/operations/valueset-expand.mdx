@@ -1,0 +1,104 @@
+---
+sidebar_position: 4
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/valueset-expand.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# ValueSet $expand Operation
+
+Medplum implements the FHIR [`$expand` operation](https://hl7.org/fhir/valueset-operation-expand.html)
+
+> This operation may be used during design and development to validate application design. It can also be used at run-time. One possible use might be that a client asks the server whether a proposed update is valid as the user is editing a dialog and displays an updated error to the user. The operation can be used as part of a light-weight two phase commit protocol but there is no expectation that the server will hold the content of the resource after this operation is used, or that the server guarantees to successfully perform an actual create, update or delete after the validation operation completes.
+
+## Invoke the `$expand` operation
+
+```
+[base]/ValueSet/$expand
+```
+
+### Parameters
+
+| Name     | Type     | Description                         | Required |
+| -------- | -------- | ----------------------------------- | -------- |
+| `url`    | `string` | The URL of the value set to expand. | Yes      |
+| `filter` | `string` | A filter to apply to the value set. | No       |
+| `offset` | `number` | The offset to start the expansion.  | No       |
+| `count`  | `number` | The number of results to return.    | No       |
+
+### Output
+
+The result of the expansion in `ValueSet` form. The contents of the expansion are in the `ValueSet.expansion` property.
+
+### Examples
+
+Query all values for a ValueSet:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender' \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN"
+```
+
+```json
+{
+  "resourceType": "ValueSet",
+  "url": "http://hl7.org/fhir/ValueSet/administrative-gender",
+  "expansion": {
+    "offset": 0,
+    "contains": [
+      {
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "code": "female",
+        "display": "Female"
+      },
+      {
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "code": "male",
+        "display": "Male"
+      },
+      {
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "code": "other",
+        "display": "Other"
+      },
+      {
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "code": "unknown",
+        "display": "Unknown"
+      }
+    ]
+  }
+}
+```
+
+Filter by search string:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/ValueSet/$expand?url=http%3A%2F%2Fhl7.org%2Ffhir%2FValueSet%2Fadministrative-gender&filter=f' \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN"
+```
+
+```json
+{
+  "resourceType": "ValueSet",
+  "url": "http://hl7.org/fhir/ValueSet/administrative-gender",
+  "expansion": {
+    "offset": 0,
+    "contains": [
+      {
+        "system": "http://hl7.org/fhir/administrative-gender",
+        "code": "female",
+        "display": "Female"
+      }
+    ]
+  }
+}
+```
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `validateResource` convenience method:
+
+<MedplumCodeBlock language="ts" selectBlocks="expand" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
