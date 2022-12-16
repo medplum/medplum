@@ -22,7 +22,7 @@ For example:
 ```bash
 curl 'https://api.medplum.com/fhir/R4/Patient/$validate' \
   -X POST \
-  -H "Content-Type: application/json" \
+  -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
   -d '{"resourceType":"Patient"}'
 ```
