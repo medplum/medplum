@@ -349,6 +349,7 @@ export const HomerMedia: Media = {
 export const HomerObservation1: Observation = {
   resourceType: 'Observation',
   id: '1',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -362,6 +363,7 @@ export const HomerObservation1: Observation = {
 export const HomerObservation2: Observation = {
   resourceType: 'Observation',
   id: '2',
+  status: 'corrected',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -385,6 +387,7 @@ export const HomerObservation2: Observation = {
 export const HomerObservation3: Observation = {
   resourceType: 'Observation',
   id: '3',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -408,6 +411,7 @@ export const HomerObservation3: Observation = {
 export const HomerObservation4: Observation = {
   resourceType: 'Observation',
   id: '4',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -442,6 +446,7 @@ export const HomerObservation4: Observation = {
 export const HomerObservation5: Observation = {
   resourceType: 'Observation',
   id: '5',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -460,6 +465,7 @@ export const HomerObservation5: Observation = {
 export const HomerObservation6: Observation = {
   resourceType: 'Observation',
   id: '6',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -488,6 +494,7 @@ export const HomerObservation6: Observation = {
 export const HomerObservation7: Observation = {
   resourceType: 'Observation',
   id: '7',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -520,6 +527,7 @@ export const HomerObservation7: Observation = {
 export const HomerObservation8: Observation = {
   resourceType: 'Observation',
   id: '8',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
