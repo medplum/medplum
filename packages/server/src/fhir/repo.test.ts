@@ -6,6 +6,7 @@ import {
   Bundle,
   BundleEntry,
   Communication,
+  DiagnosticReport,
   Encounter,
   Observation,
   OperationOutcome,
@@ -2130,5 +2131,34 @@ describe('FHIR Repo', () => {
     const provenanceEntry = searchResult.entry?.find((entry) => entry.resource?.resourceType === 'Provenance');
     expect(provenanceEntry).toBeDefined();
     expect(provenanceEntry?.search?.mode).toEqual('include');
+  });
+
+  test('DiagnosticReport category with system', async () => {
+    const code = randomUUID();
+    const dr = await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { coding: [{ code }] },
+      category: [{ coding: [{ system: 'http://loinc.org', code: 'LP217198-3' }] }],
+    });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'DiagnosticReport',
+      filters: [
+        {
+          code: 'code',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'category',
+          operator: Operator.EQUALS,
+          value: 'http://loinc.org|LP217198-3',
+        },
+      ],
+      count: 1,
+    });
+
+    expect(bundleContains(bundle, dr)).toBeTruthy();
   });
 });

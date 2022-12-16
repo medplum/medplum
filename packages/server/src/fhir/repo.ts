@@ -1086,7 +1086,12 @@ export class Repository {
     const column = new Column(resourceType, details.columnName);
     const expressions = [];
     for (const valueStr of filter.value.split(',')) {
-      const value = details.type === SearchParameterType.BOOLEAN ? valueStr === 'true' : valueStr;
+      let value: string | boolean = valueStr;
+      if (details.type === SearchParameterType.BOOLEAN) {
+        value = valueStr === 'true';
+      } else if (valueStr.includes('|')) {
+        value = valueStr.split('|').pop() as string;
+      }
       if (details.array) {
         expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value));
       } else if (filter.operator === FhirOperator.CONTAINS) {
