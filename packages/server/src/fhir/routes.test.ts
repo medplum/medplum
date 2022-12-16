@@ -1,8 +1,10 @@
+import { getReferenceString } from '@medplum/core';
 import { Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { initTestAuth } from '../test.setup';
 
@@ -490,5 +492,21 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(403);
+  });
+
+  test('Resend as project admin', async () => {
+    const { profile, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(200);
   });
 });
