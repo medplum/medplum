@@ -6,6 +6,7 @@ import { setPassword } from '../auth/setpassword';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { validateResourceType } from '../fhir/schema';
+import { logger } from '../logger';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
@@ -77,7 +78,13 @@ superAdminRouter.post(
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
 
-    await systemRepo.reindexResourceType(resourceType);
+    // Start reindex in the background
+    // This can take a long time, so we don't want to block the response
+    systemRepo
+      .reindexResourceType(resourceType)
+      .then(() => logger.info(`Reindexing ${resourceType} completed`))
+      .catch((err) => logger.error(`Reindexing ${resourceType} failed: ${err}`));
+
     sendOutcome(res, allOk);
   })
 );
