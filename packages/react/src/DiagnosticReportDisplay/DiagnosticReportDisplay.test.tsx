@@ -1,10 +1,12 @@
+import { createReference } from '@medplum/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
+import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 
 const syntheaReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
@@ -88,6 +90,9 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Critical high')).toBeInTheDocument();
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
+    expect(screen.getAllByText('final')).toHaveLength(7);
+    expect(screen.getAllByText('corrected')).toHaveLength(1);
+    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-inner'));
   });
 
   test('Renders by reference', async () => {
@@ -108,5 +113,16 @@ describe('DiagnosticReportDisplay', () => {
     });
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('Hello world')).toBeDefined();
+  });
+
+  test('Renders observation category', async () => {
+    const obs = await medplum.createResource(CreatinineObservation);
+    ExampleReport.result = [createReference(obs)];
+    await medplum.updateResource(ExampleReport);
+    await act(async () => {
+      setup({ value: ExampleReport });
+    });
+    expect(screen.getByText('Diagnostic Report')).toBeDefined();
+    expect(screen.getByText('Day 2')).toBeDefined();
   });
 });

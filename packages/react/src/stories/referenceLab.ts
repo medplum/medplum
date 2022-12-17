@@ -1,4 +1,5 @@
-import { ObservationDefinition } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { DiagnosticReport, Observation, ObservationDefinition } from '@medplum/fhirtypes';
 
 export const TestosteroneDefinition: ObservationDefinition = {
   resourceType: 'ObservationDefinition',
@@ -552,4 +553,100 @@ export const HDLDefinition: ObservationDefinition = {
       },
     },
   ],
+};
+
+export const CreatinineObservation: Observation = {
+  id: 'obs-1',
+  resourceType: 'Observation',
+  status: 'final',
+  category: [{ text: 'Kidney' }, { text: 'Day 2' }],
+  code: {
+    coding: [
+      {
+        system: 'https://intranet.aumc.nl/labtestcodes',
+        code: '20005',
+        display: 'Creatinine(Serum)',
+      },
+    ],
+  },
+  subject: {
+    reference: 'Patient/f201',
+    display: 'Roel',
+  },
+  issued: '2013-04-04T14:34:00+01:00',
+  performer: [
+    {
+      reference: 'Practitioner/f202',
+      display: 'Luigi Maas',
+    },
+  ],
+  valueQuantity: {
+    value: 122,
+    unit: 'umol/L',
+    system: 'http://snomed.info/sct',
+    code: '258814008',
+  },
+  interpretation: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+          code: 'H',
+        },
+      ],
+    },
+  ],
+  referenceRange: [
+    {
+      low: {
+        value: 64,
+      },
+      high: {
+        value: 104,
+      },
+      type: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/referencerange-meaning',
+            code: 'normal',
+            display: 'Normal Range',
+          },
+        ],
+      },
+    },
+  ],
+};
+
+export const ExampleReport: DiagnosticReport = {
+  resourceType: 'DiagnosticReport',
+  id: 'report-1',
+  status: 'final',
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://snomed.info/sct',
+          code: '15220000',
+          display: 'Laboratory test',
+        },
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v2-0074',
+          code: 'LAB',
+        },
+      ],
+    },
+  ],
+  subject: {
+    reference: 'Patient/f201',
+    display: 'Roel',
+  },
+  issued: '2013-03-11T10:28:00+01:00',
+  performer: [
+    {
+      reference: 'Organization/f201',
+      display: 'AUMC',
+    },
+  ],
+  result: [createReference(CreatinineObservation)],
+  conclusion: 'All observations within normal limits',
 };

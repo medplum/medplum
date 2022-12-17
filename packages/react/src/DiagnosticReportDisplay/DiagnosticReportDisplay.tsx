@@ -12,6 +12,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { useResource } from '../useResource/useResource';
 
 const useStyles = createStyles((theme) => ({
@@ -44,6 +45,7 @@ export interface DiagnosticReportDisplayProps {
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
   const diagnosticReport = useResource(props.value);
   const specimen = useResource(diagnosticReport?.specimen?.[0]);
+
   if (!diagnosticReport) {
     return null;
   }
@@ -125,6 +127,8 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
           <th>Value</th>
           <th>Reference Range</th>
           <th>Interpretation</th>
+          <th>Category</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
@@ -167,6 +171,18 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
           <CodeableConceptDisplay value={observation.interpretation[0]} />
         )}
       </td>
+      <td>
+        {observation.category && observation.category.length > 0 && (
+          <ul>
+            {observation.category.map((concept) => (
+              <li>
+                <CodeableConceptDisplay value={concept} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </td>
+      <td>{observation.status && <StatusBadge status={observation.status} />}</td>
     </tr>
   );
 }
