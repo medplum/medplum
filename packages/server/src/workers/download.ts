@@ -1,6 +1,6 @@
 import { isGone } from '@medplum/core';
 import { Binary, Meta, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -26,7 +26,6 @@ export interface DownloadJobData {
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
-let queueScheduler: QueueScheduler | undefined = undefined;
 let queue: Queue<DownloadJobData> | undefined = undefined;
 let worker: Worker<DownloadJobData> | undefined = undefined;
 
@@ -39,8 +38,6 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config,
   };
-
-  queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
   queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
@@ -55,7 +52,7 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
 
   worker = new Worker<DownloadJobData>(queueName, execDownloadJob, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
+  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
@@ -64,11 +61,6 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
  * Clsoes the BullMQ worker.
  */
 export async function closeDownloadWorker(): Promise<void> {
-  if (queueScheduler) {
-    await queueScheduler.close();
-    queueScheduler = undefined;
-  }
-
   if (queue) {
     await queue.close();
     queue = undefined;
