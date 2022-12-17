@@ -26,15 +26,8 @@ superAdminRouter.post(
       return;
     }
 
-    // try {
-    //   console.log('cody start createValueSets');
     await createValueSets();
     sendOutcome(res, allOk);
-    // } catch (err) {
-    //   console.log('err', err);
-    //   console.log('err', JSON.stringify(err, null, 2));
-    //   throw err;
-    // }
   })
 );
 
