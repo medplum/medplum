@@ -66,6 +66,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       item: newResponseItems,
     };
     setResponse(newResponse);

@@ -131,6 +131,7 @@ describe('QuestionnaireForm', () => {
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
+    expect(response.status).toBe('completed');
     expect(response.item).toHaveLength(2);
     expect(response.item[0].item).toHaveLength(2);
     expect(response.item[0].item[0].linkId).toBe('question1');
