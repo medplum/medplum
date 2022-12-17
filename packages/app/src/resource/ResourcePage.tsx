@@ -11,6 +11,7 @@ import {
   Questionnaire,
   RequestGroup,
   Resource,
+  ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import {
@@ -98,43 +99,17 @@ export function ResourcePage(): JSX.Element {
     setError(undefined);
     setLoading(true);
 
-    // Build a batch request
-    // 1) Read the resource
-    // 2) Read the history
-    const requestBundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'batch',
-      entry: [
-        {
-          request: {
-            method: 'GET',
-            url: `${resourceType}/${id}`,
-          },
-        },
-        {
-          request: {
-            method: 'GET',
-            url: `${resourceType}/${id}/_history`,
-          },
-        },
-      ],
-    };
+    medplum
+      .readResource(resourceType as ResourceType, id)
+      .then(setValue)
+      .catch(setError)
+      .finally(() => setLoading(false));
 
     medplum
-      .executeBatch(requestBundle)
-      .then((responseBundle: Bundle) => {
-        if (responseBundle.entry?.[0]?.response?.status !== '200') {
-          setError(responseBundle.entry?.[0]?.response?.outcome as OperationOutcome);
-        } else {
-          setValue(responseBundle.entry?.[0]?.resource);
-        }
-        setHistoryBundle(responseBundle.entry?.[1]?.resource as Bundle);
-        setLoading(false);
-      })
-      .catch((reason) => {
-        setError(reason);
-        setLoading(false);
-      });
+      .readHistory(resourceType as ResourceType, id)
+      .then(setHistoryBundle)
+      .catch(setError)
+      .finally(() => setLoading(false));
   }, [medplum, resourceType, id]);
 
   /**

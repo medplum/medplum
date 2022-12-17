@@ -17,10 +17,10 @@
     "test": "jest"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.51.1",
-    "cdk": "2.51.1",
-    "cdk-nag": "2.21.12",
-    "cdk-serverless-clamscan": "2.4.95",
-    "constructs": "10.1.170"
+    "aws-cdk-lib": "2.55.1",
+    "cdk": "2.55.1",
+    "cdk-nag": "2.21.34",
+    "cdk-serverless-clamscan": "2.4.117",
+    "constructs": "10.1.192"
   }
 }

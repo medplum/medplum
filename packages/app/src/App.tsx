@@ -1,7 +1,6 @@
 import { AppShell, useMantineTheme } from '@mantine/core';
 import { ErrorBoundary, useMedplum, useMedplumProfile } from '@medplum/react';
 import React, { Suspense, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { AppHeader } from './AppHeader';
 import { AppNavbar } from './AppNavbar';
 import { AppRoutes } from './AppRoutes';
@@ -10,7 +9,6 @@ import { Loading } from './components/Loading';
 import './App.css';
 
 export function App(): JSX.Element {
-  const location = useLocation();
   const theme = useMantineTheme();
   const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
@@ -45,7 +43,7 @@ export function App(): JSX.Element {
       navbar={(profile && navbarOpen && <AppNavbar closeNavbar={closeNavbar} />) as React.ReactElement | undefined}
       header={profile && <AppHeader navbarToggle={toggleNavbar} />}
     >
-      <ErrorBoundary key={location.pathname}>
+      <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <AppRoutes />
         </Suspense>
