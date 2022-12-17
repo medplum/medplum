@@ -1338,6 +1338,11 @@ export class Repository {
       } catch (ex) {
         // Silent ignore
       }
+    } else if (typeof value === 'object') {
+      if ('start' in value) {
+        // Can be a Period
+        return this.#buildDateColumn(value.start);
+      }
     }
     return undefined;
   }
