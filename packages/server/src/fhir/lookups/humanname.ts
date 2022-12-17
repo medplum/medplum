@@ -2,6 +2,7 @@ import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
+import { ResourceWrapper } from '../repo';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -48,10 +49,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
    * Indexes a resource HumanName values.
    * Attempts to reuse existing identifiers if they are correct.
    * @param client The database client.
-   * @param resource The resource to index.
-   * @returns Promise on completion.
+   * @param wrapper The resource wrapper.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
+    const resource = wrapper.resource as Resource;
     if (
       resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
@@ -66,15 +67,14 @@ export class HumanNameTable extends LookupTable<HumanName> {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(client, resourceType, resourceId);
+    const existing = await this.getExistingValues(client, wrapper);
 
     if (!compareArrays(names, existing)) {
       if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
+        await this.deleteValuesForResource(client, wrapper);
       }
 
+      const resourceId = wrapper.id;
       const values = [];
 
       for (let i = 0; i < names.length; i++) {
@@ -90,7 +90,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
         });
       }
 
-      await this.insertValuesForResource(client, resourceType, values);
+      await this.insertValuesForResource(client, wrapper, values);
     }
   }
 }

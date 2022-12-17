@@ -1,6 +1,7 @@
 import { CodeSystem, CodeSystemConcept, Resource, ValueSet, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
+import { ResourceWrapper } from '../repo';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -26,23 +27,29 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
+  /**
+   * Indexes a resource value set element values.
+   * Attempts to reuse existing identifiers if they are correct.
+   * @param client The database client.
+   * @param wrapper The resource wrapper.
+   */
+  async indexResource(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
+    const resource = wrapper.resource as Resource;
     let elements: ValueSetExpansionContains[] | undefined = undefined;
 
-    if (resourceType === 'ValueSet') {
-      elements = this.getValueSetElements(resource as ValueSet);
-    } else if (resourceType === 'CodeSystem') {
-      elements = this.getCodeSystemElements(resource as CodeSystem);
+    if (resource.resourceType === 'ValueSet') {
+      elements = this.getValueSetElements(resource);
+    } else if (resource.resourceType === 'CodeSystem') {
+      elements = this.getCodeSystemElements(resource);
     }
 
     if (!elements || elements.length === 0) {
       return;
     }
 
-    await this.deleteValuesForResource(client, resource);
+    await this.deleteValuesForResource(client, wrapper);
 
+    const resourceId = wrapper.id;
     const values = [];
 
     for (let i = 0; i < elements.length; i++) {
@@ -57,7 +64,7 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
       });
     }
 
-    await this.insertValuesForResource(client, resourceType, values);
+    await this.insertValuesForResource(client, wrapper, values);
   }
 
   private getValueSetElements(valueSet: ValueSet): ValueSetExpansionContains[] {

@@ -18,6 +18,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
+import { ResourceWrapper } from '../repo';
 import { Column, Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
 import { getSearchParameters } from '../structure';
 import { LookupTable } from './lookuptable';
@@ -67,20 +68,20 @@ export class TokenTable extends LookupTable<Token> {
    * Indexes a resource token values.
    * Attempts to reuse existing tokens if they are correct.
    * @param client The database client.
-   * @param resource The resource to index.
+   * @param wrapper The resource wrapper.
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
+    const resource = wrapper.resource as Resource;
     const tokens = getTokens(resource);
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
-    const existing = await getExistingValues(client, resourceType, resourceId);
+    const existing = await getExistingValues(client, wrapper);
 
     if (!compareArrays(tokens, existing)) {
       if (existing.length > 0) {
-        await this.deleteValuesForResource(client, resource);
+        await this.deleteValuesForResource(client, wrapper);
       }
 
+      const resourceId = wrapper.id;
       const values = [];
 
       for (let i = 0; i < tokens.length; i++) {
@@ -94,7 +95,7 @@ export class TokenTable extends LookupTable<Token> {
         });
       }
 
-      await this.insertValuesForResource(client, resourceType, values);
+      await this.insertValuesForResource(client, wrapper, values);
     }
   }
 
@@ -341,16 +342,17 @@ function buildSimpleToken(
 
 /**
  * Returns the existing list of indexed tokens.
- * @param resourceId The FHIR resource ID.
- * @returns Promise for the list of indexed tokens  .
+ * @param client The database client.
+ * @param wrapper The resource wrapper.
+ * @returns Promise for the list of indexed tokens.
  */
-async function getExistingValues(client: PoolClient, resourceType: ResourceType, resourceId: string): Promise<Token[]> {
-  const tableName = getTableName(resourceType);
+async function getExistingValues(client: PoolClient, wrapper: ResourceWrapper): Promise<Token[]> {
+  const tableName = getTableName((wrapper.resource as Resource).resourceType);
   return new SelectQuery(tableName)
     .column('code')
     .column('system')
     .column('value')
-    .where('resourceId', Operator.EQUALS, resourceId)
+    .where('resourceId', Operator.EQUALS, wrapper.id)
     .orderBy('index')
     .execute(client)
     .then((result) =>

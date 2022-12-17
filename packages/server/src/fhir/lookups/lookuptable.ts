@@ -1,6 +1,7 @@
 import { Operator as FhirOperator, Filter, SortRule } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { ResourceWrapper } from '../repo';
 import {
   Column,
   Condition,
@@ -46,9 +47,9 @@ export abstract class LookupTable<T> {
   /**
    * Indexes the resource in the lookup table.
    * @param client The database client.
-   * @param resource The resource to index.
+   * @param wrapper The resource wrapper.
    */
-  abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
+  abstract indexResource(client: PoolClient, wrapper: ResourceWrapper): Promise<void>;
 
   /**
    * Builds a "where" condition for the select query builder.
@@ -112,19 +113,14 @@ export abstract class LookupTable<T> {
   /**
    * Returns the existing list of indexed addresses.
    * @param client The database client.
-   * @param resourceType The FHIR resource type.
-   * @param resourceId The FHIR resource ID.
+   * @param wrapper The resource wrapper.
    * @returns Promise for the list of indexed addresses.
    */
-  protected async getExistingValues(
-    client: Pool | PoolClient,
-    resourceType: ResourceType,
-    resourceId: string
-  ): Promise<T[]> {
-    const tableName = this.getTableName(resourceType);
+  protected async getExistingValues(client: Pool | PoolClient, wrapper: ResourceWrapper): Promise<T[]> {
+    const tableName = this.getTableName((wrapper.resource as Resource).resourceType);
     return new SelectQuery(tableName)
       .column('content')
-      .where('resourceId', Operator.EQUALS, resourceId)
+      .where('resourceId', Operator.EQUALS, wrapper.id)
       .orderBy('index')
       .execute(client)
       .then((result) => result.map((row) => JSON.parse(row.content) as T));
@@ -133,29 +129,29 @@ export abstract class LookupTable<T> {
   /**
    * Inserts values into the lookup table for a resource.
    * @param client The database client.
-   * @param resourceType The resource type.
+   * @param wrapper The resource wrapper.
    * @param values The values to insert.
    */
   protected async insertValuesForResource(
     client: Pool | PoolClient,
-    resourceType: ResourceType,
+    wrapper: ResourceWrapper,
     values: Record<string, any>[]
   ): Promise<void> {
     if (values.length === 0) {
       return;
     }
-    const tableName = this.getTableName(resourceType);
+    const tableName = this.getTableName((wrapper.resource as Resource).resourceType);
     await new InsertQuery(tableName, values).execute(client);
   }
 
   /**
    * Deletes the resource from the lookup table.
    * @param client The database client.
-   * @param resource The resource to delete.
+   * @param wrapper The resource wrapper.
    */
-  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
-    const tableName = this.getTableName(resource.resourceType);
-    const resourceId = resource.id as string;
+  async deleteValuesForResource(client: Pool | PoolClient, wrapper: ResourceWrapper): Promise<void> {
+    const tableName = this.getTableName((wrapper.resource as Resource).resourceType);
+    const resourceId = wrapper.id;
     await new DeleteQuery(tableName).where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 }
