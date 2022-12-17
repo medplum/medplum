@@ -203,6 +203,24 @@
       "definition": "Optional account reference that can be used for sub-project compartments.",
       "comment": "Optional account reference that can be used for sub-project compartments.",
       "inherited": false
+    },
+    {
+      "name": "compartment",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Meta.compartment",
+      "min": 0,
+      "max": "*",
+      "short": "The list of compartments containing this resource. This is readonly and is set by the server.",
+      "definition": "The list of compartments containing this resource. This is readonly and is set by the server.",
+      "comment": "The list of compartments containing this resource. This is readonly and is set by the server.",
+      "inherited": false
     }
   ]
 }

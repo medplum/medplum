@@ -1,0 +1,25 @@
+---
+title: SmartAppLaunch
+sidebar_position: 11
+---
+
+import definition from '@site/static/data/medplumDefinitions/smartapplaunch.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# SmartAppLaunch
+
+User specific configuration for the Medplum application.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

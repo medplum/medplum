@@ -1,17 +1,17 @@
 {
-  "name": "UserConfiguration",
+  "name": "BulkDataExport",
   "location": "medplum",
   "description": "User specific configuration for the Medplum application.",
   "properties": [
     {
-      "name": "UserConfiguration",
+      "name": "BulkDataExport",
       "depth": 0,
       "types": [
         {
           "datatype": ""
         }
       ],
-      "path": "UserConfiguration",
+      "path": "BulkDataExport",
       "min": 0,
       "max": "*",
       "short": "User specific configuration for the Medplum application.",
@@ -27,7 +27,7 @@
           "datatype": "string"
         }
       ],
-      "path": "UserConfiguration.id",
+      "path": "BulkDataExport.id",
       "min": 0,
       "max": "1",
       "short": "Logical id of this artifact",
@@ -45,7 +45,7 @@
           "documentLocation": "datatype"
         }
       ],
-      "path": "UserConfiguration.meta",
+      "path": "BulkDataExport.meta",
       "min": 0,
       "max": "1",
       "short": "",
@@ -62,7 +62,7 @@
           "datatype": "uri"
         }
       ],
-      "path": "UserConfiguration.implicitRules",
+      "path": "BulkDataExport.implicitRules",
       "min": 0,
       "max": "1",
       "short": "",
@@ -79,7 +79,7 @@
           "datatype": "code"
         }
       ],
-      "path": "UserConfiguration.language",
+      "path": "BulkDataExport.language",
       "min": 0,
       "max": "1",
       "short": "",
@@ -89,206 +89,227 @@
       "base": "Resource"
     },
     {
-      "name": "name",
+      "name": "status",
       "depth": 1,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "UserConfiguration.name",
-      "min": 0,
-      "max": "1",
-      "short": "",
-      "definition": "A name associated with the UserConfiguration.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "menu",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "BackboneElement"
-        }
-      ],
-      "path": "UserConfiguration.menu",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "Optional menu of shortcuts to URLs.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "title",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "UserConfiguration.menu.title",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "Title of the menu.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "link",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "BackboneElement"
-        }
-      ],
-      "path": "UserConfiguration.menu.link",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "Shortcut links to URLs.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "name",
-      "depth": 3,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "UserConfiguration.menu.link.name",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "The human friendly name of the link.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "target",
-      "depth": 3,
-      "types": [
-        {
-          "datatype": "url"
-        }
-      ],
-      "path": "UserConfiguration.menu.link.target",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "The URL target of the link.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "search",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "BackboneElement"
-        }
-      ],
-      "path": "UserConfiguration.search",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "Shortcut links to URLs.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "name",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "UserConfiguration.search.name",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "The human friendly name of the link.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "criteria",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "string"
-        }
-      ],
-      "path": "UserConfiguration.search.criteria",
-      "min": 1,
-      "max": "1",
-      "short": "",
-      "definition": "The rules that the server should use to determine which resources to return.",
-      "comment": "The rules are search criteria (without the [base] part). Like Bundle.entry.request.url, it has no leading \"/\".",
-      "inherited": false
-    },
-    {
-      "name": "option",
-      "depth": 1,
-      "types": [
-        {
-          "datatype": "BackboneElement"
-        }
-      ],
-      "path": "UserConfiguration.option",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "User options that control the display of the application.",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "id",
-      "depth": 2,
       "types": [
         {
           "datatype": "code"
         }
       ],
-      "path": "UserConfiguration.option.id",
+      "path": "BulkDataExport.status",
+      "min": 1,
+      "max": "1",
+      "short": "active | error | completed",
+      "definition": "The status of the request.",
+      "comment": "",
+      "inherited": true,
+      "base": "ServiceRequest"
+    },
+    {
+      "name": "requestTime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "BulkDataExport.requestTime",
       "min": 1,
       "max": "1",
       "short": "",
-      "definition": "The unique identifier of the option.",
+      "definition": "Indicates the server's time when the query is requested.",
       "comment": "",
       "inherited": false
     },
     {
-      "name": "value[x]",
-      "depth": 2,
+      "name": "transactionTime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "BulkDataExport.transactionTime",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Indicates the server's time when the query is run. The response SHOULD NOT include any resources modified after this instant, and SHALL include any matching resources modified up to and including this instant.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "request",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "BulkDataExport.request",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The full URL of the original Bulk Data kick-off request. In the case of a POST request, this URL will not include the request parameters.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "requiresAccessToken",
+      "depth": 1,
       "types": [
         {
           "datatype": "boolean"
-        },
-        {
-          "datatype": "code"
-        },
-        {
-          "datatype": "decimal"
-        },
-        {
-          "datatype": "integer"
-        },
-        {
-          "datatype": "string"
         }
       ],
-      "path": "UserConfiguration.option.value[x]",
+      "path": "BulkDataExport.requiresAccessToken",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Indicates whether downloading the generated files requires the same authorization mechanism as the $export operation itself.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "output",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "BulkDataExport.output",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "An array of file items with one entry for each generated file. If no resources are returned from the kick-off request, the server SHOULD return an empty array.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "BulkDataExport.output.type",
       "min": 1,
       "max": "1",
-      "short": "Value of option",
-      "definition": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+      "short": "",
+      "definition": "The FHIR resource type that is contained in the file.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "url",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "BulkDataExport.output.url",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "deleted",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "BulkDataExport.deleted",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "An array of deleted file items following the same structure as the output array.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "BulkDataExport.deleted.type",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The FHIR resource type that is contained in the file.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "url",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "BulkDataExport.deleted.url",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "error",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "BulkDataExport.error",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Array of message file items following the same structure as the output array.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "BulkDataExport.error.type",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The FHIR resource type that is contained in the file.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "url",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "BulkDataExport.error.url",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
       "comment": "",
       "inherited": false
     }
@@ -296,9 +317,9 @@
   "searchParameters": [
     {
       "name": "name",
-      "type": "string",
-      "description": "The name of the user configuration",
-      "expression": "UserConfiguration.name"
+      "type": "token",
+      "description": "The name of the access policy",
+      "expression": "BulkDataExport.status"
     }
   ]
 }
