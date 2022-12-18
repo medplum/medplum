@@ -240,8 +240,8 @@ function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: 
  * @param searchParam The search parameter.
  * @param identifier The Identifier object to be indexed.
  */
-function buildIdentifierToken(result: Token[], searchParam: SearchParameter, identifier: Identifier): void {
-  buildSimpleToken(result, searchParam, identifier.system, identifier.value);
+function buildIdentifierToken(result: Token[], searchParam: SearchParameter, identifier: Identifier | undefined): void {
+  buildSimpleToken(result, searchParam, identifier?.system, identifier?.value);
 }
 
 /**
@@ -253,12 +253,12 @@ function buildIdentifierToken(result: Token[], searchParam: SearchParameter, ide
 function buildCodeableConceptToken(
   result: Token[],
   searchParam: SearchParameter,
-  codeableConcept: CodeableConcept
+  codeableConcept: CodeableConcept | undefined
 ): void {
-  if (codeableConcept.text) {
+  if (codeableConcept?.text) {
     buildSimpleToken(result, searchParam, undefined, codeableConcept.text);
   }
-  if (codeableConcept.coding) {
+  if (codeableConcept?.coding) {
     for (const coding of codeableConcept.coding) {
       buildCodingToken(result, searchParam, coding);
     }
@@ -271,8 +271,8 @@ function buildCodeableConceptToken(
  * @param searchParam The search parameter.
  * @param coding The Coding object to be indexed.
  */
-function buildCodingToken(result: Token[], searchParam: SearchParameter, coding: Coding): void {
-  buildSimpleToken(result, searchParam, coding.system, coding.code);
+function buildCodingToken(result: Token[], searchParam: SearchParameter, coding: Coding | undefined): void {
+  buildSimpleToken(result, searchParam, coding?.system, coding?.code);
 }
 
 /**
@@ -281,8 +281,12 @@ function buildCodingToken(result: Token[], searchParam: SearchParameter, coding:
  * @param searchParam The search parameter.
  * @param contactPoint The ContactPoint object to be indexed.
  */
-function buildContactPointToken(result: Token[], searchParam: SearchParameter, contactPoint: ContactPoint): void {
-  buildSimpleToken(result, searchParam, contactPoint.system, contactPoint.value);
+function buildContactPointToken(
+  result: Token[],
+  searchParam: SearchParameter,
+  contactPoint: ContactPoint | undefined
+): void {
+  buildSimpleToken(result, searchParam, contactPoint?.system, contactPoint?.value);
 }
 
 /**
