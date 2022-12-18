@@ -47,7 +47,7 @@ export const logger = {
   },
 
   logAuditEvent(auditEvent: AuditEvent): void {
-    if (process.env.NODE_ENV !== 'test' && Date.now() < 0) {
+    if (process.env.NODE_ENV !== 'test') {
       console.log(JSON.stringify(auditEvent));
     }
   },
