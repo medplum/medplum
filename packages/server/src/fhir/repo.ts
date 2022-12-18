@@ -602,7 +602,11 @@ export class Repository {
     this.#addDeletedFilter(builder);
 
     await builder.executeCursor(client, async (row: any) => {
-      await this.#reindexResourceImpl(JSON.parse(row.content) as Resource);
+      try {
+        await this.#reindexResourceImpl(JSON.parse(row.content) as Resource);
+      } catch (err) {
+        logger.error('Failed to reindex resource', normalizeErrorString(err));
+      }
     });
   }
 
