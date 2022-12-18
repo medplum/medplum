@@ -1,5 +1,5 @@
 import { forbidden, Operator, ProfileResource } from '@medplum/core';
-import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
+import { AccessPolicy, Practitioner, Project, Reference, ResourceType, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -101,7 +101,7 @@ async function createUser(request: InviteRequest): Promise<User> {
 
 async function searchForExistingProfile(
   project: Project,
-  resourceType: string,
+  resourceType: ResourceType,
   email: string
 ): Promise<ProfileResource | undefined> {
   const bundle = await systemRepo.search<ProfileResource>({

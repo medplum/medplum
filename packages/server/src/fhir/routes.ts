@@ -1,5 +1,5 @@
 import { allOk, badRequest, created, getStatus } from '@medplum/core';
-import { OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { Operation } from 'fast-json-patch';
 import { asyncWrap } from '../async';
@@ -128,7 +128,7 @@ protectedRoutes.get(
     const { resourceType } = req.params;
     const repo = res.locals.repo as Repository;
     const query = req.query as Record<string, string[] | string | undefined>;
-    const bundle = await repo.search(parseSearchRequest(resourceType, query));
+    const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
     await sendResponse(res, allOk, bundle);
   })
 );
@@ -144,7 +144,7 @@ protectedRoutes.post(
     const { resourceType } = req.params;
     const repo = res.locals.repo as Repository;
     const query = req.body as Record<string, string[] | string | undefined>;
-    const bundle = await repo.search(parseSearchRequest(resourceType, query));
+    const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
     await sendResponse(res, allOk, bundle);
   })
 );

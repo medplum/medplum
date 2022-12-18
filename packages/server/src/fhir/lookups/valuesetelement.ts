@@ -27,12 +27,13 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
   }
 
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {
+    const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
     let elements: ValueSetExpansionContains[] | undefined = undefined;
 
-    if (resource.resourceType === 'ValueSet') {
+    if (resourceType === 'ValueSet') {
       elements = this.getValueSetElements(resource as ValueSet);
-    } else if (resource.resourceType === 'CodeSystem') {
+    } else if (resourceType === 'CodeSystem') {
       elements = this.getCodeSystemElements(resource as CodeSystem);
     }
 
@@ -56,7 +57,7 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
       });
     }
 
-    await this.insertValuesForResource(client, values);
+    await this.insertValuesForResource(client, resourceType, values);
   }
 
   private getValueSetElements(valueSet: ValueSet): ValueSetExpansionContains[] {

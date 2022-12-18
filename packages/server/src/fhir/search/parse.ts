@@ -1,5 +1,5 @@
 import { badRequest, Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { getSearchParameter } from '../structure';
 
@@ -50,7 +50,7 @@ const modifierMap: Record<string, Operator> = {
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest(
-  resourceType: string,
+  resourceType: ResourceType,
   query: Record<string, string[] | string | undefined>
 ): SearchRequest {
   return new SearchParser(resourceType, query);
@@ -66,11 +66,11 @@ export function parseSearchUrl(url: URL): SearchRequest {
   if (resourceType.includes('/')) {
     resourceType = resourceType.split('/').pop() as string;
   }
-  return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
+  return new SearchParser(resourceType as ResourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
 class SearchParser implements SearchRequest {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly filters: Filter[];
   readonly sortRules: SortRule[];
   count?: number;
@@ -78,7 +78,7 @@ class SearchParser implements SearchRequest {
   total?: 'none' | 'estimate' | 'accurate';
   revInclude?: string;
 
-  constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
+  constructor(resourceType: ResourceType, query: Record<string, string[] | string | undefined>) {
     this.resourceType = resourceType;
     this.filters = [];
     this.sortRules = [];
