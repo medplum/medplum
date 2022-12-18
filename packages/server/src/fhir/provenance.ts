@@ -14,9 +14,8 @@ import { Provenance, Reference, Resource } from '@medplum/fhirtypes';
  * @returns The derived Provenance resource.
  */
 export function resourceToProvenance(resource: Resource): Provenance {
-  const result: Provenance = {
+  return {
     resourceType: 'Provenance',
-    // id: `${resource.resourceType}-${resource.id}-${resource.meta?.versionId}`,
     id: `${resource.resourceType}-${resource.id}`,
     target: [createReference(resource)],
     recorded: resource.meta?.lastUpdated,
@@ -35,6 +34,4 @@ export function resourceToProvenance(resource: Resource): Provenance {
       },
     ],
   };
-  // console.log('GENERATE PROVENANCE', JSON.stringify(result, null, 2));
-  return result;
 }
