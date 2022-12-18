@@ -11,6 +11,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Provenance,
   Questionnaire,
   QuestionnaireResponse,
   ResourceType,
@@ -2114,6 +2115,12 @@ describe('FHIR Repo', () => {
     const provenanceEntry = searchResult.entry?.find((entry) => entry.resource?.resourceType === 'Provenance');
     expect(provenanceEntry).toBeDefined();
     expect(provenanceEntry?.search?.mode).toEqual('include');
+
+    const provenance = provenanceEntry?.resource as Provenance;
+    expect(provenance.id).toBeDefined();
+
+    const check = await systemRepo.readResource('Provenance', provenance.id as string);
+    expect(check).toBeDefined();
   });
 
   test('DiagnosticReport category with system', async () => {
