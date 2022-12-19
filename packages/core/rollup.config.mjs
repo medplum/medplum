@@ -24,7 +24,7 @@ export default [
     input: 'src/index.ts',
     output: [
       {
-        file: 'dist/cjs/index.js',
+        file: 'dist/cjs/index.cjs',
         format: 'umd',
         name: 'medplum.core',
         sourcemap: true,
@@ -32,7 +32,7 @@ export default [
         globals,
       },
       {
-        file: 'dist/cjs/index.min.js',
+        file: 'dist/cjs/index.min.cjs',
         format: 'umd',
         name: 'medplum.core',
         plugins: [terser()],
@@ -66,6 +66,7 @@ export default [
     output: [
       {
         dir: 'dist/esm',
+        entryFileNames: '[name].mjs',
         format: 'esm',
         preserveModules: true,
         preserveModulesRoot: 'src',
@@ -73,7 +74,7 @@ export default [
         sourcemapPathTransform,
       },
       {
-        file: 'dist/esm/index.min.js',
+        file: 'dist/esm/index.min.mjs',
         format: 'esm',
         plugins: [terser()],
         sourcemap: true,
