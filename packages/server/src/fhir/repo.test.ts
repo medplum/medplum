@@ -1,4 +1,11 @@
-import { createReference, getReferenceString, isOk, normalizeErrorString, Operator } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  isOk,
+  normalizeErrorString,
+  Operator,
+  SearchRequest,
+} from '@medplum/core';
 import {
   AllergyIntolerance,
   Appointment,
@@ -11,6 +18,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Practitioner,
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
@@ -2106,21 +2114,34 @@ describe('FHIR Repo', () => {
   });
 
   test('Reverse include Provenance', async () => {
-    const searchResult = await systemRepo.search({
+    const family = randomUUID();
+
+    const practitioner = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      revInclude: 'Provenance:target',
+      name: [{ family }],
     });
-    expect(searchResult.entry).not.toHaveLength(0);
 
-    const provenanceEntry = searchResult.entry?.find((entry) => entry.resource?.resourceType === 'Provenance');
-    expect(provenanceEntry).toBeDefined();
-    expect(provenanceEntry?.search?.mode).toEqual('include');
+    const searchRequest: SearchRequest = {
+      resourceType: 'Practitioner',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      revInclude: 'Provenance:target',
+    };
 
-    const provenance = provenanceEntry?.resource as Provenance;
-    expect(provenance.id).toBeDefined();
+    const searchResult1 = await systemRepo.search(searchRequest);
+    expect(searchResult1.entry).toHaveLength(1);
+    expect(bundleContains(searchResult1, practitioner)).toBeTruthy();
 
-    const check = await systemRepo.readResource('Provenance', provenance.id as string);
-    expect(check).toBeDefined();
+    const provenance = await systemRepo.createResource<Provenance>({
+      resourceType: 'Provenance',
+      target: [createReference(practitioner)],
+      agent: [{ who: createReference(practitioner) }],
+      recorded: new Date().toISOString(),
+    });
+
+    const searchResult2 = await systemRepo.search(searchRequest);
+    expect(searchResult2.entry).toHaveLength(2);
+    expect(bundleContains(searchResult2, practitioner)).toBeTruthy();
+    expect(bundleContains(searchResult2, provenance)).toBeTruthy();
   });
 
   test('DiagnosticReport category with system', async () => {

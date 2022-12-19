@@ -7,6 +7,7 @@ import {
   Filter,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getSearchParameterDetails,
   getStatus,
   gone,
@@ -38,6 +39,7 @@ import {
   ProjectMembership,
   Reference,
   Resource,
+  ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -71,7 +73,6 @@ import { LookupTable } from './lookups/lookuptable';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
-import { resourceToProvenance } from './provenance';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
@@ -242,14 +243,6 @@ export class Repository {
   }
 
   async #readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (resourceType === 'Provenance') {
-      const provenanceIdRegex = /^(\w+)-([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})$/i;
-      const match = provenanceIdRegex.exec(id);
-      if (match) {
-        return resourceToProvenance(await this.#readResourceImpl(match[1], match[2])) as T;
-      }
-    }
-
     if (!id || !validator.isUUID(id)) {
       throw notFound;
     }
@@ -818,13 +811,21 @@ export class Repository {
         } as BundleEntry)
     );
 
-    if (searchRequest.revInclude === 'Provenance:target') {
-      for (const resource of resources) {
-        entries.push({
-          search: { mode: 'include' },
-          resource: resourceToProvenance(resource),
-        });
-      }
+    if (searchRequest.revInclude) {
+      const [nestedResourceType, nested] = searchRequest.revInclude.split(':');
+      const nestedSearchRequest: SearchRequest = {
+        resourceType: nestedResourceType as ResourceType,
+        filters: [
+          {
+            code: nested,
+            operator: FhirOperator.EQUALS,
+            value: resources.map(getReferenceString).join(','),
+          },
+        ],
+      };
+
+      const nestedSearchEntries = await this.#getSearchEntries(nestedSearchRequest);
+      entries.push(...nestedSearchEntries.entry);
     }
 
     for (const entry of entries) {

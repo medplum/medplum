@@ -139,9 +139,6 @@ class SearchParser implements SearchRequest {
 
       case '_revinclude':
         this.revInclude = value;
-        if (this.revInclude !== 'Provenance:target') {
-          throw badRequest('Unsupported revinclude: ' + code);
-        }
         break;
 
       default: {
