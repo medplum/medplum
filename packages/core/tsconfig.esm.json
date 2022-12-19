@@ -1,6 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "module": "es6",
     "outDir": "dist/esm"
   },
   "exclude": ["**/*.test.ts"]
