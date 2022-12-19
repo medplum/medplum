@@ -174,8 +174,8 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       <td>
         {observation.category && observation.category.length > 0 && (
           <ul>
-            {observation.category.map((concept) => (
-              <li>
+            {observation.category.map((concept, index) => (
+              <li key={`category-${index}`}>
                 <CodeableConceptDisplay value={concept} />
               </li>
             ))}
