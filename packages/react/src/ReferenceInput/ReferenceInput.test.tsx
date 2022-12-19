@@ -160,4 +160,23 @@ describe('ReferenceInput', () => {
     expect(screen.getByDisplayValue('Homer Simpson')).toBeDefined();
     expect(onChange).toHaveBeenCalled();
   });
+
+  test('Handle empty target types', async () => {
+    setup({
+      name: 'foo',
+      targetTypes: [],
+    });
+    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
+  });
+
+  test('Handle Resource target type', async () => {
+    setup({
+      name: 'foo',
+      targetTypes: ['Resource'],
+    });
+    // "Resource" is a FHIR special case that means "any resource type"
+    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
+  });
 });

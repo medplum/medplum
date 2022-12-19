@@ -13,7 +13,7 @@ export interface ReferenceInputProps {
 }
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
-  const targetTypes = props.targetTypes;
+  const targetTypes = getTargetTypes(props.targetTypes);
   const initialResourceType = getInitialResourceType(props.defaultValue, targetTypes);
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);
   const [resourceType, setResourceType] = useState<string | undefined>(initialResourceType);
@@ -58,6 +58,13 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
       />
     </Group>
   );
+}
+
+function getTargetTypes(targetTypes: string[] | undefined): string[] | undefined {
+  if (!targetTypes || targetTypes.length === 0 || (targetTypes.length === 1 && targetTypes[0] === 'Resource')) {
+    return undefined;
+  }
+  return targetTypes;
 }
 
 function getInitialResourceType(
