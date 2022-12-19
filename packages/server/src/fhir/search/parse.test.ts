@@ -519,6 +519,5 @@ describe('FHIR Search Utils', () => {
       resourceType: 'Patient',
       revInclude: 'Provenance:target',
     });
-    expect(() => parseSearchRequest('Patient', { _revinclude: 'Observation:subject' })).toThrow();
   });
 });
