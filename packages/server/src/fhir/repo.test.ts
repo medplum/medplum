@@ -2116,9 +2116,14 @@ describe('FHIR Repo', () => {
   test('Reverse include Provenance', async () => {
     const family = randomUUID();
 
-    const practitioner = await systemRepo.createResource<Practitioner>({
+    const practitioner1 = await systemRepo.createResource<Practitioner>({
       resourceType: 'Practitioner',
-      name: [{ family }],
+      name: [{ given: ['Homer'], family }],
+    });
+
+    const practitioner2 = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Marge'], family }],
     });
 
     const searchRequest: SearchRequest = {
@@ -2128,20 +2133,30 @@ describe('FHIR Repo', () => {
     };
 
     const searchResult1 = await systemRepo.search(searchRequest);
-    expect(searchResult1.entry).toHaveLength(1);
-    expect(bundleContains(searchResult1, practitioner)).toBeTruthy();
+    expect(searchResult1.entry).toHaveLength(2);
+    expect(bundleContains(searchResult1, practitioner1)).toBeTruthy();
+    expect(bundleContains(searchResult1, practitioner2)).toBeTruthy();
 
-    const provenance = await systemRepo.createResource<Provenance>({
+    const provenance1 = await systemRepo.createResource<Provenance>({
       resourceType: 'Provenance',
-      target: [createReference(practitioner)],
-      agent: [{ who: createReference(practitioner) }],
+      target: [createReference(practitioner1)],
+      agent: [{ who: createReference(practitioner1) }],
+      recorded: new Date().toISOString(),
+    });
+
+    const provenance2 = await systemRepo.createResource<Provenance>({
+      resourceType: 'Provenance',
+      target: [createReference(practitioner2)],
+      agent: [{ who: createReference(practitioner2) }],
       recorded: new Date().toISOString(),
     });
 
     const searchResult2 = await systemRepo.search(searchRequest);
-    expect(searchResult2.entry).toHaveLength(2);
-    expect(bundleContains(searchResult2, practitioner)).toBeTruthy();
-    expect(bundleContains(searchResult2, provenance)).toBeTruthy();
+    expect(searchResult2.entry).toHaveLength(4);
+    expect(bundleContains(searchResult2, practitioner1)).toBeTruthy();
+    expect(bundleContains(searchResult2, practitioner2)).toBeTruthy();
+    expect(bundleContains(searchResult2, provenance1)).toBeTruthy();
+    expect(bundleContains(searchResult2, provenance2)).toBeTruthy();
   });
 
   test('DiagnosticReport category with system', async () => {

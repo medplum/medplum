@@ -1127,15 +1127,20 @@ export class Repository {
    * @param filter The search filter.
    */
   #addReferenceSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
-    // TODO: Support reference queries (filter.value === 'Patient?identifier=123')
-    let value = filter.value;
-    if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
-      value = 'Patient/' + value;
+    const values = [];
+    for (const value of filter.value.split(',')) {
+      if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
+        values.push('Patient/' + value);
+      } else {
+        values.push(value);
+      }
     }
     if (details.array) {
-      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, value);
+      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, values);
+    } else if (values.length === 1) {
+      predicate.where(details.columnName, Operator.EQUALS, values[0]);
     } else {
-      predicate.where(details.columnName, Operator.EQUALS, value);
+      predicate.where(details.columnName, Operator.IN, values);
     }
   }
 
