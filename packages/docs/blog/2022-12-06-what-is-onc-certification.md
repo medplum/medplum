@@ -38,8 +38,8 @@ Some of the criteria, for example [g10](/docs/compliance/onc#standardized-api-fo
 
 For developers, it is important to understand that there are two types of criteria.
 
-- [Self attested Criteria](/docs/compliance/onc#self-attested-criteria): these will not be tested by the examiner, instead organizations will have to self-attest that the functionality is available and provide some documentation.
-- [Live Tested Criteria](/docs/compliance/onc#live-tested-criteria): these will be tested by an examiner, in accordance with the scripts.
+- [Self attested criteria](/docs/compliance/onc#self-attested-criteria): these will not be tested by the examiner, instead organizations will have to self-attest that the functionality is available and provide some documentation.
+- [Live tested criteria](/docs/compliance/onc#live-tested-criteria): these will be tested by an examiner, in accordance with the scripts.
 
 You do not need to certify for all criteria at once, you can batch them up and pursue subsets.
 
