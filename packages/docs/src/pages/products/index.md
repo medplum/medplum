@@ -51,11 +51,11 @@ Build or import your care plans and customize them to patient needs. Track patie
 
 ## 💊 Medications {#medications}
 
-Track patient prescription medications and refills. Connect to common e-Prescribe services, or track in-house fulfillment.
+Track patient prescription medications and refills. Connect to common e-Prescribe services, or track in-house fulfillment. [Learn More](/docs/medications)
 
 ## 📔 Charting {#charting}
 
-Summarize a patient’s past and current medical history, in a unified and intuitive patient chart. Build an experience to capture, manage, and refer to notes quickly and share charts securely.
+Summarize a patient’s past and current medical history, in a unified and intuitive patient chart. Build an experience to capture, manage, and refer to notes quickly and share charts securely. [Learn More](/docs/charting)
 
 ## 💵 Billing and Payments {#billing}
 
@@ -67,7 +67,7 @@ Build automations that will scale with your organization. Automatically route me
 
 ## 📈 Analytics and Dashboards {#analytics}
 
-Dashboards and analytics are at the heart of great clinical workflow. Build a custom dashboard that drives quality and speed, and troubleshoot with advanced analytics.
+Dashboards and analytics are at the heart of great clinical workflow. Build a custom dashboard that drives quality and speed, and troubleshoot with advanced analytics. [Learn More](/docs/analytics)
 
 ## Medplum App {#medplum-app}
 

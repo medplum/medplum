@@ -10,6 +10,10 @@ Building out a charting experience requires composing multiple FHIR resources in
 - Allowing **capture of notes**
 - **Placing orders** for medications, labs, imaging, etc.
 
+Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to.
+
+![Chart sample](/img/tutorials/chart-sample.png)
+
 ## Summarizing Patient History
 
 When summarizing patient history, gathering demographic data from the [Patient](/docs/api/fhir/resources/patient.mdx) resource is a basic first step. You can also query all resources related to a given patient from the `/Patient/$everything` endpoint.
