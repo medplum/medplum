@@ -14,3 +14,11 @@ This section will include common integration patterns and official Medplum suppo
 This section is under construction.
 
 :::
+
+## Integration Guides
+
+These guides are for the Medplum team only. Consult the following guides when working with customers to enable their integrations.
+
+- Lab [connectivity and data definition](https://drive.google.com/drive/folders/1CHuSu_r5Ni6QVXRVYfVWJCci0M4A28eV)
+- ePrescribe and [medication related integration](https://drive.google.com/drive/folders/1tkkKREaeCj8UOZErTHm28_y7jPfYn4Tb)
+- TODO: Smart App Launch
