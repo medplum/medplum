@@ -37,7 +37,7 @@ After many years of doing implementations like these, and getting these systems 
 
 Getting your application to implement the functionality you need will be so much easier if you have a standards based approach. An example of a standards enabled stack might look:
 
-![Standard provider stack](/img/blog/provider-stack-standard.png)
+![Standard provider stack](/img/blog/provider-stack-standards.png)
 
 Here are 5 specific ways standards can help your stack evolve.
 
