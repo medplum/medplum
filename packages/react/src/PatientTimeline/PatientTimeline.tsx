@@ -1,6 +1,6 @@
 import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Patient, Reference } from '@medplum/fhirtypes';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface PatientTimelineProps {
@@ -8,20 +8,22 @@ export interface PatientTimelineProps {
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
+  const loadTimelineResources = useCallback((medplum: MedplumClient, resource: Patient) => {
+    return Promise.all([
+      medplum.readHistory('Patient', resource.id as string),
+      medplum.search('Communication', 'subject=' + getReferenceString(resource)),
+      medplum.search('Device', 'patient=' + getReferenceString(resource)),
+      medplum.search('DeviceRequest', 'patient=' + getReferenceString(resource)),
+      medplum.search('DiagnosticReport', 'subject=' + getReferenceString(resource)),
+      medplum.search('Media', 'subject=' + getReferenceString(resource)),
+      medplum.search('ServiceRequest', 'subject=' + getReferenceString(resource)),
+    ]);
+  }, []);
+
   return (
     <ResourceTimeline
       value={props.patient}
-      loadTimelineResources={async (medplum: MedplumClient, resource: Patient) => {
-        return Promise.all([
-          medplum.readHistory('Patient', resource.id as string),
-          medplum.search('Communication', 'subject=' + getReferenceString(resource)),
-          medplum.search('Device', 'patient=' + getReferenceString(resource)),
-          medplum.search('DeviceRequest', 'patient=' + getReferenceString(resource)),
-          medplum.search('DiagnosticReport', 'subject=' + getReferenceString(resource)),
-          medplum.search('Media', 'subject=' + getReferenceString(resource)),
-          medplum.search('ServiceRequest', 'subject=' + getReferenceString(resource)),
-        ]);
-      }}
+      loadTimelineResources={loadTimelineResources}
       createCommunication={(resource: Patient, sender: ProfileResource, text: string) => ({
         resourceType: 'Communication',
         status: 'completed',

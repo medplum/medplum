@@ -1088,6 +1088,27 @@ test('graphql variables', async () => {
   expect(body.variables).toBeDefined();
 });
 
+test('Auto batch single request', async () => {
+  const medplum = new MedplumClient({ ...defaultOptions, autoBatchTime: 100 });
+  const patient = await medplum.readResource('Patient', '123');
+  expect(patient).toBeDefined();
+});
+
+test('Auto batch multiple requests', async () => {
+  const medplum = new MedplumClient({ ...defaultOptions, autoBatchTime: 100 });
+
+  // Start two requests at the same time
+  const patientPromise = medplum.readResource('Patient', '123');
+  const practitionerPromise = medplum.readResource('Practitioner', '123');
+
+  // Wait for the batch to be sent
+  const patient = await patientPromise;
+  const practitioner = await practitionerPromise;
+
+  expect(patient).toBeDefined();
+  expect(practitioner).toBeDefined();
+});
+
 function createPdf(
   docDefinition: TDocumentDefinitions,
   tableLayouts?: { [name: string]: CustomTableLayout },
