@@ -1,8 +1,6 @@
 import { badRequest, deepClone, matchesSearchRequest, notFound, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-/** @ts-ignore */
-import type { JsonPatchError, Operation } from 'fast-json-patch';
+import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -69,7 +67,6 @@ export class MemoryRepository {
 
     let patchResult;
     try {
-      const { applyPatch } = await import('fast-json-patch');
       patchResult = applyPatch(resource, patch, true);
     } catch (err) {
       const patchError = err as JsonPatchError;
