@@ -25,7 +25,7 @@ We wanted to highlight a few memorable moments and reflect on all that happened 
 
 ✅ Had our [YC S22 Demo Day](https://www.ycombinator.com/companies/medplum)
 
-✅ Launched our sample patient portal [Foo Medical](www.foomedical.com), [video](https://www.youtube.com/watch?v=aXKWDJ-GBKk), [source code](https://github.com/medplum/foomedical)
+✅ Launched our sample patient portal [Foo Medical](https://www.foomedical.com), [video](https://www.youtube.com/watch?v=aXKWDJ-GBKk), [source code](https://github.com/medplum/foomedical)
 
 ✅ [CLIA/CAP](/docs/compliance/clia-cap) Certified
 
