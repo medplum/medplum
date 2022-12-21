@@ -7,7 +7,7 @@ import {
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import baseSchema from './base-schema.json';
-import { SearchParameterDetails } from './searchparams';
+import { SearchParameterDetails } from './search/details';
 import { capitalize } from './utils';
 
 export interface TypedValue {
@@ -131,29 +131,6 @@ export interface TypeSchema {
 }
 
 /**
- * Creates a new empty IndexedStructureDefinition.
- * @returns The empty IndexedStructureDefinition.
- * @deprecated Use globalSchema
- */
-export function createSchema(): IndexedStructureDefinition {
-  return { types: {} };
-}
-
-function createTypeSchema(
-  typeName: string,
-  structureDefinition: StructureDefinition,
-  elementDefinition: ElementDefinition
-): TypeSchema {
-  return {
-    structureDefinition,
-    elementDefinition,
-    display: typeName,
-    description: elementDefinition.definition,
-    properties: {},
-  };
-}
-
-/**
  * Indexes a bundle of StructureDefinitions for faster lookup.
  * @param bundle A FHIR bundle StructureDefinition resources.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
@@ -204,8 +181,18 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
   }
   const parts = path.split('.');
   const typeName = buildTypeName(parts);
-  globalSchema.types[typeName] = createTypeSchema(typeName, structureDefinition, elementDefinition);
-  globalSchema.types[typeName].parentType = buildTypeName(parts.slice(0, parts.length - 1));
+  let typeSchema = globalSchema.types[typeName];
+
+  if (!typeSchema) {
+    globalSchema.types[typeName] = typeSchema = {} as TypeSchema;
+  }
+
+  typeSchema.parentType = typeSchema.parentType || buildTypeName(parts.slice(0, parts.length - 1));
+  typeSchema.display = typeSchema.display || typeName;
+  typeSchema.structureDefinition = typeSchema.structureDefinition || structureDefinition;
+  typeSchema.elementDefinition = typeSchema.elementDefinition || elementDefinition;
+  typeSchema.description = typeSchema.description || elementDefinition.definition;
+  typeSchema.properties = typeSchema.properties || {};
 }
 
 /**
@@ -327,6 +314,48 @@ export function buildTypeName(components: string[]): string {
     return components[0];
   }
   return components.map(capitalize).join('');
+}
+
+/**
+ * Returns true if the type schema is a DomainResource.
+ * @param typeSchema The type schema to check.
+ * @returns True if the type schema is a DomainResource.
+ */
+export function isResourceType(typeSchema: TypeSchema): boolean {
+  return typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource';
+}
+
+/**
+ * Returns an array of all resource types.
+ * Note that this is based on globalSchema, and will only return resource types that are currently in memory.
+ * @returns An array of all resource types.
+ */
+export function getResourceTypes(): string[] {
+  const result: string[] = [];
+  for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
+    if (isResourceType(typeSchema)) {
+      result.push(resourceType);
+    }
+  }
+  return result;
+}
+
+/**
+ * Returns the type schema for the resource type.
+ * @param resourceType The resource type.
+ * @returns The type schema for the resource type.
+ */
+export function getResourceTypeSchema(resourceType: string): TypeSchema {
+  return globalSchema.types[resourceType];
+}
+
+/**
+ * Returns the search parameters for the resource type indexed by search code.
+ * @param resourceType The resource type.
+ * @returns The search parameters for the resource type indexed by search code.
+ */
+export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
+  return globalSchema.types[resourceType].searchParams;
 }
 
 /**

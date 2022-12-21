@@ -14,6 +14,7 @@ medplum/
 │   ├── definitions  # Data definitions
 │   ├── examples     # Example code used in documentation
 │   ├── docs         # Documentation
+│   ├── fhir-router  # FHIR URL router
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL

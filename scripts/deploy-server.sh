@@ -38,6 +38,8 @@ tar \
   packages/core/dist \
   packages/definitions/package.json \
   packages/definitions/dist \
+  packages/fhir-router/package.json \
+  packages/fhir-router/dist \
   packages/server/package.json \
   packages/server/dist
 

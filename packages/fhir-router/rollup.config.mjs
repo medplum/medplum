@@ -8,7 +8,6 @@ const extensions = ['.ts'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
-  '@medplum/fhir-router': 'medplum.fhirRouter',
   'rfc6902': 'rfc6902',
 };
 
@@ -29,14 +28,14 @@ export default {
     {
       file: 'dist/cjs/index.cjs',
       format: 'umd',
-      name: 'medplum.mock',
+      name: 'medplum.fhirRouter',
       sourcemap: true,
       globals,
     },
     {
       file: 'dist/cjs/index.min.cjs',
       format: 'umd',
-      name: 'medplum.mock',
+      name: 'medplum.fhirRouter',
       plugins: [terser()],
       sourcemap: true,
       globals,

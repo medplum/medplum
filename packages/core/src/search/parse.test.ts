@@ -1,9 +1,17 @@
-import { Operator } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
-import { getSearchParameters } from '../structure';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
 import { parseSearchRequest, parseSearchUrl } from './parse';
+import { Operator } from './search';
 
-describe('FHIR Search Utils', () => {
+describe('Search parser', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   test('Parse Patient search', () => {
     expect(parseSearchRequest('Patient', {})).toMatchObject({
       resourceType: 'Patient',
@@ -20,6 +28,30 @@ describe('FHIR Search Utils', () => {
     });
   });
 
+  test('Parse _account', () => {
+    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=123'))).toMatchObject({
+      resourceType: 'Patient',
+      sortRules: [],
+      filters: [{ code: '_account', operator: Operator.EQUALS, value: '123' }],
+    });
+  });
+
+  test('Parse _account:not', () => {
+    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account:not=123'))).toMatchObject({
+      resourceType: 'Patient',
+      sortRules: [],
+      filters: [{ code: '_account', operator: Operator.NOT, value: '123' }],
+    });
+  });
+
+  test('Parse _account not equals', () => {
+    expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=ne123'))).toMatchObject({
+      resourceType: 'Patient',
+      sortRules: [],
+      filters: [{ code: '_account', operator: Operator.NOT_EQUALS, value: '123' }],
+    });
+  });
+
   test('Parse Patient _id:not', () => {
     expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_id:not=1'))).toMatchObject({
       resourceType: 'Patient',
@@ -28,11 +60,27 @@ describe('FHIR Search Utils', () => {
     });
   });
 
+  test('Parse name without value', () => {
+    expect(parseSearchRequest('Patient', { name: undefined })).toMatchObject({
+      resourceType: 'Patient',
+      sortRules: [],
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: '' }],
+    });
+  });
+
   test('Parse Patient name search', () => {
     expect(parseSearchRequest('Patient', { name: 'Homer' })).toMatchObject({
       resourceType: 'Patient',
       sortRules: [],
       filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Homer' }],
+    });
+  });
+
+  test('Parse Patient name missing', () => {
+    expect(parseSearchRequest('Patient', { 'name:missing': 'true' })).toMatchObject({
+      resourceType: 'Patient',
+      sortRules: [],
+      filters: [{ code: 'name', operator: Operator.MISSING, value: 'true' }],
     });
   });
 
@@ -65,11 +113,6 @@ describe('FHIR Search Utils', () => {
       total: 'estimate',
       count: 0,
     });
-  });
-
-  test('Patient has birthdate param', () => {
-    const params = getSearchParameters('Patient');
-    expect(params?.['birthdate']).toBeDefined();
   });
 
   test('Parse URL', () => {

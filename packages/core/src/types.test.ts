@@ -2,9 +2,14 @@ import { ResourceType } from '@medplum/fhirtypes';
 import {
   getElementDefinitionTypeName,
   getPropertyDisplayName,
+  getResourceTypes,
+  getResourceTypeSchema,
+  getSearchParameters,
   globalSchema,
   indexSearchParameter,
   indexStructureDefinition,
+  isResourceType,
+  TypeSchema,
 } from './types';
 
 describe('Type Utils', () => {
@@ -24,6 +29,7 @@ describe('Type Utils', () => {
       resourceType: 'StructureDefinition',
       id: '123',
       name: 'Patient',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
       snapshot: {
         element: [
           {
@@ -46,6 +52,8 @@ describe('Type Utils', () => {
     expect(globalSchema.types['Patient']).toBeDefined();
     expect(globalSchema.types['Patient'].properties).toBeDefined();
     expect(globalSchema.types['Patient'].properties['name']).toBeDefined();
+    expect(getResourceTypes()).toContain('Patient');
+    expect(getResourceTypeSchema('Patient')).toBeDefined();
 
     // Silently ignore search parameters without base
     indexSearchParameter({ resourceType: 'SearchParameter' });
@@ -65,6 +73,7 @@ describe('Type Utils', () => {
       expression: 'Patient.name',
     });
     expect(globalSchema.types['Patient'].searchParams?.['name']).toBeDefined();
+    expect(getSearchParameters('Patient')).toBeDefined();
 
     // Expect base search parameters to be indexed
     expect(globalSchema.types['Patient'].searchParams?.['_id']).toBeDefined();
@@ -101,5 +110,23 @@ describe('Type Utils', () => {
     expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toEqual(
       'TimingRepeat'
     );
+  });
+
+  test('isResourceType', () => {
+    expect(
+      isResourceType({
+        structureDefinition: {
+          baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+        },
+      } as unknown as TypeSchema)
+    ).toBeTruthy();
+
+    expect(
+      isResourceType({
+        structureDefinition: {
+          baseDefinition: 'http://example.com',
+        },
+      } as unknown as TypeSchema)
+    ).not.toBeTruthy();
   });
 });

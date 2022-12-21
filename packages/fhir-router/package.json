@@ -1,14 +1,14 @@
 {
-  "name": "@medplum/mock",
+  "name": "@medplum/fhir-router",
   "version": "2.0.3",
-  "description": "Medplum Mock Client",
+  "description": "Medplum FHIR Router",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/mock"
+    "directory": "packages/fhir-router"
   },
   "scripts": {
     "clean": "rimraf dist",
@@ -19,12 +19,9 @@
   "dependencies": {
     "@medplum/core": "*",
     "@medplum/definitions": "*",
-    "@medplum/fhir-router": "*",
     "@medplum/fhirtypes": "*",
+    "graphql": "16.6.0",
     "rfc6902": "5.0.1"
-  },
-  "devDependencies": {
-    "@types/pdfmake": "0.1.21"
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",

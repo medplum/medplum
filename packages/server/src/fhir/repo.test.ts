@@ -5,6 +5,8 @@ import {
   isOk,
   normalizeErrorString,
   Operator,
+  parseSearchRequest,
+  parseSearchUrl,
   SearchRequest,
 } from '@medplum/core';
 import {
@@ -35,10 +37,8 @@ import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { bundleContains } from '../test.setup';
-import { processBatch } from './batch';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
-import { parseSearchRequest, parseSearchUrl } from './search';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -737,34 +737,15 @@ describe('FHIR Repo', () => {
   });
 
   test('Filter and sort on same search parameter', async () => {
-    const createBundle = await processBatch(systemRepo, {
-      resourceType: 'Bundle',
-      type: 'batch',
-      entry: [
-        {
-          request: {
-            method: 'POST',
-            url: 'Patient',
-          },
-          resource: {
-            resourceType: 'Patient',
-            name: [{ given: ['Marge'], family: 'Simpson' }],
-          },
-        },
-        {
-          request: {
-            method: 'POST',
-            url: 'Patient',
-          },
-          resource: {
-            resourceType: 'Patient',
-            name: [{ given: ['Homer'], family: 'Simpson' }],
-          },
-        },
-      ],
+    await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Marge'], family: 'Simpson' }],
     });
 
-    expect(createBundle).toBeDefined();
+    await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Homer'], family: 'Simpson' }],
+    });
 
     const bundle = await systemRepo.search({
       resourceType: 'Patient',

@@ -1,17 +1,15 @@
-import { Bundle, BundleEntry, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
-import { getSearchParameterDetails, SearchParameterType } from './searchparams';
-import { globalSchema, indexStructureDefinition } from './types';
-import { isLowerCase } from './utils';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { globalSchema, indexStructureDefinitionBundle } from '../types';
+import { getSearchParameterDetails, SearchParameterType } from './details';
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 
 describe('SearchParameterDetails', () => {
   beforeAll(() => {
-    buildStructureDefinitions('profiles-types.json');
-    buildStructureDefinitions('profiles-resources.json');
-    buildStructureDefinitions('profiles-medplum.json');
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
   });
 
   test('Get details', () => {
@@ -157,6 +155,9 @@ describe('SearchParameterDetails', () => {
   test('Everything', () => {
     // Make sure that getSearchParameterDetails returns successfully for all known parameters.
     for (const resourceType of Object.keys(globalSchema.types)) {
+      if (resourceType === 'Resource' || resourceType === 'DomainResource') {
+        continue;
+      }
       for (const entry of searchParams.entry) {
         const searchParam = entry.resource;
         if (searchParam.base?.includes(resourceType)) {
@@ -167,25 +168,3 @@ describe('SearchParameterDetails', () => {
     }
   });
 });
-
-function buildStructureDefinitions(fileName: string): void {
-  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
-    if (
-      resource.resourceType === 'StructureDefinition' &&
-      resource.name &&
-      resource.name !== 'Resource' &&
-      resource.name !== 'BackboneElement' &&
-      resource.name !== 'DomainResource' &&
-      resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])
-    ) {
-      indexStructureDefinition(resource);
-    }
-  }
-}
-
-function readJson(filename: string): any {
-  return JSON.parse(readFileSync(resolve(__dirname, '../../definitions/dist/', filename), 'utf8'));
-}

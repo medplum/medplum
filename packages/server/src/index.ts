@@ -4,7 +4,6 @@ import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
-import { getRootSchema } from './fhir/operations/graphql';
 import { logger } from './logger';
 
 export async function main(configName: string): Promise<void> {
@@ -25,7 +24,6 @@ export async function main(configName: string): Promise<void> {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-  getRootSchema();
 
   const app = await initApp(express(), config);
   app.listen(config.port);

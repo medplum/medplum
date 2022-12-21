@@ -246,7 +246,7 @@ describe('MockClient', () => {
             name: [{ given: ['John'], family: 'Doe' }],
           },
           response: {
-            status: '200',
+            status: '201',
           },
         },
       ],
