@@ -473,9 +473,11 @@ export class Repository {
       resultMeta.project = project;
     }
 
-    const account = await this.#getAccount(existing, updated);
-    if (account) {
-      resultMeta.account = account;
+    if (create) {
+      const account = await this.#getAccount(existing, updated);
+      if (account) {
+        resultMeta.account = account;
+      }
     }
 
     resultMeta.compartment = this.#getCompartments(result);

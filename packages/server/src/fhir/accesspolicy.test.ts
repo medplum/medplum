@@ -429,6 +429,68 @@ describe('AccessPolicy', () => {
     }
   });
 
+  test("Access policy won't override existing account", async () => {
+    // Create an access policy with an account pointing to org1
+    // Try to update with org2
+    // Make sure that account remains pointing to org1
+    const org1 = randomUUID();
+    const org2 = randomUUID();
+
+    const accessPolicy1: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org1,
+      },
+      resource: [
+        {
+          resourceType: 'Patient',
+        },
+      ],
+    };
+
+    const accessPolicy2: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      compartment: {
+        reference: 'Organization/' + org2,
+      },
+      resource: [
+        {
+          resourceType: 'Patient',
+        },
+      ],
+    };
+
+    const repo1 = new Repository({
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/123',
+      },
+      accessPolicy: accessPolicy1,
+    });
+
+    const repo2 = new Repository({
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/456',
+      },
+      accessPolicy: accessPolicy2,
+    });
+
+    let patient = await repo1.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      birthDate: '1970-01-01',
+    });
+
+    patient.gender = 'female';
+
+    patient = await repo2.updateResource(patient);
+
+    expect(patient).toBeDefined();
+    expect(patient?.meta?.account).toBeDefined();
+    expect(patient?.meta?.account?.reference).toEqual('Organization/' + org1);
+  });
+
   test('Access policy restrict criteria', async () => {
     const org1 = randomUUID();
     const org2 = randomUUID();
