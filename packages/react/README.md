@@ -24,6 +24,7 @@ npm install @medplum/react
 ```
 
 Note the following peer dependencies:
+
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [react](https://www.npmjs.com/package/react)
 - [react-dom](https://www.npmjs.com/package/react-dom)
@@ -88,4 +89,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2022
+Apache 2.0. Copyright &copy; Medplum 2023
