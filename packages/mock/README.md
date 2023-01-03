@@ -17,6 +17,7 @@ npm install @medplum/mock
 ```
 
 Note the following peer dependencies:
+
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 
 ## Usage
@@ -33,7 +34,7 @@ Read a `Patient` resource:
 const patient = await client.readResource('Patient', '123');
 ```
 
-`MockClient` is API compatible with `MedplumClient` in [@medplum/core](https://www.npmjs.com/package/@medplum/core).  Please refer to `MedplumClient` for full documentation on client capabilities.
+`MockClient` is API compatible with `MedplumClient` in [@medplum/core](https://www.npmjs.com/package/@medplum/core). Please refer to `MedplumClient` for full documentation on client capabilities.
 
 ## About Medplum
 
@@ -41,4 +42,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2022
+Apache 2.0. Copyright &copy; Medplum 2023

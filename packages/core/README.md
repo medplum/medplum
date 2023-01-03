@@ -165,10 +165,12 @@ Example:
 const result = await medplum.updateResource({
   resourceType: 'Patient',
   id: '123',
-  name: [{
-   family: 'Smith',
-   given: ['John']
-  }]
+  name: [
+    {
+      family: 'Smith',
+      given: ['John'],
+    },
+  ],
 });
 console.log(result.meta.versionId);
 ```
@@ -199,7 +201,7 @@ Example:
 
 ```ts
 const result = await medplum.patchResource('Patient', '123', [
-  {op: 'replace', path: '/name/0/family', value: 'Smith'},
+  { op: 'replace', path: '/name/0/family', value: 'Smith' },
 ]);
 console.log(result.meta.versionId);
 ```
@@ -219,7 +221,7 @@ const result = await graphql(`
   {
     PatientList(name: "Alice") {
       name {
-        given,
+        given
         family
       }
     }
@@ -233,4 +235,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2022
+Apache 2.0. Copyright &copy; Medplum 2023
