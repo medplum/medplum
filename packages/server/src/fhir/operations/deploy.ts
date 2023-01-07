@@ -19,7 +19,7 @@ import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 import { isBotEnabled } from './execute';
 
-const LAMBDA_RUNTIME = 'nodejs16.x';
+const LAMBDA_RUNTIME = 'nodejs18.x';
 
 const LAMBDA_HANDLER = 'index.handler';
 
