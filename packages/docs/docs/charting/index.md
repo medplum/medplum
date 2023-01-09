@@ -14,6 +14,14 @@ Here is a **sample** of what a charting experience might look like - to be clear
 
 ![Chart sample](/img/tutorials/chart-sample.png)
 
+## Data Model
+
+![Chart Data Model 1](/img/tutorials/charting-annotation-1.png)
+
+![Chart Data Model 2](/img/tutorials/charting-annotation-2.png)
+
+![Chart Data Model 3](/img/tutorials/charting-annotation-3.png)
+
 ## Summarizing Patient History
 
 When summarizing patient history, gathering demographic data from the [Patient](/docs/api/fhir/resources/patient.mdx) resource is a basic first step. You can also query all resources related to a given patient from the `/Patient/$everything` endpoint.
