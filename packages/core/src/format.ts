@@ -3,6 +3,7 @@ import {
   CodeableConcept,
   Coding,
   HumanName,
+  Money,
   Observation,
   ObservationComponent,
   Period,
@@ -362,6 +363,18 @@ export function formatQuantity(quantity: Quantity | undefined, precision?: numbe
   }
 
   return result.join('').trim();
+}
+
+export function formatMoney(money: Money | undefined): string {
+  if (money?.value === undefined) {
+    return '';
+  }
+
+  return money.value.toLocaleString(undefined, {
+    style: 'currency',
+    currency: money.currency || 'USD',
+    currencyDisplay: 'narrowSymbol',
+  });
 }
 
 /**

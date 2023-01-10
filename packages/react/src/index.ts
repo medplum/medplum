@@ -41,6 +41,8 @@ export * from './IdentifierInput/IdentifierInput';
 export * from './Logo/Logo';
 export * from './MedplumLink/MedplumLink';
 export * from './MedplumProvider/MedplumProvider';
+export * from './MoneyDisplay/MoneyDisplay';
+export * from './MoneyInput/MoneyInput';
 export * from './Panel/Panel';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
