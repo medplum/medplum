@@ -7,12 +7,25 @@ sidebar_position: 0
 Building out a charting experience requires composing multiple FHIR resources into an experience that meets the requirements of practitioners. There are three primary interactions that developers should consider when building out a custom charting experience:
 
 - **Summarizing patient history** and status
-- Allowing **capture of notes**
+- **Capturing clinical notes**
 - **Placing orders** for medications, labs, imaging, etc.
 
 Here is a **sample** of what a charting experience might look like - to be clear, charting can look however you want it to.
 
 ![Chart sample](/img/tutorials/chart-sample.png)
+
+## Data Model
+
+All the elements you expect in a charting experience can be modeled in FHIR. Below are some examples of how the elements are represented
+
+![Chart Data Model 1](/img/tutorials/charting-annotation-1.png)
+You can read more about the [Patient](/docs/api/fhir/resources/patient), [Appointment](/docs/api/fhir/resources/appointment), [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance), [Condition](/docs/api/fhir/resources/condition), [Procedure](/docs/api/fhir/resources/procedure), [FamilyMemberHistory](/docs/api/fhir/resources/familymemberhistory), and [Observation](/docs/api/fhir/resources/observation) resources in our [reference material](/docs/api/fhir/resources).
+
+![Chart Data Model 2](/img/tutorials/charting-annotation-2.png)
+You can read more about the [Task](/docs/api/fhir/resources/task) resource in our [reference material](/docs/api/fhir/resources).
+
+![Chart Data Model 3](/img/tutorials/charting-annotation-3.png)
+You can read more about the [ClinicalImpression](/docs/api/fhir/resources/clinicalimpression), [Encounter](/docs/api/fhir/resources/encounter), [Condition](/docs/api/fhir/resources/condition), [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance), [FamilyMemberHistory](/docs/api/fhir/resources/familymemberhistory), [Observation](/docs/api/fhir/resources/observation), and [CarePlan](/docs/api/fhir/resources/careplan) resources in our [reference material](/docs/api/fhir/resources).
 
 ## Summarizing Patient History
 
