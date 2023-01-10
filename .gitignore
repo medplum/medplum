@@ -47,3 +47,5 @@ medplum-server.tar.gz
 # Turborepo
 .turbo
 
+# Rollup
+.rollup.cache/
