@@ -473,7 +473,7 @@ export class Repository {
       resultMeta.project = project;
     }
 
-    const account = await this.#getAccount(existing, updated);
+    const account = await this.#getAccount(existing, updated, create);
     if (account) {
       resultMeta.account = account;
     }
@@ -1593,15 +1593,19 @@ export class Repository {
    * @param resource The FHIR resource.
    * @returns
    */
-  async #getAccount(existing: Resource | undefined, updated: Resource): Promise<Reference | undefined> {
+  async #getAccount(
+    existing: Resource | undefined,
+    updated: Resource,
+    create: boolean
+  ): Promise<Reference | undefined> {
     const account = updated.meta?.account;
     if (account && this.#canWriteMeta()) {
       // If the user specifies an account, allow it if they have permission.
       return account;
     }
 
-    if (this.#context.accessPolicy?.compartment) {
-      // If the user access policy specifies a comparment, then use it as the account.
+    if (create && this.#context.accessPolicy?.compartment) {
+      // If the user access policy specifies a compartment, then use it as the account.
       return this.#context.accessPolicy?.compartment;
     }
 
