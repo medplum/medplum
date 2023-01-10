@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "composite": true,
     "rootDir": "src",
     "lib": ["esnext", "dom"],
     "emitDeclarationOnly": true,

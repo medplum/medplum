@@ -4,7 +4,7 @@
     "module": "esnext",
     "outDir": "dist",
     "lib": ["esnext", "dom", "dom.iterable"],
-    "noEmit": true,
+    "noEmit": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
 }
