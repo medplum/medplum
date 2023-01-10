@@ -1,7 +1,7 @@
 import { NativeSelect, TextInput } from '@mantine/core';
 import { Money } from '@medplum/fhirtypes';
 import { IconCurrencyDollar } from '@tabler/icons';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
 /*
  * Based on: https://github.com/mantinedev/ui.mantine.dev/blob/master/components/CurrencyInput/CurrencyInput.tsx
@@ -29,14 +29,38 @@ export interface MoneyInputProps {
 }
 
 export function MoneyInput(props: MoneyInputProps): JSX.Element {
+  const { onChange } = props;
   const [value, setValue] = useState(props.defaultValue);
 
-  function setValueWrapper(newValue: Money): void {
-    setValue(newValue);
-    if (props.onChange) {
-      props.onChange(newValue);
-    }
-  }
+  const setValueWrapper = useCallback(
+    (newValue: Money): void => {
+      setValue(newValue);
+      if (onChange) {
+        onChange(newValue);
+      }
+    },
+    [onChange]
+  );
+
+  const handleCurrencyChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      setValueWrapper({
+        ...value,
+        currency: e.currentTarget.value,
+      });
+    },
+    [value, setValueWrapper]
+  );
+
+  const handleValueChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setValueWrapper({
+        ...value,
+        value: e.currentTarget.valueAsNumber,
+      });
+    },
+    [value, setValueWrapper]
+  );
 
   const select = (
     <NativeSelect
@@ -50,12 +74,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
           width: 92,
         },
       }}
-      onChange={(e) =>
-        setValueWrapper({
-          ...value,
-          currency: e.currentTarget.value,
-        })
-      }
+      onChange={handleCurrencyChange}
     />
   );
 
@@ -68,12 +87,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
       icon={<IconCurrencyDollar size={14} />}
       rightSection={select}
       rightSectionWidth={92}
-      onChange={(e) =>
-        setValueWrapper({
-          ...value,
-          value: e.currentTarget.valueAsNumber,
-        })
-      }
+      onChange={handleValueChange}
     />
   );
 }
