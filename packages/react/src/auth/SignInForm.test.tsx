@@ -12,7 +12,18 @@ function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
   let result: any;
 
-  if (options.method === 'POST' && url.endsWith('/auth/login')) {
+  if (options.method === 'POST' && url.endsWith('/auth/method')) {
+    const { email } = JSON.parse(options.body);
+    status = 200;
+    if (email === 'alice@external.example.com') {
+      result = {
+        authorizeUrl: 'https://external.example.com/authorize',
+        domain: 'external.example.com',
+      };
+    } else {
+      result = {};
+    }
+  } else if (options.method === 'POST' && url.endsWith('/auth/login')) {
     const { email, password } = JSON.parse(options.body);
     if (email === 'admin@example.com' && password === 'admin') {
       status = 200;
@@ -172,8 +183,8 @@ describe('SignInForm', () => {
 
   test('Renders', async () => {
     await setup();
-    const input = screen.getByText('Sign in') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Sign in');
+    const input = screen.getByText('Sign in to Medplum') as HTMLButtonElement;
+    expect(input.innerHTML).toBe('Sign in to Medplum');
   });
 
   test('Submit success', async () => {
@@ -187,6 +198,10 @@ describe('SignInForm', () => {
       fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'admin@example.com' },
       });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
     });
 
     await act(async () => {
@@ -218,6 +233,10 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
@@ -239,6 +258,10 @@ describe('SignInForm', () => {
       fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'admin@example.com' },
       });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
     });
 
     await act(async () => {
@@ -267,6 +290,10 @@ describe('SignInForm', () => {
       fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
         target: { value: 'multiple@medplum.com' },
       });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
     });
 
     await act(async () => {
@@ -308,6 +335,10 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
@@ -343,6 +374,10 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password', { exact: false }), { target: { value: 'newproject' } });
     });
 
@@ -373,6 +408,10 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
@@ -398,6 +437,10 @@ describe('SignInForm', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
         target: { value: 'admin' },
       });
@@ -420,6 +463,16 @@ describe('SignInForm', () => {
     };
 
     await setup(props);
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'forgot@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Forgot password'));
@@ -494,5 +547,40 @@ describe('SignInForm', () => {
     expect(google.accounts.id.initialize).toHaveBeenCalled();
     expect(google.accounts.id.renderButton).toHaveBeenCalled();
     expect(google.accounts.id.prompt).toHaveBeenCalled();
+  });
+
+  test('Redirect to external auth', async () => {
+    Object.defineProperty(window, 'sessionStorage', {
+      value: {
+        getItem: function (key: string): string {
+          return this[key];
+        },
+        setItem: function (key: string, value: string): void {
+          this[key] = value;
+        },
+      },
+      writable: true,
+    });
+    Object.defineProperty(window, 'location', {
+      value: {
+        assign: jest.fn(),
+      },
+      writable: true,
+    });
+
+    await setup({});
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'alice@external.example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await waitFor(() => expect(window.location.assign).toBeCalled());
+    expect(window.location.assign).toBeCalled();
   });
 });

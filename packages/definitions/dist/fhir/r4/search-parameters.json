@@ -65865,5 +65865,24 @@
       "xpathUsage" : "normal",
       "target" : ["Practitioner", "PractitionerRole", "Organization"]
     }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/DomainConfiguration-domain",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "DomainConfiguration-domain",
+      "url" : "https://medplum.com/fhir/SearchParameter/DomainConfiguration-domain",
+      "version" : "4.0.1",
+      "name" : "publisher",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The publisher of the observation definition.",
+      "code" : "domain",
+      "base" : ["DomainConfiguration"],
+      "type" : "token",
+      "expression" : "DomainConfiguration.domain",
+      "xpath" : "f:DomainConfiguration/f:domain",
+      "xpathUsage" : "normal"
+    }
   }]
 }

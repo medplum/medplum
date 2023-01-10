@@ -62,6 +62,7 @@ export * from './DiagnosticReport';
 export * from './Distance';
 export * from './DocumentManifest';
 export * from './DocumentReference';
+export * from './DomainConfiguration';
 export * from './Dosage';
 export * from './Duration';
 export * from './EffectEvidenceSynthesis';

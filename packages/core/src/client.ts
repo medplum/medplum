@@ -641,11 +641,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startNewUser(newUserRequest: NewUserRequest): Promise<LoginAuthenticationResponse> {
-    await this.startPkce();
+    const { codeChallengeMethod, codeChallenge } = await this.startPkce();
     return this.post('auth/newuser', {
       ...newUserRequest,
-      codeChallengeMethod: 'S256',
-      codeChallenge: sessionStorage.getItem('codeChallenge') as string,
+      codeChallengeMethod,
+      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -680,13 +680,10 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startLogin(loginRequest: EmailPasswordLoginRequest): Promise<LoginAuthenticationResponse> {
-    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/login', {
-      ...loginRequest,
+      ...(await this.ensureCodeChallenge(loginRequest)),
       clientId: loginRequest.clientId ?? this.#clientId,
       scope: loginRequest.scope,
-      codeChallengeMethod,
-      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -699,36 +696,26 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
-    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/google', {
-      ...loginRequest,
+      ...(await this.ensureCodeChallenge(loginRequest)),
       clientId: loginRequest.clientId ?? this.#clientId,
       scope: loginRequest.scope,
-      codeChallengeMethod,
-      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
-  getCodeChallenge(loginRequest: BaseLoginRequest): {
-    codeChallenge?: string;
-    codeChallengeMethod?: string;
-  } {
+  /**
+   * Returns the PKCE code challenge and method.
+   * If the login request already includes a code challenge, it is returned.
+   * Otherwise, a new PKCE code challenge is generated.
+   * @category Authentication
+   * @param loginRequest The original login request.
+   * @returns The PKCE code challenge and method.
+   */
+  async ensureCodeChallenge<T extends BaseLoginRequest>(loginRequest: T): Promise<T> {
     if (loginRequest.codeChallenge) {
-      return {
-        codeChallenge: loginRequest.codeChallenge,
-        codeChallengeMethod: loginRequest.codeChallengeMethod,
-      };
+      return loginRequest;
     }
-
-    const codeChallenge = sessionStorage.getItem('codeChallenge');
-    if (codeChallenge) {
-      return {
-        codeChallenge,
-        codeChallengeMethod: 'S256',
-      };
-    }
-
-    return {};
+    return { ...loginRequest, ...(await this.startPkce()) };
   }
 
   /**
@@ -1954,7 +1941,7 @@ export class MedplumClient extends EventTarget {
    * Starts a new PKCE flow.
    * These PKCE values are stateful, and must survive redirects and page refreshes.
    */
-  async startPkce(): Promise<void> {
+  async startPkce(): Promise<{ codeChallengeMethod: string; codeChallenge: string }> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
@@ -1964,6 +1951,8 @@ export class MedplumClient extends EventTarget {
     const arrayHash = await encryptSHA256(codeVerifier);
     const codeChallenge = arrayBufferToBase64(arrayHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
     sessionStorage.setItem('codeChallenge', codeChallenge);
+
+    return { codeChallengeMethod: 'S256', codeChallenge };
   }
 
   /**
@@ -1972,15 +1961,15 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   async #requestAuthorization(): Promise<void> {
-    await this.startPkce();
+    const { codeChallengeMethod, codeChallenge } = await this.startPkce();
 
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', this.#clientId as string);
     url.searchParams.set('redirect_uri', getBaseUrl());
-    url.searchParams.set('code_challenge_method', 'S256');
-    url.searchParams.set('code_challenge', sessionStorage.getItem('codeChallenge') as string);
+    url.searchParams.set('code_challenge_method', codeChallengeMethod);
+    url.searchParams.set('code_challenge', codeChallenge);
     window.location.assign(url.toString());
   }
 

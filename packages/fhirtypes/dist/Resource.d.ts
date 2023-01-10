@@ -49,6 +49,7 @@ import { DeviceUseStatement } from './DeviceUseStatement';
 import { DiagnosticReport } from './DiagnosticReport';
 import { DocumentManifest } from './DocumentManifest';
 import { DocumentReference } from './DocumentReference';
+import { DomainConfiguration } from './DomainConfiguration';
 import { EffectEvidenceSynthesis } from './EffectEvidenceSynthesis';
 import { Encounter } from './Encounter';
 import { Endpoint } from './Endpoint';
@@ -208,6 +209,7 @@ export type Resource = AccessPolicy
   | DiagnosticReport
   | DocumentManifest
   | DocumentReference
+  | DomainConfiguration
   | EffectEvidenceSynthesis
   | Encounter
   | Endpoint

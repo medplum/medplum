@@ -9,6 +9,7 @@ import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { isExternalAuth } from './method';
 import { sendLoginResult } from './utils';
 
 /*
@@ -105,6 +106,12 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   }
 
   const claims = result.payload as GoogleCredentialClaims;
+
+  const externalAuth = await isExternalAuth(claims.email);
+  if (externalAuth) {
+    res.status(200).json(externalAuth);
+    return;
+  }
 
   const existingUser = await getUserByEmail(claims.email, projectId);
   if (!existingUser) {

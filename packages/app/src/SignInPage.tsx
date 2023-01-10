@@ -13,6 +13,7 @@ export function SignInPage(): JSX.Element {
       onForgotPassword={() => navigate('/resetpassword')}
       onRegister={() => navigate('/register')}
       googleClientId={process.env.GOOGLE_CLIENT_ID}
+      login={searchParams.get('login') as string | undefined}
       projectId={searchParams.get('project') as string | undefined}
     >
       <Logo size={32} />

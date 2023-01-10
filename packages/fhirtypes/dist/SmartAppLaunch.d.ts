@@ -9,7 +9,7 @@ import { Patient } from './Patient';
 import { Reference } from './Reference';
 
 /**
- * User specific configuration for the Medplum application.
+ * This resource contains context details for a SMART App Launch.
  */
 export interface SmartAppLaunch {
 

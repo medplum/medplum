@@ -182,7 +182,15 @@ const publicResourceTypes = [
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-const protectedResourceTypes = ['JsonWebKey', 'Login', 'PasswordChangeRequest', 'Project', 'ProjectMembership', 'User'];
+const protectedResourceTypes = [
+  'DomainConfiguration',
+  'JsonWebKey',
+  'Login',
+  'PasswordChangeRequest',
+  'Project',
+  'ProjectMembership',
+  'User',
+];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
