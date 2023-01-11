@@ -19,6 +19,7 @@ import { ContactDetailDisplay } from '../ContactDetailDisplay/ContactDetailDispl
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { IdentifierDisplay } from '../IdentifierDisplay/IdentifierDisplay';
+import { MoneyDisplay } from '../MoneyDisplay/MoneyDisplay';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
@@ -90,6 +91,8 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <HumanNameDisplay value={value} />;
     case PropertyType.Identifier:
       return <IdentifierDisplay value={value} />;
+    case PropertyType.Money:
+      return <MoneyDisplay value={value} />;
     case PropertyType.Period:
       return <>{formatPeriod(value)}</>;
     case PropertyType.Quantity:

@@ -16,6 +16,7 @@ import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ExtensionInput } from '../ExtensionInput/ExtensionInput';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { IdentifierInput } from '../IdentifierInput/IdentifierInput';
+import { MoneyInput } from '../MoneyInput/MoneyInput';
 import { PeriodInput } from '../PeriodInput/PeriodInput';
 import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { RangeInput } from '../RangeInput/RangeInput';
@@ -226,6 +227,8 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
       return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Identifier:
       return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
+    case PropertyType.Money:
+      return <MoneyInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Period:
       return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
     case PropertyType.Duration:

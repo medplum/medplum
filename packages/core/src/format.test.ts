@@ -7,6 +7,7 @@ import {
   formatFamilyName,
   formatGivenName,
   formatHumanName,
+  formatMoney,
   formatObservationValue,
   formatPeriod,
   formatQuantity,
@@ -355,6 +356,15 @@ test('Format Quantity', () => {
   expect(formatQuantity({ unit: 'pg/mL' })).toBe('pg/mL');
   expect(formatQuantity({ comparator: '<' })).toBe('<');
   expect(formatQuantity({ comparator: '<', unit: 'pg/mL' })).toBe('< pg/mL');
+});
+
+test('Format Money', () => {
+  expect(formatMoney(undefined)).toBe('');
+  expect(formatMoney({})).toBe('');
+  expect(formatMoney({ value: 10.1 })).toBe('$10.10');
+  expect(formatMoney({ value: 10.1, currency: 'USD' })).toBe('$10.10');
+  expect(formatMoney({ value: 10.1, currency: 'EUR' })).toBe('€10.10');
+  expect(formatMoney({ value: 1234567.89, currency: 'USD' })).toBe('$1,234,567.89');
 });
 
 test('Format CodeableConcept', () => {
