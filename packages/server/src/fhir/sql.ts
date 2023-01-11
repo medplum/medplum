@@ -164,7 +164,7 @@ export class Disjunction extends Connective {
 }
 
 export class Join {
-  constructor(readonly left: Column, readonly right: Column, readonly subQuery?: SelectQuery) {}
+  constructor(readonly joinName: string, readonly onExpression: Expression, readonly subQuery?: SelectQuery) {}
 }
 
 export class OrderBy {
@@ -208,8 +208,12 @@ export class SqlBuilder {
   }
 
   param(value: any): this {
-    this.#values.push(value);
-    this.#sql.push('$' + this.#values.length);
+    if (value instanceof Column) {
+      this.appendColumn(value);
+    } else {
+      this.#values.push(value);
+      this.#sql.push('$' + this.#values.length);
+    }
     return this;
   }
 
@@ -296,10 +300,17 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joins.length + 1}`;
   }
 
-  join(rightTableName: string, leftColumnName: string, rightColumnName: string, subQuery?: SelectQuery): this {
-    this.joins.push(
-      new Join(new Column(this.tableName, leftColumnName), new Column(rightTableName, rightColumnName), subQuery)
+  join(joinName: string, leftColumnName: string, joinColumnName: string, subQuery?: SelectQuery): this {
+    this.joinExpr(
+      joinName,
+      new Condition(new Column(this.tableName, leftColumnName), Operator.EQUALS, new Column(joinName, joinColumnName)),
+      subQuery
     );
+    return this;
+  }
+
+  joinExpr(joinName: string, onExpression: Expression, subQuery?: SelectQuery): this {
+    this.joins.push(new Join(joinName, onExpression, subQuery));
     return this;
   }
 
@@ -391,11 +402,9 @@ export class SelectQuery extends BaseQuery {
         join.subQuery.buildSql(sql);
         sql.append(' ) ');
       }
-      sql.appendIdentifier(join.right.tableName as string);
+      sql.appendIdentifier(join.joinName);
       sql.append(' ON ');
-      sql.appendColumn(join.left);
-      sql.append('=');
-      sql.appendColumn(join.right);
+      join.onExpression.buildSql(sql);
     }
   }
 

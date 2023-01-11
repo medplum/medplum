@@ -113,11 +113,7 @@ export class TokenTable extends LookupTable<Token> {
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .where('code', Operator.EQUALS, filter.code)
       .orderBy('resourceId');
-    const disjunction = new Disjunction([]);
-    for (const option of filter.value.split(',')) {
-      disjunction.expressions.push(buildWhereCondition(tableName, filter.operator, option));
-    }
-    subQuery.whereExpr(disjunction);
+    subQuery.whereExpr(buildWhereExpression(selectQuery, subQuery, tableName, filter));
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
 
     // If the filter is "not equals", then we're looking for ID=null
@@ -334,23 +330,74 @@ async function getExistingValues(resourceType: ResourceType, resourceId: string)
     );
 }
 
-function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression {
+function buildWhereExpression(
+  selectQuery: SelectQuery,
+  subQuery: SelectQuery,
+  tableName: string,
+  filter: Filter
+): Expression {
+  const disjunction = new Disjunction([]);
+  for (const option of filter.value.split(',')) {
+    disjunction.expressions.push(buildWhereCondition(selectQuery, subQuery, tableName, filter.operator, option));
+  }
+  return disjunction;
+}
+
+function buildWhereCondition(
+  selectQuery: SelectQuery,
+  subQuery: SelectQuery,
+  tableName: string,
+  operator: FhirOperator,
+  query: string
+): Expression {
   const parts = query.split('|');
   if (parts.length === 2) {
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), Operator.EQUALS, parts[0]),
-      buildValueCondition(tableName, operator, parts[1]),
+      buildValueCondition(selectQuery, subQuery, tableName, operator, parts[1]),
     ]);
   } else {
-    return buildValueCondition(tableName, operator, query);
+    return buildValueCondition(selectQuery, subQuery, tableName, operator, query);
   }
 }
 
-function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Condition {
+function buildValueCondition(
+  selectQuery: SelectQuery,
+  subQuery: SelectQuery,
+  tableName: string,
+  operator: FhirOperator,
+  value: string
+): Condition {
+  if (operator === FhirOperator.IN) {
+    return buildInValueSetCondition(selectQuery, subQuery, tableName, value);
+  }
   const column = new Column(tableName, 'value');
   if (operator === FhirOperator.CONTAINS) {
     return new Condition(column, Operator.LIKE, value.trim() + '%');
   } else {
     return new Condition(column, Operator.EQUALS, value.trim());
   }
+}
+
+/**
+ * Adds "where" conditions to the select query builder.
+ * @param selectQuery The select query builder.
+ * @param resourceType The FHIR resource type.
+ * @param predicate The conjunction where conditions should be added.
+ * @param filter The search filter details.
+ */
+function buildInValueSetCondition(
+  selectQuery: SelectQuery,
+  subQuery: SelectQuery,
+  tableName: string,
+  value: string
+): Condition {
+  const joinName = selectQuery.getNextJoinAlias();
+  const subSubQuery = new SelectQuery('ValueSet').column('reference').where('url', Operator.EQUALS, value).limit(1);
+  subQuery.joinExpr(
+    joinName,
+    new Condition(new Column(joinName, 'reference'), Operator.ARRAY_CONTAINS, new Column(tableName, 'system')),
+    subSubQuery
+  );
+  return new Condition(new Column(joinName, 'reference'), Operator.NOT_EQUALS, null);
 }
