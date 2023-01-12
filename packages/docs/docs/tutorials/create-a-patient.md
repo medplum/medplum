@@ -13,7 +13,7 @@ Now that you've registered an account, let's add some data. This tutorial explai
 
 - Click on "Patients"
 
-![Patients menu item](/img/hello-world/patients-menu-item.png)
+  <img alt='Patients' menu item src='/img/hello-world/patients-menu-item.png' style={{maxWidth: '75%'}}/>
 
 - Click on "New" in the toolbar
 
@@ -43,6 +43,6 @@ Finally, we'll set the patient's date of birth
 
 Scroll to the bottom and click "OK" to save your changes.
 
-![OK Button](/img/hello-world/ok-button.png)
+<img alt='OK Button' menu item src='/img/hello-world/ok-button.png' style={{maxWidth: '75%'}}/>
 
 Congrats, you created a patient!
