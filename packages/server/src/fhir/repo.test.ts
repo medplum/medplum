@@ -13,6 +13,7 @@ import {
   Bundle,
   BundleEntry,
   Communication,
+  Condition,
   DiagnosticReport,
   Encounter,
   Observation,
@@ -2218,5 +2219,53 @@ describe('FHIR Repo', () => {
     });
 
     expect(bundleContains(bundle, e)).toBeTruthy();
+  });
+
+  test('Condition.code :in search', async () => {
+    // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
+    // compose includes codes from http://snomed.info/sct
+    // but does not include codes from https://example.com
+
+    try {
+      const p = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family: randomUUID() }],
+      });
+
+      const c1 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+      });
+
+      const c2 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: 'https://example.com', code: 'test' }] },
+      });
+
+      const bundle = await systemRepo.search({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'subject',
+            operator: Operator.EQUALS,
+            value: getReferenceString(p),
+          },
+          {
+            code: 'code',
+            operator: Operator.IN,
+            value: 'http://hl7.org/fhir/ValueSet/condition-code',
+          },
+        ],
+      });
+
+      expect(bundle.entry?.length).toEqual(1);
+      expect(bundleContains(bundle, c1)).toBeTruthy();
+      expect(bundleContains(bundle, c2)).not.toBeTruthy();
+    } catch (err) {
+      console.log(err);
+      console.log(JSON.stringify(err, null, 2));
+    }
   });
 });
