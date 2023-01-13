@@ -14,6 +14,7 @@ import {
   getDateProperty,
   getDisplayString,
   getExtensionValue,
+  getExtension,
   getIdentifier,
   getImageSrc,
   getQuestionnaireAnswers,
@@ -296,6 +297,27 @@ describe('Core Utils', () => {
     };
     expect(getExtensionValue(resource, 'http://example.com')).toBe('xyz');
     expect(getExtensionValue(resource, 'http://example.com', 'key1')).toBe('value1');
+  });
+
+  test('Get extension object', () => {
+    const resource: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: 'http://example.com',
+          valueString: 'xyz',
+          extension: [
+            {
+              url: 'key1',
+              valueString: 'value1',
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(getExtension(resource, 'http://example.com')).toBe(resource?.extension?.[0]);
+    expect(getExtension(resource, 'http://example.com', 'key1')).toBe(resource?.extension?.[0]?.extension?.[0]);
   });
 
   test('Stringify', () => {
