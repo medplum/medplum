@@ -61292,8 +61292,16 @@
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
         },
+        "jwksUri": {
+          "description": "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt)",
+          "$ref": "#/definitions/string"
+        },
         "redirectUri": {
           "description": "Redirect URI used when redirecting a client back to the client application.",
+          "$ref": "#/definitions/string"
+        },
+        "launchUri": {
+          "description": "Optional launch URI for SMART EHR launch sequence.",
           "$ref": "#/definitions/string"
         }
       },
