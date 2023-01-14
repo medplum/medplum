@@ -1,4 +1,5 @@
 import { AuditEvent } from '@medplum/fhirtypes';
+import { getConfig } from './config';
 
 /*
  * Once upon a time, we used Winston, and that was fine.
@@ -16,7 +17,7 @@ export enum LogLevel {
 }
 
 export const logger = {
-  level: process.env.NODE_ENV === 'test' ? LogLevel.NONE : LogLevel.INFO,
+  level: process.env.NODE_ENV === 'test' ? LogLevel.ERROR : LogLevel.INFO,
 
   error(...args: any[]): void {
     if (logger.level >= LogLevel.ERROR) {
@@ -47,7 +48,7 @@ export const logger = {
   },
 
   logAuditEvent(auditEvent: AuditEvent): void {
-    if (process.env.NODE_ENV !== 'test') {
+    if (getConfig().logAuditEvents) {
       console.log(JSON.stringify(auditEvent));
     }
   },

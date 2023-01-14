@@ -171,7 +171,7 @@ describe('Super Admin routes', () => {
       .set('Authorization', 'Bearer ' + nonAdminAccessToken)
       .type('json')
       .send({
-        resourceType: 'Patient',
+        resourceType: 'PaymentNotice',
       });
 
     expect(res.status).toBe(403);
@@ -183,7 +183,7 @@ describe('Super Admin routes', () => {
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({
-        resourceType: 'Patient',
+        resourceType: 'PaymentNotice',
       });
 
     expect(res.status).toBe(200);
