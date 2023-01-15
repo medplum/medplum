@@ -1,0 +1,25 @@
+---
+title: User
+sidebar_position: 2
+---
+
+import definition from '@site/static/data/medplumDefinitions/user.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# User
+
+Representation of a human user of the system.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

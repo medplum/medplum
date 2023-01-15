@@ -6,8 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Age Type: A duration of time during which
- * an organism (or a process) has existed.
+ * A duration of time during which an organism (or a process) has
+ * existed.
  */
 export interface Age {
 
@@ -39,7 +39,7 @@ export interface Age {
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
    * value is &lt; stated value.
    */
-  comparator?: string;
+  comparator?: '<' | '<=' | '>=' | '>';
 
   /**
    * A human-readable form of the unit.

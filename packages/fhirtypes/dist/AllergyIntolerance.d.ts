@@ -125,18 +125,18 @@ export interface AllergyIntolerance {
    * Identification of the underlying physiological mechanism for the
    * reaction risk.
    */
-  type?: string;
+  type?: 'allergy' | 'intolerance';
 
   /**
    * Category of the identified substance.
    */
-  category?: string[];
+  category?: ('food' | 'medication' | 'environment' | 'biologic')[];
 
   /**
    * Estimate of the potential clinical harm, or seriousness, of the
    * reaction to the identified substance.
    */
-  criticality?: string;
+  criticality?: 'low' | 'high' | 'unable-to-assess';
 
   /**
    * Code for an allergy or intolerance statement (either a positive or a
@@ -313,7 +313,7 @@ export interface AllergyIntoleranceReaction {
    * Clinical assessment of the severity of the reaction event as a whole,
    * potentially considering multiple different manifestations.
    */
-  severity?: string;
+  severity?: 'mild' | 'moderate' | 'severe';
 
   /**
    * Identification of the route by which the subject was exposed to the

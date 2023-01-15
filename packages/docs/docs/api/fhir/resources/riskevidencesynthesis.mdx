@@ -1,0 +1,25 @@
+---
+title: RiskEvidenceSynthesis
+sidebar_position: 120
+---
+
+import definition from '@site/static/data/resourceDefinitions/riskevidencesynthesis.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# RiskEvidenceSynthesis
+
+The RiskEvidenceSynthesis resource describes the likelihood of an outcome in a population plus exposure state where the risk estimate is derived from a combination of research studies.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

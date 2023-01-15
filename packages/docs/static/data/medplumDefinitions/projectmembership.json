@@ -1,0 +1,267 @@
+{
+  "name": "ProjectMembership",
+  "location": "medplum",
+  "description": "Medplum project membership. A project membership grants a user access to a project.",
+  "properties": [
+    {
+      "name": "ProjectMembership",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "ProjectMembership",
+      "min": 0,
+      "max": "*",
+      "short": "Medplum project membership. A project membership grants a user access to a project.",
+      "definition": "Medplum project membership. A project membership grants a user access to a project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ProjectMembership.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ProjectMembership.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ProjectMembership.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ProjectMembership.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "project",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Project",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.project",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Project where the memberships are available.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "user",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "User",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.user",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "User that is granted access to the project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "profile",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ProjectMembership.profile",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Reference to the resource that represents the user profile within the project.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "accessPolicy",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "AccessPolicy",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.accessPolicy",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The access policy for the user within the project memebership.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "userConfiguration",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "UserConfiguration",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "ProjectMembership.userConfiguration",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "admin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ProjectMembership.admin",
+      "min": 0,
+      "max": "1",
+      "short": "Whether this user is a project administrator.",
+      "definition": "Whether this user is a project administrator.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "project",
+      "type": "reference",
+      "description": "The project associated with the project membership",
+      "expression": "ProjectMembership.project"
+    },
+    {
+      "name": "user",
+      "type": "reference",
+      "description": "The user associated with the project membership",
+      "expression": "ProjectMembership.user"
+    },
+    {
+      "name": "profile",
+      "type": "reference",
+      "description": "The user profile associated with the project membership",
+      "expression": "ProjectMembership.profile"
+    }
+  ]
+}

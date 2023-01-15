@@ -1,0 +1,2001 @@
+{
+  "name": "PlanDefinition",
+  "location": "resource",
+  "description": "This resource allows for the definition of various types of plans as a sharable, consumable, and executable artifact. The resource is general enough to support the description of a broad range of clinical artifacts such as clinical decision support rules, order sets and protocols.",
+  "properties": [
+    {
+      "name": "PlanDefinition",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "PlanDefinition",
+      "min": 0,
+      "max": "*",
+      "short": "The definition of a plan for a series of actions, independent of any specific patient or context",
+      "definition": "This resource allows for the definition of various types of plans as a sharable, consumable, and executable artifact. The resource is general enough to support the description of a broad range of clinical artifacts such as clinical decision support rules, order sets and protocols.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "PlanDefinition.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "PlanDefinition.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "url",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "PlanDefinition.url",
+      "min": 0,
+      "max": "1",
+      "short": "Canonical identifier for this plan definition, represented as a URI (globally unique)",
+      "definition": "An absolute URI that is used to identify this plan definition when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this plan definition is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the plan definition is stored on different servers.",
+      "comment": "Can be a urn:uuid: or a urn:oid: but real http: addresses are preferred.  Multiple instances may share the same URL if they have a distinct version.\n\nThe determination of when to create a new version of a resource (same url, new version) vs. defining a new artifact is up to the author.  Considerations for making this decision are found in [Technical and Business Versions](resource.html#versions). \n\nIn some cases, the resource can no longer be found at the stated url, but the url itself cannot change. Implementations can use the [meta.source](resource.html#meta) element to indicate where the current master source of the resource can be found.",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Additional identifier for the plan definition",
+      "definition": "A formal identifier that is used to identify this plan definition when it is represented in other formats, or referenced in a specification, model, design or an instance.",
+      "comment": "Typically, this is used for identifiers that can go in an HL7 V3 II (instance identifier) data type, and can then identify this plan definition outside of FHIR, where it is not possible to use the logical URI.",
+      "inherited": false
+    },
+    {
+      "name": "version",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.version",
+      "min": 0,
+      "max": "1",
+      "short": "Business version of the plan definition",
+      "definition": "The identifier that is used to identify this version of the plan definition when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the plan definition author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence. To provide a version consistent with the Decision Support Service specification, use the format Major.Minor.Revision (e.g. 1.0.0). For more information on versioning knowledge assets, refer to the Decision Support Service specification. Note that a version is required for non-experimental active artifacts.",
+      "comment": "There may be different plan definition instances that have the same identifier but different versions.  The version can be appended to the url in a reference to allow a reference to a particular business version of the plan definition with the format [url]|[version].",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this plan definition (computer friendly)",
+      "definition": "A natural language name identifying the plan definition. This name should be usable as an identifier for the module by machine processing applications such as code generation.",
+      "comment": "The name is not expected to be globally unique. The name should be a simple alphanumeric type name to ensure that it is machine-processing friendly.",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.title",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this plan definition (human friendly)",
+      "definition": "A short, descriptive, user-friendly title for the plan definition.",
+      "comment": "This name does not need to be machine-processing friendly and may contain punctuation, white-space, etc.",
+      "inherited": false
+    },
+    {
+      "name": "subtitle",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.subtitle",
+      "min": 0,
+      "max": "1",
+      "short": "Subordinate title of the plan definition",
+      "definition": "An explanatory or alternate title for the plan definition giving additional information about its content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.type",
+      "min": 0,
+      "max": "1",
+      "short": "order-set | clinical-protocol | eca-rule | workflow-definition",
+      "definition": "A high-level category for the plan definition that distinguishes the kinds of systems that would be interested in the plan definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.status",
+      "min": 1,
+      "max": "1",
+      "short": "draft | active | retired | unknown",
+      "definition": "The status of this plan definition. Enables tracking the life-cycle of the content.",
+      "comment": "Allows filtering of plan definitions that are appropriate for use versus not.",
+      "inherited": false
+    },
+    {
+      "name": "experimental",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "PlanDefinition.experimental",
+      "min": 0,
+      "max": "1",
+      "short": "For testing purposes, not real usage",
+      "definition": "A Boolean value to indicate that this plan definition is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.",
+      "comment": "Allows filtering of plan definitions that are appropriate for use versus not.",
+      "inherited": false
+    },
+    {
+      "name": "subject[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "PlanDefinition.subject[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Type of individual the plan definition is focused on",
+      "definition": "A code or group definition that describes the intended subject of the plan definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "PlanDefinition.date",
+      "min": 0,
+      "max": "1",
+      "short": "Date last changed",
+      "definition": "The date  (and optionally time) when the plan definition was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the plan definition changes.",
+      "comment": "Note that this is not the same as the resource last-modified-date, since the resource may be a secondary representation of the plan definition. Additional specific dates may be added as extensions or be found by consulting Provenances associated with past versions of the resource.",
+      "inherited": false
+    },
+    {
+      "name": "publisher",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.publisher",
+      "min": 0,
+      "max": "1",
+      "short": "Name of the publisher (organization or individual)",
+      "definition": "The name of the organization or individual that published the plan definition.",
+      "comment": "Usually an organization but may be an individual. The publisher (or steward) of the plan definition is the organization or individual primarily responsible for the maintenance and upkeep of the plan definition. This is not necessarily the same individual or organization that developed and initially authored the content. The publisher is the primary point of contact for questions or issues with the plan definition. This item SHOULD be populated unless the information is available from context.",
+      "inherited": false
+    },
+    {
+      "name": "contact",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.contact",
+      "min": 0,
+      "max": "*",
+      "short": "Contact details for the publisher",
+      "definition": "Contact details to assist a user in finding and communicating with the publisher.",
+      "comment": "May be a web site, an email address, a telephone number, etc.",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "PlanDefinition.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the plan definition",
+      "definition": "A free text natural language description of the plan definition from a consumer's perspective.",
+      "comment": "This description can be used to capture details such as why the plan definition was built, comments about misuse, instructions for clinical use and interpretation, literature references, examples from the paper world, etc. It is not a rendering of the plan definition as conveyed in the 'text' field of the resource itself. This item SHOULD be populated unless the information is available from context (e.g. the language of the plan definition is presumed to be the predominant language in the place the plan definition was created).",
+      "inherited": false
+    },
+    {
+      "name": "useContext",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.useContext",
+      "min": 0,
+      "max": "*",
+      "short": "The context that the content is intended to support",
+      "definition": "The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate plan definition instances.",
+      "comment": "When multiple useContexts are specified, there is no expectation that all or any of the contexts apply.",
+      "inherited": false
+    },
+    {
+      "name": "jurisdiction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.jurisdiction",
+      "min": 0,
+      "max": "*",
+      "short": "Intended jurisdiction for plan definition (if applicable)",
+      "definition": "A legal or geographic region in which the plan definition is intended to be used.",
+      "comment": "It may be possible for the plan definition to be used in jurisdictions other than those for which it was originally designed or intended.",
+      "inherited": false
+    },
+    {
+      "name": "purpose",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "PlanDefinition.purpose",
+      "min": 0,
+      "max": "1",
+      "short": "Why this plan definition is defined",
+      "definition": "Explanation of why this plan definition is needed and why it has been designed as it has.",
+      "comment": "This element does not describe the usage of the plan definition. Instead, it provides traceability of ''why'' the resource is either needed or ''why'' it is defined as it is.  This may be used to point to source materials or specifications that drove the structure of this plan definition.",
+      "inherited": false
+    },
+    {
+      "name": "usage",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.usage",
+      "min": 0,
+      "max": "1",
+      "short": "Describes the clinical usage of the plan",
+      "definition": "A detailed description of how the plan definition is used from a clinical perspective.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "copyright",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "PlanDefinition.copyright",
+      "min": 0,
+      "max": "1",
+      "short": "Use and/or publishing restrictions",
+      "definition": "A copyright statement relating to the plan definition and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the plan definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "approvalDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "PlanDefinition.approvalDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the plan definition was approved by publisher",
+      "definition": "The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.",
+      "comment": "The 'date' element may be more recent than the approval date because of minor changes or editorial corrections.",
+      "inherited": false
+    },
+    {
+      "name": "lastReviewDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "PlanDefinition.lastReviewDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the plan definition was last reviewed",
+      "definition": "The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.",
+      "comment": "If specified, this date follows the original approval date.",
+      "inherited": false
+    },
+    {
+      "name": "effectivePeriod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.effectivePeriod",
+      "min": 0,
+      "max": "1",
+      "short": "When the plan definition is expected to be used",
+      "definition": "The period during which the plan definition content was or is planned to be in active use.",
+      "comment": "The effective period for a plan definition  determines when the content is applicable for usage and is independent of publication and review dates. For example, a measure intended to be used for the year 2016 might be published in 2015.",
+      "inherited": false
+    },
+    {
+      "name": "topic",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.topic",
+      "min": 0,
+      "max": "*",
+      "short": "E.g. Education, Treatment, Assessment",
+      "definition": "Descriptive topics related to the content of the plan definition. Topics provide a high-level categorization of the definition that can be useful for filtering and searching.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.author",
+      "min": 0,
+      "max": "*",
+      "short": "Who authored the content",
+      "definition": "An individiual or organization primarily involved in the creation and maintenance of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "editor",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.editor",
+      "min": 0,
+      "max": "*",
+      "short": "Who edited the content",
+      "definition": "An individual or organization primarily responsible for internal coherence of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reviewer",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.reviewer",
+      "min": 0,
+      "max": "*",
+      "short": "Who reviewed the content",
+      "definition": "An individual or organization primarily responsible for review of some aspect of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "endorser",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.endorser",
+      "min": 0,
+      "max": "*",
+      "short": "Who endorsed the content",
+      "definition": "An individual or organization responsible for officially endorsing the content for use in some setting.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relatedArtifact",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.relatedArtifact",
+      "min": 0,
+      "max": "*",
+      "short": "Additional documentation, citations",
+      "definition": "Related artifacts such as additional documentation, justification, or bibliographic references.",
+      "comment": "Each related artifact is either an attachment, or a reference to another resource, but not both.",
+      "inherited": false
+    },
+    {
+      "name": "library",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "PlanDefinition.library",
+      "min": 0,
+      "max": "*",
+      "short": "Logic used by the plan definition",
+      "definition": "A reference to a Library resource containing any formal logic used by the plan definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "goal",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.goal",
+      "min": 0,
+      "max": "*",
+      "short": "What the plan is trying to accomplish",
+      "definition": "Goals that describe what the activities within the plan are intended to achieve. For example, weight loss, restoring an activity of daily living, obtaining herd immunity via immunization, meeting a process improvement objective, etc.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.goal.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "category",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.category",
+      "min": 0,
+      "max": "1",
+      "short": "E.g. Treatment, dietary, behavioral",
+      "definition": "Indicates a category the goal falls within.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.description",
+      "min": 1,
+      "max": "1",
+      "short": "Code or text describing the goal",
+      "definition": "Human-readable and/or coded description of a specific desired objective of care, such as \"control blood pressure\" or \"negotiate an obstacle course\" or \"dance with child at wedding\".",
+      "comment": "If no code is available, use CodeableConcept.text.",
+      "inherited": false
+    },
+    {
+      "name": "priority",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.priority",
+      "min": 0,
+      "max": "1",
+      "short": "high-priority | medium-priority | low-priority",
+      "definition": "Identifies the expected level of importance associated with reaching/sustaining the defined goal.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "start",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.start",
+      "min": 0,
+      "max": "1",
+      "short": "When goal pursuit begins",
+      "definition": "The event after which the goal should begin being pursued.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "addresses",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.addresses",
+      "min": 0,
+      "max": "*",
+      "short": "What does the goal address",
+      "definition": "Identifies problems, conditions, issues, or concerns the goal is intended to address.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "documentation",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.documentation",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting documentation for the goal",
+      "definition": "Didactic or other informational resources associated with the goal that provide further supporting information about the goal. Information resources can include inline text commentary and links to web resources.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "target",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.goal.target",
+      "min": 0,
+      "max": "*",
+      "short": "Target outcome for the goal",
+      "definition": "Indicates what should be done and within what timeframe.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "measure",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.measure",
+      "min": 0,
+      "max": "1",
+      "short": "The parameter whose value is to be tracked",
+      "definition": "The parameter whose value is to be tracked, e.g. body weight, blood pressure, or hemoglobin A1c level.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "detail[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.detail[x]",
+      "min": 0,
+      "max": "1",
+      "short": "The target value to be achieved",
+      "definition": "The target value of the measure to be achieved to signify fulfillment of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both values of the range can be specified. When a low value is missing, it indicates that the goal is achieved at any value at or below the high value. Similarly, if the high value is missing, it indicates that the goal is achieved at any value at or above the low value.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "due",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.goal.target.due",
+      "min": 0,
+      "max": "1",
+      "short": "Reach goal within",
+      "definition": "Indicates the timeframe after the start of the goal in which the goal should be met.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "action",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.action",
+      "min": 0,
+      "max": "*",
+      "short": "Action defined by the plan",
+      "definition": "An action or group of actions to be taken as part of the plan.",
+      "comment": "Note that there is overlap between many of the elements defined here and the ActivityDefinition resource. When an ActivityDefinition is referenced (using the definition element), the overlapping elements in the plan override the content of the referenced ActivityDefinition unless otherwise documented in the specific elements. See the PlanDefinition resource for more detailed information.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "prefix",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.prefix",
+      "min": 0,
+      "max": "1",
+      "short": "User-visible prefix for the action (e.g. 1. or A.)",
+      "definition": "A user-visible prefix for the action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.title",
+      "min": 0,
+      "max": "1",
+      "short": "User-visible title",
+      "definition": "The title of the action displayed to a user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.description",
+      "min": 0,
+      "max": "1",
+      "short": "Brief description of the action",
+      "definition": "A brief description of the action used to provide a summary to display to the user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "textEquivalent",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.textEquivalent",
+      "min": 0,
+      "max": "1",
+      "short": "Static text equivalent of the action, used if the dynamic aspects cannot be interpreted by the receiving system",
+      "definition": "A text equivalent of the action to be performed. This provides a human-interpretable description of the action when the definition is consumed by a system that might not be capable of interpreting it dynamically.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "priority",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.priority",
+      "min": 0,
+      "max": "1",
+      "short": "routine | urgent | asap | stat",
+      "definition": "Indicates how quickly the action should be addressed with respect to other actions.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.code",
+      "min": 0,
+      "max": "*",
+      "short": "Code representing the meaning of the action or sub-actions",
+      "definition": "A code that provides meaning for the action or action group. For example, a section may have a LOINC code for the section of a documentation template.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reason",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.reason",
+      "min": 0,
+      "max": "*",
+      "short": "Why the action should be performed",
+      "definition": "A description of why this action is necessary or appropriate.",
+      "comment": "This is different than the clinical evidence documentation, it's an actual business description of the reason for performing the action.",
+      "inherited": false
+    },
+    {
+      "name": "documentation",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.documentation",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting documentation for the intended performer of the action",
+      "definition": "Didactic or other informational resources associated with the action that can be provided to the CDS recipient. Information resources can include inline text commentary and links to web resources.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "goalId",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "PlanDefinition.action.goalId",
+      "min": 0,
+      "max": "*",
+      "short": "What goals this action supports",
+      "definition": "Identifies goals that this action supports. The reference must be to a goal element defined within this plan definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "subject[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "PlanDefinition.action.subject[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Type of individual the action is focused on",
+      "definition": "A code or group definition that describes the intended subject of the action and its children, if any.",
+      "comment": "The subject of an action overrides the subject at a parent action or on the root of the PlanDefinition if specified.\n\nIn addition, because the subject needs to be resolved during realization, use of subjects in actions (or in the ActivityDefinition referenced by the action) resolves based on the set of subjects supplied in context and by type (i.e. the patient subject would resolve to a resource of type Patient).",
+      "inherited": false
+    },
+    {
+      "name": "trigger",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.trigger",
+      "min": 0,
+      "max": "*",
+      "short": "When the action should be triggered",
+      "definition": "A description of when the action should be triggered.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "condition",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.action.condition",
+      "min": 0,
+      "max": "*",
+      "short": "Whether or not the action is applicable",
+      "definition": "An expression that describes applicability criteria or start/stop conditions for the action.",
+      "comment": "When multiple conditions of the same kind are present, the effects are combined using AND semantics, so the overall condition is true only if all the conditions are true.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.condition.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.condition.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.condition.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "kind",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.condition.kind",
+      "min": 1,
+      "max": "1",
+      "short": "applicability | start | stop",
+      "definition": "The kind of condition.",
+      "comment": "Applicability criteria are used to determine immediate applicability when a plan definition is applied to a given context. Start and stop criteria are carried through application and used to describe enter/exit criteria for an action.",
+      "inherited": false
+    },
+    {
+      "name": "expression",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.condition.expression",
+      "min": 0,
+      "max": "1",
+      "short": "Boolean-valued expression",
+      "definition": "An expression that returns true or false, indicating whether the condition is satisfied.",
+      "comment": "The expression may be inlined or may be a reference to a named expression within a logic library referenced by the library element.",
+      "inherited": false
+    },
+    {
+      "name": "input",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.input",
+      "min": 0,
+      "max": "*",
+      "short": "Input data requirements",
+      "definition": "Defines input data requirements for the action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "output",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.output",
+      "min": 0,
+      "max": "*",
+      "short": "Output data definition",
+      "definition": "Defines the outputs of the action, if any.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relatedAction",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction",
+      "min": 0,
+      "max": "*",
+      "short": "Relationship to another action",
+      "definition": "A relationship to another action such as \"before\" or \"30-60 minutes after start of\".",
+      "comment": "When an action depends on multiple actions, the meaning is that all actions are dependencies, rather than that any of the actions are a dependency.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "actionId",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.actionId",
+      "min": 1,
+      "max": "1",
+      "short": "What action is this related to",
+      "definition": "The element id of the related action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relationship",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.relationship",
+      "min": 1,
+      "max": "1",
+      "short": "before-start | before | before-end | concurrent-with-start | concurrent | concurrent-with-end | after-start | after | after-end",
+      "definition": "The relationship of this action to the related action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "offset[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.relatedAction.offset[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Time offset for the relationship",
+      "definition": "A duration or range of durations to apply to the relationship. For example, 30-60 minutes before.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "timing[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.timing[x]",
+      "min": 0,
+      "max": "1",
+      "short": "When the action should take place",
+      "definition": "An optional value describing when the action should be performed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "participant",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.action.participant",
+      "min": 0,
+      "max": "*",
+      "short": "Who should participate in the action",
+      "definition": "Indicates who should participate in performing the action described.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.participant.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.participant.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.participant.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.participant.type",
+      "min": 1,
+      "max": "1",
+      "short": "patient | practitioner | related-person | device",
+      "definition": "The type of participant in the action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "role",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.participant.role",
+      "min": 0,
+      "max": "1",
+      "short": "E.g. Nurse, Surgeon, Parent",
+      "definition": "The role the participant should play in performing the described action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.type",
+      "min": 0,
+      "max": "1",
+      "short": "create | update | remove | fire-event",
+      "definition": "The type of action to perform (create, update, remove).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "groupingBehavior",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.groupingBehavior",
+      "min": 0,
+      "max": "1",
+      "short": "visual-group | logical-group | sentence-group",
+      "definition": "Defines the grouping behavior for the action and its children.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "selectionBehavior",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.selectionBehavior",
+      "min": 0,
+      "max": "1",
+      "short": "any | all | all-or-none | exactly-one | at-most-one | one-or-more",
+      "definition": "Defines the selection behavior for the action and its children.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "requiredBehavior",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.requiredBehavior",
+      "min": 0,
+      "max": "1",
+      "short": "must | could | must-unless-documented",
+      "definition": "Defines the required behavior for the action.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "precheckBehavior",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.precheckBehavior",
+      "min": 0,
+      "max": "1",
+      "short": "yes | no",
+      "definition": "Defines whether the action should usually be preselected.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "cardinalityBehavior",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "PlanDefinition.action.cardinalityBehavior",
+      "min": 0,
+      "max": "1",
+      "short": "single | multiple",
+      "definition": "Defines whether the action can be selected multiple times.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definition[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "PlanDefinition.action.definition[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Description of the activity to be performed",
+      "definition": "A reference to an ActivityDefinition that describes the action to be taken in detail, or a PlanDefinition that describes a series of actions to be taken.",
+      "comment": "Note that the definition is optional, and if no definition is specified, a dynamicValue with a root ($this) path can be used to define the entire resource dynamically.",
+      "inherited": false
+    },
+    {
+      "name": "transform",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "PlanDefinition.action.transform",
+      "min": 0,
+      "max": "1",
+      "short": "Transform to apply the template",
+      "definition": "A reference to a StructureMap resource that defines a transform that can be executed to produce the intent resource using the ActivityDefinition instance as the input.",
+      "comment": "Note that when a referenced ActivityDefinition also defines a transform, the transform specified here generally takes precedence. In addition, if both a transform and dynamic values are specific, the dynamic values are applied to the result of the transform.",
+      "inherited": false
+    },
+    {
+      "name": "dynamicValue",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue",
+      "min": 0,
+      "max": "*",
+      "short": "Dynamic aspects of the definition",
+      "definition": "Customizations that should be applied to the statically defined resource. For example, if the dosage of a medication must be computed based on the patient's weight, a customization would be used to specify an expression that calculated the weight, and the path on the resource that would contain the result.",
+      "comment": "Dynamic values are applied in the order in which they are defined in the PlanDefinition resource. Note that when dynamic values are also specified by a referenced ActivityDefinition, the dynamicValues from the ActivityDefinition are applied first, followed by the dynamicValues specified here. In addition, if both a transform and dynamic values are specific, the dynamic values are applied to the result of the transform.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "path",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue.path",
+      "min": 0,
+      "max": "1",
+      "short": "The path to the element to be set dynamically",
+      "definition": "The path to the element to be customized. This is the path on the resource that will hold the result of the calculation defined by the expression. The specified path SHALL be a FHIRPath resolveable on the specified target type of the ActivityDefinition, and SHALL consist only of identifiers, constant indexers, and a restricted subset of functions. The path is allowed to contain qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to traverse multiple-cardinality sub-elements (see the [Simple FHIRPath Profile](fhirpath.html#simple) for full details).",
+      "comment": "To specify the path to the current action being realized, the %action environment variable is available in this path. For example, to specify the description element of the target action, the path would be %action.description. The path attribute contains a [Simple FHIRPath Subset](fhirpath.html#simple) that allows path traversal, but not calculation.",
+      "inherited": false
+    },
+    {
+      "name": "expression",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "PlanDefinition.action.dynamicValue.expression",
+      "min": 0,
+      "max": "1",
+      "short": "An expression that provides the dynamic value for the customization",
+      "definition": "An expression specifying the value of the customized element.",
+      "comment": "The expression may be inlined or may be a reference to a named expression within a logic library referenced by the library element.",
+      "inherited": false
+    },
+    {
+      "name": "action",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "PlanDefinition.action.action",
+      "min": 0,
+      "max": "*",
+      "short": "A sub-action",
+      "definition": "Sub actions that are contained within the action. The behavior of this action determines the functionality of the sub-actions. For example, a selection behavior of at-most-one indicates that of the sub-actions, at most one may be chosen as part of realizing the action definition.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "composed-of",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "PlanDefinition.relatedArtifact"
+    },
+    {
+      "name": "context",
+      "type": "token",
+      "description": "A use context assigned to the plan definition",
+      "expression": "PlanDefinition.useContext.value"
+    },
+    {
+      "name": "context-quantity",
+      "type": "quantity",
+      "description": "A quantity- or range-valued use context assigned to the plan definition",
+      "expression": "PlanDefinition.useContext.value"
+    },
+    {
+      "name": "context-type",
+      "type": "token",
+      "description": "A type of use context assigned to the plan definition",
+      "expression": "PlanDefinition.useContext.code"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "The plan definition publication date",
+      "expression": "PlanDefinition.date"
+    },
+    {
+      "name": "definition",
+      "type": "reference",
+      "description": "Activity or plan definitions used by plan definition",
+      "expression": "PlanDefinition.action.definition"
+    },
+    {
+      "name": "depends-on",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "PlanDefinition.relatedArtifact"
+    },
+    {
+      "name": "derived-from",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "PlanDefinition.relatedArtifact"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "The description of the plan definition",
+      "expression": "PlanDefinition.description"
+    },
+    {
+      "name": "effective",
+      "type": "date",
+      "description": "The time during which the plan definition is intended to be in use",
+      "expression": "PlanDefinition.effectivePeriod"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "External identifier for the plan definition",
+      "expression": "PlanDefinition.identifier"
+    },
+    {
+      "name": "jurisdiction",
+      "type": "token",
+      "description": "Intended jurisdiction for the plan definition",
+      "expression": "PlanDefinition.jurisdiction"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Computationally friendly name of the plan definition",
+      "expression": "PlanDefinition.name"
+    },
+    {
+      "name": "predecessor",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "PlanDefinition.relatedArtifact"
+    },
+    {
+      "name": "publisher",
+      "type": "string",
+      "description": "Name of the publisher of the plan definition",
+      "expression": "PlanDefinition.publisher"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The current status of the plan definition",
+      "expression": "PlanDefinition.status"
+    },
+    {
+      "name": "successor",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "PlanDefinition.relatedArtifact"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "The human-friendly name of the plan definition",
+      "expression": "PlanDefinition.title"
+    },
+    {
+      "name": "topic",
+      "type": "token",
+      "description": "Topics associated with the module",
+      "expression": "PlanDefinition.topic"
+    },
+    {
+      "name": "type",
+      "type": "token",
+      "description": "The type of artifact the plan (e.g. order-set, eca-rule, protocol)",
+      "expression": "PlanDefinition.type"
+    },
+    {
+      "name": "url",
+      "type": "uri",
+      "description": "The uri that identifies the plan definition",
+      "expression": "PlanDefinition.url"
+    },
+    {
+      "name": "version",
+      "type": "token",
+      "description": "The business version of the plan definition",
+      "expression": "PlanDefinition.version"
+    },
+    {
+      "name": "context-type-quantity",
+      "type": "composite",
+      "description": "A use context type and quantity- or range-based value assigned to the plan definition",
+      "expression": "PlanDefinition.useContext"
+    },
+    {
+      "name": "context-type-value",
+      "type": "composite",
+      "description": "A use context type and value assigned to the plan definition",
+      "expression": "PlanDefinition.useContext"
+    }
+  ]
+}

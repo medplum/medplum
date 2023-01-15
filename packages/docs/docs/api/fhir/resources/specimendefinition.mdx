@@ -1,0 +1,25 @@
+---
+title: SpecimenDefinition
+sidebar_position: 126
+---
+
+import definition from '@site/static/data/resourceDefinitions/specimendefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# SpecimenDefinition
+
+A kind of specimen with associated set of requirements.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

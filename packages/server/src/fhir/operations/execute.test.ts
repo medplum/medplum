@@ -1,35 +1,11 @@
 import { Bot } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
+import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-
-jest.mock('@aws-sdk/client-lambda', () => {
-  const original = jest.requireActual('@aws-sdk/client-lambda');
-
-  class LambdaClient {
-    async send(): Promise<any> {
-      // LogResult:
-      // START RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873 Version: $LATEST
-      // 2022-05-30T16:12:22.685Z	146fcfcf-c32b-43f5-82a6-ee0f3132d873	INFO test
-      // END RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873
-      // REPORT RequestId: 146fcfcf-c32b-43f5-82a6-ee0f3132d873
-      return {
-        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
-        Payload: '',
-      };
-    }
-  }
-
-  return {
-    ...original,
-    LambdaClient,
-  };
-});
 
 const app = express();
 let accessToken: string;
@@ -38,10 +14,7 @@ let bot: Bot;
 describe('Execute', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
 
     const res = await request(app)
@@ -51,14 +24,20 @@ describe('Execute', () => {
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
-        code: `console.log('input', input); return input;`,
+        runtimeVersion: 'awslambda',
+        code: `
+          export async function handler(medplum, event) {
+            console.log('input', event.input);
+            return event.input;
+          }
+        `,
       });
     expect(res.status).toBe(201);
     bot = res.body as Bot;
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Submit plain text', async () => {
@@ -134,8 +113,7 @@ describe('Execute', () => {
     expect(res2.status).toBe(400);
   });
 
-  test('Execute on AWS Lambda', async () => {
-    // Step 1: Create a bot
+  test('Unsupported runtime version', async () => {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', 'application/fhir+json')
@@ -143,7 +121,7 @@ describe('Execute', () => {
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
-        runtimeVersion: 'awslambda',
+        runtimeVersion: 'unsupported',
         code: `
         export async function handler() {
           console.log('input', input);
@@ -168,6 +146,41 @@ describe('Execute', () => {
       .set('Content-Type', 'application/fhir+json')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
-    expect(res3.status).toBe(200);
+    expect(res3.status).toBe(400);
+  });
+
+  test('Bots not enabled', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Next, Alice creates a bot
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/bot')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.resourceType).toBe('Bot');
+    expect(res2.body.id).toBeDefined();
+    expect(res2.body.code).toBeDefined();
+
+    // Try to execute the bot
+    // This should fail because bots are not enabled
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${res2.body.id}/$execute`)
+      .set('Content-Type', 'application/fhir+json')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res3.status).toBe(400);
+    expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
   });
 });

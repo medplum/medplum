@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { InvitePage } from './InvitePage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
@@ -12,9 +12,7 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/admin/projects/:projectId/invite" element={<InvitePage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -22,38 +20,51 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('InvitePage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
     });
@@ -63,27 +74,28 @@ describe('InvitePage', () => {
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Email sent')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/invite');
+    await setup('/admin/invite');
     await waitFor(() => screen.getByText('Invite'));
 
     expect(screen.getByText('Invite')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -95,7 +107,10 @@ describe('InvitePage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -107,5 +122,63 @@ describe('InvitePage', () => {
     });
 
     expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Invite patient', async () => {
+    await setup('/admin/invite');
+    await waitFor(() => screen.getByText('Invite'));
+
+    expect(screen.getByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'Patient' },
+      });
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'Peggy' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Patient' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'peggypatient@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
+  test('Do not send email', async () => {
+    await setup('/admin/invite');
+    await waitFor(() => screen.getByText('Invite'));
+
+    expect(screen.getByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'George' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Washington' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'george@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Send email'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.queryByText('Email sent')).not.toBeInTheDocument();
   });
 });

@@ -1,0 +1,2144 @@
+{
+  "name": "MedicationKnowledge",
+  "location": "resource",
+  "description": "Information about a medication that is used to support knowledge.",
+  "properties": [
+    {
+      "name": "MedicationKnowledge",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "MedicationKnowledge",
+      "min": 0,
+      "max": "*",
+      "short": "Definition of Medication Knowledge",
+      "definition": "Information about a medication that is used to support knowledge.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "MedicationKnowledge.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationKnowledge.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "MedicationKnowledge.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.code",
+      "min": 0,
+      "max": "1",
+      "short": "Code that identifies this medication",
+      "definition": "A code that specifies this medication, or a textual description if no code is available. Usage note: This could be a standard medication code such as a code from RxNorm, SNOMED CT, IDMP etc. It could also be a national or local formulary code, optionally with translations to other code systems.",
+      "comment": "Depending on the context of use, the code that was actually selected by the user (prescriber, dispenser, etc.) will have the coding.userSelected set to true.  As described in the coding datatype: \"A coding may be marked as a \"userSelected\" if a user selected the particular coded value in a user interface (e.g. the user selects an item in a pick-list). If a user selected coding exists, it is the preferred choice for performing translations etc. Other codes can only be literal translations to alternative code systems, or codes at a lower level of granularity (e.g. a generic code for a vendor-specific primary one).",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationKnowledge.status",
+      "min": 0,
+      "max": "1",
+      "short": "active | inactive | entered-in-error",
+      "definition": "A code to indicate if the medication is in active use.  The status refers to the validity about the information of the medication and not to its medicinal properties.",
+      "comment": "This status is intended to identify if the medication in a local system is in active use within a drug database or inventory.  For example, a pharmacy system may create a new drug file record for a compounded product \"ABC Hospital Special Cream\" with an active status.  At some point in the future, it may be determined that the drug record was created with an error and the status is changed to \"entered in error\".   This status is not intended to specify if a medication is part of a particular formulary.  It is possible that the drug record may be referenced by multiple formularies or catalogues and each of those entries would have a separate status.",
+      "inherited": false
+    },
+    {
+      "name": "manufacturer",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.manufacturer",
+      "min": 0,
+      "max": "1",
+      "short": "Manufacturer of the item",
+      "definition": "Describes the details of the manufacturer of the medication product.  This is not intended to represent the distributor of a medication product.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "doseForm",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.doseForm",
+      "min": 0,
+      "max": "1",
+      "short": "powder | tablets | capsule +",
+      "definition": "Describes the form of the item.  Powder; tablets; capsule.",
+      "comment": "When Medication is referenced from MedicationRequest, this is the ordered form.  When Medication is referenced within MedicationDispense, this is the dispensed form.  When Medication is referenced within MedicationAdministration, this is administered form.",
+      "inherited": false
+    },
+    {
+      "name": "amount",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.amount",
+      "min": 0,
+      "max": "1",
+      "short": "Amount of drug in package",
+      "definition": "Specific amount of the drug in the packaged product.  For example, when specifying a product that has the same strength (For example, Insulin glargine 100 unit per mL solution for injection), this attribute provides additional clarification of the package amount (For example, 3 mL, 10mL, etc.).",
+      "comment": "This is the quantity of medication in a package.  To specify the strength of the medication, the Ingredient.strength attribute is used.",
+      "inherited": false
+    },
+    {
+      "name": "synonym",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.synonym",
+      "min": 0,
+      "max": "*",
+      "short": "Additional names for a medication",
+      "definition": "Additional names for a medication, for example, the name(s) given to a medication in different countries.  For example, acetaminophen and paracetamol or salbutamol and albuterol.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relatedMedicationKnowledge",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge",
+      "min": 0,
+      "max": "*",
+      "short": "Associated or related medication information",
+      "definition": "Associated or related knowledge about a medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge.type",
+      "min": 1,
+      "max": "1",
+      "short": "Category of medicationKnowledge",
+      "definition": "The category of the associated medication knowledge reference.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reference",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "MedicationKnowledge",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.relatedMedicationKnowledge.reference",
+      "min": 1,
+      "max": "*",
+      "short": "Associated documentation about the associated medication knowledge",
+      "definition": "Associated documentation about the associated medication knowledge.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "associatedMedication",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.associatedMedication",
+      "min": 0,
+      "max": "*",
+      "short": "A medication resource that is associated with this medication",
+      "definition": "Associated or related medications.  For example, if the medication is a branded product (e.g. Crestor), this is the Therapeutic Moeity (e.g. Rosuvastatin) or if this is a generic medication (e.g. Rosuvastatin), this would link to a branded product (e.g. Crestor).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "productType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.productType",
+      "min": 0,
+      "max": "*",
+      "short": "Category of the medication or product",
+      "definition": "Category of the medication or product (e.g. branded product, therapeutic moeity, generic product, innovator product, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "monograph",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph",
+      "min": 0,
+      "max": "*",
+      "short": "Associated documentation about the medication",
+      "definition": "Associated documentation about the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph.type",
+      "min": 0,
+      "max": "1",
+      "short": "The category of medication document",
+      "definition": "The category of documentation about the medication. (e.g. professional monograph, patient education monograph).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.monograph.source",
+      "min": 0,
+      "max": "1",
+      "short": "Associated documentation about the medication",
+      "definition": "Associated documentation about the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "ingredient",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient",
+      "min": 0,
+      "max": "*",
+      "short": "Active or inactive ingredient",
+      "definition": "Identifies a particular constituent of interest in the product.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "item[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.item[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Medication(s) or substance(s) contained in the medication",
+      "definition": "The actual ingredient - either a substance (simple ingredient) or another medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "isActive",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.isActive",
+      "min": 0,
+      "max": "1",
+      "short": "Active ingredient indicator",
+      "definition": "Indication of whether this ingredient affects the therapeutic action of the drug.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "strength",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.ingredient.strength",
+      "min": 0,
+      "max": "1",
+      "short": "Quantity of ingredient present",
+      "definition": "Specifies how many (or how much) of the items there are in this Medication.  For example, 250 mg per tablet.  This is expressed as a ratio where the numerator is 250mg and the denominator is 1 tablet.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "preparationInstruction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "MedicationKnowledge.preparationInstruction",
+      "min": 0,
+      "max": "1",
+      "short": "The instructions for preparing the medication",
+      "definition": "The instructions for preparing the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "intendedRoute",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.intendedRoute",
+      "min": 0,
+      "max": "*",
+      "short": "The intended or approved route of administration",
+      "definition": "The intended or approved route of administration.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "cost",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.cost",
+      "min": 0,
+      "max": "*",
+      "short": "The pricing of the medication",
+      "definition": "The price of the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.type",
+      "min": 1,
+      "max": "1",
+      "short": "The category of the cost information",
+      "definition": "The category of the cost information.  For example, manufacturers' cost, patient cost, claim reimbursement cost, actual acquisition cost.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.source",
+      "min": 0,
+      "max": "1",
+      "short": "The source or owner for the price information",
+      "definition": "The source or owner that assigns the price to the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "cost",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.cost.cost",
+      "min": 1,
+      "max": "1",
+      "short": "The price of the medication",
+      "definition": "The price of the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "monitoringProgram",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram",
+      "min": 0,
+      "max": "*",
+      "short": "Program under which a medication is reviewed",
+      "definition": "The program under which the medication is reviewed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram.type",
+      "min": 0,
+      "max": "1",
+      "short": "Type of program under which the medication is monitored",
+      "definition": "Type of program under which the medication is monitored.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.monitoringProgram.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name of the reviewing program",
+      "definition": "Name of the reviewing program.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "administrationGuidelines",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines",
+      "min": 0,
+      "max": "*",
+      "short": "Guidelines for administration of the medication",
+      "definition": "Guidelines for the administration of the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "dosage",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage",
+      "min": 0,
+      "max": "*",
+      "short": "Dosage for the medication for the specific guidelines",
+      "definition": "Dosage for the medication for the specific guidelines.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage.type",
+      "min": 1,
+      "max": "1",
+      "short": "Type of dosage",
+      "definition": "The type of dosage (for example, prophylaxis, maintenance, therapeutic, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dosage",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.dosage.dosage",
+      "min": 1,
+      "max": "*",
+      "short": "Dosage for the medication for the specific guidelines",
+      "definition": "Dosage for the medication for the specific guidelines.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "indication[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ObservationDefinition",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.indication[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Indication for use that apply to the specific administration guidelines",
+      "definition": "Indication for use that apply to the specific administration guidelines.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patientCharacteristics",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics",
+      "min": 0,
+      "max": "*",
+      "short": "Characteristics of the patient that are relevant to the administration guidelines",
+      "definition": "Characteristics of the patient that are relevant to the administration guidelines (for example, height, weight, gender, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "characteristic[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.characteristic[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Specific characteristic that is relevant to the administration guideline",
+      "definition": "Specific characteristic that is relevant to the administration guideline (e.g. height, weight, gender).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.administrationGuidelines.patientCharacteristics.value",
+      "min": 0,
+      "max": "*",
+      "short": "The specific characteristic",
+      "definition": "The specific characteristic (e.g. height, weight, gender, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "medicineClassification",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification",
+      "min": 0,
+      "max": "*",
+      "short": "Categorization of the medication within a formulary or classification system",
+      "definition": "Categorization of the medication within a formulary or classification system.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification.type",
+      "min": 1,
+      "max": "1",
+      "short": "The type of category for the medication (for example, therapeutic classification, therapeutic sub-classification)",
+      "definition": "The type of category for the medication (for example, therapeutic classification, therapeutic sub-classification).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "classification",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.medicineClassification.classification",
+      "min": 0,
+      "max": "*",
+      "short": "Specific category assigned to the medication",
+      "definition": "Specific category assigned to the medication (e.g. anti-infective, anti-hypertensive, antibiotic, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "packaging",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging",
+      "min": 0,
+      "max": "1",
+      "short": "Details about packaged medications",
+      "definition": "Information that only applies to packages (not products).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging.type",
+      "min": 0,
+      "max": "1",
+      "short": "A code that defines the specific type of packaging that the medication can be found in",
+      "definition": "A code that defines the specific type of packaging that the medication can be found in (e.g. blister sleeve, tube, bottle).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "quantity",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.packaging.quantity",
+      "min": 0,
+      "max": "1",
+      "short": "The number of product units the package would contain if fully loaded",
+      "definition": "The number of product units the package would contain if fully loaded.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "drugCharacteristic",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic",
+      "min": 0,
+      "max": "*",
+      "short": "Specifies descriptive properties of the medicine",
+      "definition": "Specifies descriptive properties of the medicine, such as color, shape, imprints, etc.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic.type",
+      "min": 0,
+      "max": "1",
+      "short": "Code specifying the type of characteristic of medication",
+      "definition": "A code specifying which characteristic of the medicine is being described (for example, colour, shape, imprint).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "base64Binary"
+        }
+      ],
+      "path": "MedicationKnowledge.drugCharacteristic.value[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Description of the characteristic",
+      "definition": "Description of the characteristic.",
+      "comment": "The description should be provided as a CodeableConcept, SimpleQuantity or an image.  The description can be a string only when these others are not available.",
+      "inherited": false
+    },
+    {
+      "name": "contraindication",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DetectedIssue",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.contraindication",
+      "min": 0,
+      "max": "*",
+      "short": "Potential clinical issue with or between medication(s)",
+      "definition": "Potential clinical issue with or between medication(s) (for example, drug-drug interaction, drug-disease contraindication, drug-allergy interaction, etc.).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "regulatory",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory",
+      "min": 0,
+      "max": "*",
+      "short": "Regulatory information about a medication",
+      "definition": "Regulatory information about a medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "regulatoryAuthority",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.regulatoryAuthority",
+      "min": 1,
+      "max": "1",
+      "short": "Specifies the authority of the regulation",
+      "definition": "The authority that is specifying the regulations.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "substitution",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution",
+      "min": 0,
+      "max": "*",
+      "short": "Specifies if changes are allowed when dispensing a medication from a regulatory perspective",
+      "definition": "Specifies if changes are allowed when dispensing a medication from a regulatory perspective.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution.type",
+      "min": 1,
+      "max": "1",
+      "short": "Specifies the type of substitution allowed",
+      "definition": "Specifies the type of substitution allowed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "allowed",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.substitution.allowed",
+      "min": 1,
+      "max": "1",
+      "short": "Specifies if regulation allows for changes in the medication when dispensing",
+      "definition": "Specifies if regulation allows for changes in the medication when dispensing.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "schedule",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.schedule",
+      "min": 0,
+      "max": "*",
+      "short": "Specifies the schedule of a medication in jurisdiction",
+      "definition": "Specifies the schedule of a medication in jurisdiction.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.schedule.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.schedule.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.schedule.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "schedule",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.schedule.schedule",
+      "min": 1,
+      "max": "1",
+      "short": "Specifies the specific drug schedule",
+      "definition": "Specifies the specific drug schedule.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "maxDispense",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense",
+      "min": 0,
+      "max": "1",
+      "short": "The maximum number of units of the medication that can be dispensed in a period",
+      "definition": "The maximum number of units of the medication that can be dispensed in a period.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "quantity",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense.quantity",
+      "min": 1,
+      "max": "1",
+      "short": "The maximum number of units of the medication that can be dispensed",
+      "definition": "The maximum number of units of the medication that can be dispensed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.regulatory.maxDispense.period",
+      "min": 0,
+      "max": "1",
+      "short": "The period that applies to the maximum number of units",
+      "definition": "The period that applies to the maximum number of units.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "kinetics",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics",
+      "min": 0,
+      "max": "*",
+      "short": "The time course of drug absorption, distribution, metabolism and excretion of a medication from the body",
+      "definition": "The time course of drug absorption, distribution, metabolism and excretion of a medication from the body.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "areaUnderCurve",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.areaUnderCurve",
+      "min": 0,
+      "max": "*",
+      "short": "The drug concentration measured at certain discrete points in time",
+      "definition": "The drug concentration measured at certain discrete points in time.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "lethalDose50",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.lethalDose50",
+      "min": 0,
+      "max": "*",
+      "short": "The median lethal dose of a drug",
+      "definition": "The median lethal dose of a drug.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "halfLifePeriod",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationKnowledge.kinetics.halfLifePeriod",
+      "min": 0,
+      "max": "1",
+      "short": "Time required for concentration in the body to decrease by half",
+      "definition": "The time required for any specified property (e.g., the concentration of a substance in the body) to decrease by half.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "classification",
+      "type": "token",
+      "description": "Specific category assigned to the medication",
+      "expression": "MedicationKnowledge.medicineClassification.classification"
+    },
+    {
+      "name": "classification-type",
+      "type": "token",
+      "description": "The type of category for the medication (for example, therapeutic classification, therapeutic sub-classification)",
+      "expression": "MedicationKnowledge.medicineClassification.type"
+    },
+    {
+      "name": "code",
+      "type": "token",
+      "description": "Code that identifies this medication",
+      "expression": "MedicationKnowledge.code"
+    },
+    {
+      "name": "doseform",
+      "type": "token",
+      "description": "powder | tablets | capsule +",
+      "expression": "MedicationKnowledge.doseForm"
+    },
+    {
+      "name": "ingredient",
+      "type": "reference",
+      "description": "Medication(s) or substance(s) contained in the medication",
+      "expression": "MedicationKnowledge.ingredient.item"
+    },
+    {
+      "name": "ingredient-code",
+      "type": "token",
+      "description": "Medication(s) or substance(s) contained in the medication",
+      "expression": "MedicationKnowledge.ingredient.item"
+    },
+    {
+      "name": "manufacturer",
+      "type": "reference",
+      "description": "Manufacturer of the item",
+      "expression": "MedicationKnowledge.manufacturer"
+    },
+    {
+      "name": "monitoring-program-name",
+      "type": "token",
+      "description": "Name of the reviewing program",
+      "expression": "MedicationKnowledge.monitoringProgram.name"
+    },
+    {
+      "name": "monitoring-program-type",
+      "type": "token",
+      "description": "Type of program under which the medication is monitored",
+      "expression": "MedicationKnowledge.monitoringProgram.type"
+    },
+    {
+      "name": "monograph",
+      "type": "reference",
+      "description": "Associated documentation about the medication",
+      "expression": "MedicationKnowledge.monograph.source"
+    },
+    {
+      "name": "monograph-type",
+      "type": "token",
+      "description": "The category of medication document",
+      "expression": "MedicationKnowledge.monograph.type"
+    },
+    {
+      "name": "source-cost",
+      "type": "token",
+      "description": "The source or owner for the price information",
+      "expression": "MedicationKnowledge.cost.source"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "active | inactive | entered-in-error",
+      "expression": "MedicationKnowledge.status"
+    }
+  ]
+}

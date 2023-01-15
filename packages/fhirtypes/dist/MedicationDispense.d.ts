@@ -132,7 +132,7 @@ export interface MedicationDispense {
   /**
    * A code specifying the state of the set of dispense events.
    */
-  status?: string;
+  status?: 'preparation' | 'in-progress' | 'cancelled' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'declined' | 'unknown';
 
   /**
    * Indicates the reason why a dispense was not performed.

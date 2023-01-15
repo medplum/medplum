@@ -1,10 +1,10 @@
 ---
+sidebar_label: Tutorials
 sidebar_position: 1
 ---
 
-# Medplum Tutorials
+# Tutorials
 
-The best way to learn is by doing. Follow these tutorials to get you up and running.
+Welcome to the Medplum tutorials! This section contains several tutorials designed to introduce you to the core concepts of Medplum and build a simple application. This series of tutorials is **designed to be completed in under an hour**.
 
-1. [API Basics](/tutorials/api-basics/create-fhir-data) - Use the REST API to create and read data
-2. [React Hello World](/tutorials/react-components/hello-world-part-1) - Use the React Component Library to build a front-end app
+The tutorials series will run off of our hosted [Medplum App](https://app.medplum.com). How-to guides for related to [self-hosting](/docs/self-hosting/) are available as well.

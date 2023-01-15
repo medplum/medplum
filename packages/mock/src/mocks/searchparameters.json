@@ -1,0 +1,251 @@
+[
+  {
+    "resourceType": "SearchParameter",
+    "id": "ActivityDefinition-name",
+    "name": "name",
+    "code": "name",
+    "base": [
+      "ActivityDefinition"
+    ],
+    "type": "string",
+    "expression": "ActivityDefinition.name"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Communication-encounter",
+    "name": "encounter",
+    "code": "encounter",
+    "base": [
+      "Communication"
+    ],
+    "type": "reference",
+    "expression": "Communication.encounter"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Encounter-length",
+    "name": "length",
+    "code": "length",
+    "base": [
+      "Encounter"
+    ],
+    "type": "quantity",
+    "expression": "Encounter.length"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Media-encounter",
+    "name": "encounter",
+    "code": "encounter",
+    "base": [
+      "Media"
+    ],
+    "type": "reference",
+    "expression": "Media.encounter"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-value-quantity",
+    "name": "value-quantity",
+    "code": "value-quantity",
+    "base": [
+      "Observation"
+    ],
+    "type": "quantity",
+    "expression": "(Observation.value as Quantity) | (Observation.value as SampledData)"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Observation-value-string",
+    "name": "value-string",
+    "code": "value-string",
+    "base": [
+      "Observation"
+    ],
+    "type": "string",
+    "expression": "(Observation.value as string) | (Observation.value as CodeableConcept).text"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Patient-active",
+    "name": "active",
+    "code": "active",
+    "base": [
+      "Patient"
+    ],
+    "type": "token",
+    "expression": "Patient.active"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "individual-address-city",
+    "name": "address-city",
+    "code": "address-city",
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "RelatedPerson"
+    ],
+    "type": "string",
+    "expression": "Patient.address.city | Person.address.city | Practitioner.address.city | RelatedPerson.address.city"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "individual-address-state",
+    "name": "address-state",
+    "code": "address-state",
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "RelatedPerson"
+    ],
+    "type": "string",
+    "expression": "Patient.address.state | Person.address.state | Practitioner.address.state | RelatedPerson.address.state"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "individual-email",
+    "name": "email",
+    "code": "email",
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
+    "type": "token",
+    "expression": "Patient.telecom.where(system='email') | Person.telecom.where(system='email') | Practitioner.telecom.where(system='email') | PractitionerRole.telecom.where(system='email') | RelatedPerson.telecom.where(system='email')"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Patient-name",
+    "name": "name",
+    "code": "name",
+    "base": [
+      "Patient"
+    ],
+    "type": "string",
+    "expression": "Patient.name"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Patient-organization",
+    "name": "organization",
+    "code": "organization",
+    "base": [
+      "Patient"
+    ],
+    "type": "reference",
+    "expression": "Patient.managingOrganization"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "individual-phone",
+    "name": "phone",
+    "code": "phone",
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
+    "type": "token",
+    "expression": "Patient.telecom.where(system='phone') | Person.telecom.where(system='phone') | Practitioner.telecom.where(system='phone') | PractitionerRole.telecom.where(system='phone') | RelatedPerson.telecom.where(system='phone')"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "individual-telecom",
+    "name": "telecom",
+    "code": "telecom",
+    "base": [
+      "Patient",
+      "Person",
+      "Practitioner",
+      "PractitionerRole",
+      "RelatedPerson"
+    ],
+    "type": "token",
+    "expression": "Patient.telecom | Person.telecom | Practitioner.telecom | PractitionerRole.telecom | RelatedPerson.telecom"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Questionnaire-name",
+    "name": "name",
+    "code": "name",
+    "base": [
+      "Questionnaire"
+    ],
+    "type": "string",
+    "expression": "Questionnaire.name"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Schedule-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": [
+      "Schedule"
+    ],
+    "type": "token",
+    "expression": "Schedule.identifier"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "ServiceRequest-authored",
+    "name": "authored",
+    "code": "authored",
+    "base": [
+      "ServiceRequest"
+    ],
+    "type": "date",
+    "expression": "ServiceRequest.authoredOn"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "ServiceRequest-subject",
+    "name": "subject",
+    "code": "subject",
+    "base": [
+      "ServiceRequest"
+    ],
+    "type": "reference",
+    "expression": "ServiceRequest.subject"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Slot-schedule",
+    "name": "schedule",
+    "code": "schedule",
+    "base": [
+      "Slot"
+    ],
+    "type": "reference",
+    "expression": "Slot.schedule"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Slot-start",
+    "name": "start",
+    "code": "start",
+    "base": [
+      "Slot"
+    ],
+    "type": "date",
+    "expression": "Slot.start"
+  },
+  {
+    "resourceType": "SearchParameter",
+    "id": "Task-identifier",
+    "name": "identifier",
+    "code": "identifier",
+    "base": [
+      "Task"
+    ],
+    "type": "token",
+    "expression": "Task.identifier"
+  }
+]

@@ -394,7 +394,7 @@ export interface DeviceDefinitionDeviceName {
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
-  type?: string;
+  type?: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
 }
 
 /**

@@ -1,0 +1,25 @@
+---
+title: ProjectMembership
+sidebar_position: 3
+---
+
+import definition from '@site/static/data/medplumDefinitions/projectmembership.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ProjectMembership
+
+Medplum project membership. A project membership grants a user access to a project.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

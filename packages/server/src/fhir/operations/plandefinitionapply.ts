@@ -1,4 +1,4 @@
-import { assertOk, badRequest, createReference, getReferenceString, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import {
   CareTeam,
   Device,
@@ -16,6 +16,7 @@ import {
   RequestGroupAction,
   Resource,
   Task,
+  TaskInput,
 } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
@@ -49,9 +50,9 @@ interface PlanDefinitionApplyParameters {
 export async function planDefinitionApplyHandler(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
+  const profile = res.locals.profile as Reference<ProfileResource>;
 
-  const [outcome1, planDefinition] = await repo.readResource<PlanDefinition>('PlanDefinition', id);
-  assertOk(outcome1, planDefinition);
+  const planDefinition = await repo.readResource<PlanDefinition>('PlanDefinition', id);
 
   const params = await validateParameters(req, res);
   if (!params) {
@@ -61,19 +62,19 @@ export async function planDefinitionApplyHandler(req: Request, res: Response): P
   const actions: RequestGroupAction[] = [];
   if (planDefinition.action) {
     for (const action of planDefinition.action) {
-      actions.push(await createAction(repo, params, action));
+      actions.push(await createAction(repo, profile, params, action));
     }
   }
 
-  const [outcome3, requestGroup] = await repo.createResource<RequestGroup>({
+  const requestGroup = await repo.createResource<RequestGroup>({
     resourceType: 'RequestGroup',
     instantiatesCanonical: [getReferenceString(planDefinition)],
     subject: createReference(params.subject) as Reference<Patient | Group>,
     status: 'active',
+    intent: 'order',
     action: actions,
   });
-  assertOk(outcome3, requestGroup);
-  sendResponse(res, outcome3, requestGroup);
+  await sendResponse(res, allOk, requestGroup);
 }
 
 /**
@@ -102,8 +103,7 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
   }
 
   const repo = res.locals.repo as Repository;
-  const [outcome2, subject] = await repo.readReference(subjectParam.valueReference as Reference<SubjectType>);
-  assertOk(outcome2, subject);
+  const subject = await repo.readReference(subjectParam.valueReference as Reference<SubjectType>);
 
   return {
     subject,
@@ -111,7 +111,7 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
 }
 
 /**
- * Creates a RequestGroup action for the given PlanDefinition action.
+ * Creates a Task and RequestGroup action for the given PlanDefinition action.
  * @param repo The repository configured for the current user.
  * @param params The apply operation parameters (subject, etc).
  * @param action The PlanDefinition action.
@@ -119,17 +119,18 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
  */
 async function createAction(
   repo: Repository,
+  requester: Reference<ProfileResource>,
   params: PlanDefinitionApplyParameters,
   action: PlanDefinitionAction
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
-    return createQuestionnaireTask(repo, params, action);
+    return createQuestionnaireTask(repo, requester, params, action);
   }
-  throw new OperationOutcomeError(badRequest('Unsupported action type'));
+  return createTask(repo, requester, params, action);
 }
 
 /**
- * Creates a RequestGroup action for a Questionnaire.
+ * Creates a Task and RequestGroup action to complete a Questionnaire.
  * @param repo The repository configured for the current user.
  * @param params The apply operation parameters (subject, etc).
  * @param action The PlanDefinition action.
@@ -137,25 +138,51 @@ async function createAction(
  */
 async function createQuestionnaireTask(
   repo: Repository,
+  requester: Reference<ProfileResource>,
   params: PlanDefinitionApplyParameters,
   action: PlanDefinitionAction
 ): Promise<RequestGroupAction> {
-  const [outcome, task] = await repo.createResource<Task>({
+  return createTask(repo, requester, params, action, [
+    {
+      type: {
+        text: 'Questionnaire',
+      },
+      valueReference: {
+        display: action.title,
+        reference: action.definitionCanonical,
+      },
+    },
+  ]);
+}
+
+/**
+ * Creates a Task and RequestGroup action for a PlanDefinition action.
+ * @param repo The repository configured for the current user.
+ * @param requester The requester profile.
+ * @param params The apply operation parameters (subject, etc).
+ * @param action The PlanDefinition action.
+ * @param input Optional input details.
+ * @return The RequestGroup action.
+ */
+async function createTask(
+  repo: Repository,
+  requester: Reference<ProfileResource>,
+  params: PlanDefinitionApplyParameters,
+  action: PlanDefinitionAction,
+  input?: TaskInput[] | undefined
+): Promise<RequestGroupAction> {
+  const task = await repo.createResource<Task>({
     resourceType: 'Task',
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),
+    requester,
+    for: createReference(params.subject),
     owner: createReference(params.subject),
-    input: [
-      {
-        valueReference: {
-          display: action.title,
-          reference: action.definitionCanonical,
-        },
-      },
-    ],
+    description: action.description,
+    focus: input?.[0]?.valueReference,
+    input,
   });
-  assertOk(outcome, task);
 
   return {
     title: action.title,

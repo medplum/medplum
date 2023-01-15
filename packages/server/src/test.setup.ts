@@ -1,25 +1,32 @@
-import { assertOk, createReference, isOk } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { Bundle, ClientApplication, Login, Project, ProjectMembership, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from './fhir';
-import { generateAccessToken } from './oauth';
+import { systemRepo } from './fhir/repo';
+import { generateAccessToken } from './oauth/keys';
 
-export async function createTestProject(): Promise<{
+export async function createTestProject(options?: Partial<Project>): Promise<{
   project: Project;
   client: ClientApplication;
   membership: ProjectMembership;
 }> {
-  const [projectOutcome, project] = await systemRepo.createResource<Project>({
+  const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: 'Test Project',
     owner: {
       reference: 'User/' + randomUUID(),
     },
-    features: ['bots', 'email'],
+    strictMode: true,
+    features: ['bots', 'email', 'graphql-introspection'],
+    secret: [
+      {
+        name: 'foo',
+        valueString: 'bar',
+      },
+    ],
+    ...options,
   });
-  assertOk(projectOutcome, project);
 
-  const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+  const client = await systemRepo.createResource<ClientApplication>({
     resourceType: 'ClientApplication',
     secret: randomUUID(),
     redirectUri: 'https://example.com/',
@@ -27,15 +34,13 @@ export async function createTestProject(): Promise<{
       project: project.id as string,
     },
   });
-  assertOk(clientOutcome, client);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  const membership = await systemRepo.createResource<ProjectMembership>({
     resourceType: 'ProjectMembership',
     user: createReference(client),
     profile: createReference(client),
     project: createReference(project),
   });
-  assertOk(membershipOutcome, membership);
 
   return {
     project,
@@ -44,25 +49,23 @@ export async function createTestProject(): Promise<{
   };
 }
 
-export async function createTestClient(): Promise<ClientApplication> {
-  return (await createTestProject()).client;
+export async function createTestClient(options?: Partial<Project>): Promise<ClientApplication> {
+  return (await createTestProject(options)).client;
 }
 
-export async function initTestAuth(): Promise<string> {
-  const { client, membership } = await createTestProject();
+export async function initTestAuth(options?: Partial<Project>): Promise<string> {
+  const { client, membership } = await createTestProject(options);
   const scope = 'openid';
 
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    authMethod: 'client',
+    user: createReference(client),
     client: createReference(client),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     scope,
   });
-
-  if (!isOk(loginOutcome) || !login) {
-    throw new Error('Error creating login');
-  }
 
   return generateAccessToken({
     login_id: login.id as string,

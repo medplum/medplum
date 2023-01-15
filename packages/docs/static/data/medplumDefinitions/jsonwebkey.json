@@ -1,0 +1,356 @@
+{
+  "name": "JsonWebKey",
+  "location": "medplum",
+  "description": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
+  "properties": [
+    {
+      "name": "JsonWebKey",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "JsonWebKey",
+      "min": 0,
+      "max": "*",
+      "short": "A JSON object that represents a cryptographic key.",
+      "definition": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "JsonWebKey.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "JsonWebKey.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "JsonWebKey.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "active",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "JsonWebKey.active",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether this key is in active use.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "alg",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.alg",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The specific cryptographic algorithm used with the key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "kty",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.kty",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The family of cryptographic algorithms used with the key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "use",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.use",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "How the key was meant to be used; sig represents the signature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "key_ops",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.key_ops",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "The operation(s) for which the key is intended to be used.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "x5c",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.x5c",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "The x.509 certificate chain. The first entry in the array is the certificate to use for token verification; the other certificates can be used to verify this first certificate.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "n",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.n",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The modulus for the RSA public key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "e",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.e",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The exponent for the RSA public key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "kid",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.kid",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The unique identifier for the key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "x5t",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.x5t",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The thumbprint of the x.509 cert (SHA-1 thumbprint).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "d",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.d",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The exponent for the RSA private key.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "p",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.p",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The first prime factor.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "q",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.q",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The second prime factor.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dp",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.dp",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The first factor CRT exponent.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dq",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.dq",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The second factor CRT exponent.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "qi",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "JsonWebKey.qi",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The first CRT coefficient.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "active",
+      "type": "token",
+      "description": "Whether the JWK is active",
+      "expression": "JsonWebKey.active"
+    }
+  ]
+}

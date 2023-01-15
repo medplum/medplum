@@ -1,0 +1,946 @@
+{
+  "name": "EvidenceVariable",
+  "location": "resource",
+  "description": "The EvidenceVariable resource describes a \"PICO\" element that knowledge (evidence, assertion, recommendation) is about.",
+  "properties": [
+    {
+      "name": "EvidenceVariable",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "EvidenceVariable",
+      "min": 0,
+      "max": "*",
+      "short": "A population, intervention, or exposure definition",
+      "definition": "The EvidenceVariable resource describes a \"PICO\" element that knowledge (evidence, assertion, recommendation) is about.",
+      "comment": "PICO stands for Population (the population within which exposures are being compared), Intervention (the conditional state or exposure state being described for its effect on outcomes), Comparison (the alternative conditional state or alternative exposure state being compared against), and Outcome (the result or effect of the intervention in the population).",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "EvidenceVariable.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EvidenceVariable.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "EvidenceVariable.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "url",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "EvidenceVariable.url",
+      "min": 0,
+      "max": "1",
+      "short": "Canonical identifier for this evidence variable, represented as a URI (globally unique)",
+      "definition": "An absolute URI that is used to identify this evidence variable when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this evidence variable is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the evidence variable is stored on different servers.",
+      "comment": "Can be a urn:uuid: or a urn:oid: but real http: addresses are preferred.  Multiple instances may share the same URL if they have a distinct version.\n\nThe determination of when to create a new version of a resource (same url, new version) vs. defining a new artifact is up to the author.  Considerations for making this decision are found in [Technical and Business Versions](resource.html#versions). \n\nIn some cases, the resource can no longer be found at the stated url, but the url itself cannot change. Implementations can use the [meta.source](resource.html#meta) element to indicate where the current master source of the resource can be found.",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Additional identifier for the evidence variable",
+      "definition": "A formal identifier that is used to identify this evidence variable when it is represented in other formats, or referenced in a specification, model, design or an instance.",
+      "comment": "Typically, this is used for identifiers that can go in an HL7 V3 II (instance identifier) data type, and can then identify this evidence variable outside of FHIR, where it is not possible to use the logical URI.",
+      "inherited": false
+    },
+    {
+      "name": "version",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.version",
+      "min": 0,
+      "max": "1",
+      "short": "Business version of the evidence variable",
+      "definition": "The identifier that is used to identify this version of the evidence variable when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the evidence variable author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence. To provide a version consistent with the Decision Support Service specification, use the format Major.Minor.Revision (e.g. 1.0.0). For more information on versioning knowledge assets, refer to the Decision Support Service specification. Note that a version is required for non-experimental active artifacts.",
+      "comment": "There may be different evidence variable instances that have the same identifier but different versions.  The version can be appended to the url in a reference to allow a reference to a particular business version of the evidence variable with the format [url]|[version].",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this evidence variable (computer friendly)",
+      "definition": "A natural language name identifying the evidence variable. This name should be usable as an identifier for the module by machine processing applications such as code generation.",
+      "comment": "The name is not expected to be globally unique. The name should be a simple alphanumeric type name to ensure that it is machine-processing friendly.",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.title",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this evidence variable (human friendly)",
+      "definition": "A short, descriptive, user-friendly title for the evidence variable.",
+      "comment": "This name does not need to be machine-processing friendly and may contain punctuation, white-space, etc.",
+      "inherited": false
+    },
+    {
+      "name": "shortTitle",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.shortTitle",
+      "min": 0,
+      "max": "1",
+      "short": "Title for use in informal contexts",
+      "definition": "The short title provides an alternate title for use in informal descriptive contexts where the full, formal title is not necessary.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "subtitle",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.subtitle",
+      "min": 0,
+      "max": "1",
+      "short": "Subordinate title of the EvidenceVariable",
+      "definition": "An explanatory or alternate title for the EvidenceVariable giving additional information about its content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EvidenceVariable.status",
+      "min": 1,
+      "max": "1",
+      "short": "draft | active | retired | unknown",
+      "definition": "The status of this evidence variable. Enables tracking the life-cycle of the content.",
+      "comment": "Allows filtering of evidence variables that are appropriate for use versus not.",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "EvidenceVariable.date",
+      "min": 0,
+      "max": "1",
+      "short": "Date last changed",
+      "definition": "The date  (and optionally time) when the evidence variable was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the evidence variable changes.",
+      "comment": "Note that this is not the same as the resource last-modified-date, since the resource may be a secondary representation of the evidence variable. Additional specific dates may be added as extensions or be found by consulting Provenances associated with past versions of the resource.",
+      "inherited": false
+    },
+    {
+      "name": "publisher",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.publisher",
+      "min": 0,
+      "max": "1",
+      "short": "Name of the publisher (organization or individual)",
+      "definition": "The name of the organization or individual that published the evidence variable.",
+      "comment": "Usually an organization but may be an individual. The publisher (or steward) of the evidence variable is the organization or individual primarily responsible for the maintenance and upkeep of the evidence variable. This is not necessarily the same individual or organization that developed and initially authored the content. The publisher is the primary point of contact for questions or issues with the evidence variable. This item SHOULD be populated unless the information is available from context.",
+      "inherited": false
+    },
+    {
+      "name": "contact",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.contact",
+      "min": 0,
+      "max": "*",
+      "short": "Contact details for the publisher",
+      "definition": "Contact details to assist a user in finding and communicating with the publisher.",
+      "comment": "May be a web site, an email address, a telephone number, etc.",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "EvidenceVariable.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the evidence variable",
+      "definition": "A free text natural language description of the evidence variable from a consumer's perspective.",
+      "comment": "This description can be used to capture details such as why the evidence variable was built, comments about misuse, instructions for clinical use and interpretation, literature references, examples from the paper world, etc. It is not a rendering of the evidence variable as conveyed in the 'text' field of the resource itself. This item SHOULD be populated unless the information is available from context (e.g. the language of the evidence variable is presumed to be the predominant language in the place the evidence variable was created).",
+      "inherited": false
+    },
+    {
+      "name": "note",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.note",
+      "min": 0,
+      "max": "*",
+      "short": "Used for footnotes or explanatory notes",
+      "definition": "A human-readable string to clarify or explain concepts about the resource.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "useContext",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.useContext",
+      "min": 0,
+      "max": "*",
+      "short": "The context that the content is intended to support",
+      "definition": "The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate evidence variable instances.",
+      "comment": "When multiple useContexts are specified, there is no expectation that all or any of the contexts apply.",
+      "inherited": false
+    },
+    {
+      "name": "jurisdiction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.jurisdiction",
+      "min": 0,
+      "max": "*",
+      "short": "Intended jurisdiction for evidence variable (if applicable)",
+      "definition": "A legal or geographic region in which the evidence variable is intended to be used.",
+      "comment": "It may be possible for the evidence variable to be used in jurisdictions other than those for which it was originally designed or intended.",
+      "inherited": false
+    },
+    {
+      "name": "copyright",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "EvidenceVariable.copyright",
+      "min": 0,
+      "max": "1",
+      "short": "Use and/or publishing restrictions",
+      "definition": "A copyright statement relating to the evidence variable and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the evidence variable.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "approvalDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "EvidenceVariable.approvalDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the evidence variable was approved by publisher",
+      "definition": "The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.",
+      "comment": "The 'date' element may be more recent than the approval date because of minor changes or editorial corrections.",
+      "inherited": false
+    },
+    {
+      "name": "lastReviewDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "EvidenceVariable.lastReviewDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the evidence variable was last reviewed",
+      "definition": "The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.",
+      "comment": "If specified, this date follows the original approval date.",
+      "inherited": false
+    },
+    {
+      "name": "effectivePeriod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.effectivePeriod",
+      "min": 0,
+      "max": "1",
+      "short": "When the evidence variable is expected to be used",
+      "definition": "The period during which the evidence variable content was or is planned to be in active use.",
+      "comment": "The effective period for a evidence variable  determines when the content is applicable for usage and is independent of publication and review dates. For example, a measure intended to be used for the year 2016 might be published in 2015.",
+      "inherited": false
+    },
+    {
+      "name": "topic",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.topic",
+      "min": 0,
+      "max": "*",
+      "short": "The category of the EvidenceVariable, such as Education, Treatment, Assessment, etc.",
+      "definition": "Descriptive topics related to the content of the EvidenceVariable. Topics provide a high-level categorization grouping types of EvidenceVariables that can be useful for filtering and searching.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.author",
+      "min": 0,
+      "max": "*",
+      "short": "Who authored the content",
+      "definition": "An individiual or organization primarily involved in the creation and maintenance of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "editor",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.editor",
+      "min": 0,
+      "max": "*",
+      "short": "Who edited the content",
+      "definition": "An individual or organization primarily responsible for internal coherence of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reviewer",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.reviewer",
+      "min": 0,
+      "max": "*",
+      "short": "Who reviewed the content",
+      "definition": "An individual or organization primarily responsible for review of some aspect of the content.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "endorser",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.endorser",
+      "min": 0,
+      "max": "*",
+      "short": "Who endorsed the content",
+      "definition": "An individual or organization responsible for officially endorsing the content for use in some setting.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relatedArtifact",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.relatedArtifact",
+      "min": 0,
+      "max": "*",
+      "short": "Additional documentation, citations, etc.",
+      "definition": "Related artifacts such as additional documentation, justification, or bibliographic references.",
+      "comment": "Each related artifact is either an attachment, or a reference to another resource, but not both.",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EvidenceVariable.type",
+      "min": 0,
+      "max": "1",
+      "short": "dichotomous | continuous | descriptive",
+      "definition": "The type of evidence element, a population, an exposure, or an outcome.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "characteristic",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic",
+      "min": 1,
+      "max": "*",
+      "short": "What defines the members of the evidence element",
+      "definition": "A characteristic that defines the members of the evidence element. Multiple characteristics are applied with \"and\" semantics.",
+      "comment": "Characteristics can be defined flexibly to accommodate different use cases for membership criteria, ranging from simple codes, all the way to using an expression language to express the criteria.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the characteristic",
+      "definition": "A short, natural language description of the characteristic that could be used to communicate the criteria to an end-user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definition[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.definition[x]",
+      "min": 1,
+      "max": "1",
+      "short": "What code or expression defines members?",
+      "definition": "Define members of the evidence element using Codes (such as condition, medication, or observation), Expressions ( using an expression language such as FHIRPath or CQL) or DataRequirements (such as Diabetes diagnosis onset in the last year).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "usageContext",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.usageContext",
+      "min": 0,
+      "max": "*",
+      "short": "What code/value pairs define members?",
+      "definition": "Use UsageContext to define the members of the population, such as Age Ranges, Genders, Settings.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "exclude",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.exclude",
+      "min": 0,
+      "max": "1",
+      "short": "Whether the characteristic includes or excludes members",
+      "definition": "When true, members with this characteristic are excluded from the element.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "participantEffective[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.participantEffective[x]",
+      "min": 0,
+      "max": "1",
+      "short": "What time period do participants cover",
+      "definition": "Indicates what effective period the study covers.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "timeFromStart",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.timeFromStart",
+      "min": 0,
+      "max": "1",
+      "short": "Observation time from study start",
+      "definition": "Indicates duration from the participant's study entry.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "groupMeasure",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EvidenceVariable.characteristic.groupMeasure",
+      "min": 0,
+      "max": "1",
+      "short": "mean | median | mean-of-mean | mean-of-median | median-of-mean | median-of-median",
+      "definition": "Indicates how elements are aggregated within the study effective period.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "composed-of",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "EvidenceVariable.relatedArtifact"
+    },
+    {
+      "name": "context",
+      "type": "token",
+      "description": "A use context assigned to the evidence variable",
+      "expression": "EvidenceVariable.useContext.value"
+    },
+    {
+      "name": "context-quantity",
+      "type": "quantity",
+      "description": "A quantity- or range-valued use context assigned to the evidence variable",
+      "expression": "EvidenceVariable.useContext.value"
+    },
+    {
+      "name": "context-type",
+      "type": "token",
+      "description": "A type of use context assigned to the evidence variable",
+      "expression": "EvidenceVariable.useContext.code"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "The evidence variable publication date",
+      "expression": "EvidenceVariable.date"
+    },
+    {
+      "name": "depends-on",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "EvidenceVariable.relatedArtifact"
+    },
+    {
+      "name": "derived-from",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "EvidenceVariable.relatedArtifact"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "The description of the evidence variable",
+      "expression": "EvidenceVariable.description"
+    },
+    {
+      "name": "effective",
+      "type": "date",
+      "description": "The time during which the evidence variable is intended to be in use",
+      "expression": "EvidenceVariable.effectivePeriod"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "External identifier for the evidence variable",
+      "expression": "EvidenceVariable.identifier"
+    },
+    {
+      "name": "jurisdiction",
+      "type": "token",
+      "description": "Intended jurisdiction for the evidence variable",
+      "expression": "EvidenceVariable.jurisdiction"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Computationally friendly name of the evidence variable",
+      "expression": "EvidenceVariable.name"
+    },
+    {
+      "name": "predecessor",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "EvidenceVariable.relatedArtifact"
+    },
+    {
+      "name": "publisher",
+      "type": "string",
+      "description": "Name of the publisher of the evidence variable",
+      "expression": "EvidenceVariable.publisher"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The current status of the evidence variable",
+      "expression": "EvidenceVariable.status"
+    },
+    {
+      "name": "successor",
+      "type": "reference",
+      "description": "What resource is being referenced",
+      "expression": "EvidenceVariable.relatedArtifact"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "The human-friendly name of the evidence variable",
+      "expression": "EvidenceVariable.title"
+    },
+    {
+      "name": "topic",
+      "type": "token",
+      "description": "Topics associated with the EvidenceVariable",
+      "expression": "EvidenceVariable.topic"
+    },
+    {
+      "name": "url",
+      "type": "uri",
+      "description": "The uri that identifies the evidence variable",
+      "expression": "EvidenceVariable.url"
+    },
+    {
+      "name": "version",
+      "type": "token",
+      "description": "The business version of the evidence variable",
+      "expression": "EvidenceVariable.version"
+    },
+    {
+      "name": "context-type-quantity",
+      "type": "composite",
+      "description": "A use context type and quantity- or range-based value assigned to the evidence variable",
+      "expression": "EvidenceVariable.useContext"
+    },
+    {
+      "name": "context-type-value",
+      "type": "composite",
+      "description": "A use context type and value assigned to the evidence variable",
+      "expression": "EvidenceVariable.useContext"
+    }
+  ]
+}

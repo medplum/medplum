@@ -1,0 +1,26 @@
+---
+title: Invoice
+sidebar_position: 66
+tags: [billing]
+---
+
+import definition from '@site/static/data/resourceDefinitions/invoice.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Invoice
+
+Invoice containing collected ChargeItems from an Account with calculated individual and total price for Billing purpose.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

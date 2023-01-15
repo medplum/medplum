@@ -1,13 +1,26 @@
-import { assertOk, badRequest, Filter, getReferenceString, LRUCache, Operator, SearchRequest } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import {
+  badRequest,
+  Filter,
+  forbidden,
+  getReferenceString,
+  LRUCache,
+  normalizeErrorString,
+  Operator,
+  SearchRequest,
+} from '@medplum/core';
+import { OperationOutcome, Project, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import {
+  ASTNode,
+  ASTVisitor,
   DocumentNode,
   execute,
   ExecutionResult,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
+  GraphQLError,
   GraphQLFieldConfig,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -23,13 +36,15 @@ import {
   GraphQLString,
   GraphQLUnionType,
   parse,
+  specifiedRules,
   validate,
+  ValidationContext,
 } from 'graphql';
 import { JSONSchema4 } from 'json-schema';
 import { asyncWrap } from '../../async';
+import { getJsonSchemaDefinition, getJsonSchemaResourceTypes } from '../jsonschema';
 import { Repository } from '../repo';
 import { rewriteAttachments, RewriteMode } from '../rewrite';
-import { getResourceTypes, getSchemaDefinition } from '../schema';
 import { parseSearchRequest } from '../search';
 import { getSearchParameters } from '../structure';
 import { sendOutcome } from './../outcomes';
@@ -90,39 +105,40 @@ export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const schema = getRootSchema();
-  const validationErrors = validate(schema, document);
+  const validationRules = [...specifiedRules, MaxDepthRule];
+  const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
-    sendOutcome(res, badRequest('GraphQL validation error.'));
+    sendOutcome(res, invalidRequest(validationErrors));
     return;
   }
 
-  try {
-    const introspection = isIntrospectionQuery(query);
-    let result = introspection && introspectionResults.get(query);
-    if (!result) {
-      result = await execute({
-        schema,
-        document,
-        contextValue: { res },
-        operationName,
-        variableValues: variables,
-      });
-    }
-
-    if (introspection) {
-      introspectionResults.set(query, result);
-      res.set('Cache-Control', 'public, max-age=31536000');
-    } else {
-      const repo = res.locals.repo as Repository;
-      result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
-    }
-
-    const status = result.data ? 200 : 400;
-    res.status(status).json(result);
-  } catch (err) {
-    console.log('Unhandled graphql error', err);
-    res.sendStatus(500);
+  const introspection = isIntrospectionQuery(query);
+  if (introspection && !(res.locals.project as Project).features?.includes('graphql-introspection')) {
+    sendOutcome(res, forbidden);
+    return;
   }
+
+  let result = introspection && introspectionResults.get(query);
+  if (!result) {
+    result = await execute({
+      schema,
+      document,
+      contextValue: { res },
+      operationName,
+      variableValues: variables,
+    });
+  }
+
+  if (introspection) {
+    introspectionResults.set(query, result);
+    res.set('Cache-Control', 'public, max-age=31536000');
+  } else {
+    const repo = res.locals.repo as Repository;
+    result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
+  }
+
+  const status = result.data ? 200 : 400;
+  res.status(status).json(result);
 });
 
 /**
@@ -149,7 +165,7 @@ export function getRootSchema(): GraphQLSchema {
 function buildRootSchema(): GraphQLSchema {
   // First, create placeholder types
   // We need this first for circular dependencies
-  for (const resourceType of getResourceTypes()) {
+  for (const resourceType of getJsonSchemaResourceTypes()) {
     const graphQLType = buildGraphQLType(resourceType);
     if (graphQLType) {
       typeCache[resourceType] = graphQLType;
@@ -158,7 +174,7 @@ function buildRootSchema(): GraphQLSchema {
 
   // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, any> = {};
-  for (const resourceType of getResourceTypes()) {
+  for (const resourceType of getJsonSchemaResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
 
     // Get resource by ID
@@ -206,22 +222,22 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType {
     return new GraphQLUnionType({
       name: 'ResourceList',
       types: () =>
-        getResourceTypes()
+        getJsonSchemaResourceTypes()
           .map(getGraphQLType)
           .filter((t) => !!t) as GraphQLObjectType[],
       resolveType: resolveTypeByReference,
     });
   }
 
-  const schema = getSchemaDefinition(resourceType);
+  const schema = getJsonSchemaDefinition(resourceType);
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
-    fields: () => buildGraphQLFields(resourceType),
+    fields: () => buildGraphQLFields(resourceType as ResourceType),
   });
 }
 
-function buildGraphQLFields(resourceType: string): GraphQLFieldConfigMap<any, any> {
+function buildGraphQLFields(resourceType: ResourceType): GraphQLFieldConfigMap<any, any> {
   const fields: GraphQLFieldConfigMap<any, any> = {};
   buildPropertyFields(resourceType, fields);
   buildReverseLookupFields(resourceType, fields);
@@ -229,7 +245,7 @@ function buildGraphQLFields(resourceType: string): GraphQLFieldConfigMap<any, an
 }
 
 function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  const schema = getSchemaDefinition(resourceType);
+  const schema = getJsonSchemaDefinition(resourceType);
   const properties = schema.properties as { [k: string]: JSONSchema4 };
 
   for (const [propertyName, property] of Object.entries(properties)) {
@@ -275,8 +291,8 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
  * @param resourceType The resource type to build fields for.
  * @param fields The fields object to add fields to.
  */
-function buildReverseLookupFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  for (const childResourceType of getResourceTypes()) {
+function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
+  for (const childResourceType of getJsonSchemaResourceTypes()) {
     const childGraphQLType = getGraphQLType(childResourceType);
     const childSearchParams = getSearchParameters(childResourceType);
     const enumValues: GraphQLEnumValueConfigMap = {};
@@ -388,11 +404,10 @@ async function resolveBySearch(
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 4); // Remove "List"
+  const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
   const repo = ctx.res.locals.repo as Repository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
-  const [outcome, bundle] = await repo.search(searchRequest);
-  assertOk(outcome, bundle);
+  const bundle = await repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
 
@@ -409,9 +424,11 @@ async function resolveBySearch(
  */
 async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readResource(info.fieldName, args.id);
-  assertOk(outcome, resource);
-  return resource;
+  try {
+    return await repo.readResource(info.fieldName, args.id);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -425,9 +442,11 @@ async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResol
  */
 async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
   const repo = ctx.res.locals.repo as Repository;
-  const [outcome, resource] = await repo.readReference(source as Reference);
-  assertOk(outcome, resource);
-  return resource;
+  try {
+    return await repo.readReference(source as Reference);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -446,7 +465,7 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
   return (getGraphQLType(resourceType) as GraphQLObjectType).name;
 }
 
-function parseSearchArgs(resourceType: string, source: any, args: Record<string, string>): SearchRequest {
+function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
     // _reference is a required field for reverse lookup searches
@@ -482,4 +501,61 @@ function fhirParamToGraphQLField(code: string): string {
 
 function graphQLFieldToFhirParam(code: string): string {
   return code.startsWith('_') ? code : code.replaceAll('_', '-');
+}
+
+/**
+ * Custom GraphQL rule that enforces max depth constraint.
+ * @param context The validation context.
+ * @returns An ASTVisitor that validates the maximum depth rule.
+ */
+const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
+  Field(
+    /** The current node being visiting. */
+    node: any,
+    /** The index or key to this node from the parent node or Array. */
+    _key: string | number | undefined,
+    /** The parent immediately above this node, which may be an Array. */
+    _parent: ASTNode | ReadonlyArray<ASTNode> | undefined,
+    /** The key path to get to this node from the root node. */
+    path: ReadonlyArray<string | number>
+  ): any {
+    const depth = getDepth(path);
+    const maxDepth = 8;
+    if (depth > maxDepth) {
+      const fieldName = node.name.value;
+      context.reportError(
+        new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
+          nodes: node,
+        })
+      );
+    }
+  },
+});
+
+/**
+ * Returns the depth of the GraphQL node in a query.
+ * We use "selections" as the representation of depth.
+ * As a rough approximation, it's the number of indentations in a well formatted query.
+ * @param path The GraphQL node path.
+ * @returns The "depth" of the node.
+ */
+function getDepth(path: ReadonlyArray<string | number>): number {
+  return path.filter((p) => p === 'selections').length;
+}
+
+/**
+ * Returns an OperationOutcome for GraphQL errors.
+ * @param errors Array of GraphQL errors.
+ * @returns OperationOutcome with the GraphQL errors as OperationOutcome issues.
+ */
+function invalidRequest(errors: ReadonlyArray<GraphQLError>): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: randomUUID(),
+    issue: errors.map((error) => ({
+      severity: 'error',
+      code: 'invalid',
+      details: { text: error.message },
+    })),
+  };
 }

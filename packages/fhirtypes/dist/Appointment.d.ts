@@ -121,7 +121,7 @@ export interface Appointment {
    * their own participation status which indicates their involvement in
    * the process, however this status indicates the shared status.
    */
-  status?: string;
+  status?: 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist';
 
   /**
    * The coded reason for the appointment being cancelled. This is often
@@ -316,12 +316,12 @@ export interface AppointmentParticipant {
    * results for a specific patient, and the patient is not required to be
    * present.
    */
-  required?: string;
+  required?: 'required' | 'optional' | 'information-only';
 
   /**
    * Participation status of the actor.
    */
-  status?: string;
+  status?: 'accepted' | 'declined' | 'tentative' | 'needs-action';
 
   /**
    * Participation period of the actor.

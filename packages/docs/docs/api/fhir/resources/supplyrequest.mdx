@@ -1,0 +1,25 @@
+---
+title: SupplyRequest
+sidebar_position: 138
+---
+
+import definition from '@site/static/data/resourceDefinitions/supplyrequest.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# SupplyRequest
+
+A record of a request for a medication, substance or device used in the healthcare setting.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

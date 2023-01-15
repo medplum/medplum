@@ -1,32 +1,30 @@
-import { assertOk, Operator } from '@medplum/core';
+import { Operator } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { seedDatabase } from '../../seed';
 import { systemRepo } from '../repo';
 
 describe('Address Lookup Table', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Patient resource with address', async () => {
     const addressLine = randomUUID();
     const addressCity = randomUUID();
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       address: [
         {
-          use: 'both',
+          use: 'home',
           line: [addressLine],
           city: addressCity,
           state: 'CA',
@@ -35,9 +33,8 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(createOutcome, patient);
 
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -47,11 +44,10 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(searchOutcome1, searchResult1);
     expect(searchResult1.entry?.length).toEqual(1);
     expect(searchResult1.entry?.[0]?.resource?.id).toEqual(patient.id);
 
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -61,7 +57,6 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(searchOutcome2, searchResult2);
     expect(searchResult2.entry?.length).toEqual(1);
     expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
@@ -70,7 +65,7 @@ describe('Address Lookup Table', () => {
     const address = randomUUID();
     const other = randomUUID();
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       address: [
@@ -78,9 +73,8 @@ describe('Address Lookup Table', () => {
         { use: 'home', line: [other] },
       ],
     });
-    assertOk(createOutcome, patient);
 
-    const [searchOutcome, searchResult] = await systemRepo.search({
+    const searchResult = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -90,11 +84,10 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(searchOutcome, searchResult);
     expect(searchResult.entry?.length).toEqual(1);
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
 
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -104,7 +97,6 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(searchOutcome2, searchResult2);
     expect(searchResult2.entry?.length).toEqual(1);
     expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
@@ -113,14 +105,13 @@ describe('Address Lookup Table', () => {
     const address1 = randomUUID();
     const address2 = randomUUID();
 
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       address: [{ use: 'home', line: [address1] }],
     });
-    assertOk(outcome1, patient1);
 
-    const [outcome2, bundle2] = await systemRepo.search({
+    const bundle2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -130,11 +121,10 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(outcome2, bundle2);
     expect(bundle2.entry?.length).toEqual(1);
     expect(bundle2.entry?.[0]?.resource?.id).toEqual(patient1.id);
 
-    const [outcome3, bundle3] = await systemRepo.search({
+    const bundle3 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -144,16 +134,14 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(outcome3, bundle3);
     expect(bundle3.entry?.length).toEqual(0);
 
-    const [outcome4, patient4] = await systemRepo.updateResource<Patient>({
+    await systemRepo.updateResource<Patient>({
       ...patient1,
       address: [{ use: 'home', line: [address2] }],
     });
-    assertOk(outcome4, patient4);
 
-    const [outcome5, bundle5] = await systemRepo.search({
+    const bundle5 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -163,10 +151,9 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(outcome5, bundle5);
     expect(bundle5.entry?.length).toEqual(0);
 
-    const [outcome6, bundle6] = await systemRepo.search({
+    const bundle6 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -176,7 +163,6 @@ describe('Address Lookup Table', () => {
         },
       ],
     });
-    assertOk(outcome6, bundle6);
     expect(bundle6.entry?.length).toEqual(1);
     expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
   });

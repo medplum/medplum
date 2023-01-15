@@ -1,0 +1,25 @@
+---
+title: TestScript
+sidebar_position: 142
+---
+
+import definition from '@site/static/data/resourceDefinitions/testscript.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# TestScript
+
+A structured set of tests against a FHIR server or client implementation to determine compliance against the FHIR specification.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

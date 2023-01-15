@@ -10,6 +10,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -133,7 +134,7 @@ export interface ExampleScenario {
    * The status of this example scenario. Enables tracking the life-cycle
    * of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this example scenario is authored for
@@ -261,7 +262,7 @@ export interface ExampleScenarioActor {
   /**
    * The type of actor - person or system.
    */
-  type?: string;
+  type?: 'person' | 'entity';
 
   /**
    * The name of the actor as shown in the page.
@@ -322,7 +323,7 @@ export interface ExampleScenarioInstance {
   /**
    * The type of the resource.
    */
-  resourceType?: string;
+  resourceType?: ResourceType;
 
   /**
    * A short name for the resource instance.

@@ -1,5 +1,5 @@
-import { Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { badRequest, Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
 import { getSearchParameter } from '../structure';
 
@@ -50,7 +50,7 @@ const modifierMap: Record<string, Operator> = {
  * @returns A parsed SearchRequest.
  */
 export function parseSearchRequest(
-  resourceType: string,
+  resourceType: ResourceType,
   query: Record<string, string[] | string | undefined>
 ): SearchRequest {
   return new SearchParser(resourceType, query);
@@ -63,21 +63,22 @@ export function parseSearchRequest(
  */
 export function parseSearchUrl(url: URL): SearchRequest {
   let resourceType = url.pathname;
-  if (resourceType.startsWith('/')) {
-    resourceType = resourceType.substring(1);
+  if (resourceType.includes('/')) {
+    resourceType = resourceType.split('/').pop() as string;
   }
-  return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
+  return new SearchParser(resourceType as ResourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
 class SearchParser implements SearchRequest {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly filters: Filter[];
   readonly sortRules: SortRule[];
   count?: number;
   offset?: number;
   total?: 'none' | 'estimate' | 'accurate';
+  revInclude?: string;
 
-  constructor(resourceType: string, query: Record<string, string[] | string | undefined>) {
+  constructor(resourceType: ResourceType, query: Record<string, string[] | string | undefined>) {
     this.resourceType = resourceType;
     this.filters = [];
     this.sortRules = [];
@@ -105,15 +106,6 @@ class SearchParser implements SearchRequest {
     }
 
     switch (code) {
-      case '_id':
-      case 'id':
-        this.filters.push({
-          code: '_id',
-          operator: Operator.EQUALS,
-          value,
-        });
-        break;
-
       case '_account':
       case '_compartment':
       case '_project':
@@ -122,17 +114,6 @@ class SearchParser implements SearchRequest {
           operator: Operator.EQUALS,
           value,
         });
-        break;
-
-      case '_lastUpdated':
-      case 'meta.lastUpdated':
-        {
-          const parsed = parsePrefix(value);
-          this.filters.push({
-            code: '_lastUpdated',
-            ...parsed,
-          });
-        }
         break;
 
       case '_sort':
@@ -156,11 +137,16 @@ class SearchParser implements SearchRequest {
         this.count = 0;
         break;
 
+      case '_revinclude':
+        this.revInclude = value;
+        break;
+
       default: {
         const param = getSearchParameter(this.resourceType, code);
-        if (param) {
-          this.#parseParameter(param, modifier, value);
+        if (!param) {
+          throw badRequest('Unknown search parameter: ' + code);
         }
+        this.#parseParameter(param, modifier, value);
       }
     }
   }

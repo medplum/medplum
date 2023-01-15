@@ -1,10 +1,11 @@
-import { accessDenied, allOk, assertOk } from '@medplum/core';
+import { allOk, forbidden } from '@medplum/core';
 import { Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, check, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { authenticateToken } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { authenticateToken } from '../oauth/middleware';
 import { sendEmail } from './email';
 
 export const emailRouter = Router();
@@ -27,12 +28,11 @@ emailRouter.post(
     }
 
     // Make sure the user project has the email feature enabled
-    const [projectOutcome, project] = await systemRepo.readReference(
+    const project = await systemRepo.readReference(
       (res.locals.membership as ProjectMembership).project as Reference<Project>
     );
-    assertOk(projectOutcome, project);
     if (!project.features?.includes('email')) {
-      sendOutcome(res, accessDenied);
+      sendOutcome(res, forbidden);
       return;
     }
 

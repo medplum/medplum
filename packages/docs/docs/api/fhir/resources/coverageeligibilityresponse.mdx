@@ -1,0 +1,25 @@
+---
+title: CoverageEligibilityResponse
+sidebar_position: 32
+---
+
+import definition from '@site/static/data/resourceDefinitions/coverageeligibilityresponse.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# CoverageEligibilityResponse
+
+This resource provides eligibility and plan details from the processing of an CoverageEligibilityRequest resource.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -106,13 +106,13 @@ export interface NamingSystem {
    * The status of this naming system. Enables tracking the life-cycle of
    * the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * Indicates the purpose for the naming system - what kinds of things
    * does it make unique?
    */
-  kind?: string;
+  kind?: 'codesystem' | 'identifier' | 'root';
 
   /**
    * The date  (and optionally time) when the naming system was published.
@@ -227,7 +227,7 @@ export interface NamingSystemUniqueId {
    * Identifies the unique identifier scheme used for this particular
    * identifier.
    */
-  type?: string;
+  type?: 'oid' | 'uuid' | 'uri' | 'other';
 
   /**
    * The string that should be sent over the wire to identify the code

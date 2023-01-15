@@ -1,0 +1,25 @@
+---
+title: VisionPrescription
+sidebar_position: 145
+---
+
+import definition from '@site/static/data/resourceDefinitions/visionprescription.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# VisionPrescription
+
+An authorization for the provision of glasses and/or contact lenses to a patient.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

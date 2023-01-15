@@ -1,0 +1,949 @@
+{
+  "name": "ChargeItemDefinition",
+  "location": "resource",
+  "description": "The ChargeItemDefinition resource provides the properties that apply to the (billing) codes necessary to calculate costs and prices. The properties may differ largely depending on type and realm, therefore this resource gives only a rough structure and requires profiling for each type of billing code system.",
+  "properties": [
+    {
+      "name": "ChargeItemDefinition",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "ChargeItemDefinition",
+      "min": 0,
+      "max": "*",
+      "short": "Definition of properties and rules about how the price and the applicability of a ChargeItem can be determined",
+      "definition": "The ChargeItemDefinition resource provides the properties that apply to the (billing) codes necessary to calculate costs and prices. The properties may differ largely depending on type and realm, therefore this resource gives only a rough structure and requires profiling for each type of billing code system.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ChargeItemDefinition.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ChargeItemDefinition.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "ChargeItemDefinition.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "url",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ChargeItemDefinition.url",
+      "min": 1,
+      "max": "1",
+      "short": "Canonical identifier for this charge item definition, represented as a URI (globally unique)",
+      "definition": "An absolute URI that is used to identify this charge item definition when it is referenced in a specification, model, design or an instance; also called its canonical identifier. This SHOULD be globally unique and SHOULD be a literal address at which at which an authoritative instance of this charge item definition is (or will be) published. This URL can be the target of a canonical reference. It SHALL remain the same when the charge item definition is stored on different servers.",
+      "comment": "Can be a urn:uuid: or a urn:oid: but real http: addresses are preferred.  Multiple instances may share the same URL if they have a distinct version.\n\nThe determination of when to create a new version of a resource (same url, new version) vs. defining a new artifact is up to the author.  Considerations for making this decision are found in [Technical and Business Versions](resource.html#versions). \n\nIn some cases, the resource can no longer be found at the stated url, but the url itself cannot change. Implementations can use the [meta.source](resource.html#meta) element to indicate where the current master source of the resource can be found.",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Additional identifier for the charge item definition",
+      "definition": "A formal identifier that is used to identify this charge item definition when it is represented in other formats, or referenced in a specification, model, design or an instance.",
+      "comment": "Typically, this is used for identifiers that can go in an HL7 V3 II (instance identifier) data type, and can then identify this charge item definition outside of FHIR, where it is not possible to use the logical URI.",
+      "inherited": false
+    },
+    {
+      "name": "version",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.version",
+      "min": 0,
+      "max": "1",
+      "short": "Business version of the charge item definition",
+      "definition": "The identifier that is used to identify this version of the charge item definition when it is referenced in a specification, model, design or instance. This is an arbitrary value managed by the charge item definition author and is not expected to be globally unique. For example, it might be a timestamp (e.g. yyyymmdd) if a managed version is not available. There is also no expectation that versions can be placed in a lexicographical sequence. To provide a version consistent with the Decision Support Service specification, use the format Major.Minor.Revision (e.g. 1.0.0). For more information on versioning knowledge assets, refer to the Decision Support Service specification. Note that a version is required for non-experimental active assets.",
+      "comment": "There may be different charge item definition instances that have the same identifier but different versions.  The version can be appended to the url in a reference to allow a reference to a particular business version of the charge item definition with the format [url]|[version].",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.title",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this charge item definition (human friendly)",
+      "definition": "A short, descriptive, user-friendly title for the charge item definition.",
+      "comment": "This name does not need to be machine-processing friendly and may contain punctuation, white-space, etc.",
+      "inherited": false
+    },
+    {
+      "name": "derivedFromUri",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "ChargeItemDefinition.derivedFromUri",
+      "min": 0,
+      "max": "*",
+      "short": "Underlying externally-defined charge item definition",
+      "definition": "The URL pointing to an externally-defined charge item definition that is adhered to in whole or in part by this definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "partOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "ChargeItemDefinition.partOf",
+      "min": 0,
+      "max": "*",
+      "short": "A larger definition of which this particular definition is a component or step",
+      "definition": "A larger definition of which this particular definition is a component or step.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "replaces",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "ChargeItemDefinition.replaces",
+      "min": 0,
+      "max": "*",
+      "short": "Completed or terminated request(s) whose function is taken by this new request",
+      "definition": "As new versions of a protocol or guideline are defined, allows identification of what versions are replaced by a new instance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ChargeItemDefinition.status",
+      "min": 1,
+      "max": "1",
+      "short": "draft | active | retired | unknown",
+      "definition": "The current state of the ChargeItemDefinition.",
+      "comment": "Allows filtering of charge item definitions that are appropriate for use versus not.",
+      "inherited": false
+    },
+    {
+      "name": "experimental",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ChargeItemDefinition.experimental",
+      "min": 0,
+      "max": "1",
+      "short": "For testing purposes, not real usage",
+      "definition": "A Boolean value to indicate that this charge item definition is authored for testing purposes (or education/evaluation/marketing) and is not intended to be used for genuine usage.",
+      "comment": "Allows filtering of charge item definitions that are appropriate for use versus not.",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "ChargeItemDefinition.date",
+      "min": 0,
+      "max": "1",
+      "short": "Date last changed",
+      "definition": "The date  (and optionally time) when the charge item definition was published. The date must change when the business version changes and it must change if the status code changes. In addition, it should change when the substantive content of the charge item definition changes.",
+      "comment": "Note that this is not the same as the resource last-modified-date, since the resource may be a secondary representation of the charge item definition. Additional specific dates may be added as extensions or be found by consulting Provenances associated with past versions of the resource.",
+      "inherited": false
+    },
+    {
+      "name": "publisher",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.publisher",
+      "min": 0,
+      "max": "1",
+      "short": "Name of the publisher (organization or individual)",
+      "definition": "The name of the organization or individual that published the charge item definition.",
+      "comment": "Usually an organization but may be an individual. The publisher (or steward) of the charge item definition is the organization or individual primarily responsible for the maintenance and upkeep of the charge item definition. This is not necessarily the same individual or organization that developed and initially authored the content. The publisher is the primary point of contact for questions or issues with the charge item definition. This item SHOULD be populated unless the information is available from context.",
+      "inherited": false
+    },
+    {
+      "name": "contact",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.contact",
+      "min": 0,
+      "max": "*",
+      "short": "Contact details for the publisher",
+      "definition": "Contact details to assist a user in finding and communicating with the publisher.",
+      "comment": "May be a web site, an email address, a telephone number, etc.",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ChargeItemDefinition.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the charge item definition",
+      "definition": "A free text natural language description of the charge item definition from a consumer's perspective.",
+      "comment": "This description can be used to capture details such as why the charge item definition was built, comments about misuse, instructions for clinical use and interpretation, literature references, examples from the paper world, etc. It is not a rendering of the charge item definition as conveyed in the 'text' field of the resource itself. This item SHOULD be populated unless the information is available from context (e.g. the language of the charge item definition is presumed to be the predominant language in the place the charge item definition was created).",
+      "inherited": false
+    },
+    {
+      "name": "useContext",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.useContext",
+      "min": 0,
+      "max": "*",
+      "short": "The context that the content is intended to support",
+      "definition": "The content was developed with a focus and intent of supporting the contexts that are listed. These contexts may be general categories (gender, age, ...) or may be references to specific programs (insurance plans, studies, ...) and may be used to assist with indexing and searching for appropriate charge item definition instances.",
+      "comment": "When multiple useContexts are specified, there is no expectation that all or any of the contexts apply.",
+      "inherited": false
+    },
+    {
+      "name": "jurisdiction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.jurisdiction",
+      "min": 0,
+      "max": "*",
+      "short": "Intended jurisdiction for charge item definition (if applicable)",
+      "definition": "A legal or geographic region in which the charge item definition is intended to be used.",
+      "comment": "It may be possible for the charge item definition to be used in jurisdictions other than those for which it was originally designed or intended.",
+      "inherited": false
+    },
+    {
+      "name": "copyright",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ChargeItemDefinition.copyright",
+      "min": 0,
+      "max": "1",
+      "short": "Use and/or publishing restrictions",
+      "definition": "A copyright statement relating to the charge item definition and/or its contents. Copyright statements are generally legal restrictions on the use and publishing of the charge item definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "approvalDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "ChargeItemDefinition.approvalDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the charge item definition was approved by publisher",
+      "definition": "The date on which the resource content was approved by the publisher. Approval happens once when the content is officially approved for usage.",
+      "comment": "The 'date' element may be more recent than the approval date because of minor changes or editorial corrections.",
+      "inherited": false
+    },
+    {
+      "name": "lastReviewDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "ChargeItemDefinition.lastReviewDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the charge item definition was last reviewed",
+      "definition": "The date on which the resource content was last reviewed. Review happens periodically after approval but does not change the original approval date.",
+      "comment": "If specified, this date follows the original approval date.",
+      "inherited": false
+    },
+    {
+      "name": "effectivePeriod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.effectivePeriod",
+      "min": 0,
+      "max": "1",
+      "short": "When the charge item definition is expected to be used",
+      "definition": "The period during which the charge item definition content was or is planned to be in active use.",
+      "comment": "The effective period for a charge item definition  determines when the content is applicable for usage and is independent of publication and review dates. For example, a measure intended to be used for the year 2016 might be published in 2015.",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.code",
+      "min": 0,
+      "max": "1",
+      "short": "Billing codes or product types this definition applies to",
+      "definition": "The defined billing details in this resource pertain to the given billing code.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instance",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ChargeItemDefinition.instance",
+      "min": 0,
+      "max": "*",
+      "short": "Instances this definition applies to",
+      "definition": "The defined billing details in this resource pertain to the given product instance(s).",
+      "comment": "In case of highly customized, individually produced or fitted devices/substances, the pricing information may be different for each instance of the product. This reference links pricing details to specific product instances.",
+      "inherited": false
+    },
+    {
+      "name": "applicability",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability",
+      "min": 0,
+      "max": "*",
+      "short": "Whether or not the billing code is applicable",
+      "definition": "Expressions that describe applicability criteria for the billing code.",
+      "comment": "The applicability conditions can be used to ascertain whether a billing item is allowed in a specific context. E.g. some billing codes may only be applicable in out-patient settings, only to male/female patients or only to children.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the condition",
+      "definition": "A brief, natural language description of the condition that effectively communicates the intended semantics.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "language",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the expression",
+      "definition": "The media type of the language for the expression, e.g. \"text/cql\" for Clinical Query Language expressions or \"text/fhirpath\" for FHIRPath expressions.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "expression",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.applicability.expression",
+      "min": 0,
+      "max": "1",
+      "short": "Boolean-valued expression",
+      "definition": "An expression that returns true or false, indicating whether the condition is satisfied. When using FHIRPath expressions, the %context environment variable must be replaced at runtime with the ChargeItem resource to which this definition is applied.",
+      "comment": "Please note that FHIRPath Expressions can only be evaluated in the scope of the current ChargeItem resource to which this definition is being applied.\nFHIRPath expressions can traverse into other resources linked from the ChargeItem resource, however, testing rules such as that a billing code may be billed only once per encounter need a wider scope. In such scenarios, CQL may be the appropriate choice.",
+      "inherited": false
+    },
+    {
+      "name": "propertyGroup",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup",
+      "min": 0,
+      "max": "*",
+      "short": "Group of properties which are applicable under the same conditions",
+      "definition": "Group of properties which are applicable under the same conditions. If no applicability rules are established for the group, then all properties always apply.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "applicability",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.applicability",
+      "min": 0,
+      "max": "*",
+      "short": "Conditions under which the priceComponent is applicable",
+      "definition": "Expressions that describe applicability criteria for the priceComponent.",
+      "comment": "The applicability conditions can be used to ascertain whether a billing item is allowed in a specific context. E.g. some billing codes may only be applicable in out-patient settings, only to male/female patients or only to children.",
+      "inherited": false
+    },
+    {
+      "name": "priceComponent",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent",
+      "min": 0,
+      "max": "*",
+      "short": "Components of total line item price",
+      "definition": "The price for a ChargeItem may be calculated as a base price with surcharges/deductions that apply in certain conditions. A ChargeItemDefinition resource that defines the prices, factors and conditions that apply to a billing code is currently under development. The priceComponent element can be used to offer transparency to the recipient of the Invoice of how the prices have been calculated.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.type",
+      "min": 1,
+      "max": "1",
+      "short": "base | surcharge | deduction | discount | tax | informational",
+      "definition": "This code identifies the type of the component.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.code",
+      "min": 0,
+      "max": "1",
+      "short": "Code identifying the specific component",
+      "definition": "A code that identifies the component. Codes may be used to differentiate between kinds of taxes, surcharges, discounts etc.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "factor",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "decimal"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.factor",
+      "min": 0,
+      "max": "1",
+      "short": "Factor used for calculating this component",
+      "definition": "The factor that has been applied on the base price for calculating this component.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amount",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ChargeItemDefinition.propertyGroup.priceComponent.amount",
+      "min": 0,
+      "max": "1",
+      "short": "Monetary amount associated with this component",
+      "definition": "The amount calculated for this component.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "context",
+      "type": "token",
+      "description": "A use context assigned to the charge item definition",
+      "expression": "ChargeItemDefinition.useContext.value"
+    },
+    {
+      "name": "context-quantity",
+      "type": "quantity",
+      "description": "A quantity- or range-valued use context assigned to the charge item definition",
+      "expression": "ChargeItemDefinition.useContext.value"
+    },
+    {
+      "name": "context-type",
+      "type": "token",
+      "description": "A type of use context assigned to the charge item definition",
+      "expression": "ChargeItemDefinition.useContext.code"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "The charge item definition publication date",
+      "expression": "ChargeItemDefinition.date"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "The description of the charge item definition",
+      "expression": "ChargeItemDefinition.description"
+    },
+    {
+      "name": "effective",
+      "type": "date",
+      "description": "The time during which the charge item definition is intended to be in use",
+      "expression": "ChargeItemDefinition.effectivePeriod"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "External identifier for the charge item definition",
+      "expression": "ChargeItemDefinition.identifier"
+    },
+    {
+      "name": "jurisdiction",
+      "type": "token",
+      "description": "Intended jurisdiction for the charge item definition",
+      "expression": "ChargeItemDefinition.jurisdiction"
+    },
+    {
+      "name": "publisher",
+      "type": "string",
+      "description": "Name of the publisher of the charge item definition",
+      "expression": "ChargeItemDefinition.publisher"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The current status of the charge item definition",
+      "expression": "ChargeItemDefinition.status"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "The human-friendly name of the charge item definition",
+      "expression": "ChargeItemDefinition.title"
+    },
+    {
+      "name": "url",
+      "type": "uri",
+      "description": "The uri that identifies the charge item definition",
+      "expression": "ChargeItemDefinition.url"
+    },
+    {
+      "name": "version",
+      "type": "token",
+      "description": "The business version of the charge item definition",
+      "expression": "ChargeItemDefinition.version"
+    },
+    {
+      "name": "context-type-quantity",
+      "type": "composite",
+      "description": "A use context type and quantity- or range-based value assigned to the charge item definition",
+      "expression": "ChargeItemDefinition.useContext"
+    },
+    {
+      "name": "context-type-value",
+      "type": "composite",
+      "description": "A use context type and value assigned to the charge item definition",
+      "expression": "ChargeItemDefinition.useContext"
+    }
+  ]
+}

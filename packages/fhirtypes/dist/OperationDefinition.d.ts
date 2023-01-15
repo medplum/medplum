@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
 
 /**
@@ -133,12 +134,12 @@ export interface OperationDefinition {
    * The status of this operation definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * Whether this is an operation or a named query.
    */
-  kind?: string;
+  kind?: 'operation' | 'query';
 
   /**
    * A Boolean value to indicate that this operation definition is authored
@@ -220,7 +221,7 @@ export interface OperationDefinition {
   /**
    * The types on which this operation can be executed.
    */
-  resource?: string[];
+  resource?: ResourceType[];
 
   /**
    * Indicates whether this operation or named query can be invoked at the
@@ -370,7 +371,7 @@ export interface OperationDefinitionParameter {
   /**
    * Whether this is an input or an output parameter.
    */
-  use?: string;
+  use?: 'in' | 'out';
 
   /**
    * The minimum number of times this parameter SHALL appear in the request
@@ -411,7 +412,7 @@ export interface OperationDefinitionParameter {
    * How the parameter is understood as a search parameter. This is only
    * used if the parameter type is 'string'.
    */
-  searchType?: string;
+  searchType?: 'number' | 'date' | 'string' | 'token' | 'reference' | 'composite' | 'quantity' | 'uri' | 'special';
 
   /**
    * Binds to a value set if this parameter is coded (code, Coding,
@@ -477,7 +478,7 @@ export interface OperationDefinitionParameterBinding {
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  strength?: string;
+  strength?: 'required' | 'extensible' | 'preferred' | 'example';
 
   /**
    * Points to the value set or external definition (e.g. implicit value

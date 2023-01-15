@@ -145,7 +145,7 @@ export interface AppointmentResponse {
    * When the status is accepted, the times can either be the time of the
    * appointment (as a confirmation of the time) or can be empty.
    */
-  participantStatus?: string;
+  participantStatus?: 'accepted' | 'declined' | 'tentative' | 'needs-action';
 
   /**
    * Additional comments about the appointment.

@@ -1,6 +1,16 @@
-import { capitalize, IndexedStructureDefinition, indexStructureDefinition, TypeSchema } from '@medplum/core';
+import { capitalize, globalSchema, indexStructureDefinition, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, ElementDefinitionType, Resource } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  CodeSystem,
+  CodeSystemConcept,
+  ElementDefinition,
+  ElementDefinitionType,
+  Resource,
+  ValueSet,
+  ValueSetCompose,
+} from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
@@ -24,16 +34,24 @@ interface FhirType {
 
 const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
+const valueSets: Map<string, CodeSystem | ValueSet> = new Map();
 
 export function main(): void {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
   buildStructureDefinitions('profiles-medplum.json');
 
-  for (const [resourceType, definition] of Object.entries(structureDefinitions.types)) {
+  const valueSetBundle = readJson('fhir/r4/valuesets.json') as Bundle;
+  for (const entry of valueSetBundle.entry as BundleEntry[]) {
+    const resource = entry.resource as Resource;
+    if (resource.resourceType === 'CodeSystem' || resource.resourceType === 'ValueSet') {
+      valueSets.set(resource.url as string, resource as CodeSystem | ValueSet);
+    }
+  }
+
+  for (const [resourceType, definition] of Object.entries(globalSchema.types)) {
     const fhirType = buildType(resourceType, definition);
     if (fhirType) {
       fhirTypes.push(fhirType);
@@ -62,6 +80,7 @@ export function main(): void {
       .map((e) => e[0])
       .sort()
   );
+  writeResourceTypeFile();
   Object.values(parentTypes).forEach((fhirType) => writeInterfaceFile(fhirType));
 }
 
@@ -78,7 +97,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      indexStructureDefinition(resource);
     }
   }
 }
@@ -119,7 +138,7 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
 
 function writeIndexFile(names: string[]): void {
   const b = new FileBuilder();
-  for (const resourceType of [...names, 'Resource'].sort()) {
+  for (const resourceType of [...names, 'Resource', 'ResourceType'].sort()) {
     if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
       continue;
     }
@@ -147,6 +166,15 @@ function writeResourceFile(names: string[]): void {
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/Resource.d.ts'), b.toString(), 'utf8');
 }
 
+function writeResourceTypeFile(): void {
+  const b = new FileBuilder();
+  b.append("import { Resource } from './Resource';");
+  b.newLine();
+  b.append("export type ResourceType = Resource['resourceType'];");
+  b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
+}
+
 function writeInterfaceFile(fhirType: FhirType): void {
   if (fhirType.properties.length === 0 && fhirType.subTypes.length === 0) {
     return;
@@ -168,6 +196,10 @@ function writeInterfaceFile(fhirType: FhirType): void {
 }
 
 function writeInterface(b: FileBuilder, fhirType: FhirType): void {
+  if (!fhirType.properties || fhirType.properties.length === 0) {
+    return;
+  }
+
   const resourceType = fhirType.outputName;
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
   const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
@@ -321,6 +353,19 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     case 'xhtml':
     case 'http://hl7.org/fhirpath/System.String':
       baseType = 'string';
+      if (property.definition.binding?.valueSet && property.definition.binding.strength === 'required') {
+        if (property.definition.binding.valueSet === 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1') {
+          baseType = 'ResourceType';
+        } else if (
+          property.definition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
+          property.definition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
+        ) {
+          const values = getValueSetValues(property.definition.binding.valueSet);
+          if (values && values.length > 0) {
+            baseType = "'" + values.join("' | '") + "'";
+          }
+        }
+      }
       break;
 
     case 'date':
@@ -362,9 +407,70 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
   }
 
   if (property.definition.max === '*') {
+    if (baseType.includes("' | '")) {
+      return `(${baseType})[]`;
+    }
     return baseType + '[]';
   }
   return baseType;
+}
+
+function getValueSetValues(url: string): string[] {
+  const result: string[] = [];
+  buildValueSetValues(url, result);
+  return result;
+}
+
+function buildValueSetValues(url: string, result: string[]): void {
+  // If the url includes a version, remove it
+  if (url.includes('|')) {
+    url = url.split('|')[0];
+  }
+
+  const resource = valueSets.get(url);
+  if (!resource) {
+    return;
+  }
+
+  if (resource.resourceType === 'ValueSet') {
+    buildValueSetComposeValues(resource.compose, result);
+  }
+
+  if (resource.resourceType === 'CodeSystem') {
+    buildCodeSystemConceptValues(resource.concept, result);
+  }
+}
+
+function buildValueSetComposeValues(compose: ValueSetCompose | undefined, result: string[]): void {
+  if (compose?.include) {
+    for (const include of compose.include) {
+      if (include.concept) {
+        for (const concept of include.concept) {
+          if (concept.code) {
+            result.push(concept.code);
+          }
+        }
+      } else if (include.system) {
+        const includedValues = getValueSetValues(include.system);
+        if (includedValues) {
+          result.push(...includedValues);
+        }
+      }
+    }
+  }
+}
+
+function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined, result: string[]): void {
+  if (!concepts) {
+    return;
+  }
+
+  for (const concept of concepts) {
+    if (concept.code) {
+      result.push(concept.code);
+    }
+    buildCodeSystemConceptValues(concept.concept, result);
+  }
 }
 
 function containsAll(set: Set<string>, values: string[]): boolean {

@@ -2,6 +2,7 @@ import { Bundle, Patient, SearchParameter, StructureDefinition } from '@medplum/
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { ProfileResource, stringify } from './utils';
@@ -17,6 +18,9 @@ const patientStructureDefinition: StructureDefinition = {
   name: 'Patient',
   snapshot: {
     element: [
+      {
+        path: 'Patient',
+      },
       {
         path: 'Patient.id',
         type: [
@@ -119,10 +123,14 @@ function mockFetch(url: string, options: any): Promise<any> {
     };
   } else if (method === 'POST' && url.endsWith('oauth2/token')) {
     if (canRefresh) {
+      let clientId = defaultOptions.clientId;
+      if (options.body && options.body.get) {
+        clientId = options.body.get('client_id') || defaultOptions.clientId;
+      }
       result = {
         status: 200,
-        access_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
-        refresh_token: 'header.' + window.btoa(stringify({ client_id: defaultOptions.clientId })) + '.signature',
+        access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+        refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
       };
     } else {
       result = {
@@ -211,14 +219,6 @@ describe('Client', () => {
       () =>
         new MedplumClient({
           clientId: 'xyz',
-          baseUrl: 'https://x',
-        })
-    ).toThrow('Base URL must end with a trailing slash');
-
-    expect(
-      () =>
-        new MedplumClient({
-          clientId: 'xyz',
           baseUrl: 'https://x/',
         })
     ).toThrow();
@@ -241,6 +241,11 @@ describe('Client', () => {
 
     window.fetch = jest.fn();
     expect(() => new MedplumClient()).not.toThrow();
+  });
+
+  test('Missing trailing slash', () => {
+    const client = new MedplumClient({ clientId: 'xyz', baseUrl: 'https://x' });
+    expect(client.getBaseUrl()).toBe('https://x/');
   });
 
   test('Restore from localStorage', async () => {
@@ -315,7 +320,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     // First, test the initial reidrect
-    const result1 = client.signInWithRedirect();
+    const result1 = await client.signInWithRedirect();
     expect(result1).toBeUndefined();
 
     // Mock response code
@@ -351,6 +356,8 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -360,12 +367,11 @@ describe('Client', () => {
     expect(response1).toBeDefined();
 
     const newProjectRequest: NewProjectRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
+      login: response1.login,
       projectName: 'Sally World',
     };
 
-    const response2 = await client.startNewProject(newProjectRequest, response1);
+    const response2 = await client.startNewProject(newProjectRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -376,6 +382,8 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -385,12 +393,11 @@ describe('Client', () => {
     expect(response1).toBeDefined();
 
     const newPatientRequest: NewPatientRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
+      login: response1.login,
       projectId: '123',
     };
 
-    const response2 = await client.startNewPatient(newPatientRequest, response1);
+    const response2 = await client.startNewPatient(newPatientRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -401,6 +408,10 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
     const result1 = await client.startClientLogin('test-client-id', 'test-client-secret');
     expect(result1).toBeDefined();
+
+    tokenExpired = true;
+    const result2 = await client.get('expired');
+    expect(result2).toBeDefined();
   });
 
   test('HTTP GET', async () => {
@@ -435,7 +446,7 @@ describe('Client', () => {
     await expect(client.processCode(loginResponse.code as string)).rejects.toThrow('Failed to fetch tokens');
 
     const result = client.get('expired');
-    await expect(result).rejects.toThrow('Invalid refresh token');
+    await expect(result).rejects.toThrow('Unauthenticated');
     expect(onUnauthenticated).toBeCalled();
   });
 
@@ -455,16 +466,34 @@ describe('Client', () => {
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/123');
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
-    expect(() => client.readReference({})).rejects.toThrow();
-    expect(() => client.readReference({ reference: '' })).rejects.toThrow();
-    expect(() => client.readReference({ reference: 'xyz' })).rejects.toThrow();
-    expect(() => client.readReference({ reference: 'xyz?abc' })).rejects.toThrow();
-  });
 
-  test('Read empty reference', async () => {
-    const client = new MedplumClient(defaultOptions);
-    const result = client.readReference({});
-    expect(result).rejects.toThrow('Missing reference');
+    try {
+      await client.readReference({});
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing reference');
+    }
+
+    try {
+      await client.readReference({ reference: '' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing reference');
+    }
+
+    try {
+      await client.readReference({ reference: 'xyz' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Invalid reference');
+    }
+
+    try {
+      await client.readReference({ reference: 'xyz?abc' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Invalid reference');
+    }
   });
 
   test('Read cached resource', async () => {
@@ -553,7 +582,12 @@ describe('Client', () => {
 
   test('Create resource missing resourceType', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(async () => client.createResource({} as Patient)).rejects.toThrow('Missing resourceType');
+    try {
+      await client.createResource({} as Patient);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing resourceType');
+    }
   });
 
   test('Create resource if none exist returns existing', async () => {
@@ -593,20 +627,36 @@ describe('Client', () => {
 
   test('Update resource validation', async () => {
     const client = new MedplumClient(defaultOptions);
-    expect(async () => client.updateResource({} as Patient)).rejects.toThrow('Missing resourceType');
-    expect(async () => client.updateResource({ resourceType: 'Patient' })).rejects.toThrow('Missing id');
+    try {
+      await client.updateResource({} as Patient);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing resourceType');
+    }
+    try {
+      await client.updateResource({ resourceType: 'Patient' });
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing id');
+    }
   });
 
   test('Not modified', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.updateResource({ resourceType: 'Patient', id: '777' });
-    expect(result).toBeUndefined();
+    expect(result).not.toBeUndefined();
+    expect(result.resourceType).toBe('Patient');
+    expect(result.id).toBe('777');
   });
 
   test('Bad Request', async () => {
     const client = new MedplumClient(defaultOptions);
-    const promise = client.updateResource({ resourceType: 'Patient', id: '888' });
-    expect(promise).rejects.toMatchObject({});
+    try {
+      await client.updateResource({ resourceType: 'Patient', id: '888' });
+      fail('Expected error');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('Create binary', async () => {
@@ -623,6 +673,38 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Binary?_filename=hello.txt');
+  });
+
+  test('Create binary with progress event listener', async () => {
+    const xhrMock: Partial<XMLHttpRequest> = {
+      open: jest.fn(),
+      send: jest.fn(),
+      setRequestHeader: jest.fn(),
+      upload: {} as XMLHttpRequestUpload,
+      readyState: 4,
+      status: 200,
+      response: {
+        resourceType: 'Binary',
+      },
+    };
+
+    jest.spyOn(window, 'XMLHttpRequest').mockImplementation(() => xhrMock as XMLHttpRequest);
+
+    const onProgress = jest.fn();
+
+    const client = new MedplumClient(defaultOptions);
+    const promise = client.createBinary('Hello world', undefined, 'text/plain', onProgress);
+    expect(xhrMock.open).toBeCalled();
+    expect(xhrMock.setRequestHeader).toBeCalled();
+
+    // Emulate xhr progress events
+    (xhrMock.upload?.onprogress as EventListener)(new Event(''));
+    (xhrMock.upload?.onload as EventListener)(new Event(''));
+    (xhrMock.onload as EventListener)(new Event(''));
+
+    const result = await promise;
+    expect(result).toBeDefined();
+    expect(onProgress).toHaveBeenCalledTimes(2);
   });
 
   test('Create pdf not enabled', async () => {
@@ -716,6 +798,14 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('DELETE');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/xyz');
+  });
+
+  test('Validate resource', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.validateResource({ resourceType: 'Patient' });
+    expect(result).toBeDefined();
+    expect((result as any).request.options.method).toBe('POST');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/$validate');
   });
 
   test('Request schema', async () => {

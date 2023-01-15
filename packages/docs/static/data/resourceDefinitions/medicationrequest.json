@@ -1,0 +1,1327 @@
+{
+  "name": "MedicationRequest",
+  "location": "resource",
+  "description": "An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called \"MedicationRequest\" rather than \"MedicationPrescription\" or \"MedicationOrder\" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns.",
+  "properties": [
+    {
+      "name": "MedicationRequest",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "MedicationRequest",
+      "min": 0,
+      "max": "*",
+      "short": "Ordering of medication for patient or group",
+      "definition": "An order or request for both supply of the medication and the instructions for administration of the medication to a patient. The resource is called \"MedicationRequest\" rather than \"MedicationPrescription\" or \"MedicationOrder\" to generalize the use across inpatient and outpatient settings, including care plans, etc., and to harmonize with workflow patterns.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationRequest.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "MedicationRequest.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationRequest.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "MedicationRequest.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "External ids for this request",
+      "definition": "Identifiers associated with this medication request that are defined by business processes and/or used to refer to it when a direct URL reference to the resource itself is not appropriate. They are business identifiers assigned to this resource by the performer or other systems and remain constant as the resource is updated and propagates from server to server.",
+      "comment": "This is a business identifier, not a resource identifier.",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationRequest.status",
+      "min": 1,
+      "max": "1",
+      "short": "active | on-hold | cancelled | completed | entered-in-error | stopped | draft | unknown",
+      "definition": "A code specifying the current state of the order.  Generally, this will be active or completed state.",
+      "comment": "This element is labeled as a modifier because the status contains codes that mark the resource as not currently valid.",
+      "inherited": false
+    },
+    {
+      "name": "statusReason",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.statusReason",
+      "min": 0,
+      "max": "1",
+      "short": "Reason for current status",
+      "definition": "Captures the reason for the current state of the MedicationRequest.",
+      "comment": "This is generally only used for \"exception\" statuses such as \"suspended\" or \"cancelled\". The reason why the MedicationRequest was created at all is captured in reasonCode, not here.",
+      "inherited": false
+    },
+    {
+      "name": "intent",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationRequest.intent",
+      "min": 1,
+      "max": "1",
+      "short": "proposal | plan | order | original-order | reflex-order | filler-order | instance-order | option",
+      "definition": "Whether the request is a proposal, plan, or an original order.",
+      "comment": "It is expected that the type of requester will be restricted for different stages of a MedicationRequest.  For example, Proposals can be created by a patient, relatedPerson, Practitioner or Device.  Plans can be created by Practitioners, Patients, RelatedPersons and Devices.  Original orders can be created by a Practitioner only.\r\rAn instance-order is an instantiation of a request or order and may be used to populate Medication Administration Record.\r\rThis element is labeled as a modifier because the intent alters when and how the resource is actually applicable.",
+      "inherited": false
+    },
+    {
+      "name": "category",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.category",
+      "min": 0,
+      "max": "*",
+      "short": "Type of medication usage",
+      "definition": "Indicates the type of medication request (for example, where the medication is expected to be consumed or administered (i.e. inpatient or outpatient)).",
+      "comment": "The category can be used to include where the medication is expected to be consumed or other types of requests.",
+      "inherited": false
+    },
+    {
+      "name": "priority",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "MedicationRequest.priority",
+      "min": 0,
+      "max": "1",
+      "short": "routine | urgent | asap | stat",
+      "definition": "Indicates how quickly the Medication Request should be addressed with respect to other requests.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "doNotPerform",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "MedicationRequest.doNotPerform",
+      "min": 0,
+      "max": "1",
+      "short": "True if request is prohibiting action",
+      "definition": "If true indicates that the provider is asking for the medication request not to occur.",
+      "comment": "If do not perform is not specified, the request is a positive request e.g. \"do perform\".",
+      "inherited": false
+    },
+    {
+      "name": "reported[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.reported[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Reported rather than primary record",
+      "definition": "Indicates if this record was captured as a secondary 'reported' record rather than as an original primary source-of-truth record.  It may also indicate the source of the report.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "medication[x]",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.medication[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Medication to be taken",
+      "definition": "Identifies the medication being requested. This is a link to a resource that represents the medication which may be the details of the medication or simply an attribute carrying a code that identifies the medication from a known list of medications.",
+      "comment": "If only a code is specified, then it needs to be a code for a specific product. If more information is required, then the use of the Medication resource is recommended.  For example, if you require form or lot number or if the medication is compounded or extemporaneously prepared, then you must reference the Medication resource.",
+      "inherited": false
+    },
+    {
+      "name": "subject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.subject",
+      "min": 1,
+      "max": "1",
+      "short": "Who or group medication request is for",
+      "definition": "A link to a resource representing the person or set of individuals to whom the medication will be given.",
+      "comment": "The subject on a medication request is mandatory.  For the secondary use case where the actual subject is not provided, there still must be an anonymized subject specified.",
+      "inherited": false
+    },
+    {
+      "name": "encounter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.encounter",
+      "min": 0,
+      "max": "1",
+      "short": "Encounter created as part of encounter/admission/stay",
+      "definition": "The Encounter during which this [x] was created or to which the creation of this record is tightly associated.",
+      "comment": "This will typically be the encounter the event occurred within, but some activities may be initiated prior to or after the official completion of an encounter but still be tied to the context of the encounter.\"    If there is a need to link to episodes of care they will be handled with an extension.",
+      "inherited": false
+    },
+    {
+      "name": "supportingInformation",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "MedicationRequest.supportingInformation",
+      "min": 0,
+      "max": "*",
+      "short": "Information to support ordering of the medication",
+      "definition": "Include additional information (for example, patient height and weight) that supports the ordering of the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "authoredOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "MedicationRequest.authoredOn",
+      "min": 0,
+      "max": "1",
+      "short": "When request was initially authored",
+      "definition": "The date (and perhaps time) when the prescription was initially written or authored on.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "requester",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.requester",
+      "min": 0,
+      "max": "1",
+      "short": "Who/What requested the Request",
+      "definition": "The individual, organization, or device that initiated the request and has responsibility for its activation.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "performer",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.performer",
+      "min": 0,
+      "max": "1",
+      "short": "Intended performer of administration",
+      "definition": "The specified desired performer of the medication treatment (e.g. the performer of the medication administration).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "performerType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.performerType",
+      "min": 0,
+      "max": "1",
+      "short": "Desired kind of performer of the medication administration",
+      "definition": "Indicates the type of performer of the administration of the medication.",
+      "comment": "If specified without indicating a performer, this indicates that the performer must be of the specified type. If specified with a performer then it indicates the requirements of the performer if the designated performer is not available.",
+      "inherited": false
+    },
+    {
+      "name": "recorder",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.recorder",
+      "min": 0,
+      "max": "1",
+      "short": "Person who entered the request",
+      "definition": "The person who entered the order on behalf of another individual for example in the case of a verbal or a telephone order.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reasonCode",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.reasonCode",
+      "min": 0,
+      "max": "*",
+      "short": "Reason or indication for ordering or not ordering the medication",
+      "definition": "The reason or the indication for ordering or not ordering the medication.",
+      "comment": "This could be a diagnosis code. If a full condition record exists or additional detail is needed, use reasonReference.",
+      "inherited": false
+    },
+    {
+      "name": "reasonReference",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.reasonReference",
+      "min": 0,
+      "max": "*",
+      "short": "Condition or observation that supports why the prescription is being written",
+      "definition": "Condition or observation that supports why the medication was ordered.",
+      "comment": "This is a reference to a condition or observation that is the reason for the medication order.  If only a code exists, use reasonCode.",
+      "inherited": false
+    },
+    {
+      "name": "instantiatesCanonical",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "MedicationRequest.instantiatesCanonical",
+      "min": 0,
+      "max": "*",
+      "short": "Instantiates FHIR protocol or definition",
+      "definition": "The URL pointing to a protocol, guideline, orderset, or other definition that is adhered to in whole or in part by this MedicationRequest.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instantiatesUri",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "MedicationRequest.instantiatesUri",
+      "min": 0,
+      "max": "*",
+      "short": "Instantiates external protocol or definition",
+      "definition": "The URL pointing to an externally maintained protocol, guideline, orderset or other definition that is adhered to in whole or in part by this MedicationRequest.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "basedOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ImmunizationRecommendation",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.basedOn",
+      "min": 0,
+      "max": "*",
+      "short": "What request fulfills",
+      "definition": "A plan or request that is fulfilled in whole or in part by this medication request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "groupIdentifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.groupIdentifier",
+      "min": 0,
+      "max": "1",
+      "short": "Composite request this is part of",
+      "definition": "A shared identifier common to all requests that were authorized more or less simultaneously by a single author, representing the identifier of the requisition or prescription.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "courseOfTherapyType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.courseOfTherapyType",
+      "min": 0,
+      "max": "1",
+      "short": "Overall pattern of medication administration",
+      "definition": "The description of the overall patte3rn of the administration of the medication to the patient.",
+      "comment": "This attribute should not be confused with the protocol of the medication.",
+      "inherited": false
+    },
+    {
+      "name": "insurance",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.insurance",
+      "min": 0,
+      "max": "*",
+      "short": "Associated insurance coverage",
+      "definition": "Insurance plans, coverage extensions, pre-authorizations and/or pre-determinations that may be required for delivering the requested service.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "note",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.note",
+      "min": 0,
+      "max": "*",
+      "short": "Information about the prescription",
+      "definition": "Extra information about the prescription that could not be conveyed by the other attributes.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dosageInstruction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dosageInstruction",
+      "min": 0,
+      "max": "*",
+      "short": "How the medication should be taken",
+      "definition": "Indicates how the medication is to be used by the patient.",
+      "comment": "There are examples where a medication request may include the option of an oral dose or an Intravenous or Intramuscular dose.  For example, \"Ondansetron 8mg orally or IV twice a day as needed for nausea\" or \"Compazine® (prochlorperazine) 5-10mg PO or 25mg PR bid prn nausea or vomiting\".  In these cases, two medication requests would be created that could be grouped together.  The decision on which dose and route of administration to use is based on the patient's condition at the time the dose is needed.",
+      "inherited": false
+    },
+    {
+      "name": "dispenseRequest",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest",
+      "min": 0,
+      "max": "1",
+      "short": "Medication supply authorization",
+      "definition": "Indicates the specific details for the dispense or medication supply part of a medication request (also known as a Medication Prescription or Medication Order).  Note that this information is not always sent with the order.  There may be in some settings (e.g. hospitals) institutional or system support for completing the dispense details in the pharmacy department.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "initialFill",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill",
+      "min": 0,
+      "max": "1",
+      "short": "First fill details",
+      "definition": "Indicates the quantity or duration for the first dispense of the medication.",
+      "comment": "If populating this element, either the quantity or the duration must be included.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "quantity",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill.quantity",
+      "min": 0,
+      "max": "1",
+      "short": "First fill quantity",
+      "definition": "The amount or quantity to provide as part of the first dispense.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "duration",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.initialFill.duration",
+      "min": 0,
+      "max": "1",
+      "short": "First fill duration",
+      "definition": "The length of time that the first dispense is expected to last.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "dispenseInterval",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.dispenseInterval",
+      "min": 0,
+      "max": "1",
+      "short": "Minimum period of time between dispenses",
+      "definition": "The minimum period of time that must occur between dispenses of the medication.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "validityPeriod",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.validityPeriod",
+      "min": 0,
+      "max": "1",
+      "short": "Time period supply is authorized for",
+      "definition": "This indicates the validity period of a prescription (stale dating the Prescription).",
+      "comment": "It reflects the prescribers' perspective for the validity of the prescription. Dispenses must not be made against the prescription outside of this period. The lower-bound of the Dispensing Window signifies the earliest date that the prescription can be filled for the first time. If an upper-bound is not specified then the Prescription is open-ended or will default to a stale-date based on regulations.",
+      "inherited": false
+    },
+    {
+      "name": "numberOfRepeatsAllowed",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "unsignedInt"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.numberOfRepeatsAllowed",
+      "min": 0,
+      "max": "1",
+      "short": "Number of refills authorized",
+      "definition": "An integer indicating the number of times, in addition to the original dispense, (aka refills or repeats) that the patient can receive the prescribed medication. Usage Notes: This integer does not include the original order dispense. This means that if an order indicates dispense 30 tablets plus \"3 repeats\", then the order can be dispensed a total of 4 times and the patient can receive a total of 120 tablets.  A prescriber may explicitly say that zero refills are permitted after the initial dispense.",
+      "comment": "If displaying \"number of authorized fills\", add 1 to this number.",
+      "inherited": false
+    },
+    {
+      "name": "quantity",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.quantity",
+      "min": 0,
+      "max": "1",
+      "short": "Amount of medication to supply per dispense",
+      "definition": "The amount that is to be dispensed for one fill.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "expectedSupplyDuration",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.expectedSupplyDuration",
+      "min": 0,
+      "max": "1",
+      "short": "Number of days supply per dispense",
+      "definition": "Identifies the period time over which the supplied product is expected to be used, or the length of time the dispense is expected to last.",
+      "comment": "In some situations, this attribute may be used instead of quantity to identify the amount supplied by how long it is expected to last, rather than the physical quantity issued, e.g. 90 days supply of medication (based on an ordered dosage). When possible, it is always better to specify quantity, as this tends to be more precise. expectedSupplyDuration will always be an estimate that can be influenced by external factors.",
+      "inherited": false
+    },
+    {
+      "name": "performer",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.dispenseRequest.performer",
+      "min": 0,
+      "max": "1",
+      "short": "Intended dispenser",
+      "definition": "Indicates the intended dispensing Organization specified by the prescriber.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "substitution",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "MedicationRequest.substitution",
+      "min": 0,
+      "max": "1",
+      "short": "Any restrictions on medication substitution",
+      "definition": "Indicates whether or not substitution can or should be part of the dispense. In some cases, substitution must happen, in other cases substitution must not happen. This block explains the prescriber's intent. If nothing is specified substitution may be done.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "MedicationRequest.substitution.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.substitution.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.substitution.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "allowed[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.substitution.allowed[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Whether substitution is allowed or not",
+      "definition": "True if the prescriber allows a different drug to be dispensed from what was prescribed.",
+      "comment": "This element is labeled as a modifier because whether substitution is allow or not, it cannot be ignored.",
+      "inherited": false
+    },
+    {
+      "name": "reason",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "MedicationRequest.substitution.reason",
+      "min": 0,
+      "max": "1",
+      "short": "Why should (not) substitution be made",
+      "definition": "Indicates the reason for the substitution, or why substitution must or must not be performed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "priorPrescription",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "MedicationRequest",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.priorPrescription",
+      "min": 0,
+      "max": "1",
+      "short": "An order/prescription that is being replaced",
+      "definition": "A link to a resource representing an earlier order related order or prescription.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "detectedIssue",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DetectedIssue",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.detectedIssue",
+      "min": 0,
+      "max": "*",
+      "short": "Clinical Issue with action",
+      "definition": "Indicates an actual or potential clinical issue with or between one or more active or proposed clinical actions for a patient; e.g. Drug-drug interaction, duplicate therapy, dosage alert etc.",
+      "comment": "This element can include a detected issue that has been identified either by a decision support system or by a clinician and may include information on the steps that were taken to address the issue.",
+      "inherited": false
+    },
+    {
+      "name": "eventHistory",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "MedicationRequest.eventHistory",
+      "min": 0,
+      "max": "*",
+      "short": "A list of events of interest in the lifecycle",
+      "definition": "Links to Provenance records for past versions of this resource or fulfilling request or event resources that identify key state transitions or updates that are likely to be relevant to a user looking at the current version of the resource.",
+      "comment": "This might not include provenances for all versions of the request – only those deemed “relevant” or important. This SHALL NOT include the provenance associated with this current version of the resource. (If that provenance is deemed to be a “relevant” change, it will need to be added as part of a later update. Until then, it can be queried directly as the provenance that points to this version using _revinclude All Provenances should have some historical version of this Request as their subject.).",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "code",
+      "type": "token",
+      "description": " Return prescriptions of this medication code\r",
+      "expression": "MedicationRequest.medication"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": " Return prescriptions with this external identifier\r",
+      "expression": "MedicationRequest.identifier"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": " Returns prescriptions for a specific patient\r",
+      "expression": "MedicationRequest.subject"
+    },
+    {
+      "name": "medication",
+      "type": "reference",
+      "description": " Return prescriptions for this medication reference\r",
+      "expression": "MedicationRequest.medication"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": " Status of the prescription\r",
+      "expression": "MedicationRequest.status"
+    },
+    {
+      "name": "authoredon",
+      "type": "date",
+      "description": "Return prescriptions written on this date",
+      "expression": "MedicationRequest.authoredOn"
+    },
+    {
+      "name": "category",
+      "type": "token",
+      "description": "Returns prescriptions with different categories",
+      "expression": "MedicationRequest.category"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": " Returns medication request to be administered on a specific date\r",
+      "expression": "MedicationRequest.dosageInstruction.timing.event"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": " Return prescriptions with this encounter identifier\r",
+      "expression": "MedicationRequest.encounter"
+    },
+    {
+      "name": "intended-dispenser",
+      "type": "reference",
+      "description": "Returns prescriptions intended to be dispensed by this Organization",
+      "expression": "MedicationRequest.dispenseRequest.performer"
+    },
+    {
+      "name": "intended-performer",
+      "type": "reference",
+      "description": "Returns the intended performer of the administration of the medication request",
+      "expression": "MedicationRequest.performer"
+    },
+    {
+      "name": "intended-performertype",
+      "type": "token",
+      "description": "Returns requests for a specific type of performer",
+      "expression": "MedicationRequest.performerType"
+    },
+    {
+      "name": "intent",
+      "type": "token",
+      "description": "Returns prescriptions with different intents",
+      "expression": "MedicationRequest.intent"
+    },
+    {
+      "name": "priority",
+      "type": "token",
+      "description": "Returns prescriptions with different priorities",
+      "expression": "MedicationRequest.priority"
+    },
+    {
+      "name": "requester",
+      "type": "reference",
+      "description": "Returns prescriptions prescribed by this prescriber",
+      "expression": "MedicationRequest.requester"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "The identity of a patient to list orders  for",
+      "expression": "MedicationRequest.subject"
+    }
+  ]
+}

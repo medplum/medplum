@@ -5,13 +5,9 @@ import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-import { initBinaryStorage } from '../storage';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -25,11 +21,7 @@ let encounter2: Encounter;
 describe('GraphQL', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initBinaryStorage('file:' + binaryDir);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
 
     // Create a profile picture
@@ -73,6 +65,8 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
         code: {
           text: 'Chest CT',
         },
@@ -88,6 +82,7 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Encounter',
+        status: 'active',
         class: {
           code: 'HH',
         },
@@ -104,6 +99,7 @@ describe('GraphQL', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Encounter',
+        status: 'active',
         class: {
           code: 'HH',
         },
@@ -116,7 +112,7 @@ describe('GraphQL', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
     rmSync(binaryDir, { recursive: true, force: true });
   });
 
@@ -555,5 +551,78 @@ describe('GraphQL', () => {
     `,
       });
     expect(res.status).toBe(400);
+  });
+
+  test('Max depth', async () => {
+    // The definition of "depth" is a little abstract in GraphQL
+    // We use "selection", which, in a well formatted query, is the level of indentation
+
+    // 8 levels of depth is ok
+    const res1 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      });
+    expect(res1.status).toBe(200);
+
+    // 10 levels of nesting is too much
+    const res2 = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                        basedOn {
+                          resource {
+                            ...on ServiceRequest {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual('Field "resource" exceeds max depth (depth=9, max=8)');
   });
 });

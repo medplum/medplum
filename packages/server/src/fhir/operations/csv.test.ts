@@ -2,11 +2,8 @@ import { ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -15,15 +12,12 @@ let accessToken: string;
 describe('CSV Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Export Patient', async () => {
@@ -73,7 +67,7 @@ describe('CSV Export', () => {
     expect(res2.status).toBe(201);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/Patient/$csv`)
+      .get(`/fhir/R4/Patient/$csv?_fields=id,name,address,email,phone`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toContain(res1.body.id);
@@ -87,6 +81,7 @@ describe('CSV Export', () => {
     const serviceRequest: ServiceRequest = {
       resourceType: 'ServiceRequest',
       status: 'active',
+      intent: 'order',
       subject: {
         reference: 'Patient/' + randomUUID(),
         display: 'Alice Smith',
@@ -116,7 +111,7 @@ describe('CSV Export', () => {
     expect(res1.status).toBe(201);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/ServiceRequest/$csv`)
+      .get(`/fhir/R4/ServiceRequest/$csv?_fields=id,subject,code,orderDetail`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toContain(res1.body.id);

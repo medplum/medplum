@@ -9,7 +9,7 @@ import {
   parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
-import { Binary, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
+import { Binary, Bundle, BundleEntry, OperationOutcome, Resource, UserConfiguration } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -37,6 +37,8 @@ import {
   HomerObservation4,
   HomerObservation5,
   HomerObservation6,
+  HomerObservation7,
+  HomerObservation8,
   HomerServiceRequest,
   HomerSimpson,
   HomerSimpsonPreviousVersion,
@@ -44,6 +46,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import { ExampleSmartClientApplication } from './mocks/smart';
 import {
   ExampleWorkflowPlanDefinition,
   ExampleWorkflowQuestionnaire1,
@@ -55,6 +58,7 @@ import {
   ExampleWorkflowTask2,
   ExampleWorkflowTask3,
 } from './mocks/workflow';
+
 import { MemoryRepository } from './repo';
 
 export interface MockClientOptions {
@@ -89,13 +93,26 @@ export class MockClient extends MedplumClient {
   }
 
   getProfile(): ProfileResource {
+    return DrAliceSmith;
+  }
+
+  getUserConfiguration(): UserConfiguration | undefined {
     return {
-      resourceType: 'Practitioner',
-      id: '123',
-      meta: {
-        versionId: '456',
-      },
-    } as Practitioner;
+      resourceType: 'UserConfiguration',
+      menu: [
+        {
+          title: 'Favorites',
+          link: [{ name: 'Patients', target: '/Patient' }],
+        },
+        {
+          title: 'Admin',
+          link: [
+            { name: 'Project', target: '/admin/project' },
+            { name: 'Batch', target: '/batch' },
+          ],
+        },
+      ],
+    };
   }
 
   setActiveLoginOverride(activeLoginOverride: LoginState): void {
@@ -109,17 +126,27 @@ export class MockClient extends MedplumClient {
     return super.getActiveLogin();
   }
 
-  createBinary(_data: any, filename: string, contentType: string): Promise<Binary> {
+  async createBinary(
+    data: string | File | Blob | Uint8Array,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
+  ): Promise<Binary> {
     if (filename?.endsWith('.exe')) {
       return Promise.reject(badRequest('Invalid file type'));
     }
 
-    return Promise.resolve({
+    if (onProgress) {
+      onProgress({ loaded: 0, lengthComputable: false } as ProgressEvent);
+      onProgress({ loaded: 0, total: 100, lengthComputable: true } as ProgressEvent);
+      onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
+    }
+
+    return {
       resourceType: 'Binary',
-      title: filename,
       contentType,
       url: 'https://example.com/binary/123',
-    });
+    };
   }
 }
 
@@ -131,7 +158,7 @@ class MockFetchClient {
     this.initMockRepo();
   }
 
-  mockFetch(url: string, options: any): Promise<any> {
+  async mockFetch(url: string, options: any): Promise<any> {
     const method = options.method || 'GET';
     const path = url.replace('https://example.com/', '');
 
@@ -139,7 +166,7 @@ class MockFetchClient {
       console.log('MockClient', method, path);
     }
 
-    const response = this.mockHandler(method, path, options);
+    const response = await this.mockHandler(method, path, options);
 
     if (this.debug && !response) {
       console.log('MockClient: not found', method, path);
@@ -174,7 +201,7 @@ class MockFetchClient {
     return Promise.resolve({});
   }
 
-  private mockHandler(method: string, path: string, options: any): any {
+  private async mockHandler(method: string, path: string, options: any): Promise<any> {
     if (path.startsWith('admin/')) {
       return this.mockAdminHandler(method, path);
     } else if (path.startsWith('auth/')) {
@@ -222,8 +249,9 @@ class MockFetchClient {
       return this.mockNewUserHandler(method, path, options);
     }
 
-    if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient')) {
+    if (path.startsWith('auth/newproject') || path.startsWith('auth/newpatient') || path.startsWith('auth/scope')) {
       return {
+        login: '123',
         code: 'xyz',
       };
     }
@@ -234,8 +262,40 @@ class MockFetchClient {
 
     if (path.startsWith('auth/me')) {
       return {
-        profile: { reference: 'Practitioner/123' },
+        profile: DrAliceSmith,
+        security: {
+          mfaEnrolled: false,
+          sessions: [
+            {
+              id: '123',
+              lastUpdated: new Date().toISOString(),
+              authMethod: 'password',
+              remoteAddress: '5.5.5.5',
+              browser: 'Chrome',
+              os: 'Linux',
+            },
+            {
+              id: '456',
+              lastUpdated: new Date().toISOString(),
+              authMethod: 'password',
+              remoteAddress: '6.6.6.6',
+              browser: 'Chrome',
+              os: 'Android',
+            },
+          ],
+        },
       };
+    }
+
+    if (path.startsWith('auth/mfa/status')) {
+      return {
+        enrolled: false,
+        enrollUri: 'otpauth://totp/medplum.com:alice.smith%40example',
+      };
+    }
+
+    if (path.startsWith('auth/mfa/enroll')) {
+      return allOk;
     }
 
     return null;
@@ -266,6 +326,7 @@ class MockFetchClient {
     const { password } = JSON.parse(body);
     if (password === 'password') {
       return {
+        login: '123',
         code: 'xyz',
       };
     } else {
@@ -370,6 +431,8 @@ class MockFetchClient {
     this.mockRepo.createResource(HomerObservation4);
     this.mockRepo.createResource(HomerObservation5);
     this.mockRepo.createResource(HomerObservation6);
+    this.mockRepo.createResource(HomerObservation7);
+    this.mockRepo.createResource(HomerObservation8);
     this.mockRepo.createResource(HomerSimpsonSpecimen);
     this.mockRepo.createResource(TestOrganization);
     this.mockRepo.createResource(DifferentOrganization);
@@ -390,10 +453,12 @@ class MockFetchClient {
     this.mockRepo.createResource(ExampleWorkflowTask2);
     this.mockRepo.createResource(ExampleWorkflowTask3);
     this.mockRepo.createResource(ExampleWorkflowRequestGroup);
+    this.mockRepo.createResource(ExampleSmartClientApplication);
+
     DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
   }
 
-  private mockFhirHandler(method: string, url: string, options: any): any {
+  private async mockFhirHandler(method: string, url: string, options: any): Promise<Resource> {
     const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
     const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
     const resourceType = match?.[1];
@@ -408,7 +473,7 @@ class MockFetchClient {
       return notFound;
     } else if (method === 'POST') {
       if (resourceType && id && operation) {
-        return {};
+        return allOk;
       } else if (resourceType) {
         return this.mockRepo.createResource(JSON.parse(options.body));
       } else {
@@ -419,6 +484,8 @@ class MockFetchClient {
         return this.mockRepo.readVersion(resourceType, id, versionId);
       } else if (resourceType && id && operation === '_history') {
         return this.mockRepo.readHistory(resourceType, id);
+      } else if (resourceType && id === '$csv') {
+        return allOk;
       } else if (resourceType && id) {
         return this.mockRepo.readResource(resourceType, id);
       } else if (resourceType) {
@@ -426,13 +493,17 @@ class MockFetchClient {
       }
     } else if (method === 'PUT') {
       return this.mockRepo.updateResource(JSON.parse(options.body));
+    } else if (method === 'PATCH') {
+      if (resourceType && id) {
+        return this.mockRepo.patchResource(resourceType, id, JSON.parse(options.body));
+      }
     } else if (method === 'DELETE') {
       if (resourceType && id) {
-        return this.mockRepo.deleteResource(resourceType, id);
-      } else {
-        return notFound;
+        this.mockRepo.deleteResource(resourceType, id);
+        return allOk;
       }
     }
+    throw notFound;
   }
 
   private mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
@@ -459,24 +530,50 @@ class MockFetchClient {
     return GraphQLSchemaResponse;
   }
 
-  private mockFhirBatchHandler(_method: string, _path: string, options: any): any {
+  private async mockFhirBatchHandler(_method: string, _path: string, options: any): Promise<Bundle> {
     const { body } = options;
     const request = JSON.parse(body) as Bundle;
+    let entry: BundleEntry[] | undefined;
+
+    if (request.entry) {
+      entry = [];
+      for (const input of request.entry) {
+        entry.push(await this.handleBatchEntry(input));
+      }
+    }
+
     return {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry: request.entry?.map((e: BundleEntry) => {
-        const url = 'fhir/R4/' + e?.request?.url;
-        const method = e?.request?.method as string;
-        const resource = this.mockHandler(method, url, null);
-        if (resource?.resourceType === 'OperationOutcome') {
-          return { resource, response: { status: getStatus(resource).toString() } };
-        } else if (resource) {
-          return { resource, response: { status: '200' } };
-        } else {
-          return { resource: notFound, response: { status: '404' } };
-        }
-      }),
+      entry,
     };
+  }
+
+  private async handleBatchEntry(input: BundleEntry): Promise<BundleEntry> {
+    try {
+      const url = 'fhir/R4/' + input.request?.url;
+      const method = input.request?.method as string;
+      const resource = await this.mockHandler(method, url, {
+        body: input.resource ? JSON.stringify(input.resource) : undefined,
+      });
+      if (resource?.resourceType === 'OperationOutcome') {
+        return {
+          resource,
+          response: { status: getStatus(resource).toString() },
+        };
+      } else if (resource) {
+        return { resource, response: { status: '200' } };
+      } else {
+        return { resource: notFound, response: { status: '404' } };
+      }
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      return {
+        response: {
+          status: getStatus(outcome).toString(),
+          outcome,
+        },
+      };
+    }
   }
 }

@@ -1,0 +1,26 @@
+---
+title: MedicinalProductUndesirableEffect
+sidebar_position: 89
+tags: [medications]
+---
+
+import definition from '@site/static/data/resourceDefinitions/medicinalproductundesirableeffect.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# MedicinalProductUndesirableEffect
+
+Describe the undesirable effects of the medicinal product.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

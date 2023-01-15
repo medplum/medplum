@@ -1,0 +1,1148 @@
+{
+  "name": "Composition",
+  "location": "resource",
+  "description": "A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A Composition defines the structure and narrative content necessary for a document. However, a Composition alone does not constitute a document. Rather, the Composition must be the first entry in a Bundle where Bundle.type=document, and any other resources referenced from Composition must be included as subsequent entries in the Bundle (for example Patient, Practitioner, Encounter, etc.).",
+  "properties": [
+    {
+      "name": "Composition",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Composition",
+      "min": 0,
+      "max": "*",
+      "short": "A set of resources composed into a single coherent clinical statement with clinical attestation",
+      "definition": "A set of healthcare-related information that is assembled together into a single logical package that provides a single coherent statement of meaning, establishes its own context and that has clinical attestation with regard to who is making the statement. A Composition defines the structure and narrative content necessary for a document. However, a Composition alone does not constitute a document. Rather, the Composition must be the first entry in a Bundle where Bundle.type=document, and any other resources referenced from Composition must be included as subsequent entries in the Bundle (for example Patient, Practitioner, Encounter, etc.).",
+      "comment": "While the focus of this specification is on patient-specific clinical statements, this resource can also apply to other healthcare-related statements such as study protocol designs, healthcare invoices and other activities that are not necessarily patient-specific or clinical.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Composition.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Composition.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Version-independent identifier for the Composition",
+      "definition": "A version-independent identifier for the Composition. This identifier stays constant as the composition is changed over time.",
+      "comment": "Similar to ClinicalDocument/setId in CDA. See discussion in resource definition for how these relate.",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.status",
+      "min": 1,
+      "max": "1",
+      "short": "preliminary | final | amended | entered-in-error",
+      "definition": "The workflow/clinical status of this composition. The status is a marker for the clinical standing of the document.",
+      "comment": "If a composition is marked as withdrawn, the compositions/documents in the series, or data from the composition or document series, should never be displayed to a user without being clearly marked as untrustworthy. The flag \"entered-in-error\" is why this element is labeled as a modifier of other elements.   \n\nSome reporting work flows require that the original narrative of a final document never be altered; instead, only new narrative can be added. The composition resource has no explicit status for explicitly noting whether this business rule is in effect. This would be handled by an extension if required.",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.type",
+      "min": 1,
+      "max": "1",
+      "short": "Kind of composition (LOINC if possible)",
+      "definition": "Specifies the particular kind of composition (e.g. History and Physical, Discharge Summary, Progress Note). This usually equates to the purpose of making the composition.",
+      "comment": "For Composition type, LOINC is ubiquitous and strongly endorsed by HL7. Most implementation guides will require a specific LOINC code, or use LOINC as an extensible binding.",
+      "inherited": false
+    },
+    {
+      "name": "category",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.category",
+      "min": 0,
+      "max": "*",
+      "short": "Categorization of Composition",
+      "definition": "A categorization for the type of the composition - helps for indexing and searching. This may be implied by or derived from the code specified in the Composition Type.",
+      "comment": "This is a metadata field from [XDS/MHD](http://wiki.ihe.net/index.php?title=Mobile_access_to_Health_Documents_(MHD)).",
+      "inherited": false
+    },
+    {
+      "name": "subject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Composition.subject",
+      "min": 0,
+      "max": "1",
+      "short": "Who and/or what the composition is about",
+      "definition": "Who or what the composition is about. The composition can be about a person, (patient or healthcare practitioner), a device (e.g. a machine) or even a group of subjects (such as a document about a herd of livestock, or a set of patients that share a common exposure).",
+      "comment": "For clinical documents, this is usually the patient.",
+      "inherited": false
+    },
+    {
+      "name": "encounter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.encounter",
+      "min": 0,
+      "max": "1",
+      "short": "Context of the Composition",
+      "definition": "Describes the clinical encounter or type of care this documentation is associated with.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "Composition.date",
+      "min": 1,
+      "max": "1",
+      "short": "Composition editing time",
+      "definition": "The composition editing time, when the composition was last logically changed by the author.",
+      "comment": "The Last Modified Date on the composition may be after the date of the document was attested without being changed.",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.author",
+      "min": 1,
+      "max": "*",
+      "short": "Who and/or what authored the composition",
+      "definition": "Identifies who is responsible for the information in the composition, not necessarily who typed it in.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "title",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.title",
+      "min": 1,
+      "max": "1",
+      "short": "Human Readable name/title",
+      "definition": "Official human-readable label for the composition.",
+      "comment": "For many compositions, the title is the same as the text or a display name of Composition.type (e.g. a \"consultation\" or \"progress note\"). Note that CDA does not make title mandatory, but there are no known cases where it is useful for title to be omitted, so it is mandatory here. Feedback on this requirement is welcome during the trial use period.",
+      "inherited": false
+    },
+    {
+      "name": "confidentiality",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.confidentiality",
+      "min": 0,
+      "max": "1",
+      "short": "As defined by affinity domain",
+      "definition": "The code specifying the level of confidentiality of the Composition.",
+      "comment": "The exact use of this element, and enforcement and issues related to highly sensitive documents are out of scope for the base specification, and delegated to implementation profiles (see security section).  This element is labeled as a modifier because highly confidential documents must not be treated as if they are not.",
+      "inherited": false
+    },
+    {
+      "name": "attester",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Composition.attester",
+      "min": 0,
+      "max": "*",
+      "short": "Attests to accuracy of composition",
+      "definition": "A participant who has attested to the accuracy of the composition/document.",
+      "comment": "Only list each attester once.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.attester.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.attester.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.attester.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "mode",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.attester.mode",
+      "min": 1,
+      "max": "1",
+      "short": "personal | professional | legal | official",
+      "definition": "The type of attestation the authenticator offers.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "time",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "Composition.attester.time",
+      "min": 0,
+      "max": "1",
+      "short": "When the composition was attested",
+      "definition": "When the composition was attested by the party.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "party",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.attester.party",
+      "min": 0,
+      "max": "1",
+      "short": "Who attested the composition",
+      "definition": "Who attested the composition in the specified way.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "custodian",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.custodian",
+      "min": 0,
+      "max": "1",
+      "short": "Organization which maintains the composition",
+      "definition": "Identifies the organization or group who is responsible for ongoing maintenance of and access to the composition/document information.",
+      "comment": "This is useful when documents are derived from a composition - provides guidance for how to get the latest version of the document. This is optional because this is sometimes not known by the authoring system, and can be inferred by context. However, it is important that this information be known when working with a derived document, so providing a custodian is encouraged.",
+      "inherited": false
+    },
+    {
+      "name": "relatesTo",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Composition.relatesTo",
+      "min": 0,
+      "max": "*",
+      "short": "Relationships to other compositions/documents",
+      "definition": "Relationships that this composition has with other compositions or documents that already exist.",
+      "comment": "A document is a version specific composition.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.relatesTo.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.relatesTo.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.relatesTo.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.relatesTo.code",
+      "min": 1,
+      "max": "1",
+      "short": "replaces | transforms | signs | appends",
+      "definition": "The type of relationship that this composition has with anther composition or document.",
+      "comment": "If this document appends another document, then the document cannot be fully understood without also accessing the referenced document.",
+      "inherited": false
+    },
+    {
+      "name": "target[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Composition",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.relatesTo.target[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Target of the relationship",
+      "definition": "The target composition/document of this relationship.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "event",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Composition.event",
+      "min": 0,
+      "max": "*",
+      "short": "The clinical service(s) being documented",
+      "definition": "The clinical service, such as a colonoscopy or an appendectomy, being documented.",
+      "comment": "The event needs to be consistent with the type element, though can provide further information if desired.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.event.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.event.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.event.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.event.code",
+      "min": 0,
+      "max": "*",
+      "short": "Code(s) that apply to the event being documented",
+      "definition": "This list of codes represents the main clinical acts, such as a colonoscopy or an appendectomy, being documented. In some cases, the event is inherent in the typeCode, such as a \"History and Physical Report\" in which the procedure being documented is necessarily a \"History and Physical\" act.",
+      "comment": "An event can further specialize the act inherent in the typeCode, such as where it is simply \"Procedure Report\" and the procedure was a \"colonoscopy\". If one or more eventCodes are included, they SHALL NOT conflict with the values inherent in the classCode, practiceSettingCode or typeCode, as such a conflict would create an ambiguous situation. This short list of codes is provided to be used as key words for certain types of queries.",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.event.period",
+      "min": 0,
+      "max": "1",
+      "short": "The period covered by the documentation",
+      "definition": "The period of time covered by the documentation. There is no assertion that the documentation is a complete representation for this period, only that it documents events during this time.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "detail",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Composition.event.detail",
+      "min": 0,
+      "max": "*",
+      "short": "The event(s) being documented",
+      "definition": "The description and/or reference of the event(s) being documented. For example, this could be used to document such a colonoscopy or an appendectomy.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "section",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Composition.section",
+      "min": 0,
+      "max": "*",
+      "short": "Composition is broken into sections",
+      "definition": "The root of the sections that make up the composition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.section.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "title",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Composition.section.title",
+      "min": 0,
+      "max": "1",
+      "short": "Label for section (e.g. for ToC)",
+      "definition": "The label for this particular section.  This will be part of the rendered content for the document, and is often used to build a table of contents.",
+      "comment": "The title identifies the section for a human reader. The title must be consistent with the narrative of the resource that is the target of the section.content reference. Generally, sections SHOULD have titles, but in some documents, it is unnecessary or inappropriate. Typically, this is where a section has subsections that have their own adequately distinguishing title,  or documents that only have a single section. Most Implementation Guides will make section title to be a required element.",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.code",
+      "min": 0,
+      "max": "1",
+      "short": "Classification of section (recommended)",
+      "definition": "A code identifying the kind of content contained within the section. This must be consistent with the section title.",
+      "comment": "The code identifies the section for an automated processor of the document. This is particularly relevant when using profiles to control the structure of the document.   \n\nIf the section has content (instead of sub-sections), the section.code does not change the meaning or interpretation of the resource that is the content of the section in the comments for the section.code.",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Composition.section.author",
+      "min": 0,
+      "max": "*",
+      "short": "Who and/or what authored the section",
+      "definition": "Identifies who is responsible for the information in this section, not necessarily who typed it in.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "focus",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Composition.section.focus",
+      "min": 0,
+      "max": "1",
+      "short": "Who/what the section is about, when it is not about the subject of composition",
+      "definition": "The actual focus of the section when it is not the subject of the composition, but instead represents something or someone associated with the subject such as (for a patient subject) a spouse, parent, fetus, or donor. If not focus is specified, the focus is assumed to be focus of the parent section, or, for a section in the Composition itself, the subject of the composition. Sections with a focus SHALL only include resources where the logical subject (patient, subject, focus, etc.) matches the section focus, or the resources have no logical subject (few resources).",
+      "comment": "Typically, sections in a doument are about the subject of the document, whether that is a  patient, or group of patients, location, or device, or whatever. For some kind of documents, some sections actually contain data about related entities. Typical examples are  a section in a newborn discharge summary concerning the mother, or family history documents, with a section about each family member, though there are many other examples.",
+      "inherited": false
+    },
+    {
+      "name": "text",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the section, for human interpretation",
+      "definition": "A human-readable narrative that contains the attested content of the section, used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative.",
+      "comment": "Document profiles may define what content should be represented in the narrative to ensure clinical safety.",
+      "inherited": false
+    },
+    {
+      "name": "mode",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Composition.section.mode",
+      "min": 0,
+      "max": "1",
+      "short": "working | snapshot | changes",
+      "definition": "How the entry list was prepared - whether it is a working list that is suitable for being maintained on an ongoing basis, or if it represents a snapshot of a list of items from another source, or whether it is a prepared list where items may be marked as added, modified or deleted.",
+      "comment": "This element is labeled as a modifier because a change list must not be misunderstood as a complete list.",
+      "inherited": false
+    },
+    {
+      "name": "orderedBy",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.orderedBy",
+      "min": 0,
+      "max": "1",
+      "short": "Order of section entries",
+      "definition": "Specifies the order applied to the items in the section entries.",
+      "comment": "Applications SHOULD render ordered lists in the order provided, but MAY allow users to re-order based on their own preferences as well. If there is no order specified, the order is unknown, though there may still be some order.",
+      "inherited": false
+    },
+    {
+      "name": "entry",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Composition.section.entry",
+      "min": 0,
+      "max": "*",
+      "short": "A reference to data that supports this section",
+      "definition": "A reference to the actual resource from which the narrative in the section is derived.",
+      "comment": "If there are no entries in the list, an emptyReason SHOULD be provided.",
+      "inherited": false
+    },
+    {
+      "name": "emptyReason",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Composition.section.emptyReason",
+      "min": 0,
+      "max": "1",
+      "short": "Why the section is empty",
+      "definition": "If the section is empty, why the list is empty. An empty section typically has some text explaining the empty reason.",
+      "comment": "The various reasons for an empty section make a significant interpretation to its interpretation. Note that this code is for use when the entire section content has been suppressed, and not for when individual items are omitted - implementers may consider using a text note or a flag on an entry in these cases.",
+      "inherited": false
+    },
+    {
+      "name": "section",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Composition.section.section",
+      "min": 0,
+      "max": "*",
+      "short": "Nested Section",
+      "definition": "A nested sub-section within this section.",
+      "comment": "Nested sections are primarily used to help human readers navigate to particular portions of the document.",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "date",
+      "type": "date",
+      "description": " Composition editing time\r",
+      "expression": "Composition.date"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": " Version-independent identifier for the Composition\r",
+      "expression": "Composition.identifier"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": " Who and/or what the composition is about\r",
+      "expression": "Composition.subject"
+    },
+    {
+      "name": "type",
+      "type": "token",
+      "description": " Kind of composition (LOINC if possible)\r",
+      "expression": "Composition.type"
+    },
+    {
+      "name": "attester",
+      "type": "reference",
+      "description": "Who attested the composition",
+      "expression": "Composition.attester.party"
+    },
+    {
+      "name": "author",
+      "type": "reference",
+      "description": "Who and/or what authored the composition",
+      "expression": "Composition.author"
+    },
+    {
+      "name": "category",
+      "type": "token",
+      "description": "Categorization of Composition",
+      "expression": "Composition.category"
+    },
+    {
+      "name": "confidentiality",
+      "type": "token",
+      "description": "As defined by affinity domain",
+      "expression": "Composition.confidentiality"
+    },
+    {
+      "name": "context",
+      "type": "token",
+      "description": "Code(s) that apply to the event being documented",
+      "expression": "Composition.event.code"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": " Context of the Composition\r",
+      "expression": "Composition.encounter"
+    },
+    {
+      "name": "entry",
+      "type": "reference",
+      "description": "A reference to data that supports this section",
+      "expression": "Composition.section.entry"
+    },
+    {
+      "name": "period",
+      "type": "date",
+      "description": "The period covered by the documentation",
+      "expression": "Composition.event.period"
+    },
+    {
+      "name": "related-id",
+      "type": "token",
+      "description": "Target of the relationship",
+      "expression": "Composition.relatesTo.target"
+    },
+    {
+      "name": "related-ref",
+      "type": "reference",
+      "description": "Target of the relationship",
+      "expression": "Composition.relatesTo.target"
+    },
+    {
+      "name": "section",
+      "type": "token",
+      "description": "Classification of section (recommended)",
+      "expression": "Composition.section.code"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "preliminary | final | amended | entered-in-error",
+      "expression": "Composition.status"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "Who and/or what the composition is about",
+      "expression": "Composition.subject"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "Human Readable name/title",
+      "expression": "Composition.title"
+    }
+  ]
+}

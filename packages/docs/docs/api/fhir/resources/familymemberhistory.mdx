@@ -1,0 +1,25 @@
+---
+title: FamilyMemberHistory
+sidebar_position: 53
+---
+
+import definition from '@site/static/data/resourceDefinitions/familymemberhistory.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# FamilyMemberHistory
+
+Significant health conditions for a person related to the patient relevant in the context of care for the patient.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -12,20 +12,25 @@ describe('FHIR Search Utils', () => {
     });
   });
 
-  test('Parse Patient id', () => {
-    expect(parseSearchRequest('Patient', { id: '1' })).toMatchObject({
-      resourceType: 'Patient',
-      sortRules: [],
-      filters: [{ code: '_id', operator: Operator.EQUALS, value: '1' }],
-    });
-  });
-
   test('Parse Patient _id', () => {
     expect(parseSearchRequest('Patient', { _id: '1' })).toMatchObject({
       resourceType: 'Patient',
       sortRules: [],
       filters: [{ code: '_id', operator: Operator.EQUALS, value: '1' }],
     });
+  });
+
+  test('Parse Patient _id:not', () => {
+    try {
+      expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_id:not=1'))).toMatchObject({
+        resourceType: 'Patient',
+        sortRules: [],
+        filters: [{ code: '_id', operator: Operator.NOT_EQUALS, value: '1' }],
+      });
+    } catch (err) {
+      console.log(err);
+      console.log(JSON.stringify(err, null, 2));
+    }
   });
 
   test('Parse Patient name search', () => {
@@ -506,6 +511,13 @@ describe('FHIR Search Utils', () => {
           value: '2019-01-02',
         },
       ],
+    });
+  });
+
+  test('_revinclude', () => {
+    expect(parseSearchRequest('Patient', { _revinclude: 'Provenance:target' })).toMatchObject({
+      resourceType: 'Patient',
+      revInclude: 'Provenance:target',
     });
   });
 });

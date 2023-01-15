@@ -1,10 +1,10 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider, SmartSearchField } from '@medplum/react';
+import { MedplumProvider, FhirPathTableField } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SmartSearchPage } from './SmartSearchPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const query = `{
 ResourceList: ServiceRequestList {
@@ -51,7 +51,7 @@ ResourceList: ServiceRequestList {
 }
 }`;
 
-const fields: SmartSearchField[] = [
+const fields: FhirPathTableField[] = [
   {
     name: 'ID',
     fhirPath: 'id',
@@ -97,10 +97,7 @@ async function setup(url = '/Patient'): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/smart" element={<SmartSearchPage />} />
-            <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -131,7 +128,7 @@ describe('SmartSearchPage', () => {
     });
 
     // Change the tab
-    expect(screen.getByText('Resource Page')).toBeInTheDocument();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
 
     // Do not open a new browser tab
     expect(window.open).not.toHaveBeenCalled();

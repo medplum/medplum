@@ -113,7 +113,7 @@ export interface BiologicallyDerivedProduct {
   /**
    * Broad category of this product.
    */
-  productCategory?: string;
+  productCategory?: 'organ' | 'tissue' | 'fluid' | 'cells' | 'biologicalAgent';
 
   /**
    * A code that identifies the kind of this biologically derived product
@@ -124,7 +124,7 @@ export interface BiologicallyDerivedProduct {
   /**
    * Whether the product is currently available.
    */
-  status?: string;
+  status?: 'available' | 'unavailable';
 
   /**
    * Procedure request to obtain this biologically derived product.
@@ -407,7 +407,7 @@ export interface BiologicallyDerivedProductStorage {
   /**
    * Temperature scale used.
    */
-  scale?: string;
+  scale?: 'farenheit' | 'celsius' | 'kelvin';
 
   /**
    * Storage timeperiod.

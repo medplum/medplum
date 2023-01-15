@@ -11,9 +11,8 @@ import { Schedule } from './Schedule';
 import { Timing } from './Timing';
 
 /**
- * Base StructureDefinition for TriggerDefinition Type: A description of
- * a triggering event. Triggering events can be named events, data
- * events, or periodic, as determined by the type element.
+ * A description of a triggering event. Triggering events can be named
+ * events, data events, or periodic, as determined by the type element.
  */
 export interface TriggerDefinition {
 
@@ -36,7 +35,7 @@ export interface TriggerDefinition {
   /**
    * The type of triggering event.
    */
-  type?: string;
+  type?: 'named-event' | 'periodic' | 'data-changed' | 'data-added' | 'data-modified' | 'data-removed' | 'data-accessed' | 'data-access-ended';
 
   /**
    * A formal name for the event. This may be an absolute URI that

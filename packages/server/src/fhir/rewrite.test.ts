@@ -1,9 +1,9 @@
-import { assertOk } from '@medplum/core';
-import { Binary, Practitioner } from '@medplum/fhirtypes';
+import { deepClone } from '@medplum/core';
+import { Binary, Bundle, Practitioner } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { URL } from 'url';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { seedDatabase } from '../seed';
 import { systemRepo } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 
@@ -13,18 +13,17 @@ describe('URL rewrite', () => {
 
   beforeAll(async () => {
     config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
 
-    const [outcome, resource] = await systemRepo.createResource({
+    const resource = await systemRepo.createResource({
       resourceType: 'Binary',
+      contentType: 'text/plain',
     });
-    assertOk(outcome, resource);
     binary = resource;
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Null', async () => {
@@ -40,6 +39,7 @@ describe('URL rewrite', () => {
   test('Binary', async () => {
     const input = {
       resourceType: 'Binary',
+      contentType: 'text/plain',
       id: '123',
       extension: [
         {
@@ -109,6 +109,27 @@ describe('URL rewrite', () => {
     expect(url.searchParams.has('Expires')).toBe(true);
   });
 
+  test('Reference not found', async () => {
+    const id = randomUUID();
+
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${id}`);
+  });
+
   test('URL', async () => {
     const practitioner: Practitioner = {
       resourceType: 'Practitioner',
@@ -149,5 +170,66 @@ describe('URL rewrite', () => {
 
     const url = new URL(result.photo?.[0]?.url as string);
     expect(url.searchParams.has('Expires')).toBe(true);
+  });
+
+  test('FHIR URL to reference', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.baseUrl}fhir/R4/Binary/${binary.id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+  });
+
+  test('Storage URL to reference', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `${config.storageBaseUrl}${binary.id}`,
+        },
+      ],
+    };
+
+    const result = await rewriteAttachments(RewriteMode.REFERENCE, systemRepo, practitioner);
+    expect(result).toBeDefined();
+    expect(result.resourceType).toBe('Practitioner');
+    expect(result.photo).toBeDefined();
+    expect(result.photo?.length).toBe(1);
+    expect(result.photo?.[0]?.url).toBe(`Binary/${binary.id}`);
+  });
+
+  test('Consistent results', async () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: `Binary/${binary.id}`,
+        },
+      ],
+    };
+
+    const bundle: Bundle = deepClone({
+      resourceType: 'Bundle',
+      entry: [{ resource: practitioner }, { resource: practitioner }],
+    });
+
+    const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, bundle);
+    const url1 = (result.entry?.[0]?.resource as Practitioner).photo?.[0]?.url;
+    const url2 = (result.entry?.[1]?.resource as Practitioner).photo?.[0]?.url;
+    expect(url1).toBeDefined();
+    expect(url1).toBe(url2);
   });
 });

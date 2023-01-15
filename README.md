@@ -1,10 +1,14 @@
-# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main)
+# [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main) [![Featured on Openbase](https://badges.openbase.com/js/featured/@medplum/core.svg?token=UnCQpn8imdOYaqKQa6AI2km3rXx5shpt6bKIoGj3KMk=)](https://openbase.com/js/@medplum/core?utm_source=embedded&utm_medium=badge&utm_campaign=rate-badge)
 
-Medplum is a developer platform that enables flexible and rapid development of healthcare apps. In consists of 3 main components
+Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
-- **Medplum Clinical Data Repository (CDR)** - This is the the backend server that hosts your healthcare data in a secure, compliant, and standards based respository. The Medplum CDR also exposes a FHIR-based API for sending, receiving, and manipulating data
-- **Medplum App** - This is a web application where can you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
- - **UI Component Library** - Medplum ships with a system of React components designed to help you quickly develop custom healthcare applications
+- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
+- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards based repository.
+- **Medplum API** - FHIR-based API for sending, receiving, and manipulating data.
+- **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
+- **Medplum App** - Web application where you can view your data, perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+- **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
+- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
 
 ## Docs
 
@@ -15,8 +19,6 @@ Medplum is a developer platform that enables flexible and rapid development of h
     - [Folder Structure](#folder-structure)
     - [Code Style](#code-style)
   - [First time setup](#first-time-setup)
-  - [Running the app locally](#running-the-app-locally)
-  - [Roadmap](https://github.com/medplum/medplum/projects/19)
 
 ## Contributing
 
@@ -68,32 +70,36 @@ Here is a list of all the big technologies we use:
 medplum/
 ├── packages
 │   ├── app          # Frontend web app
+│   ├── bot-layer    # AWS Lambda Layer for Bots
 │   ├── cli          # Command line interface
 │   ├── core         # Core shared library
 │   ├── definitions  # Data definitions
 │   ├── docs         # Documentation
+│   ├── examples     # Example code used in documentation
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
 │   ├── infra        # Infra as code
 │   ├── mock         # Mock FHIR data for testing
-│   └── react        # React component library
-│   ├── server       # Backend API server
+│   ├── react        # React component library
+│   └── server       # Backend API server
 └── scripts          # Helper bash scripts
 ```
 
 ### First time setup
 
-See developer setup documentation: https://docs.medplum.com/contributing/intro
+See developer setup documentation: https://www.medplum.com/docs/contributing
 
 ## License
 
 [Apache 2.0](LICENSE.txt)
 
-Copyright &copy; Medplum 2022
+Copyright &copy; Medplum 2023
 
-FHIR &reg; is a registered trademark of HL7.
+FHIR&reg; is a registered trademark of HL7.
 
-SNOMED &reg; is a registered trademark of the International Health Terminology Standards Development Organisation.
+SNOMED&reg; is a registered trademark of the International Health Terminology Standards Development Organisation.
 
-DICOM &reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).
+LOINC&reg; is a registered trademark of Regenstrief Institute, Inc.
+
+DICOM&reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).

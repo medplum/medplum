@@ -16,8 +16,8 @@ import { UsageContext } from './UsageContext';
 /**
  * A ValueSet resource instance specifies a set of codes drawn from one
  * or more code systems, intended for use in a particular context. Value
- * sets link between [[[CodeSystem]]] definitions and their use in [coded
- * elements](terminologies.html).
+ * sets link between [CodeSystem](codesystem.html) definitions and their
+ * use in [coded elements](terminologies.html).
  */
 export interface ValueSet {
 
@@ -144,7 +144,7 @@ export interface ValueSet {
    * definition (ValueSet.compose) and the associated ValueSet metadata.
    * Expansions do not have a state.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this value set is authored for
@@ -548,7 +548,7 @@ export interface ValueSetComposeIncludeFilter {
   /**
    * The kind of operation to perform as a part of the filter criteria.
    */
-  op?: string;
+  op?: '=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists';
 
   /**
    * The match value may be either a code defined by the system, or a

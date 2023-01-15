@@ -1,0 +1,25 @@
+---
+title: RiskAssessment
+sidebar_position: 119
+---
+
+import definition from '@site/static/data/resourceDefinitions/riskassessment.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# RiskAssessment
+
+An assessment of the likely outcome(s) for a patient or other subject as well as the likelihood of each outcome.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,20 +1,34 @@
 import {
   allOk,
-  badRequest,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
   LoginState,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
   notFound,
 } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
-import { webcrypto } from 'crypto';
+import { readJson } from '@medplum/definitions';
+import {
+  Bundle,
+  CodeableConcept,
+  OperationOutcome,
+  Patient,
+  SearchParameter,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
+import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
-import { HomerSimpson } from './mocks';
+import { DrAliceSmith, DrAliceSmithSchedule, HomerSimpson } from './mocks';
 
 describe('MockClient', () => {
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+
     Object.defineProperty(global, 'TextEncoder', {
       value: TextEncoder,
     });
@@ -41,10 +55,15 @@ describe('MockClient', () => {
     expect(client.getProfile()).toMatchObject({ resourceType: 'Practitioner' });
   });
 
-  test('Login', () => {
+  test('Login', async () => {
     const client = new MockClient();
-    expect(client.post('auth/login', '{"password":"password"}')).resolves.toBeDefined();
-    expect(client.post('auth/login', '{"password":"wrong"}')).rejects.toBeDefined();
+    expect(await client.post('auth/login', '{"password":"password"}')).toBeDefined();
+    try {
+      await client.post('auth/login', '{"password":"wrong"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('Login override', () => {
@@ -55,28 +74,45 @@ describe('MockClient', () => {
     expect(client.getActiveLogin()).toBeDefined();
   });
 
-  test('Change password', () => {
+  test('Change password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/changepassword', '{"oldPassword":"orange"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/changepassword', '{"oldPassword":"banana"}')).rejects.toBeDefined();
+    expect(await client.post('auth/changepassword', '{"oldPassword":"orange"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/changepassword', '{"oldPassword":"banana"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Set password', () => {
+  test('Set password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/setpassword', '{"password":"orange"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/setpassword', '{"password":"banana"}')).rejects.toBeDefined();
+    expect(await client.post('auth/setpassword', '{"password":"orange"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/setpassword', '{"password":"banana"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Reset password', () => {
+  test('Reset password', async () => {
     const client = new MockClient();
-    expect(client.post('auth/resetpassword', '{"email":"admin@example.com"}')).resolves.toMatchObject(allOk);
-    expect(client.post('auth/resetpassword', '{"email":"other@example.com"}')).rejects.toBeDefined();
+    expect(await client.post('auth/resetpassword', '{"email":"admin@example.com"}')).toMatchObject(allOk);
+    try {
+      await client.post('auth/resetpassword', '{"email":"other@example.com"}');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('New project success', async () => {
     const client = new MockClient();
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -86,12 +122,11 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newProjectRequest: NewProjectRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
+      login: response1.login,
       projectName: 'Sally World',
     };
 
-    const response2 = await client.startNewProject(newProjectRequest, response1);
+    const response2 = await client.startNewProject(newProjectRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -102,6 +137,8 @@ describe('MockClient', () => {
     const client = new MockClient();
 
     const newUserRequest: NewUserRequest = {
+      firstName: 'Sally',
+      lastName: 'Foo',
       email: `george@example.com`,
       password: 'password',
       recaptchaToken: 'xyz',
@@ -111,12 +148,11 @@ describe('MockClient', () => {
     expect(response1).toBeDefined();
 
     const newPatientRequest: NewPatientRequest = {
-      firstName: 'Sally',
-      lastName: 'Foo',
+      login: response1.login,
       projectId: '123',
     };
 
-    const response2 = await client.startNewPatient(newPatientRequest, response1);
+    const response2 = await client.startNewPatient(newPatientRequest);
     expect(response2).toBeDefined();
 
     const response3 = await client.processCode(response2.code as string);
@@ -125,19 +161,35 @@ describe('MockClient', () => {
 
   test('Register error', async () => {
     const client = new MockClient();
-    expect(
-      client.post('auth/newuser', JSON.stringify({ email: 'other@example.com', password: 'password' }))
-    ).rejects.toBeDefined();
-    expect(
-      client.post('auth/newuser', JSON.stringify({ email: 'george@example.com', password: 'wrong' }))
-    ).rejects.toBeDefined();
+
+    try {
+      await client.post('auth/newuser', JSON.stringify({ email: 'other@example.com', password: 'password' }));
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
+
+    try {
+      await client.post('auth/newuser', JSON.stringify({ email: 'george@example.com', password: 'wrong' }));
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
-  test('Who am i', () => {
+  test('Who am i', async () => {
     const client = new MockClient();
-    expect(client.get('auth/me')).resolves.toMatchObject({
-      profile: { reference: 'Practitioner/123' },
-    });
+    expect(await client.get('auth/me')).toMatchObject({ profile: DrAliceSmith });
+  });
+
+  test('MFA status', async () => {
+    const client = new MockClient();
+    expect(await client.get('auth/mfa/status')).toMatchObject({ enrolled: false });
+  });
+
+  test('MFA enroll', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/enroll', { token: 'foo' })).toMatchObject(allOk);
   });
 
   test('Batch request', async () => {
@@ -160,6 +212,16 @@ describe('MockClient', () => {
                 url: 'Questionnaire/not-found',
               },
             },
+            {
+              request: {
+                method: 'POST',
+                url: 'Patient',
+              },
+              resource: {
+                resourceType: 'Patient',
+                name: [{ given: ['John'], family: 'Doe' }],
+              },
+            },
           ],
         })
       )
@@ -177,6 +239,15 @@ describe('MockClient', () => {
           resource: notFound,
           response: {
             status: '404',
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['John'], family: 'Doe' }],
+          },
+          response: {
+            status: '200',
           },
         },
       ],
@@ -214,16 +285,34 @@ describe('MockClient', () => {
     expect(result.entry).toHaveLength(2);
   });
 
-  test('Create binary', async () => {
+  test('Create binary success', async () => {
     const client = new MockClient();
-    expect(client.createBinary(null, 'test.exe', 'application/exe')).rejects.toMatchObject(
-      badRequest('Invalid file type')
-    );
-    expect(client.createBinary(null, 'test.txt', 'text/plain')).resolves.toMatchObject({
+    const result = await client.createBinary('test', 'test.txt', 'text/plain');
+    expect(result).toMatchObject({
       resourceType: 'Binary',
-      title: 'test.txt',
       contentType: 'text/plain',
     });
+  });
+
+  test('Create binary with progress listener', async () => {
+    const client = new MockClient();
+    const onProgress = jest.fn();
+    const result = await client.createBinary('test', 'test.txt', 'text/plain', onProgress);
+    expect(result).toMatchObject({
+      resourceType: 'Binary',
+      contentType: 'text/plain',
+    });
+    expect(onProgress).toHaveBeenCalled();
+  });
+
+  test('Create binary with error', async () => {
+    const client = new MockClient();
+    try {
+      await client.createBinary('test', 'test.exe', 'application/exe');
+      fail('Should have failed');
+    } catch (err) {
+      expect(err).toBeDefined();
+    }
   });
 
   test('Create PDF', async () => {
@@ -236,6 +325,67 @@ describe('MockClient', () => {
     const result2 = await client2.createPdf({ content: ['Hello World'] });
     expect(result2).toBeDefined();
     expect(console.log).toHaveBeenCalled();
+  });
+
+  test('Read resource', async () => {
+    const client = new MockClient();
+    const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
+    expect(resource1).toBeDefined();
+    const resource2 = await client.readResource('Patient', resource1.id as string);
+    expect(resource2).toBeDefined();
+    expect(resource2).toEqual(resource1);
+    expect(resource2).not.toBe(resource1);
+  });
+
+  test('Read resource not found', async () => {
+    const client = new MockClient();
+    try {
+      await client.readResource('Patient', randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
+  });
+
+  test('Read history', async () => {
+    const client = new MockClient();
+    const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
+    expect(resource1).toBeDefined();
+    const resource2 = await client.readHistory('Patient', resource1.id as string);
+    expect(resource2).toBeDefined();
+    expect(resource2.resourceType).toEqual('Bundle');
+  });
+
+  test('Read history not found', async () => {
+    const client = new MockClient();
+    try {
+      await client.readHistory('Patient', randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
+  });
+
+  test('Read version', async () => {
+    const client = new MockClient();
+    const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
+    expect(resource1).toBeDefined();
+    const resource2 = await client.readVersion('Patient', resource1.id as string, resource1.meta?.versionId as string);
+    expect(resource2).toBeDefined();
+    expect(resource2).toEqual(resource1);
+    expect(resource2).not.toBe(resource1);
+  });
+
+  test('Read version not found', async () => {
+    const client = new MockClient();
+    const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
+    expect(resource1).toBeDefined();
+    try {
+      await client.readVersion('Patient', resource1.id as string, randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
   });
 
   test('Update resource', async () => {
@@ -252,6 +402,51 @@ describe('MockClient', () => {
     expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
   });
 
+  test('Patch resource', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    expect(resource1).toBeDefined();
+
+    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+      {
+        op: 'add',
+        path: '/active',
+        value: true,
+      },
+    ]);
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+  });
+
+  test('Preserve history', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      orderDetail: [{ text: 'foo' }],
+    });
+    expect(resource1).toBeDefined();
+
+    // Explicitly edit the resource in place
+    // While this is not recommended, it is supported
+    (resource1.orderDetail as CodeableConcept[])[0].text = 'bar';
+
+    const resource2 = await client.updateResource(resource1);
+    expect(resource2).toBeDefined();
+    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+
+    const history = await client.readHistory('ServiceRequest', resource1.id as string);
+    expect(history).toBeDefined();
+    expect(history.entry).toHaveLength(2);
+    expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('bar');
+    expect((history.entry?.[1]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('foo');
+  });
+
   test('Delete resource', async () => {
     const client = new MockClient();
 
@@ -266,7 +461,37 @@ describe('MockClient', () => {
 
     await client.deleteResource('Patient', resource1.id as string);
 
-    const resource3 = await client.readResource('Patient', resource1.id as string);
-    expect(resource3).toBeUndefined();
+    try {
+      await client.readResource('Patient', resource1.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
+  });
+
+  test('Slot search', async () => {
+    const client = new MockClient();
+
+    const startDate = new Date();
+    startDate.setDate(1);
+
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1);
+    endDate.setDate(1);
+
+    const slots = await client.searchResources(
+      'Slot',
+      new URLSearchParams([
+        ['_count', (30 * 24).toString()],
+        ['schedule', getReferenceString(DrAliceSmithSchedule)],
+        ['start', 'gt' + startDate.toISOString()],
+        ['start', 'lt' + endDate.toISOString()],
+      ])
+    );
+    expect(slots.length).toBeGreaterThan(0);
   });
 });
+
+function fail(reason: string): never {
+  throw new Error(reason);
+}

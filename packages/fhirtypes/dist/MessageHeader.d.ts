@@ -297,7 +297,7 @@ export interface MessageHeaderResponse {
    * Code that identifies the type of response to the message - whether it
    * was successful or not, and whether it should be resent or not.
    */
-  code?: string;
+  code?: 'ok' | 'transient-error' | 'fatal-error';
 
   /**
    * Full details of any issues found in the message.

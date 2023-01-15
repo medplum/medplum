@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { CreateClientPage } from './CreateClientPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
@@ -12,9 +12,7 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/admin/projects/:projectId/client" element={<CreateClientPage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -22,37 +20,50 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('CreateClientPage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
     expect(screen.getByText('Create Client')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Client' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
-      fireEvent.change(screen.getByTestId('redirectUri'), {
+      fireEvent.change(screen.getByLabelText('Redirect URI'), {
         target: { value: 'https://example.com/' },
       });
     });
@@ -61,28 +72,28 @@ describe('CreateClientPage', () => {
       fireEvent.click(screen.getByText('Create Client'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Client created')).toBeInTheDocument();
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/client');
+    await setup('/admin/clients/new');
     await waitFor(() => screen.getByText('Create Client'));
 
     expect(screen.getByText('Create Client')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Client' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
-      fireEvent.change(screen.getByTestId('redirectUri'), {
+      fireEvent.change(screen.getByLabelText('Redirect URI'), {
         target: { value: 'https://example.com/' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -94,7 +105,10 @@ describe('CreateClientPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {
@@ -105,6 +119,6 @@ describe('CreateClientPage', () => {
       fireEvent.click(screen.getByText('Create Client'));
     });
 
-    expect(screen.getByTestId('success')).toBeInTheDocument();
+    expect(screen.getByText('Client created')).toBeInTheDocument();
   });
 });

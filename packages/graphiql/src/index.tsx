@@ -1,11 +1,13 @@
+import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
+import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+
 import 'regenerator-runtime/runtime.js';
-import '@medplum/react/defaulttheme.css';
-import '@medplum/react/styles.css';
+
 import 'graphiql/graphiql.css';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
@@ -38,17 +40,40 @@ const medplum = new MedplumClient({
   baseUrl: process.env.MEDPLUM_BASE_URL,
 });
 
+const theme: MantineThemeOverride = {
+  headings: {
+    sizes: {
+      h1: {
+        fontSize: 18,
+        fontWeight: 500,
+        lineHeight: 2.0,
+      },
+    },
+  },
+  fontSizes: {
+    xs: 11,
+    sm: 14,
+    md: 14,
+    lg: 16,
+    xl: 18,
+  },
+};
+
+function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+  if (params.operationName === 'IntrospectionQuery') {
+    return fetch('/schema/schema-v1.json').then((res) => res.json());
+  }
+  return medplum.graphql(params.query, params.operationName, params.variables);
+}
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL
-      fetcher={async (params) => medplum.graphql(params.query, params.operationName, params.variables)}
-      defaultQuery={HELP_TEXT}
-    />
+    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
-      <h1>Sign in to Medplum</h1>
+      <Title>Sign in to Medplum</Title>
     </SignInForm>
   );
 }
@@ -57,7 +82,9 @@ const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <MedplumProvider medplum={medplum}>
-      <App />
+      <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
+        <App />
+      </MantineProvider>
     </MedplumProvider>
   </React.StrictMode>
 );

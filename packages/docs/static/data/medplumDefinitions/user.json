@@ -1,0 +1,257 @@
+{
+  "name": "User",
+  "location": "medplum",
+  "description": "Representation of a human user of the system.",
+  "properties": [
+    {
+      "name": "User",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "User",
+      "min": 0,
+      "max": "*",
+      "short": "Representation of a human user of the system",
+      "definition": "Representation of a human user of the system.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "User.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "User.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "User.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "firstName",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.firstName",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "lastName",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.lastName",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The last name or family name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "email",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.email",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The email address that uniquely identifies the user.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "emailVerified",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "User.emailVerified",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether the system has verified that the user has access to the email address.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "admin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "User.admin",
+      "min": 0,
+      "max": "1",
+      "short": "DEPRECATED",
+      "definition": "DEPRECATED",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "passwordHash",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.passwordHash",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Encrypted hash of the user's password.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "mfaSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "User.mfaSecret",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Shared secret for MFA authenticator applications.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "mfaEnrolled",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "User.mfaEnrolled",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether the user has completed MFA enrollment.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "project",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Project",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "User.project",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional project if the user only exists for the project. This is used for the project-specific user database.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "email",
+      "type": "token",
+      "description": "The email address of the user",
+      "expression": "User.email"
+    },
+    {
+      "name": "project",
+      "type": "reference",
+      "description": "The project that contains the user",
+      "expression": "User.project"
+    }
+  ]
+}

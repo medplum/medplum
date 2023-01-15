@@ -1,0 +1,18 @@
+---
+title: DataRequirement
+sidebar_position: 10
+---
+
+import definition from '@site/static/data/datatypeDefinitions/datarequirement.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DataRequirement
+
+Base StructureDefinition for DataRequirement Type: Describes a required data item for evaluation in terms of the type of data, and optional code or date-based filters of the data.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

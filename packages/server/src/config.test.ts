@@ -15,6 +15,7 @@ describe('Config', () => {
               { Name: 'baseUrl', Value: 'https://www.example.com/' },
               { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
               { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
+              { Name: 'port', Value: '8080' },
             ],
           };
         },
@@ -52,6 +53,7 @@ describe('Config', () => {
     const config = await loadConfig('aws:test');
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
+    expect(config.port).toEqual(8080);
     expect(getConfig()).toBe(config);
   });
 });

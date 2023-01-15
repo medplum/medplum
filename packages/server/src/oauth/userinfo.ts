@@ -1,5 +1,4 @@
 import {
-  assertOk,
   formatAddress,
   formatFamilyName,
   formatGivenName,
@@ -8,9 +7,10 @@ import {
   getReferenceString,
   ProfileResource,
 } from '@medplum/core';
+import { Reference } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
@@ -21,26 +21,21 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
     sub: res.locals.user,
   };
 
-  const [outcome, resource] = await systemRepo.readReference({
-    reference: res.locals.profile,
-  });
-  assertOk(outcome, resource);
+  const profile = await systemRepo.readReference(res.locals.profile as Reference<ProfileResource>);
 
-  const profile = resource as ProfileResource;
-
-  if (res.locals.scope.includes('profile')) {
+  if (res.locals.login.scope.includes('profile')) {
     buildProfile(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('email')) {
+  if (res.locals.login.scope.includes('email')) {
     buildEmail(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('phone')) {
+  if (res.locals.login.scope.includes('phone')) {
     buildPhone(userInfo, profile);
   }
 
-  if (res.locals.scope.includes('address')) {
+  if (res.locals.login.scope.includes('address')) {
     buildAddress(userInfo, profile);
   }
 

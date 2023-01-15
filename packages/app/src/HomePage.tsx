@@ -1,17 +1,33 @@
+import { createStyles, Paper } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
+  normalizeErrorString,
   parseSearchDefinition,
   SearchRequest,
   SortRule,
 } from '@medplum/core';
 import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Loading } from './components/Loading';
+
+const useStyles = createStyles((theme) => {
+  return {
+    paper: {
+      [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+        margin: 2,
+        padding: 4,
+      },
+    },
+  };
+});
 
 export function HomePage(): JSX.Element {
+  const { classes } = useStyles();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,49 +58,55 @@ export function HomePage(): JSX.Element {
   }
 
   return (
-    <MemoizedSearchControl
-      checkboxesEnabled={true}
-      search={search}
-      userConfig={medplum.getUserConfiguration()}
-      onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
-      onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
-      onChange={(e) => {
-        navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
-      }}
-      onNew={
-        search.resourceType === 'Bot'
-          ? undefined
-          : () => {
-              navigate(`/${search.resourceType}/new`);
-            }
-      }
-      onExport={() => {
-        const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
-        medplum.download(url).then((blob) => {
-          window.open(window.URL.createObjectURL(blob), '_blank');
-        });
-      }}
-      onDelete={(ids: string[]) => {
-        if (window.confirm('Are you sure you want to delete these resources?')) {
-          medplum.invalidateSearches(search.resourceType as ResourceType);
-          medplum
-            .executeBatch({
-              resourceType: 'Bundle',
-              type: 'batch',
-              entry: ids.map((id) => ({
-                request: {
-                  method: 'DELETE',
-                  url: `${search.resourceType}/${id}`,
-                },
-              })),
-            })
-            .then(() => setSearch({ ...search }));
+    <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
+      <MemoizedSearchControl
+        checkboxesEnabled={true}
+        search={search}
+        userConfig={medplum.getUserConfiguration()}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
+        onChange={(e) => {
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+        }}
+        onNew={
+          canCreate(search.resourceType)
+            ? () => {
+                navigate(`/${search.resourceType}/new`);
+              }
+            : undefined
         }
-      }}
-      onBulk={(ids: string[]) => {
-        navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
-      }}
-    />
+        onExport={() => {
+          const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
+          medplum
+            .download(url)
+            .then((blob) => {
+              window.open(window.URL.createObjectURL(blob), '_blank');
+            })
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        }}
+        onDelete={(ids: string[]) => {
+          if (window.confirm('Are you sure you want to delete these resources?')) {
+            medplum.invalidateSearches(search.resourceType as ResourceType);
+            medplum
+              .executeBatch({
+                resourceType: 'Bundle',
+                type: 'batch',
+                entry: ids.map((id) => ({
+                  request: {
+                    method: 'DELETE',
+                    url: `${search.resourceType}/${id}`,
+                  },
+                })),
+              })
+              .then(() => setSearch({ ...search }))
+              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+          }
+        }}
+        onBulk={(ids: string[]) => {
+          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+        }}
+      />
+    </Paper>
   );
 }
 
@@ -191,4 +213,8 @@ function getLastSearch(resourceType: string): SearchRequest | undefined {
 function saveLastSearch(search: SearchRequest): void {
   localStorage.setItem('defaultResourceType', search.resourceType);
   localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
+}
+
+function canCreate(resourceType: string): boolean {
+  return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
 }

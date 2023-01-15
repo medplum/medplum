@@ -1,13 +1,14 @@
-import { assertOk, badRequest, createReference, Operator } from '@medplum/core';
-import { Project, User } from '@medplum/fhirtypes';
+import { badRequest, Operator } from '@medplum/core';
+import { ClientApplication, Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { URL } from 'url';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { sendLoginResult } from './utils';
 
 /*
@@ -44,18 +45,47 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const googleClientId = req.body.googleClientId;
-  let project: Project | undefined;
+  // Resource type can optionally be specified.
+  // If specified, only memberships of that type will be returned.
+  // If not specified, all memberships will be considered.
+  const resourceType = req.body.resourceType as ResourceType | undefined;
 
+  // Project ID can come from one of three sources
+  // 1) Passed in explicitly as projectId
+  // 2) Implicit with clientId
+  // 3) Implicit with googleClientId
+  // The only rule is that they have to match
+  let projectId = req.body.projectId as string | undefined;
+
+  const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByGoogleClientId(googleClientId);
+    const project = await getProjectByGoogleClientId(googleClientId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
     }
+
+    if (projectId !== undefined && project.id !== projectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+
+    projectId = project.id;
+  }
+
+  // For OAuth2 flow, check the clientId
+  const clientId = req.body.clientId;
+  if (clientId) {
+    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    const clientProjectId = client.meta?.project as string;
+    if (projectId !== undefined && projectId !== clientProjectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+    projectId = clientProjectId;
   }
 
   const googleJwt = req.body.googleCredential as string;
@@ -76,34 +106,42 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
 
   const claims = result.payload as GoogleCredentialClaims;
 
-  const existingUser = await getUserByEmail(claims.email, project?.id);
+  const existingUser = await getUserByEmail(claims.email, projectId);
   if (!existingUser) {
-    const [createUserOutcome, user] = await systemRepo.createResource<User>({
+    if (!req.body.createUser) {
+      sendOutcome(res, badRequest('User not found'));
+      return;
+    }
+    await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: claims.given_name,
+      lastName: claims.family_name,
       email: claims.email,
-      project: project ? createReference(project) : undefined,
+      project: projectId ? { reference: 'Project/' + projectId } : undefined,
     });
-    assertOk(createUserOutcome, user);
   }
 
-  const [loginOutcome, login] = await tryLogin({
+  const login = await tryLogin({
     authMethod: 'google',
     email: claims.email,
     googleCredentials: claims,
     remember: true,
-    projectId: project?.id,
-    clientId: req.body.clientId || undefined,
+    projectId,
+    clientId,
+    resourceType,
     scope: req.body.scope || 'openid',
     nonce: req.body.nonce || randomUUID(),
+    launchId: req.body.launch,
+    codeChallenge: req.body.codeChallenge,
+    codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
   });
-  assertOk(loginOutcome, login);
   await sendLoginResult(res, login);
 }
 
 async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {
-  const [outcome, bundle] = await systemRepo.search<Project>({
+  const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
     filters: [
@@ -114,6 +152,5 @@ async function getProjectByGoogleClientId(googleClientId: string): Promise<Proje
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

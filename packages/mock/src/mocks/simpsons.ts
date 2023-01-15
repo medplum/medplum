@@ -1,15 +1,197 @@
 import { createReference } from '@medplum/core';
 import {
+  Address,
   Communication,
   DiagnosticReport,
   Encounter,
+  Group,
   Media,
   Observation,
   Patient,
+  RelatedPerson,
   ServiceRequest,
   Specimen,
 } from '@medplum/fhirtypes';
 import { DrAliceSmith } from './alice';
+
+const SIMPSONS_ADDRESS: Address = {
+  use: 'home',
+  line: ['742 Evergreen Terrace'],
+  city: 'Springfield',
+  state: 'IL',
+  postalCode: '12345',
+};
+
+export const LisaSimpson: Patient = {
+  resourceType: 'Patient',
+  id: 'lisa-simpson',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
+  birthDate: '1981-05-09',
+  name: [
+    {
+      given: ['Lisa'],
+      family: 'Simpson',
+    },
+  ],
+  photo: [
+    {
+      contentType: 'image/jpeg',
+      url: 'https://example.com/picture.jpg',
+    },
+  ],
+  contact: [
+    {
+      name: { given: ['Homer'], family: 'Simpson' },
+      address: {
+        use: 'home',
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '12345',
+      },
+      telecom: [
+        {
+          system: 'phone',
+          use: 'home',
+          value: '555-1239',
+        },
+        {
+          system: 'email',
+          use: 'home',
+          value: 'homer@thesimpsons.com',
+        },
+      ],
+    },
+    {
+      name: { given: ['Marge'], family: 'Simpson' },
+      address: {
+        use: 'home',
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '12345',
+      },
+      telecom: [
+        {
+          system: 'phone',
+          use: 'mobile',
+          value: '139-1928',
+        },
+        {
+          system: 'email',
+          use: 'home',
+          value: 'marge@thesimpsons.com',
+        },
+      ],
+    },
+  ],
+
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-1239',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'lisa@thesimpsons.com',
+    },
+  ],
+};
+
+export const BartSimpson: Patient = {
+  resourceType: 'Patient',
+  id: '555',
+  meta: {
+    versionId: '1',
+    lastUpdated: '2020-01-01T12:00:00Z',
+    author: {
+      reference: 'Practitioner/123',
+    },
+  },
+  birthDate: '1979-12-17',
+  name: [
+    {
+      given: ['Bart'],
+      family: 'Simpson',
+    },
+  ],
+  photo: [
+    {
+      contentType: 'image/jpeg',
+      url: 'https://example.com/picture.jpg',
+    },
+  ],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-1239',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'bart@thesimpsons.com',
+    },
+  ],
+};
+
+export const HomerLisaRelatedPerson: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'homer-lisa-related-person',
+  patient: createReference(LisaSimpson),
+  address: [SIMPSONS_ADDRESS],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-7334',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'chunkylover53@aol.com',
+    },
+  ],
+  relationship: [
+    {
+      text: 'father',
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'FTH', display: 'father' }],
+    },
+  ],
+};
+
+export const HomerBartRelatedPerson: RelatedPerson = {
+  resourceType: 'RelatedPerson',
+  id: 'homer-bart-related-person',
+  patient: createReference(BartSimpson),
+  address: [SIMPSONS_ADDRESS],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-7334',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'chunkylover53@aol.com',
+    },
+  ],
+  relationship: [
+    {
+      text: 'father',
+      coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'FTH', display: 'father' }],
+    },
+  ],
+};
 
 export const HomerSimpson: Patient = {
   resourceType: 'Patient',
@@ -37,7 +219,7 @@ export const HomerSimpson: Patient = {
   photo: [
     {
       contentType: 'image/png',
-      url: 'https://docs.medplum.com/img/homer-simpson.png',
+      url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
   telecom: [
@@ -61,6 +243,38 @@ export const HomerSimpson: Patient = {
       postalCode: '12345',
     },
   ],
+  link: [
+    { other: createReference(HomerLisaRelatedPerson), type: 'seealso' },
+    { other: createReference(HomerBartRelatedPerson), type: 'seealso' },
+  ],
+};
+
+export const MargeSimpson: Patient = {
+  resourceType: 'Patient',
+  id: 'marge-simpson',
+  gender: 'female',
+
+  active: true,
+  birthDate: '1961-08-23',
+  name: [
+    {
+      given: ['Marge'],
+      family: 'Simpson',
+    },
+  ],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'home',
+      value: '555-7334',
+    },
+    {
+      system: 'email',
+      use: 'home',
+      value: 'margesimpson@aol.com',
+    },
+  ],
+  address: [SIMPSONS_ADDRESS],
 };
 
 export const HomerSimpsonPreviousVersion: Patient = {
@@ -82,7 +296,7 @@ export const HomerSimpsonPreviousVersion: Patient = {
   photo: [
     {
       contentType: 'image/png',
-      url: 'https://docs.medplum.com/img/homer-simpson.png',
+      url: 'https://www.medplum.com/img/homer-simpson.png',
     },
   ],
 };
@@ -108,6 +322,7 @@ export const HomerCommunication: Communication = {
       reference: 'Practitioner/123',
     },
   },
+  encounter: createReference(HomerEncounter),
   payload: [
     {
       contentString: 'Hello world',
@@ -124,6 +339,7 @@ export const HomerMedia: Media = {
       reference: 'Practitioner/123',
     },
   },
+  encounter: createReference(HomerEncounter),
   content: {
     contentType: 'text/plain',
     url: 'https://example.com/test.txt',
@@ -133,6 +349,7 @@ export const HomerMedia: Media = {
 export const HomerObservation1: Observation = {
   resourceType: 'Observation',
   id: '1',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -146,6 +363,7 @@ export const HomerObservation1: Observation = {
 export const HomerObservation2: Observation = {
   resourceType: 'Observation',
   id: '2',
+  status: 'corrected',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -169,6 +387,7 @@ export const HomerObservation2: Observation = {
 export const HomerObservation3: Observation = {
   resourceType: 'Observation',
   id: '3',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -192,6 +411,7 @@ export const HomerObservation3: Observation = {
 export const HomerObservation4: Observation = {
   resourceType: 'Observation',
   id: '4',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -226,6 +446,7 @@ export const HomerObservation4: Observation = {
 export const HomerObservation5: Observation = {
   resourceType: 'Observation',
   id: '5',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -244,6 +465,7 @@ export const HomerObservation5: Observation = {
 export const HomerObservation6: Observation = {
   resourceType: 'Observation',
   id: '6',
+  status: 'final',
   subject: {
     reference: 'Patient/123',
     display: 'Homer Simpson',
@@ -265,6 +487,73 @@ export const HomerObservation6: Observation = {
         unit: 'mmHg',
         system: 'http://unitsofmeasure.org',
       },
+    },
+  ],
+};
+
+export const HomerObservation7: Observation = {
+  resourceType: 'Observation',
+  id: '7',
+  status: 'final',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
+  code: {
+    text: 'Test 7',
+  },
+  component: [
+    {
+      valueQuantity: {
+        value: 1000,
+        unit: 'mg/dL',
+        system: 'http://unitsofmeasure.org',
+      },
+    },
+  ],
+  interpretation: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+          code: 'HH',
+          display: 'Critical high',
+        },
+      ],
+    },
+  ],
+};
+
+export const HomerObservation8: Observation = {
+  resourceType: 'Observation',
+  id: '8',
+  status: 'final',
+  subject: {
+    reference: 'Patient/123',
+    display: 'Homer Simpson',
+  },
+  code: {
+    text: 'Test 8',
+  },
+  component: [
+    {
+      valueString: 'REACTIVE',
+    },
+  ],
+  referenceRange: [
+    {
+      text: 'NEGATIVE',
+    },
+  ],
+  interpretation: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+          code: 'RR',
+          display: 'Reactive',
+        },
+      ],
     },
   ],
 };
@@ -341,42 +630,20 @@ export const HomerDiagnosticReport: DiagnosticReport = {
     createReference(HomerObservation4),
     createReference(HomerObservation5),
     createReference(HomerObservation6),
+    createReference(HomerObservation7),
+    createReference(HomerObservation8),
   ],
 };
 
-export const BartSimpson: Patient = {
-  resourceType: 'Patient',
-  id: '555',
-  meta: {
-    versionId: '1',
-    lastUpdated: '2020-01-01T12:00:00Z',
-    author: {
-      reference: 'Practitioner/123',
-    },
-  },
-  birthDate: '1979-12-17',
-  name: [
-    {
-      given: ['Bart'],
-      family: 'Simpson',
-    },
-  ],
-  photo: [
-    {
-      contentType: 'image/jpeg',
-      url: 'https://example.com/picture.jpg',
-    },
-  ],
-  telecom: [
-    {
-      system: 'phone',
-      use: 'home',
-      value: '555-1239',
-    },
-    {
-      system: 'email',
-      use: 'home',
-      value: 'bart@thesimpsons.com',
-    },
+export const SimpsonsFamily: Group = {
+  resourceType: 'Group',
+  id: 'simpsons-family',
+  type: 'person',
+  actual: true,
+  member: [
+    { entity: createReference(HomerSimpson) },
+    { entity: createReference(MargeSimpson) },
+    { entity: createReference(BartSimpson) },
+    { entity: createReference(LisaSimpson) },
   ],
 };

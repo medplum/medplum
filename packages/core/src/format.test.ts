@@ -1,11 +1,17 @@
 import {
   formatAddress,
+  formatCodeableConcept,
+  formatCoding,
   formatDate,
   formatDateTime,
   formatFamilyName,
   formatGivenName,
   formatHumanName,
+  formatMoney,
+  formatObservationValue,
   formatPeriod,
+  formatQuantity,
+  formatRange,
   formatTime,
   formatTiming,
 } from './format';
@@ -55,6 +61,20 @@ test('Format Address', () => {
         postalCode: '97403',
       },
       {
+        lineSeparator: '\n',
+      }
+    )
+  ).toEqual('742 Evergreen Terrace\nSpringfield, OR, 97403');
+
+  expect(
+    formatAddress(
+      {
+        line: ['742 Evergreen Terrace'],
+        city: 'Springfield',
+        state: 'OR',
+        postalCode: '97403',
+      },
+      {
         use: true,
       }
     )
@@ -67,13 +87,13 @@ test('Format Address', () => {
         city: 'Springfield',
         state: 'OR',
         postalCode: '97403',
-        use: 'official',
+        use: 'home',
       },
       {
         use: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 
   expect(
     formatAddress(
@@ -82,13 +102,13 @@ test('Format Address', () => {
         city: 'Springfield',
         state: 'OR',
         postalCode: '97403',
-        use: 'official',
+        use: 'home',
       },
       {
         all: true,
       }
     )
-  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [official]');
+  ).toEqual('742 Evergreen Terrace, Springfield, OR, 97403, [home]');
 });
 
 test('Format HumanName', () => {
@@ -108,7 +128,7 @@ test('Format HumanName', () => {
       given: ['Alice'],
       family: 'Smith',
     })
-  ).toEqual('Alice Smith');
+  ).toEqual('Ms. Alice Smith');
 
   expect(
     formatHumanName(
@@ -131,10 +151,10 @@ test('Format HumanName', () => {
         family: 'Smith',
       },
       {
-        prefix: true,
+        prefix: false,
       }
     )
-  ).toEqual('Ms. Alice Smith');
+  ).toEqual('Alice Smith');
 
   expect(
     formatHumanName(
@@ -146,10 +166,10 @@ test('Format HumanName', () => {
         use: 'official',
       },
       {
-        suffix: true,
+        suffix: false,
       }
     )
-  ).toEqual('Alice Gelato Smith III');
+  ).toEqual('Ms. Alice Gelato Smith');
 
   expect(
     formatHumanName(
@@ -164,7 +184,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Alice Gelato Smith [official]');
+  ).toEqual('Ms. Alice Gelato Smith III [official]');
 
   expect(
     formatHumanName(
@@ -178,7 +198,7 @@ test('Format HumanName', () => {
         use: true,
       }
     )
-  ).toEqual('Alice Gelato Smith');
+  ).toEqual('Ms. Alice Gelato Smith III');
 
   expect(
     formatHumanName(
@@ -220,7 +240,7 @@ test('Format date', () => {
   expect(formatDate(undefined)).toEqual('');
   expect(formatDate('')).toEqual('');
   expect(formatDate('xyz')).toEqual('');
-  expect(formatDate('2021-06-01')).toMatch(/2021/);
+  expect(formatDate('2021-06-01')).toEqual('6/1/2021');
 });
 
 test('Format time', () => {
@@ -286,4 +306,108 @@ test('Format timing', () => {
       },
     })
   ).toEqual('2 times per 3 hours');
+});
+
+test('Format Range', () => {
+  expect(formatRange({})).toBe('');
+  expect(formatRange({ low: {}, high: {} })).toBe('');
+
+  expect(formatRange({ low: { value: 0 }, high: { value: 0 } })).toBe('0 - 0');
+
+  expect(formatRange({ low: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ low: { value: 20 } })).toBe('>= 20');
+  expect(formatRange({ low: { value: 20, unit: 'mg/dL' } })).toBe('>= 20 mg/dL');
+  expect(formatRange({ low: { value: 20, unit: '%' } })).toBe('>= 20%');
+  expect(formatRange({ low: { value: 20, unit: '%' } }, 1)).toBe('>= 20.0%');
+  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 0, true)).toBe('> 19%');
+  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 1, true)).toBe('> 19.9%');
+  expect(formatRange({ low: { value: 20.0, unit: '%' } }, 2, true)).toBe('> 19.99%');
+
+  expect(formatRange({ high: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ high: { value: 20 } })).toBe('<= 20');
+  expect(formatRange({ high: { value: 20, unit: 'mg/dL' } })).toBe('<= 20 mg/dL');
+  expect(formatRange({ high: { value: 20, unit: '%' } })).toBe('<= 20%');
+  expect(formatRange({ high: { value: 20, unit: '%' } }, 1)).toBe('<= 20.0%');
+  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 0, true)).toBe('< 21%');
+  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 1, true)).toBe('< 20.1%');
+  expect(formatRange({ high: { value: 20.0, unit: '%' } }, 2, true)).toBe('< 20.01%');
+
+  expect(formatRange({ low: { unit: 'mg/dL' }, high: { unit: 'mg/dL' } })).toBe('');
+  expect(formatRange({ low: { value: 20 }, high: { value: 30 } })).toBe('20 - 30');
+  expect(formatRange({ low: { value: 20, unit: 'mg/dL' }, high: { value: 30, unit: 'mg/dL' } })).toBe('20 - 30 mg/dL');
+  expect(formatRange({ low: { value: 20, unit: '%' }, high: { value: 30, unit: '%' } })).toBe('20 - 30%');
+  expect(formatRange({ low: { value: 0, unit: '%' }, high: { value: 100, unit: '%' } })).toBe('0 - 100%');
+});
+
+test('Format Quantity', () => {
+  expect(formatQuantity(undefined)).toBe('');
+  expect(formatQuantity({})).toBe('');
+  expect(formatQuantity({ value: 10.1, unit: 'pg/mL' })).toBe('10.1 pg/mL');
+  expect(formatQuantity({ comparator: '>', value: 10.1, unit: 'pg/mL' })).toBe('> 10.1 pg/mL');
+  expect(formatQuantity({ value: 10.1, unit: '%' })).toBe('10.1%');
+  expect(formatQuantity({ comparator: '>', value: 10.1, unit: '%' })).toBe('> 10.1%');
+  expect(formatQuantity({ comparator: '>', value: 10.1 })).toBe('> 10.1');
+
+  // Test Precision
+  expect(formatQuantity({ value: 10, unit: '%' }, 1)).toBe('10.0%');
+  expect(formatQuantity({ value: 10, unit: '%' }, 3)).toBe('10.000%');
+
+  // Edge cases with missing value
+  expect(formatQuantity({ unit: 'pg/mL' })).toBe('pg/mL');
+  expect(formatQuantity({ comparator: '<' })).toBe('<');
+  expect(formatQuantity({ comparator: '<', unit: 'pg/mL' })).toBe('< pg/mL');
+});
+
+test('Format Money', () => {
+  expect(formatMoney(undefined)).toBe('');
+  expect(formatMoney({})).toBe('');
+  expect(formatMoney({ value: 10.1 })).toBe('$10.10');
+  expect(formatMoney({ value: 10.1, currency: 'USD' })).toBe('$10.10');
+  expect(formatMoney({ value: 10.1, currency: 'EUR' })).toBe('€10.10');
+  expect(formatMoney({ value: 1234567.89, currency: 'USD' })).toBe('$1,234,567.89');
+});
+
+test('Format CodeableConcept', () => {
+  expect(formatCodeableConcept(undefined)).toBe('');
+  expect(formatCodeableConcept({})).toBe('');
+  expect(formatCodeableConcept({ text: 'foo' })).toBe('foo');
+  expect(formatCodeableConcept({ coding: [{ display: 'foo' }] })).toBe('foo');
+});
+
+test('Format Coding', () => {
+  expect(formatCoding(undefined)).toBe('');
+  expect(formatCoding({})).toBe('');
+  expect(formatCoding({ display: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: 'foo' })).toBe('foo');
+});
+
+test('Format Observation value', () => {
+  expect(formatObservationValue(undefined)).toBe('');
+  expect(formatObservationValue({})).toBe('');
+  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' })).toBe('foo');
+  expect(formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } })).toBe('foo');
+  expect(formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } })).toBe(
+    '123 mg'
+  );
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      component: [
+        {
+          valueQuantity: {
+            value: 110,
+            unit: 'mmHg',
+            system: 'http://unitsofmeasure.org',
+          },
+        },
+        {
+          valueQuantity: {
+            value: 75,
+            unit: 'mmHg',
+            system: 'http://unitsofmeasure.org',
+          },
+        },
+      ],
+    })
+  ).toBe('110 mmHg / 75 mmHg');
 });

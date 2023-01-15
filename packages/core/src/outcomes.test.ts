@@ -1,9 +1,9 @@
 import {
-  accessDenied,
   allOk,
   assertOk,
   badRequest,
   created,
+  forbidden,
   getStatus,
   gone,
   isGone,
@@ -13,6 +13,7 @@ import {
   notFound,
   notModified,
   tooManyRequests,
+  unauthorized,
 } from './outcomes';
 
 describe('Outcomes', () => {
@@ -43,7 +44,8 @@ describe('Outcomes', () => {
     expect(getStatus(allOk)).toBe(200);
     expect(getStatus(created)).toBe(201);
     expect(getStatus(notModified)).toBe(304);
-    expect(getStatus(accessDenied)).toBe(403);
+    expect(getStatus(unauthorized)).toBe(401);
+    expect(getStatus(forbidden)).toBe(403);
     expect(getStatus(notFound)).toBe(404);
     expect(getStatus(gone)).toBe(410);
     expect(getStatus(tooManyRequests)).toBe(429);

@@ -1,19 +1,13 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { assertOk, createReference, Hl7Message, resolveId } from '@medplum/core';
-import { AuditEvent, Bot, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { badRequest, createReference, Hl7Message, resolveId } from '@medplum/core';
+import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import fetch from 'node-fetch';
-import Mail from 'nodemailer/lib/mailer';
 import { TextDecoder, TextEncoder } from 'util';
-import vm from 'vm';
 import { asyncWrap } from '../../async';
-import { sendEmail } from '../../email/email';
-import { generateAccessToken } from '../../oauth';
+import { getConfig } from '../../config';
+import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
-import { MockConsole } from '../../util/console';
-import { createPdf } from '../../util/pdf';
-import { getRepoForMembership, Repository, systemRepo } from '../repo';
-import { rewriteAttachments, RewriteMode } from '../rewrite';
+import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
   'application/json',
@@ -45,8 +39,12 @@ export interface BotExecutionResult {
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
-  assertOk(outcome, bot);
+
+  // First read the bot as the user to verify access
+  await repo.readResource<Bot>('Bot', id);
+
+  // Then read the bot as system user to load extended metadata
+  const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   // Execute the bot
   const result = await executeBot({
@@ -57,13 +55,17 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   });
 
   // Create the audit event
-  createAuditEvent(bot, result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure, result.logResult);
+  await createAuditEvent(
+    bot,
+    result.success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+    result.logResult
+  );
 
   // Send the response
   res
     .status(result.success ? 200 : 400)
     .type(getResponseContentType(req))
-    .send(result.returnValue);
+    .send(result.returnValue || badRequest(result.logResult));
 });
 
 /**
@@ -75,18 +77,19 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
  */
 export async function executeBot(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot } = request;
-  if (!bot.code) {
-    return { success: false, logResult: 'Ignore bots with no code' };
-  }
 
   if (!(await isBotEnabled(bot))) {
     return { success: false, logResult: 'Bots not enabled' };
   }
 
+  if (!bot.code) {
+    return { success: false, logResult: 'Ignore bots with no code' };
+  }
+
   if (bot.runtimeVersion === 'awslambda') {
     return runInLambda(request);
   } else {
-    return runInVmContext(request);
+    return { success: false, logResult: 'Unsupported bot runtime' };
   }
 }
 
@@ -95,9 +98,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
  * @param bot The bot resource.
  * @returns True if the bot is enabled.
  */
-async function isBotEnabled(bot: Bot): Promise<boolean> {
-  const [projectOutcome, project] = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  assertOk(projectOutcome, project);
+export async function isBotEnabled(bot: Bot): Promise<boolean> {
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   return !!project.features?.includes('bots');
 }
 
@@ -110,13 +112,14 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const { bot, runAs, input, contentType } = request;
 
   // Create the Login resource
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
+    authMethod: 'execute',
+    user: runAs.user,
     membership: createReference(runAs),
     authTime: new Date().toISOString(),
     scope: 'openid',
   });
-  assertOk(loginOutcome, login);
 
   // Create the access token
   const accessToken = await generateAccessToken({
@@ -127,12 +130,18 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
     scope: 'openid',
   });
 
+  // Get the project secrets
+  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
+
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
   const payload = {
+    baseUrl: getConfig().baseUrl,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,
+    secrets,
   };
 
   // Build the command
@@ -207,54 +216,6 @@ function parseLambdaLog(logResult: string): string {
   return result.join('\n');
 }
 
-/**
- * Executes a Bot in a VM sandbox.
- * @param request The bot request.
- * @returns The bot execution result.
- */
-async function runInVmContext(request: BotExecutionRequest): Promise<BotExecutionResult> {
-  const { bot, runAs, input } = request;
-  const botRepo = await getRepoForMembership(runAs);
-  const botConsole = new MockConsole();
-
-  const sandbox = {
-    input,
-    resource: input,
-    repo: botRepo,
-    console: botConsole,
-    fetch,
-    assertOk,
-    createReference,
-    createPdf,
-    sendEmail: async (args: Mail.Options) => {
-      await sendEmail(await rewriteAttachments(RewriteMode.PRESIGNED_URL, botRepo, args));
-    },
-  };
-
-  const options: vm.RunningScriptOptions = {
-    timeout: 100,
-  };
-
-  // Wrap code in an async block for top-level await support
-  const wrappedCode = '(async () => {' + bot.code + '})();';
-
-  // Return the result of the code execution
-  try {
-    const returnValue = (await vm.runInNewContext(wrappedCode, sandbox, options)) as any;
-    return {
-      success: true,
-      logResult: botConsole.toString(),
-      returnValue,
-    };
-  } catch (err) {
-    botConsole.log('Error', (err as Error).message);
-    return {
-      success: false,
-      logResult: botConsole.toString(),
-    };
-  }
-}
-
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
   if (requestContentType && EXECUTE_CONTENT_TYPES.includes(requestContentType)) {
@@ -271,12 +232,16 @@ function isJsonContentType(contentType: string): boolean {
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param subscription The rest-hook subscription.
- * @param resource The resource that triggered the subscription.
+ * @param bot The bot that produced the audit event.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
 async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDesc: string): Promise<void> {
+  const maxDescLength = 10 * 1024;
+  if (outcomeDesc.length > maxDescLength) {
+    outcomeDesc = outcomeDesc.substring(outcomeDesc.length - maxDescLength);
+  }
+
   await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
@@ -296,12 +261,12 @@ async function createAuditEvent(bot: Bot, outcome: AuditEventOutcome, outcomeDes
       },
     ],
     source: {
-      // Observer cannot be a Bot resource
-      // observer: createReference(bot)
+      observer: createReference(bot) as Reference as Reference<Organization>,
     },
     entity: [
       {
         what: createReference(bot),
+        role: { code: '9', display: 'Subscriber' },
       },
     ],
     outcome,

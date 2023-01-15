@@ -1,41 +1,53 @@
-import { assertOk, createReference, getReferenceString, isOk, Operator } from '@medplum/core';
 import {
+  createReference,
+  getReferenceString,
+  isOk,
+  normalizeErrorString,
+  Operator,
+  SearchRequest,
+} from '@medplum/core';
+import {
+  AllergyIntolerance,
   Appointment,
   AuditEvent,
   Bundle,
+  BundleEntry,
   Communication,
+  Condition,
+  DiagnosticReport,
   Encounter,
   Observation,
+  OperationOutcome,
   Patient,
+  Practitioner,
+  Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  ResourceType,
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
 import { parseSearchRequest } from './search';
 
 jest.mock('hibp');
+jest.mock('ioredis');
 
 describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initKeys(config);
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('getRepoForLogin', async () => {
@@ -45,99 +57,152 @@ describe('FHIR Repo', () => {
   });
 
   test('Read resource with undefined id', async () => {
-    const [outcome] = await systemRepo.readResource('Patient', undefined as unknown as string);
-    expect(isOk(outcome)).toBe(false);
+    try {
+      await systemRepo.readResource('Patient', undefined as unknown as string);
+      fail('Should have thrown');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+    }
   });
 
   test('Read resource with blank id', async () => {
-    const [outcome] = await systemRepo.readResource('Patient', '');
-    expect(isOk(outcome)).toBe(false);
+    try {
+      await systemRepo.readResource('Patient', '');
+      fail('Should have thrown');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+    }
   });
 
   test('Read resource with invalid id', async () => {
-    const [outcome] = await systemRepo.readResource('Patient', 'x');
-    expect(isOk(outcome)).toBe(false);
+    try {
+      await systemRepo.readResource('Patient', 'x');
+      fail('Should have thrown');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(isOk(outcome)).toBe(false);
+    }
   });
 
   test('Search total', async () => {
-    const [outcome1, result1] = await systemRepo.search({
+    const result1 = await systemRepo.search({
       resourceType: 'Patient',
     });
-    assertOk(outcome1, result1);
     expect(result1.total).toBeUndefined();
     expect(result1.link?.length).toBe(3);
 
-    const [outcome2, result2] = await systemRepo.search({
+    const result2 = await systemRepo.search({
       resourceType: 'Patient',
       total: 'none',
     });
-    assertOk(outcome2, result2);
     expect(result2.total).toBeUndefined();
 
-    const [outcome3, result3] = await systemRepo.search({
+    const result3 = await systemRepo.search({
       resourceType: 'Patient',
       total: 'accurate',
     });
-    assertOk(outcome3, result3);
     expect(result3.total).toBeDefined();
     expect(typeof result3.total).toBe('number');
 
-    const [outcome4, result4] = await systemRepo.search({
+    const result4 = await systemRepo.search({
       resourceType: 'Patient',
       total: 'estimate',
     });
-    assertOk(outcome4, result4);
     expect(result4.total).toBeDefined();
     expect(typeof result4.total).toBe('number');
   });
 
   test('Search count=0', async () => {
-    const [outcome1, result1] = await systemRepo.search({
+    const result1 = await systemRepo.search({
       resourceType: 'Patient',
       count: 0,
     });
-    assertOk(outcome1, result1);
     expect(result1.entry).toBeUndefined();
     expect(result1.link).toBeDefined();
     expect(result1.link?.length).toBe(1);
   });
 
+  test('Search next link', async () => {
+    const family = randomUUID();
+
+    for (let i = 0; i < 2; i++) {
+      await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+    }
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 1,
+    });
+    expect(result1.entry).toHaveLength(1);
+    expect(result1.link).toBeDefined();
+    expect(result1.link?.find((e) => e.relation === 'next')).toBeDefined();
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 2,
+    });
+    expect(result2.entry).toHaveLength(2);
+    expect(result2.link).toBeDefined();
+    expect(result2.link?.find((e) => e.relation === 'next')).toBeUndefined();
+
+    const result3 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 3,
+    });
+    expect(result3.entry).toHaveLength(2);
+    expect(result3.link).toBeDefined();
+    expect(result3.link?.find((e) => e.relation === 'next')).toBeUndefined();
+  });
+
   test('Repo read malformed reference', async () => {
-    const [outcome1, resource1] = await systemRepo.readReference({
-      reference: undefined,
-    });
-    expect(outcome1.id).not.toBe('ok');
-    expect(resource1).toBeUndefined();
+    try {
+      await systemRepo.readReference({ reference: undefined });
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).not.toBe('ok');
+    }
 
-    const [outcome2, resource2] = await systemRepo.readReference({ reference: '' });
-    expect(outcome2.id).not.toBe('ok');
-    expect(resource2).toBeUndefined();
+    try {
+      await systemRepo.readReference({ reference: '' });
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).not.toBe('ok');
+    }
 
-    const [outcome3, resource3] = await systemRepo.readReference({
-      reference: '////',
-    });
-    expect(outcome3.id).not.toBe('ok');
-    expect(resource3).toBeUndefined();
+    try {
+      await systemRepo.readReference({ reference: '////' });
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).not.toBe('ok');
+    }
 
-    const [outcome4, resource4] = await systemRepo.readReference({
-      reference: 'Patient/123/foo',
-    });
-    expect(outcome4.id).not.toBe('ok');
-    expect(resource4).toBeUndefined();
+    try {
+      await systemRepo.readReference({ reference: 'Patient/123/foo' });
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).not.toBe('ok');
+    }
   });
 
   test('Read history', async () => {
-    const [outcome1, version1] = await systemRepo.createResource<Patient>({
+    const version1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       meta: {
         lastUpdated: new Date(Date.now() - 1000 * 60).toISOString(),
       },
     });
-    expect(isOk(outcome1)).toBe(true);
     expect(version1).toBeDefined();
     expect(version1?.id).toBeDefined();
 
-    const [outcome2, version2] = await systemRepo.updateResource<Patient>({
+    const version2 = await systemRepo.updateResource<Patient>({
       resourceType: 'Patient',
       id: version1?.id,
       active: true,
@@ -145,13 +210,11 @@ describe('FHIR Repo', () => {
         lastUpdated: new Date().toISOString(),
       },
     });
-    expect(isOk(outcome2)).toBe(true);
     expect(version2).toBeDefined();
     expect(version2?.id).toEqual(version1?.id);
     expect(version2?.meta?.versionId).not.toEqual(version1?.meta?.versionId);
 
-    const [outcome3, history] = await systemRepo.readHistory('Patient', version1?.id as string);
-    expect(isOk(outcome3)).toBe(true);
+    const history = await systemRepo.readHistory('Patient', version1?.id as string);
     expect(history).toBeDefined();
     expect(history?.entry?.length).toBe(2);
     expect(history?.entry?.[0]?.resource?.id).toBe(version2?.id);
@@ -159,49 +222,41 @@ describe('FHIR Repo', () => {
   });
 
   test('Update patient', async () => {
-    const [createOutcome, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Update1'], family: 'Update1' }],
     });
 
-    expect(createOutcome.id).toEqual('created');
-
-    const [updateOutcome, patient2] = await systemRepo.updateResource<Patient>({
+    const patient2 = await systemRepo.updateResource<Patient>({
       ...(patient1 as Patient),
       active: true,
     });
 
-    expect(updateOutcome.id).toEqual('ok');
     expect(patient2?.id).toEqual(patient1?.id);
     expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
   });
 
   test('Update patient no changes', async () => {
-    const [createOutcome, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Update1'], family: 'Update1' }],
     });
 
-    expect(createOutcome.id).toEqual('created');
-
-    const [updateOutcome, patient2] = await systemRepo.updateResource<Patient>({
+    const patient2 = await systemRepo.updateResource<Patient>({
       ...(patient1 as Patient),
     });
 
-    expect(updateOutcome.id).toEqual('not-modified');
     expect(patient2?.id).toEqual(patient1?.id);
     expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
   });
 
   test('Update patient multiple names', async () => {
-    const [createOutcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Suzy'], family: 'Smith' }],
     });
 
-    expect(createOutcome1.id).toEqual('created');
-
-    const [updateOutcome2, patient2] = await systemRepo.updateResource<Patient>({
+    const patient2 = await systemRepo.updateResource<Patient>({
       ...(patient1 as Patient),
       name: [
         { given: ['Suzy'], family: 'Smith' },
@@ -209,7 +264,6 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(updateOutcome2.id).toEqual('ok');
     expect(patient2?.id).toEqual(patient1?.id);
     expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
     expect(patient2?.name?.length).toEqual(2);
@@ -222,6 +276,7 @@ describe('FHIR Repo', () => {
 
     const repo = new Repository({
       project: randomUUID(),
+      extendedMode: true,
       author: {
         reference: author,
       },
@@ -230,29 +285,30 @@ describe('FHIR Repo', () => {
     // Try to "update" a resource, which does not exist.
     // Some FHIR systems allow users to set ID's.
     // We do not.
-    const [createOutcome, patient] = await repo.updateResource<Patient>({
-      resourceType: 'Patient',
-      id: randomUUID(),
-      name: [{ given: ['Alice'], family: 'Smith' }],
-    });
-
-    expect(createOutcome.id).toEqual('not-found');
-    expect(patient).toBeUndefined();
+    try {
+      await repo.updateResource<Patient>({
+        resourceType: 'Patient',
+        id: randomUUID(),
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.id).toEqual('not-found');
+    }
   });
 
   test('Create Patient with no author', async () => {
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual('system');
   });
 
   test('Create Patient as system on behalf of author', async () => {
     const author = 'Practitioner/' + randomUUID();
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
@@ -262,7 +318,6 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(author);
   });
 
@@ -270,17 +325,17 @@ describe('FHIR Repo', () => {
     const clientApp = 'ClientApplication/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: clientApp,
       },
     });
 
-    const [createOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(clientApp);
   });
 
@@ -288,17 +343,17 @@ describe('FHIR Repo', () => {
     const author = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },
     });
 
-    const [createOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(author);
   });
 
@@ -307,6 +362,7 @@ describe('FHIR Repo', () => {
     const fakeAuthor = 'Practitioner/' + randomUUID();
 
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },
@@ -316,7 +372,7 @@ describe('FHIR Repo', () => {
     // Practitioner does *not* have the right to set the author
     // So even though we pass in an author,
     // We expect the Practitioner to be in the result.
-    const [createOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
@@ -326,7 +382,6 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(author);
   });
 
@@ -337,12 +392,13 @@ describe('FHIR Repo', () => {
     // This user does not have an access policy
     // So they can optionally set an account
     const repo = new Repository({
+      extendedMode: true,
       author: {
         reference: author,
       },
     });
 
-    const [createOutcome, patient] = await repo.createResource<Patient>({
+    const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
@@ -352,7 +408,6 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.author?.reference).toEqual(author);
     expect(patient?.meta?.account?.reference).toEqual(account);
   });
@@ -361,7 +416,7 @@ describe('FHIR Repo', () => {
     const lastUpdated = '2020-01-01T12:00:00Z';
 
     // System systemRepo has the ability to write custom timestamps
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
@@ -369,7 +424,6 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(createOutcome.id).toEqual('created');
     expect(patient?.meta?.lastUpdated).toEqual(lastUpdated);
   });
 
@@ -377,39 +431,37 @@ describe('FHIR Repo', () => {
     const lastUpdated = '2020-01-01T12:00:00Z';
 
     // System systemRepo has the ability to write custom timestamps
-    const [createOutcome, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       meta: {
         lastUpdated,
       },
     });
-    expect(createOutcome.id).toEqual('created');
     expect(patient1?.meta?.lastUpdated).toEqual(lastUpdated);
 
     // But system cannot update the timestamp
-    const [updateOutcome, patient2] = await systemRepo.updateResource<Patient>({
+    const patient2 = await systemRepo.updateResource<Patient>({
       ...(patient1 as Patient),
       active: true,
       meta: {
         lastUpdated,
       },
     });
-    expect(updateOutcome.id).toEqual('ok');
     expect(patient2?.meta?.lastUpdated).not.toEqual(lastUpdated);
   });
 
   test('Search for Communications by Encounter', async () => {
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(outcome1.id).toEqual('created');
     expect(patient1).toBeDefined();
 
-    const [outcome2, encounter1] = await systemRepo.createResource<Encounter>({
+    const encounter1 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
+      status: 'in-progress',
       class: {
         code: 'HH',
         display: 'home health',
@@ -417,30 +469,29 @@ describe('FHIR Repo', () => {
       subject: createReference(patient1 as Patient),
     });
 
-    expect(outcome2.id).toEqual('created');
     expect(encounter1).toBeDefined();
 
-    const [outcome3, comm1] = await systemRepo.createResource<Communication>({
+    const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       encounter: createReference(encounter1 as Encounter),
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
       payload: [{ contentString: 'This is a test' }],
     });
 
-    expect(outcome3.id).toEqual('created');
     expect(comm1).toBeDefined();
 
-    const [outcome4, patient2] = await systemRepo.createResource<Patient>({
+    const patient2 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
-    expect(outcome4.id).toEqual('created');
     expect(patient2).toBeDefined();
 
-    const [outcome5, encounter2] = await systemRepo.createResource<Encounter>({
+    const encounter2 = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
+      status: 'in-progress',
       class: {
         code: 'HH',
         display: 'home health',
@@ -448,21 +499,20 @@ describe('FHIR Repo', () => {
       subject: createReference(patient2 as Patient),
     });
 
-    expect(outcome5.id).toEqual('created');
     expect(encounter2).toBeDefined();
 
-    const [outcome6, comm2] = await systemRepo.createResource<Communication>({
+    const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       encounter: createReference(encounter2 as Encounter),
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
       payload: [{ contentString: 'This is another test' }],
     });
 
-    expect(outcome6.id).toEqual('created');
     expect(comm2).toBeDefined();
 
-    const [searchOutcome, searchResult] = await systemRepo.search({
+    const searchResult = await systemRepo.search({
       resourceType: 'Communication',
       filters: [
         {
@@ -473,73 +523,72 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome.id).toEqual('ok');
     expect(searchResult?.entry?.length).toEqual(1);
     expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
   });
 
   test('Search for Communications by ServiceRequest', async () => {
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(outcome1.id).toEqual('created');
     expect(patient1).toBeDefined();
 
-    const [outcome2, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'text',
       },
       subject: createReference(patient1 as Patient),
     });
 
-    expect(outcome2.id).toEqual('created');
     expect(serviceRequest1).toBeDefined();
 
-    const [outcome3, comm1] = await systemRepo.createResource<Communication>({
+    const comm1 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(serviceRequest1 as ServiceRequest)],
       subject: createReference(patient1 as Patient),
       sender: createReference(patient1 as Patient),
       payload: [{ contentString: 'This is a test' }],
     });
 
-    expect(outcome3.id).toEqual('created');
     expect(comm1).toBeDefined();
 
-    const [outcome4, patient2] = await systemRepo.createResource<Patient>({
+    const patient2 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Bob'], family: 'Jones' }],
     });
 
-    expect(outcome4.id).toEqual('created');
     expect(patient2).toBeDefined();
 
-    const [outcome5, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: {
         text: 'test',
       },
       subject: createReference(patient2 as Patient),
     });
 
-    expect(outcome5.id).toEqual('created');
     expect(serviceRequest2).toBeDefined();
 
-    const [outcome6, comm2] = await systemRepo.createResource<Communication>({
+    const comm2 = await systemRepo.createResource<Communication>({
       resourceType: 'Communication',
+      status: 'completed',
       basedOn: [createReference(serviceRequest2 as ServiceRequest)],
       subject: createReference(patient2 as Patient),
       sender: createReference(patient2 as Patient),
       payload: [{ contentString: 'This is another test' }],
     });
 
-    expect(outcome6.id).toEqual('created');
     expect(comm2).toBeDefined();
 
-    const [searchOutcome, searchResult] = await systemRepo.search({
+    const searchResult = await systemRepo.search({
       resourceType: 'Communication',
       filters: [
         {
@@ -550,30 +599,29 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome.id).toEqual('ok');
     expect(searchResult?.entry?.length).toEqual(1);
     expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
   });
 
   test('Search for QuestionnaireResponse by Questionnaire', async () => {
-    const [outcome1, questionnaire] = await systemRepo.createResource<Questionnaire>({
+    const questionnaire = await systemRepo.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
+      status: 'active',
     });
-    assertOk(outcome1, questionnaire);
 
-    const [outcome2, response1] = await systemRepo.createResource<QuestionnaireResponse>({
+    const response1 = await systemRepo.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: getReferenceString(questionnaire),
     });
-    assertOk(outcome2, response1);
 
-    const [outcome3, response2] = await systemRepo.createResource<QuestionnaireResponse>({
+    await systemRepo.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: `Questionnaire/${randomUUID()}`,
     });
-    assertOk(outcome3, response2);
 
-    const [outcome4, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'QuestionnaireResponse',
       filters: [
         {
@@ -583,13 +631,12 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4, bundle);
     expect(bundle.entry?.length).toEqual(1);
     expect(bundle.entry?.[0]?.resource?.id).toEqual(response1.id);
   });
 
   test('Search for token in array', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'SearchParameter',
       filters: [
         {
@@ -601,103 +648,93 @@ describe('FHIR Repo', () => {
       count: 100,
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
   });
 
   test('Search sort by Patient.id', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'id' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.meta.lastUpdated', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'lastUpdated' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.identifier', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'identifier' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.name', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'name' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.given', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'given' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.address', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'address' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.telecom', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'telecom' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.email', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'email' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Search sort by Patient.birthDate', async () => {
-    const [outcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       sortRules: [{ code: 'birthdate' }],
     });
 
-    expect(outcome.id).toEqual('ok');
     expect(bundle).toBeDefined();
   });
 
   test('Filter and sort on same search parameter', async () => {
-    const [createOutcome, createBundle] = await processBatch(systemRepo, {
+    const createBundle = await processBatch(systemRepo, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -724,16 +761,14 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(isOk(createOutcome)).toBe(true);
     expect(createBundle).toBeDefined();
 
-    const [searchOutcome, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       filters: [{ code: 'family', operator: Operator.EQUALS, value: 'Simpson' }],
       sortRules: [{ code: 'family' }],
     });
 
-    expect(isOk(searchOutcome)).toBe(true);
     expect(bundle?.entry).toBeDefined();
     expect(bundle?.entry?.length).toBeGreaterThanOrEqual(2);
   });
@@ -751,16 +786,14 @@ describe('FHIR Repo', () => {
     expect(result1.profile).toBeDefined();
 
     const repo1 = await getRepoForLogin({ resourceType: 'Login' }, result1.membership);
-    const [patientOutcome1, patient1] = await repo1.createResource<Patient>({
+    const patient1 = await repo1.createResource<Patient>({
       resourceType: 'Patient',
     });
 
-    assertOk(patientOutcome1, patient1);
     expect(patient1).toBeDefined();
     expect(patient1?.id).toBeDefined();
 
-    const [patientOutcome2, patient2] = await repo1.readResource('Patient', patient1?.id as string);
-    assertOk(patientOutcome2, patient2);
+    const patient2 = await repo1.readResource('Patient', patient1?.id as string);
     expect(patient2).toBeDefined();
     expect(patient2?.id).toEqual(patient1?.id);
 
@@ -776,23 +809,64 @@ describe('FHIR Repo', () => {
     expect(result2.profile).toBeDefined();
 
     const repo2 = await getRepoForLogin({ resourceType: 'Login' }, result2.membership);
-    const [patientOutcome3, patient3] = await repo2.readResource('Patient', patient1?.id as string);
-    expect(patientOutcome3.id).toEqual('not-found');
-    expect(patient3).toBeUndefined();
+    try {
+      await repo2.readResource('Patient', patient1?.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.id).toEqual('not-found');
+    }
+  });
+
+  test('Read history after delete', async () => {
+    // Create the patient
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    const history1 = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(history1?.entry?.length).toBe(1);
+
+    // Delete the patient
+    await systemRepo.deleteResource('Patient', patient?.id as string);
+
+    const history2 = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(history2?.entry?.length).toBe(2);
+
+    // Restore the patient
+    await systemRepo.updateResource({ ...patient, meta: undefined });
+
+    const history3 = await systemRepo.readHistory('Patient', patient?.id as string);
+    expect(history3?.entry?.length).toBe(3);
+
+    const entries = history3?.entry as BundleEntry[];
+    expect(entries[0].response?.status).toEqual('200');
+    expect(entries[0].resource).toBeDefined();
+    expect(entries[1].response?.status).toEqual('410');
+    expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
+    expect(entries[1].resource).toBeUndefined();
+    expect(entries[2].response?.status).toEqual('200');
+    expect(entries[2].resource).toBeDefined();
   });
 
   test('Search birthDate after delete', async () => {
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const family = randomUUID();
+
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
-      name: [{ given: ['Alice'], family: 'Smith' }],
+      name: [{ given: ['Alice'], family }],
       birthDate: '1971-02-02',
     });
 
-    expect(createOutcome.id).toEqual('created');
-
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        {
+          code: 'family',
+          operator: Operator.EQUALS,
+          value: family,
+        },
         {
           code: 'birthdate',
           operator: Operator.EQUALS,
@@ -801,16 +875,19 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome1.id).toEqual('ok');
     expect(searchResult1?.entry?.length).toEqual(1);
     expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
 
-    const [deleteOutcome] = await systemRepo.deleteResource('Patient', patient?.id as string);
-    expect(deleteOutcome.id).toEqual('ok');
+    await systemRepo.deleteResource('Patient', patient?.id as string);
 
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        {
+          code: 'family',
+          operator: Operator.EQUALS,
+          value: family,
+        },
         {
           code: 'birthdate',
           operator: Operator.EQUALS,
@@ -819,22 +896,19 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome2.id).toEqual('ok');
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
   test('Search identifier after delete', async () => {
     const identifier = randomUUID();
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
       identifier: [{ system: 'https://www.example.com', value: identifier }],
     });
 
-    expect(createOutcome.id).toEqual('created');
-
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -845,14 +919,12 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome1.id).toEqual('ok');
     expect(searchResult1?.entry?.length).toEqual(1);
     expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
 
-    const [deleteOutcome] = await systemRepo.deleteResource('Patient', patient?.id as string);
-    expect(deleteOutcome.id).toEqual('ok');
+    await systemRepo.deleteResource('Patient', patient?.id as string);
 
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -863,12 +935,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome2.id).toEqual('ok');
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
   test('String filter', async () => {
-    const [outcome1, bundle1] = await systemRepo.search({
+    const bundle1 = await systemRepo.search({
       resourceType: 'StructureDefinition',
       filters: [
         {
@@ -884,12 +955,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome1, bundle1);
     expect(bundle1?.entry?.length).toEqual(2);
     expect((bundle1?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
     expect((bundle1?.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
 
-    const [outcome2, bundle2] = await systemRepo.search({
+    const bundle2 = await systemRepo.search({
       resourceType: 'StructureDefinition',
       filters: [
         {
@@ -899,7 +969,6 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome2, bundle2);
     expect(bundle2?.entry?.length).toEqual(1);
     expect((bundle2?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
   });
@@ -908,14 +977,13 @@ describe('FHIR Repo', () => {
     // Unique family name to isolate the test
     const family = randomUUID();
 
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
     });
-    assertOk(createOutcome, patient);
     expect(patient).toBeDefined();
 
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -926,11 +994,10 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome1.id).toEqual('ok');
     expect(searchResult1?.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
 
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -946,7 +1013,6 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome2.id).toEqual('ok');
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
@@ -954,27 +1020,25 @@ describe('FHIR Repo', () => {
     const project1 = randomUUID();
     const project2 = randomUUID();
 
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice1'], family: 'Smith1' }],
       meta: {
         project: project1,
       },
     });
-    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
-    const [outcome2, patient2] = await systemRepo.createResource<Patient>({
+    const patient2 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice2'], family: 'Smith2' }],
       meta: {
         project: project2,
       },
     });
-    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
-    const [outcome3, bundle] = await systemRepo.search({
+    const bundle = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -984,10 +1048,27 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome3, bundle);
     expect(bundle?.entry?.length).toEqual(1);
     expect(bundleContains(bundle as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(bundle as Bundle, patient2 as Patient)).toEqual(false);
+  });
+
+  test('Handle malformed _lastUpdated', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_lastUpdated',
+            operator: Operator.GREATER_THAN,
+            value: 'xyz',
+          },
+        ],
+      });
+      fail('Expected error');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Invalid date value: xyz');
+    }
   });
 
   test('Filter by _lastUpdated', async () => {
@@ -1000,28 +1081,26 @@ describe('FHIR Repo', () => {
     const nowMinus2Seconds = new Date(now.getTime() - 2000);
     const nowMinus3Seconds = new Date(now.getTime() - 3000);
 
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
       meta: {
         lastUpdated: nowMinus1Second.toISOString(),
       },
     });
-    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
-    const [outcome2, patient2] = await systemRepo.createResource<Patient>({
+    const patient2 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family }],
       meta: {
         lastUpdated: nowMinus2Seconds.toISOString(),
       },
     });
-    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
     // Greater than (newer than) 2 seconds ago should only return patient 1
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1037,12 +1116,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome1.id).toEqual('ok');
     expect(bundleContains(searchResult1 as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(searchResult1 as Bundle, patient2 as Patient)).toEqual(false);
 
     // Greater than (newer than) or equal to 2 seconds ago should return both patients
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1058,12 +1136,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome2.id).toEqual('ok');
     expect(bundleContains(searchResult2 as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(searchResult2 as Bundle, patient2 as Patient)).toEqual(true);
 
     // Less than (older than) to 1 seconds ago should only return patient 2
-    const [searchOutcome3, searchResult3] = await systemRepo.search({
+    const searchResult3 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1084,12 +1161,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome3.id).toEqual('ok');
     expect(bundleContains(searchResult3 as Bundle, patient1 as Patient)).toEqual(false);
     expect(bundleContains(searchResult3 as Bundle, patient2 as Patient)).toEqual(true);
 
     // Less than (older than) or equal to 1 seconds ago should return both patients
-    const [searchOutcome4, searchResult4] = await systemRepo.search({
+    const searchResult4 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1110,7 +1186,6 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome4.id).toEqual('ok');
     expect(bundleContains(searchResult4 as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(searchResult4 as Bundle, patient2 as Patient)).toEqual(true);
   });
@@ -1118,7 +1193,7 @@ describe('FHIR Repo', () => {
   test('Sort by _lastUpdated', async () => {
     const project = randomUUID();
 
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice1'], family: 'Smith1' }],
       meta: {
@@ -1126,10 +1201,9 @@ describe('FHIR Repo', () => {
         project,
       },
     });
-    assertOk(outcome1, patient1);
     expect(patient1).toBeDefined();
 
-    const [outcome2, patient2] = await systemRepo.createResource<Patient>({
+    const patient2 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Alice2'], family: 'Smith2' }],
       meta: {
@@ -1137,10 +1211,9 @@ describe('FHIR Repo', () => {
         project,
       },
     });
-    assertOk(outcome2, patient2);
     expect(patient2).toBeDefined();
 
-    const [outcome3, bundle3] = await systemRepo.search({
+    const bundle3 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1156,12 +1229,11 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome3, bundle3);
     expect(bundle3?.entry?.length).toEqual(2);
     expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1?.id);
     expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2?.id);
 
-    const [outcome4, bundle4] = await systemRepo.search({
+    const bundle4 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
         {
@@ -1177,14 +1249,13 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4, bundle4);
     expect(bundle4?.entry?.length).toEqual(2);
     expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2?.id);
     expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1?.id);
   });
 
   test('Unsupported date search param', async () => {
-    const [outcome, resource] = await systemRepo.createResource<Encounter>({
+    const resource = await systemRepo.createResource<Encounter>({
       resourceType: 'Encounter',
       status: 'finished',
       class: {
@@ -1196,7 +1267,6 @@ describe('FHIR Repo', () => {
         end: '2014-01-11T21:38:39-08:00',
       },
     });
-    expect(outcome.id).toEqual('created');
     expect(resource).toBeDefined();
     expect(resource?.id).toBeDefined();
   });
@@ -1205,20 +1275,27 @@ describe('FHIR Repo', () => {
     const auditEvents = [] as AuditEvent[];
 
     for (let i = 0; i < 3; i++) {
-      const [outcome, resource] = await systemRepo.createResource<AuditEvent>({
+      const resource = await systemRepo.createResource<AuditEvent>({
         resourceType: 'AuditEvent',
+        recorded: new Date().toISOString(),
         type: {
           code: randomUUID(),
         },
-        agent: [],
-        source: {},
+        agent: [
+          {
+            who: { reference: 'Practitioner/' + randomUUID() },
+            requestor: true,
+          },
+        ],
+        source: {
+          observer: { reference: 'Practitioner/' + randomUUID() },
+        },
       });
-      assertOk(outcome, resource);
       auditEvents.push(resource);
     }
 
     for (let i = 0; i < 3; i++) {
-      const [outcome, bundle] = await systemRepo.search({
+      const bundle = await systemRepo.search({
         resourceType: 'AuditEvent',
         filters: [
           {
@@ -1228,7 +1305,6 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      assertOk(outcome, bundle);
       expect(bundle.entry?.length).toEqual(1);
       expect(bundle.entry?.[0]?.resource?.id).toEqual(auditEvents[i].id);
     }
@@ -1240,51 +1316,36 @@ describe('FHIR Repo', () => {
     const x3 = randomUUID();
 
     // Create test patient
-    const [outcome0, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['John'], family: 'CodeableConcept' }],
     });
-    assertOk(outcome0, patient);
 
-    // Use code.coding[0].code
-    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
-      code: {
-        coding: [
-          {
-            code: x1,
-          },
-        ],
-      },
+      code: { coding: [{ code: x1 }] },
     });
-    assertOk(outcome1, serviceRequest1);
 
-    // Use code.coding[0].display
-    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
-      code: {
-        coding: [
-          {
-            display: x2,
-          },
-        ],
-      },
+      code: { coding: [{ code: x2 }] },
     });
-    assertOk(outcome2, serviceRequest2);
 
-    // Use code.text
-    const [outcome3, serviceRequest3] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest3 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: createReference(patient),
-      code: {
-        text: x3,
-      },
+      code: { coding: [{ code: x3 }] },
     });
-    assertOk(outcome3, serviceRequest3);
 
-    const [outcome4, bundle1] = await systemRepo.search({
+    const bundle1 = await systemRepo.search({
       resourceType: 'ServiceRequest',
       filters: [
         {
@@ -1294,13 +1355,12 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4, bundle1);
     expect(bundle1.entry?.length).toEqual(1);
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(true);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest3)).toEqual(false);
 
-    const [outcome5, bundle2] = await systemRepo.search({
+    const bundle2 = await systemRepo.search({
       resourceType: 'ServiceRequest',
       filters: [
         {
@@ -1310,13 +1370,12 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome5, bundle2);
     expect(bundle2.entry?.length).toEqual(1);
     expect(bundleContains(bundle2, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle2, serviceRequest2)).toEqual(true);
     expect(bundleContains(bundle2, serviceRequest3)).toEqual(false);
 
-    const [outcome6, bundle3] = await systemRepo.search({
+    const bundle3 = await systemRepo.search({
       resourceType: 'ServiceRequest',
       filters: [
         {
@@ -1326,7 +1385,6 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome6, bundle3);
     expect(bundle3.entry?.length).toEqual(1);
     expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle3, serviceRequest2)).toEqual(false);
@@ -1336,66 +1394,62 @@ describe('FHIR Repo', () => {
   test('Filter by Quantity.value', async () => {
     const code = randomUUID();
 
-    const [outcome0, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['John'], family: 'Quantity' }],
     });
-    assertOk(outcome0, patient);
 
-    const [outcome1, observation1] = await systemRepo.createResource<Observation>({
+    const observation1 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 1, unit: 'mg' },
     });
-    assertOk(outcome1, observation1);
 
-    const [outcome2, observation2] = await systemRepo.createResource<Observation>({
+    const observation2 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 5, unit: 'mg' },
     });
-    assertOk(outcome2, observation2);
 
-    const [outcome3, observation3] = await systemRepo.createResource<Observation>({
+    const observation3 = await systemRepo.createResource<Observation>({
       resourceType: 'Observation',
+      status: 'final',
       subject: createReference(patient),
       code: { coding: [{ code }] },
       valueQuantity: { value: 10, unit: 'mg' },
     });
-    assertOk(outcome3, observation3);
 
-    const [outcome4, bundle1] = await systemRepo.search<Observation>({
+    const bundle1 = await systemRepo.search<Observation>({
       resourceType: 'Observation',
       filters: [{ code: 'code', operator: Operator.EQUALS, value: code }],
       sortRules: [{ code: 'value-quantity', descending: false }],
     });
-    assertOk(outcome4, bundle1);
     expect(bundle1.entry?.length).toEqual(3);
     expect(bundle1.entry?.[0]?.resource?.id).toEqual(observation1.id);
     expect(bundle1.entry?.[1]?.resource?.id).toEqual(observation2.id);
     expect(bundle1.entry?.[2]?.resource?.id).toEqual(observation3.id);
 
-    const [outcome5, bundle2] = await systemRepo.search<Observation>({
+    const bundle2 = await systemRepo.search<Observation>({
       resourceType: 'Observation',
       filters: [{ code: 'code', operator: Operator.EQUALS, value: code }],
       sortRules: [{ code: 'value-quantity', descending: true }],
     });
-    assertOk(outcome5, bundle2);
     expect(bundle2.entry?.length).toEqual(3);
     expect(bundle2.entry?.[0]?.resource?.id).toEqual(observation3.id);
     expect(bundle2.entry?.[1]?.resource?.id).toEqual(observation2.id);
     expect(bundle2.entry?.[2]?.resource?.id).toEqual(observation1.id);
 
-    const [outcome6, bundle3] = await systemRepo.search<Observation>({
+    const bundle3 = await systemRepo.search<Observation>({
       resourceType: 'Observation',
       filters: [
         { code: 'code', operator: Operator.EQUALS, value: code },
         { code: 'value-quantity', operator: Operator.GREATER_THAN, value: '8' },
       ],
     });
-    assertOk(outcome6, bundle3);
     expect(bundle3.entry?.length).toEqual(1);
     expect(bundle3.entry?.[0]?.resource?.id).toEqual(observation3.id);
   });
@@ -1408,8 +1462,12 @@ describe('FHIR Repo', () => {
       },
     });
 
-    const [reindexOutcome] = await repo.reindexResourceType('Practitioner');
-    expect(isOk(reindexOutcome)).toBe(false);
+    try {
+      await repo.reindexResourceType('Practitioner');
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
   });
 
   test('Reindex resource as non-admin', async () => {
@@ -1420,34 +1478,40 @@ describe('FHIR Repo', () => {
       },
     });
 
-    const [reindexOutcome] = await repo.reindexResource('Practitioner', randomUUID());
-    expect(isOk(reindexOutcome)).toBe(false);
+    try {
+      await repo.reindexResource('Practitioner', randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
   });
 
   test('Reindex resource not found', async () => {
-    const [reindexOutcome] = await systemRepo.reindexResource('Practitioner', randomUUID());
-    expect(isOk(reindexOutcome)).toBe(false);
+    try {
+      await systemRepo.reindexResource('Practitioner', randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
   });
 
   test('Reindex success', async () => {
-    const [reindexOutcome] = await systemRepo.reindexResourceType('Practitioner');
-    expect(isOk(reindexOutcome)).toBe(true);
+    await systemRepo.reindexResourceType('Practitioner');
   });
 
   test('Remove property', async () => {
     const value = randomUUID();
 
     // Create a patient with an identifier
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ given: ['Identifier'], family: 'Test' }],
       identifier: [{ system: 'https://example.com/', value }],
     });
-    assertOk(outcome1, patient1);
 
     // Search for patient by identifier
     // This should succeed
-    const [outcome2, bundle1] = await systemRepo.search<Patient>({
+    const bundle1 = await systemRepo.search<Patient>({
       resourceType: 'Patient',
       filters: [
         {
@@ -1457,20 +1521,18 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome2, bundle1);
     expect(bundle1.entry?.length).toEqual(1);
 
     const { identifier, ...rest } = patient1;
     expect(identifier).toBeDefined();
     expect((rest as Patient).identifier).toBeUndefined();
 
-    const [outcome3, patient2] = await systemRepo.updateResource<Patient>(rest);
-    assertOk(outcome3, patient2);
+    const patient2 = await systemRepo.updateResource<Patient>(rest);
     expect(patient2.identifier).toBeUndefined();
 
     // Try to search for the identifier
     // This should return empty result
-    const [outcome4, bundle2] = await systemRepo.search<Patient>({
+    const bundle2 = await systemRepo.search<Patient>({
       resourceType: 'Patient',
       filters: [
         {
@@ -1480,7 +1542,6 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4, bundle2);
     expect(bundle2.entry?.length).toEqual(0);
   });
 
@@ -1488,8 +1549,10 @@ describe('FHIR Repo', () => {
     const orderDetailText = randomUUID();
     const orderDetailCode = randomUUID();
 
-    const [outcome1, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: {
         reference: 'Patient/' + randomUUID(),
       },
@@ -1512,9 +1575,8 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome1, serviceRequest);
 
-    const [outcome2, bundle1] = await systemRepo.search({
+    const bundle1 = await systemRepo.search({
       resourceType: 'ServiceRequest',
       filters: [
         {
@@ -1524,20 +1586,20 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome2, bundle1);
     expect(bundle1.entry?.length).toEqual(1);
+    expect(bundle1.entry?.[0]?.resource?.id).toEqual(serviceRequest.id);
   });
 
   test('Delete Questionnaire.subjectType', async () => {
     const nonce = randomUUID();
 
-    const [outcome1, resource1] = await systemRepo.createResource<Questionnaire>({
+    const resource1 = await systemRepo.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
-      subjectType: [nonce],
+      status: 'active',
+      subjectType: [nonce as ResourceType],
     });
-    assertOk(outcome1, resource1);
 
-    const [outcome2, resource2] = await systemRepo.search({
+    const resource2 = await systemRepo.search({
       resourceType: 'Questionnaire',
       filters: [
         {
@@ -1547,14 +1609,12 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome2, resource2);
     expect(resource2.entry?.length).toEqual(1);
 
     delete resource1.subjectType;
-    const [outcome3, resource3] = await systemRepo.updateResource<Questionnaire>(resource1);
-    assertOk(outcome3, resource3);
+    await systemRepo.updateResource<Questionnaire>(resource1);
 
-    const [outcome4, resource4] = await systemRepo.search({
+    const resource4 = await systemRepo.search({
       resourceType: 'Questionnaire',
       filters: [
         {
@@ -1564,7 +1624,6 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    assertOk(outcome4, resource4);
     expect(resource4.entry?.length).toEqual(0);
   });
 
@@ -1574,20 +1633,20 @@ describe('FHIR Repo', () => {
     const serviceRequests = [];
 
     for (const code of codes) {
-      const [createOutcome, serviceRequest] = await systemRepo.createResource<ServiceRequest>({
+      const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
         subject: { reference: 'Patient/' + randomUUID() },
         category: [{ coding: [{ code: category }] }],
         code: { coding: [{ code: code }] },
       });
-      assertOk(createOutcome, serviceRequest);
       serviceRequests.push(serviceRequest);
     }
 
-    const [outcome3, bundle1] = await systemRepo.search(
+    const bundle1 = await systemRepo.search(
       parseSearchRequest('ServiceRequest', { category, code: `${codes[0]},${codes[1]}` })
     );
-    assertOk(outcome3, bundle1);
     expect(bundle1.entry?.length).toEqual(2);
     expect(bundleContains(bundle1, serviceRequests[0])).toEqual(true);
     expect(bundleContains(bundle1, serviceRequests[1])).toEqual(true);
@@ -1598,26 +1657,25 @@ describe('FHIR Repo', () => {
     const code1 = randomUUID();
     const code2 = randomUUID();
 
-    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category }] }],
       code: { coding: [{ code: code1 }] },
     });
-    assertOk(outcome1, serviceRequest1);
 
-    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category }] }],
       code: { coding: [{ code: code2 }] },
     });
-    assertOk(outcome2, serviceRequest2);
 
-    const [outcome3, bundle1] = await systemRepo.search(
-      parseSearchRequest('ServiceRequest', { category, 'code:not': code1 })
-    );
-    assertOk(outcome3, bundle1);
+    const bundle1 = await systemRepo.search(parseSearchRequest('ServiceRequest', { category, 'code:not': code1 }));
     expect(bundle1.entry?.length).toEqual(1);
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
@@ -1628,26 +1686,25 @@ describe('FHIR Repo', () => {
     const category2 = randomUUID();
     const code = randomUUID();
 
-    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category1 }] }],
       code: { coding: [{ code }] },
     });
-    assertOk(outcome1, serviceRequest1);
 
-    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category2 }] }],
       code: { coding: [{ code }] },
     });
-    assertOk(outcome2, serviceRequest2);
 
-    const [outcome3, bundle1] = await systemRepo.search(
-      parseSearchRequest('ServiceRequest', { code, 'category:not': category1 })
-    );
-    assertOk(outcome3, bundle1);
+    const bundle1 = await systemRepo.search(parseSearchRequest('ServiceRequest', { code, 'category:not': category1 }));
     expect(bundle1.entry?.length).toEqual(1);
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
@@ -1657,25 +1714,24 @@ describe('FHIR Repo', () => {
     const category1 = randomUUID();
     const code = randomUUID();
 
-    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       category: [{ coding: [{ code: category1 }] }],
       code: { coding: [{ code }] },
     });
-    assertOk(outcome1, serviceRequest1);
 
-    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       subject: { reference: 'Patient/' + randomUUID() },
       code: { coding: [{ code }] },
     });
-    assertOk(outcome2, serviceRequest2);
 
-    const [outcome3, bundle1] = await systemRepo.search(
-      parseSearchRequest('ServiceRequest', { code, 'category:not': category1 })
-    );
-    assertOk(outcome3, bundle1);
+    const bundle1 = await systemRepo.search(parseSearchRequest('ServiceRequest', { code, 'category:not': category1 }));
     expect(bundle1.entry?.length).toEqual(1);
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
@@ -1687,68 +1743,62 @@ describe('FHIR Repo', () => {
     // Test both an array column (specimen) and a non-array column (encounter),
     // because the resulting SQL could be subtly different.
 
-    const [outcome1, serviceRequest1] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest1 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: { coding: [{ code }] },
       subject: { reference: 'Patient/' + randomUUID() },
       specimen: [{ reference: 'Specimen/' + randomUUID() }],
       encounter: { reference: 'Encounter/' + randomUUID() },
     });
-    assertOk(outcome1, serviceRequest1);
 
-    const [outcome2, serviceRequest2] = await systemRepo.createResource<ServiceRequest>({
+    const serviceRequest2 = await systemRepo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
       code: { coding: [{ code }] },
       subject: { reference: 'Patient/' + randomUUID() },
     });
-    assertOk(outcome2, serviceRequest2);
 
-    const [outcome3, bundle1] = await systemRepo.search(
-      parseSearchRequest('ServiceRequest', { code, 'specimen:missing': 'true' })
-    );
-    assertOk(outcome3, bundle1);
+    const bundle1 = await systemRepo.search(parseSearchRequest('ServiceRequest', { code, 'specimen:missing': 'true' }));
     expect(bundle1.entry?.length).toEqual(1);
     expect(bundleContains(bundle1, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle1, serviceRequest2)).toEqual(true);
 
-    const [outcome4, bundle2] = await systemRepo.search(
+    const bundle2 = await systemRepo.search(
       parseSearchRequest('ServiceRequest', { code, 'specimen:missing': 'false' })
     );
-    assertOk(outcome4, bundle2);
     expect(bundle2.entry?.length).toEqual(1);
     expect(bundleContains(bundle2, serviceRequest1)).toEqual(true);
     expect(bundleContains(bundle2, serviceRequest2)).toEqual(false);
 
-    const [outcome5, bundle3] = await systemRepo.search(
+    const bundle3 = await systemRepo.search(
       parseSearchRequest('ServiceRequest', { code, 'encounter:missing': 'true' })
     );
-    assertOk(outcome5, bundle3);
     expect(bundle3.entry?.length).toEqual(1);
     expect(bundleContains(bundle3, serviceRequest1)).toEqual(false);
     expect(bundleContains(bundle3, serviceRequest2)).toEqual(true);
 
-    const [outcome6, bundle4] = await systemRepo.search(
+    const bundle4 = await systemRepo.search(
       parseSearchRequest('ServiceRequest', { code, 'encounter:missing': 'false' })
     );
-    assertOk(outcome6, bundle4);
     expect(bundle4.entry?.length).toEqual(1);
     expect(bundleContains(bundle4, serviceRequest1)).toEqual(true);
     expect(bundleContains(bundle4, serviceRequest2)).toEqual(false);
   });
 
   test('Empty objects', async () => {
-    const [outcome1, patient1] = await systemRepo.createResource<Patient>({
+    const patient1 = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       contact: [{}],
     });
-    assertOk(outcome1, patient1);
 
-    const [outcome2, patient2] = await systemRepo.updateResource<Patient>({
+    const patient2 = await systemRepo.updateResource<Patient>({
       resourceType: 'Patient',
       id: patient1.id,
       contact: [{}],
     });
-    expect(outcome2.id).toEqual('not-modified');
     expect(patient2?.id).toEqual(patient1?.id);
   });
 
@@ -1762,28 +1812,26 @@ describe('FHIR Repo', () => {
     const nowMinus2Seconds = new Date(now.getTime() - 2000);
     const nowMinus3Seconds = new Date(now.getTime() - 3000);
 
-    const [outcome1, appt1] = await systemRepo.createResource<Appointment>({
+    const appt1 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
-      serviceType: [{ text: code }],
+      serviceType: [{ coding: [{ code }] }],
       participant: [{ status: 'accepted' }],
       start: nowMinus1Second.toISOString(),
     });
-    assertOk(outcome1, appt1);
     expect(appt1).toBeDefined();
 
-    const [outcome2, appt2] = await systemRepo.createResource<Appointment>({
+    const appt2 = await systemRepo.createResource<Appointment>({
       resourceType: 'Appointment',
       status: 'booked',
-      serviceType: [{ text: code }],
+      serviceType: [{ coding: [{ code }] }],
       participant: [{ status: 'accepted' }],
       start: nowMinus2Seconds.toISOString(),
     });
-    assertOk(outcome2, appt2);
     expect(appt2).toBeDefined();
 
     // Greater than (newer than) 2 seconds ago should only return appt 1
-    const [searchOutcome1, searchResult1] = await systemRepo.search({
+    const searchResult1 = await systemRepo.search({
       resourceType: 'Appointment',
       filters: [
         {
@@ -1799,12 +1847,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome1.id).toEqual('ok');
     expect(bundleContains(searchResult1 as Bundle, appt1 as Appointment)).toEqual(true);
     expect(bundleContains(searchResult1 as Bundle, appt2 as Appointment)).toEqual(false);
 
     // Greater than (newer than) or equal to 2 seconds ago should return both appts
-    const [searchOutcome2, searchResult2] = await systemRepo.search({
+    const searchResult2 = await systemRepo.search({
       resourceType: 'Appointment',
       filters: [
         {
@@ -1820,12 +1867,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome2.id).toEqual('ok');
     expect(bundleContains(searchResult2 as Bundle, appt1 as Appointment)).toEqual(true);
     expect(bundleContains(searchResult2 as Bundle, appt2 as Appointment)).toEqual(true);
 
     // Less than (older than) to 1 seconds ago should only return appt 2
-    const [searchOutcome3, searchResult3] = await systemRepo.search({
+    const searchResult3 = await systemRepo.search({
       resourceType: 'Appointment',
       filters: [
         {
@@ -1846,12 +1892,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome3.id).toEqual('ok');
     expect(bundleContains(searchResult3 as Bundle, appt1 as Appointment)).toEqual(false);
     expect(bundleContains(searchResult3 as Bundle, appt2 as Appointment)).toEqual(true);
 
     // Less than (older than) or equal to 1 seconds ago should return both appts
-    const [searchOutcome4, searchResult4] = await systemRepo.search({
+    const searchResult4 = await systemRepo.search({
       resourceType: 'Appointment',
       filters: [
         {
@@ -1872,18 +1917,16 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchOutcome4.id).toEqual('ok');
     expect(bundleContains(searchResult4 as Bundle, appt1 as Appointment)).toEqual(true);
     expect(bundleContains(searchResult4 as Bundle, appt2 as Appointment)).toEqual(true);
   });
 
   test('Too many versions', async () => {
     // Create version 1
-    const [createOutcome, patient] = await systemRepo.createResource<Patient>({
+    const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [{ family: 'Test' }],
     });
-    assertOk(createOutcome, patient);
 
     // Create versions 2-10
     for (let i = 0; i < 9; i++) {
@@ -1894,11 +1937,335 @@ describe('FHIR Repo', () => {
     }
 
     // Try to create version 11
-    const [updateOutcome, updatedPatient] = await systemRepo.updateResource<Patient>({
-      ...patient,
-      name: [{ family: `Test too many requests` }],
+    try {
+      await systemRepo.updateResource<Patient>({
+        ...patient,
+        name: [{ family: `Test too many requests` }],
+      });
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.id).toEqual('too-many-requests');
+    }
+  });
+
+  test('Boolean search', async () => {
+    const family = randomUUID();
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family }],
+      active: true,
     });
-    expect(updateOutcome.id).toEqual('too-many-requests');
-    expect(updatedPatient).toBeUndefined();
+    const searchResult = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: family,
+        },
+        {
+          code: 'active',
+          operator: Operator.EQUALS,
+          value: 'true',
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+  });
+
+  test('Not equals with comma separated values', async () => {
+    // Create 3 service requests
+    // All 3 have the same category for test isolation
+    // Each have a different code
+    const category = randomUUID();
+    const serviceRequests = [];
+    for (let i = 0; i < 3; i++) {
+      serviceRequests.push(
+        await systemRepo.createResource({
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          subject: { reference: 'Patient/' + randomUUID() },
+          category: [{ coding: [{ code: category }] }],
+          code: { coding: [{ code: randomUUID() }] },
+        })
+      );
+    }
+
+    // Search for service requests with category
+    // and code "not equals" the first two separated by a comma
+    const searchResult = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: 'category',
+          operator: Operator.EQUALS,
+          value: category,
+        },
+        {
+          code: 'code',
+          operator: Operator.NOT_EQUALS,
+          value: serviceRequests[0].code.coding[0].code + ',' + serviceRequests[1].code.coding[0].code,
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(1);
+  });
+
+  test('_id equals with comma separated values', async () => {
+    // Create 3 service requests
+    const serviceRequests = [];
+    for (let i = 0; i < 3; i++) {
+      serviceRequests.push(
+        await systemRepo.createResource<ServiceRequest>({
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          subject: { reference: 'Patient/' + randomUUID() },
+          code: { text: randomUUID() },
+        })
+      );
+    }
+
+    // Search for service requests with _id equals the first two separated by a comma
+    const searchResult = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: serviceRequests[0].id + ',' + serviceRequests[1].id,
+        },
+      ],
+    });
+    expect(searchResult.entry).toHaveLength(2);
+  });
+
+  test('Error on invalid search parameter', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'ServiceRequest',
+        filters: [
+          {
+            code: 'basedOn', // should be "based-on"
+            operator: Operator.EQUALS,
+            value: 'ServiceRequest/123',
+          },
+        ],
+      });
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
+    }
+  });
+
+  test('Patient search without resource type', async () => {
+    // Create Patient
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    // Create AllergyIntolerance
+    const allergyIntolerance = await systemRepo.createResource<AllergyIntolerance>({
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(patient),
+    });
+
+    // Search by patient
+    const searchResult = await systemRepo.search({
+      resourceType: 'AllergyIntolerance',
+      filters: [
+        {
+          code: 'patient',
+          operator: Operator.EQUALS,
+          value: patient.id as string,
+        },
+      ],
+    });
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(allergyIntolerance.id);
+  });
+
+  test('Subject search without resource type', async () => {
+    // Create Patient
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    // Create Observation
+    const observation = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: createReference(patient),
+    });
+
+    // Search by patient
+    const searchResult = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'subject',
+          operator: Operator.EQUALS,
+          value: patient.id as string,
+        },
+      ],
+    });
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
+  });
+
+  test('Reverse include Provenance', async () => {
+    const family = randomUUID();
+
+    const practitioner1 = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Homer'], family }],
+    });
+
+    const practitioner2 = await systemRepo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Marge'], family }],
+    });
+
+    const searchRequest: SearchRequest = {
+      resourceType: 'Practitioner',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      revInclude: 'Provenance:target',
+    };
+
+    const searchResult1 = await systemRepo.search(searchRequest);
+    expect(searchResult1.entry).toHaveLength(2);
+    expect(bundleContains(searchResult1, practitioner1)).toBeTruthy();
+    expect(bundleContains(searchResult1, practitioner2)).toBeTruthy();
+
+    const provenance1 = await systemRepo.createResource<Provenance>({
+      resourceType: 'Provenance',
+      target: [createReference(practitioner1)],
+      agent: [{ who: createReference(practitioner1) }],
+      recorded: new Date().toISOString(),
+    });
+
+    const provenance2 = await systemRepo.createResource<Provenance>({
+      resourceType: 'Provenance',
+      target: [createReference(practitioner2)],
+      agent: [{ who: createReference(practitioner2) }],
+      recorded: new Date().toISOString(),
+    });
+
+    const searchResult2 = await systemRepo.search(searchRequest);
+    expect(searchResult2.entry).toHaveLength(4);
+    expect(bundleContains(searchResult2, practitioner1)).toBeTruthy();
+    expect(bundleContains(searchResult2, practitioner2)).toBeTruthy();
+    expect(bundleContains(searchResult2, provenance1)).toBeTruthy();
+    expect(bundleContains(searchResult2, provenance2)).toBeTruthy();
+  });
+
+  test('DiagnosticReport category with system', async () => {
+    const code = randomUUID();
+    const dr = await systemRepo.createResource<DiagnosticReport>({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: { coding: [{ code }] },
+      category: [{ coding: [{ system: 'http://loinc.org', code: 'LP217198-3' }] }],
+    });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'DiagnosticReport',
+      filters: [
+        {
+          code: 'code',
+          operator: Operator.EQUALS,
+          value: code,
+        },
+        {
+          code: 'category',
+          operator: Operator.EQUALS,
+          value: 'http://loinc.org|LP217198-3',
+        },
+      ],
+      count: 1,
+    });
+
+    expect(bundleContains(bundle, dr)).toBeTruthy();
+  });
+
+  test('Encounter.period date search', async () => {
+    const e = await systemRepo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      identifier: [{ value: randomUUID() }],
+      status: 'finished',
+      class: { code: 'test' },
+      period: {
+        start: '2020-02-01',
+        end: '2020-02-02',
+      },
+    });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'Encounter',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: e.identifier?.[0]?.value as string,
+        },
+        {
+          code: 'date',
+          operator: Operator.GREATER_THAN,
+          value: '2020-01-01',
+        },
+      ],
+      count: 1,
+    });
+
+    expect(bundleContains(bundle, e)).toBeTruthy();
+  });
+
+  test('Condition.code :in search', async () => {
+    // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
+    // compose includes codes from http://snomed.info/sct
+    // but does not include codes from https://example.com
+
+    try {
+      const p = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family: randomUUID() }],
+      });
+
+      const c1 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+      });
+
+      const c2 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: 'https://example.com', code: 'test' }] },
+      });
+
+      const bundle = await systemRepo.search({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'subject',
+            operator: Operator.EQUALS,
+            value: getReferenceString(p),
+          },
+          {
+            code: 'code',
+            operator: Operator.IN,
+            value: 'http://hl7.org/fhir/ValueSet/condition-code',
+          },
+        ],
+      });
+
+      expect(bundle.entry?.length).toEqual(1);
+      expect(bundleContains(bundle, c1)).toBeTruthy();
+      expect(bundleContains(bundle, c2)).not.toBeTruthy();
+    } catch (err) {
+      console.log(err);
+      console.log(JSON.stringify(err, null, 2));
+    }
   });
 });

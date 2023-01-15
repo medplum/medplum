@@ -1,108 +1,52 @@
-import { resolveId } from '@medplum/core';
-import { Document, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
-import React from 'react';
+import { Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Document, useMedplum } from '@medplum/react';
+import React, { useMemo } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { InfoBar } from '../components/InfoBar';
+import { getProjectId } from '../utils';
+
+const tabs = ['Details', 'Users', 'Patients', 'Clients', 'Bots', 'Secrets', 'Sites'];
 
 export function ProjectPage(): JSX.Element {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentTab = location.pathname.replace('/admin/', '') || tabs[0];
   const medplum = useMedplum();
-  const id = resolveId(medplum.getActiveLogin()?.project) as string;
-  const result = medplum.get(`admin/projects/${id}`).read();
+  const projectId = getProjectId(medplum);
+  const result = useMemo(() => medplum.get('admin/projects/' + projectId).read(), [medplum, projectId]);
+
+  /**
+   * Handles a tab change event.
+   * @param newTabName The new tab name.
+   */
+  function onTabChange(newTabName: string): void {
+    navigate(`/admin/${newTabName}`);
+  }
 
   return (
-    <Document width={600}>
-      <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Members</h3>
-      <table className="medplum-table">
-        <colgroup>
-          <col style={{ width: '60%' }} />
-          <col style={{ width: '20%' }} />
-          <col style={{ width: '20%' }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th className="medplum-center">Role</th>
-            <th className="medplum-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.members
-            .filter((member: any) => member.role !== 'bot' && member.role !== 'client')
-            .map((member: any) => (
-              <tr key={member.profile.reference}>
-                <td>
-                  <ResourceBadge value={member.profile} link={true} />
-                </td>
-                <td className="medplum-center">{member.role}</td>
-                <td className="medplum-center">
-                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-      <div className="medplum-right">
-        <MedplumLink to={`/admin/projects/${result.project.id}/invite`}>Invite new user</MedplumLink>
-      </div>
-      <h3>Clients</h3>
-      <table className="medplum-table">
-        <colgroup>
-          <col style={{ width: '80%' }} />
-          <col style={{ width: '20%' }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th className="medplum-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.members
-            .filter((member: any) => member.role === 'client')
-            .map((member: any) => (
-              <tr key={member.profile.reference}>
-                <td>
-                  <ResourceBadge value={member.profile} link={true} />
-                </td>
-                <td className="medplum-center">
-                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-      <div className="medplum-right">
-        <MedplumLink to={`/admin/projects/${result.project.id}/client`}>Create new client</MedplumLink>
-      </div>
-      <h3>Bots</h3>
-      <table className="medplum-table">
-        <colgroup>
-          <col style={{ width: '80%' }} />
-          <col style={{ width: '20%' }} />
-        </colgroup>
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th className="medplum-center">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.members
-            .filter((member: any) => member.role === 'bot')
-            .map((member: any) => (
-              <tr key={member.profile.reference}>
-                <td>
-                  <ResourceBadge value={member.profile} link={true} />
-                </td>
-                <td className="medplum-center">
-                  <MedplumLink to={`/admin/projects/${id}/members/${member.id}`}>Access</MedplumLink>
-                </td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
-      <div className="medplum-right">
-        <MedplumLink to={`/admin/projects/${result.project.id}/bot`}>Create new bot</MedplumLink>
-      </div>
-    </Document>
+    <>
+      <Paper>
+        <InfoBar>
+          <InfoBar.Entry>
+            <InfoBar.Key>Project</InfoBar.Key>
+            <InfoBar.Value>{result.project.name}</InfoBar.Value>
+          </InfoBar.Entry>
+        </InfoBar>
+        <ScrollArea>
+          <Tabs value={currentTab.toLowerCase()} onTabChange={onTabChange}>
+            <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
+              {tabs.map((t) => (
+                <Tabs.Tab key={t} value={t.toLowerCase()}>
+                  {t}
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        </ScrollArea>
+      </Paper>
+      <Document width={700}>
+        <Outlet />
+      </Document>
+    </>
   );
 }

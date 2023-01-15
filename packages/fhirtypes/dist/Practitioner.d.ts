@@ -131,7 +131,7 @@ export interface Practitioner {
    * Administrative Gender - the gender that the person is considered to
    * have for administration and record keeping purposes.
    */
-  gender?: string;
+  gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
    * The date of birth for the practitioner.

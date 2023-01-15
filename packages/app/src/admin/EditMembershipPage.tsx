@@ -1,13 +1,16 @@
+import { Button, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
-import { Button, Checkbox, Document, Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
+import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';
 
 export function EditMembershipPage(): JSX.Element {
-  const { projectId, membershipId } = useParams();
+  const { membershipId } = useParams();
   const medplum = useMedplum();
+  const projectId = getProjectId(medplum);
   const membership = medplum.get(`admin/projects/${projectId}/members/${membershipId}`).read();
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy> | undefined>(membership.accessPolicy);
   const [userConfiguration, setUserConfiguration] = useState<Reference<UserConfiguration> | undefined>(
@@ -27,8 +30,8 @@ export function EditMembershipPage(): JSX.Element {
   }
 
   return (
-    <Document width={600}>
-      <h1>Edit membership</h1>
+    <>
+      <Title>Edit membership</Title>
       <h3>
         <ResourceBadge value={membership.profile} />
       </h3>
@@ -48,7 +51,7 @@ export function EditMembershipPage(): JSX.Element {
         }}
       >
         {!success && (
-          <>
+          <Stack>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" defaultValue={accessPolicy} onChange={setAccessPolicy} />
             </FormSection>
@@ -60,23 +63,20 @@ export function EditMembershipPage(): JSX.Element {
               />
             </FormSection>
             <FormSection title="Admin" htmlFor="admin" outcome={outcome}>
-              <Checkbox name="admin" testid="admin-checkbox" defaultValue={admin} onChange={setAdmin} />
+              <Checkbox
+                id="admin"
+                name="admin"
+                defaultChecked={admin}
+                onChange={(e) => setAdmin(e.currentTarget.checked)}
+              />
             </FormSection>
-            <div className="medplum-signin-buttons">
-              <div></div>
-              <div>
-                <Button type="submit" testid="submit">
-                  Save
-                </Button>
-              </div>
-            </div>
-            <hr />
-            <div style={{ textAlign: 'right' }}>
-              <Button type="button" testid="remove-user" danger={true} onClick={deleteMembership}>
+            <Group position="right" mt="xl">
+              <Button type="submit">Save</Button>
+              <Button type="button" color="red" variant="outline" onClick={deleteMembership}>
                 Remove user
               </Button>
-            </div>
-          </>
+            </Group>
+          </Stack>
         )}
         {success && (
           <div data-testid="success">
@@ -88,6 +88,6 @@ export function EditMembershipPage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }

@@ -121,7 +121,7 @@ export interface SupplyRequest {
   /**
    * Status of the supply request.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'suspended' | 'cancelled' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Category of supply, e.g.  central, non-stock, etc. This is used to
@@ -133,7 +133,7 @@ export interface SupplyRequest {
    * Indicates how quickly this SupplyRequest should be addressed with
    * respect to other requests.
    */
-  priority?: string;
+  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
    * The item that is requested to be supplied. This is either a link to a

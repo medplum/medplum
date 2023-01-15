@@ -7,9 +7,8 @@ import { Attachment } from './Attachment';
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for RelatedArtifact Type: Related artifacts
- * such as additional documentation, justification, or bibliographic
- * references.
+ * Related artifacts such as additional documentation, justification, or
+ * bibliographic references.
  */
 export interface RelatedArtifact {
 
@@ -32,7 +31,7 @@ export interface RelatedArtifact {
   /**
    * The type of relationship to the related artifact.
    */
-  type?: string;
+  type?: 'documentation' | 'justification' | 'citation' | 'predecessor' | 'successor' | 'derived-from' | 'depends-on' | 'composed-of';
 
   /**
    * A short label that can be used to reference the citation from

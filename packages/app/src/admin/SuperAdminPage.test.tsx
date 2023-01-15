@@ -1,9 +1,11 @@
+import { MantineProvider } from '@mantine/core';
+import { NotificationsProvider } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { SuperAdminPage } from './SuperAdminPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
@@ -11,9 +13,11 @@ function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-        <Routes>
-          <Route path="/admin/super" element={<SuperAdminPage />} />
-        </Routes>
+        <MantineProvider withGlobalStyles withNormalizeCSS>
+          <NotificationsProvider>
+            <AppRoutes />
+          </NotificationsProvider>
+        </MantineProvider>
       </MemoryRouter>
     </MedplumProvider>
   );
@@ -21,44 +25,36 @@ function setup(): void {
 
 describe('SuperAdminPage', () => {
   test('Rebuild StructureDefinitions', async () => {
-    window.alert = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild StructureDefinitions'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Rebuild SearchParameters', async () => {
-    window.alert = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild SearchParameters'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Rebuild ValueSets', async () => {
-    window.alert = jest.fn();
-
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Reindex resource type', async () => {
-    window.alert = jest.fn();
-
     setup();
 
     await act(async () => {
@@ -69,6 +65,24 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Reindex'));
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Done');
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Force set password', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'alice@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password *'), { target: { value: 'override123' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Force Set Password' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 });

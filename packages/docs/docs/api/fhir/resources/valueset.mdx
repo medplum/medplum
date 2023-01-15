@@ -1,0 +1,25 @@
+---
+title: ValueSet
+sidebar_position: 143
+---
+
+import definition from '@site/static/data/resourceDefinitions/valueset.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ValueSet
+
+A ValueSet resource instance specifies a set of codes drawn from one or more code systems, intended for use in a particular context. Value sets link between [CodeSystem](./codesystem) definitions and their use in [coded elements](https://www.hl7.org/fhir/terminologies.html).
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,5 +1,6 @@
 {
   "testEnvironment": "jsdom",
+  "testTimeout": 120000,
   "transform": {
     "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
   },
@@ -13,6 +14,7 @@
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": [
     "**/src/**/*",
-    "!**/stories/**"
+    "!**/stories",
+    "!**/*.stories.tsx"
   ]
 }

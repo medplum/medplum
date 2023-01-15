@@ -7,8 +7,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Medplum',
-  tagline: 'Healthcare infrastructure and application development',
-  url: 'https://docs.medplum.com',
+  tagline: 'Fast and easy healthcare dev',
+  url: 'https://www.medplum.com',
   baseUrl: '/',
   trailingSlash: false,
   onBrokenLinks: 'throw',
@@ -16,7 +16,6 @@ const config = {
   favicon: 'img/favicon.ico',
   organizationName: 'medplum', // Usually your GitHub org/user name.
   projectName: 'medplum', // Usually your repo name.
-
   presets: [
     [
       '@docusaurus/preset-classic',
@@ -25,7 +24,6 @@ const config = {
         docs: {
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: 'https://github.com/medplum/medplum/blob/main/packages/docs/',
-          routeBasePath: '/',
           async sidebarItemsGenerator({ defaultSidebarItemsGenerator, ...args }) {
             // Example: return an hardcoded list of static sidebar items
             let items = await defaultSidebarItemsGenerator(args);
@@ -38,6 +36,9 @@ const config = {
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
+        },
+        gtag: {
+          trackingID: 'G-SHW0ZNT27G',
         },
       }),
     ],
@@ -88,47 +89,65 @@ const config = {
         },
         items: [
           {
+            to: '/products',
+            label: 'Products',
+            position: 'left',
+          },
+          {
+            to: '/solutions',
+            label: 'Solutions',
+            position: 'left',
+          },
+          {
             type: 'doc',
             docId: 'home',
             position: 'left',
-            label: 'Home',
+            label: 'Documentation',
           },
           {
-            to: '/tutorials',
-            label: 'Tutorials',
+            to: '/docs/api',
+            label: 'Reference',
             position: 'left',
           },
           {
-            to: '/api',
-            label: 'API',
-            position: 'left',
+            to: 'https://app.medplum.com/',
+            label: 'Sign In',
+            position: 'right',
           },
           {
-            to: '/community/contributing',
-            label: 'Community',
-            position: 'left',
-          },
-          {
-            to: '/blog',
-            label: 'Blog',
-            position: 'left',
-          },
-          {
-            href: 'https://github.com/medplum/medplum',
+            to: 'https://github.com/medplum/medplum',
             label: 'GitHub',
             position: 'right',
           },
         ],
       },
       footer: {
-        style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'Medplum',
             items: [
               {
-                label: 'Tutorial',
-                to: '/tutorials',
+                html: `
+                <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
+                <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
+                  `,
+              },
+            ],
+          },
+          {
+            title: 'Developers',
+            items: [
+              {
+                label: 'Getting started',
+                to: '/docs/tutorials',
+              },
+              {
+                label: 'Documentation',
+                to: '/docs',
+              },
+              {
+                label: 'Search',
+                to: '/search',
               },
             ],
           },
@@ -137,38 +156,67 @@ const config = {
             items: [
               {
                 label: 'Stack Overflow',
-                href: 'https://stackoverflow.com/questions/tagged/medplum',
+                to: 'https://stackoverflow.com/questions/tagged/medplum',
               },
               {
                 label: 'Discord',
-                href: 'https://discord.gg/UBAWwvrVeN',
+                to: 'https://discord.gg/UBAWwvrVeN',
               },
               {
                 label: 'Storybook',
-                href: 'https://docs.medplum.com/storybook/index.html',
+                to: 'https://storybook.medplum.com/',
+              },
+              {
+                label: 'GitHub',
+                to: 'https://github.com/medplum/medplum',
+              },
+              {
+                label: 'Contributing',
+                to: '/docs/contributing',
               },
             ],
           },
           {
-            title: 'More',
+            title: 'Company',
             items: [
+              {
+                label: 'About us',
+                to: '/about',
+              },
+              {
+                label: 'Services',
+                to: '/services',
+              },
+              {
+                label: 'Security',
+                to: '/security',
+              },
+              {
+                label: 'Terms of Service',
+                to: '/terms',
+              },
+              {
+                label: 'Privacy Policy',
+                to: '/privacy',
+              },
+              {
+                label: 'Pricing',
+                to: '/pricing',
+              },
               {
                 label: 'Blog',
                 to: '/blog',
               },
-              {
-                label: 'GitHub',
-                href: 'https://github.com/medplum/medplum',
-              },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} Medplum, Inc.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Orangebot, Inc.`,
       },
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
       },
+      image: 'img/medplum.png',
       algolia: {
         // The application ID provided by Algolia
         appId: '6A1DXS603N',

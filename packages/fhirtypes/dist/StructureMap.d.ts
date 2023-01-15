@@ -165,7 +165,7 @@ export interface StructureMap {
    * The status of this structure map. Enables tracking the life-cycle of
    * the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this structure map is authored for
@@ -302,7 +302,7 @@ export interface StructureMapGroup {
    * If this is the default rule set to apply for the source type or this
    * combination of types.
    */
-  typeMode?: string;
+  typeMode?: 'none' | 'types' | 'type-and-types';
 
   /**
    * Additional supporting documentation that explains the purpose of the
@@ -376,7 +376,7 @@ export interface StructureMapGroupInput {
   /**
    * Mode for this instance of data.
    */
-  mode?: string;
+  mode?: 'source' | 'target';
 
   /**
    * Documentation for this instance of data.
@@ -828,7 +828,7 @@ export interface StructureMapGroupRuleSource {
   /**
    * How to handle the list mode for this element.
    */
-  listMode?: string;
+  listMode?: 'first' | 'not_first' | 'last' | 'not_last' | 'only_one';
 
   /**
    * Named context for field, if a field is specified.
@@ -901,7 +901,7 @@ export interface StructureMapGroupRuleTarget {
   /**
    * How to interpret the context.
    */
-  contextType?: string;
+  contextType?: 'type' | 'variable';
 
   /**
    * Field to create in the context.
@@ -916,7 +916,7 @@ export interface StructureMapGroupRuleTarget {
   /**
    * If field is a list, how to manage the list.
    */
-  listMode?: string[];
+  listMode?: ('first' | 'share' | 'last' | 'collate')[];
 
   /**
    * Internal rule reference for shared list items.
@@ -926,7 +926,8 @@ export interface StructureMapGroupRuleTarget {
   /**
    * How the data is copied / created.
    */
-  transform?: string;
+  transform?: 'create' | 'copy' | 'truncate' | 'escape' | 'cast' | 'append' | 'translate' | 'reference' | 'dateOp' |
+      'uuid' | 'pointer' | 'evaluate' | 'cc' | 'c' | 'qty' | 'id' | 'cp';
 
   /**
    * Parameters to the transform.
@@ -1050,7 +1051,7 @@ export interface StructureMapStructure {
   /**
    * How the referenced structure is used in this mapping.
    */
-  mode?: string;
+  mode?: 'source' | 'queried' | 'target' | 'produced';
 
   /**
    * The name used for this type in the map.

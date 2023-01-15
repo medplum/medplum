@@ -5,11 +5,8 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
 
@@ -22,14 +19,11 @@ const app = express();
 describe('Reset Password', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   beforeEach(() => {

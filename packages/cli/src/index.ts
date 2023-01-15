@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import dotenv from 'dotenv';
 import { existsSync, readFileSync } from 'fs';
@@ -46,9 +46,11 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
     return;
   }
 
-  const bot = await medplum.readResource('Bot', botConfig.id);
-  if (!bot) {
-    console.log('Error: Bot does not exist: ' + botConfig.id);
+  let bot;
+  try {
+    bot = await medplum.readResource('Bot', botConfig.id);
+  } catch (err) {
+    console.log('Error: ' + normalizeErrorString(err));
     return;
   }
 
@@ -123,10 +125,9 @@ function readFileContents(fileName: string): string | undefined {
 
 if (require.main === module) {
   dotenv.config();
-  const medplum = new MedplumClient({ fetch });
+  const medplum = new MedplumClient({ fetch, baseUrl: process.env['MEDPLUM_BASE_URL'] });
   medplum
     .startClientLogin(process.env['MEDPLUM_CLIENT_ID'] as string, process.env['MEDPLUM_CLIENT_SECRET'] as string)
-    .then(() => {
-      main(medplum, process.argv).catch((err) => console.error('Unhandled error:', err));
-    });
+    .then(() => main(medplum, process.argv))
+    .catch((err) => console.error('Unhandled error:', err));
 }

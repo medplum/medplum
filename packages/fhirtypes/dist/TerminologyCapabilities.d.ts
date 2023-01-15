@@ -135,7 +135,7 @@ export interface TerminologyCapabilities {
    * The status of this terminology capabilities. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this terminology capabilities is
@@ -209,7 +209,7 @@ export interface TerminologyCapabilities {
    * instance of software) or a class of implementation (e.g. a desired
    * purchase).
    */
-  kind?: string;
+  kind?: 'instance' | 'capability' | 'requirements';
 
   /**
    * Software that is covered by this terminology capability statement.  It
@@ -247,7 +247,7 @@ export interface TerminologyCapabilities {
    * The degree to which the server supports the code search parameter on
    * ValueSet, if it is supported.
    */
-  codeSearch?: string;
+  codeSearch?: 'explicit' | 'all';
 
   /**
    * Information about the

@@ -3,14 +3,18 @@
  * Do not edit manually.
  */
 
+import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Meta } from './Meta';
+import { Project } from './Project';
 import { ProjectMembership } from './ProjectMembership';
 import { Reference } from './Reference';
+import { ResourceType } from './ResourceType';
+import { SmartAppLaunch } from './SmartAppLaunch';
 import { User } from './User';
 
 /**
- * OAuth login.
+ * Login event and session details.
  */
 export interface Login {
 
@@ -51,9 +55,19 @@ export interface Login {
   client?: Reference<ClientApplication>;
 
   /**
+   * Optional required profile resource type.
+   */
+  profileType?: ResourceType;
+
+  /**
+   * Optional required project for the login.
+   */
+  project?: Reference<Project>;
+
+  /**
    * The user requesting the code.
    */
-  user?: Reference<ClientApplication | User>;
+  user?: Reference<Bot | ClientApplication | User>;
 
   /**
    * Reference to the project membership which includes FHIR identity
@@ -120,6 +134,13 @@ export interface Login {
   nonce?: string;
 
   /**
+   * Whether the user has verified using multi-factor authentication (MFA).
+   * This will only be set is the user has MFA enabled (see
+   * User.mfaEnrolled).
+   */
+  mfaVerified?: boolean;
+
+  /**
    * Whether a token has been granted for this login.
    */
   granted?: boolean;
@@ -130,9 +151,19 @@ export interface Login {
   revoked?: boolean;
 
   /**
-   * Whether this login has system administrator privileges.
+   * DEPRECATED
    */
   admin?: boolean;
+
+  /**
+   * Whether this login has super administrator privileges.
+   */
+  superAdmin?: boolean;
+
+  /**
+   * Optional SMART App Launch context for this login.
+   */
+  launch?: Reference<SmartAppLaunch>;
 
   /**
    * The Internet Protocol (IP) address of the client or last proxy that

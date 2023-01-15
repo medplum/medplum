@@ -1,9 +1,10 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference, forbidden } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
-import { generateSecret } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { Repository, systemRepo } from '../fhir/repo';
+import { generateSecret } from '../oauth/keys';
 import { verifyProjectAdmin } from './utils';
 
 export const createClientValidators = [body('name').notEmpty().withMessage('Client name is required')];
@@ -11,7 +12,7 @@ export const createClientValidators = [body('name').notEmpty().withMessage('Clie
 export async function createClientHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
-    res.sendStatus(404);
+    sendOutcome(res, forbidden);
     return;
   }
 
@@ -38,19 +39,18 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
-  const [clientOutcome, client] = await repo.createResource<ClientApplication>({
+  const client = await repo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,
     },
     resourceType: 'ClientApplication',
     name: request.name,
-    secret: generateSecret(48),
+    secret: generateSecret(32),
     description: request.description,
     redirectUri: request.redirectUri,
   });
-  assertOk(clientOutcome, client);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,
     },
@@ -60,6 +60,6 @@ export async function createClient(repo: Repository, request: CreateClientReques
     profile: createReference(client),
     accessPolicy: request.accessPolicy,
   });
-  assertOk(membershipOutcome, membership);
+
   return client;
 }

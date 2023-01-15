@@ -1,19 +1,13 @@
-import { assertOk, getReferenceString, ProfileResource } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
+import { getReferenceString, ProfileResource } from '@medplum/core';
+import { Login, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
 import { registerNew } from './register';
-
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
 
 const app = express();
 const email = `multi${randomUUID()}@example.com`;
@@ -24,10 +18,7 @@ let profile2: ProfileResource;
 describe('Profile', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
 
     // Create a user with multiple profiles
     // Use the same user/email in the same project
@@ -41,17 +32,18 @@ describe('Profile', () => {
 
     const inviteResult = await inviteUser({
       project: registerResult.project,
+      resourceType: 'Practitioner',
       firstName: 'Multi2',
       lastName: 'Multi2',
       email,
     });
 
     profile1 = registerResult.profile;
-    profile2 = inviteResult;
+    profile2 = inviteResult.profile;
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Missing login', async () => {
@@ -94,8 +86,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       revoked: true,
@@ -122,8 +113,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       granted: true,
@@ -150,8 +140,7 @@ describe('Profile', () => {
     expect(res1.status).toBe(200);
     expect(res1.body.login).toBeDefined();
 
-    const [readOutcome, login] = await systemRepo.readResource<Login>('Login', res1.body.login);
-    assertOk(readOutcome, login);
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
     await systemRepo.updateResource({
       ...login,
       membership: {
@@ -192,6 +181,38 @@ describe('Profile', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Profile not found');
+  });
+
+  test('Membership for different user', async () => {
+    // Create a dummy ProjectMembership
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: { reference: randomUUID() },
+      profile: { reference: randomUUID() },
+      user: { reference: randomUUID() },
+    });
+
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+    expect(res1.body.memberships).toBeDefined();
+    expect(res1.body.memberships.length).toBe(2);
+
+    const res2 = await request(app)
+      .post('/auth/profile')
+      .type('json')
+      .send({
+        login: res1.body.login,
+        profile: membership.id as string,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Invalid profile');
   });
 
   test('Success', async () => {

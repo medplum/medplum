@@ -1,0 +1,26 @@
+---
+title: NutritionOrder
+sidebar_position: 94
+tags: [medications]
+---
+
+import definition from '@site/static/data/resourceDefinitions/nutritionorder.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# NutritionOrder
+
+A request to supply a diet, formula feeding (enteral) or oral nutritional supplement to a patient/resident.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

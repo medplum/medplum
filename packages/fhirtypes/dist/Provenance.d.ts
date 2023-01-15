@@ -281,7 +281,7 @@ export interface ProvenanceEntity {
   /**
    * How the entity was used during the activity.
    */
-  role?: string;
+  role?: 'derivation' | 'revision' | 'quotation' | 'source' | 'removal';
 
   /**
    * Identity of the  Entity used. May be a logical or physical uri and

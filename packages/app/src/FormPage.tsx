@@ -1,3 +1,4 @@
+import { Paper, Text, Title } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
 import {
   Bundle,
@@ -7,11 +8,12 @@ import {
   QuestionnaireResponse,
   Resource,
 } from '@medplum/fhirtypes';
-import { Document, Loading, MedplumLink, QuestionnaireForm, TitleBar, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, QuestionnaireForm, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { PatientHeader } from './PatientHeader';
-import { ResourceHeader } from './ResourceHeader';
+import { Loading } from './components/Loading';
+import { PatientHeader } from './components/PatientHeader';
+import { ResourceHeader } from './components/ResourceHeader';
 import { getPatient } from './utils';
 
 export function FormPage(): JSX.Element {
@@ -82,7 +84,7 @@ export function FormPage(): JSX.Element {
   if (result) {
     return (
       <Document>
-        <h1>{questionnaire?.title}</h1>
+        <Title>{questionnaire?.title}</Title>
         <p>Your response has been recorded.</p>
         <ul>
           {result.length === 1 && (
@@ -125,12 +127,12 @@ export function FormPage(): JSX.Element {
     <>
       {patient && <PatientHeader patient={patient} />}
       {subject && subject.resourceType !== 'Patient' && <ResourceHeader resource={subject} />}
-      <TitleBar>
-        <h1>
+      <Paper p="xl" shadow="xs" radius={0}>
+        <Text>
           {getDisplayString(questionnaire)}
           {subjectList && subjectList.length > 1 && <>&nbsp;(for {subjectList.length} resources)</>}
-        </h1>
-      </TitleBar>
+        </Text>
+      </Paper>
       <Document>
         <QuestionnaireForm
           questionnaire={questionnaire}

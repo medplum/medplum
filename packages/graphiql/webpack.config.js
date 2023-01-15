@@ -7,7 +7,7 @@ module.exports = (env, argv) => ({
   devtool: argv.mode === 'production' ? 'source-map' : 'eval-source-map',
   output: {
     path: path.resolve(__dirname, 'dist'),
-    filename: '[name].[contenthash].js',
+    filename: 'js/[name].[contenthash].js',
   },
   module: {
     rules: [
@@ -54,9 +54,9 @@ module.exports = (env, argv) => ({
   ],
   devServer: {
     hot: true,
-    // bypass simple localhost CORS restrictions by setting
-    // these to 127.0.0.1 in /etc/hosts
-    allowedHosts: ['local.test.com', 'graphiql.com'],
+    static: {
+      directory: path.join(__dirname, 'public'),
+    },
   },
   optimization: {
     usedExports: true,

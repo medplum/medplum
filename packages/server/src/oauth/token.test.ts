@@ -1,33 +1,64 @@
-import { assertOk } from '@medplum/core';
-import { ClientApplication } from '@medplum/fhirtypes';
+import { parseSearchDefinition } from '@medplum/core';
+import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { generateKeyPair, SignJWT } from 'jose';
 import request from 'supertest';
-import { initApp } from '../app';
+import { createClient } from '../admin/client';
+import { inviteUser } from '../admin/invite';
+import { initApp, shutdownApp } from '../app';
+import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { seedDatabase } from '../seed';
-import { createTestClient } from '../test.setup';
-import { generateSecret, initKeys } from './keys';
+import { systemRepo } from '../fhir/repo';
+import { createTestProject } from '../test.setup';
+import { generateSecret } from './keys';
 import { hashCode } from './token';
 
+jest.mock('jose', () => {
+  const core = jest.requireActual('@medplum/core');
+  const original = jest.requireActual('jose');
+  return {
+    ...original,
+    jwtVerify: jest.fn((credential: string) => {
+      const payload = core.parseJWTPayload(credential);
+      if (payload.invalid) {
+        throw new Error('Verification failed');
+      }
+      return { payload };
+    }),
+  };
+});
+
 const app = express();
+const email = randomUUID() + '@example.com';
+const password = randomUUID();
 let config: MedplumServerConfig;
+let project: Project;
 let client: ClientApplication;
 
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
     config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
-    client = await createTestClient();
+    await initApp(app, config);
+
+    // Create a test project
+    ({ project, client } = await createTestProject());
+
+    // Create a test user
+    const { user } = await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'User',
+      email,
+    });
+
+    // Set the test user password
+    await setPassword(user, password);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Token with wrong Content-Type', async () => {
@@ -137,14 +168,13 @@ describe('OAuth2 Token', () => {
 
   test('Token for client empty secret', async () => {
     // Create a client without an secret
-    const [outcome, badClient] = await systemRepo.createResource<ClientApplication>({
+    const badClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Bad Client',
       description: 'Bad Client',
       secret: '',
       redirectUri: 'https://example.com',
     });
-    assertOk(outcome, badClient);
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
@@ -157,12 +187,11 @@ describe('OAuth2 Token', () => {
   });
 
   test('Token for client without project membership', async () => {
-    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+    const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
-      secret: generateSecret(48),
+      secret: generateSecret(32),
     });
-    assertOk(clientOutcome, client);
 
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
@@ -208,19 +237,58 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Missing code');
   });
 
-  test('Authorization code token success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+  test('Token for authorization_code with invalid authorization header', async () => {
+    const res = await request(app).post('/oauth2/token').set('Authorization', 'Bearer xyz').type('form').send({
+      grant_type: 'authorization_code',
+      code: '',
+      code_verifier: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid authorization header');
+  });
+
+  test('Authorization code missing verification', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Missing verification context');
+  });
+
+  test('Authorization code missing code_verifier', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Missing code verifier');
+  });
+
+  test('Authorization code token with code verifier success', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -237,20 +305,86 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeUndefined();
   });
 
+  test('Authorization code token with wrong client secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: 'wrong',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_request');
+    expect(res2.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Authorization code token with client secret success', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Authorization code revoked', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Revoke the login
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    await systemRepo.updateResource({
+      ...login,
+      revoked: true,
+    });
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.error).toBe('invalid_grant');
+    expect(res2.body.error_description).toBe('Token revoked');
+  });
+
   test('Authorization code token success with refresh', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: true,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -272,11 +406,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
       });
@@ -300,18 +432,12 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token failure with client ID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -326,18 +452,12 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token failure already granted', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -383,19 +503,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: true,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -425,19 +539,13 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token failed for no refresh secret', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        client_id: client.id as string,
-        redirect_uri: client.redirectUri as string,
-        scope: 'openid',
-        code_challenge: 'xyz',
-        code_challenge_method: 'plain',
-        remember: false,
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: false,
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -472,11 +580,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
         remember: true,
@@ -499,11 +605,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
         remember: true,
@@ -536,16 +640,57 @@ describe('OAuth2 Token', () => {
     expect(res3.body.refresh_token).toBeDefined();
   });
 
+  test('Refresh token revoked', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      remember: true,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+
+    // Find the login
+    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    expect(loginBundle.entry).toHaveLength(1);
+
+    // Revoke the login
+    const login = loginBundle.entry?.[0]?.resource as Login;
+    await systemRepo.updateResource({
+      ...login,
+      revoked: true,
+    });
+
+    const res3 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'refresh_token',
+      refresh_token: res2.body.refresh_token,
+    });
+    expect(res3.status).toBe(400);
+    expect(res3.body.error).toBe('invalid_grant');
+    expect(res3.body.error_description).toBe('Token revoked');
+  });
+
   test('Refresh token Basic auth success', async () => {
     const res = await request(app)
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -587,11 +732,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -629,11 +772,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -671,11 +812,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -720,11 +859,9 @@ describe('OAuth2 Token', () => {
       .post('/auth/login')
       .type('json')
       .send({
-        email: 'admin@example.com',
-        password: 'medplum_admin',
+        email,
+        password,
         clientId: client.id as string,
-        redirectUri: client.redirectUri as string,
-        scope: 'openid',
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
         remember: true,
@@ -778,5 +915,256 @@ describe('OAuth2 Token', () => {
     });
     expect(res5.status).toBe(400);
     expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+  });
+
+  test('Patient in token response', async () => {
+    const patientEmail = `test-patient-${randomUUID()}@example.com`;
+    const patientPassword = 'test-patient-password';
+
+    // Invite a test patient
+    const testPatient = await inviteUser({
+      project,
+      resourceType: 'Patient',
+      firstName: 'Test',
+      lastName: 'Patient',
+      email: patientEmail,
+    });
+    expect(testPatient.user).toBeDefined();
+    expect(testPatient.profile).toBeDefined();
+
+    // Force set the password
+    await setPassword(testPatient.user, patientPassword);
+
+    // Authenticate
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        email: patientEmail,
+        password: patientPassword,
+        clientId: client.id as string,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+        remember: true,
+      });
+    expect(res.status).toBe(200);
+
+    // Get tokens
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.patient).toEqual(testPatient.profile.id);
+  });
+
+  test('Client assertion success', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Client assertion client not found', async () => {
+    const fakeClientId = randomUUID();
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(fakeClientId)
+      .setSubject(fakeClientId)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Client not found',
+    });
+  });
+
+  test('Client assertion missing jwks URL', async () => {
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client.id as string)
+      .setSubject(client.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Client must have a JWK Set URL',
+    });
+  });
+
+  test('Client assertion invalid audience', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('https://invalid-audience.com')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion audience',
+    });
+  });
+
+  test('Client assertion invalid issuer', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ 'urn:example:claim': true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer('invalid-issuer')
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion issuer',
+    });
+  });
+
+  test('Client assertion invalid signature', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ invalid: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion signature',
+    });
+  });
+
+  test('Smart App Launch tokens', async () => {
+    // Create a SmartAppLaunch
+    const launch = await systemRepo.createResource<SmartAppLaunch>({
+      resourceType: 'SmartAppLaunch',
+      patient: { reference: `Patient/${randomUUID()}` },
+      encounter: { reference: `Patient/${randomUUID()}` },
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      launch: launch.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.patient).toBeDefined();
+    expect(res2.body.encounter).toBeDefined();
   });
 });

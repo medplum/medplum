@@ -1,5 +1,6 @@
-import { PropertyType } from '../types';
-import { Atom, LiteralAtom, TypedValue } from './atoms';
+import { Atom } from '../fhirlexer';
+import { PropertyType, TypedValue } from '../types';
+import { LiteralAtom } from './atoms';
 import { FhirPathFunction, functions } from './functions';
 import { booleanToTypedValue, toTypedValue } from './utils';
 

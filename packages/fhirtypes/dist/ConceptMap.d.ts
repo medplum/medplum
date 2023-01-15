@@ -140,7 +140,7 @@ export interface ConceptMap {
    * The status of this concept map. Enables tracking the life-cycle of the
    * content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this concept map is authored for
@@ -429,7 +429,7 @@ export interface ConceptMapGroupElementTarget {
    * the dependencies and products). The equivalence is read from target to
    * source (e.g. the target is 'wider' than the source).
    */
-  equivalence?: string;
+  equivalence?: 'relatedto' | 'equivalent' | 'equal' | 'wider' | 'subsumes' | 'narrower' | 'specializes' | 'inexact' | 'unmatched' | 'disjoint';
 
   /**
    * A description of status/issues in mapping that conveys additional
@@ -573,7 +573,7 @@ export interface ConceptMapGroupUnmapped {
    * fixed code (a default code), or alternatively, a reference to a
    * different concept map can be provided (by canonical URL).
    */
-  mode?: string;
+  mode?: 'provided' | 'fixed' | 'other-map';
 
   /**
    * The fixed code to use when the mode = 'fixed'  - all unmapped codes

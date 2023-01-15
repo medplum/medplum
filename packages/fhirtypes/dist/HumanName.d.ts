@@ -7,8 +7,7 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * Base StructureDefinition for HumanName Type: A human's name with the
- * ability to identify parts and usage.
+ * A human's name with the ability to identify parts and usage.
  */
 export interface HumanName {
 
@@ -31,7 +30,7 @@ export interface HumanName {
   /**
    * Identifies the purpose for this name.
    */
-  use?: string;
+  use?: 'usual' | 'official' | 'temp' | 'nickname' | 'anonymous' | 'old' | 'maiden';
 
   /**
    * Specifies the entire name as it should be displayed e.g. on an

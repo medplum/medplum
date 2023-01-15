@@ -1,19 +1,15 @@
-import { assertOk } from '@medplum/core';
 import { Media } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { mkdtempSync, rmSync } from 'fs';
 import fetch from 'node-fetch';
 import { sep } from 'path';
 import { Readable } from 'stream';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initBinaryStorage } from '../fhir';
 import { Repository } from '../fhir/repo';
-import { seedDatabase } from '../seed';
-import { closeDownloadWorker, execDownloadJob, initDownloadWorker } from './download';
+import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
 
-jest.mock('bullmq');
 jest.mock('node-fetch');
 
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
@@ -22,10 +18,7 @@ let repo: Repository;
 describe('Download Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initBinaryStorage('file:' + binaryDir);
-    await initDownloadWorker(config.redis);
+    await initAppServices(config);
 
     repo = new Repository({
       project: randomUUID(),
@@ -36,8 +29,7 @@ describe('Download Worker', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
-    await closeDownloadWorker();
+    await shutdownApp();
     await closeDownloadWorker(); // Double close to ensure quite ignore
     rmSync(binaryDir, { recursive: true, force: true });
   });
@@ -49,18 +41,17 @@ describe('Download Worker', () => {
   test('Download external URL', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -71,7 +62,12 @@ describe('Download Worker', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       headers: {
-        get: jest.fn(),
+        get(name: string): string | undefined {
+          return {
+            'content-disposition': 'attachment; filename=download',
+            'content-type': 'text/plain',
+          }[name];
+        },
       },
       body,
     }));
@@ -83,18 +79,17 @@ describe('Download Worker', () => {
   });
 
   test('Ignore media missing URL', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: '',
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).not.toHaveBeenCalled();
   });
@@ -102,18 +97,17 @@ describe('Download Worker', () => {
   test('Retry on 400', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -128,18 +122,17 @@ describe('Download Worker', () => {
   test('Retry on exception', async () => {
     const url = 'https://example.com/download';
 
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url,
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
@@ -154,24 +147,23 @@ describe('Download Worker', () => {
   });
 
   test('Stop retries if Resource deleted', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: 'https://example.com/download',
       },
     });
 
-    assertOk(mediaOutcome, media);
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's delete the resource
-    const [deleteOutcome] = await repo.deleteResource('Media', media?.id as string);
-    assertOk(deleteOutcome, media);
+    await repo.deleteResource('Media', media?.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);
@@ -181,31 +173,29 @@ describe('Download Worker', () => {
   });
 
   test('Stop if URL changed', async () => {
-    const queue = (Queue as unknown as jest.Mock).mock.instances[0];
+    const queue = getDownloadQueue() as any;
     queue.add.mockClear();
 
-    const [mediaOutcome, media] = await repo.createResource<Media>({
+    const media = await repo.createResource<Media>({
       resourceType: 'Media',
+      status: 'completed',
       content: {
         contentType: 'text/plain',
         url: 'https://example.com/download',
       },
     });
-
-    expect(mediaOutcome.id).toEqual('created');
     expect(media).toBeDefined();
     expect(queue.add).toHaveBeenCalled();
 
     // At this point the job should be in the queue
     // But let's change the URL to an internal Binary resource
-    const [updateOutcome, updated] = await repo.updateResource({
+    await repo.updateResource({
       ...(media as Media),
       content: {
         contentType: 'text/plain',
         url: 'Binary/' + randomUUID(),
       },
     });
-    assertOk(updateOutcome, updated);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);

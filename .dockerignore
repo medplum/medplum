@@ -4,7 +4,5 @@
 .gitignore
 .dockerignore
 Dockerfile
-Dockerfile.app
-Dockerfile.server
 docker-compose.yml
 node_modules

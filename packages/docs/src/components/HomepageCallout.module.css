@@ -23,11 +23,15 @@
   order: 0;
   align-self: stretch;
   flex-grow: 1;
+
+  box-shadow:  rgba(0, 0, 0, 0.15) 0 5px 15px;
 }
 
 [data-theme='dark'] .container {
-  background: #0D0D0D;
-  border: 1px solid #333333;
+  background-color: rgb(27 27 29);
+  border: 1px solid #0d0d0d4b;
+
+  box-shadow:  rgba(0, 0, 0, 0.35) 0 5px 15px
 }
 
 .content {
@@ -93,3 +97,6 @@
   line-height: 100%;
 }
 
+.icon {
+  box-shadow: none;
+}

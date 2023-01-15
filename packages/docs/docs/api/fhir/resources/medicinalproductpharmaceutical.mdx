@@ -1,0 +1,26 @@
+---
+title: MedicinalProductPharmaceutical
+sidebar_position: 88
+tags: [medications]
+---
+
+import definition from '@site/static/data/resourceDefinitions/medicinalproductpharmaceutical.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# MedicinalProductPharmaceutical
+
+A pharmaceutical product described in terms of its composition and dose form.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

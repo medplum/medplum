@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
 import { getConfig } from './config';
-import { getSchemaDefinitions } from './fhir';
+import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
@@ -21,7 +21,7 @@ function getSpec(): any {
 
 function buildSpec(): any {
   const result = buildBaseSpec();
-  const definitions = getSchemaDefinitions();
+  const definitions = getJsonSchemaDefinitions();
   Object.entries(definitions).forEach(([name, definition]) => buildFhirType(result, name, definition));
   buildPaths(result);
   return result;
@@ -39,7 +39,7 @@ function buildBaseSpec(): OpenAPIObject {
       title: 'Medplum - OpenAPI 3.0',
       description:
         'Medplum OpenAPI 3.0 specification.  Learn more about Medplum at [https://www.medplum.com](https://www.medplum.com).',
-      termsOfService: 'https://www.medplum.com/docs/terms/',
+      termsOfService: 'https://www.medplum.com/terms',
       contact: {
         email: 'hello@medplum.com',
       },
@@ -156,7 +156,7 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
     name: typeName,
     description: typeDefinition.description,
     externalDocs: {
-      url: 'https://docs.medplum.com/api/fhir/resources/' + typeName.toLowerCase(),
+      url: 'https://www.medplum.com/docs/api/fhir/resources/' + typeName.toLowerCase(),
     },
   });
 }

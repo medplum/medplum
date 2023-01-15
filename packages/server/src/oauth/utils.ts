@@ -1,11 +1,9 @@
 import {
-  allOk,
-  assertOk,
   badRequest,
   createReference,
   Filter,
   getDateProperty,
-  isOk,
+  getReferenceString,
   Operator,
   ProfileResource,
   resolveId,
@@ -14,16 +12,19 @@ import {
   BundleEntry,
   ClientApplication,
   Login,
-  OperationOutcome,
   Project,
   ProjectMembership,
   Reference,
+  ResourceType,
+  SmartAppLaunch,
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
-import { systemRepo } from '../fhir';
+import { authenticator } from 'otplib';
+import { systemRepo } from '../fhir/repo';
+import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
@@ -33,8 +34,10 @@ export interface LoginRequest {
   readonly scope: string;
   readonly nonce: string;
   readonly remember: boolean;
+  readonly resourceType?: ResourceType;
   readonly projectId?: string;
   readonly clientId?: string;
+  readonly launchId?: string;
   readonly codeChallenge?: string;
   readonly codeChallengeMethod?: string;
   readonly googleCredentials?: GoogleCredentialClaims;
@@ -80,89 +83,86 @@ export interface GoogleCredentialClaims extends JWTPayload {
   readonly picture: string;
 }
 
-export async function tryLogin(request: LoginRequest): Promise<[OperationOutcome, Login | undefined]> {
-  const validateOutcome = validateLoginRequest(request);
-  if (validateOutcome) {
-    return [validateOutcome, undefined];
-  }
+export async function tryLogin(request: LoginRequest): Promise<Login> {
+  validateLoginRequest(request);
 
-  let clientOutcome: OperationOutcome | undefined;
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    [clientOutcome, client] = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
-    if (!isOk(clientOutcome)) {
-      return [clientOutcome, undefined];
-    }
+    client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
+  }
+
+  let launch: SmartAppLaunch | undefined;
+  if (request.launchId) {
+    launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
   }
 
   const user = await getUserByEmail(request.email, request.projectId);
   if (!user) {
-    return [badRequest('Email or password is invalid'), undefined];
+    throw badRequest('Email or password is invalid');
   }
 
-  const authOutcome = await authenticate(request, user);
-  if (!isOk(authOutcome)) {
-    return [authOutcome, undefined];
-  }
+  await authenticate(request, user);
 
-  const refreshSecret = request.remember ? generateSecret(48) : undefined;
+  const refreshSecret = request.remember ? generateSecret(32) : undefined;
 
-  const [loginOutcome, login] = await systemRepo.createResource<Login>({
+  const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     client: client && createReference(client),
+    launch: launch && createReference(launch),
+    project: request.projectId ? { reference: 'Project/' + request.projectId } : undefined,
+    profileType: request.resourceType,
     user: createReference(user),
     authMethod: request.authMethod,
     authTime: new Date().toISOString(),
     code: generateSecret(16),
+    cookie: generateSecret(16),
     refreshSecret,
     scope: request.scope,
     nonce: request.nonce,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
-    admin: user.admin,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });
-  assertOk(loginOutcome, login);
 
   // Try to get user memberships
   // If they only have one membership, set it now
   // Otherwise the application will need to prompt the user
-  const memberships = await getUserMemberships(createReference(user), request.projectId);
+  const memberships = await getMembershipsForLogin(login);
   if (memberships.length === 1) {
     return setLoginMembership(login, memberships[0].id as string);
   } else {
-    return [loginOutcome, login];
+    return login;
   }
 }
 
-export function validateLoginRequest(request: LoginRequest): OperationOutcome | undefined {
+export function validateLoginRequest(request: LoginRequest): void {
   if (!request.email) {
-    return badRequest('Invalid email', 'email');
+    throw badRequest('Invalid email', 'email');
   }
 
   if (!request.authMethod) {
-    return badRequest('Invalid authentication method', 'authMethod');
+    throw badRequest('Invalid authentication method', 'authMethod');
   }
 
   if (request.authMethod === 'password' && !request.password) {
-    return badRequest('Invalid password', 'password');
+    throw badRequest('Invalid password', 'password');
   }
 
   if (request.authMethod === 'google' && !request.googleCredentials) {
-    return badRequest('Invalid google credentials', 'googleCredentials');
+    throw badRequest('Invalid google credentials', 'googleCredentials');
   }
 
   if (!request.scope) {
-    return badRequest('Invalid scope', 'scope');
+    throw badRequest('Invalid scope', 'scope');
   }
 
   if (!request.codeChallenge && request.codeChallengeMethod) {
-    return badRequest('Invalid code challenge', 'code_challenge');
+    throw badRequest('Invalid code challenge', 'code_challenge');
   }
 
   if (request.codeChallenge && !request.codeChallengeMethod) {
-    return badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
   if (
@@ -170,28 +170,65 @@ export function validateLoginRequest(request: LoginRequest): OperationOutcome | 
     request.codeChallengeMethod !== 'plain' &&
     request.codeChallengeMethod !== 'S256'
   ) {
-    return badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw badRequest('Invalid code challenge method', 'code_challenge_method');
   }
 
   return undefined;
 }
 
-async function authenticate(request: LoginRequest, user: User): Promise<OperationOutcome> {
-  if (request.password) {
+async function authenticate(request: LoginRequest, user: User): Promise<void> {
+  if (request.password && user.passwordHash) {
     const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
     if (!bcryptResult) {
-      return badRequest('Email or password is invalid');
+      throw badRequest('Email or password is invalid');
     }
-
-    return allOk;
+    return;
   }
 
   if (request.googleCredentials) {
     // Verify Google user id
-    return allOk;
+    return;
   }
 
-  return badRequest('Invalid authentication method');
+  throw badRequest('Invalid authentication method');
+}
+
+/**
+ * Verifies the MFA token for a login.
+ * Ensures that the login is valid.
+ * Ensures that the token is valid.
+ * On success, updates the login with the MFA status.
+ * On error, throws an error.
+ * @param login The login resource.
+ * @param token The user supplied MFA token.
+ */
+export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
+  if (login.revoked) {
+    throw badRequest('Login revoked');
+  }
+
+  if (login.granted) {
+    throw badRequest('Login granted');
+  }
+
+  if (login.mfaVerified) {
+    throw badRequest('Login already verified');
+  }
+
+  const user = await systemRepo.readReference(login.user as Reference<User>);
+  if (!user.mfaEnrolled) {
+    throw badRequest('User not enrolled in MFA');
+  }
+
+  const secret = user.mfaSecret as string;
+  if (!authenticator.check(token, secret)) {
+    throw badRequest('Invalid MFA token');
+  }
+
+  return systemRepo.updateResource<Login>({
+    ...login,
+    mfaVerified: true,
+  });
 }
 
 /**
@@ -199,15 +236,15 @@ async function authenticate(request: LoginRequest, user: User): Promise<Operatio
  * When a user logs in, gather all the available profiles.
  * If there is only one profile, then automatically select it.
  * Otherwise, the user must select a profile.
- * @param user Reference to the user.
- * @param projectId Optional project ID.
+ * @param login The login resource.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getUserMemberships(
-  user: Reference<ClientApplication | User>,
-  projectId?: string
-): Promise<ProjectMembership[]> {
-  if (!user.reference) {
+export async function getMembershipsForLogin(login: Login): Promise<ProjectMembership[]> {
+  if (login.project?.reference === 'Project/new') {
+    return [];
+  }
+
+  if (!login.user?.reference) {
     throw new Error('User reference is missing');
   }
 
@@ -215,24 +252,55 @@ export async function getUserMemberships(
     {
       code: 'user',
       operator: Operator.EQUALS,
-      value: user.reference,
+      value: login.user.reference,
     },
   ];
 
-  if (projectId) {
+  if (login.project?.reference) {
     filters.push({
       code: 'project',
       operator: Operator.EQUALS,
-      value: 'Project/' + projectId,
+      value: login.project.reference,
     });
   }
 
-  const [membershipsOutcome, memberships] = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
+    count: 100,
     filters,
   });
-  assertOk(membershipsOutcome, memberships);
-  return (memberships.entry as BundleEntry<ProjectMembership>[]).map((entry) => entry.resource as ProjectMembership);
+
+  let memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map((e) => e.resource as ProjectMembership);
+
+  const profileType = login.profileType;
+  if (profileType) {
+    memberships = memberships.filter((m) => m.profile?.reference?.startsWith(profileType));
+  }
+
+  return memberships;
+}
+
+/**
+ * Returns the project membership for the client application.
+ * @param client The client application.
+ * @returns The project membership for the client application if found; otherwise undefined.
+ */
+export async function getClientApplicationMembership(
+  client: ClientApplication
+): Promise<ProjectMembership | undefined> {
+  const bundle = await systemRepo.search<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    count: 1,
+    filters: [
+      {
+        code: 'user',
+        operator: Operator.EQUALS,
+        value: getReferenceString(client),
+      },
+    ],
+  });
+
+  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as ProjectMembership) : undefined;
 }
 
 /**
@@ -241,57 +309,96 @@ export async function getUserMemberships(
  * Most users will only have one membership, so this happens immediately after login.
  * Some users have multiple memberships, so this happens after choosing a profile.
  * @param login The login before the membership is set.
- * @param membership The membership to set.
+ * @param membershipId The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(
-  login: Login,
-  membershipId: string
-): Promise<[OperationOutcome, Login | undefined]> {
+export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
   if (login.revoked) {
-    return [badRequest('Login revoked'), undefined];
+    throw badRequest('Login revoked');
   }
 
   if (login.granted) {
-    return [badRequest('Login granted'), undefined];
+    throw badRequest('Login granted');
   }
 
   if (login.membership) {
-    return [badRequest('Login profile already set'), undefined];
+    throw badRequest('Login profile already set');
   }
 
   // Find the membership for the user
-  const memberships = await getUserMemberships(login?.user as Reference<User>);
-  const membership = memberships.find((m) => m.id === membershipId);
-  if (!membership) {
-    return [badRequest('Profile not found'), undefined];
+  let membership = undefined;
+  try {
+    membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+  } catch (err) {
+    throw badRequest('Profile not found');
+  }
+  if (membership.user?.reference !== login.user?.reference) {
+    throw badRequest('Invalid profile');
   }
 
   // Get the project
-  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
-    return [badRequest('Google authentication is required'), undefined];
+    throw badRequest('Google authentication is required');
   }
 
+  logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
+
   // Everything checks out, update the login
-  return systemRepo.updateResource<Login>({ ...login, membership: createReference(membership) });
+  return systemRepo.updateResource<Login>({
+    ...login,
+    membership: createReference(membership),
+    superAdmin: project.superAdmin,
+  });
 }
 
-export async function getAuthTokens(
-  login: Login,
-  profile: Reference<ProfileResource>
-): Promise<[OperationOutcome, TokenResult | undefined]> {
+/**
+ * Sets the login scope.
+ * Ensures that the scope is the same or a subset of the originally requested scope.
+ * @param login The login before the membership is set.
+ * @param scope The scope to set.
+ * @returns The updated login.
+ */
+export async function setLoginScope(login: Login, scope: string): Promise<Login> {
+  if (login.revoked) {
+    throw badRequest('Login revoked');
+  }
+
+  if (login.granted) {
+    throw badRequest('Login granted');
+  }
+
+  // Get existing scope
+  const existingScopes = login.scope?.split(' ') || [];
+
+  // Get submitted scope
+  const submittedScopes = scope.split(' ');
+
+  // If user requests any scope that is not in existing scope, then reject
+  for (const scope of submittedScopes) {
+    if (!existingScopes.includes(scope)) {
+      throw badRequest('Invalid scope');
+    }
+  }
+
+  // Otherwise update scope
+  return systemRepo.updateResource<Login>({
+    ...login,
+    scope: submittedScopes.join(' '),
+  });
+}
+
+export async function getAuthTokens(login: Login, profile: Reference<ProfileResource>): Promise<TokenResult> {
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    return [badRequest('Login missing user'), undefined];
+    throw badRequest('Login missing user');
   }
 
   if (!login.membership) {
-    return [badRequest('Login missing profile'), undefined];
+    throw badRequest('Login missing profile');
   }
 
   if (!login.granted) {
@@ -328,18 +435,15 @@ export async function getAuthTokens(
       })
     : undefined;
 
-  return [
-    allOk,
-    {
-      idToken,
-      accessToken,
-      refreshToken,
-    },
-  ];
+  return {
+    idToken,
+    accessToken,
+    refreshToken,
+  };
 }
 
 export async function revokeLogin(login: Login): Promise<void> {
-  systemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     revoked: true,
   });
@@ -347,13 +451,12 @@ export async function revokeLogin(login: Login): Promise<void> {
 
 /**
  * Searches for user by email.
- * TODO: When we implement FHIR _filter, this method can be simplified with an "or" operation.
  * @param email The email string.
  * @param projectId Optional project ID.
  * @return The user if found; otherwise, undefined.
  */
 export async function getUserByEmail(email: string, projectId: string | undefined): Promise<User | undefined> {
-  if (projectId) {
+  if (projectId && projectId !== 'new') {
     // If a project is specified, then try to find a user account only in that project.
     const userWithProject = await getUserByEmailInProject(email, projectId);
     if (userWithProject) {
@@ -370,8 +473,8 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @param projectId The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
-  const [outcome, bundle] = await systemRepo.search({
+export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
+  const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
       {
@@ -386,7 +489,6 @@ async function getUserByEmailInProject(email: string, projectId: string): Promis
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 
@@ -396,8 +498,8 @@ async function getUserByEmailInProject(email: string, projectId: string): Promis
  * @param email The email string.
  * @returns The user if found; otherwise, undefined.
  */
-async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
-  const [outcome, bundle] = await systemRepo.search({
+export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+  const bundle = await systemRepo.search({
     resourceType: 'User',
     filters: [
       {
@@ -412,7 +514,6 @@ async function getUserByEmailWithoutProject(email: string): Promise<User | undef
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 

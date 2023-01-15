@@ -1,8 +1,10 @@
+import { AuditEvent } from '@medplum/fhirtypes';
+
 /*
  * Once upon a time, we used Winston, and that was fine.
  * Then the log4j fiasco happened, and everyone started auditing logging libraries.
  * And we decided that we did not use any fancy logging features,
- * and that logging to console.log was actually perfeectly adequate.
+ * and that logging to console.log was actually perfectly adequate.
  */
 
 export enum LogLevel {
@@ -42,5 +44,11 @@ export const logger = {
 
   log(level: string, ...args: any[]): void {
     console.log(level, new Date().toISOString(), ...args);
+  },
+
+  logAuditEvent(auditEvent: AuditEvent): void {
+    if (process.env.NODE_ENV !== 'test') {
+      console.log(JSON.stringify(auditEvent));
+    }
   },
 };

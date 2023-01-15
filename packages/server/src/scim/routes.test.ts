@@ -1,11 +1,8 @@
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
 import { initTestAuth } from '../test.setup';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 
 const app = express();
 let accessToken: string;
@@ -13,15 +10,12 @@ let accessToken: string;
 describe('SCIM Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Search users', async () => {

@@ -109,7 +109,7 @@ export interface Location {
    * not the current value which may be covered by the operationStatus, or
    * by a schedule/slots if they are configured for the location.
    */
-  status?: string;
+  status?: 'active' | 'suspended' | 'inactive';
 
   /**
    * The operational status covers operation values most relevant to beds
@@ -140,7 +140,7 @@ export interface Location {
    * Indicates whether a resource instance represents a specific location
    * or a class of locations.
    */
-  mode?: string;
+  mode?: 'instance' | 'kind';
 
   /**
    * Indicates the type of function performed at the location.
@@ -245,7 +245,7 @@ export interface LocationHoursOfOperation {
    * Indicates which days of the week are available between the start and
    * end Times.
    */
-  daysOfWeek?: string[];
+  daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
    * The Location is open all day.

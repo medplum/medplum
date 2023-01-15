@@ -1,22 +1,18 @@
-import { Patient } from '@medplum/fhirtypes';
+import { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { getDefaultFields, HomePage } from './HomePage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
+import { getDefaultFields } from './HomePage';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/:resourceType/new" element={<div>Create Resource Page</div>} />
-            <Route path="/:resourceType/:id" element={<div>Resource Page</div>} />
-            <Route path="/:resourceType" element={<HomePage />} />
-            <Route path="/" element={<HomePage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -54,19 +50,19 @@ describe('HomePage', () => {
 
   test('Next page button', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('next-page-button'));
+    await waitFor(() => screen.getByLabelText('Next page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('next-page-button'));
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
   });
 
   test('Prev page button', async () => {
     await setup();
-    await waitFor(() => screen.getByTestId('prev-page-button'));
+    await waitFor(() => screen.getByLabelText('Previous page'));
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('prev-page-button'));
+      fireEvent.click(screen.getByLabelText('Previous page'));
     });
   });
 
@@ -121,8 +117,12 @@ describe('HomePage', () => {
       fireEvent.click(screen.getByText('Delete...'));
     });
 
-    const check = await medplum.readResource('Patient', patient.id as string);
-    expect(check).toBeUndefined();
+    try {
+      await medplum.readResource('Patient', patient.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcome).id).toEqual('not-found');
+    }
 
     // Make sure the patient is *not* on the screen
     await waitFor(() => screen.queryByText(patient.id as string) === null);
@@ -184,7 +184,7 @@ describe('HomePage', () => {
     });
 
     // Change the tab
-    expect(screen.getByText('Resource Page')).toBeInTheDocument();
+    expect(screen.getByText('Timeline')).toBeInTheDocument();
 
     // Do not open a new browser tab
     expect(window.open).not.toHaveBeenCalled();

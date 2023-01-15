@@ -21966,6 +21966,18 @@
           "type" : [{
             "code" : "Reference"
           }]
+        },
+        {
+          "id" : "Meta.compartment",
+          "path" : "Meta.compartment",
+          "short" : "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "definition" : "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "comment" : "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "min" : 0,
+          "max" : "*",
+          "type" : [{
+            "code" : "Reference"
+          }]
         }]
       },
       "differential" : {

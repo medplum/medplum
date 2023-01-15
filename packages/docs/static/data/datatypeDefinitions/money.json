@@ -1,0 +1,90 @@
+{
+  "name": "Money",
+  "location": "datatype",
+  "description": "Base StructureDefinition for Money Type: An amount of economic utility in some recognized currency.",
+  "properties": [
+    {
+      "name": "Money",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Money",
+      "min": 0,
+      "max": "*",
+      "short": "An amount of economic utility in some recognized currency",
+      "definition": "An amount of economic utility in some recognized currency.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Money.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Money.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "value",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "decimal"
+        }
+      ],
+      "path": "Money.value",
+      "min": 0,
+      "max": "1",
+      "short": "Numerical value (with implicit precision)",
+      "definition": "Numerical value (with implicit precision).",
+      "comment": "Monetary values have their own rules for handling precision (refer to standard accounting text books).",
+      "inherited": false
+    },
+    {
+      "name": "currency",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Money.currency",
+      "min": 0,
+      "max": "1",
+      "short": "ISO 4217 Currency Code",
+      "definition": "ISO 4217 Currency Code.",
+      "comment": "",
+      "inherited": false
+    }
+  ]
+}

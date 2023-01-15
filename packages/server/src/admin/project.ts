@@ -1,9 +1,10 @@
-import { assertOk, badRequest, getStatus } from '@medplum/core';
+import { allOk, badRequest, forbidden } from '@medplum/core';
 import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { sendOutcome, systemRepo } from '../fhir';
-import { authenticateToken } from '../oauth';
+import { sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { authenticateToken } from '../oauth/middleware';
 import { createBotHandler, createBotValidators } from './bot';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
@@ -24,7 +25,8 @@ projectAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      return res.sendStatus(404);
+      sendOutcome(res, forbidden);
+      return;
     }
 
     const memberships = await getProjectMemberships(project.id as string);
@@ -44,9 +46,47 @@ projectAdminRouter.get(
       project: {
         id: project?.id,
         name: project?.name,
+        secret: project?.secret,
+        site: project?.site,
       },
       members,
     });
+  })
+);
+
+projectAdminRouter.post(
+  '/:projectId/secrets',
+  asyncWrap(async (req: Request, res: Response) => {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const result = await systemRepo.updateResource({
+      ...project,
+      secret: req.body,
+    });
+
+    res.json(result);
+  })
+);
+
+projectAdminRouter.post(
+  '/:projectId/sites',
+  asyncWrap(async (req: Request, res: Response) => {
+    const project = await verifyProjectAdmin(req, res);
+    if (!project) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const result = await systemRepo.updateResource({
+      ...project,
+      site: req.body,
+    });
+
+    res.json(result);
   })
 );
 
@@ -55,14 +95,13 @@ projectAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
     const { membershipId } = req.params;
-    const [outcome, membership] = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-    assertOk(outcome, membership);
-    res.status(getStatus(outcome)).json(membership);
+    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
+    res.json(membership);
   })
 );
 
@@ -71,19 +110,18 @@ projectAdminRouter.post(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
     const resource = req.body;
     if (resource?.resourceType !== 'ProjectMembership' || resource.id !== req.params.membershipId) {
-      res.sendStatus(400);
+      sendOutcome(res, forbidden);
       return;
     }
 
-    const [outcome, result] = await systemRepo.updateResource(resource);
-    assertOk(outcome, result);
-    res.status(getStatus(outcome)).json(result);
+    const result = await systemRepo.updateResource(resource);
+    res.json(result);
   })
 );
 
@@ -92,25 +130,20 @@ projectAdminRouter.delete(
   asyncWrap(async (req: Request, res: Response) => {
     const project = await verifyProjectAdmin(req, res);
     if (!project) {
-      res.sendStatus(404);
+      sendOutcome(res, forbidden);
       return;
     }
 
     const { membershipId } = req.params;
-    const [readOutcome, membership] = await systemRepo.readResource<ProjectMembership>(
-      'ProjectMembership',
-      membershipId
-    );
-    assertOk(readOutcome, membership);
+    const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
 
     if (project.owner?.reference === membership.user?.reference) {
       sendOutcome(res, badRequest('Cannot delete the owner of the project'));
       return;
     }
 
-    const [outcome] = await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
-    assertOk(outcome, outcome);
-    sendOutcome(res, outcome);
+    await systemRepo.deleteResource('ProjectMembership', req.params.membershipId);
+    sendOutcome(res, allOk);
   })
 );
 
@@ -130,6 +163,9 @@ function getRole(project: Project, membership: ProjectMembership): string {
   }
   if (membership.user?.reference?.startsWith('ClientApplication/')) {
     return 'client';
+  }
+  if (membership.profile?.reference?.startsWith('Patient/')) {
+    return 'patient';
   }
   if (membership.user?.reference === project.owner?.reference) {
     return 'owner';

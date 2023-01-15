@@ -104,7 +104,7 @@ export interface EnrollmentResponse {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * Original request resource reference.
@@ -114,7 +114,7 @@ export interface EnrollmentResponse {
   /**
    * Processing status: error, complete.
    */
-  outcome?: string;
+  outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A description of the status of the adjudication.

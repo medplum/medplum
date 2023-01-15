@@ -7,9 +7,8 @@ import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Contributor Type: A contributor to the
- * content of a knowledge asset, including authors, editors, reviewers,
- * and endorsers.
+ * A contributor to the content of a knowledge asset, including authors,
+ * editors, reviewers, and endorsers.
  */
 export interface Contributor {
 
@@ -32,7 +31,7 @@ export interface Contributor {
   /**
    * The type of contributor.
    */
-  type?: string;
+  type?: 'author' | 'editor' | 'reviewer' | 'endorser';
 
   /**
    * The name of the individual or organization responsible for the

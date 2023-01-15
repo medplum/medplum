@@ -8,6 +8,9 @@ import { Meta } from './Meta';
 import { Reference } from './Reference';
 import { User } from './User';
 
+/**
+ * Encapsulation of resources for a specific project or organization.
+ */
 export interface Project {
 
   /**
@@ -52,6 +55,24 @@ export interface Project {
   description?: string;
 
   /**
+   * Whether this project is the super administrator project. A super
+   * administrator is a user who has complete access to all resources in
+   * all projects.
+   */
+  superAdmin?: boolean;
+
+  /**
+   * Whether this project uses strict FHIR validation.
+   */
+  strictMode?: boolean;
+
+  /**
+   * Whether this project uses referential integrity on write operations
+   * such as 'create' and 'update'.
+   */
+  checkReferencesOnWrite?: boolean;
+
+  /**
    * The user who owns the project.
    */
   owner?: Reference<User>;
@@ -67,19 +88,47 @@ export interface Project {
   defaultPatientAccessPolicy?: Reference<AccessPolicy>;
 
   /**
-   * DEPRECATED
+   * Secure environment variable that can be used to store secrets for
+   * bots.
    */
-  googleClientId?: string[];
-
-  /**
-   * DEPRECATED
-   */
-  recaptchaSiteKey?: string[];
+  secret?: ProjectSecret[];
 
   /**
    * Web application or web site that is associated with the project.
    */
   site?: ProjectSite[];
+}
+
+/**
+ * Secure environment variable that can be used to store secrets for
+ * bots.
+ */
+export interface ProjectSecret {
+
+  /**
+   * The secret name.
+   */
+  name?: string;
+
+  /**
+   * The secret value.
+   */
+  valueString?: string;
+
+  /**
+   * The secret value.
+   */
+  valueBoolean?: boolean;
+
+  /**
+   * The secret value.
+   */
+  valueDecimal?: number;
+
+  /**
+   * The secret value.
+   */
+  valueInteger?: number;
 }
 
 /**

@@ -1,0 +1,749 @@
+{
+  "name": "QuestionnaireResponse",
+  "location": "resource",
+  "description": "A structured set of questions and their answers. The questions are ordered and grouped into coherent subsets, corresponding to the structure of the grouping of the questionnaire being responded to.",
+  "properties": [
+    {
+      "name": "QuestionnaireResponse",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "QuestionnaireResponse",
+      "min": 0,
+      "max": "*",
+      "short": "A structured set of questions and their answers",
+      "definition": "A structured set of questions and their answers. The questions are ordered and grouped into coherent subsets, corresponding to the structure of the grouping of the questionnaire being responded to.",
+      "comment": "The QuestionnaireResponse contains enough information about the questions asked and their organization that it can be interpreted somewhat independently from the Questionnaire it is based on.  I.e. You don't need access to the Questionnaire in order to extract basic information from a QuestionnaireResponse.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "QuestionnaireResponse.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "QuestionnaireResponse.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "QuestionnaireResponse.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for this set of answers",
+      "definition": "A business identifier assigned to a particular completed (or partially completed) questionnaire.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "basedOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "CarePlan",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.basedOn",
+      "min": 0,
+      "max": "*",
+      "short": "Request fulfilled by this QuestionnaireResponse",
+      "definition": "The order, proposal or plan that is fulfilled in whole or in part by this QuestionnaireResponse.  For example, a ServiceRequest seeking an intake assessment or a decision support recommendation to assess for post-partum depression.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "partOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.partOf",
+      "min": 0,
+      "max": "*",
+      "short": "Part of this action",
+      "definition": "A procedure or observation that this questionnaire was performed as part of the execution of.  For example, the surgery a checklist was executed as part of.",
+      "comment": "Composition of questionnaire responses will be handled by the parent questionnaire having answers that reference the child questionnaire.  For relationships to referrals, and other types of requests, use basedOn.",
+      "inherited": false
+    },
+    {
+      "name": "questionnaire",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "QuestionnaireResponse.questionnaire",
+      "min": 0,
+      "max": "1",
+      "short": "Form being answered",
+      "definition": "The Questionnaire that defines and organizes the questions for which answers are being provided.",
+      "comment": "If a QuestionnaireResponse references a Questionnaire, then the QuestionnaireResponse structure must be consistent with the Questionnaire (i.e. questions must be organized into the same groups, nested questions must still be nested, etc.).",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "QuestionnaireResponse.status",
+      "min": 1,
+      "max": "1",
+      "short": "in-progress | completed | amended | entered-in-error | stopped",
+      "definition": "The position of the questionnaire response within its overall lifecycle.",
+      "comment": "This element is labeled as a modifier because the status contains codes that mark the resource as not currently valid.",
+      "inherited": false
+    },
+    {
+      "name": "subject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.subject",
+      "min": 0,
+      "max": "1",
+      "short": "The subject of the questions",
+      "definition": "The subject of the questionnaire response.  This could be a patient, organization, practitioner, device, etc.  This is who/what the answers apply to, but is not necessarily the source of information.",
+      "comment": "If the Questionnaire declared a subjectType, the resource pointed to by this element must be an instance of one of the listed types.",
+      "inherited": false
+    },
+    {
+      "name": "encounter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.encounter",
+      "min": 0,
+      "max": "1",
+      "short": "Encounter created as part of",
+      "definition": "The Encounter during which this questionnaire response was created or to which the creation of this record is tightly associated.",
+      "comment": "This will typically be the encounter the event occurred within, but some activities may be initiated prior to or after the official completion of an encounter but still be tied to the context of the encounter. A questionnaire that was initiated during an encounter but not fully completed during the encounter would still generally be associated with the encounter.",
+      "inherited": false
+    },
+    {
+      "name": "authored",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "QuestionnaireResponse.authored",
+      "min": 0,
+      "max": "1",
+      "short": "Date the answers were gathered",
+      "definition": "The date and/or time that this set of answers were last changed.",
+      "comment": "May be different from the lastUpdateTime of the resource itself, because that reflects when the data was known to the server, not when the data was captured.\n\nThis element is optional to allow for systems that might not know the value, however it SHOULD be populated if possible.",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.author",
+      "min": 0,
+      "max": "1",
+      "short": "Person who received and recorded the answers",
+      "definition": "Person who received the answers to the questions in the QuestionnaireResponse and recorded them in the system.",
+      "comment": "Mapping a subject's answers to multiple choice options and determining what to put in the textual answer is a matter of interpretation.  Authoring by device would indicate that some portion of the questionnaire had been auto-populated.",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.source",
+      "min": 0,
+      "max": "1",
+      "short": "The person who answered the questions",
+      "definition": "The person who answered the questions about the subject.",
+      "comment": "If not specified, no inference can be made about who provided the data.",
+      "inherited": false
+    },
+    {
+      "name": "item",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "QuestionnaireResponse.item",
+      "min": 0,
+      "max": "*",
+      "short": "Groups and questions",
+      "definition": "A group or question item from the original questionnaire for which answers are provided.",
+      "comment": "Groups cannot have answers and therefore must nest directly within item. When dealing with questions, nesting must occur within each answer because some questions may have multiple answers (and the nesting occurs for each answer).",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "linkId",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.linkId",
+      "min": 1,
+      "max": "1",
+      "short": "Pointer to specific item from Questionnaire",
+      "definition": "The item from the Questionnaire that corresponds to this item in the QuestionnaireResponse resource.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definition",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.definition",
+      "min": 0,
+      "max": "1",
+      "short": "ElementDefinition - details for the item",
+      "definition": "A reference to an [ElementDefinition](elementdefinition.html) that provides the details for the item.",
+      "comment": "The ElementDefinition must be in a [StructureDefinition](structuredefinition.html#), and must have a fragment identifier that identifies the specific data element by its id (Element.id). E.g. http://hl7.org/fhir/StructureDefinition/Observation#Observation.value[x].\n\nThere is no need for this element if the item pointed to by the linkId has a definition listed.",
+      "inherited": false
+    },
+    {
+      "name": "text",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.text",
+      "min": 0,
+      "max": "1",
+      "short": "Name for group or question text",
+      "definition": "Text that is displayed above the contents of the group or as the text of the question being answered.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "answer",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer",
+      "min": 0,
+      "max": "*",
+      "short": "The response(s) to the question",
+      "definition": "The respondent's answer(s) to the question.",
+      "comment": "The value is nested because we cannot have a repeating structure that has variable type.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "value[x]",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer.value[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Single-valued answer to the question",
+      "definition": "The answer (or one of the answers) provided by the respondent to the question.",
+      "comment": "More complex structures (Attachment, Resource and Quantity) will typically be limited to electronic forms that can expose an appropriate user interface to capture the components and enforce the constraints of a complex data type.  Additional complex types can be introduced through extensions. Must match the datatype specified by Questionnaire.item.type in the corresponding Questionnaire.",
+      "inherited": false
+    },
+    {
+      "name": "item",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "QuestionnaireResponse.item.answer.item",
+      "min": 0,
+      "max": "*",
+      "short": "Nested groups and questions",
+      "definition": "Nested groups and/or questions found within this particular answer.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "item",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "QuestionnaireResponse.item.item",
+      "min": 0,
+      "max": "*",
+      "short": "Nested questionnaire response items",
+      "definition": "Questions or sub-groups nested beneath a question or group.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "author",
+      "type": "reference",
+      "description": "The author of the questionnaire response",
+      "expression": "QuestionnaireResponse.author"
+    },
+    {
+      "name": "authored",
+      "type": "date",
+      "description": "When the questionnaire response was last changed",
+      "expression": "QuestionnaireResponse.authored"
+    },
+    {
+      "name": "based-on",
+      "type": "reference",
+      "description": "Plan/proposal/order fulfilled by this questionnaire response",
+      "expression": "QuestionnaireResponse.basedOn"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": "Encounter associated with the questionnaire response",
+      "expression": "QuestionnaireResponse.encounter"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The unique identifier for the questionnaire response",
+      "expression": "QuestionnaireResponse.identifier"
+    },
+    {
+      "name": "part-of",
+      "type": "reference",
+      "description": "Procedure or observation this questionnaire response was performed as a part of",
+      "expression": "QuestionnaireResponse.partOf"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": "The patient that is the subject of the questionnaire response",
+      "expression": "QuestionnaireResponse.subject"
+    },
+    {
+      "name": "questionnaire",
+      "type": "reference",
+      "description": "The questionnaire the answers are provided for",
+      "expression": "QuestionnaireResponse.questionnaire"
+    },
+    {
+      "name": "source",
+      "type": "reference",
+      "description": "The individual providing the information reflected in the questionnaire respose",
+      "expression": "QuestionnaireResponse.source"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The status of the questionnaire response",
+      "expression": "QuestionnaireResponse.status"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "The subject of the questionnaire response",
+      "expression": "QuestionnaireResponse.subject"
+    }
+  ]
+}

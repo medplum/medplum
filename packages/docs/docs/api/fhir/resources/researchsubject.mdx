@@ -1,0 +1,25 @@
+---
+title: ResearchSubject
+sidebar_position: 118
+---
+
+import definition from '@site/static/data/resourceDefinitions/researchsubject.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ResearchSubject
+
+A physical entity which is the primary unit of operational and/or administrative interest in a study.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,3 +1,4 @@
+import { MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -5,18 +6,18 @@ import crypto from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { RegisterPage } from './RegisterPage';
+import { AppRoutes } from './AppRoutes';
 
-const medplum = new MockClient();
-
-function setup(): void {
-  render(
-    <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
-        <RegisterPage />
-      </MedplumProvider>
-    </MemoryRouter>
-  );
+async function setup(medplum: MedplumClient): Promise<void> {
+  await act(async () => {
+    render(
+      <MemoryRouter initialEntries={['/register']} initialIndex={0}>
+        <MedplumProvider medplum={medplum}>
+          <AppRoutes />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+  });
 }
 
 describe('RegisterPage', () => {
@@ -30,14 +31,24 @@ describe('RegisterPage', () => {
     });
   });
 
-  test('Renders', () => {
-    setup();
-    const input = screen.getByTestId('submit') as HTMLButtonElement;
-    expect(input.innerHTML).toBe('Create account');
+  test('Renders', async () => {
+    const medplum = new MockClient();
+    medplum.getProfile = jest.fn(() => undefined) as any;
+    await setup(medplum);
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeInTheDocument();
+  });
+
+  test('Redirect if signed in', async () => {
+    const medplum = new MockClient();
+    await setup(medplum);
+    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    setup();
+    const medplum = new MockClient();
+    medplum.getProfile = jest.fn(() => undefined) as any;
+    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    await setup(medplum);
 
     Object.defineProperty(global, 'grecaptcha', {
       value: {
@@ -51,25 +62,30 @@ describe('RegisterPage', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('firstName'), {
+      fireEvent.change(screen.getByLabelText('First name *'), {
         target: { value: 'George' },
       });
-      fireEvent.change(screen.getByTestId('lastName'), {
+      fireEvent.change(screen.getByLabelText('Last name *'), {
         target: { value: 'Washington' },
       });
-      fireEvent.change(screen.getByTestId('projectName'), {
-        target: { value: 'Test Project' },
-      });
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'george@example.com' },
       });
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password *'), {
         target: { value: 'password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button'));
+    });
+
+    fireEvent.change(screen.getByLabelText('Project Name *'), {
+      target: { value: 'Test Project' },
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button'));
     });
   });
 });

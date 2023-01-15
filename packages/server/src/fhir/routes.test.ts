@@ -1,12 +1,11 @@
+import { getReferenceString } from '@medplum/core';
 import { Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 import { initTestAuth } from '../test.setup';
 
 const app = express();
@@ -18,10 +17,7 @@ let patientVersionId: string;
 describe('FHIR Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
 
     const res = await request(app)
@@ -44,7 +40,7 @@ describe('FHIR Routes', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Get CapabilityStatement anonymously', async () => {
@@ -65,8 +61,17 @@ describe('FHIR Routes', () => {
     const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
+
+    // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
     expect(res.body.authorization_endpoint).toBeDefined();
+    expect(res.body.grant_types_supported).toBeDefined();
     expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.capabilities).toBeDefined();
+    expect(res.body.code_challenge_methods_supported).toBeDefined();
+
+    const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
+    expect(res2.status).toBe(200);
+    expect(res2.headers['content-type']).toEqual('application/json; charset=utf-8');
   });
 
   test('Invalid JSON', async () => {
@@ -157,7 +162,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource invalid resource type', async () => {
@@ -194,7 +199,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123/_history`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource history invalid resource type', async () => {
@@ -215,14 +220,14 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/123/_history/${patientVersionId}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource version invalid version UUID', async () => {
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patientId}/_history/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Read resource version invalid resource type', async () => {
@@ -266,7 +271,8 @@ describe('FHIR Routes', () => {
       .put(`/fhir/R4/Patient/${patient.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(patient);
-    expect(res2.status).toBe(304);
+    expect(res2.status).toBe(200);
+    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
   });
 
   test('Update resource not modified with empty strings', async () => {
@@ -292,7 +298,8 @@ describe('FHIR Routes', () => {
           display: '',
         },
       });
-    expect(res2.status).toBe(304);
+    expect(res2.status).toBe(200);
+    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
   });
 
   test('Update resource invalid', async () => {
@@ -350,7 +357,7 @@ describe('FHIR Routes', () => {
     const res = await request(app)
       .delete(`/fhir/R4/Patient/123`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   test('Delete resource invalid resource type', async () => {
@@ -422,6 +429,30 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Search invalid search parameter', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ServiceRequest?basedOn=ServiceRequest/123`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
+  });
+
+  test('Search by POST', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/_search`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('form');
+    expect(res.status).toBe(200);
+  });
+
+  test('Search by POST wrong content-type', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/_search`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('application/json');
+    expect(res.status).toBe(400);
+  });
+
   test('Validate create success', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/$validate`)
@@ -461,5 +492,21 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res.status).toBe(403);
+  });
+
+  test('Resend as project admin', async () => {
+    const { profile, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/${getReferenceString(profile)}/$resend`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res.status).toBe(200);
   });
 });

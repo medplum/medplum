@@ -1,0 +1,25 @@
+---
+title: Coverage
+sidebar_position: 30
+---
+
+import definition from '@site/static/data/resourceDefinitions/coverage.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Coverage
+
+Financial instrument which may be used to reimburse or pay for health care products and services. Includes both insurance and self-payment.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

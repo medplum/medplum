@@ -1,0 +1,42 @@
+.indentation {
+  border: solid #ddd;
+  border-width: 0 0 2px 2px;
+  height: 0.5ch;
+  width: 0.75rem;
+  display: inline-block;
+  position: relative;
+  top: -0.5ch;
+  margin-right: 0.5rem;
+  margin-left: 1.5rem;
+}
+
+td p {
+  margin-bottom: 0.5ch;
+}
+
+td {
+  font-size: 14px;
+}
+
+.propertyNameColumn {
+  white-space: nowrap;
+}
+
+.propertyTypeColumn {
+  display: inline-block;
+}
+
+details summary {
+  font-style: italic;
+  margin-bottom: 0.2ch;
+}
+
+td details p {
+  padding-left: 1.25rem;
+  margin-bottom: 1.2ch;
+}
+
+.required {
+  text-align: center;
+  font-size: 2.25ch;
+}

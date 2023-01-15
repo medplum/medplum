@@ -38,7 +38,7 @@ export const DrAliceSmith: Practitioner = {
   photo: [
     {
       contentType: 'image/png',
-      url: 'https://docs.medplum.com/img/cdc-femaledoc.png',
+      url: 'https://www.medplum.com/img/cdc-femaledoc.png',
     },
   ],
 };
@@ -58,7 +58,7 @@ export const DrAliceSmithPreviousVersion: Practitioner = {
 
 export const DrAliceSmithSchedule: Schedule = {
   resourceType: 'Schedule',
-  id: '123',
+  id: 'alice-smith-schedule',
   actor: [
     {
       reference: 'Practitioner/123',

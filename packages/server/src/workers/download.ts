@@ -1,9 +1,10 @@
-import { assertOk, isGone } from '@medplum/core';
-import { Binary, Meta, Resource } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
+import { isGone } from '@medplum/core';
+import { Binary, Meta, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
-import { getBinaryStorage, systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
+import { getBinaryStorage } from '../fhir/storage';
 import { logger } from '../logger';
 
 /*
@@ -25,7 +26,6 @@ export interface DownloadJobData {
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
-let queueScheduler: QueueScheduler | undefined = undefined;
 let queue: Queue<DownloadJobData> | undefined = undefined;
 let worker: Worker<DownloadJobData> | undefined = undefined;
 
@@ -38,8 +38,6 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config,
   };
-
-  queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
   queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
@@ -54,21 +52,15 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
 
   worker = new Worker<DownloadJobData>(queueName, execDownloadJob, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
+  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
  * Shuts down the download worker.
- * Closes the BullMQ scheduler.
  * Closes the BullMQ job queue.
  * Clsoes the BullMQ worker.
  */
 export async function closeDownloadWorker(): Promise<void> {
-  if (queueScheduler) {
-    await queueScheduler.close();
-    queueScheduler = undefined;
-  }
-
   if (queue) {
     await queue.close();
     queue = undefined;
@@ -78,6 +70,15 @@ export async function closeDownloadWorker(): Promise<void> {
     await worker.close();
     worker = undefined;
   }
+}
+
+/**
+ * Returns the download queue instance.
+ * This is used by the unit tests.
+ * @returns The download queue (if available).
+ */
+export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
+  return queue;
 }
 
 /**
@@ -102,7 +103,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
   }
 
   if (resource.resourceType === 'Media' && isExternalUrl(resource.content?.url)) {
-    addDownloadJobData({
+    await addDownloadJobData({
       resourceType: resource.resourceType,
       id: resource.id as string,
       url: resource.content?.url as string,
@@ -134,10 +135,10 @@ function isExternalUrl(url: string | undefined): boolean {
  * Adds a download job to the queue.
  * @param job The download job details.
  */
-function addDownloadJobData(job: DownloadJobData): void {
+async function addDownloadJobData(job: DownloadJobData): Promise<void> {
   logger.debug(`Adding Download job`);
   if (queue) {
-    queue.add(jobName, job);
+    await queue.add(jobName, job);
   } else {
     logger.debug(`Download queue not initialized`);
   }
@@ -150,12 +151,16 @@ function addDownloadJobData(job: DownloadJobData): void {
 export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
   const { resourceType, id, url } = job.data;
 
-  const [readOutcome, resource] = await systemRepo.readResource(resourceType, id);
-  if (isGone(readOutcome)) {
-    // If the resource was deleted, then stop processing it.
-    return;
+  let resource;
+  try {
+    resource = await systemRepo.readResource(resourceType, id);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the resource was deleted, then stop processing it.
+      return;
+    }
+    throw err;
   }
-  assertOk(readOutcome, resource);
 
   if (!JSON.stringify(resource).includes(url)) {
     // If the resource no longer includes the URL, then stop processing it.
@@ -173,14 +178,13 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
 
     const contentDisposition = response.headers.get('content-disposition') as string | undefined;
     const contentType = response.headers.get('content-type') as string | undefined;
-    const [createBinaryOutcome, binary] = await systemRepo.createResource<Binary>({
+    const binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
         project: resource?.meta?.project,
       },
     });
-    assertOk(createBinaryOutcome, binary);
     if (response.body === null) {
       throw new Error('Received null response body');
     }
@@ -188,8 +192,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
 
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
-    const [updateOutcome, updatedResource] = await systemRepo.updateResource(updated);
-    assertOk(updateOutcome, updatedResource);
+    await systemRepo.updateResource(updated);
     logger.info('Downloaded content successfully');
   } catch (ex) {
     logger.info('Download exception: ' + ex);

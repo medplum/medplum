@@ -1,13 +1,16 @@
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { BulkAppPage } from './BulkAppPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
-describe('ResourcePage', () => {
+describe('BulkAppPage', () => {
   async function setup(url: string): Promise<void> {
     const urlObj = new URL(url, 'http://localhost');
     Object.defineProperty(window, 'location', {
@@ -20,14 +23,18 @@ describe('ResourcePage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );
     });
   }
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
 
   test('Patient apps', async () => {
     await setup('/bulk/Patient?ids=123,456');

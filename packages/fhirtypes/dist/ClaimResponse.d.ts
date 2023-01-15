@@ -114,7 +114,7 @@ export interface ClaimResponse {
   /**
    * The status of the resource instance.
    */
-  status?: string;
+  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * A finer grained suite of claim type codes which may convey additional
@@ -137,7 +137,7 @@ export interface ClaimResponse {
    * or requesting the non-binding adjudication of the listed products and
    * services which could be provided in the future.
    */
-  use?: string;
+  use?: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
    * The party to whom the professional services and/or products have been
@@ -172,7 +172,7 @@ export interface ClaimResponse {
    * The outcome of the claim, predetermination, or preauthorization
    * processing.
    */
-  outcome?: string;
+  outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
    * A human readable description of the status of the adjudication.
@@ -1134,7 +1134,7 @@ export interface ClaimResponseProcessNote {
   /**
    * The business purpose of the note text.
    */
-  type?: string;
+  type?: 'display' | 'print' | 'printoper';
 
   /**
    * The explanation or description associated with the processing.

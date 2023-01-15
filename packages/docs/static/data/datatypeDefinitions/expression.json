@@ -1,0 +1,138 @@
+{
+  "name": "Expression",
+  "location": "datatype",
+  "description": "Base StructureDefinition for Expression Type: A expression that is evaluated in a specified context and returns a value. The context of use of the expression must specify the context in which the expression is evaluated, and how the result of the expression is used.",
+  "properties": [
+    {
+      "name": "Expression",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Expression",
+      "min": 0,
+      "max": "*",
+      "short": "An expression that can be used to generate a value",
+      "definition": "A expression that is evaluated in a specified context and returns a value. The context of use of the expression must specify the context in which the expression is evaluated, and how the result of the expression is used.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Expression.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Expression.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Expression.description",
+      "min": 0,
+      "max": "1",
+      "short": "Natural language description of the condition",
+      "definition": "A brief, natural language description of the condition that effectively communicates the intended semantics.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "Expression.name",
+      "min": 0,
+      "max": "1",
+      "short": "Short name assigned to expression for reuse",
+      "definition": "A short name assigned to the expression to allow for multiple reuse of the expression in the context where it is defined.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Expression.language",
+      "min": 1,
+      "max": "1",
+      "short": "text/cql | text/fhirpath | application/x-fhir-query | etc.",
+      "definition": "The media type of the language for the expression.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "expression",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Expression.expression",
+      "min": 0,
+      "max": "1",
+      "short": "Expression in specified language",
+      "definition": "An expression in the specified language that returns a value.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reference",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Expression.reference",
+      "min": 0,
+      "max": "1",
+      "short": "Where the expression is found",
+      "definition": "A URI that defines where the expression is found.",
+      "comment": "If both a reference and an expression is found, the reference SHALL point to the same expression.",
+      "inherited": false
+    }
+  ]
+}

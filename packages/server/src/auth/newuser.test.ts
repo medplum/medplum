@@ -1,16 +1,13 @@
-import { assertOk, badRequest } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
 
@@ -22,14 +19,11 @@ const app = express();
 describe('New user', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   beforeEach(async () => {
@@ -46,7 +40,6 @@ describe('New user', () => {
       .send({
         firstName: 'Alexander',
         lastName: 'Hamilton',
-        projectName: 'Hamilton Project',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
@@ -126,7 +119,7 @@ describe('New user', () => {
     expect(res2.body.issue[0].details.text).toBe('Email already registered');
   });
 
-  test('Custom recaptcha client', async () => {
+  test('Custom recaptcha client success', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
@@ -142,7 +135,8 @@ describe('New user', () => {
     });
 
     // As a super admin, set the recaptcha site key
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    // and the default access policy
+    await systemRepo.updateResource({
       ...project,
       site: [
         {
@@ -152,8 +146,10 @@ describe('New user', () => {
           recaptchaSecretKey,
         },
       ],
+      defaultPatientAccessPolicy: {
+        reference: 'AccessPolicy/' + randomUUID(),
+      },
     });
-    assertOk(updateOutcome, updated);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -171,6 +167,52 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Custom recaptcha client missing access policy', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the recaptcha site key
+    // but *not* the access policy
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+          recaptchaSecretKey,
+        },
+      ],
+    });
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: project.id,
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey,
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Project does not allow open registration');
   });
 
   test('Recaptcha site key not found', async () => {
@@ -204,7 +246,7 @@ describe('New user', () => {
     });
 
     // As a super admin, set the recaptcha site key
-    const [updateOutcome, updated] = await systemRepo.updateResource({
+    await systemRepo.updateResource({
       ...project,
       site: [
         {
@@ -214,7 +256,6 @@ describe('New user', () => {
         },
       ],
     });
-    assertOk(updateOutcome, updated);
 
     const res = await request(app)
       .post('/auth/newuser')
@@ -230,5 +271,66 @@ describe('New user', () => {
       });
     expect(res.status).toBe(400);
     expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSecretKey');
+  });
+
+  test('Isolated projects', async () => {
+    // 1 email address, 3 scenarios
+    // First, register a new project
+    // Next, register as a patient in a different project
+    // Third, register as a patient in a different project
+    // All 3 of these should be isolated
+
+    const email = `test${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Project P1 is owned by the email address
+    const reg1 = await registerNew({ firstName: 'P1', lastName: 'P1', projectName: 'P1', email, password });
+    expect(reg1).toBeDefined();
+
+    // Project P2 is owned by someone else
+    const reg2 = await registerNew({
+      firstName: 'P2',
+      lastName: 'P2',
+      projectName: 'P2',
+      email: randomUUID(),
+      password: randomUUID(),
+    });
+    expect(reg2).toBeDefined();
+
+    // Project P3 is owned by someone else
+    const reg3 = await registerNew({
+      firstName: 'P3',
+      lastName: 'P3',
+      projectName: 'P3',
+      email: randomUUID(),
+      password: randomUUID(),
+    });
+    expect(reg3).toBeDefined();
+
+    // Try to register as a patient in Project P2
+    const res1 = await request(app).post('/auth/newuser').type('json').send({
+      projectId: reg2.project.id,
+      firstName: 'Isolated1',
+      lastName: 'Isolated1',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeUndefined();
+
+    // Try to register as a patient in Project P2
+    const res2 = await request(app).post('/auth/newuser').type('json').send({
+      projectId: reg3.project.id,
+      firstName: 'Isolated2',
+      lastName: 'Isolated2',
+      email,
+      password,
+      recaptchaToken: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.login).toBeDefined();
+    expect(res2.body.code).toBeUndefined();
   });
 });

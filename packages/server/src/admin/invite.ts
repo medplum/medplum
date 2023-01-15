@@ -1,5 +1,5 @@
-import { assertOk, Operator } from '@medplum/core';
-import { AccessPolicy, Practitioner, Project, Reference, User } from '@medplum/fhirtypes';
+import { forbidden, Operator, ProfileResource } from '@medplum/core';
+import { AccessPolicy, Practitioner, Project, Reference, ResourceType, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -7,12 +7,15 @@ import { resetPassword } from '../auth/resetpassword';
 import { createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { generateSecret, getUserByEmail } from '../oauth';
+import { generateSecret } from '../oauth/keys';
+import { getUserByEmailWithoutProject } from '../oauth/utils';
 import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
+  body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
   body('firstName').notEmpty().withMessage('First name is required'),
   body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
@@ -21,7 +24,7 @@ export const inviteValidators = [
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
-    res.sendStatus(404);
+    sendOutcome(res, forbidden);
     return;
   }
 
@@ -31,7 +34,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const profile = await inviteUser({
+  const { profile } = await inviteUser({
     ...req.body,
     project: project,
   });
@@ -41,17 +44,91 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
 export interface InviteRequest {
   readonly project: Project;
+  readonly resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
   readonly firstName: string;
   readonly lastName: string;
   readonly email: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
+  readonly sendEmail?: boolean;
 }
 
-export async function inviteUser(request: InviteRequest): Promise<Practitioner> {
+export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: ProfileResource }> {
   const project = request.project;
-  let user = await getUserByEmail(request.email, project.id);
+  let user = await getUserByEmailWithoutProject(request.email);
+  let existingUser = true;
+  let passwordResetUrl = undefined;
 
-  if (user) {
+  if (!user) {
+    existingUser = false;
+    user = await createUser(request);
+    passwordResetUrl = await resetPassword(user);
+  }
+
+  let profile = await searchForExistingProfile(project, request.resourceType, request.email);
+  if (!profile) {
+    profile = (await createProfile(
+      project,
+      request.resourceType,
+      request.firstName,
+      request.lastName,
+      request.email
+    )) as Practitioner;
+  }
+  await createProjectMembership(user, project, profile, request.accessPolicy);
+
+  if (request.sendEmail !== false) {
+    await sendInviteEmail(request, user, existingUser, passwordResetUrl);
+  }
+
+  return { user, profile };
+}
+
+async function createUser(request: InviteRequest): Promise<User> {
+  const { firstName, lastName, email } = request;
+  const password = generateSecret(16);
+  logger.info('Create user ' + email);
+  const passwordHash = await bcrypt.hash(password, 10);
+  const result = await systemRepo.createResource<User>({
+    resourceType: 'User',
+    firstName,
+    lastName,
+    email,
+    passwordHash,
+  });
+  logger.info('Created: ' + result.id);
+  return result;
+}
+
+async function searchForExistingProfile(
+  project: Project,
+  resourceType: ResourceType,
+  email: string
+): Promise<ProfileResource | undefined> {
+  const bundle = await systemRepo.search<ProfileResource>({
+    resourceType,
+    filters: [
+      {
+        code: '_project',
+        operator: Operator.EQUALS,
+        value: project.id as string,
+      },
+      {
+        code: 'email',
+        operator: Operator.EQUALS,
+        value: email,
+      },
+    ],
+  });
+  return bundle.entry?.[0]?.resource;
+}
+
+async function sendInviteEmail(
+  request: InviteRequest,
+  user: User,
+  existing: boolean,
+  resetPasswordUrl: string | undefined
+): Promise<void> {
+  if (existing) {
     // Existing user
     await sendEmail({
       to: user.email,
@@ -70,8 +147,6 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
     });
   } else {
     // New user
-    user = await createUser(request);
-    const url = await resetPassword(user);
     await sendEmail({
       to: user.email,
       subject: 'Welcome to Medplum',
@@ -80,7 +155,7 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
         '',
         'Please click on the following link to create your account:',
         '',
-        url,
+        resetPasswordUrl,
         '',
         'Thank you,',
         'Medplum',
@@ -88,54 +163,4 @@ export async function inviteUser(request: InviteRequest): Promise<Practitioner> 
       ].join('\n'),
     });
   }
-  let practitioner = await searchForExistingPractitioner(project, request.email);
-  if (!practitioner) {
-    practitioner = (await createProfile(
-      project,
-      'Practitioner',
-      request.firstName,
-      request.lastName,
-      request.email
-    )) as Practitioner;
-  }
-  await createProjectMembership(user, project, practitioner, request.accessPolicy);
-  return practitioner;
-}
-
-async function createUser(request: InviteRequest): Promise<User> {
-  const email = request.email;
-  const password = generateSecret(16);
-  logger.info('Create user ' + email);
-  const passwordHash = await bcrypt.hash(password, 10);
-  const [outcome, result] = await systemRepo.createResource<User>({
-    resourceType: 'User',
-    email,
-    passwordHash,
-  });
-  assertOk(outcome, result);
-  logger.info('Created: ' + result.id);
-  return result;
-}
-
-async function searchForExistingPractitioner(project: Project, email: string): Promise<Practitioner | undefined> {
-  const [outcome, bundle] = await systemRepo.search<Practitioner>({
-    resourceType: 'Practitioner',
-    filters: [
-      {
-        code: '_project',
-        operator: Operator.EQUALS,
-        value: project.id as string,
-      },
-      {
-        code: 'email',
-        operator: Operator.EQUALS,
-        value: email,
-      },
-    ],
-  });
-  assertOk(outcome, bundle);
-  if (bundle.entry && bundle.entry.length > 0) {
-    return bundle.entry[0].resource as Practitioner;
-  }
-  return undefined;
 }

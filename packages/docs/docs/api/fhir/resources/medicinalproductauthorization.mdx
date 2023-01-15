@@ -1,0 +1,26 @@
+---
+title: MedicinalProductAuthorization
+sidebar_position: 81
+tags: [medications, billing]
+---
+
+import definition from '@site/static/data/resourceDefinitions/medicinalproductauthorization.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# MedicinalProductAuthorization
+
+The regulatory authorization of a medicinal product.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

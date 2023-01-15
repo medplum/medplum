@@ -2,23 +2,33 @@ import { badRequest } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
-import { Express, json, NextFunction, Request, Response, text, urlencoded } from 'express';
+import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
-import { getConfig } from './config';
+import { getConfig, MedplumServerConfig } from './config';
 import { corsOptions } from './cors';
-import { dicomRouter } from './dicom/routes';
+import { closeDatabase, initDatabase } from './database';
+import { dicomRouter } from './dicom';
 import { emailRouter } from './email/routes';
-import { binaryRouter, fhirRouter, sendOutcome } from './fhir';
+import { binaryRouter } from './fhir/binary';
+import { sendOutcome } from './fhir/outcomes';
+import { fhirRouter } from './fhir/routes';
+import { initBinaryStorage } from './fhir/storage';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { logger } from './logger';
-import { authenticateToken, oauthRouter } from './oauth';
+import { initKeys } from './oauth/keys';
+import { authenticateToken } from './oauth/middleware';
+import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
+import { closeRateLimiter } from './ratelimit';
+import { closeRedis, initRedis } from './redis';
 import { scimRouter } from './scim';
+import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
+import { closeWorkers, initWorkers } from './workers';
 
 /**
  * Sets standard headers for all requests.
@@ -29,6 +39,7 @@ import { wellKnownRouter } from './wellknown';
 function standardHeaders(_req: Request, res: Response, next: NextFunction): void {
   // Disables all caching
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.set('Pragma', 'no-cache');
 
   if (getConfig().baseUrl.startsWith('https://')) {
     // Only connect to this site and subdomains via HTTPS for the next two years
@@ -93,8 +104,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export async function initApp(app: Express): Promise<Express> {
-  const config = getConfig();
+export async function initApp(app: Express, config: MedplumServerConfig): Promise<Express> {
+  await initAppServices(config);
+
+  app.set('etag', false);
   app.set('trust proxy', true);
   app.set('x-powered-by', false);
   app.use(standardHeaders);
@@ -122,18 +135,40 @@ export async function initApp(app: Express): Promise<Express> {
       type: ['x-application/hl7-v2+er7'],
     })
   );
-  app.get('/', (req: Request, res: Response) => res.sendStatus(200));
-  app.get('/healthcheck', asyncWrap(healthcheckHandler));
-  app.get('/openapi.json', openApiHandler);
-  app.use('/.well-known/', wellKnownRouter);
-  app.use('/admin/', adminRouter);
-  app.use('/auth/', authRouter);
-  app.use('/dicom/PS3/', dicomRouter);
-  app.use('/email/v1/', emailRouter);
-  app.use('/fhir/R4/', fhirRouter);
-  app.use('/oauth2/', oauthRouter);
-  app.use('/scim/v2/', scimRouter);
-  app.use('/storage/', storageRouter);
+
+  const apiRouter = Router();
+  apiRouter.get('/', (_req, res) => res.sendStatus(200));
+  apiRouter.get('/robots.txt', (_req, res) => res.type('text/plain').send('User-agent: *\nDisallow: /'));
+  apiRouter.get('/healthcheck', asyncWrap(healthcheckHandler));
+  apiRouter.get('/openapi.json', openApiHandler);
+  apiRouter.use('/.well-known/', wellKnownRouter);
+  apiRouter.use('/admin/', adminRouter);
+  apiRouter.use('/auth/', authRouter);
+  apiRouter.use('/dicom/PS3/', dicomRouter);
+  apiRouter.use('/email/v1/', emailRouter);
+  apiRouter.use('/fhir/R4/', fhirRouter);
+  apiRouter.use('/oauth2/', oauthRouter);
+  apiRouter.use('/scim/v2/', scimRouter);
+  apiRouter.use('/storage/', storageRouter);
+
+  app.use('/api/', apiRouter);
+  app.use('/', apiRouter);
   app.use(errorHandler);
   return app;
+}
+
+export async function initAppServices(config: MedplumServerConfig): Promise<void> {
+  initRedis(config.redis);
+  await initDatabase(config.database);
+  await seedDatabase();
+  await initKeys(config);
+  initBinaryStorage(config.binaryStorage);
+  initWorkers(config.redis);
+}
+
+export async function shutdownApp(): Promise<void> {
+  await closeWorkers();
+  await closeDatabase();
+  closeRedis();
+  closeRateLimiter();
 }

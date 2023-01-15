@@ -1,15 +1,12 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { createTestClient } from '../test.setup';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 import { generateAccessToken, generateSecret } from './keys';
 
 const app = express();
@@ -18,15 +15,12 @@ let client: ClientApplication;
 describe('Auth middleware', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     client = await createTestClient();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Login not found', async () => {
@@ -48,15 +42,15 @@ describe('Auth middleware', () => {
   test('Login revoked', async () => {
     const scope = 'openid';
 
-    const [loginOutcome, login] = await systemRepo.createResource<Login>({
+    const login = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
+      user: createReference(client),
       client: createReference(client),
       authTime: new Date().toISOString(),
       revoked: true,
       scope,
     });
-
-    assertOk(loginOutcome, login);
 
     const accessToken = await generateAccessToken({
       login_id: login?.id as string,
@@ -154,16 +148,35 @@ describe('Auth middleware', () => {
       });
     expect(res.status).toBe(201);
     expect(res.body.meta).toBeDefined();
+    expect(res.body.meta.project).toBeUndefined();
+  });
+
+  test('Basic auth project with extended mode', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Patient',
+        name: [
+          {
+            given: ['Given'],
+            family: 'Family',
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    expect(res.body.meta).toBeDefined();
     expect(res.body.meta.project).toBeDefined();
   });
 
   test('Basic auth without project membership', async () => {
-    const [clientOutcome, client] = await systemRepo.createResource<ClientApplication>({
+    const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       name: 'Client without project membership',
-      secret: generateSecret(48),
+      secret: generateSecret(32),
     });
-    assertOk(clientOutcome, client);
 
     const res = await request(app)
       .get('/fhir/R4/Patient')

@@ -1,0 +1,1568 @@
+{
+  "name": "Task",
+  "location": "resource",
+  "description": "A task to be performed.",
+  "properties": [
+    {
+      "name": "Task",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Task",
+      "min": 0,
+      "max": "*",
+      "short": "A task to be performed",
+      "definition": "A task to be performed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Task.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Task.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Task.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Task.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Task Instance Identifier",
+      "definition": "The business identifier for this task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instantiatesCanonical",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "canonical"
+        }
+      ],
+      "path": "Task.instantiatesCanonical",
+      "min": 0,
+      "max": "1",
+      "short": "Formal definition of task",
+      "definition": "The URL pointing to a *FHIR*-defined protocol, guideline, orderset or other definition that is adhered to in whole or in part by this Task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instantiatesUri",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Task.instantiatesUri",
+      "min": 0,
+      "max": "1",
+      "short": "Formal definition of task",
+      "definition": "The URL pointing to an *externally* maintained  protocol, guideline, orderset or other definition that is adhered to in whole or in part by this Task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "basedOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Task.basedOn",
+      "min": 0,
+      "max": "*",
+      "short": "Request fulfilled by this task",
+      "definition": "BasedOn refers to a higher-level authorization that triggered the creation of the task.  It references a \"request\" resource such as a ServiceRequest, MedicationRequest, ServiceRequest, CarePlan, etc. which is distinct from the \"request\" resource the task is seeking to fulfill.  This latter resource is referenced by FocusOn.  For example, based on a ServiceRequest (= BasedOn), a task is created to fulfill a procedureRequest ( = FocusOn ) to collect a specimen from a patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "groupIdentifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.groupIdentifier",
+      "min": 0,
+      "max": "1",
+      "short": "Requisition or grouper id",
+      "definition": "An identifier that links together multiple tasks and other requests that were created in the same context.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "partOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Task",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.partOf",
+      "min": 0,
+      "max": "*",
+      "short": "Composite task",
+      "definition": "Task that this particular task is part of.",
+      "comment": "This should usually be 0..1.",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Task.status",
+      "min": 1,
+      "max": "1",
+      "short": "draft | requested | received | accepted | +",
+      "definition": "The current status of the task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "statusReason",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.statusReason",
+      "min": 0,
+      "max": "1",
+      "short": "Reason for current status",
+      "definition": "An explanation as to why this task is held, failed, was refused, etc.",
+      "comment": "This applies to the current status.  Look at the history of the task to see reasons for past statuses.",
+      "inherited": false
+    },
+    {
+      "name": "businessStatus",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.businessStatus",
+      "min": 0,
+      "max": "1",
+      "short": "E.g. \"Specimen collected\", \"IV prepped\"",
+      "definition": "Contains business-specific nuances of the business state.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "intent",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Task.intent",
+      "min": 1,
+      "max": "1",
+      "short": "unknown | proposal | plan | order | original-order | reflex-order | filler-order | instance-order | option",
+      "definition": "Indicates the \"level\" of actionability associated with the Task, i.e. i+R[9]Cs this a proposed task, a planned task, an actionable task, etc.",
+      "comment": "This element is immutable.  Proposed tasks, planned tasks, etc. must be distinct instances.\n\nIn most cases, Tasks will have an intent of \"order\".",
+      "inherited": false
+    },
+    {
+      "name": "priority",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Task.priority",
+      "min": 0,
+      "max": "1",
+      "short": "routine | urgent | asap | stat",
+      "definition": "Indicates how quickly the Task should be addressed with respect to other requests.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.code",
+      "min": 0,
+      "max": "1",
+      "short": "Task Type",
+      "definition": "A name or code (or both) briefly describing what the task involves.",
+      "comment": "The title (eg \"My Tasks\", \"Outstanding Tasks for Patient X\") should go into the code.",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Task.description",
+      "min": 0,
+      "max": "1",
+      "short": "Human-readable explanation of task",
+      "definition": "A free-text description of what is to be performed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "focus",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Task.focus",
+      "min": 0,
+      "max": "1",
+      "short": "What task is acting on",
+      "definition": "The request being actioned or the resource being manipulated by this task.",
+      "comment": "If multiple resources need to be manipulated, use sub-tasks.  (This ensures that status can be tracked independently for each referenced resource.).",
+      "inherited": false
+    },
+    {
+      "name": "for",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Task.for",
+      "min": 0,
+      "max": "1",
+      "short": "Beneficiary of the Task",
+      "definition": "The entity who benefits from the performance of the service specified in the task (e.g., the patient).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "encounter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.encounter",
+      "min": 0,
+      "max": "1",
+      "short": "Healthcare event during which this task originated",
+      "definition": "The healthcare event  (e.g. a patient and healthcare provider interaction) during which this task was created.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "executionPeriod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.executionPeriod",
+      "min": 0,
+      "max": "1",
+      "short": "Start and end time of execution",
+      "definition": "Identifies the time action was first taken against the task (start) and/or the time final action was taken against the task prior to marking it as completed (end).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "authoredOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "Task.authoredOn",
+      "min": 0,
+      "max": "1",
+      "short": "Task Creation Date",
+      "definition": "The date and time this task was created.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "lastModified",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "Task.lastModified",
+      "min": 0,
+      "max": "1",
+      "short": "Task Last Modified Date",
+      "definition": "The date and time of last modification to this task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "requester",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.requester",
+      "min": 0,
+      "max": "1",
+      "short": "Who is asking for task to be done",
+      "definition": "The creator of the task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "performerType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.performerType",
+      "min": 0,
+      "max": "*",
+      "short": "Requested performer",
+      "definition": "The kind of participant that should perform the task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "owner",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "HealthcareService",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.owner",
+      "min": 0,
+      "max": "1",
+      "short": "Responsible individual",
+      "definition": "Individual organization or Device currently responsible for task execution.",
+      "comment": "Tasks may be created with an owner not yet identified.",
+      "inherited": false
+    },
+    {
+      "name": "location",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.location",
+      "min": 0,
+      "max": "1",
+      "short": "Where task occurs",
+      "definition": "Principal physical location where the this task is performed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reasonCode",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.reasonCode",
+      "min": 0,
+      "max": "1",
+      "short": "Why task is needed",
+      "definition": "A description or code indicating why this task needs to be performed.",
+      "comment": "This should only be included if there is no focus or if it differs from the reason indicated on the focus.",
+      "inherited": false
+    },
+    {
+      "name": "reasonReference",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "Task.reasonReference",
+      "min": 0,
+      "max": "1",
+      "short": "Why task is needed",
+      "definition": "A resource reference indicating why this task needs to be performed.",
+      "comment": "Tasks might be justified based on an Observation, a Condition, a past or planned procedure, etc.   This should only be included if there is no focus or if it differs from the reason indicated on the focus.    Use the CodeableConcept text element in `Task.reasonCode` if the data is free (uncoded) text.",
+      "inherited": false
+    },
+    {
+      "name": "insurance",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Coverage",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ClaimResponse",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.insurance",
+      "min": 0,
+      "max": "*",
+      "short": "Associated insurance coverage",
+      "definition": "Insurance plans, coverage extensions, pre-authorizations and/or pre-determinations that may be relevant to the Task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "note",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.note",
+      "min": 0,
+      "max": "*",
+      "short": "Comments made about the task",
+      "definition": "Free-text information captured about the task as it progresses.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relevantHistory",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Provenance",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.relevantHistory",
+      "min": 0,
+      "max": "*",
+      "short": "Key events in history of the Task",
+      "definition": "Links to Provenance records for past versions of this Task that identify key state transitions or updates that are likely to be relevant to a user looking at the current version of the task.",
+      "comment": "This element does not point to the Provenance associated with the *current* version of the resource - as it would be created after this version existed.  The Provenance for the current version can be retrieved with a _revinclude.",
+      "inherited": false
+    },
+    {
+      "name": "restriction",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Task.restriction",
+      "min": 0,
+      "max": "1",
+      "short": "Constraints on fulfillment tasks",
+      "definition": "If the Task.focus is a request resource and the task is seeking fulfillment (i.e. is asking for the request to be actioned), this element identifies any limitations on what parts of the referenced request should be actioned.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Task.restriction.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.restriction.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.restriction.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "repetitions",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "positiveInt"
+        }
+      ],
+      "path": "Task.restriction.repetitions",
+      "min": 0,
+      "max": "1",
+      "short": "How many times to repeat",
+      "definition": "Indicates the number of times the requested action should occur.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.restriction.period",
+      "min": 0,
+      "max": "1",
+      "short": "When fulfillment sought",
+      "definition": "Over what time-period is fulfillment sought.",
+      "comment": "Note that period.high is the due date representing the time by which the task should be completed.",
+      "inherited": false
+    },
+    {
+      "name": "recipient",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Task.restriction.recipient",
+      "min": 0,
+      "max": "*",
+      "short": "For whom is fulfillment sought?",
+      "definition": "For requests that are targeted to more than on potential recipient/target, for whom is fulfillment sought?",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "input",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Task.input",
+      "min": 0,
+      "max": "*",
+      "short": "Information used to perform task",
+      "definition": "Additional information that may be needed in the execution of the task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Task.input.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.input.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.input.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.input.type",
+      "min": 1,
+      "max": "1",
+      "short": "Label for the input",
+      "definition": "A code or description indicating how the input is intended to be used as part of the task execution.",
+      "comment": "If referencing a BPMN workflow or Protocol, the \"system\" is the URL for the workflow definition and the code is the \"name\" of the required input.",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Task.input.value[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Content to use in performing the task",
+      "definition": "The value of the input parameter as a basic type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "output",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "Task.output",
+      "min": 0,
+      "max": "*",
+      "short": "Information produced as part of task",
+      "definition": "Outputs produced by the Task.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Task.output.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.output.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.output.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Task.output.type",
+      "min": 1,
+      "max": "1",
+      "short": "Label for output",
+      "definition": "The name of the Output parameter.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "base64Binary"
+        },
+        {
+          "datatype": "boolean"
+        },
+        {
+          "datatype": "canonical"
+        },
+        {
+          "datatype": "code"
+        },
+        {
+          "datatype": "date"
+        },
+        {
+          "datatype": "dateTime"
+        },
+        {
+          "datatype": "decimal"
+        },
+        {
+          "datatype": "id"
+        },
+        {
+          "datatype": "instant"
+        },
+        {
+          "datatype": "integer"
+        },
+        {
+          "datatype": "markdown"
+        },
+        {
+          "datatype": "oid"
+        },
+        {
+          "datatype": "positiveInt"
+        },
+        {
+          "datatype": "string"
+        },
+        {
+          "datatype": "time"
+        },
+        {
+          "datatype": "unsignedInt"
+        },
+        {
+          "datatype": "uri"
+        },
+        {
+          "datatype": "url"
+        },
+        {
+          "datatype": "uuid"
+        },
+        {
+          "datatype": "Address",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Age",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Annotation",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactPoint",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Count",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Distance",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Duration",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "HumanName",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Money",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "SampledData",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Signature",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Timing",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ContactDetail",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Contributor",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "DataRequirement",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Expression",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "ParameterDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "RelatedArtifact",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "TriggerDefinition",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "UsageContext",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Dosage",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Task.output.value[x]",
+      "min": 1,
+      "max": "1",
+      "short": "Result of output",
+      "definition": "The value of the Output parameter as a basic type.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "authored-on",
+      "type": "date",
+      "description": "Search by creation date",
+      "expression": "Task.authoredOn"
+    },
+    {
+      "name": "based-on",
+      "type": "reference",
+      "description": "Search by requests this task is based on",
+      "expression": "Task.basedOn"
+    },
+    {
+      "name": "business-status",
+      "type": "token",
+      "description": "Search by business status",
+      "expression": "Task.businessStatus"
+    },
+    {
+      "name": "code",
+      "type": "token",
+      "description": "Search by task code",
+      "expression": "Task.code"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": "Search by encounter",
+      "expression": "Task.encounter"
+    },
+    {
+      "name": "focus",
+      "type": "reference",
+      "description": "Search by task focus",
+      "expression": "Task.focus"
+    },
+    {
+      "name": "group-identifier",
+      "type": "token",
+      "description": "Search by group identifier",
+      "expression": "Task.groupIdentifier"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "Search for a task instance by its business identifier",
+      "expression": "Task.identifier"
+    },
+    {
+      "name": "intent",
+      "type": "token",
+      "description": "Search by task intent",
+      "expression": "Task.intent"
+    },
+    {
+      "name": "modified",
+      "type": "date",
+      "description": "Search by last modification date",
+      "expression": "Task.lastModified"
+    },
+    {
+      "name": "owner",
+      "type": "reference",
+      "description": "Search by task owner",
+      "expression": "Task.owner"
+    },
+    {
+      "name": "part-of",
+      "type": "reference",
+      "description": "Search by task this task is part of",
+      "expression": "Task.partOf"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": "Search by patient",
+      "expression": "Task.for"
+    },
+    {
+      "name": "performer",
+      "type": "token",
+      "description": "Search by recommended type of performer (e.g., Requester, Performer, Scheduler).",
+      "expression": "Task.performerType"
+    },
+    {
+      "name": "period",
+      "type": "date",
+      "description": "Search by period Task is/was underway",
+      "expression": "Task.executionPeriod"
+    },
+    {
+      "name": "priority",
+      "type": "token",
+      "description": "Search by task priority",
+      "expression": "Task.priority"
+    },
+    {
+      "name": "requester",
+      "type": "reference",
+      "description": "Search by task requester",
+      "expression": "Task.requester"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "Search by task status",
+      "expression": "Task.status"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "Search by subject",
+      "expression": "Task.for"
+    }
+  ]
+}

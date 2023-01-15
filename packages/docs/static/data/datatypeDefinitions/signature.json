@@ -1,0 +1,225 @@
+{
+  "name": "Signature",
+  "location": "datatype",
+  "description": "Base StructureDefinition for Signature Type: A signature along with supporting context. The signature may be a digital signature that is cryptographic in nature, or some other signature acceptable to the domain. This other signature may be as simple as a graphical image representing a hand-written signature, or a signature ceremony Different signature approaches have different utilities.",
+  "properties": [
+    {
+      "name": "Signature",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Signature",
+      "min": 0,
+      "max": "*",
+      "short": "A Signature - XML DigSig, JWS, Graphical image of signature, etc.",
+      "definition": "A signature along with supporting context. The signature may be a digital signature that is cryptographic in nature, or some other signature acceptable to the domain. This other signature may be as simple as a graphical image representing a hand-written signature, or a signature ceremony Different signature approaches have different utilities.",
+      "comment": "The elements of the Signature Resource are for ease of access of these elements. For digital signatures (Xml DigSig, JWS), the non-repudiation proof comes from the Signature  validation, which includes validation of the referenced objects (e.g. Resources) (a.k.a., Content) in the XML-Signature Detached form.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Signature.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Signature.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Coding",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Signature.type",
+      "min": 1,
+      "max": "*",
+      "short": "Indication of the reason the entity signed the object(s)",
+      "definition": "An indication of the reason that the entity signed this document. This may be explicitly included as part of the signature information and can be used when determining accountability for various actions concerning the document.",
+      "comment": "Examples include attesting to: authorship, correct transcription, and witness of specific event. Also known as a &quot;Commitment Type Indication&quot;.",
+      "inherited": false
+    },
+    {
+      "name": "when",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "Signature.when",
+      "min": 1,
+      "max": "1",
+      "short": "When the signature was created",
+      "definition": "When the digital signature was signed.",
+      "comment": "This should agree with the information in the signature.",
+      "inherited": false
+    },
+    {
+      "name": "who",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Signature.who",
+      "min": 1,
+      "max": "1",
+      "short": "Who signed",
+      "definition": "A reference to an application-usable description of the identity that signed  (e.g. the signature used their private key).",
+      "comment": "This should agree with the information in the signature.",
+      "inherited": false
+    },
+    {
+      "name": "onBehalfOf",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "Signature.onBehalfOf",
+      "min": 0,
+      "max": "1",
+      "short": "The party represented",
+      "definition": "A reference to an application-usable description of the identity that is represented by the signature.",
+      "comment": "The party that can't sign. For example a child.",
+      "inherited": false
+    },
+    {
+      "name": "targetFormat",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Signature.targetFormat",
+      "min": 0,
+      "max": "1",
+      "short": "The technical format of the signed resources",
+      "definition": "A mime type that indicates the technical format of the target resources signed by the signature.",
+      "comment": "\"xml\", \"json\" and \"ttl\" are allowed, which describe the simple encodings described in the specification (and imply appropriate bundle support). Otherwise, mime types are legal here.",
+      "inherited": false
+    },
+    {
+      "name": "sigFormat",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Signature.sigFormat",
+      "min": 0,
+      "max": "1",
+      "short": "The technical format of the signature",
+      "definition": "A mime type that indicates the technical format of the signature. Important mime types are application/signature+xml for X ML DigSig, application/jose for JWS, and image/* for a graphical image of a signature, etc.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "data",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "base64Binary"
+        }
+      ],
+      "path": "Signature.data",
+      "min": 0,
+      "max": "1",
+      "short": "The actual signature content (XML DigSig. JWS, picture, etc.)",
+      "definition": "The base64 encoding of the Signature content. When signature is not recorded electronically this element would be empty.",
+      "comment": "Where the signature type is an XML DigSig, the signed content is a FHIR Resource(s), the signature is of the XML form of the Resource(s) using  XML-Signature (XMLDIG) \"Detached Signature\" form.",
+      "inherited": false
+    }
+  ]
+}

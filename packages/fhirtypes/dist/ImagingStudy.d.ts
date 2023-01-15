@@ -131,7 +131,7 @@ export interface ImagingStudy {
   /**
    * The current state of the ImagingStudy.
    */
-  status?: string;
+  status?: 'registered' | 'available' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A list of all the series.modality values that are actual acquisition

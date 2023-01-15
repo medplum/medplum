@@ -1,22 +1,22 @@
-import { assertOk, badRequest, createReference } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { badRequest, createReference } from '@medplum/core';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { setLoginMembership } from '../oauth';
+import { setLoginMembership } from '../oauth/utils';
 import { createProfile, createProjectMembership } from './utils';
 
 export interface NewProjectRequest {
   readonly loginId: string;
-  readonly projectName?: string;
+  readonly projectName: string;
 }
 
 export const newProjectValidators = [
   body('login').notEmpty().withMessage('Missing login'),
-  body('firstName').notEmpty().withMessage('First name is required'),
-  body('lastName').notEmpty().withMessage('Last name is required'),
+  body('projectName').notEmpty().withMessage('Project name is required'),
 ];
 
 /**
@@ -33,26 +33,20 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
     return;
   }
 
-  const [loginOutcome, login] = await systemRepo.readResource<Login>('Login', req.body.login);
-  assertOk(loginOutcome, login);
+  const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
     sendOutcome(res, badRequest('Login already has a membership'));
     return;
   }
 
-  const { firstName, lastName } = req.body;
-
-  let projectName = req.body.projectName;
-  if (!projectName) {
-    projectName = `${firstName} ${lastName}'s Project`;
-  }
-
-  const membership = await createProject(login, projectName, firstName, lastName);
+  const projectName = req.body.projectName;
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const { firstName, lastName } = user;
+  const { membership } = await createProject(login, projectName, firstName as string, lastName as string);
 
   // Update the login
-  const [updateOutcome, updated] = await setLoginMembership(login, membership.id as string);
-  assertOk(updateOutcome, updated);
+  const updated = await setLoginMembership(login, membership.id as string);
 
   res.status(200).json({
     login: updated?.id,
@@ -73,20 +67,19 @@ export async function createProject(
   projectName: string,
   firstName: string,
   lastName: string
-): Promise<ProjectMembership> {
-  const [userOutcome, user] = await systemRepo.readReference<User>(login.user as Reference<User>);
-  assertOk(userOutcome, user);
+): Promise<{ project: Project; membership: ProjectMembership; client: ClientApplication }> {
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   logger.info('Create project ' + projectName);
-  const [projectOutcome, project] = await systemRepo.createResource<Project>({
+  const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
     owner: createReference(user),
+    strictMode: true,
   });
-  assertOk(projectOutcome, project);
 
   logger.info('Created project: ' + project.id);
-  await createClient(systemRepo, {
+  const client = await createClient(systemRepo, {
     project,
     name: project.name + ' Default Client',
     description: 'Default client for ' + project.name,
@@ -96,11 +89,10 @@ export async function createProject(
   const membership = await createProjectMembership(user, project, profile, undefined, true);
 
   // Set the membership on the login
-  const [updateOutcome, updated] = await systemRepo.updateResource<Login>({
+  await systemRepo.updateResource<Login>({
     ...login,
     membership: createReference(membership),
   });
-  assertOk(updateOutcome, updated);
 
-  return membership;
+  return { project, membership, client };
 }

@@ -7,9 +7,8 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * Base StructureDefinition for ContactPoint Type: Details for all kinds
- * of technology mediated contact points for a person or organization,
- * including telephone, email, etc.
+ * Details for all kinds of technology mediated contact points for a
+ * person or organization, including telephone, email, etc.
  */
 export interface ContactPoint {
 
@@ -33,7 +32,7 @@ export interface ContactPoint {
    * Telecommunications form for contact point - what communications system
    * is required to make use of the contact.
    */
-  system?: string;
+  system?: 'phone' | 'fax' | 'email' | 'pager' | 'url' | 'sms' | 'other';
 
   /**
    * The actual contact point details, in a form that is meaningful to the
@@ -44,7 +43,7 @@ export interface ContactPoint {
   /**
    * Identifies the purpose for the contact point.
    */
-  use?: string;
+  use?: 'home' | 'work' | 'temp' | 'old' | 'mobile';
 
   /**
    * Specifies a preferred order in which to use a set of contacts.

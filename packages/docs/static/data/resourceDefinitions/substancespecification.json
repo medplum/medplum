@@ -1,0 +1,2066 @@
+{
+  "name": "SubstanceSpecification",
+  "location": "resource",
+  "description": "The detailed description of a substance, typically at a level beyond what is used for prescribing.",
+  "properties": [
+    {
+      "name": "SubstanceSpecification",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "SubstanceSpecification",
+      "min": 0,
+      "max": "*",
+      "short": "The detailed description of a substance, typically at a level beyond what is used for prescribing",
+      "definition": "The detailed description of a substance, typically at a level beyond what is used for prescribing.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "SubstanceSpecification.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "SubstanceSpecification.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "SubstanceSpecification.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Identifier by which this substance is known",
+      "definition": "Identifier by which this substance is known.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.type",
+      "min": 0,
+      "max": "1",
+      "short": "High level categorization, e.g. polymer or nucleic acid",
+      "definition": "High level categorization, e.g. polymer or nucleic acid.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.status",
+      "min": 0,
+      "max": "1",
+      "short": "Status of substance within the catalogue e.g. approved",
+      "definition": "Status of substance within the catalogue e.g. approved.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "domain",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.domain",
+      "min": 0,
+      "max": "1",
+      "short": "If the substance applies to only human or veterinary use",
+      "definition": "If the substance applies to only human or veterinary use.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.description",
+      "min": 0,
+      "max": "1",
+      "short": "Textual description of the substance",
+      "definition": "Textual description of the substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.source",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting literature",
+      "definition": "Supporting literature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "comment",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.comment",
+      "min": 0,
+      "max": "1",
+      "short": "Textual comment about this record of a substance",
+      "definition": "Textual comment about this record of a substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "moiety",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety",
+      "min": 0,
+      "max": "*",
+      "short": "Moiety, for structural modifications",
+      "definition": "Moiety, for structural modifications.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "role",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.role",
+      "min": 0,
+      "max": "1",
+      "short": "Role that the moiety is playing",
+      "definition": "Role that the moiety is playing.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Identifier by which this moiety substance is known",
+      "definition": "Identifier by which this moiety substance is known.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.name",
+      "min": 0,
+      "max": "1",
+      "short": "Textual name for this moiety substance",
+      "definition": "Textual name for this moiety substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "stereochemistry",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.stereochemistry",
+      "min": 0,
+      "max": "1",
+      "short": "Stereochemistry type",
+      "definition": "Stereochemistry type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "opticalActivity",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.opticalActivity",
+      "min": 0,
+      "max": "1",
+      "short": "Optical activity type",
+      "definition": "Optical activity type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularFormula",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.molecularFormula",
+      "min": 0,
+      "max": "1",
+      "short": "Molecular formula",
+      "definition": "Molecular formula.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amount[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.moiety.amount[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Quantitative value for this moiety",
+      "definition": "Quantitative value for this moiety.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "property",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.property",
+      "min": 0,
+      "max": "*",
+      "short": "General specifications for this substance, including how it is related to other substances",
+      "definition": "General specifications for this substance, including how it is related to other substances.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.property.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.property.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.property.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "category",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.property.category",
+      "min": 0,
+      "max": "1",
+      "short": "A category for this property, e.g. Physical, Chemical, Enzymatic",
+      "definition": "A category for this property, e.g. Physical, Chemical, Enzymatic.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.property.code",
+      "min": 0,
+      "max": "1",
+      "short": "Property type e.g. viscosity, pH, isoelectric point",
+      "definition": "Property type e.g. viscosity, pH, isoelectric point.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "parameters",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.property.parameters",
+      "min": 0,
+      "max": "1",
+      "short": "Parameters that were used in the measurement of a property (e.g. for viscosity: measured at 20C with a pH of 7.1)",
+      "definition": "Parameters that were used in the measurement of a property (e.g. for viscosity: measured at 20C with a pH of 7.1).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "definingSubstance[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceSpecification",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.property.definingSubstance[x]",
+      "min": 0,
+      "max": "1",
+      "short": "A substance upon which a defining property depends (e.g. for solubility: in water, in alcohol)",
+      "definition": "A substance upon which a defining property depends (e.g. for solubility: in water, in alcohol).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amount[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.property.amount[x]",
+      "min": 0,
+      "max": "1",
+      "short": "Quantitative value for this property",
+      "definition": "Quantitative value for this property.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "referenceInformation",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceReferenceInformation",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.referenceInformation",
+      "min": 0,
+      "max": "1",
+      "short": "General information detailing this substance",
+      "definition": "General information detailing this substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "structure",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.structure",
+      "min": 0,
+      "max": "1",
+      "short": "Structural information",
+      "definition": "Structural information.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "stereochemistry",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.stereochemistry",
+      "min": 0,
+      "max": "1",
+      "short": "Stereochemistry type",
+      "definition": "Stereochemistry type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "opticalActivity",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.opticalActivity",
+      "min": 0,
+      "max": "1",
+      "short": "Optical activity type",
+      "definition": "Optical activity type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularFormula",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.molecularFormula",
+      "min": 0,
+      "max": "1",
+      "short": "Molecular formula",
+      "definition": "Molecular formula.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularFormulaByMoiety",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.molecularFormulaByMoiety",
+      "min": 0,
+      "max": "1",
+      "short": "Specified per moiety according to the Hill system, i.e. first C, then H, then alphabetical, each moiety separated by a dot",
+      "definition": "Specified per moiety according to the Hill system, i.e. first C, then H, then alphabetical, each moiety separated by a dot.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "isotope",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope",
+      "min": 0,
+      "max": "*",
+      "short": "Applicable for single substances that contain a radionuclide or a non-natural isotopic ratio",
+      "definition": "Applicable for single substances that contain a radionuclide or a non-natural isotopic ratio.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "identifier",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Substance identifier for each non-natural or radioisotope",
+      "definition": "Substance identifier for each non-natural or radioisotope.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.name",
+      "min": 0,
+      "max": "1",
+      "short": "Substance name for each non-natural or radioisotope",
+      "definition": "Substance name for each non-natural or radioisotope.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "substitution",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.substitution",
+      "min": 0,
+      "max": "1",
+      "short": "The type of isotopic substitution present in a single substance",
+      "definition": "The type of isotopic substitution present in a single substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "halfLife",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.halfLife",
+      "min": 0,
+      "max": "1",
+      "short": "Half life - for a non-natural nuclide",
+      "definition": "Half life - for a non-natural nuclide.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularWeight",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight",
+      "min": 0,
+      "max": "1",
+      "short": "The molecular weight or weight range (for proteins, polymers or nucleic acids)",
+      "definition": "The molecular weight or weight range (for proteins, polymers or nucleic acids).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "method",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.method",
+      "min": 0,
+      "max": "1",
+      "short": "The method by which the molecular weight was determined",
+      "definition": "The method by which the molecular weight was determined.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.type",
+      "min": 0,
+      "max": "1",
+      "short": "Type of molecular weight such as exact, average (also known as. number average), weight average",
+      "definition": "Type of molecular weight such as exact, average (also known as. number average), weight average.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amount",
+      "depth": 4,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.isotope.molecularWeight.amount",
+      "min": 0,
+      "max": "1",
+      "short": "Used to capture quantitative values for a variety of elements. If only limits are given, the arithmetic mean would be the average. If only a single definite value for a given element is given, it would be captured in this field",
+      "definition": "Used to capture quantitative values for a variety of elements. If only limits are given, the arithmetic mean would be the average. If only a single definite value for a given element is given, it would be captured in this field.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularWeight",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "SubstanceSpecification.structure.molecularWeight",
+      "min": 0,
+      "max": "1",
+      "short": "The molecular weight or weight range (for proteins, polymers or nucleic acids)",
+      "definition": "The molecular weight or weight range (for proteins, polymers or nucleic acids).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.source",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting literature",
+      "definition": "Supporting literature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "representation",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation",
+      "min": 0,
+      "max": "*",
+      "short": "Molecular structural representation",
+      "definition": "Molecular structural representation.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.type",
+      "min": 0,
+      "max": "1",
+      "short": "The type of structure (e.g. Full, Partial, Representative)",
+      "definition": "The type of structure (e.g. Full, Partial, Representative).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "representation",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.representation",
+      "min": 0,
+      "max": "1",
+      "short": "The structural representation as text string in a format e.g. InChI, SMILES, MOLFILE, CDX",
+      "definition": "The structural representation as text string in a format e.g. InChI, SMILES, MOLFILE, CDX.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "attachment",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.structure.representation.attachment",
+      "min": 0,
+      "max": "1",
+      "short": "An attached file with the structural representation",
+      "definition": "An attached file with the structural representation.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.code",
+      "min": 0,
+      "max": "*",
+      "short": "Codes associated with the substance",
+      "definition": "Codes associated with the substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.code.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.code.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.code.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "code",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.code.code",
+      "min": 0,
+      "max": "1",
+      "short": "The specific code",
+      "definition": "The specific code.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.code.status",
+      "min": 0,
+      "max": "1",
+      "short": "Status of the code assignment",
+      "definition": "Status of the code assignment.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "statusDate",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "SubstanceSpecification.code.statusDate",
+      "min": 0,
+      "max": "1",
+      "short": "The date at which the code status is changed as part of the terminology maintenance",
+      "definition": "The date at which the code status is changed as part of the terminology maintenance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "comment",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.code.comment",
+      "min": 0,
+      "max": "1",
+      "short": "Any comment can be provided in this field, if necessary",
+      "definition": "Any comment can be provided in this field, if necessary.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.code.source",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting literature",
+      "definition": "Supporting literature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.name",
+      "min": 0,
+      "max": "*",
+      "short": "Names applicable to this substance",
+      "definition": "Names applicable to this substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.name.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.name.name",
+      "min": 1,
+      "max": "1",
+      "short": "The actual name",
+      "definition": "The actual name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.type",
+      "min": 0,
+      "max": "1",
+      "short": "Name type",
+      "definition": "Name type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.status",
+      "min": 0,
+      "max": "1",
+      "short": "The status of the name",
+      "definition": "The status of the name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "preferred",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "SubstanceSpecification.name.preferred",
+      "min": 0,
+      "max": "1",
+      "short": "If this is the preferred name for this substance",
+      "definition": "If this is the preferred name for this substance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "language",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.language",
+      "min": 0,
+      "max": "*",
+      "short": "Language of the name",
+      "definition": "Language of the name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "domain",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.domain",
+      "min": 0,
+      "max": "*",
+      "short": "The use context of this name for example if there is a different name a drug active ingredient as opposed to a food colour additive",
+      "definition": "The use context of this name for example if there is a different name a drug active ingredient as opposed to a food colour additive.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "jurisdiction",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.jurisdiction",
+      "min": 0,
+      "max": "*",
+      "short": "The jurisdiction where this name applies",
+      "definition": "The jurisdiction where this name applies.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "synonym",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "SubstanceSpecification.name.synonym",
+      "min": 0,
+      "max": "*",
+      "short": "A synonym of this name",
+      "definition": "A synonym of this name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "translation",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "SubstanceSpecification.name.translation",
+      "min": 0,
+      "max": "*",
+      "short": "A translation for this name",
+      "definition": "A translation for this name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "official",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official",
+      "min": 0,
+      "max": "*",
+      "short": "Details of the official nature of this name",
+      "definition": "Details of the official nature of this name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "authority",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.authority",
+      "min": 0,
+      "max": "1",
+      "short": "Which authority uses this official name",
+      "definition": "Which authority uses this official name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.status",
+      "min": 0,
+      "max": "1",
+      "short": "The status of the official name",
+      "definition": "The status of the official name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "SubstanceSpecification.name.official.date",
+      "min": 0,
+      "max": "1",
+      "short": "Date of official name change",
+      "definition": "Date of official name change.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.name.source",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting literature",
+      "definition": "Supporting literature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "molecularWeight",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "SubstanceSpecification.molecularWeight",
+      "min": 0,
+      "max": "*",
+      "short": "The molecular weight or weight range (for proteins, polymers or nucleic acids)",
+      "definition": "The molecular weight or weight range (for proteins, polymers or nucleic acids).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relationship",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship",
+      "min": 0,
+      "max": "*",
+      "short": "A link between this substance and another, with details of the relationship",
+      "definition": "A link between this substance and another, with details of the relationship.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "substance[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceSpecification",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.substance[x]",
+      "min": 0,
+      "max": "1",
+      "short": "A pointer to another substance, as a resource or just a representational code",
+      "definition": "A pointer to another substance, as a resource or just a representational code.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "relationship",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.relationship",
+      "min": 0,
+      "max": "1",
+      "short": "For example \"salt to parent\", \"active moiety\", \"starting material\"",
+      "definition": "For example \"salt to parent\", \"active moiety\", \"starting material\".",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "isDefining",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.isDefining",
+      "min": 0,
+      "max": "1",
+      "short": "For example where an enzyme strongly bonds with a particular substance, this is a defining relationship for that enzyme, out of several possible substance relationships",
+      "definition": "For example where an enzyme strongly bonds with a particular substance, this is a defining relationship for that enzyme, out of several possible substance relationships.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amount[x]",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Quantity",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Range",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        },
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.amount[x]",
+      "min": 0,
+      "max": "1",
+      "short": "A numeric factor for the relationship, for instance to express that the salt of a substance has some percentage of the active substance in relation to some other",
+      "definition": "A numeric factor for the relationship, for instance to express that the salt of a substance has some percentage of the active substance in relation to some other.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amountRatioLowLimit",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Ratio",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.amountRatioLowLimit",
+      "min": 0,
+      "max": "1",
+      "short": "For use when the numeric",
+      "definition": "For use when the numeric.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "amountType",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.amountType",
+      "min": 0,
+      "max": "1",
+      "short": "An operator for the amount, for example \"average\", \"approximately\", \"less than\"",
+      "definition": "An operator for the amount, for example \"average\", \"approximately\", \"less than\".",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.relationship.source",
+      "min": 0,
+      "max": "*",
+      "short": "Supporting literature",
+      "definition": "Supporting literature.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "nucleicAcid",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceNucleicAcid",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.nucleicAcid",
+      "min": 0,
+      "max": "1",
+      "short": "Data items specific to nucleic acids",
+      "definition": "Data items specific to nucleic acids.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "polymer",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstancePolymer",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.polymer",
+      "min": 0,
+      "max": "1",
+      "short": "Data items specific to polymers",
+      "definition": "Data items specific to polymers.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "protein",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceProtein",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.protein",
+      "min": 0,
+      "max": "1",
+      "short": "Data items specific to proteins",
+      "definition": "Data items specific to proteins.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "sourceMaterial",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SubstanceSourceMaterial",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "SubstanceSpecification.sourceMaterial",
+      "min": 0,
+      "max": "1",
+      "short": "Material or taxonomic/anatomical source for the substance",
+      "definition": "Material or taxonomic/anatomical source for the substance.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "code",
+      "type": "token",
+      "description": "The specific code",
+      "expression": "SubstanceSpecification.code.code"
+    }
+  ]
+}

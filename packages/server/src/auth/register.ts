@@ -1,9 +1,9 @@
-import { assertOk, createReference, ProfileResource } from '@medplum/core';
-import { ClientApplication, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { createReference, ProfileResource } from '@medplum/core';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { systemRepo } from '../fhir';
-import { getAuthTokens, tryLogin } from '../oauth';
+import { systemRepo } from '../fhir/repo';
+import { getAuthTokens, tryLogin } from '../oauth/utils';
 import { createProject } from './newproject';
 
 /*
@@ -18,16 +18,18 @@ export interface RegisterRequest {
   readonly projectName: string;
   readonly email: string;
   readonly password: string;
-  readonly admin?: boolean;
+  readonly remoteAddress?: string;
+  readonly userAgent?: string;
 }
 
 export interface RegisterResponse {
   readonly accessToken: string;
   readonly user: User;
   readonly project: Project;
+  readonly login: Login;
   readonly membership: ProjectMembership;
   readonly profile: ProfileResource;
-  readonly client?: ClientApplication;
+  readonly client: ClientApplication;
 }
 
 /**
@@ -38,47 +40,46 @@ export interface RegisterResponse {
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {
   const { email, password, projectName, firstName, lastName } = request;
   const passwordHash = await bcrypt.hash(password, 10);
-  const [userOutcome, user] = await systemRepo.createResource<User>({
+  const user = await systemRepo.createResource<User>({
     resourceType: 'User',
+    firstName,
+    lastName,
     email,
     passwordHash,
   });
-  assertOk(userOutcome, user);
 
-  const [loginOutcome, login] = await tryLogin({
+  const login = await tryLogin({
     authMethod: 'password',
     scope: 'openid',
     nonce: randomUUID(),
     email: request.email,
     password: request.password,
     remember: true,
+    remoteAddress: request.remoteAddress,
+    userAgent: request.userAgent,
   });
-  assertOk(loginOutcome, login);
 
-  const membership = await createProject(login, projectName, firstName, lastName);
+  const { membership, client } = await createProject(login, projectName, firstName, lastName);
 
-  const [projectOutcome, project] = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  assertOk(projectOutcome, project);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 
-  const [profileOutcome, profile] = await systemRepo.readReference<ProfileResource>(
-    membership.profile as Reference<ProfileResource>
-  );
-  assertOk(profileOutcome, profile);
+  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
 
-  const [tokenOutcome, token] = await getAuthTokens(
+  const token = await getAuthTokens(
     {
       ...login,
       membership: createReference(membership),
     },
     createReference(profile)
   );
-  assertOk(tokenOutcome, token);
 
   return {
     accessToken: token.accessToken,
     user,
     project,
+    login,
     membership,
     profile,
+    client,
   };
 }

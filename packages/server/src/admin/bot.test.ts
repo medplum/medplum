@@ -1,43 +1,20 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { pwnedPassword } from 'hibp';
-import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
-
-jest.mock('@aws-sdk/client-sesv2');
-jest.mock('hibp');
-jest.mock('node-fetch');
 
 const app = express();
 
 describe('Bot admin', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
-  });
-
-  beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
-    (fetch as unknown as jest.Mock).mockClear();
-    (pwnedPassword as unknown as jest.Mock).mockClear();
-    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
-    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    await shutdownApp();
   });
 
   test('Create new bot', async () => {
@@ -62,6 +39,7 @@ describe('Bot admin', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('Bot');
     expect(res2.body.id).toBeDefined();
+    expect(res2.body.code).toBeDefined();
 
     // Read the bot
     const res3 = await request(app)

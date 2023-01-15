@@ -8,7 +8,7 @@ import {
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
-import { allOk, assertOk, badRequest } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import JSZip from 'jszip';
@@ -16,11 +16,14 @@ import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
 import { sendOutcome } from '../outcomes';
-import { Repository } from '../repo';
+import { Repository, systemRepo } from '../repo';
+import { isBotEnabled } from './execute';
 
-const LAMBDA_RUNTIME = 'nodejs16.x';
+const LAMBDA_RUNTIME = 'nodejs18.x';
 
 const LAMBDA_HANDLER = 'index.handler';
+
+const LAMBDA_MEMORY = 1024;
 
 const WRAPPER_CODE = `const { Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
@@ -28,8 +31,12 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { accessToken, input, contentType } = event;
-  const medplum = new MedplumClient({ fetch, createPdf });
+  const { baseUrl, accessToken, input, contentType, secrets } = event;
+  const medplum = new MedplumClient({
+    baseUrl,
+    fetch,
+    createPdf,
+  });
   medplum.setAccessToken(accessToken);
   try {
     return await userCode.handler(medplum, {
@@ -38,10 +45,13 @@ exports.handler = async (event, context) => {
           ? Hl7Message.parse(input)
           : input,
       contentType,
+      secrets,
     });
   } catch (err) {
     if (err instanceof Error) {
       console.log("Unhandled error: " + err.message + "\\n" + err.stack);
+    } else if (typeof err === "object") {
+      console.log("Unhandled error: " + JSON.stringify(err, undefined, 2));
     } else {
       console.log("Unhandled error: " + err);
     }
@@ -84,8 +94,17 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 export const deployHandler = asyncWrap(async (req: Request, res: Response) => {
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const [outcome, bot] = await repo.readResource<Bot>('Bot', id);
-  assertOk(outcome, bot);
+
+  // First read the bot as the user to verify access
+  await repo.readResource<Bot>('Bot', id);
+
+  // Then read the bot as system user to load extended metadata
+  const bot = await systemRepo.readResource<Bot>('Bot', id);
+
+  if (!(await isBotEnabled(bot))) {
+    sendOutcome(res, badRequest('Bots not enabled'));
+    return;
+  }
 
   const client = new LambdaClient({ region: 'us-east-1' });
   const name = `medplum-bot-lambda-${bot.id}`;
@@ -157,6 +176,7 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       Role: getConfig().botLambdaRoleArn,
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
+      MemorySize: LAMBDA_MEMORY,
       PackageType: PackageType.Zip,
       Layers: [layerVersion],
       Code: {

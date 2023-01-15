@@ -1,0 +1,25 @@
+---
+title: EventDefinition
+sidebar_position: 48
+---
+
+import definition from '@site/static/data/resourceDefinitions/eventdefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# EventDefinition
+
+The EventDefinition resource provides a reusable description of when a particular event can occur.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

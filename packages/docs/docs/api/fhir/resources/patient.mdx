@@ -1,0 +1,25 @@
+---
+title: Patient
+sidebar_position: 102
+---
+
+import definition from '@site/static/data/resourceDefinitions/patient.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Patient
+
+Demographics and other administrative information about an individual or animal receiving care or other health-related services.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

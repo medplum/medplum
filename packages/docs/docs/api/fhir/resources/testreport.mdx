@@ -1,0 +1,25 @@
+---
+title: TestReport
+sidebar_position: 141
+---
+
+import definition from '@site/static/data/resourceDefinitions/testreport.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# TestReport
+
+A summary of information based on the results of executing a TestScript.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -116,7 +116,7 @@ export interface MeasureReport {
    * The MeasureReport status. No data will be available until the
    * MeasureReport status is complete.
    */
-  status?: string;
+  status?: 'complete' | 'pending' | 'error';
 
   /**
    * The type of measure report. This may be an individual report, which
@@ -127,7 +127,7 @@ export interface MeasureReport {
    * a data-collection, which enables the MeasureReport to be used to
    * exchange the data-of-interest for a quality measure.
    */
-  type?: string;
+  type?: 'individual' | 'subject-list' | 'summary' | 'data-collection';
 
   /**
    * A reference to the Measure that was calculated to produce this report.

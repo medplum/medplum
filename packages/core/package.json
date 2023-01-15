@@ -1,6 +1,6 @@
 {
   "name": "@medplum/core",
-  "version": "0.9.27",
+  "version": "1.0.6",
   "description": "Medplum TS/JS Library",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -13,26 +13,26 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && npm run rollup",
-    "rollup": "rollup --config rollup.config.js",
+    "rollup": "rollup --config rollup.config.mjs",
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/definitions": "0.9.27",
-    "@medplum/fhirtypes": "0.9.27"
+    "@medplum/definitions": "*",
+    "@medplum/fhirtypes": "*"
   },
   "peerDependencies": {
-    "pdfmake": "0.2.5"
+    "pdfmake": "^0.2.5"
   },
   "peerDependenciesMeta": {
     "pdfmake": {
       "optional": true
     }
   },
-  "main": "dist/cjs/index.js",
-  "module": "dist/esm/index.js",
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
   "exports": {
-    "require": "./dist/cjs/index.js",
-    "import": "./dist/esm/index.js"
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
   },
   "types": "dist/esm/index.d.ts",
   "sideEffects": false,

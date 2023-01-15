@@ -18,8 +18,21 @@ export const corsOptions: cors.CorsOptionsDelegate<Request> = (req, callback) =>
 };
 
 function isOriginAllowed(origin: string | undefined): boolean {
+  if (!origin) {
+    return false;
+  }
+
   const config = getConfig();
-  return !!origin && (config.corsMode === 'open' || config.appBaseUrl.startsWith(origin));
+  if (config.appBaseUrl.startsWith(origin) || config.allowedOrigins === '*') {
+    return true;
+  }
+
+  if (config.allowedOrigins) {
+    const whitelist = config.allowedOrigins.split(',');
+    return whitelist.some((item) => item.trim() === origin);
+  }
+
+  return false;
 }
 
 const prefixes = ['/.well-known/', '/admin/', '/auth/', '/fhir/', '/oauth2/'];

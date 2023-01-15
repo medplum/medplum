@@ -75,7 +75,7 @@ describe('CLI', () => {
     );
 
     await main(medplum, ['node', 'index.js', 'deploy-bot', 'hello-world']);
-    expect(console.log).toBeCalledWith(expect.stringMatching('Bot does not exist'));
+    expect(console.log).toBeCalledWith(expect.stringMatching('Not found'));
   });
 
   test('Save bot success', async () => {

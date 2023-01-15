@@ -1,13 +1,23 @@
-import { assertOk, createReference, getExtensionValue, isGone, Operator, stringify } from '@medplum/core';
-import { AuditEvent, Bot, BundleEntry, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, QueueScheduler, Worker } from 'bullmq';
+import { createReference, getExtensionValue, isGone, matchesSearchRequest, Operator, stringify } from '@medplum/core';
+import {
+  AuditEvent,
+  Bot,
+  BundleEntry,
+  OperationOutcome,
+  Practitioner,
+  ProjectMembership,
+  Reference,
+  Resource,
+  Subscription,
+} from '@medplum/fhirtypes';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
 import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
-import { systemRepo } from '../fhir';
 import { executeBot } from '../fhir/operations/execute';
-import { matchesSearchRequest, parseSearchUrl } from '../fhir/search';
+import { systemRepo } from '../fhir/repo';
+import { parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -28,7 +38,6 @@ export interface SubscriptionJobData {
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
-let queueScheduler: QueueScheduler | undefined = undefined;
 let queue: Queue<SubscriptionJobData> | undefined = undefined;
 let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
@@ -41,8 +50,6 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config,
   };
-
-  queueScheduler = new QueueScheduler(queueName, defaultOptions);
 
   queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
@@ -57,21 +64,15 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
 
   worker = new Worker<SubscriptionJobData>(queueName, execSubscriptionJob, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => logger.info(`Failed job ${job.id} with ${err}`));
+  worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
  * Shuts down the subscription worker.
- * Closes the BullMQ scheduler.
  * Closes the BullMQ job queue.
  * Clsoes the BullMQ worker.
  */
 export async function closeSubscriptionWorker(): Promise<void> {
-  if (queueScheduler) {
-    await queueScheduler.close();
-    queueScheduler = undefined;
-  }
-
   if (queue) {
     await queue.close();
     queue = undefined;
@@ -81,6 +82,15 @@ export async function closeSubscriptionWorker(): Promise<void> {
     await worker.close();
     worker = undefined;
   }
+}
+
+/**
+ * Returns the subscription queue instance.
+ * This is used by the unit tests.
+ * @returns The subscription queue (if available).
+ */
+export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
+  return queue;
 }
 
 /**
@@ -107,7 +117,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
     if (matchesCriteria(resource, subscription)) {
-      addSubscriptionJobData({
+      await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
         id: resource.id as string,
@@ -176,10 +186,10 @@ function matchesChannelType(subscription: Subscription): boolean {
  * Adds a subscription job to the queue.
  * @param job The subscription job details.
  */
-function addSubscriptionJobData(job: SubscriptionJobData): void {
+async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
   logger.debug(`Adding Subscription job`);
   if (queue) {
-    queue.add(jobName, job);
+    await queue.add(jobName, job);
   } else {
     logger.debug(`Subscription queue not initialized`);
   }
@@ -191,8 +201,9 @@ function addSubscriptionJobData(job: SubscriptionJobData): void {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const [outcome, bundle] = await systemRepo.search<Subscription>({
+  const bundle = await systemRepo.search<Subscription>({
     resourceType: 'Subscription',
+    count: 1000,
     filters: [
       {
         code: '_project',
@@ -206,7 +217,6 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  assertOk(outcome, bundle);
   return (bundle.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
@@ -217,30 +227,41 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
 
-  const [subscriptionOutcome, subscription] = await systemRepo.readResource<Subscription>(
-    'Subscription',
-    subscriptionId
-  );
-  if (isGone(subscriptionOutcome)) {
-    // If the subscription was deleted, then stop processing it.
-    return;
+  let subscription;
+  try {
+    subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the subscription was deleted, then stop processing it.
+      return;
+    }
+    // Otherwise re-throw
+    throw err;
   }
-  assertOk(subscriptionOutcome, subscription);
 
   if (subscription.status !== 'active') {
     // If the subscription has been disabled, then stop processing it.
     return;
   }
 
-  const [readOutcome, currentVersion] = await systemRepo.readResource(resourceType, id);
-  if (isGone(readOutcome)) {
-    // If the resource was deleted, then stop processing it.
+  let currentVersion;
+  try {
+    currentVersion = await systemRepo.readResource(resourceType, id);
+  } catch (err) {
+    if (isGone(err as OperationOutcome)) {
+      // If the resource was deleted, then stop processing it.
+      return;
+    }
+    // Otherwise re-throw
+    throw err;
+  }
+
+  if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+    // If this is a retry and the resource is not the current version, then stop processing it.
     return;
   }
-  assertOk(readOutcome, currentVersion);
 
-  const [versionOutcome, resourceVersion] = await systemRepo.readVersion(resourceType, id, versionId);
-  assertOk(versionOutcome, resourceVersion);
+  const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
 
   const channelType = subscription?.channel?.type;
   if (channelType === 'rest-hook') {
@@ -270,6 +291,7 @@ async function sendRestHook(
     return;
   }
 
+  const startTime = new Date().toISOString();
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
   let error: Error | undefined = undefined;
@@ -282,6 +304,7 @@ async function sendRestHook(
     await createSubscriptionEvent(
       subscription,
       resource,
+      startTime,
       response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`
     );
@@ -294,6 +317,7 @@ async function sendRestHook(
     await createSubscriptionEvent(
       subscription,
       resource,
+      startTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`
     );
@@ -338,6 +362,7 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  * @param resource The resource that triggered the subscription.
  */
 async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
+  const startTime = new Date().toISOString();
   const url = subscription?.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
@@ -346,8 +371,7 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   }
 
   // URL should be a Bot reference string
-  const [botOutcome, bot] = await systemRepo.readReference<Bot>({ reference: url });
-  assertOk(botOutcome, bot);
+  const bot = await systemRepo.readReference<Bot>({ reference: url });
 
   const project = bot.meta?.project as string;
   let runAs: ProjectMembership | undefined;
@@ -373,11 +397,11 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
     logResult = (error as Error).message;
   }
 
-  await createSubscriptionEvent(subscription, resource, outcome, logResult);
+  await createSubscriptionEvent(subscription, resource, startTime, outcome, logResult, bot);
 }
 
 async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
-  const [outcome, bundle] = await systemRepo.search<ProjectMembership>({
+  const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 1,
     filters: [
@@ -393,7 +417,6 @@ async function findProjectMembership(project: string, profile: Reference): Promi
       },
     ],
   });
-  assertOk(outcome, bundle);
   return bundle.entry?.[0]?.resource;
 }
 
@@ -401,20 +424,46 @@ async function findProjectMembership(project: string, profile: Reference): Promi
  * Creates an AuditEvent for a subscription attempt.
  * @param subscription The rest-hook subscription.
  * @param resource The resource that triggered the subscription.
+ * @param startTime The time the subscription attempt started.
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
+ * @param bot Optional bot that was executed.
  */
 async function createSubscriptionEvent(
   subscription: Subscription,
   resource: Resource,
+  startTime: string,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string
+  outcomeDesc?: string,
+  bot?: Bot
 ): Promise<void> {
+  const entity = [
+    {
+      what: createReference(resource),
+      role: { code: '4', display: 'Domain' },
+    },
+    {
+      what: createReference(subscription),
+      role: { code: '9', display: 'Subscriber' },
+    },
+  ];
+
+  if (bot) {
+    entity.push({
+      what: createReference(bot),
+      role: { code: '9', display: 'Subscriber' },
+    });
+  }
+
   await systemRepo.createResource<AuditEvent>({
     resourceType: 'AuditEvent',
     meta: {
       project: subscription.meta?.project,
       account: subscription.meta?.account,
+    },
+    period: {
+      start: startTime,
+      end: new Date().toISOString(),
     },
     recorded: new Date().toISOString(),
     type: {
@@ -431,23 +480,9 @@ async function createSubscriptionEvent(
     source: {
       // Observer cannot be a Subscription resource
       // observer: createReference(subscription)
+      observer: createReference(subscription) as Reference as Reference<Practitioner>,
     },
-    entity: [
-      {
-        what: createReference(resource),
-        role: {
-          code: '4',
-          display: 'Domain',
-        },
-      },
-      {
-        what: createReference(subscription),
-        role: {
-          code: '9',
-          display: 'Subscriber',
-        },
-      },
-    ],
+    entity,
     outcome,
     outcomeDesc,
   });

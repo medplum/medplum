@@ -1,7 +1,8 @@
 import { Reference, Resource } from '@medplum/fhirtypes';
-import { PropertyType } from '../types';
+import { Atom } from '../fhirlexer';
+import { PropertyType, TypedValue } from '../types';
 import { calculateAge } from '../utils';
-import { Atom, DotAtom, SymbolAtom, TypedValue } from './atoms';
+import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
 import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBoolean, toTypedValue } from './utils';
 
@@ -290,7 +291,9 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
    */
-  ofType: stub,
+  ofType: (input: TypedValue[], criteria: Atom): TypedValue[] => {
+    return input.filter((e) => e.type === (criteria as SymbolAtom).name);
+  },
 
   /*
    * 5.3 Subsetting

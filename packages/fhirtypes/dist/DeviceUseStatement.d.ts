@@ -127,7 +127,7 @@ export interface DeviceUseStatement {
    * state of the device used that this statement is about.  Generally this
    * will be active or completed.
    */
-  status?: string;
+  status?: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold';
 
   /**
    * The patient who used the device.

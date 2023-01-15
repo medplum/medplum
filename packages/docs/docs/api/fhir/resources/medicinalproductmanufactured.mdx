@@ -1,0 +1,26 @@
+---
+title: MedicinalProductManufactured
+sidebar_position: 86
+tags: [medications]
+---
+
+import definition from '@site/static/data/resourceDefinitions/medicinalproductmanufactured.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# MedicinalProductManufactured
+
+The manufactured item as contained in the packaged medicinal product.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

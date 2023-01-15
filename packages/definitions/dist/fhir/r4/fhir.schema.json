@@ -3053,6 +3053,17 @@
         "author": {
           "description": "The individual, device or organization who initiated the last change.",
           "$ref": "#/definitions/Reference"
+        },
+        "account": {
+          "description": "Optional account reference that can be used for sub-project compartments.",
+          "$ref": "#/definitions/Reference"
+        },
+        "compartment": {
+          "description": "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false
@@ -61077,6 +61088,14 @@
           "description": "A summary, characterization or explanation of the Project.",
           "$ref": "#/definitions/string"
         },
+        "superAdmin": {
+          "description": "Whether this project is the super administrator project. A super administrator is a user who has complete access to all resources in all projects.",
+          "$ref": "#/definitions/boolean"
+        },
+        "strictMode": {
+          "description": "Whether this project uses strict FHIR validation.",
+          "$ref": "#/definitions/boolean"
+        },
         "owner": {
           "description": "Indicates the user with responsibility for managing the Project.",
           "$ref": "#/definitions/Reference"
@@ -61092,17 +61111,10 @@
           "description": "The default access policy for patients using open registration.",
           "$ref": "#/definitions/Reference"
         },
-        "googleClientId": {
-          "description": "DEPRECATED",
+        "secret": {
+          "description": "Secure environment variable that can be used to store secrets for bots.",
           "items": {
-            "$ref": "#/definitions/string"
-          },
-          "type": "array"
-        },
-        "recaptchaSiteKey": {
-          "description": "DEPRECATED",
-          "items": {
-            "$ref": "#/definitions/string"
+            "$ref": "#/definitions/Project_Secret"
           },
           "type": "array"
         },
@@ -61119,17 +61131,38 @@
         "owner"
       ]
     },
+    "Project_Secret": {
+      "description": "Secure environment variable that can be used to store secrets for bots.",
+      "properties": {
+        "name": {
+          "description": "A name associated with the Project.",
+          "$ref": "#/definitions/string"
+        },
+        "valueBoolean": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^true|false$",
+          "type": "boolean"
+        },
+        "valueDecimal": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
+          "type": "number"
+        },
+        "valueInteger": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^-?([0]|([1-9][0-9]*))$",
+          "type": "number"
+        },
+        "valueString": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "pattern": "^[ \\r\\n\\t\\S]+$",
+          "type": "string"
+        }
+      }
+    },
     "Project_Site": {
       "description": "Web application or web site that is associated with the project.",
       "properties": {
-        "resourceType": {
-          "description": "This is a Project resource",
-          "const": "Project"
-        },
-        "id": {
-          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
-          "$ref": "#/definitions/string"
-        },
         "name": {
           "description": "A name associated with the Project.",
           "$ref": "#/definitions/string"
@@ -61259,8 +61292,16 @@
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
         },
+        "jwksUri": {
+          "description": "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt)",
+          "$ref": "#/definitions/string"
+        },
         "redirectUri": {
           "description": "Redirect URI used when redirecting a client back to the client application.",
+          "$ref": "#/definitions/string"
+        },
+        "launchUri": {
+          "description": "Optional launch URI for SMART EHR launch sequence.",
           "$ref": "#/definitions/string"
         }
       },
@@ -61300,9 +61341,21 @@
           "description": "Extensions for language",
           "$ref": "#/definitions/Element"
         },
-        "email": {
-          "description": "User email.",
+        "firstName": {
+          "description": "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
           "$ref": "#/definitions/string"
+        },
+        "lastName": {
+          "description": "The last name or family name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+          "$ref": "#/definitions/string"
+        },
+        "email": {
+          "description": "The email address that uniquely identifies the user.",
+          "$ref": "#/definitions/string"
+        },
+        "emailVerified": {
+          "description": "Whether the system has verified that the user has access to the email address.",
+          "$ref": "#/definitions/boolean"
         },
         "passwordHash": {
           "description": "Encrypted hash of the user's password.",
@@ -61417,6 +61470,10 @@
         },
         "admin": {
           "description": "Whether this login has system administrator privileges.",
+          "$ref": "#/definitions/boolean"
+        },
+        "superAdmin": {
+          "description": "Whether this login has super administrator privileges.",
           "$ref": "#/definitions/boolean"
         },
         "remoteAddress": {

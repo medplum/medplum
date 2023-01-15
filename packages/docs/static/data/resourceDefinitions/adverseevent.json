@@ -1,0 +1,932 @@
+{
+  "name": "AdverseEvent",
+  "location": "resource",
+  "description": "Actual or  potential/avoided event causing unintended physical injury resulting from or contributed to by medical care, a research study or other healthcare setting factors that requires additional monitoring, treatment, or hospitalization, or that results in death.",
+  "properties": [
+    {
+      "name": "AdverseEvent",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "AdverseEvent",
+      "min": 0,
+      "max": "*",
+      "short": "Medical care, research study or other healthcare event causing physical injury",
+      "definition": "Actual or  potential/avoided event causing unintended physical injury resulting from or contributed to by medical care, a research study or other healthcare setting factors that requires additional monitoring, treatment, or hospitalization, or that results in death.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AdverseEvent.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "AdverseEvent.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "AdverseEvent.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "AdverseEvent.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Business identifier for the event",
+      "definition": "Business identifiers assigned to this adverse event by the performer or other systems which remain constant as the resource is updated and propagates from server to server.",
+      "comment": "This is a business identifier, not a resource identifier (see [discussion](resource.html#identifiers)).  It is best practice for the identifier to only appear on a single resource instance, however business practices may occasionally dictate that multiple resource instances with the same identifier can exist - possibly even with different resource types.  For example, multiple Patient and a Person resource instance might share the same social insurance number.",
+      "inherited": false
+    },
+    {
+      "name": "actuality",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "AdverseEvent.actuality",
+      "min": 1,
+      "max": "1",
+      "short": "actual | potential",
+      "definition": "Whether the event actually happened, or just had the potential to. Note that this is independent of whether anyone was affected or harmed or how severely.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "category",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.category",
+      "min": 0,
+      "max": "*",
+      "short": "product-problem | product-quality | product-use-error | wrong-dose | incorrect-prescribing-information | wrong-technique | wrong-route-of-administration | wrong-rate | wrong-duration | wrong-time | expired-drug | medical-device-use-error | problem-different-manufacturer | unsafe-physical-environment",
+      "definition": "The overall type of event, intended for search and filtering purposes.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "event",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.event",
+      "min": 0,
+      "max": "1",
+      "short": "Type of the event itself in relation to the subject",
+      "definition": "This element defines the specific type of event that occurred or that was prevented from occurring.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "subject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.subject",
+      "min": 1,
+      "max": "1",
+      "short": "Subject impacted by event",
+      "definition": "This subject or group impacted by the event.",
+      "comment": "If AdverseEvent.resultingCondition differs among members of the group, then use Patient as the subject.",
+      "inherited": false
+    },
+    {
+      "name": "encounter",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Encounter",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.encounter",
+      "min": 0,
+      "max": "1",
+      "short": "Encounter created as part of",
+      "definition": "The Encounter during which AdverseEvent was created or to which the creation of this record is tightly associated.",
+      "comment": "This will typically be the encounter the event occurred within, but some activities may be initiated prior to or after the official completion of an encounter but still be tied to the context of the encounter.  For example, if a medication administration was considered an adverse event because it resulted in a rash, then the encounter when the medication administration was given is the context.  If the patient reports the AdverseEvent during a second encounter, that second encounter is not the context.",
+      "inherited": false
+    },
+    {
+      "name": "date",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "AdverseEvent.date",
+      "min": 0,
+      "max": "1",
+      "short": "When the event occurred",
+      "definition": "The date (and perhaps time) when the adverse event occurred.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "detected",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "AdverseEvent.detected",
+      "min": 0,
+      "max": "1",
+      "short": "When the event was detected",
+      "definition": "Estimated or actual date the AdverseEvent began, in the opinion of the reporter.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "recordedDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "AdverseEvent.recordedDate",
+      "min": 0,
+      "max": "1",
+      "short": "When the event was recorded",
+      "definition": "The date on which the existence of the AdverseEvent was first recorded.",
+      "comment": "The recordedDate represents the date when this particular AdverseEvent record was created in the system, not the date of the most recent update.  The date of the last record modification can be retrieved from the resource metadata.",
+      "inherited": false
+    },
+    {
+      "name": "resultingCondition",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.resultingCondition",
+      "min": 0,
+      "max": "*",
+      "short": "Effect on the subject due to this event",
+      "definition": "Includes information about the reaction that occurred as a result of exposure to a substance (for example, a drug or a chemical).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "location",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Location",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.location",
+      "min": 0,
+      "max": "1",
+      "short": "Location where adverse event occurred",
+      "definition": "The information about where the adverse event occurred.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "seriousness",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.seriousness",
+      "min": 0,
+      "max": "1",
+      "short": "Seriousness of the event",
+      "definition": "Assessment whether this event was of real importance.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "severity",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.severity",
+      "min": 0,
+      "max": "1",
+      "short": "mild | moderate | severe",
+      "definition": "Describes the severity of the adverse event, in relation to the subject. Contrast to AdverseEvent.seriousness - a severe rash might not be serious, but a mild heart problem is.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "outcome",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.outcome",
+      "min": 0,
+      "max": "1",
+      "short": "resolved | recovering | ongoing | resolvedWithSequelae | fatal | unknown",
+      "definition": "Describes the type of outcome from the adverse event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "recorder",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.recorder",
+      "min": 0,
+      "max": "1",
+      "short": "Who recorded the adverse event",
+      "definition": "Information on who recorded the adverse event.  May be the patient or a practitioner.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "contributor",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.contributor",
+      "min": 0,
+      "max": "*",
+      "short": "Who  was involved in the adverse event or the potential adverse event",
+      "definition": "Parties that may or should contribute or have contributed information to the adverse event, which can consist of one or more activities.  Such information includes information leading to the decision to perform the activity and how to perform the activity (e.g. consultant), information that the activity itself seeks to reveal (e.g. informant of clinical history), or information about what activity was performed (e.g. informant witness).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "suspectEntity",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity",
+      "min": 0,
+      "max": "*",
+      "short": "The suspected agent causing the adverse event",
+      "definition": "Describes the entity that is suspected to have caused the adverse event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "instance",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Substance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Medication",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationAdministration",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "MedicationStatement",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.instance",
+      "min": 1,
+      "max": "1",
+      "short": "Refers to the specific entity that caused the adverse event",
+      "definition": "Identifies the actual instance of what caused the adverse event.  May be a substance, medication, medication administration, medication statement or a device.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "causality",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality",
+      "min": 0,
+      "max": "*",
+      "short": "Information on the possible cause of the event",
+      "definition": "Information on the possible cause of the event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "assessment",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.assessment",
+      "min": 0,
+      "max": "1",
+      "short": "Assessment of if the entity caused the event",
+      "definition": "Assessment of if the entity caused the event.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "productRelatedness",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.productRelatedness",
+      "min": 0,
+      "max": "1",
+      "short": "AdverseEvent.suspectEntity.causalityProductRelatedness",
+      "definition": "AdverseEvent.suspectEntity.causalityProductRelatedness.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.author",
+      "min": 0,
+      "max": "1",
+      "short": "AdverseEvent.suspectEntity.causalityAuthor",
+      "definition": "AdverseEvent.suspectEntity.causalityAuthor.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "method",
+      "depth": 3,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "AdverseEvent.suspectEntity.causality.method",
+      "min": 0,
+      "max": "1",
+      "short": "ProbabilityScale | Bayesian | Checklist",
+      "definition": "ProbabilityScale | Bayesian | Checklist.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "subjectMedicalHistory",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Observation",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "AllergyIntolerance",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "FamilyMemberHistory",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Immunization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Procedure",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Media",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.subjectMedicalHistory",
+      "min": 0,
+      "max": "*",
+      "short": "AdverseEvent.subjectMedicalHistory",
+      "definition": "AdverseEvent.subjectMedicalHistory.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "referenceDocument",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DocumentReference",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.referenceDocument",
+      "min": 0,
+      "max": "*",
+      "short": "AdverseEvent.referenceDocument",
+      "definition": "AdverseEvent.referenceDocument.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "study",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ResearchStudy",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "AdverseEvent.study",
+      "min": 0,
+      "max": "*",
+      "short": "AdverseEvent.study",
+      "definition": "AdverseEvent.study.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "actuality",
+      "type": "token",
+      "description": "actual | potential",
+      "expression": "AdverseEvent.actuality"
+    },
+    {
+      "name": "category",
+      "type": "token",
+      "description": "product-problem | product-quality | product-use-error | wrong-dose | incorrect-prescribing-information | wrong-technique | wrong-route-of-administration | wrong-rate | wrong-duration | wrong-time | expired-drug | medical-device-use-error | problem-different-manufacturer | unsafe-physical-environment",
+      "expression": "AdverseEvent.category"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "When the event occurred",
+      "expression": "AdverseEvent.date"
+    },
+    {
+      "name": "event",
+      "type": "token",
+      "description": "Type of the event itself in relation to the subject",
+      "expression": "AdverseEvent.event"
+    },
+    {
+      "name": "location",
+      "type": "reference",
+      "description": "Location where adverse event occurred",
+      "expression": "AdverseEvent.location"
+    },
+    {
+      "name": "recorder",
+      "type": "reference",
+      "description": "Who recorded the adverse event",
+      "expression": "AdverseEvent.recorder"
+    },
+    {
+      "name": "resultingcondition",
+      "type": "reference",
+      "description": "Effect on the subject due to this event",
+      "expression": "AdverseEvent.resultingCondition"
+    },
+    {
+      "name": "seriousness",
+      "type": "token",
+      "description": "Seriousness of the event",
+      "expression": "AdverseEvent.seriousness"
+    },
+    {
+      "name": "severity",
+      "type": "token",
+      "description": "mild | moderate | severe",
+      "expression": "AdverseEvent.severity"
+    },
+    {
+      "name": "study",
+      "type": "reference",
+      "description": "AdverseEvent.study",
+      "expression": "AdverseEvent.study"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "Subject impacted by event",
+      "expression": "AdverseEvent.subject"
+    },
+    {
+      "name": "substance",
+      "type": "reference",
+      "description": "Refers to the specific entity that caused the adverse event",
+      "expression": "AdverseEvent.suspectEntity.instance"
+    }
+  ]
+}

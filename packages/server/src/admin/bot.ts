@@ -1,16 +1,24 @@
-import { assertOk, createReference } from '@medplum/core';
+import { createReference, forbidden } from '@medplum/core';
 import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
-import { invalidRequest, Repository, sendOutcome, systemRepo } from '../fhir';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { Repository, systemRepo } from '../fhir/repo';
 import { verifyProjectAdmin } from './utils';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
 
+const defaultBotCode = `import { BotEvent, MedplumClient } from '@medplum/core';
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  // Your code here
+}
+`;
+
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
   const project = await verifyProjectAdmin(req, res);
   if (!project) {
-    res.sendStatus(404);
+    sendOutcome(res, forbidden);
     return;
   }
 
@@ -36,7 +44,7 @@ export interface CreateBotRequest {
 }
 
 export async function createBot(repo: Repository, request: CreateBotRequest): Promise<Bot> {
-  const [clientOutcome, bot] = await repo.createResource<Bot>({
+  const bot = await repo.createResource<Bot>({
     meta: {
       project: request.project.id,
     },
@@ -44,10 +52,10 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     name: request.name,
     description: request.description,
     runtimeVersion: 'awslambda',
+    code: defaultBotCode,
   });
-  assertOk(clientOutcome, bot);
 
-  const [membershipOutcome, membership] = await systemRepo.createResource<ProjectMembership>({
+  await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,
     },
@@ -57,6 +65,6 @@ export async function createBot(repo: Repository, request: CreateBotRequest): Pr
     profile: createReference(bot),
     accessPolicy: request.accessPolicy,
   });
-  assertOk(membershipOutcome, membership);
+
   return bot;
 }

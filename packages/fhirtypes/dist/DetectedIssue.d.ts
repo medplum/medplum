@@ -108,7 +108,7 @@ export interface DetectedIssue {
   /**
    * Indicates the status of the detected issue.
    */
-  status?: string;
+  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * Identifies the general type of issue identified.
@@ -119,7 +119,7 @@ export interface DetectedIssue {
    * Indicates the degree of importance associated with the identified
    * issue based on the potential impact on the patient.
    */
-  severity?: string;
+  severity?: 'high' | 'moderate' | 'low';
 
   /**
    * Indicates the patient whose record the detected issue is associated

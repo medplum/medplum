@@ -1,16 +1,13 @@
-import { assertOk, createReference, resolveId } from '@medplum/core';
-import { AccessPolicy, BundleEntry, Patient } from '@medplum/fhirtypes';
+import { createReference, Operator, resolveId } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
+import { systemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('hibp');
@@ -21,14 +18,11 @@ const app = express();
 describe('New patient', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   beforeEach(async () => {
@@ -44,16 +38,18 @@ describe('New patient', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
+        firstName: 'Christina',
+        lastName: 'Smith',
         email: `christina${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(res1.status).toBe(200);
 
     const res2 = await request(app).post('/auth/newproject').type('json').send({
       login: res1.body.login,
-      firstName: 'Christina',
-      lastName: 'Smith',
       projectName: 'Christina Project',
     });
     expect(res2.status).toBe(200);
@@ -73,17 +69,20 @@ describe('New patient', () => {
       .post('/auth/newuser')
       .type('json')
       .send({
-        email: `christina${randomUUID()}@example.com`,
+        projectId,
+        firstName: 'Peggy',
+        lastName: 'Patient',
+        email: `peggy${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       });
     expect(res4.status).toBe(200);
 
     const res5 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId: projectId,
-      firstName: 'Peggy',
-      lastName: 'Patient',
     });
     expect(res5.status).toBe(400);
 
@@ -112,32 +111,28 @@ describe('New patient', () => {
     expect(res6.status).toBe(201);
 
     // As a super admin, enable patient registration
-    const [updateOutcome, updatedProject] = await systemRepo.patchResource('Project', projectId, [
+    await systemRepo.patchResource('Project', projectId, [
       {
         op: 'add',
         path: '/defaultPatientAccessPolicy',
         value: createReference(res6.body),
       },
     ]);
-    assertOk(updateOutcome, updatedProject);
 
     // Try to register as a patient in the new project
     // (This should succeed)
     const res7 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Peggy',
-      lastName: 'Patient',
     });
     expect(res7.status).toBe(200);
+    expect(res7.body.code).toBeDefined();
 
     // Try to reuse the login
     // (This should fail)
     const res8 = await request(app).post('/auth/newpatient').type('json').send({
       login: res4.body.login,
       projectId,
-      firstName: 'Reuse',
-      lastName: 'Login',
     });
     expect(res8.status).toBe(400);
 
@@ -145,8 +140,6 @@ describe('New patient', () => {
     // (This should fail)
     const res9 = await request(app).post('/auth/newpatient').type('json').send({
       projectId,
-      firstName: 'Missing',
-      lastName: 'Login',
     });
     expect(res9.status).toBe(400);
 
@@ -158,21 +151,55 @@ describe('New patient', () => {
 
     const patient = res10.body.entry[0].resource as Patient;
 
-    // Get the AccessPolicy
+    // Get the ProjectMembership
+    const membershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: 'profile', operator: Operator.EQUALS, value: 'Patient/' + patient.id }],
+    });
+    expect(membershipBundle).toBeDefined();
+    expect(membershipBundle.entry).toBeDefined();
+    expect(membershipBundle.entry).toHaveLength(1);
+
+    // Create an observation for the new patient
     const res11 = await request(app)
-      .get(`/fhir/R4/AccessPolicy`)
-      .set('Authorization', 'Bearer ' + res3.body.access_token);
-    expect(res11.status).toBe(200);
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token)
+      .type('json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: createReference(patient),
+      });
+    expect(res11.status).toBe(201);
 
-    const accessPolicies = (res11.body.entry as BundleEntry<AccessPolicy>[]).map((e) => e.resource) as AccessPolicy[];
-    expect(accessPolicies).toHaveLength(2);
-    expect(accessPolicies.some((p) => p.name === 'Default Patient Policy')).toBe(true);
-    expect(accessPolicies.some((p) => p.name === 'Peggy Patient Access Policy')).toBe(true);
+    // Create an observation for a different patient
+    const res12 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res3.body.access_token)
+      .type('json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: randomUUID() },
+      });
+    expect(res12.status).toBe(201);
 
-    const peggyPolicy = accessPolicies.find((p) => p.name === 'Peggy Patient Access Policy');
-    expect(peggyPolicy).toBeDefined();
-    expect(peggyPolicy?.compartment?.reference).toEqual('Patient/' + patient.id);
-    expect(peggyPolicy?.resource?.[0]?.criteria).toEqual('Patient?_id=' + patient.id);
-    expect(peggyPolicy?.resource?.[1]?.criteria).toEqual('Observation?subject=Patient/' + patient.id);
+    // Login as the patient
+    const res13 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res7.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res13.status).toBe(200);
+
+    // Make sure that the patient can only access their observations
+    const res14 = await request(app)
+      .get(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + res13.body.access_token);
+    expect(res14.status).toBe(200);
+    expect(res14.body.entry).toHaveLength(1);
+    expect(res14.body.entry[0].resource.id).toEqual(res11.body.id);
   });
 });

@@ -6,10 +6,10 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Count Type: A measured amount (or an
- * amount that can potentially be measured). Note that measured amounts
- * include amounts that are not precisely quantified, including amounts
- * involving arbitrary units and floating currencies.
+ * A measured amount (or an amount that can potentially be measured).
+ * Note that measured amounts include amounts that are not precisely
+ * quantified, including amounts involving arbitrary units and floating
+ * currencies.
  */
 export interface Count {
 
@@ -41,7 +41,7 @@ export interface Count {
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
    * value is &lt; stated value.
    */
-  comparator?: string;
+  comparator?: '<' | '<=' | '>=' | '>';
 
   /**
    * A human-readable form of the unit.

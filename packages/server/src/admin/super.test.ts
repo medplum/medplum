@@ -1,15 +1,14 @@
-import { assertOk, createReference, getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import { ClientApplication, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
+import { generateAccessToken } from '../oauth/keys';
 import { createTestProject } from '../test.setup';
-import { generateAccessToken, initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 
 const app = express();
 let project: Project;
@@ -20,72 +19,68 @@ let nonAdminAccessToken: string;
 describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
 
     ({ project, client } = await createTestProject());
 
-    const [outcome1, practitioner1] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-    assertOk(outcome1, practitioner1);
+    // Mark the project as a "Super Admin" project
+    await systemRepo.updateResource({ ...project, superAdmin: true });
 
-    const [outcome2, practitioner2] = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-    assertOk(outcome2, practitioner2);
+    const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
-    const [outcome3, user1] = await systemRepo.createResource<User>({
+    const practitioner2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+
+    const user1 = await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: 'Super',
+      lastName: 'Admin',
       email: `super${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: true,
     });
-    assertOk(outcome3, user1);
 
-    const [outcome4, user2] = await systemRepo.createResource<User>({
+    const user2 = await systemRepo.createResource<User>({
       resourceType: 'User',
+      firstName: 'Super',
+      lastName: 'Admin',
       email: `normie${randomUUID()}@example.com`,
       passwordHash: 'abc',
-      admin: false,
     });
-    assertOk(outcome4, user2);
 
-    const [membershipOutcome1, membership1] = await systemRepo.createResource<ProjectMembership>({
+    const membership1 = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       project: createReference(project),
       user: createReference(user1),
       profile: createReference(practitioner1),
     });
-    assertOk(membershipOutcome1, membership1);
 
-    const [membershipOutcome2, membership2] = await systemRepo.createResource<ProjectMembership>({
+    const membership2 = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       project: createReference(project),
       user: createReference(user2),
       profile: createReference(practitioner2),
     });
-    assertOk(membershipOutcome2, membership2);
 
-    const [outcome5, login1] = await systemRepo.createResource<Login>({
+    const login1 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
       client: createReference(client),
       user: createReference(user1),
       membership: createReference(membership1),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      admin: true,
+      superAdmin: true,
     });
-    assertOk(outcome5, login1);
 
-    const [outcome6, login2] = await systemRepo.createResource<Login>({
+    const login2 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
+      authMethod: 'client',
       client: createReference(client),
       user: createReference(user2),
       membership: createReference(membership2),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      admin: false,
+      superAdmin: false,
     });
-    assertOk(outcome6, login2);
 
     adminAccessToken = await generateAccessToken({
       login_id: login1?.id as string,
@@ -107,7 +102,7 @@ describe('Super Admin routes', () => {
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Rebuild ValueSetElements as super admin', async () => {
@@ -204,5 +199,69 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  test('Set password access denied', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Set password missing password', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: '',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+  });
+
+  test('Set password user not found', async () => {
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email: 'user-not-found@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password success', async () => {
+    const email = `alice${randomUUID()}@example.com`;
+
+    await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email,
+      password: 'password!@#',
+    });
+
+    const res = await request(app)
+      .post('/admin/super/setpassword')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(200);
   });
 });

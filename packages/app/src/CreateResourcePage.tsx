@@ -1,5 +1,6 @@
+import { Paper, Text } from '@mantine/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, TitleBar, useMedplum } from '@medplum/react';
+import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -11,9 +12,9 @@ export function CreateResourcePage(): JSX.Element {
 
   return (
     <>
-      <TitleBar>
-        <h1>New&nbsp;{resourceType}</h1>
-      </TitleBar>
+      <Paper p="xl" shadow="xs" radius={0}>
+        <Text weight={500}>New&nbsp;{resourceType}</Text>
+      </Paper>
       <Document>
         <ResourceForm
           defaultValue={{ resourceType } as Resource}

@@ -2,25 +2,19 @@ import { ContactPoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 
 const app = express();
 
 describe('OAuth2 UserInfo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Get userinfo with profile email', async () => {
@@ -28,6 +22,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -56,6 +52,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -103,6 +101,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -144,6 +144,8 @@ describe('OAuth2 UserInfo', () => {
       email: 'admin@example.com',
       password: 'medplum_admin',
       scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 

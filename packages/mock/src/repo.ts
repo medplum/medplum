@@ -1,5 +1,6 @@
-import { evalFhirPath, Filter, Operator, SearchRequest } from '@medplum/core';
+import { badRequest, deepClone, matchesSearchRequest, notFound, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -11,7 +12,7 @@ export class MemoryRepository {
   }
 
   createResource<T extends Resource>(resource: T): T {
-    const result = JSON.parse(JSON.stringify(resource));
+    const result = deepClone(resource);
 
     if (!result.id) {
       result.id = this.generateId();
@@ -45,7 +46,7 @@ export class MemoryRepository {
 
     this.#resources[resourceType][id] = result;
     this.#history[resourceType][id].push(result);
-    return result;
+    return deepClone(result);
   }
 
   updateResource<T extends Resource>(resource: T): T {
@@ -61,25 +62,48 @@ export class MemoryRepository {
     return this.createResource(result);
   }
 
-  readResource<T extends Resource>(resourceType: string, id: string): T | undefined {
-    return this.#resources?.[resourceType]?.[id] as T | undefined;
+  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
+    const resource = this.readResource(resourceType, id);
+
+    let patchResult;
+    try {
+      patchResult = applyPatch(resource, patch, true);
+    } catch (err) {
+      const patchError = err as JsonPatchError;
+      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
+      throw badRequest(message);
+    }
+
+    const patchedResource = patchResult.newDocument;
+    return this.updateResource(patchedResource);
+  }
+
+  readResource<T extends Resource>(resourceType: string, id: string): T {
+    const resource = this.#resources?.[resourceType]?.[id] as T | undefined;
+    if (!resource) {
+      throw notFound;
+    }
+    return deepClone(resource);
   }
 
   readHistory<T extends Resource>(resourceType: string, id: string): Bundle<T> {
+    this.readResource(resourceType, id);
     return {
       resourceType: 'Bundle',
       type: 'history',
       entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[])
-        .sort(
-          (version1, version2) =>
-            -(version1.meta?.lastUpdated?.localeCompare(version2.meta?.lastUpdated as string) as number)
-        )
-        .map((version) => ({ resource: version })),
+        .reverse()
+        .map((version) => ({ resource: deepClone(version) })),
     };
   }
 
-  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T | undefined {
-    return this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+  readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): T {
+    this.readResource(resourceType, id);
+    const version = this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+    if (!version) {
+      throw notFound;
+    }
+    return deepClone(version);
   }
 
   search<T extends Resource>(searchRequest: SearchRequest): Bundle<T> {
@@ -89,7 +113,7 @@ export class MemoryRepository {
     return {
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: result.map((resource) => ({ resource })) as BundleEntry<T>[],
+      entry: result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[],
       total: result.length,
     };
   }
@@ -111,46 +135,4 @@ export class MemoryRepository {
       return v.toString(16);
     });
   }
-}
-
-/**
- * Determines if the resource matches the search request.
- * @param resource The resource that was created or updated.
- * @param searchRequest The subscription criteria as a search request.
- * @returns True if the resource satisfies the search request.
- */
-export function matchesSearchRequest(resource: Resource, searchRequest: SearchRequest): boolean {
-  if (searchRequest.resourceType !== resource.resourceType) {
-    return false;
-  }
-  if (searchRequest.filters) {
-    for (const filter of searchRequest.filters) {
-      if (!matchesSearchFilter(resource, filter)) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-
-/**
- * Determines if the resource matches the search filter.
- * @param resource The resource that was created or updated.
- * @param filter One of the filters of a subscription criteria.
- * @returns True if the resource satisfies the search filter.
- */
-function matchesSearchFilter(resource: Resource, filter: Filter): boolean {
-  for (const filterValue of filter.value.split(',')) {
-    if (matchesSearchFilterValue(resource, filter, filterValue)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function matchesSearchFilterValue(resource: Resource, filter: Filter, filterValue: string): boolean {
-  const expression = filter.code.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-  const values = evalFhirPath(expression as string, resource);
-  const result = values.some((value) => JSON.stringify(value).toLowerCase().includes(filterValue.toLowerCase()));
-  return filter.operator === Operator.NOT_EQUALS ? !result : result;
 }

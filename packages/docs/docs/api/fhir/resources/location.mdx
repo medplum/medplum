@@ -1,0 +1,25 @@
+---
+title: Location
+sidebar_position: 70
+---
+
+import definition from '@site/static/data/resourceDefinitions/location.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Location
+
+Details and position information for a physical place where services are provided and resources and participants may be stored, found, contained, or accommodated.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

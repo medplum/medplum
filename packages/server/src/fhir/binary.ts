@@ -1,10 +1,9 @@
-import { assertOk, badRequest } from '@medplum/core';
+import { badRequest } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
-import { json, Request, Response, Router } from 'express';
+import { Request, Response, Router } from 'express';
 import internal from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
-import { createPdf } from '../util/pdf';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { getPresignedUrl } from './signer';
@@ -19,14 +18,13 @@ binaryRouter.post(
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.createResource<Binary>({
+    const resource = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -46,31 +44,6 @@ binaryRouter.post(
   })
 );
 
-// Create a binary by PDF Document Definition
-binaryRouter.post(
-  '/([$]|%24)pdf',
-  json(),
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!req.is('application/json')) {
-      sendOutcome(res, badRequest('Unsupported content type'));
-      return;
-    }
-
-    const filename = req.query['_filename'] as string | undefined;
-    const repo = res.locals.repo as Repository;
-
-    try {
-      const binary = await createPdf(repo, filename, req.body);
-      res.status(201).json({
-        ...binary,
-        url: getPresignedUrl(binary),
-      });
-    } catch (err) {
-      sendOutcome(res, badRequest((err as Error).message));
-    }
-  })
-);
-
 // Update a binary
 binaryRouter.put(
   '/:id',
@@ -79,7 +52,7 @@ binaryRouter.put(
     const filename = req.query['_filename'] as string | undefined;
     const contentType = req.get('Content-Type');
     const repo = res.locals.repo as Repository;
-    const [outcome, resource] = await repo.updateResource<Binary>({
+    const resource = await repo.updateResource<Binary>({
       resourceType: 'Binary',
       id,
       contentType,
@@ -87,7 +60,6 @@ binaryRouter.put(
         project: req.query['_project'] as string | undefined,
       },
     });
-    assertOk(outcome, resource);
 
     const stream = getContentStream(req);
     if (!stream) {
@@ -106,8 +78,7 @@ binaryRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
     const repo = res.locals.repo as Repository;
-    const [outcome, binary] = await repo.readResource<Binary>('Binary', id);
-    assertOk(outcome, binary);
+    const binary = await repo.readResource<Binary>('Binary', id);
 
     res.status(200).contentType(binary.contentType as string);
 

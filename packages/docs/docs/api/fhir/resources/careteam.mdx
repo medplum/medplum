@@ -1,0 +1,25 @@
+---
+title: CareTeam
+sidebar_position: 14
+---
+
+import definition from '@site/static/data/resourceDefinitions/careteam.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# CareTeam
+
+The Care Team includes all the people and organizations who plan to participate in the coordination and delivery of care for a patient.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -5,12 +5,9 @@ import { pwnedPassword } from 'hibp';
 import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
-import { initKeys } from '../oauth';
-import { seedDatabase } from '../seed';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
@@ -22,14 +19,11 @@ const app = express();
 describe('Admin Invite', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   beforeEach(() => {
@@ -57,6 +51,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -99,6 +94,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -146,6 +142,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
@@ -182,12 +179,13 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Carol',
         lastName: 'Brown',
         email: `carol${randomUUID()}@example.com`,
       });
 
-    expect(res3.status).toBe(404);
+    expect(res3.status).toBe(403);
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });
@@ -209,6 +207,7 @@ describe('Admin Invite', () => {
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
+        resourceType: 'Practitioner',
         firstName: 'Bob',
         lastName: 'Jones',
         email: '',
@@ -218,5 +217,33 @@ describe('Admin Invite', () => {
     expect(res2.body.issue).toBeDefined();
     expect(SESv2Client).not.toHaveBeenCalled();
     expect(SendEmailCommand).not.toHaveBeenCalled();
+  });
+
+  test('Do not send email', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
+      });
+
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(0);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
 });

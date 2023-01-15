@@ -1,0 +1,18 @@
+---
+title: Contributor
+sidebar_position: 8
+---
+
+import definition from '@site/static/data/datatypeDefinitions/contributor.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Contributor
+
+Base StructureDefinition for Contributor Type: A contributor to the content of a knowledge asset, including authors, editors, reviewers, and endorsers.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

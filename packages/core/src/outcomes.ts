@@ -5,7 +5,8 @@ const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
 const NOT_FOUND_ID = 'not-found';
-const ACCESS_DENIED_ID = 'access-denied';
+const UNAUTHORIZED_ID = 'unauthorized';
+const FORBIDDEN_ID = 'forbidden';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 
 export const allOk: OperationOutcome = {
@@ -14,7 +15,7 @@ export const allOk: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'All OK',
       },
@@ -28,7 +29,7 @@ export const created: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'Created',
       },
@@ -42,7 +43,7 @@ export const notModified: OperationOutcome = {
   issue: [
     {
       severity: 'information',
-      code: 'information',
+      code: 'informational',
       details: {
         text: 'Not Modified',
       },
@@ -64,29 +65,43 @@ export const notFound: OperationOutcome = {
   ],
 };
 
+export const unauthorized: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: UNAUTHORIZED_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'login',
+      details: {
+        text: 'Unauthorized',
+      },
+    },
+  ],
+};
+
+export const forbidden: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: FORBIDDEN_ID,
+  issue: [
+    {
+      severity: 'error',
+      code: 'forbidden',
+      details: {
+        text: 'Forbidden',
+      },
+    },
+  ],
+};
+
 export const gone: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: GONE_ID,
   issue: [
     {
       severity: 'error',
-      code: 'gone',
+      code: 'deleted',
       details: {
         text: 'Gone',
-      },
-    },
-  ],
-};
-
-export const accessDenied: OperationOutcome = {
-  resourceType: 'OperationOutcome',
-  id: ACCESS_DENIED_ID,
-  issue: [
-    {
-      severity: 'error',
-      code: 'forbidden',
-      details: {
-        text: 'Access Denied',
       },
     },
   ],
@@ -141,7 +156,9 @@ export function getStatus(outcome: OperationOutcome): number {
     return 201;
   } else if (outcome.id === NOT_MODIFIED_ID) {
     return 304;
-  } else if (outcome.id === ACCESS_DENIED_ID) {
+  } else if (outcome.id === UNAUTHORIZED_ID) {
+    return 401;
+  } else if (outcome.id === FORBIDDEN_ID) {
     return 403;
   } else if (outcome.id === NOT_FOUND_ID) {
     return 404;

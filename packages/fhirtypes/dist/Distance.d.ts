@@ -6,8 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Distance Type: A length - a value with a
- * unit that is a physical distance.
+ * A length - a value with a unit that is a physical distance.
  */
 export interface Distance {
 
@@ -39,7 +38,7 @@ export interface Distance {
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
    * value is &lt; stated value.
    */
-  comparator?: string;
+  comparator?: '<' | '<=' | '>=' | '>';
 
   /**
    * A human-readable form of the unit.

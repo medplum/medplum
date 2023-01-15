@@ -1,3 +1,4 @@
+import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -31,9 +32,13 @@ export function OAuthPage(): JSX.Element | null {
       clientId={clientId}
       scope={params.get('scope') || undefined}
       nonce={params.get('nonce') || undefined}
+      launch={params.get('launch') || undefined}
+      codeChallenge={params.get('code_challenge') || undefined}
+      codeChallengeMethod={params.get('code_challenge_method') || undefined}
+      chooseScopes={true}
     >
       <Logo size={32} />
-      <h1>Sign in to Medplum</h1>
+      <Title>Sign in to Medplum</Title>
     </SignInForm>
   );
 }

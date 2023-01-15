@@ -107,7 +107,7 @@ export interface MolecularSequence {
   /**
    * Amino Acid Sequence/ DNA Sequence / RNA Sequence.
    */
-  type?: string;
+  type?: 'aa' | 'dna' | 'rna';
 
   /**
    * Whether the sequence is numbered starting at 0 (0-based numbering or
@@ -238,7 +238,7 @@ export interface MolecularSequenceQuality {
   /**
    * INDEL / SNP / Undefined variant.
    */
-  type?: string;
+  type?: 'indel' | 'snp' | 'unknown';
 
   /**
    * Gold standard sequence used for comparing against.
@@ -481,7 +481,7 @@ export interface MolecularSequenceReferenceSeq {
    * strand, and the opposite complementary strand is the &quot;antisense&quot;
    * strand.
    */
-  orientation?: string;
+  orientation?: 'sense' | 'antisense';
 
   /**
    * Reference identifier of reference sequence submitted to NCBI. It must
@@ -506,7 +506,7 @@ export interface MolecularSequenceReferenceSeq {
    * whose 5'-end is on the short arm of the chromosome, and the Crick
    * strand as the one whose 5'-end is on the long arm.
    */
-  strand?: string;
+  strand?: 'watson' | 'crick';
 
   /**
    * Start position of the window on the reference sequence. If the
@@ -569,7 +569,7 @@ export interface MolecularSequenceRepository {
    * Click and see / RESTful API / Need login to see / RESTful API with
    * authentication / Other ways to see resource.
    */
-  type?: string;
+  type?: 'directlink' | 'openapi' | 'login' | 'oauth' | 'other';
 
   /**
    * URI of an external repository which contains further details about the

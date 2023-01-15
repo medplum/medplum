@@ -3,9 +3,9 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
-import { OAuthPage } from './OAuthPage';
+import { AppRoutes } from './AppRoutes';
 
 const medplum = new MockClient();
 
@@ -15,11 +15,7 @@ describe('OAuthPage', () => {
       render(
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
-            <Routes>
-              <Route path="/oauth" element={<OAuthPage />} />
-              <Route path="/register" element={<div />} />
-              <Route path="/resetpassword" element={<div />} />
-            </Routes>
+            <AppRoutes />
           </MemoryRouter>
         </MedplumProvider>
       );
@@ -52,19 +48,25 @@ describe('OAuthPage', () => {
     );
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('email'), {
+      fireEvent.change(screen.getByLabelText('Email *'), {
         target: { value: 'admin@example.com' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('password'), {
+      fireEvent.change(screen.getByLabelText('Password *'), {
         target: { value: 'password' },
       });
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('submit'));
+      fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    });
+
+    await waitFor(() => expect(screen.getByText('Choose scope')).toBeInTheDocument());
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set scope' }));
     });
 
     await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
@@ -75,7 +77,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('forgotpassword'));
+      fireEvent.click(screen.getByText('Forgot password'));
     });
   });
 
@@ -83,7 +85,7 @@ describe('OAuthPage', () => {
     await setup('/oauth?client_id=123');
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('register'));
+      fireEvent.click(screen.getByText('Register'));
     });
   });
 });

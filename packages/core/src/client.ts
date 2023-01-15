@@ -1,4 +1,4 @@
-// PKCE auth ased on:
+// PKCE auth based on:
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
 import {
@@ -11,6 +11,7 @@ import {
   Patient,
   Project,
   ProjectMembership,
+  ProjectSecret,
   Reference,
   Resource,
   ResourceType,
@@ -32,10 +33,11 @@ import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
 import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 
+export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
+
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
-const DEFAULT_SCOPE = 'launch/patient openid fhirUser offline_access user/*.*';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
-const DEFAULT_CACHE_TIME = 10000; // 10 seconds
+const DEFAULT_CACHE_TIME = 60000; // 60 seconds
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
@@ -49,7 +51,7 @@ export interface MedplumClientOptions {
   /**
    * Base server URL.
    *
-   * Default value is "https://api.medplum.com/".
+   * Default value is https://api.medplum.com/
    *
    * Use this to point to a custom Medplum deployment.
    */
@@ -187,34 +189,43 @@ export interface CreatePdfFunction {
   ): Promise<any>;
 }
 
-export interface LoginRequest {
+export interface BaseLoginRequest {
+  readonly projectId?: string;
+  readonly clientId?: string;
+  readonly resourceType?: string;
+  readonly scope?: string;
+  readonly nonce?: string;
+  readonly codeChallenge?: string;
+  readonly codeChallengeMethod?: string;
+  readonly googleClientId?: string;
+  readonly launch?: string;
+}
+
+export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
   readonly remember?: boolean;
-  readonly projectId?: string;
-  readonly clientId?: string;
-  readonly scope?: string;
-  readonly nonce?: string;
 }
 
 export interface NewUserRequest {
+  readonly firstName: string;
+  readonly lastName: string;
   readonly email: string;
   readonly password: string;
   readonly recaptchaToken: string;
   readonly recaptchaSiteKey?: string;
   readonly remember?: boolean;
+  readonly projectId?: string;
 }
 
 export interface NewProjectRequest {
+  readonly login: string;
   readonly projectName: string;
-  readonly firstName: string;
-  readonly lastName: string;
 }
 
 export interface NewPatientRequest {
+  readonly login: string;
   readonly projectId: string;
-  readonly firstName: string;
-  readonly lastName: string;
 }
 
 export interface GoogleCredentialResponse {
@@ -222,16 +233,15 @@ export interface GoogleCredentialResponse {
   readonly credential: string;
 }
 
-export interface GoogleLoginRequest {
+export interface GoogleLoginRequest extends BaseLoginRequest {
   readonly googleClientId: string;
   readonly googleCredential: string;
-  readonly clientId?: string;
-  readonly scope?: string;
-  readonly nonce?: string;
+  readonly createUser?: boolean;
 }
 
 export interface LoginAuthenticationResponse {
   readonly login: string;
+  readonly mfaRequired?: boolean;
   readonly code?: string;
   readonly memberships?: ProjectMembership[];
 }
@@ -263,9 +273,10 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
-export interface BotEvent {
+export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
   readonly contentType: string;
-  readonly input: Resource | Hl7Message | string;
+  readonly input: T;
+  readonly secrets: Record<string, ProjectSecret>;
 }
 
 /**
@@ -387,6 +398,11 @@ interface RequestCacheEntry {
  * const bundle = await medplum.search('Patient', 'name=Alice');
  * console.log(bundle.total);
  * ```
+ *
+ *  <head>
+ *    <meta name="algolia:pageRank" content="100" />
+ *  </head>
+
  */
 export class MedplumClient extends EventTarget {
   readonly #fetch: FetchLike;
@@ -395,11 +411,12 @@ export class MedplumClient extends EventTarget {
   readonly #requestCache: LRUCache<RequestCacheEntry>;
   readonly #cacheTime: number;
   readonly #baseUrl: string;
-  readonly #clientId: string;
   readonly #authorizeUrl: string;
   readonly #tokenUrl: string;
   readonly #logoutUrl: string;
   readonly #onUnauthenticated?: () => void;
+  #clientId?: string;
+  #clientSecret?: string;
   #accessToken?: string;
   #refreshToken?: string;
   #refreshPromise?: Promise<any>;
@@ -414,9 +431,6 @@ export class MedplumClient extends EventTarget {
       if (!options.baseUrl.startsWith('http')) {
         throw new Error('Base URL must start with http or https');
       }
-      if (!options.baseUrl.endsWith('/')) {
-        throw new Error('Base URL must end with a trailing slash');
-      }
     }
 
     this.#fetch = options?.fetch || window.fetch.bind(window);
@@ -424,7 +438,7 @@ export class MedplumClient extends EventTarget {
     this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
-    this.#baseUrl = options?.baseUrl || DEFAULT_BASE_URL;
+    this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
     this.#clientId = options?.clientId || '';
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
@@ -617,11 +631,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startNewUser(newUserRequest: NewUserRequest): Promise<LoginAuthenticationResponse> {
-    await this.#startPkce();
+    await this.startPkce();
     return this.post('auth/newuser', {
       ...newUserRequest,
       codeChallengeMethod: 'S256',
-      codeChallenge: this.#storage.getString('codeChallenge') as string,
+      codeChallenge: sessionStorage.getItem('codeChallenge') as string,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -631,17 +645,10 @@ export class MedplumClient extends EventTarget {
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
    *
    * @param newProjectRequest Register request including email and password.
-   * @param login The partial login to complete.  This should come from the `startNewUser` method.
    * @returns Promise to the authentication response.
    */
-  async startNewProject(
-    newProjectRequest: NewProjectRequest,
-    login: LoginAuthenticationResponse
-  ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newproject', {
-      ...newProjectRequest,
-      ...login,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startNewProject(newProjectRequest: NewProjectRequest): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newproject', newProjectRequest) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -650,17 +657,10 @@ export class MedplumClient extends EventTarget {
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
    *
    * @param newPatientRequest Register request including email and password.
-   * @param login The partial login to complete.  This should come from the `startNewUser` method.
    * @returns Promise to the authentication response.
    */
-  async startNewPatient(
-    newPatientRequest: NewPatientRequest,
-    login: LoginAuthenticationResponse
-  ): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newpatient', {
-      ...newPatientRequest,
-      ...login,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startNewPatient(newPatientRequest: NewPatientRequest): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newpatient', newPatientRequest) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -669,14 +669,14 @@ export class MedplumClient extends EventTarget {
    * @param loginRequest Login request including email and password.
    * @returns Promise to the authentication response.
    */
-  async startLogin(loginRequest: LoginRequest): Promise<LoginAuthenticationResponse> {
-    await this.#startPkce();
+  async startLogin(loginRequest: EmailPasswordLoginRequest): Promise<LoginAuthenticationResponse> {
+    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/login', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
-      scope: loginRequest.scope ?? DEFAULT_SCOPE,
-      codeChallengeMethod: 'S256',
-      codeChallenge: this.#storage.getString('codeChallenge') as string,
+      scope: loginRequest.scope,
+      codeChallengeMethod,
+      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
   }
 
@@ -689,12 +689,36 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the authentication response.
    */
   async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
-    await this.#startPkce();
+    const { codeChallenge, codeChallengeMethod } = this.getCodeChallenge(loginRequest);
     return this.post('auth/google', {
       ...loginRequest,
       clientId: loginRequest.clientId ?? this.#clientId,
-      scope: loginRequest.scope ?? DEFAULT_SCOPE,
+      scope: loginRequest.scope,
+      codeChallengeMethod,
+      codeChallenge,
     }) as Promise<LoginAuthenticationResponse>;
+  }
+
+  getCodeChallenge(loginRequest: BaseLoginRequest): {
+    codeChallenge?: string;
+    codeChallengeMethod?: string;
+  } {
+    if (loginRequest.codeChallenge) {
+      return {
+        codeChallenge: loginRequest.codeChallenge,
+        codeChallengeMethod: loginRequest.codeChallengeMethod,
+      };
+    }
+
+    const codeChallenge = sessionStorage.getItem('codeChallenge');
+    if (codeChallenge) {
+      return {
+        codeChallenge,
+        codeChallengeMethod: 'S256',
+      };
+    }
+
+    return {};
   }
 
   /**
@@ -702,9 +726,8 @@ export class MedplumClient extends EventTarget {
    * Does not invalidate tokens with the server.
    * @category Authentication
    */
-  signOut(): Promise<void> {
+  signOut(): void {
     this.clear();
-    return Promise.resolve();
   }
 
   /**
@@ -713,11 +736,11 @@ export class MedplumClient extends EventTarget {
    * This may result in navigating away to the sign in page.
    * @category Authentication
    */
-  signInWithRedirect(): Promise<ProfileResource | void> | undefined {
+  async signInWithRedirect(): Promise<ProfileResource | void> {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
-      this.#requestAuthorization();
+      await this.#requestAuthorization();
       return undefined;
     } else {
       return this.processCode(code);
@@ -774,8 +797,7 @@ export class MedplumClient extends EventTarget {
    * ```json
    * {
    *    "resourceType": "Bundle",
-   *    "type": "searchest",
-   *    "total": 1,
+   *    "type": "searchset",
    *    "entry": [
    *       {
    *          "resource": {
@@ -794,10 +816,18 @@ export class MedplumClient extends EventTarget {
    * }
    * ```
    *
+   * To query the count of a search, use the summary feature like so:
+   *
+   * ```typescript
+   * const patients = medplum.search('Patient', '_summary=count');
+   * ```
+   *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   search<K extends ResourceType>(
@@ -825,7 +855,9 @@ export class MedplumClient extends EventTarget {
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchOne<K extends ResourceType>(
@@ -865,7 +897,9 @@ export class MedplumClient extends EventTarget {
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
    *
    * @category Search
+   * @param resourceType The FHIR resource type.
    * @param query The search query as either a string or a structured search object.
+   * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchResources<K extends ResourceType>(
@@ -895,6 +929,7 @@ export class MedplumClient extends EventTarget {
    * @category Search
    * @param system The ValueSet system url.
    * @param filter The search string.
+   * @param options Optional fetch options.
    * @returns Promise to expanded ValueSet.
    */
   searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
@@ -947,13 +982,18 @@ export class MedplumClient extends EventTarget {
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
    *
-   * @category Caching
+   * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
-  readResource<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<ExtractResource<K>> {
-    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id));
+  readResource<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    options: RequestInit = {}
+  ): ReadablePromise<ExtractResource<K>> {
+    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
 
   /**
@@ -973,9 +1013,10 @@ export class MedplumClient extends EventTarget {
    *
    * @category Read
    * @param reference The FHIR reference object.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
-  readReference<T extends Resource>(reference: Reference<T>): ReadablePromise<T> {
+  readReference<T extends Resource>(reference: Reference<T>, options: RequestInit = {}): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
@@ -984,7 +1025,7 @@ export class MedplumClient extends EventTarget {
     if (!resourceType || !id) {
       return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
     }
-    return this.readResource(resourceType as ResourceType, id) as ReadablePromise<T>;
+    return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<T>;
   }
 
   /**
@@ -992,7 +1033,6 @@ export class MedplumClient extends EventTarget {
    * If the schema is not cached, returns undefined.
    * It is assumed that a client will call requestSchema before using this method.
    * @category Schema
-   * @param resourceType The FHIR resource type.
    * @returns The schema if immediately available, undefined otherwise.
    * @deprecated Use globalSchema instead.
    */
@@ -1045,11 +1085,11 @@ export class MedplumClient extends EventTarget {
     const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
     for (const structureDefinition of response.data.StructureDefinitionList) {
-      indexStructureDefinition(globalSchema, structureDefinition);
+      indexStructureDefinition(structureDefinition);
     }
 
     for (const searchParameter of response.data.SearchParameterList) {
-      indexSearchParameter(globalSchema, searchParameter);
+      indexSearchParameter(searchParameter);
     }
 
     return globalSchema;
@@ -1072,10 +1112,15 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param options Optional fetch options.
    * @returns Promise to the resource history.
    */
-  readHistory<K extends ResourceType>(resourceType: K, id: string): ReadablePromise<Bundle<ExtractResource<K>>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history'));
+  readHistory<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    options: RequestInit = {}
+  ): ReadablePromise<Bundle<ExtractResource<K>>> {
+    return this.get(this.fhirUrl(resourceType, id, '_history'), options);
   }
 
   /**
@@ -1093,20 +1138,38 @@ export class MedplumClient extends EventTarget {
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param vid The version ID.
+   * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
-  readVersion<K extends ResourceType>(resourceType: K, id: string, vid: string): ReadablePromise<ExtractResource<K>> {
-    return this.get(this.fhirUrl(resourceType, id, '_history', vid));
+  readVersion<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    vid: string,
+    options: RequestInit = {}
+  ): ReadablePromise<ExtractResource<K>> {
+    return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
   }
 
   /**
+   * Executes the Patient "everything" operation for a patient.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const bundle = await medplum.readPatientEverything('123');
+   * console.log(bundle);
+   * ```
+   *
+   * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
    *
    * @category Read
    * @param id The Patient Id
+   * @param options Optional fetch options.
    * @returns A Bundle of all Resources related to the Patient
    */
-  readPatientEverything(id: string): ReadablePromise<Bundle> {
-    return this.get(this.fhirUrl('Patient', id, '$everything'));
+  readPatientEverything(id: string, options: RequestInit = {}): ReadablePromise<Bundle> {
+    return this.get(this.fhirUrl('Patient', id, '$everything'), options);
   }
 
   /**
@@ -1150,7 +1213,6 @@ export class MedplumClient extends EventTarget {
    *
    * ```typescript
    * const result = await medplum.createResourceIfNoneExist(
-   *   'Patient?identifier=123',
    *   {
    *     resourceType: 'Patient',
    *     identifier: [{
@@ -1161,14 +1223,16 @@ export class MedplumClient extends EventTarget {
    *      family: 'Smith',
    *      given: ['John']
    *     }]
-   *   });
+   *   },
+   *   'identifier=123'
+   * );
    * console.log(result.id);
    * ```
    *
    * This method is syntactic sugar for:
    *
    * ```typescript
-   * return searchOne(query) ?? createResource(resource);
+   * return searchOne(resourceType, query) ?? createResource(resource);
    * ```
    *
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
@@ -1177,7 +1241,7 @@ export class MedplumClient extends EventTarget {
    *
    * @category Create
    * @param resource The FHIR resource to create.
-   * @param query The search query for an equivalent resource.
+   * @param query The search query for an equivalent resource (should not include resource type or "?").
    * @returns The result of the create operation.
    */
   async createResourceIfNoneExist<T extends Resource>(resource: T, query: string): Promise<T> {
@@ -1211,13 +1275,54 @@ export class MedplumClient extends EventTarget {
   createBinary(
     data: string | File | Blob | Uint8Array,
     filename: string | undefined,
-    contentType: string
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void
   ): Promise<Binary> {
     const url = this.fhirUrl('Binary');
     if (filename) {
       url.searchParams.set('_filename', filename);
     }
-    return this.post(url, data, contentType);
+
+    if (onProgress) {
+      return this.uploadwithProgress(url, data, contentType, onProgress);
+    } else {
+      return this.post(url, data, contentType);
+    }
+  }
+
+  uploadwithProgress(
+    url: URL,
+    data: string | File | Blob | Uint8Array,
+    contentType: string,
+    onProgress: (e: ProgressEvent) => void
+  ): Promise<any> {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'json';
+      xhr.onabort = () => reject(new Error('Request aborted'));
+      xhr.onerror = () => reject(new Error('Request error'));
+
+      if (onProgress) {
+        xhr.upload.onprogress = (e) => onProgress(e);
+        xhr.upload.onload = (e) => onProgress(e);
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+        } else {
+          reject(new Error(xhr.statusText));
+        }
+      };
+
+      xhr.open('POST', url);
+      xhr.withCredentials = true;
+      xhr.setRequestHeader('Authorization', 'Bearer ' + this.#accessToken);
+      xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.setRequestHeader('X-Medplum', 'extended');
+      xhr.send(data);
+    });
   }
 
   /**
@@ -1320,7 +1425,7 @@ export class MedplumClient extends EventTarget {
    * @param resource The FHIR resource to update.
    * @returns The result of the update operation.
    */
-  updateResource<T extends Resource>(resource: T): Promise<T> {
+  async updateResource<T extends Resource>(resource: T): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -1328,7 +1433,10 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing id');
     }
     this.invalidateSearches(resource.resourceType);
-    return this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    const result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    // On 304 not modified, result will be undefined
+    // Return the user input instead
+    return result ?? resource;
   }
 
   /**
@@ -1383,6 +1491,27 @@ export class MedplumClient extends EventTarget {
   deleteResource(resourceType: ResourceType, id: string): Promise<any> {
     this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
+  }
+
+  /**
+   * Executes the validate operation with the provided resource.
+   *
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.validateResource({
+   *   resourceType: 'Patient',
+   *   name: [{ given: ['Alice'], family: 'Smith' }],
+   * });
+   * ```
+   *
+   * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
+   *
+   * @param resource The FHIR resource.
+   * @returns The validate operation outcome.
+   */
+  validateResource<T extends Resource>(resource: T): Promise<OperationOutcome> {
+    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource);
   }
 
   /**
@@ -1527,6 +1656,25 @@ export class MedplumClient extends EventTarget {
    */
   graphql(query: string, operationName?: string | null, variables?: any, options?: RequestInit): Promise<any> {
     return this.post(this.fhirUrl('$graphql'), { query, operationName, variables }, JSON_CONTENT_TYPE, options);
+  }
+
+  /**
+   *
+   * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
+   * according to a graph definition
+
+   * @category Read
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   * @param graphName `name` parameter of the GraphDefinition
+   * @returns A Bundle
+   */
+  readResourceGraph<K extends ResourceType>(
+    resourceType: K,
+    id: string,
+    graphName: string
+  ): ReadablePromise<Bundle<Resource>> {
+    return this.get<Bundle<Resource>>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`);
   }
 
   /**
@@ -1724,6 +1872,8 @@ export class MedplumClient extends EventTarget {
     }
 
     const headers = options.headers as Record<string, string>;
+    headers['X-Medplum'] = 'extended';
+
     if (!headers['Content-Type']) {
       headers['Content-Type'] = FHIR_CONTENT_TYPE;
     }
@@ -1781,32 +1931,31 @@ export class MedplumClient extends EventTarget {
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
    */
-  async #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
-    return this.#refresh()
-      .then(() => this.#request(method, url, options))
-      .catch((error) => {
-        this.clear();
-        if (this.#onUnauthenticated) {
-          this.#onUnauthenticated();
-        }
-        return Promise.reject(error);
-      });
+  #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
+    if (this.#refresh()) {
+      return this.#request(method, url, options);
+    }
+    this.clear();
+    if (this.#onUnauthenticated) {
+      this.#onUnauthenticated();
+    }
+    return Promise.reject(new Error('Unauthenticated'));
   }
 
   /**
    * Starts a new PKCE flow.
    * These PKCE values are stateful, and must survive redirects and page refreshes.
    */
-  async #startPkce(): Promise<void> {
+  async startPkce(): Promise<void> {
     const pkceState = getRandomString();
-    this.#storage.setString('pkceState', pkceState);
+    sessionStorage.setItem('pkceState', pkceState);
 
     const codeVerifier = getRandomString();
-    this.#storage.setString('codeVerifier', codeVerifier);
+    sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
     const codeChallenge = arrayBufferToBase64(arrayHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    this.#storage.setString('codeChallenge', codeChallenge);
+    sessionStorage.setItem('codeChallenge', codeChallenge);
   }
 
   /**
@@ -1814,17 +1963,16 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  #requestAuthorization(): void {
-    this.#startPkce();
+  async #requestAuthorization(): Promise<void> {
+    await this.startPkce();
 
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('state', this.#storage.getString('pkceState') as string);
-    url.searchParams.set('client_id', this.#clientId);
+    url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
+    url.searchParams.set('client_id', this.#clientId as string);
     url.searchParams.set('redirect_uri', getBaseUrl());
-    url.searchParams.set('scope', DEFAULT_SCOPE);
     url.searchParams.set('code_challenge_method', 'S256');
-    url.searchParams.set('code_challenge', this.#storage.getString('codeChallenge') as string);
+    url.searchParams.set('code_challenge', sessionStorage.getItem('codeChallenge') as string);
     window.location.assign(url.toString());
   }
 
@@ -1834,24 +1982,17 @@ export class MedplumClient extends EventTarget {
    * @param code The authorization code received by URL parameter.
    */
   processCode(code: string): Promise<ProfileResource> {
-    const pkceState = this.#storage.getString('pkceState');
-    if (!pkceState) {
-      this.clear();
-      throw new Error('Invalid PCKE state');
-    }
-
-    const codeVerifier = this.#storage.getString('codeVerifier');
-    if (!codeVerifier) {
-      this.clear();
-      throw new Error('Invalid PCKE code verifier');
-    }
-
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
-    formBody.set('client_id', this.#clientId);
-    formBody.set('code_verifier', codeVerifier);
+    formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
     formBody.set('redirect_uri', getBaseUrl());
+
+    const codeVerifier = sessionStorage.getItem('codeVerifier');
+    if (codeVerifier) {
+      formBody.set('code_verifier', codeVerifier);
+    }
+
     return this.#fetchTokens(formBody);
   }
 
@@ -1859,22 +2000,26 @@ export class MedplumClient extends EventTarget {
    * Tries to refresh the auth tokens.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  async #refresh(): Promise<void> {
+  #refresh(): Promise<void> | undefined {
     if (this.#refreshPromise) {
       return this.#refreshPromise;
     }
 
-    if (!this.#refreshToken) {
-      this.clear();
-      throw new Error('Invalid refresh token');
+    if (this.#refreshToken) {
+      const formBody = new URLSearchParams();
+      formBody.set('grant_type', 'refresh_token');
+      formBody.set('client_id', this.#clientId as string);
+      formBody.set('refresh_token', this.#refreshToken);
+      this.#refreshPromise = this.#fetchTokens(formBody);
+      return this.#refreshPromise;
     }
 
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', 'refresh_token');
-    formBody.set('client_id', this.#clientId);
-    formBody.set('refresh_token', this.#refreshToken);
-    this.#refreshPromise = this.#fetchTokens(formBody);
-    await this.#refreshPromise;
+    if (this.#clientId && this.#clientSecret) {
+      this.#refreshPromise = this.startClientLogin(this.#clientId, this.#clientSecret);
+      return this.#refreshPromise;
+    }
+
+    return undefined;
   }
 
   /**
@@ -1886,6 +2031,9 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
+    this.#clientId = clientId;
+    this.#clientSecret = clientSecret;
+
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'client_credentials');
     formBody.set('client_id', clientId);
@@ -1903,6 +2051,7 @@ export class MedplumClient extends EventTarget {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
+      credentials: 'include',
     })
       .then((response) => {
         if (!response.ok) {
@@ -1970,4 +2119,11 @@ export class MedplumClient extends EventTarget {
  */
 function getBaseUrl(): string {
   return window.location.protocol + '//' + window.location.host + '/';
+}
+
+function ensureTrailingSlash(url: string | undefined): string | undefined {
+  if (!url) {
+    return url;
+  }
+  return url.endsWith('/') ? url : url + '/';
 }

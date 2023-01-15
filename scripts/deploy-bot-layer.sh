@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+if [[ -z "${BOT_LAYER_NAME}" ]]; then
+  echo "BOT_LAYER_NAME is missing"
+  exit 1
+fi
+
+
 # Fail on error
 set -e
 
@@ -37,10 +43,10 @@ zip -r -q medplum-bot-layer.zip .
 # Publish the bot layer
 aws lambda publish-layer-version \
   --region us-east-1 \
-  --layer-name "medplum-bot-layer" \
+  --layer-name "$BOT_LAYER_NAME" \
   --description "Medplum Bot Layer" \
   --license-info "Apache-2.0" \
-  --compatible-runtimes "nodejs16.x" \
+  --compatible-runtimes "nodejs18.x" \
   --zip-file fileb://medplum-bot-layer.zip
 
 # Pop back to original directory

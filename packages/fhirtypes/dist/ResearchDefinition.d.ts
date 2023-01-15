@@ -162,7 +162,7 @@ export interface ResearchDefinition {
    * The status of this research definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: string;
+  status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this research definition is authored

@@ -1,0 +1,507 @@
+{
+  "name": "Login",
+  "location": "medplum",
+  "description": "Login event and session details.",
+  "properties": [
+    {
+      "name": "Login",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "Login",
+      "min": 0,
+      "max": "*",
+      "short": "Login event and session details.",
+      "definition": "Login event and session details.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "Login.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "Login.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Login.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "client",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Login.client",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The client requesting the code.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "profileType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Login.profileType",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional required profile resource type.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "project",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Project",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Login.project",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional required project for the login.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "user",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Bot",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "ClientApplication",
+          "documentLocation": "medplum"
+        },
+        {
+          "datatype": "User",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Login.user",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The user requesting the code.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "membership",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ProjectMembership",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Login.membership",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Reference to the project membership which includes FHIR identity (patient, practitioner, etc), access policy, and user configuration.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "scope",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.scope",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "OAuth scope or scopes.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "authMethod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.authMethod",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "The authentication method used to obtain the code (password or google).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "authTime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "instant"
+        }
+      ],
+      "path": "Login.authTime",
+      "min": 1,
+      "max": "1",
+      "short": "",
+      "definition": "Time when the End-User authentication occurred.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "cookie",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.cookie",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The cookie value that can be used for session management.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "code",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.code",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The authorization code generated by the authorization server.  The authorization code MUST expire shortly after it is issued to mitigate the risk of leaks.  A maximum authorization code lifetime of 10 minutes is RECOMMENDED.  The client MUST NOT use the authorization code more than once.  If an authorization code is used more than once, the authorization server MUST deny the request and SHOULD revoke (when possible) all tokens previously issued based on that authorization code.  The authorization code is bound to the client identifier and redirection URI.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "codeChallenge",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.codeChallenge",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "PKCE code challenge presented in the authorization request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "codeChallengeMethod",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.codeChallengeMethod",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "OPTIONAL, defaults to \"plain\" if not present in the request.  Code verifier transformation method is \"S256\" or \"plain\".",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "refreshSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.refreshSecret",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional secure random string that can be used in an OAuth refresh token.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "nonce",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.nonce",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional cryptographically random string that your app adds to the initial request and the authorization server includes inside the ID Token, used to prevent token replay attacks.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "mfaVerified",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Login.mfaVerified",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "granted",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Login.granted",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether a token has been granted for this login.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "revoked",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Login.revoked",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether this login has been revoked or invalidated.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "admin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Login.admin",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "DEPRECATED",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "superAdmin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Login.superAdmin",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Whether this login has super administrator privileges.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "launch",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "SmartAppLaunch",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "Login.launch",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional SMART App Launch context for this login.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "remoteAddress",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.remoteAddress",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The Internet Protocol (IP) address of the client or last proxy that sent the request.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "userAgent",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "Login.userAgent",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The User-Agent request header as sent by the client.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "code",
+      "type": "reference",
+      "description": "The user of the login",
+      "expression": "Login.user"
+    },
+    {
+      "name": "code",
+      "type": "token",
+      "description": "The code of the login",
+      "expression": "Login.code"
+    },
+    {
+      "name": "cookie",
+      "type": "token",
+      "description": "The cookie code of the login",
+      "expression": "Login.cookie"
+    }
+  ]
+}

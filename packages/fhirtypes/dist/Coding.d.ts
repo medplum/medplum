@@ -6,8 +6,7 @@
 import { Extension } from './Extension';
 
 /**
- * Base StructureDefinition for Coding Type: A reference to a code
- * defined by a terminology system.
+ * A reference to a code defined by a terminology system.
  */
 export interface Coding {
 

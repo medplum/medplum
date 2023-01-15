@@ -1,75 +1,12 @@
 import { LambdaClient } from '@aws-sdk/client-lambda';
 import { Bot } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
+import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
-
-jest.mock('@aws-sdk/client-lambda', () => {
-  const original = jest.requireActual('@aws-sdk/client-lambda');
-
-  class LambdaClient {
-    static created = false;
-    static updated = false;
-
-    async send(command: any): Promise<any> {
-      if (command instanceof original.GetFunctionCommand) {
-        if (LambdaClient.created) {
-          return {
-            Configuration: {
-              FunctionName: command.input.FunctionName,
-            },
-          };
-        } else {
-          return Promise.reject(new Error('Function not found'));
-        }
-      }
-      if (command instanceof original.GetFunctionConfigurationCommand) {
-        return {
-          FunctionName: command.input.FunctionName,
-          Runtime: 'node16.x',
-          Handler: 'index.handler',
-          Layers: [
-            {
-              Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
-            },
-          ],
-        };
-      }
-      if (command instanceof original.CreateFunctionCommand) {
-        LambdaClient.created = true;
-        return {
-          FunctionName: command.input.FunctionName,
-        };
-      }
-      if (command instanceof original.UpdateFunctionCodeCommand) {
-        LambdaClient.updated = true;
-        return {
-          FunctionName: command.input.FunctionName,
-        };
-      }
-      if (command instanceof original.ListLayerVersionsCommand) {
-        return {
-          LayerVersions: [
-            {
-              LayerVersionArn: 'xyz',
-            },
-          ],
-        };
-      }
-      return undefined;
-    }
-  }
-
-  return {
-    ...original,
-    LambdaClient,
-  };
-});
 
 const app = express();
 let accessToken: string;
@@ -77,15 +14,12 @@ let accessToken: string;
 describe('Deploy', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   beforeEach(() => {
@@ -131,5 +65,40 @@ describe('Deploy', () => {
       .send({});
     expect(res3.status).toBe(200);
     expect((LambdaClient as any).updated).toBe(true);
+  });
+
+  test('Bots not enabled', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Next, Alice creates a bot
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/bot')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        name: 'Alice personal bot',
+        description: 'Alice bot description',
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.resourceType).toBe('Bot');
+    expect(res2.body.id).toBeDefined();
+    expect(res2.body.code).toBeDefined();
+
+    // Try to deploy the bot
+    // This should fail because bots are not enabled
+    const res3 = await request(app)
+      .post(`/fhir/R4/Bot/${res2.body.id}/$deploy`)
+      .set('Content-Type', 'text/plain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send('input');
+    expect(res3.status).toBe(400);
+    expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
   });
 });

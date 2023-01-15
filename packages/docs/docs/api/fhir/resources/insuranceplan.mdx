@@ -1,0 +1,26 @@
+---
+title: InsurancePlan
+sidebar_position: 65
+tags: [billing]
+---
+
+import definition from '@site/static/data/resourceDefinitions/insuranceplan.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# InsurancePlan
+
+Details of a Health Insurance product/plan provided by an organization.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

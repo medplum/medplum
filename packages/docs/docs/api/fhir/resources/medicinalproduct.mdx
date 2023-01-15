@@ -1,0 +1,26 @@
+---
+title: MedicinalProduct
+sidebar_position: 80
+tags: [medications]
+---
+
+import definition from '@site/static/data/resourceDefinitions/medicinalproduct.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# MedicinalProduct
+
+Detailed definition of a medicinal product, typically for uses other than direct patient care (e.g. regulatory use).
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

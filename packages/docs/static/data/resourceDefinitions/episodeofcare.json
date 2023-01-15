@@ -1,0 +1,655 @@
+{
+  "name": "EpisodeOfCare",
+  "location": "resource",
+  "description": "An association between a patient and an organization / healthcare provider(s) during which time encounters may occur. The managing organization assumes a level of responsibility for the patient during this time.",
+  "properties": [
+    {
+      "name": "EpisodeOfCare",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "EpisodeOfCare",
+      "min": 0,
+      "max": "*",
+      "short": "An association of a Patient with an Organization and  Healthcare Provider(s) for a period of time that the Organization assumes some level of responsibility",
+      "definition": "An association between a patient and an organization / healthcare provider(s) during which time encounters may occur. The managing organization assumes a level of responsibility for the patient during this time.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EpisodeOfCare.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "EpisodeOfCare.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EpisodeOfCare.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "EpisodeOfCare.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Business Identifier(s) relevant for this EpisodeOfCare",
+      "definition": "The EpisodeOfCare may be known by different identifiers for different contexts of use, such as when an external agency is tracking the Episode for funding purposes.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EpisodeOfCare.status",
+      "min": 1,
+      "max": "1",
+      "short": "planned | waitlist | active | onhold | finished | cancelled | entered-in-error",
+      "definition": "planned | waitlist | active | onhold | finished | cancelled.",
+      "comment": "This element is labeled as a modifier because the status contains codes that mark the episode as not currently valid.",
+      "inherited": false
+    },
+    {
+      "name": "statusHistory",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory",
+      "min": 0,
+      "max": "*",
+      "short": "Past list of status codes (the current status may be included to cover the start date of the status)",
+      "definition": "The history of statuses that the EpisodeOfCare has been through (without requiring processing the history of the resource).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "status",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory.status",
+      "min": 1,
+      "max": "1",
+      "short": "planned | waitlist | active | onhold | finished | cancelled | entered-in-error",
+      "definition": "planned | waitlist | active | onhold | finished | cancelled.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.statusHistory.period",
+      "min": 1,
+      "max": "1",
+      "short": "Duration the EpisodeOfCare was in the specified status",
+      "definition": "The period during this EpisodeOfCare that the specific status applied.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.type",
+      "min": 0,
+      "max": "*",
+      "short": "Type/class  - e.g. specialist referral, disease management",
+      "definition": "A classification of the type of episode of care; e.g. specialist referral, disease management, type of funded care.",
+      "comment": "The type can be very important in processing as this could be used in determining if the EpisodeOfCare is relevant to specific government reporting, or other types of classifications.",
+      "inherited": false
+    },
+    {
+      "name": "diagnosis",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis",
+      "min": 0,
+      "max": "*",
+      "short": "The list of diagnosis relevant to this episode of care",
+      "definition": "The list of diagnosis relevant to this episode of care.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "condition",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Condition",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.condition",
+      "min": 1,
+      "max": "1",
+      "short": "Conditions/problems/diagnoses this episode of care is for",
+      "definition": "A list of conditions/problems/diagnoses that this episode of care is intended to be providing care for.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "role",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.role",
+      "min": 0,
+      "max": "1",
+      "short": "Role that this diagnosis has within the episode of care (e.g. admission, billing, discharge …)",
+      "definition": "Role that this diagnosis has within the episode of care (e.g. admission, billing, discharge …).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "rank",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "positiveInt"
+        }
+      ],
+      "path": "EpisodeOfCare.diagnosis.rank",
+      "min": 0,
+      "max": "1",
+      "short": "Ranking of the diagnosis (for each role type)",
+      "definition": "Ranking of the diagnosis (for each role type).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patient",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.patient",
+      "min": 1,
+      "max": "1",
+      "short": "The patient who is the focus of this episode of care",
+      "definition": "The patient who is the focus of this episode of care.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "managingOrganization",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.managingOrganization",
+      "min": 0,
+      "max": "1",
+      "short": "Organization that assumes care",
+      "definition": "The organization that has assumed the specific responsibilities for the specified duration.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "EpisodeOfCare.period",
+      "min": 0,
+      "max": "1",
+      "short": "Interval during responsibility is assumed",
+      "definition": "The interval during which the managing organization assumes the defined responsibility.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "referralRequest",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "ServiceRequest",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.referralRequest",
+      "min": 0,
+      "max": "*",
+      "short": "Originating Referral Request(s)",
+      "definition": "Referral Request(s) that are fulfilled by this EpisodeOfCare, incoming referrals.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "careManager",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.careManager",
+      "min": 0,
+      "max": "1",
+      "short": "Care manager/care coordinator for the patient",
+      "definition": "The practitioner that is the care manager/care coordinator for this patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "team",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "CareTeam",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.team",
+      "min": 0,
+      "max": "*",
+      "short": "Other practitioners facilitating this episode of care",
+      "definition": "The list of practitioners that may be facilitating this episode of care for specific purposes.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "account",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Account",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "EpisodeOfCare.account",
+      "min": 0,
+      "max": "*",
+      "short": "The set of accounts that may be used for billing for this EpisodeOfCare",
+      "definition": "The set of accounts that may be used for billing for this EpisodeOfCare.",
+      "comment": "The billing system may choose to allocate billable items associated with the EpisodeOfCare to different referenced Accounts based on internal business rules.",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "date",
+      "type": "date",
+      "description": " The provided date search value falls within the episode of care's period\r",
+      "expression": "EpisodeOfCare.period"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": " Business Identifier(s) relevant for this EpisodeOfCare\r",
+      "expression": "EpisodeOfCare.identifier"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": " The patient who is the focus of this episode of care\r",
+      "expression": "EpisodeOfCare.patient"
+    },
+    {
+      "name": "type",
+      "type": "token",
+      "description": " Type/class  - e.g. specialist referral, disease management\r",
+      "expression": "EpisodeOfCare.type"
+    },
+    {
+      "name": "care-manager",
+      "type": "reference",
+      "description": "Care manager/care coordinator for the patient",
+      "expression": "EpisodeOfCare.careManager"
+    },
+    {
+      "name": "condition",
+      "type": "reference",
+      "description": "Conditions/problems/diagnoses this episode of care is for",
+      "expression": "EpisodeOfCare.diagnosis.condition"
+    },
+    {
+      "name": "incoming-referral",
+      "type": "reference",
+      "description": "Incoming Referral Request",
+      "expression": "EpisodeOfCare.referralRequest"
+    },
+    {
+      "name": "organization",
+      "type": "reference",
+      "description": "The organization that has assumed the specific responsibilities of this EpisodeOfCare",
+      "expression": "EpisodeOfCare.managingOrganization"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The current status of the Episode of Care as provided (does not check the status history collection)",
+      "expression": "EpisodeOfCare.status"
+    }
+  ]
+}

@@ -5,6 +5,9 @@
 
 import { Meta } from './Meta';
 
+/**
+ * Medplum client application for automated access.
+ */
 export interface ClientApplication {
 
   /**
@@ -54,8 +57,19 @@ export interface ClientApplication {
   secret?: string;
 
   /**
-   * Redirect URI used when redirecting a client back to the client
-   * application.
+   * Optional JWKS URI for public key verification of JWTs issued by the
+   * authorization server (client_secret_jwt).
+   */
+  jwksUri?: string;
+
+  /**
+   * Optional redirect URI used when redirecting a client back to the
+   * client application.
    */
   redirectUri?: string;
+
+  /**
+   * Optional launch URI for SMART EHR launch sequence.
+   */
+  launchUri?: string;
 }

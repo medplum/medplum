@@ -126,7 +126,7 @@ export interface RiskAssessment {
    * The status of the RiskAssessment, using the same statuses as an
    * Observation.
    */
-  status?: string;
+  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The algorithm, process or mechanism used to evaluate the risk.

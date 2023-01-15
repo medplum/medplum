@@ -1,9 +1,12 @@
-.medplum-alert {
-  background-color: #cce5ff;
-  border-color: #b8daff;
-  border-radius: 8px;
-  color: #004085;
-  padding: 12px;
+html {
+  height: 100%;
 }
 
-.grecaptcha-badge { visibility: hidden; }
+body,
+#root {
+  min-height: 100vh;
+}
+
+.grecaptcha-badge {
+  visibility: hidden;
+}

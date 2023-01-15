@@ -1,0 +1,26 @@
+---
+title: PaymentNotice
+sidebar_position: 103
+tags: [billing]
+---
+
+import definition from '@site/static/data/resourceDefinitions/paymentnotice.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# PaymentNotice
+
+This resource provides the status of the payment for goods and services rendered, and the request and response resource references.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />

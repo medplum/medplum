@@ -1,0 +1,605 @@
+{
+  "name": "DocumentManifest",
+  "location": "resource",
+  "description": "A collection of documents compiled for a purpose together with metadata that applies to the collection.",
+  "properties": [
+    {
+      "name": "DocumentManifest",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "DocumentManifest",
+      "min": 0,
+      "max": "*",
+      "short": "A list that defines a set of documents",
+      "definition": "A collection of documents compiled for a purpose together with metadata that applies to the collection.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DocumentManifest.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "The only time that a resource does not have an id is when it is being submitted to the server using a create operation.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.meta",
+      "min": 0,
+      "max": "1",
+      "short": "Metadata about the resource",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DocumentManifest.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "A set of rules under which this content was created",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "Asserting this rule set restricts the content to be only understood by a limited set of trading partners. This inherently limits the usefulness of the data in the long term. However, the existing health eco-system is highly fractured, and not yet ready to define, collect, and exchange data in a generally computable sense. Wherever possible, implementers and/or specification writers should avoid using this element. Often, when used, the URL is a reference to an implementation guide that defines these special rules as part of it's narrative along with other profiles, value sets, etc.",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DocumentManifest.language",
+      "min": 0,
+      "max": "1",
+      "short": "Language of the resource content",
+      "definition": "The base language in which the resource is written.",
+      "comment": "Language is provided to support indexing and accessibility (typically, services such as text to speech use the language tag). The html language tag in the narrative applies  to the narrative. The language tag on the resource may be used to specify the language of other presentations generated from the data in the resource. Not all the content has to be in the base language. The Resource.language should not be assumed to apply to the narrative automatically. If a language is specified, it should it also be specified on the div element in the html (see rules in HTML5 for information about the relationship between xml:lang and the html lang attribute).",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "Contained resources do not have narrative. Resources that are not contained SHOULD have a narrative. In some cases, a resource may only have text with little or no additional discrete data (as long as all minOccurs=1 elements are satisfied).  This may be necessary for data from legacy systems where information is captured as a \"text blob\" or where text is additionally entered raw or narrated and encoded information is added later.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "DocumentManifest.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "This should never be done when the content can be identified properly, as once identification is lost, it is extremely difficult (and context dependent) to restore it again. Contained resources may have profiles and tags In their meta elements, but SHALL NOT have security labels.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "masterIdentifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.masterIdentifier",
+      "min": 0,
+      "max": "1",
+      "short": "Unique Identifier for the set of documents",
+      "definition": "A single identifier that uniquely identifies this manifest. Principally used to refer to the manifest in non-FHIR contexts.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "Other identifiers for the manifest",
+      "definition": "Other identifiers associated with the document manifest, including version independent  identifiers.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "status",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DocumentManifest.status",
+      "min": 1,
+      "max": "1",
+      "short": "current | superseded | entered-in-error",
+      "definition": "The status of this document manifest.",
+      "comment": "This element is labeled as a modifier because the status contains the codes that mark the manifest as not currently valid.",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.type",
+      "min": 0,
+      "max": "1",
+      "short": "Kind of document set",
+      "definition": "The code specifying the type of clinical activity that resulted in placing the associated content into the DocumentManifest.",
+      "comment": "Specifies the kind of this set of documents (e.g. Patient Summary, Discharge Summary, Prescription, etc.). The type of a set of documents may be the same as one of the documents in it - especially if there is only one - but it may be wider.",
+      "inherited": false
+    },
+    {
+      "name": "subject",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "DocumentManifest.subject",
+      "min": 0,
+      "max": "1",
+      "short": "The subject of the set of documents",
+      "definition": "Who or what the set of documents is about. The documents can be about a person, (patient or healthcare practitioner), a device (i.e. machine) or even a group of subjects (such as a document about a herd of farm animals, or a set of patients that share a common exposure). If the documents cross more than one subject, then more than one subject is allowed here (unusual use case).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "created",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "dateTime"
+        }
+      ],
+      "path": "DocumentManifest.created",
+      "min": 0,
+      "max": "1",
+      "short": "When this document manifest created",
+      "definition": "When the document manifest was created for submission to the server (not necessarily the same thing as the actual resource last modified time, since it may be modified, replicated, etc.).",
+      "comment": "Creation time is used for tracking, organizing versions and searching. This is the creation time of the document set, not the documents on which it is based.",
+      "inherited": false
+    },
+    {
+      "name": "author",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Device",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "DocumentManifest.author",
+      "min": 0,
+      "max": "*",
+      "short": "Who and/or what authored the DocumentManifest",
+      "definition": "Identifies who is the author of the manifest. Manifest author is not necessarly the author of the references included.",
+      "comment": "Not necessarily who did the actual data entry (i.e. typist) or who was the source (informant).",
+      "inherited": false
+    },
+    {
+      "name": "recipient",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Patient",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "RelatedPerson",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "DocumentManifest.recipient",
+      "min": 0,
+      "max": "*",
+      "short": "Intended to get notified about this set of documents",
+      "definition": "A patient, practitioner, or organization for which this set of documents is intended.",
+      "comment": "How the recipient receives the document set or is notified of it is up to the implementation. This element is just a statement of intent. If the recipient is a person, and it is not known whether the person is a patient or a practitioner, RelatedPerson would be the default choice.",
+      "inherited": false
+    },
+    {
+      "name": "source",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DocumentManifest.source",
+      "min": 0,
+      "max": "1",
+      "short": "The source system/application/software",
+      "definition": "Identifies the source system, application, or software that produced the document manifest.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DocumentManifest.description",
+      "min": 0,
+      "max": "1",
+      "short": "Human-readable description (title)",
+      "definition": "Human-readable description of the source document. This is sometimes known as the \"title\".",
+      "comment": "What the document is about, rather than a terse summary of the document. It is commonly the case that records do not have a title and are collectively referred to by the display name of Record code (e.g. a \"consultation\" or \"progress note\").",
+      "inherited": false
+    },
+    {
+      "name": "content",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "DocumentManifest.content",
+      "min": 1,
+      "max": "*",
+      "short": "Items in manifest",
+      "definition": "The list of Resources that consist of the parts of this manifest.",
+      "comment": "When used for XDS the intended focus of the DocumentManifest is for the reference to target to be a set of DocumentReference Resources. The reference is to \"Any\" to support EN 13606 usage, where an extract is DocumentManifest that references  List and Composition resources.",
+      "inherited": false
+    },
+    {
+      "name": "related",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "DocumentManifest.related",
+      "min": 0,
+      "max": "*",
+      "short": "Related things",
+      "definition": "Related identifiers or resources associated with the DocumentManifest.",
+      "comment": "May be identifiers or resources that caused the DocumentManifest to be created.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DocumentManifest.related.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.related.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.related.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "identifier",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DocumentManifest.related.identifier",
+      "min": 0,
+      "max": "1",
+      "short": "Identifiers of things that are related",
+      "definition": "Related identifier to this DocumentManifest.  For example, Order numbers, accession numbers, XDW workflow numbers.",
+      "comment": "If both identifier and ref elements are present they shall refer to the same thing.",
+      "inherited": false
+    },
+    {
+      "name": "ref",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "DocumentManifest.related.ref",
+      "min": 0,
+      "max": "1",
+      "short": "Related Resource",
+      "definition": "Related Resource to this DocumentManifest. For example, Order, ServiceRequest,  Procedure, EligibilityRequest, etc.",
+      "comment": "If both identifier and ref elements are present they shall refer to the same thing.",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": " Unique Identifier for the set of documents\r",
+      "expression": "DocumentManifest.masterIdentifier"
+    },
+    {
+      "name": "patient",
+      "type": "reference",
+      "description": " The subject of the set of documents\r",
+      "expression": "DocumentManifest.subject"
+    },
+    {
+      "name": "type",
+      "type": "token",
+      "description": " Kind of document set\r",
+      "expression": "DocumentManifest.type"
+    },
+    {
+      "name": "author",
+      "type": "reference",
+      "description": "Who and/or what authored the DocumentManifest",
+      "expression": "DocumentManifest.author"
+    },
+    {
+      "name": "created",
+      "type": "date",
+      "description": "When this document manifest created",
+      "expression": "DocumentManifest.created"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Human-readable description (title)",
+      "expression": "DocumentManifest.description"
+    },
+    {
+      "name": "item",
+      "type": "reference",
+      "description": "Items in manifest",
+      "expression": "DocumentManifest.content"
+    },
+    {
+      "name": "recipient",
+      "type": "reference",
+      "description": "Intended to get notified about this set of documents",
+      "expression": "DocumentManifest.recipient"
+    },
+    {
+      "name": "related-id",
+      "type": "token",
+      "description": "Identifiers of things that are related",
+      "expression": "DocumentManifest.related.identifier"
+    },
+    {
+      "name": "related-ref",
+      "type": "reference",
+      "description": "Related Resource",
+      "expression": "DocumentManifest.related.ref"
+    },
+    {
+      "name": "source",
+      "type": "uri",
+      "description": "The source system/application/software",
+      "expression": "DocumentManifest.source"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "current | superseded | entered-in-error",
+      "expression": "DocumentManifest.status"
+    },
+    {
+      "name": "subject",
+      "type": "reference",
+      "description": "The subject of the set of documents",
+      "expression": "DocumentManifest.subject"
+    }
+  ]
+}

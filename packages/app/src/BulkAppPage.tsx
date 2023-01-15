@@ -1,7 +1,9 @@
+import { Title } from '@mantine/core';
 import { Questionnaire } from '@medplum/fhirtypes';
-import { Document, Loading, MedplumLink, useMedplum } from '@medplum/react';
+import { Document, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Loading } from './components/Loading';
 
 export function BulkAppPage(): JSX.Element {
   const { resourceType } = useParams() as {
@@ -14,7 +16,7 @@ export function BulkAppPage(): JSX.Element {
   const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
 
   useEffect(() => {
-    medplum.searchResources('Questionnaire', `subject-type=${resourceType}`).then(setQuestionnaires);
+    medplum.searchResources('Questionnaire', `subject-type=${resourceType}`).then(setQuestionnaires).catch(console.log);
   }, [medplum, resourceType]);
 
   if (!questionnaires) {
@@ -24,7 +26,7 @@ export function BulkAppPage(): JSX.Element {
   if (questionnaires.length === 0) {
     return (
       <Document>
-        <h1>No apps for {resourceType}</h1>
+        <Title>No apps for {resourceType}</Title>
         <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
       </Document>
     );

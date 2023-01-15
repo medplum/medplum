@@ -1,0 +1,25 @@
+---
+title: DeviceUseStatement
+sidebar_position: 38
+---
+
+import definition from '@site/static/data/resourceDefinitions/deviceusestatement.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# DeviceUseStatement
+
+A record of a device being used by a patient where the record is the result of a report from the patient or another clinician.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

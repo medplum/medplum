@@ -1,11 +1,12 @@
-import { allOk, assertOk, badRequest, createReference, Operator } from '@medplum/core';
+import { allOk, badRequest, createReference, Operator } from '@medplum/core';
 import { BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
-import { invalidRequest, sendOutcome, systemRepo } from '../fhir';
-import { generateSecret } from '../oauth';
+import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
+import { generateSecret } from '../oauth/keys';
 import { verifyRecaptcha } from './utils';
 
 export const resetPasswordValidators = [
@@ -25,7 +26,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const [existingOutcome, existingBundle] = await systemRepo.search<User>({
+  const existingBundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -35,7 +36,6 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
       },
     ],
   });
-  assertOk(existingOutcome, existingBundle);
 
   if ((existingBundle.entry as BundleEntry[]).length === 0) {
     sendOutcome(res, badRequest('User not found', 'email'));
@@ -75,12 +75,11 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  */
 export async function resetPassword(user: User): Promise<string> {
   // Create the password change request
-  const [createOutcome, pcr] = await systemRepo.createResource<PasswordChangeRequest>({
+  const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
     user: createReference(user),
     secret: generateSecret(16),
   });
-  assertOk(createOutcome, pcr);
 
   // Build the reset URL
   return `${getConfig().appBaseUrl}setpassword/${pcr.id}/${pcr.secret}`;

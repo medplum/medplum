@@ -16,6 +16,7 @@ import { Binary } from './Binary';
 import { BiologicallyDerivedProduct } from './BiologicallyDerivedProduct';
 import { BodyStructure } from './BodyStructure';
 import { Bot } from './Bot';
+import { BulkDataExport } from './BulkDataExport';
 import { Bundle } from './Bundle';
 import { CapabilityStatement } from './CapabilityStatement';
 import { CarePlan } from './CarePlan';
@@ -136,6 +137,7 @@ import { Schedule } from './Schedule';
 import { SearchParameter } from './SearchParameter';
 import { ServiceRequest } from './ServiceRequest';
 import { Slot } from './Slot';
+import { SmartAppLaunch } from './SmartAppLaunch';
 import { Specimen } from './Specimen';
 import { SpecimenDefinition } from './SpecimenDefinition';
 import { StructureDefinition } from './StructureDefinition';
@@ -173,6 +175,7 @@ export type Resource = AccessPolicy
   | BiologicallyDerivedProduct
   | BodyStructure
   | Bot
+  | BulkDataExport
   | Bundle
   | CapabilityStatement
   | CarePlan
@@ -293,6 +296,7 @@ export type Resource = AccessPolicy
   | SearchParameter
   | ServiceRequest
   | Slot
+  | SmartAppLaunch
   | Specimen
   | SpecimenDefinition
   | StructureDefinition
@@ -316,6 +320,3 @@ export type Resource = AccessPolicy
   | ValueSet
   | VerificationResult
   | VisionPrescription;
-
-  export type ResourceType = Resource['resourceType'];
-  export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;

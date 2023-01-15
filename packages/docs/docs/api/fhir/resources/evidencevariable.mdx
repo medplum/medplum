@@ -1,0 +1,25 @@
+---
+title: EvidenceVariable
+sidebar_position: 50
+---
+
+import definition from '@site/static/data/resourceDefinitions/evidencevariable.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# EvidenceVariable
+
+The EvidenceVariable resource describes a "PICO" element that knowledge (evidence, assertion, recommendation) is about.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -1,23 +1,19 @@
 import express from 'express';
-import validator from 'validator';
 import request from 'supertest';
-import { initApp } from './app';
+import validator from 'validator';
+import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config';
-import { closeDatabase, initDatabase } from './database';
-import { initKeys } from './oauth';
 
 const app = express();
 
 describe('Well Known', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Get /.well-known/jwks.json', async () => {

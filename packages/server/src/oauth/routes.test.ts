@@ -1,12 +1,9 @@
 import { ClientApplication } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { closeDatabase, initDatabase } from '../database';
 import { createTestClient } from '../test.setup';
-import { seedDatabase } from '../seed';
-import { initKeys } from './keys';
 
 const app = express();
 let client: ClientApplication;
@@ -14,15 +11,12 @@ let client: ClientApplication;
 describe('OAuth Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     client = await createTestClient();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Get token with client credentials', async () => {

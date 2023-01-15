@@ -7,12 +7,11 @@ import { Extension } from './Extension';
 import { Period } from './Period';
 
 /**
- * Base StructureDefinition for Address Type: An address expressed using
- * postal conventions (as opposed to GPS or other location definition
- * formats).  This data type may be used to convey addresses for use in
- * delivering mail as well as for visiting locations which might not be
- * valid for mail delivery.  There are a variety of postal address
- * formats defined around the world.
+ * An address expressed using postal conventions (as opposed to GPS or
+ * other location definition formats).  This data type may be used to
+ * convey addresses for use in delivering mail as well as for visiting
+ * locations which might not be valid for mail delivery.  There are a
+ * variety of postal address formats defined around the world.
  */
 export interface Address {
 
@@ -35,14 +34,14 @@ export interface Address {
   /**
    * The purpose of this address.
    */
-  use?: string;
+  use?: 'home' | 'work' | 'temp' | 'old' | 'billing';
 
   /**
    * Distinguishes between physical addresses (those you can visit) and
    * mailing addresses (e.g. PO Boxes and care-of addresses). Most
    * addresses are both.
    */
-  type?: string;
+  type?: 'postal' | 'physical' | 'both';
 
   /**
    * Specifies the entire address as it should be displayed e.g. on a

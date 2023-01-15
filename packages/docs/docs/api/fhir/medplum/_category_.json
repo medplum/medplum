@@ -1,0 +1,10 @@
+{
+  "label": "Medplum",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "title": "Medplum Resources",
+    "description": "Medplum Resource Reference",
+    "slug": "/api/fhir/medplum"
+  }
+}

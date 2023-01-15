@@ -1,8 +1,7 @@
 import { formatFamilyName, formatGivenName, formatHumanName, stringify } from '@medplum/core';
 import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import { InsertQuery } from '../sql';
+import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -48,10 +47,11 @@ export class HumanNameTable extends LookupTable<HumanName> {
   /**
    * Indexes a resource HumanName values.
    * Attempts to reuse existing identifiers if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     if (
       resource.resourceType !== 'Patient' &&
       resource.resourceType !== 'Person' &&
@@ -66,19 +66,20 @@ export class HumanNameTable extends LookupTable<HumanName> {
       return;
     }
 
+    const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(resourceId);
+    const existing = await this.getExistingValues(resourceType, resourceId);
 
     if (!compareArrays(names, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < names.length; i++) {
         const name = names[i];
-        await new InsertQuery('HumanName', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
@@ -86,8 +87,10 @@ export class HumanNameTable extends LookupTable<HumanName> {
           name: formatHumanName(name),
           given: formatGivenName(name),
           family: formatFamilyName(name),
-        }).execute(client);
+        });
       }
+
+      await this.insertValuesForResource(client, resourceType, values);
     }
   }
 }

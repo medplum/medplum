@@ -1,8 +1,8 @@
 import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
+import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { closeDatabase, getClient, initDatabase } from '../database';
-import { seedDatabase } from '../seed';
+import { getClient } from '../database';
 import {
   generateAccessToken,
   generateIdToken,
@@ -17,12 +17,11 @@ import {
 describe('Keys', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
+    await initAppServices(config);
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Init keys', async () => {
@@ -46,7 +45,12 @@ describe('Keys', () => {
   test('Missing issuer', async () => {
     const config = await loadTestConfig();
     delete (config as any).issuer;
-    expect(async () => await initKeys(config)).rejects.toThrowError('Missing issuer');
+    try {
+      await initKeys(config);
+      fail('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Missing issuer');
+    }
   });
 
   test('Generate before initialized', async () => {
@@ -183,6 +187,6 @@ describe('Keys', () => {
 
   test('Generate secret', () => {
     expect(generateSecret(16)).toHaveLength(32);
-    expect(generateSecret(48)).toHaveLength(96);
+    expect(generateSecret(32)).toHaveLength(64);
   });
 });

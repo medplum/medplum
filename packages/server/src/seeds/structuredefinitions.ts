@@ -1,8 +1,7 @@
-import { assertOk } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
 import { getClient } from '../database';
-import { systemRepo } from '../fhir';
+import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 
 /**
@@ -10,7 +9,7 @@ import { logger } from '../logger';
  */
 export async function createStructureDefinitions(): Promise<void> {
   const client = getClient();
-  client.query('DELETE FROM "StructureDefinition"');
+  await client.query('DELETE FROM "StructureDefinition"');
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   await createStructureDefinitionsForBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 }
@@ -21,12 +20,11 @@ async function createStructureDefinitionsForBundle(structureDefinitions: Bundle)
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       logger.debug('StructureDefinition: ' + resource.name);
-      const [outcome, result] = await systemRepo.createResource<StructureDefinition>({
+      const result = await systemRepo.createResource<StructureDefinition>({
         ...resource,
         text: undefined,
         differential: undefined,
       });
-      assertOk(outcome, result);
       logger.debug('Created: ' + result.id);
     }
   }

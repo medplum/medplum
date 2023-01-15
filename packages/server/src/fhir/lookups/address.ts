@@ -1,8 +1,7 @@
 import { formatAddress, stringify } from '@medplum/core';
 import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { getClient } from '../../database';
-import { InsertQuery } from '../sql';
+import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { compareArrays } from './util';
 
@@ -77,28 +76,30 @@ export class AddressTable extends LookupTable<Address> {
   /**
    * Indexes a resource Address values.
    * Attempts to reuse existing Addresses if they are correct.
+   * @param client The database client.
    * @param resource The resource to index.
    * @returns Promise on completion.
    */
-  async indexResource(resource: Resource): Promise<void> {
+  async indexResource(client: PoolClient, resource: Resource): Promise<void> {
     const addresses = this.#getIncomingAddresses(resource);
     if (!addresses || !Array.isArray(addresses)) {
       return;
     }
 
+    const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await this.getExistingValues(resourceId);
+    const existing = await this.getExistingValues(resourceType, resourceId);
 
     if (!compareArrays(addresses, existing)) {
-      const client = getClient();
-
       if (existing.length > 0) {
         await this.deleteValuesForResource(resource);
       }
 
+      const values = [];
+
       for (let i = 0; i < addresses.length; i++) {
         const address = addresses[i];
-        await new InsertQuery('Address', {
+        values.push({
           id: randomUUID(),
           resourceId,
           index: i,
@@ -109,8 +110,10 @@ export class AddressTable extends LookupTable<Address> {
           postalCode: address.postalCode?.trim(),
           state: address.state?.trim(),
           use: address.use?.trim(),
-        }).execute(client);
+        });
       }
+
+      await this.insertValuesForResource(client, resourceType, values);
     }
   }
 

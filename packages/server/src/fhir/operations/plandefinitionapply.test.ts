@@ -2,11 +2,8 @@ import { createReference, getReferenceString } from '@medplum/core';
 import { OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
-import { initApp } from '../../app';
+import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { closeDatabase, initDatabase } from '../../database';
-import { initKeys } from '../../oauth';
-import { seedDatabase } from '../../seed';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -15,15 +12,12 @@ let accessToken: string;
 describe('PlanDefinition apply', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initDatabase(config.database);
-    await seedDatabase();
-    await initApp(app);
-    await initKeys(config);
+    await initApp(app, config);
     accessToken = await initTestAuth();
   });
 
   afterAll(async () => {
-    await closeDatabase();
+    await shutdownApp();
   });
 
   test('Happy path', async () => {
@@ -41,6 +35,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', 'application/fhir+json')
       .send({
         resourceType: 'Questionnaire',
+        status: 'active',
         name: 'Patient Registration',
         title: 'Patient Registration',
         subjectType: ['Patient'],
@@ -62,6 +57,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
         action: [
           {
             title: res1.body.title,
@@ -96,7 +92,7 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(201);
+    expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toEqual('RequestGroup');
     expect((res4.body as RequestGroup).action).toHaveLength(1);
     expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
@@ -113,10 +109,12 @@ describe('PlanDefinition apply', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.resourceType).toEqual('Task');
-    expect((res6.body as Task).input).toHaveLength(1);
-    expect((res6.body as Task).input?.[0]?.valueReference?.reference).toEqual(
-      getReferenceString(res1.body as Questionnaire)
-    );
+
+    const resultTask = res6.body as Task;
+    expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
+    expect(resultTask.input).toHaveLength(1);
+    expect(resultTask.input?.[0]?.valueReference?.reference).toEqual(getReferenceString(res1.body as Questionnaire));
   });
 
   test('Unsupported content type', async () => {
@@ -127,6 +125,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -147,6 +146,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -169,6 +169,7 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
       });
     expect(res2.status).toBe(201);
 
@@ -184,7 +185,7 @@ describe('PlanDefinition apply', () => {
     expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Missing subject parameter');
   });
 
-  test('Unsupported action type', async () => {
+  test('General task', async () => {
     const res2 = await request(app)
       .post(`/fhir/R4/PlanDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -192,9 +193,10 @@ describe('PlanDefinition apply', () => {
       .send({
         resourceType: 'PlanDefinition',
         title: 'Example Plan Definition',
+        status: 'active',
         action: [
           {
-            definitionCanonical: 'UnsupportedResourceType',
+            description: 'do the thing',
           },
         ],
       });
@@ -223,7 +225,6 @@ describe('PlanDefinition apply', () => {
           },
         ],
       });
-    expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual('Unsupported action type');
+    expect(res4.status).toBe(200);
   });
 });

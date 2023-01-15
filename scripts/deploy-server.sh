@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 
-if [[ -z "${DOCKER_REPOSITORY}" ]]; then
-  echo "DOCKER_REPOSITORY is missing"
+if [[ -z "${DOCKERHUB_REPOSITORY}" ]]; then
+  echo "DOCKERHUB_REPOSITORY is missing"
+  exit 1
+fi
+
+if [[ -z "${ECR_REPOSITORY}" ]]; then
+  echo "ECR_REPOSITORY is missing"
   exit 1
 fi
 
@@ -34,20 +39,25 @@ tar \
   packages/definitions/package.json \
   packages/definitions/dist \
   packages/server/package.json \
-  packages/server/dist \
-  packages/server/fonts \
-  packages/server/templates
+  packages/server/dist
 
 # Build the Docker image
-docker build . -t $DOCKER_REPOSITORY:latest -t $DOCKER_REPOSITORY:$GITHUB_SHA
+# Tag for both Docker Hub and AWS Elastic Container Registry (ECR)
+docker build . \
+  -t "$DOCKERHUB_REPOSITORY:latest" \
+  -t "$DOCKERHUB_REPOSITORY:$GITHUB_SHA" \
+  -t "$ECR_REPOSITORY:latest" \
+  -t "$ECR_REPOSITORY:$GITHUB_SHA"
 
 # Push the Docker image
-docker push $DOCKER_REPOSITORY:latest
-docker push $DOCKER_REPOSITORY:$GITHUB_SHA
+docker push "$DOCKERHUB_REPOSITORY:latest"
+docker push "$DOCKERHUB_REPOSITORY:$GITHUB_SHA"
+docker push "$ECR_REPOSITORY:latest"
+docker push "$ECR_REPOSITORY:$GITHUB_SHA"
 
 # Update the medplum fargate service
 aws ecs update-service \
-  --region $AWS_REGION \
-  --cluster $ECS_CLUSTER \
-  --service $ECS_SERVICE \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$ECS_SERVICE" \
   --force-new-deployment

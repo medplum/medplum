@@ -8,7 +8,7 @@ import { Project } from './Project';
 import { Reference } from './Reference';
 
 /**
- * OAuth user.
+ * Representation of a human user of the system.
  */
 export interface User {
 
@@ -44,13 +44,30 @@ export interface User {
   language?: string;
 
   /**
-   * The email address that uniquely identifies the user.  This email
-   * address must be globally unique within the server.
+   * The first name or given name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  firstName?: string;
+
+  /**
+   * The last name or family name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  lastName?: string;
+
+  /**
+   * The email address that uniquely identifies the user.
    */
   email?: string;
 
   /**
-   * Whether this user is a system administrator.
+   * Whether the system has verified that the user has access to the email
+   * address.
+   */
+  emailVerified?: boolean;
+
+  /**
+   * DEPRECATED
    */
   admin?: boolean;
 
@@ -58,6 +75,16 @@ export interface User {
    * Encrypted hash of the user's password.
    */
   passwordHash?: string;
+
+  /**
+   * Shared secret for MFA authenticator applications.
+   */
+  mfaSecret?: string;
+
+  /**
+   * Whether the user has completed MFA enrollment.
+   */
+  mfaEnrolled?: boolean;
 
   /**
    * Optional project if the user only exists for the project. This is used

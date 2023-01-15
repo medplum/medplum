@@ -2,8 +2,8 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { CreateBotPage } from './CreateBotPage';
+import { MemoryRouter } from 'react-router-dom';
+import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
@@ -12,9 +12,7 @@ async function setup(url: string): Promise<void> {
     render(
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <Routes>
-            <Route path="/admin/projects/:projectId/bot" element={<CreateBotPage />} />
-          </Routes>
+          <AppRoutes />
         </MemoryRouter>
       </MedplumProvider>
     );
@@ -22,34 +20,47 @@ async function setup(url: string): Promise<void> {
 }
 
 describe('CreateBotPage', () => {
+  beforeAll(() => {
+    medplum.setActiveLoginOverride({
+      accessToken: '123',
+      refreshToken: '456',
+      profile: {
+        reference: 'Practitioner/123',
+      },
+      project: {
+        reference: 'Project/123',
+      },
+    });
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
   });
 
   afterEach(async () => {
-    act(() => {
+    await act(async () => {
       jest.runOnlyPendingTimers();
     });
     jest.useRealTimers();
   });
 
   test('Renders', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
   });
 
   test('Submit success', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });
@@ -62,21 +73,21 @@ describe('CreateBotPage', () => {
   });
 
   test('Submit with access policy', async () => {
-    await setup('/admin/projects/123/bot');
+    await setup('/admin/bots/new');
     await waitFor(() => screen.getByText('Create Bot'));
 
     expect(screen.getByText('Create Bot')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('name'), {
+      fireEvent.change(screen.getByLabelText('Name'), {
         target: { value: 'Test Bot' },
       });
-      fireEvent.change(screen.getByTestId('description'), {
+      fireEvent.change(screen.getByLabelText('Description'), {
         target: { value: 'Test Description' },
       });
     });
 
-    const input = screen.getByTestId('input-element') as HTMLInputElement;
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -88,7 +99,10 @@ describe('CreateBotPage', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => screen.getByTestId('dropdown'));
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
 
     // Press "Enter"
     await act(async () => {

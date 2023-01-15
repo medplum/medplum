@@ -1,13 +1,13 @@
+import { Button, Group, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Button, Document, Form, FormSection, Input, MedplumLink, useMedplum } from '@medplum/react';
+import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function CreateBotPage(): JSX.Element {
-  const { projectId } = useParams() as { projectId: string };
   const medplum = useMedplum();
-  const result = medplum.get(`admin/projects/${projectId}`).read();
+  const projectId = getProjectId(medplum);
   const [name, setName] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
@@ -15,9 +15,8 @@ export function CreateBotPage(): JSX.Element {
   const [success, setSuccess] = useState(false);
 
   return (
-    <Document width={600}>
-      <h1>Admin / Projects / {result.project.name}</h1>
-      <h3>Create new Bot</h3>
+    <>
+      <Title>Create new Bot</Title>
       <Form
         onSubmit={() => {
           const body = {
@@ -35,22 +34,29 @@ export function CreateBotPage(): JSX.Element {
         {!success && (
           <>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
-              <Input name="name" testid="name" required={true} autoFocus={true} onChange={setName} outcome={outcome} />
+              <TextInput
+                id="name"
+                name="name"
+                required={true}
+                autoFocus={true}
+                onChange={(e) => setName(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'name')}
+              />
             </FormSection>
             <FormSection title="Description" htmlFor="description" outcome={outcome}>
-              <Input name="description" testid="description" onChange={setDescription} outcome={outcome} />
+              <TextInput
+                id="description"
+                name="description"
+                onChange={(e) => setDescription(e.currentTarget.value)}
+                error={getErrorsForInput(outcome, 'description')}
+              />
             </FormSection>
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <div className="medplum-right">
-              <div></div>
-              <div>
-                <Button type="submit" testid="submit">
-                  Create Bot
-                </Button>
-              </div>
-            </div>
+            <Group position="right">
+              <Button type="submit">Create Bot</Button>
+            </Group>
           </>
         )}
         {success && (
@@ -62,6 +68,6 @@ export function CreateBotPage(): JSX.Element {
           </div>
         )}
       </Form>
-    </Document>
+    </>
   );
 }

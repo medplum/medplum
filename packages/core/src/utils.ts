@@ -57,7 +57,7 @@ export function resolveId(reference: Reference | undefined): string | undefined 
  * @param resource The FHIR resource.
  * @returns True if the resource is a "ProfileResource".
  */
-export function isProfileResource(resource: Resource): boolean {
+export function isProfileResource(resource: Resource): resource is ProfileResource {
   return (
     resource.resourceType === 'Patient' ||
     resource.resourceType === 'Practitioner' ||
@@ -72,7 +72,7 @@ export function isProfileResource(resource: Resource): boolean {
  */
 export function getDisplayString(resource: Resource): string {
   if (isProfileResource(resource)) {
-    const profileName = getProfileResourceDisplayString(resource as ProfileResource);
+    const profileName = getProfileResourceDisplayString(resource);
     if (profileName) {
       return profileName;
     }
@@ -84,8 +84,8 @@ export function getDisplayString(resource: Resource): string {
     }
   }
   if (resource.resourceType === 'Observation') {
-    if ('code' in resource && (resource.code as any)?.text) {
-      return (resource.code as any)?.text;
+    if ('code' in resource && resource.code?.text) {
+      return resource.code.text;
     }
   }
   if (resource.resourceType === 'User') {
@@ -131,23 +131,26 @@ function getDeviceDisplayString(device: Device): string | undefined {
  * @returns The image URL for the resource or undefined.
  */
 export function getImageSrc(resource: Resource): string | undefined {
-  if (isProfileResource(resource)) {
-    const photos = (resource as ProfileResource).photo;
-    if (photos) {
-      for (const photo of photos) {
-        const url = getPhotoImageSrc(photo);
-        if (url) {
-          return url;
-        }
+  if (!('photo' in resource)) {
+    return undefined;
+  }
+
+  const photo = resource.photo;
+  if (!photo) {
+    return undefined;
+  }
+
+  if (Array.isArray(photo)) {
+    for (const p of photo) {
+      const url = getPhotoImageSrc(p);
+      if (url) {
+        return url;
       }
     }
+  } else {
+    return getPhotoImageSrc(photo);
   }
-  if (resource.resourceType === 'Bot' && resource.photo) {
-    const url = getPhotoImageSrc(resource.photo);
-    if (url) {
-      return url;
-    }
-  }
+
   return undefined;
 }
 
@@ -291,7 +294,7 @@ export function getIdentifier(resource: Resource, system: string): string | unde
  * @param urls Array of extension URLs.  Each entry represents a nested extension.
  * @returns The extension value if found; undefined otherwise.
  */
-export function getExtensionValue(resource: Resource, ...urls: string[]): string | undefined {
+export function getExtensionValue(resource: any, ...urls: string[]): string | undefined {
   // Let curr be the current resource or extension. Extensions can be nested.
   let curr: any = resource;
 
@@ -301,6 +304,24 @@ export function getExtensionValue(resource: Resource, ...urls: string[]): string
   }
 
   return curr?.valueString as string | undefined;
+}
+
+/**
+ * Returns an extension by extension URLs.
+ * @param resource The base resource.
+ * @param urls Array of extension URLs. Each entry represents a nested extension.
+ * @returns The extension object if found; undefined otherwise.
+ */
+export function getExtension(resource: any, ...urls: string[]): Extension | undefined {
+  // Let curr be the current resource or extension. Extensions can be nested.
+  let curr: any = resource;
+
+  // For each of the urls, try to find a matching nested extension.
+  for (let i = 0; i < urls.length && curr; i++) {
+    curr = (curr?.extension as Extension[] | undefined)?.find((e) => e.url === urls[i]);
+  }
+
+  return curr as Extension | undefined;
 }
 
 /**
@@ -341,7 +362,7 @@ function isArrayKey(k: string): boolean {
  * @param v Any value.
  * @returns True if the value is an empty string or an empty object.
  */
-function isEmpty(v: any): boolean {
+export function isEmpty(v: any): boolean {
   if (v === null || v === undefined) {
     return true;
   }
@@ -417,6 +438,24 @@ function deepEqualsObject(
 }
 
 /**
+ * Creates a deep clone of the input value.
+ *
+ * Limitations:
+ *  - Only supports JSON primitives and arrays.
+ *  - Does not support Functions, lambdas, etc.
+ *  - Does not support circular references.
+ *
+ * See: https://web.dev/structured-clone/
+ * See: https://stackoverflow.com/questions/40488190/how-is-structured-clone-algorithm-different-from-deep-copy
+ *
+ * @param input The input to clone.
+ * @returns A deep clone of the input.
+ */
+export function deepClone<T>(input: T): T {
+  return JSON.parse(JSON.stringify(input)) as T;
+}
+
+/**
  * Returns true if the input string is a UUID.
  * @param input The input string.
  * @returns True if the input string matches the UUID format.
@@ -484,7 +523,7 @@ export function capitalize(word: string): string {
 }
 
 export function isLowerCase(c: string): boolean {
-  return c === c.toLowerCase();
+  return c === c.toLowerCase() && c !== c.toUpperCase();
 }
 
 /**
@@ -616,6 +655,16 @@ export function matchesRange(value: number, range: Range, precision?: number): b
 }
 
 /**
+ * Returns the input number rounded to the specified number of digits.
+ * @param a The input number.
+ * @param precision The precision in number of digits.
+ * @returns The number rounded to the specified number of digits.
+ */
+export function preciseRound(a: number, precision: number): number {
+  return parseFloat(a.toFixed(precision));
+}
+
+/**
  * Returns true if the two numbers are equal to the given precision.
  * @param a The first number.
  * @param b The second number.
@@ -623,11 +672,7 @@ export function matchesRange(value: number, range: Range, precision?: number): b
  * @returns True if the two numbers are equal to the given precision.
  */
 export function preciseEquals(a: number, b: number, precision?: number): boolean {
-  if (precision) {
-    return Math.abs(a - b) < Math.pow(10, -precision);
-  } else {
-    return a === b;
-  }
+  return toPreciseInteger(a, precision) === toPreciseInteger(b, precision);
 }
 
 /**
@@ -638,11 +683,7 @@ export function preciseEquals(a: number, b: number, precision?: number): boolean
  * @returns True if the first number is less than the second number to the given precision.
  */
 export function preciseLessThan(a: number, b: number, precision?: number): boolean {
-  if (precision) {
-    return a < b && Math.abs(a - b) > Math.pow(10, -precision);
-  } else {
-    return a < b;
-  }
+  return toPreciseInteger(a, precision) < toPreciseInteger(b, precision);
 }
 
 /**
@@ -653,11 +694,7 @@ export function preciseLessThan(a: number, b: number, precision?: number): boole
  * @returns True if the first number is greater than the second number to the given precision.
  */
 export function preciseGreaterThan(a: number, b: number, precision?: number): boolean {
-  if (precision) {
-    return a > b && Math.abs(a - b) > Math.pow(10, -precision);
-  } else {
-    return a > b;
-  }
+  return toPreciseInteger(a, precision) > toPreciseInteger(b, precision);
 }
 
 /**
@@ -668,7 +705,7 @@ export function preciseGreaterThan(a: number, b: number, precision?: number): bo
  * @returns True if the first number is less than or equal to the second number to the given precision.
  */
 export function preciseLessThanOrEquals(a: number, b: number, precision?: number): boolean {
-  return preciseLessThan(a, b, precision) || preciseEquals(a, b, precision);
+  return toPreciseInteger(a, precision) <= toPreciseInteger(b, precision);
 }
 
 /**
@@ -679,5 +716,19 @@ export function preciseLessThanOrEquals(a: number, b: number, precision?: number
  * @returns True if the first number is greater than or equal to the second number to the given precision.
  */
 export function preciseGreaterThanOrEquals(a: number, b: number, precision?: number): boolean {
-  return preciseGreaterThan(a, b, precision) || preciseEquals(a, b, precision);
+  return toPreciseInteger(a, precision) >= toPreciseInteger(b, precision);
+}
+
+/**
+ * Returns an integer representation of the number with the given precision.
+ * For example, if precision is 2, then 1.2345 will be returned as 123.
+ * @param a The number.
+ * @param precision Optional precision in number of digits.
+ * @returns The integer with the given precision.
+ */
+function toPreciseInteger(a: number, precision?: number): number {
+  if (precision === undefined) {
+    return a;
+  }
+  return Math.round(a * Math.pow(10, precision));
 }

@@ -1,0 +1,25 @@
+---
+title: Practitioner
+sidebar_position: 107
+---
+
+import definition from '@site/static/data/resourceDefinitions/practitioner.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Practitioner
+
+A person who is directly or indirectly involved in the provisioning of healthcare.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

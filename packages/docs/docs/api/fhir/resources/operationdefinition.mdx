@@ -1,0 +1,25 @@
+---
+title: OperationDefinition
+sidebar_position: 97
+---
+
+import definition from '@site/static/data/resourceDefinitions/operationdefinition.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# OperationDefinition
+
+A formal computable definition of an operation (on the RESTful interface) or a named query (using the search interaction).
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

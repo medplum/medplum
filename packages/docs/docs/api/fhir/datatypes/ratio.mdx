@@ -1,0 +1,18 @@
+---
+title: Ratio
+sidebar_position: 30
+---
+
+import definition from '@site/static/data/datatypeDefinitions/ratio.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Ratio
+
+Base StructureDefinition for Ratio Type: A relationship of two Quantity values - expressed as a numerator and a denominator.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

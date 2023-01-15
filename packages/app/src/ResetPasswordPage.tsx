@@ -1,21 +1,13 @@
+import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import {
-  Button,
-  Document,
-  Form,
-  FormSection,
-  getRecaptcha,
-  initRecaptcha,
-  Input,
-  Logo,
-  MedplumLink,
-  useMedplum,
-} from '@medplum/react';
+import { Document, Form, getErrorsForInput, getRecaptcha, initRecaptcha, Logo, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
 
 export function ResetPasswordPage(): JSX.Element {
+  const navigate = useNavigate();
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
@@ -29,36 +21,33 @@ export function ResetPasswordPage(): JSX.Element {
       <Form
         style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
-          getRecaptcha(recaptchaSiteKey).then((recaptchaToken: string) => {
-            medplum
-              .post('auth/resetpassword', { ...formData, recaptchaToken })
-              .then(() => setSuccess(true))
-              .catch(setOutcome);
-          });
+          getRecaptcha(recaptchaSiteKey)
+            .then((recaptchaToken: string) => medplum.post('auth/resetpassword', { ...formData, recaptchaToken }))
+            .then(() => setSuccess(true))
+            .catch(setOutcome);
         }}
       >
-        <div className="medplum-center">
+        <Stack spacing="lg" mb="xl" align="center">
           <Logo size={32} />
-          <h1>Medplum Password Reset</h1>
-        </div>
+          <Title>Medplum Password Reset</Title>
+        </Stack>
         {!success && (
-          <>
-            <FormSection title="Email" htmlFor="email" outcome={outcome}>
-              <Input name="email" type="email" testid="email" required={true} autoFocus={true} outcome={outcome} />
-            </FormSection>
-            <div className="medplum-signin-buttons">
-              <div>
-                <MedplumLink testid="register" to="/register">
-                  Register
-                </MedplumLink>
-              </div>
-              <div>
-                <Button type="submit" testid="submit">
-                  Reset password
-                </Button>
-              </div>
-            </div>
-          </>
+          <Stack spacing="xl">
+            <TextInput
+              name="email"
+              type="email"
+              label="Email"
+              required={true}
+              autoFocus={true}
+              error={getErrorsForInput(outcome, 'email')}
+            />
+            <Group position="apart" mt="xl" noWrap>
+              <Anchor component="button" type="button" color="dimmed" onClick={() => navigate('/register')} size="xs">
+                Register
+              </Anchor>
+              <Button type="submit">Reset password</Button>
+            </Group>
+          </Stack>
         )}
         {success && <div data-testid="success">Email sent</div>}
       </Form>

@@ -1,0 +1,25 @@
+---
+title: Media
+sidebar_position: 73
+---
+
+import definition from '@site/static/data/resourceDefinitions/media.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Media
+
+A photo, video, or audio recording acquired or used in healthcare. The actual content may be inline or provided by direct reference.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

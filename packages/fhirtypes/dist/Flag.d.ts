@@ -115,7 +115,7 @@ export interface Flag {
   /**
    * Supports basic workflow.
    */
-  status?: string;
+  status?: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * Allows a flag to be divided into different categories like clinical,

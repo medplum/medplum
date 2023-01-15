@@ -2,11 +2,10 @@ import { Bundle, BundleEntry, Resource, SearchParameter } from '@medplum/fhirtyp
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { getSearchParameterDetails, SearchParameterType } from './searchparams';
-import { IndexedStructureDefinition, indexStructureDefinition } from './types';
+import { globalSchema, indexStructureDefinition } from './types';
 import { isLowerCase } from './utils';
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
-const structureDefinitions = { types: {} } as IndexedStructureDefinition;
 
 describe('SearchParameterDetails', () => {
   beforeAll(() => {
@@ -23,7 +22,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', individualPhoneticParam);
+    const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('phonetic');
     expect(details.array).toEqual(true);
@@ -37,7 +36,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.active',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', activeParam);
+    const details = getSearchParameterDetails('Patient', activeParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('active');
     expect(details.type).toEqual(SearchParameterType.BOOLEAN);
@@ -52,7 +51,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.birthDate',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', birthDateParam);
+    const details = getSearchParameterDetails('Patient', birthDateParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('birthdate');
     expect(details.type).toEqual(SearchParameterType.DATE);
@@ -67,7 +66,7 @@ describe('SearchParameterDetails', () => {
       expression: 'ServiceRequest.authoredOn',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'ServiceRequest', authoredParam);
+    const details = getSearchParameterDetails('ServiceRequest', authoredParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('authored');
     expect(details.type).toEqual(SearchParameterType.DATETIME);
@@ -82,7 +81,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.link.other',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
+    const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('link');
     expect(details.type).toEqual(SearchParameterType.REFERENCE);
@@ -96,7 +95,7 @@ describe('SearchParameterDetails', () => {
       expression: 'OtherType.test',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam);
+    const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
     expect(details.columnName).toEqual('test');
   });
@@ -109,7 +108,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.unknown',
     };
 
-    expect(() => getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam)).toThrow();
+    expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
 
   test('Subtype not found', () => {
@@ -120,7 +119,7 @@ describe('SearchParameterDetails', () => {
       expression: 'Patient.name.unknown',
     };
 
-    expect(() => getSearchParameterDetails(structureDefinitions, 'Patient', missingExpressionParam)).toThrow();
+    expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
 
   test('Observation-value-date', () => {
@@ -132,7 +131,7 @@ describe('SearchParameterDetails', () => {
       expression: '(Observation.value as dateTime) | (Observation.value as Period)',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Observation', valueDateParam);
+    const details = getSearchParameterDetails('Observation', valueDateParam);
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.DATE);
     expect(details.columnName).toEqual('valueDate');
@@ -148,7 +147,7 @@ describe('SearchParameterDetails', () => {
       expression: '(Observation.value as Quantity) | (Observation.value as SampledData)',
     };
 
-    const details = getSearchParameterDetails(structureDefinitions, 'Observation', valueQuantityParam);
+    const details = getSearchParameterDetails('Observation', valueQuantityParam);
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.QUANTITY);
     expect(details.columnName).toEqual('valueQuantity');
@@ -157,11 +156,11 @@ describe('SearchParameterDetails', () => {
 
   test('Everything', () => {
     // Make sure that getSearchParameterDetails returns successfully for all known parameters.
-    for (const resourceType of Object.keys(structureDefinitions.types)) {
+    for (const resourceType of Object.keys(globalSchema.types)) {
       for (const entry of searchParams.entry) {
         const searchParam = entry.resource;
         if (searchParam.base?.includes(resourceType)) {
-          const details = getSearchParameterDetails(structureDefinitions, resourceType, searchParam);
+          const details = getSearchParameterDetails(resourceType, searchParam);
           expect(details).toBeDefined();
         }
       }
@@ -182,7 +181,7 @@ function buildStructureDefinitions(fileName: string): void {
       resource.name !== 'MetadataResource' &&
       !isLowerCase(resource.name[0])
     ) {
-      indexStructureDefinition(structureDefinitions, resource);
+      indexStructureDefinition(resource);
     }
   }
 }

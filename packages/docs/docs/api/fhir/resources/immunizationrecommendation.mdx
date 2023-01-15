@@ -1,0 +1,25 @@
+---
+title: ImmunizationRecommendation
+sidebar_position: 63
+---
+
+import definition from '@site/static/data/resourceDefinitions/immunizationrecommendation.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# ImmunizationRecommendation
+
+A patient's point-in-time set of recommendations (i.e. forecasting) according to a published schedule with optional supporting justification.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
+
+

@@ -134,7 +134,7 @@ export interface Slot {
   /**
    * busy | free | busy-unavailable | busy-tentative | entered-in-error.
    */
-  status?: string;
+  status?: 'busy' | 'free' | 'busy-unavailable' | 'busy-tentative' | 'entered-in-error';
 
   /**
    * Date/Time that the slot is to begin.

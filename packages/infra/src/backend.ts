@@ -1,6 +1,5 @@
 import {
   aws_ec2 as ec2,
-  aws_ecr as ecr,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
   aws_elasticloadbalancingv2 as elbv2,
@@ -16,6 +15,7 @@ import {
   Duration,
   RemovalPolicy,
 } from 'aws-cdk-lib';
+import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
 import { awsManagedRules } from './waf';
@@ -48,10 +48,15 @@ export class BackEnd extends Construct {
       },
     });
 
+    // Bot Lambda Role
+    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+    });
+
     // RDS
     const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
       engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_12_4,
+        version: rds.AuroraPostgresEngineVersion.VER_12_9,
       }),
       credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
       defaultDatabaseName: 'medplum',
@@ -60,7 +65,7 @@ export class BackEnd extends Construct {
       instanceProps: {
         vpc: vpc,
         vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
       },
       backup: {
@@ -125,22 +130,89 @@ export class BackEnd extends Construct {
       vpc: vpc,
     });
 
+    // Task Policies
+    const taskRolePolicies = new iam.PolicyDocument({
+      statements: [
+        // CloudWatch Logs: Create streams and put events
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['logs:CreateLogStream', 'logs:PutLogEvents'],
+          resources: ['arn:aws:logs:*'],
+        }),
+
+        // Secrets Manager: Read only access to secrets
+        // https://docs.aws.amazon.com/mediaconnect/latest/ug/iam-policy-examples-asm-secrets.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'secretsmanager:GetResourcePolicy',
+            'secretsmanager:GetSecretValue',
+            'secretsmanager:DescribeSecret',
+            'secretsmanager:ListSecrets',
+            'secretsmanager:ListSecretVersionIds',
+          ],
+          resources: ['arn:aws:secretsmanager:*'],
+        }),
+
+        // Parameter Store: Read only access
+        // https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-paramstore-access.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ssm:GetParametersByPath', 'ssm:GetParameters', 'ssm:GetParameter', 'ssm:DescribeParameters'],
+          resources: ['arn:aws:ssm:*'],
+        }),
+
+        // SES: Send emails
+        // https://docs.aws.amazon.com/ses/latest/dg/sending-authorization-policy-examples.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['ses:SendEmail', 'ses:SendRawEmail'],
+          resources: ['arn:aws:ses:*'],
+        }),
+
+        // S3: Read and write access to buckets
+        // https://docs.aws.amazon.com/service-authorization/latest/reference/list_amazons3.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:ListBucket', 's3:GetObject', 's3:PutObject', 's3:DeleteObject'],
+          resources: ['arn:aws:s3:::*'],
+        }),
+
+        // IAM: Pass role to innvoke lambda functions
+        // https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use_passrole.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['iam:ListRoles', 'iam:GetRole', 'iam:PassRole'],
+          resources: [botLambdaRole.roleArn],
+        }),
+
+        // Lambda: Create, read, update, delete, and invoke functions
+        // https://docs.aws.amazon.com/lambda/latest/dg/access-control-identity-based.html
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: [
+            'lambda:CreateFunction',
+            'lambda:GetFunction',
+            'lambda:GetFunctionConfiguration',
+            'lambda:UpdateFunctionCode',
+            'lambda:UpdateFunctionConfiguration',
+            'lambda:ListLayerVersions',
+            'lambda:GetLayerVersion',
+            'lambda:InvokeFunction',
+          ],
+          resources: ['arn:aws:lambda:*'],
+        }),
+      ],
+    });
+
     // Task Role
     const taskRole = new iam.Role(this, 'TaskExecutionRole', {
       assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+      description: 'Medplum Server Task Execution Role',
+      inlinePolicies: {
+        TaskExecutionPolicies: taskRolePolicies,
+      },
     });
-
-    // Task Policies
-    const policies = [
-      'service-role/AmazonECSTaskExecutionRolePolicy',
-      'AmazonSSMReadOnlyAccess', // Read SSM parameters
-      'SecretsManagerReadWrite', // Read RDS secrets
-      'AmazonCognitoPowerUser', // Authenticate users with Cognito
-      'AmazonSESFullAccess', // Send emails with SES
-      'AmazonS3FullAccess', // Upload content to content bucket
-      'AWSLambda_FullAccess', // Create and execute lambdas
-    ];
-    policies.forEach((policy) => taskRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName(policy)));
 
     // Task Definitions
     const taskDefinition = new ecs.FargateTaskDefinition(this, 'TaskDefinition', {
@@ -160,19 +232,36 @@ export class BackEnd extends Construct {
       streamPrefix: 'Medplum',
     });
 
-    // Amazon ECR Repositories
-    const serviceRepo = ecr.Repository.fromRepositoryName(this, 'MedplumRepo', 'medplum-server');
-
     // Task Containers
+    let serverImage: ecs.ContainerImage | undefined = undefined;
+    // Pull out the image name and tag from the image URI if it's an ECR image
+    const ecrImageUriRegex = new RegExp(
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+    );
+    const nameTagMatches = config.serverImage.match(ecrImageUriRegex);
+    const serverImageName = nameTagMatches?.[1];
+    const serverImageTag = nameTagMatches?.[2];
+    if (serverImageName && serverImageTag) {
+      // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
+      const ecrRepo = Repository.fromRepositoryArn(
+        this,
+        'ServerImageRepo',
+        `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
+      );
+      serverImage = ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
+    } else {
+      // Otherwise, use the standard container image
+      serverImage = ecs.ContainerImage.fromRegistry(config.serverImage);
+    }
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: ecs.ContainerImage.fromEcrRepository(serviceRepo, config.serverImageTag),
+      image: serverImage,
       command: [`aws:/medplum/${name}/`],
       logging: logDriver,
     });
 
     serviceContainer.addPortMappings({
-      containerPort: 5000,
-      hostPort: 5000,
+      containerPort: config.apiPort,
+      hostPort: config.apiPort,
     });
 
     // Security Groups
@@ -188,7 +277,7 @@ export class BackEnd extends Construct {
       taskDefinition: taskDefinition,
       assignPublicIp: false,
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_NAT,
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       desiredCount: config.desiredServerCount,
       securityGroups: [fargateSecurityGroup],
@@ -197,7 +286,7 @@ export class BackEnd extends Construct {
     // Load Balancer Target Group
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       vpc: vpc,
-      port: 5000,
+      port: config.apiPort,
       protocol: elbv2.ApplicationProtocol.HTTP,
       healthCheck: {
         path: '/healthcheck',
@@ -216,11 +305,13 @@ export class BackEnd extends Construct {
       http2Enabled: true,
     });
 
-    // Load Balancer logging
-    loadBalancer.logAccessLogs(
-      s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
-      config.loadBalancerLoggingPrefix
-    );
+    if (config.loadBalancerLoggingEnabled) {
+      // Load Balancer logging
+      loadBalancer.logAccessLogs(
+        s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
+        config.loadBalancerLoggingPrefix
+      );
+    }
 
     // HTTPS Listener
     // Forward to the target group
@@ -270,11 +361,6 @@ export class BackEnd extends Construct {
       recordName: config.apiDomainName,
       target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
       zone: zone,
-    });
-
-    // Bot Lambda Role
-    const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
-      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
 
     // SSM Parameters

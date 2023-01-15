@@ -1,34 +1,36 @@
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
-import { initDatabase } from './database';
-import { initBinaryStorage } from './fhir';
 import { getRootSchema } from './fhir/operations/graphql';
 import { logger } from './logger';
-import { initKeys } from './oauth';
-import { initRedis } from './redis';
-import { seedDatabase } from './seed';
-import { initWorkers } from './workers';
 
-async function main(): Promise<void> {
+export async function main(configName: string): Promise<void> {
+  process.on('unhandledRejection', (err) => {
+    logger.error('Unhandled promise rejection', err);
+  });
+  process.on('uncaughtException', (err) => {
+    logger.error(err, 'Uncaught Exception thrown');
+    process.exit(1);
+  });
+
   logger.info('Starting Medplum Server...');
-
-  const configName = process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json';
   logger.info('configName: ' + configName);
 
   const config = await loadConfig(configName);
-  logger.info('config: ' + JSON.stringify(config, undefined, 2));
 
-  await initDatabase(config.database);
-  await initRedis(config.redis);
-  await initKeys(config);
-  await seedDatabase();
-  initBinaryStorage(config.binaryStorage);
-  initWorkers(config.redis);
+  // Preload the schema
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
   getRootSchema();
 
-  const app = await initApp(express());
-  app.listen(5000);
+  const app = await initApp(express(), config);
+  app.listen(config.port);
 }
 
-main();
+if (require.main === module) {
+  main(process.argv.length === 3 ? process.argv[2] : 'file:medplum.config.json').catch(console.log);
+}

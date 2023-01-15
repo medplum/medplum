@@ -138,7 +138,7 @@ export interface QuestionnaireResponse {
    * The position of the questionnaire response within its overall
    * lifecycle.
    */
-  status?: string;
+  status?: 'in-progress' | 'completed' | 'amended' | 'entered-in-error' | 'stopped';
 
   /**
    * The subject of the questionnaire response.  This could be a patient,

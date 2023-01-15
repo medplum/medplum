@@ -1,0 +1,18 @@
+---
+title: Annotation
+sidebar_position: 2
+---
+
+import definition from '@site/static/data/datatypeDefinitions/annotation.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Annotation
+
+Base StructureDefinition for Annotation Type: A  text note which also  contains information about who made the statement and when.
+
+## Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+
+
+

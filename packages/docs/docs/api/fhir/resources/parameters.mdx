@@ -1,0 +1,25 @@
+---
+title: Parameters
+sidebar_position: 101
+---
+
+import definition from '@site/static/data/resourceDefinitions/parameters.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# Parameters
+
+This resource is a non-persisted resource used to pass information into and back from an [operation](../operations). It has no other use, and there is no RESTful endpoint associated with it.
+
+## Properties
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+## Search Parameters
+
+<SearchParamsTable searchParams={definition.searchParameters} />
+
+## Inherited Properties
+
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
