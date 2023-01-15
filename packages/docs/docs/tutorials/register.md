@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Register
+# Register an Account
 
 This guide explains how to register for a new Medplum account and create your first Medplum project.
 
@@ -14,15 +14,17 @@ This guide explains how to register for a new Medplum account and create your fi
 
 Congrats, you now have a Medplum account!
 
-:::tip Medplum projects
+## Medplum projects
 
 When you signed up for an account, you created a new [Medplum Project](/docs/api/fhir/medplum/project).
 
-A project is a collection of [FHIR resources](/docs/fhir-basics#resources) that is logically separated from other resources on the server. Each project is administered separately, and can have it's own set of users, permissions, client applications, and bots.
+A project is a collection of [FHIR resources](/docs/fhir-basics#resources) that is logically separated from other resources on the server.
 
 Each resource can only contain [references](/docs/fhir-basics#references-linking-resources) to resources inside the same project, and can only be accessed from [Bots](/docs/bots/bot-basics) inside the same project.
 
-:::
+Each project is administered separately, and can have it's own set of users, permissions, client applications, and bots. A common usage pattern is to set up staging and production production for an application. See the [Bots in Production](/docs/bots/bots-in-production#deploying-to-staging-vs-production) guide for more details.
+
+You can create a new project for your account by visiting [https://app.medplum.com/register](https://app.medplum.com/register)
 
 ## Explore your new project
 
