@@ -8,7 +8,7 @@ Welcome to the Medplum API reference. This section is intended as reference mate
 
 ## System Requirements
 
-The API does requires [registration](/docs/tutorials/register) and acceptance of . The following standards are supported:
+The API does requires [registration](/docs/tutorials/register) and acceptance of the [terms of service](/terms). The following standards are supported:
 
 - US Core 5.0.1 / USCDI v2
 - SMART App Launch 2.0.0
@@ -63,6 +63,6 @@ In case of server errors you can expect [HTTP Status codes](https://en.wikipedia
 
 Our [**TypeScript SDK**](./sdk/classes/MedplumClient) provides a powerful, type-safe library to create and store healthcare data in Medplum. The SDK can be used in standalone applications and is used by [bots](/docs/bots).
 
-## Pre-built UI
+## Prebuilt UI
 
 If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react-components) can give you building blocks to get you started.
