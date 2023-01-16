@@ -1,187 +1,83 @@
 ---
 sidebar_position: 4
-sidebar_label: Hello World App
+sidebar_label: Medplum Hello World
 ---
 
-# Hello World App
+# Medplum Hello World
 
-Welcome to Part 1 of the Medplum Hello World series.
+Digital health companies often build custom UIs on top of the Medplum platform to design patient and physician experiences specific to their needs.
+
+This tutorial will go over how to run the **Medplum "Hello World"** example, a simple [React](https://reactjs.org/) app that visualizes patient information stored in Medplum. Hello World is built with Medplum's [React Component](https://storybook.medplum.com/?path=/docs/medplum-introduction--page) library, which is a great resource for rapid prototyping and building internal tools.
 
 This tutorial assumes you have already:
 
 - Registered for a Medplum account. (If not [registration instructions](./register.md))
 - Created a sample patient. (If not [create patient instructions](./create-a-patient.md))
 
-Sign into the [Medplum App](https://app.medplum.com). When you sign in to Medplum, you will see a Patient list by default.
+## Clone and Run the App
 
-## Find Client Application ID
+First, make sure you have Node JS and npm installed. If not, follow instructions [here](https://nodejs.org/en/download/).
 
-Now let's get our Client Application ID, because we will also need that later. Click on the menu button in the top left corner:
-
-![Top left menu](/img/hello-world/top-left-menu.png)
-
-Click on Project -> [Clients](https://app.medplum.com/admin/clients)":
-
-When you registered your account, Medplum automatically created a default client. Click on that row:
-
-And copy the Client Application ID:
-
-**To recap:** You registered a new account, created a patient, and should have a Patient ID and a Client Application ID.
-
-## Create a React app
-
-First, make sure you have Node JS and npm installed. If not, follow instructions here:
-
-https://nodejs.org/en/download/
-
-Open a terminal window. Create a new React app using create-react-app. We're going to use the TypeScript variant:
+Next, clone the Medplum Hello World repo
 
 ```bash
-npx create-react-app medplum-hello-world --template typescript
+git clone https://github.com/medplum/medplum-hello-world.git
 cd medplum-hello-world
-npm start
 ```
 
-That should open a browser window to the default React app:
-
-Go back to the terminal. Stop the Node JS process using Ctrl+C.
-
-## Add Medplum dependencies
-
-Next let's add Medplum dependencies.
-
-npm install @medplum/core @medplum/react
-
-The @medplum/core package includes the basic Medplum client and utilities.
-
-The @medplum/react package includes the React components.
-
-## Add Medplum authentication
-
-Next let's use the Medplum React components. Open the medplum-hello-world folder in your favorite editor.
-
-I will use VS Code:
-
-First we need to connect our Medplum account. Open "src/index.tsx". Add a couple Medplum imports:
-
-```tsx
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/react';
-```
-
-Add the Medplum client using the Client Application ID from before. Be sure to replace `YOUR_CLIENT_ID_HERE` with the actual client ID.
-
-```tsx
-const medplum = new MedplumClient({
-  clientId: 'YOUR_CLIENT_ID_HERE',
-});
-```
-
-And add the MedplumProvider to the app:
-
-```tsx
-<React.StrictMode>
-  <MedplumProvider medplum={medplum}>
-    <App />
-  </MedplumProvider>
-</React.StrictMode>
-```
-
-When you're done, src/index.tsx should look like this:
-
-```tsx
-import { MedplumClient } from '@medplum/core';
-import { MedplumProvider } from '@medplum/react';
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-
-const medplum = new MedplumClient({
-  clientId: 'YOUR_CLIENT_ID_HERE',
-});
-
-ReactDOM.render(
-  <React.StrictMode>
-    <MedplumProvider medplum={medplum}>
-      <App />
-    </MedplumProvider>
-  </React.StrictMode>,
-  document.getElementById('root')
-);
-
-// If you want to start measuring performance in your app, pass a function
-// to log results (for example: reportWebVitals(console.log))
-// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
-reportWebVitals();
-```
-
-## Add a Medplum UI component
-
-Let's add a patient timeline to the app. Open "src/App.tsx".
-
-Add a few Medplum imports:
-
-```tsx
-import { PatientTimeline, SignInForm, useMedplumProfile } from '@medplum/react';
-```
-
-Replace the App function with the following. Be sure to replace `YOUR_PATIENT_ID_HERE` with the actual patient ID.
-
-```tsx
-function App() {
-  const profile = useMedplumProfile();
-  return profile ? (
-    <div className="App">
-      <PatientTimeline patient={{ reference: 'Patient/YOUR_PATIENT_ID_HERE' }} />
-    </div>
-  ) : (
-    <SignInForm />
-  );
-}
-```
-
-What does that do? Let's go line by line:
-
-```tsx
-const profile = useMedplumProfile();
-```
-
-This is a React hook that gets the current user profile. If the user is logged in, it will be a Practitioner or Patient FHIR resource. If the user is not logged in, it will be null. Because it is a React hook, the React engine will automatically re-execute this function if the profile changes.
-
-```tsx
-  return profile ? (
-    <div className="App">
-      <PatientTimeline patient={{ reference: 'Patient/YOUR_PATIENT_ID_HERE' }} />
-    </div>
-  )
-```
-
-If the user is signed in, we want to render a PatientTimeline. PatientTimeline is a high level Medplum component that will show common Patient events.
-
-```tsx
-  ) : (
-    <SignInForm />
-  );
-```
-
-Otherwise, if the user is not signed in, we want to render the SignInForm.
-
-## Run the app
-
-Go back to the terminal and run:
+Next, install the dependencies
 
 ```bash
-npm start
+npm install
 ```
 
-First you should see the Sign-in form:
+Then, run the app
 
-![Sign-in form](/img/hello-world/sign-in.png)
+```bash
+npm run dev
+```
 
-And after you sign-in, you should see the patient timeline. The timeline component includes comments and file attachments out of the box:
+You should be able to access the Hello World app at [http://localhost:3000/](http://localhost:3000/). You can stop the Node JS process using `Ctrl+C`.
 
-![Patient timeline](/img/hello-world/patient-timeline.png)
+## Explore Medplum Hello World
 
-Congrats! You completed Medplum Hello World Part!
+The Medplum Hello World demo presents is a simple application that presents a list of patients, along with detailed information for each one.
+
+In this section, we'll familiarize ourselves with functionality of the Hello World demo. Follow-on tutorials will dive deeper into how the demo was built.
+
+### Sign-in
+
+The first page of the demo asks you to sign in using the Medplum credentials you set up in the the [registration tutorial](./register.md).
+
+After entering your credentials, you will prompted to select a Medplum project. Click on the name on the project that you registered in the Tutorial 1, and you'll be redirected to the Hello World home page.
+
+### Home Page
+
+Once you log in, you'll be presented with a greeting, along with a list of all the patients in your Medplum project. Right now, there will only be a single patient, but you can repeat the steps in the [create patient tutorial](./create-a-patient.md) to add more patient records.
+
+### Practitioner Profile
+
+Click on the link in the "Welcome" greeting to access the Practitioner profile page.
+
+This page uses the Medplum's [`ResourceTable`](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--patient) component to display basic data about the profile resource of the logged-user. You can read more about profile resources [here](/docs/tutorials/register#invite-a-new-user).
+
+### Patient Profile
+
+Click on the "Hello World" link in the top left corner to return to the homepage.
+
+Clicking on any individual patient name in the patient list navigates to the patient details page. This page which has three different views of the patient data:
+
+- The **Overview** panel demonstrates how to use plain HTML to create a custom view of patient data, including linked ServiceRequest and DiagnosticReports.
+- The **Timeline** panel uses Medplum's built-in [`PatientTimeline`](#) component to add comments, upload files, and display relevant events related to the Patient.
+- The **History** A view uses the Medplum's built-in [`ResourceHistory`](#) component to display the history of changes to the Patient resource.
+
+## Conclusion
+
+You've now built and run a simple custom UI built on top of the Medplum platform!
+
+Medplum Hello World is a very simple app intended to help developers learn the Medplum platform. The following tutorials will dive into details of how this application was built.
+
+Medplum also maintains more complete example applications that companies can use as a starting point for building their own experiences:
+
+- [**Foo Medical**](https://github.com/medplum/foomedical): An example patient portal, complete with messaging, vital signs, and vaccination records.
+- [**Foo Provider**](https://github.com/medplum/foomedical-provider) _(under construction)_: An example provider portal, with Patient records, task lists, questionnaires, and care plans.
