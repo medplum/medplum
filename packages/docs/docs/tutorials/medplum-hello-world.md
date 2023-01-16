@@ -67,7 +67,7 @@ Click on the "Hello World" link in the top left corner to return to the homepage
 
 Click on any individual patient name to navigate to the patient details page. This page has three different views of the patient data:
 
-- The **Overview** panel demonstrates how to use plain HTML to create a custom view of patient data, including linked ServiceRequests and DiagnosticReports.
+- The **Overview** panel demonstrates how to use plain HTML to create a custom view of patient data, including linked [ServiceRequests](/docs/api/fhir/resources/servicerequest) and [DiagnosticReports](/docs/api/fhir/resources/diagnosticreport).
 - The **Timeline** panel uses Medplum's built-in [`PatientTimeline`](https://storybook.medplum.com/?path=/docs/medplum-patienttimeline--patient) component to add comments, upload files, and display relevant events related to the Patient.
 - The **History** A view uses the Medplum's built-in [`ResourceHistoryTable`](https://storybook.medplum.com/?path=/docs/medplum-resourcehistorytable--basic) component to display the history of changes to the Patient resource.
 
