@@ -5,16 +5,16 @@ sidebar_label: Medplum Hello World
 
 # Medplum Hello World
 
-Digital health companies often build custom UIs on top of the Medplum platform to design patient and physician experiences specific to their needs.
+Digital health companies often build custom UIs on top of the Medplum platform to design streamlined patient and physician experiences. This tutorial will cover to run the **Medplum "Hello World"** example, a simple [React](https://reactjs.org/) app that visualizes patient information.
 
-This tutorial will go over how to run the **Medplum "Hello World"** example, a simple [React](https://reactjs.org/) app that visualizes patient information stored in Medplum. Hello World is built with Medplum's [React Component](https://storybook.medplum.com/?path=/docs/medplum-introduction--page) library, which is a great resource for rapid prototyping and building internal tools.
+Hello World is built with Medplum's [React Component](https://storybook.medplum.com/?path=/docs/medplum-introduction--page) library, which is a great resource for rapid prototyping and building internal tools.
+
+## Clone and Run the App
 
 This tutorial assumes you have already:
 
 - Registered for a Medplum account. (If not [registration instructions](./register.md))
 - Created a sample patient. (If not [create patient instructions](./create-a-patient.md))
-
-## Clone and Run the App
 
 First, make sure you have Node JS and npm installed. If not, follow instructions [here](https://nodejs.org/en/download/).
 
@@ -41,9 +41,9 @@ You should be able to access the Hello World app at [http://localhost:3000/](htt
 
 ## Explore Medplum Hello World
 
-The Medplum Hello World demo presents is a simple application that presents a list of patients, along with detailed information for each one.
+The Medplum Hello World demo is a simple application that presents a list of current patients, along with detailed patient information.
 
-In this section, we'll familiarize ourselves with functionality of the Hello World demo. Follow-on tutorials will dive deeper into how the demo was built.
+In this section, we'll familiarize ourselves with functionality of the Hello World demo. Follow-on tutorials will dive deeper into how the app was built.
 
 ### Sign-in
 
@@ -65,9 +65,9 @@ This page uses the Medplum's [`ResourceTable`](https://storybook.medplum.com/?pa
 
 Click on the "Hello World" link in the top left corner to return to the homepage.
 
-Clicking on any individual patient name in the patient list navigates to the patient details page. This page which has three different views of the patient data:
+Click on any individual patient name to navigate to the patient details page. This page has three different views of the patient data:
 
-- The **Overview** panel demonstrates how to use plain HTML to create a custom view of patient data, including linked ServiceRequest and DiagnosticReports.
+- The **Overview** panel demonstrates how to use plain HTML to create a custom view of patient data, including linked ServiceRequests and DiagnosticReports.
 - The **Timeline** panel uses Medplum's built-in [`PatientTimeline`](#) component to add comments, upload files, and display relevant events related to the Patient.
 - The **History** A view uses the Medplum's built-in [`ResourceHistory`](#) component to display the history of changes to the Patient resource.
 
@@ -77,7 +77,7 @@ You've now built and run a simple custom UI built on top of the Medplum platform
 
 Medplum Hello World is a very simple app intended to help developers learn the Medplum platform. The following tutorials will dive into details of how this application was built.
 
-Medplum also maintains more complete example applications that companies can use as a starting point for building their own experiences:
+Medplum also maintains more feature-rich example applications that companies can use as a starting point for building their own experiences:
 
 - [**Foo Medical**](https://github.com/medplum/foomedical): An example patient portal, complete with messaging, vital signs, and vaccination records.
 - [**Foo Provider**](https://github.com/medplum/foomedical-provider) _(under construction)_: An example provider portal, with Patient records, task lists, questionnaires, and care plans.
