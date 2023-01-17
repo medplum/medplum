@@ -29,7 +29,7 @@ You can read more about the [ClinicalImpression](/docs/api/fhir/resources/clinic
 
 ## Summarizing Patient History
 
-When summarizing patient history, gathering demographic data from the [Patient](/docs/api/fhir/resources/patient.mdx) resource is a basic first step. You can also query all resources related to a given patient from the `/Patient/$everything` endpoint.
+When summarizing patient history, gathering demographic data from the [Patient](/docs/api/fhir/resources/patient.mdx) resource is a basic first step. You can also query all resources related to a given patient from the [Patient `$everything`](/docs/api/fhir/operations/patient-everything) endpoint.
 
 Depending on your use case, `$everything` may be verbose to summarize in a chart, so queries for specific resources like active [CarePlans](/docs/api/fhir/resources/careplan.mdx), [MedicationRequests](/docs/api/fhir/resources/medicationrequest.mdx), [Conditions](/docs/api/fhir/resources/condition.mdx) may be more appropriate. [Search](/docs/search/) is useful to construct the specific queries that will give the context needed for a chart.
 
