@@ -30,19 +30,16 @@ The following materials are related to ONC Certification.
 
 This is the list of criteria that are already complete or are in active development. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
 
-| Criteria                                                                      | Description                                                   |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| [a1](#cpoe-medication-a1)                                                     | Computerized Provider Order Entry (CPOE) - Medication         |
-| [a2](#cpoe-laboratory-a2)                                                     | CPOE - Laboratory Orders                                      |
-| [a3](#cpoe-imaging-a3)                                                        | Computerized Provider Order Entry (CPOE) – Diagnostic Imaging |
-| [d1](#authentication-access-control-authorization-d1)                         | Authentication, Access Control, Authorization                 |
-| [d2](#auditable-events-and-tamper-resistant-d2)                               | Auditable events and tamper resistant                         |
-| [d10](#auditing-actions-on-health-information-d10)                            | Auditing actions on Health Information                        |
-| [d12](#encrypt-authentication-credentials-d12)                                | Encrypt Authentication Credentials                            |
-| [d13](#multi-factor-authentication-d13)                                       | Multi-factor Authentication                                   |
-| [g4](#quality-management-system-g4)                                           | Quality Management System                                     |
-| [g5](#accessibility-centered-design-g5)                                       | Accessibility-Centered Design                                 |
-| [g10](#standardized-api-for-patient-and-population-services-cures-update-g10) | Standardized API for Patient and Population Services          |
+| Criteria                                                                      | Description                                          |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [d1](#authentication-access-control-authorization-d1)                         | Authentication, Access Control, Authorization        |
+| [d9](/docs/compliance/onc#trusted-connection-d9)                              | Trusted connection                                   |
+| [d10](#auditing-actions-on-health-information-d10)                            | Auditing actions on Health Information               |
+| [d12](#encrypt-authentication-credentials-d12)                                | Encrypt Authentication Credentials                   |
+| [d13](#multi-factor-authentication-d13)                                       | Multi-factor Authentication                          |
+| [g4](#quality-management-system-g4)                                           | Quality Management System                            |
+| [g5](#accessibility-centered-design-g5)                                       | Accessibility-Centered Design                        |
+| [g10](#standardized-api-for-patient-and-population-services-cures-update-g10) | Standardized API for Patient and Population Services |
 
 The following criteria are required for CHPL listing: [d12](#encrypt-authentication-credentials-d12), [d13](#multi-factor-authentication-d13), [g4](#quality-management-system-g4), [g5](#accessibility-centered-design-g5).
 
@@ -50,15 +47,18 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 This is the list of criteria extended criteria that will follow the above.
 
-| Criteria                                               | Description                                   |
-| ------------------------------------------------------ | --------------------------------------------- |
-| [a9](#clinical-decision-support-a9)                    | Clinical Decision Support                     |
-| [a14](#implantable-device-list-a14)                    | Implantable device list                       |
-| [b1](#transition-of-care-b1)                           | Transition of Care                            |
-| [c1](#clinical-quality-measures--record-and-export-c1) | Clinical Quality Measures - record and export |
-| [g7](#application-access--patient-selection-g7)        | Application Access Patient Selection          |
-| [g9](#application-access--all-data-request-g9)         | Application Access All Data Request           |
-| [h1](#direct-project-edge-protocol-and-xdrxdm-h1)      | Direct Project, Edge Protocol and XDR/XDM     |
+| Criteria                                               | Description                                                   |
+| ------------------------------------------------------ | ------------------------------------------------------------- |
+| [a1](#cpoe-medication-a1)                              | Computerized Provider Order Entry (CPOE) - Medication         |
+| [a2](#cpoe-laboratory-a2)                              | CPOE - Laboratory Orders                                      |
+| [a3](#cpoe-imaging-a3)                                 | Computerized Provider Order Entry (CPOE) – Diagnostic Imaging |
+| [a9](#clinical-decision-support-a9)                    | Clinical Decision Support                                     |
+| [a14](#implantable-device-list-a14)                    | Implantable device list                                       |
+| [b1](#transition-of-care-b1)                           | Transition of Care                                            |
+| [c1](#clinical-quality-measures--record-and-export-c1) | Clinical Quality Measures - record and export                 |
+| [g7](#application-access--patient-selection-g7)        | Application Access Patient Selection                          |
+| [g9](#application-access--all-data-request-g9)         | Application Access All Data Request                           |
+| [h1](#direct-project-edge-protocol-and-xdrxdm-h1)      | Direct Project, Edge Protocol and XDR/XDM                     |
 
 ## Self-Attested Criteria
 
@@ -69,6 +69,7 @@ Medplum attests to this criteria, links provided below.
 - [Medplum App CPOE Medication](https://app.medplum.com/MedicationRequest/new)
 - [Medplum App Medication Requests](https://app.medplum.com/MedicationRequest)
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications)
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### CPOE Laboratory (a2)
 
@@ -77,6 +78,7 @@ Medplum attests to this criteria, links provided below.
 - [Medplum App CPOE Lab](https://app.medplum.com/ServiceRequest/new)
 - [Medplum App Service Requests](https://app.medplum.com/ServiceRequest)
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-laboratory)
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### CPOE Imaging (a3)
 
@@ -84,15 +86,18 @@ Medplum attests to this criteria, links provided below.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-diagnostic-imaging)
 - [Medplum App CPOE Imaging](https://app.medplum.com/ImagingStudy/new)
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### Drug-drug, Drug-allergy Interaction Checks (a4)
 
 - Not included in ONC 2015E Cures Base EHR
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### Demographics (a5)
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/demographics)
 - [Medplum App New Patient](https://app.medplum.com/Patient/new)
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### Clinical Decision Support (a9)
 
@@ -101,6 +106,7 @@ Medplum attests to this criteria, links provided below.
 - [Medplum App Allergies](https://app.medplum.com/AllergyIntolerance)
 - [Medplum App Medication](https://app.medplum.com/MedicationRequest)
 - [Account Setup Bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts) shows a sample implementation on how CDS can be integrated.
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### Drug-Formulary Checks (a10)
 
@@ -120,6 +126,7 @@ Medplum attests to this criteria, links provided below.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/implantable-device-list)
 - [Medplum App New Device](https://app.medplum.com/Device/new)
+- Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### Social, Psychological, and Behavioral Data (a15)
 
