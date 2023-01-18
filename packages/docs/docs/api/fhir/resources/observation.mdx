@@ -8,11 +8,20 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Observation
 
-Measurements and simple assertions made about a patient, device or other subject.
+Measurements and simple assertions made about a patient, device or other subject. US Core Profiles related to Observations are as follows:
+
+- [US Core Laboratory Result profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-observation-lab.html)
+- [US Core Smoking Status Observation profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-smokingstatus.html).
+- [US Core Pulse Oximetry Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-pulse-oximetry.html)
+- [US Core Pediatric BMI for Age Profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-pediatric-bmi-for-age.html)
+- [US Core Pediatric Weight for Height](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-pediatric-weight-for-height.html)
+- [US Core Pediatric Head Circumference](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-head-occipital-frontal-circumference-percentile.html)
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +30,3 @@ Measurements and simple assertions made about a patient, device or other subject
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

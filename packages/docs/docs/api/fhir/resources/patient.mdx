@@ -8,11 +8,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Patient
 
-Demographics and other administrative information about an individual or animal receiving care or other health-related services.
+Demographics and other administrative information about an individual or animal receiving care or other health-related services. Refer to the [US Core Patient profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-patient.html).
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +23,3 @@ Demographics and other administrative information about an individual or animal 
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-

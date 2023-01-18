@@ -8,11 +8,13 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # Condition
 
-A clinical condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern.
+A clinical condition, problem, diagnosis, or other event, situation, issue, or clinical concept that has risen to a level of concern. Refer to the [US Core Condition profile](https://hl7.org/fhir/us/core/stu3.1.1/StructureDefinition-us-core-condition.html).
 
 ## Properties
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
 
 ## Search Parameters
 
@@ -21,5 +23,3 @@ A clinical condition, problem, diagnosis, or other event, situation, issue, or c
 ## Inherited Properties
 
 <ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-
-
