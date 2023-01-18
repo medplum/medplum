@@ -2,7 +2,6 @@ import { resolveId, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin, systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 import { getClientApplicationMembership, timingSafeEqualStr } from './utils';
 
@@ -44,7 +43,6 @@ async function authenticateBearerToken(req: Request, res: Response, token: strin
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
     await setupLocals(req, res, login, membership);
   } catch (err) {
-    logger.error('verify error', err);
     throw unauthorized;
   }
 }

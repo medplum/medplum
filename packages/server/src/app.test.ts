@@ -62,6 +62,7 @@ describe('App', () => {
   });
 
   test('Internal Server Error', async () => {
+    console.log = jest.fn();
     const app = express();
     app.get('/throw', () => {
       throw new Error('Error');
@@ -71,6 +72,7 @@ describe('App', () => {
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
+    expect(console.log).toHaveBeenCalled();
     await shutdownApp();
   });
 

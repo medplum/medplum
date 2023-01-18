@@ -31,6 +31,7 @@ export interface MedplumServerConfig {
   allowedOrigins?: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
+  logAuditEvents?: boolean;
 }
 
 /**
