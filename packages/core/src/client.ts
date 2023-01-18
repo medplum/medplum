@@ -472,6 +472,16 @@ export class MedplumClient extends EventTarget {
    */
   clear(): void {
     this.#storage.clear();
+    this.clearActiveLogin();
+  }
+
+  /**
+   * Clears the active login from local storage.
+   * Does not clear all local storage (such as other logins).
+   * @category Authentication
+   */
+  clearActiveLogin(): void {
+    this.#storage.setString('activeLogin', undefined);
     this.#requestCache.clear();
     this.#accessToken = undefined;
     this.#refreshToken = undefined;
@@ -1689,13 +1699,11 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
+    this.clearActiveLogin();
     this.#accessToken = login.accessToken;
     this.#refreshToken = login.refreshToken;
-    this.#profile = undefined;
-    this.#config = undefined;
     this.#storage.setObject('activeLogin', login);
     this.#addLogin(login);
-    this.#requestCache.clear();
     this.#refreshPromise = undefined;
     await this.#refreshProfile();
   }
@@ -1935,7 +1943,7 @@ export class MedplumClient extends EventTarget {
     if (this.#refresh()) {
       return this.#request(method, url, options);
     }
-    this.clear();
+    this.clearActiveLogin();
     if (this.#onUnauthenticated) {
       this.#onUnauthenticated();
     }
@@ -2047,20 +2055,19 @@ export class MedplumClient extends EventTarget {
    * @param formBody Token parameters in URL encoded format.
    */
   async #fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    return this.#fetch(this.#tokenUrl, {
+    const response = await this.#fetch(this.#tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
       credentials: 'include',
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch tokens');
-        }
-        return response.json();
-      })
-      .then((tokens) => this.#verifyTokens(tokens))
-      .then(() => this.getProfile() as ProfileResource);
+    });
+    if (!response.ok) {
+      this.clearActiveLogin();
+      throw new Error('Failed to fetch tokens');
+    }
+    const tokens = await response.json();
+    await this.#verifyTokens(tokens);
+    return this.getProfile() as ProfileResource;
   }
 
   /**
@@ -2075,17 +2082,17 @@ export class MedplumClient extends EventTarget {
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
     if (Date.now() >= (tokenPayload.exp as number) * 1000) {
-      this.clear();
+      this.clearActiveLogin();
       throw new Error('Token expired');
     }
 
     // Verify app_client_id
     if (this.#clientId && tokenPayload.client_id !== this.#clientId) {
-      this.clear();
+      this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
     }
 
-    await this.setActiveLogin({
+    return this.setActiveLogin({
       accessToken: token,
       refreshToken: tokens.refresh_token,
       project: tokens.project,
