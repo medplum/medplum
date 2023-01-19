@@ -14,15 +14,16 @@ Users are the representation of identities in Medplum, and each user belongs to 
 
 ## Login Flowchart
 
-Users can belong to multiple Medplum projects, and the service supports multiple types of authentication. Below is a diagram that steps through the login logic and process. There are three major stages in the login flow.
+Users can belong to multiple Medplum projects, and the service supports multiple types of authentication. Below is a diagram that steps through the login logic and process. There are four major stages in the login flow.
 
-| Stage       | Description                                                                                                                                                                                                                                                                                                | Relevant endpoints                         |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| Credentials | In the Credentials phase of login the authentication provider is determined (Medplum auth, Google auth, Okta, etc.), the credentials are collected and user authenticated with the auth provider of choice. If Okta is enabled for a domain, all emails at that domain will go to Okta for authentication. | `auth/login` <br /> `auth/external` <br /> |
-| Profile     | In the Profile phase, if the user is a member of multiple projects, one must be selected to proceed                                                                                                                                                                                                        | `auth/profile`<br />                       |
-| Scope       | If SMART-on-FHIR scopes were provided, they need to be selected and access to them determined. Access control is applied where configured.                                                                                                                                                                 | `auth/scope`                               |
+| Stage       | Description                                                                                                                                                             | Involved endpoints                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Domain      | In the Domain phase, the preferred authentication method is determined, either by the user selecting a method, by configuration or based on email domain.               | `auth/method` <br /> `auth/external` <br />                  |
+| Credentials | In the Credentials phase of login the authentication credentials are collected and sent to service of choice and authentication performed.                              | `auth/login` <br /> `auth/external` <br /> `auth/mfa` <br /> |
+| Profile     | In the Profile phase, if the user is a member of multiple projects, one must be selected to proceed                                                                     | `auth/profile`<br /> `auth/me` <br />                        |
+| Scope       | If SMART-on-FHIR scopes were provided, they need to be selected and access to them determined. Access control is applied where configured and authorization determined. | `auth/scope`                                                 |
 
-The following diagram shows an overview of the process.
+The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
 
 ![Auth flow](/img/auth/auth-flow.png)
 
