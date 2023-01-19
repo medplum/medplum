@@ -1,6 +1,6 @@
 import { BaseLoginRequest, LoginAuthenticationResponse } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { AuthenticationForm } from './AuthenticationForm';
@@ -10,6 +10,7 @@ import { MfaForm } from './MfaForm';
 import { NewProjectForm } from './NewProjectForm';
 
 export interface SignInFormProps extends BaseLoginRequest {
+  readonly login?: string;
   readonly chooseScopes?: boolean;
   readonly onSuccess?: () => void;
   readonly onForgotPassword?: () => void;
@@ -35,44 +36,62 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const [mfaRequired, setAuthenticatorRequired] = useState<boolean>(false);
   const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
 
-  function handleAuthResponse(response: LoginAuthenticationResponse): void {
-    setAuthenticatorRequired(!!response.mfaRequired);
-
-    if (response.login) {
-      setLogin(response.login);
-    }
-
-    if (response.memberships) {
-      setMemberships(response.memberships);
-    }
-
-    if (response.code) {
-      if (chooseScopes) {
-        setMemberships(undefined);
+  const handleCode = useCallback(
+    (code: string): void => {
+      if (onCode) {
+        onCode(code);
       } else {
-        handleCode(response.code as string);
+        medplum
+          .processCode(code)
+          .then(() => {
+            if (onSuccess) {
+              onSuccess();
+            }
+          })
+          .catch(console.log);
       }
-    }
-  }
+    },
+    [medplum, onCode, onSuccess]
+  );
 
-  function handleScopeResponse(response: LoginAuthenticationResponse): void {
-    handleCode(response.code as string);
-  }
+  const handleAuthResponse = useCallback(
+    (response: LoginAuthenticationResponse): void => {
+      setAuthenticatorRequired(!!response.mfaRequired);
 
-  function handleCode(code: string): void {
-    if (onCode) {
-      onCode(code);
-    } else {
+      if (response.login) {
+        setLogin(response.login);
+      }
+
+      if (response.memberships) {
+        setMemberships(response.memberships);
+      }
+
+      if (response.code) {
+        if (chooseScopes) {
+          setMemberships(undefined);
+        } else {
+          handleCode(response.code as string);
+        }
+      }
+    },
+    [chooseScopes, handleCode]
+  );
+
+  const handleScopeResponse = useCallback(
+    (response: LoginAuthenticationResponse): void => {
+      handleCode(response.code as string);
+    },
+    [handleCode]
+  );
+
+  useEffect(() => {
+    if (props.login) {
       medplum
-        .processCode(code)
-        .then(() => {
-          if (onSuccess) {
-            onSuccess();
-          }
-        })
-        .catch(console.log);
+        .get('auth/login/' + props.login)
+        .then(handleAuthResponse)
+        .catch(console.error);
     }
-  }
+  }, [medplum, props, handleAuthResponse]);
 
   return (
     <Document width={450}>
@@ -80,7 +99,6 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         if (!login) {
           return (
             <AuthenticationForm
-              generatePkce={!onCode}
               onForgotPassword={onForgotPassword}
               onRegister={onRegister}
               handleAuthResponse={handleAuthResponse}

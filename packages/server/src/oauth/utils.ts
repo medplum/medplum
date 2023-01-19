@@ -29,7 +29,7 @@ import { generateAccessToken, generateIdToken, generateRefreshToken, generateSec
 
 export interface LoginRequest {
   readonly email: string;
-  readonly authMethod: 'password' | 'google';
+  readonly authMethod: 'password' | 'google' | 'external';
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
@@ -187,6 +187,11 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
 
   if (request.googleCredentials) {
     // Verify Google user id
+    return;
+  }
+
+  if (request.authMethod === 'external') {
+    // Verified by external auth provider
     return;
   }
 

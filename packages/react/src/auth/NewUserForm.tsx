@@ -1,23 +1,11 @@
-import {
-  Alert,
-  Anchor,
-  Button,
-  Center,
-  Checkbox,
-  Divider,
-  Group,
-  PasswordInput,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
 import { GoogleCredentialResponse, LoginAuthenticationResponse } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { IconAlertCircle } from '@tabler/icons';
 import React, { useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
@@ -62,15 +50,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
       }}
     >
       <Center sx={{ flexDirection: 'column' }}>{props.children}</Center>
-      {issues && (
-        <Alert icon={<IconAlertCircle size={16} />} color="red">
-          {issues.map((issue) => (
-            <div data-testid="text-field-error" key={issue.details?.text}>
-              {issue.details?.text}
-            </div>
-          ))}
-        </Alert>
-      )}
+      <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
           <Group position="center" p="xl" style={{ height: 70 }}>
@@ -78,7 +58,6 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
               googleClientId={googleClientId}
               handleGoogleCredential={async (response: GoogleCredentialResponse) => {
                 try {
-                  await medplum.startPkce();
                   props.handleAuthResponse(
                     await medplum.startGoogleLogin({
                       googleClientId: response.clientId,

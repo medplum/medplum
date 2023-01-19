@@ -33,7 +33,8 @@ describe('SignInPage', () => {
   test('Renders', async () => {
     setup();
 
-    expect(screen.getByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeInTheDocument();
   });
 
   test('Success', async () => {
@@ -41,6 +42,10 @@ describe('SignInPage', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'admin@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {
@@ -57,6 +62,14 @@ describe('SignInPage', () => {
 
   test('Forgot password', async () => {
     setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'admin@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Forgot password'));
@@ -76,6 +89,10 @@ describe('SignInPage', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'admin@example.com' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
     });
 
     await act(async () => {

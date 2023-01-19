@@ -54,6 +54,10 @@ describe('OAuthPage', () => {
     });
 
     await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    });
+
+    await act(async () => {
       fireEvent.change(screen.getByLabelText('Password *'), {
         target: { value: 'password' },
       });
@@ -75,6 +79,16 @@ describe('OAuthPage', () => {
 
   test('Forgot password', async () => {
     await setup('/oauth?client_id=123');
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'admin@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Next' }));
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Forgot password'));

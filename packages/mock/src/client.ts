@@ -233,6 +233,10 @@ class MockFetchClient {
   }
 
   private mockAuthHandler(method: string, path: string, options: any): any {
+    if (path.startsWith('auth/method')) {
+      return {};
+    }
+
     if (path.startsWith('auth/changepassword')) {
       return this.mockChangePasswordHandler(method, path, options);
     }
