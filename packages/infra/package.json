@@ -13,10 +13,14 @@
   "scripts": {
     "clean": "rimraf dist cdk.out",
     "build": "npm run clean && tsc",
+    "init": "ts-node src/init.ts",
     "cdk": "cdk",
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-acm": "3.254.0",
+    "@aws-sdk/client-ssm": "3.254.0",
+    "@aws-sdk/client-sts": "3.254.0",
     "aws-cdk-lib": "2.61.1",
     "cdk": "2.61.1",
     "cdk-nag": "2.21.69",
