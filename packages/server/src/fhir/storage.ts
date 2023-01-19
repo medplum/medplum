@@ -4,6 +4,7 @@ import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 import { Readable } from 'stream';
+import { getConfig } from '../config';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
 
@@ -97,7 +98,7 @@ class S3Storage implements BinaryStorage {
   readonly #bucket: string;
 
   constructor(bucket: string) {
-    this.#client = new S3Client({ region: 'us-east-1' });
+    this.#client = new S3Client({ region: getConfig().awsRegion });
     this.#bucket = bucket;
   }
 
