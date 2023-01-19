@@ -6,7 +6,7 @@ Users will need a User account of both Medplum and Okta to enable access, Medplu
 
 :::caution Note
 
-Okta authentication requires an Enterprise account, for those [self-hosting](/docs/self-hosting), setting it up requires superadmin privileges.
+Okta authentication requires an Enterprise account, for those [self-hosting](/docs/self-hosting), setting it up requires admin privileges.
 
 :::
 
@@ -71,15 +71,15 @@ Okta uses separate domains per organization. You will need your organization's O
 
 The "baseUrl" could look something like this `dev-71569655.okta.com` or could be a named subdomain like `mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
 
-Authorize URL = ${baseUrl}/v1/authorize (e.g., "https://dev-71569655.okta.com/oauth2/v1/authorize")
-Token URL = ${baseUrl}/oauth2/v1/token (e.g., "https://dev-71569655.okta.com/oauth2/v1/token")
-UserInfo URL = ${baseUrl}/oauth2/v1/userinfo (e.g., "https://dev-71569655.okta.com/oauth2/v1/userinfo")
+- Authorize URL = ${baseUrl}/v1/authorize (e.g., "https://dev-71569655.okta.com/ oauth2/v1/authorize")
+- Token URL = ${baseUrl}/oauth2/v1/token (e.g., "https://dev-71569655.okta.com/oauth2/v1/token")
+- UserInfo URL = ${baseUrl}/oauth2/v1/userinfo (e.g., "https://dev-71569655.okta.com/oauth2/v1/userinfo")
 
 Client ID and Client secret will be the same as those obtained at the end of the previous section.
 
 :::caution Note
 
-Configuring a domain authentication requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires superadmin privileges.
+Configuring a domain authentication requires a Medplum team member, contact us at hello@medplum.com to enable. For those self-hosting, setup below requires super admin privileges.
 
 :::
 
