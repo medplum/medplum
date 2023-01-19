@@ -110,6 +110,7 @@ export async function isBotEnabled(bot: Bot): Promise<boolean> {
  */
 async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionResult> {
   const { bot, runAs, input, contentType } = request;
+  const config = getConfig();
 
   // Create the Login resource
   const login = await systemRepo.createResource<Login>({
@@ -134,10 +135,10 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
 
-  const client = new LambdaClient({ region: 'us-east-1' });
+  const client = new LambdaClient({ region: config.awsRegion });
   const name = `medplum-bot-lambda-${bot.id}`;
   const payload = {
-    baseUrl: getConfig().baseUrl,
+    baseUrl: config.baseUrl,
     accessToken,
     input: input instanceof Hl7Message ? input.toString() : input,
     contentType,

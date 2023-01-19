@@ -3,12 +3,17 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import internal, { Readable } from 'stream';
+import { loadTestConfig } from '../config';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
 jest.mock('@aws-sdk/client-s3');
 jest.mock('@aws-sdk/lib-storage');
 
 describe('Storage', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   beforeEach(() => {
     (S3Client as unknown as jest.Mock).mockClear();
     (Upload as unknown as jest.Mock).mockClear();
