@@ -75,7 +75,7 @@ export function getConfig(): MedplumServerConfig {
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
-  const [configType, configPath] = configName.split(':', 2);
+  const [configType, configPath] = splitOnce(configName, ':');
   switch (configType) {
     case 'file':
       cachedConfig = await loadFileConfig(configPath);
@@ -86,7 +86,8 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
-  return addDefaults(cachedConfig);
+  cachedConfig = addDefaults(cachedConfig);
+  return cachedConfig;
 }
 
 /**
@@ -124,7 +125,7 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
   let region = DEFAULT_AWS_REGION;
   if (path.includes(':')) {
-    [region, path] = path.split(':', 2);
+    [region, path] = splitOnce(path, ':');
   }
 
   const client = new SSMClient({ region });
@@ -194,4 +195,9 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   return config;
+}
+
+function splitOnce(value: string, delimiter: string): [string, string] {
+  const index = value.indexOf(delimiter);
+  return [value.substring(0, index), value.substring(index + 1)];
 }
