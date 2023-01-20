@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { revokeLogin } from '../oauth/utils';
 
 export const revokeValidators = [body('loginId').isUUID().withMessage('Login ID is required.')];
 
@@ -23,10 +24,7 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
   }
 
   // Mark the login as revoked
-  await systemRepo.updateResource({
-    ...login,
-    revoked: true,
-  });
+  await revokeLogin(login);
 
   sendOutcome(res, allOk);
 }
