@@ -12,6 +12,23 @@ Authentication (_are you who you say you are?_) and authorization (_what can you
 
 Users are the representation of identities in Medplum, and each user belongs to one or more Medplum Projects. For a specific project, a user can be either a [Practitioner](../api/fhir/resources/practitioner.mdx), [Patient](../api/fhir/resources/patient.mdx) or [Bot](../bots/index.md). At a high level, Practitioners are staff or administrators, Patients are those receiving care and Bots are designed for programmatic access or integrations.
 
+## Login Flowchart
+
+Users can belong to multiple Medplum projects, and the service supports multiple types of authentication. Below is a diagram that steps through the login logic and process. There are four major stages in the login flow.
+
+| Stage       | Description                                                                                                                                                             | Involved endpoints                                           |
+| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Domain      | In the Domain phase, the preferred authentication method is determined, either by the user selecting a method, by configuration or based on email domain.               | `auth/method` <br /> `auth/external` <br />                  |
+| Credentials | In the Credentials phase of login the authentication credentials are collected and sent to service of choice and authentication performed.                              | `auth/login` <br /> `auth/external` <br /> `auth/mfa` <br /> |
+| Profile     | In the Profile phase, if the user is a member of multiple projects, one must be selected to proceed                                                                     | `auth/profile`<br /> `auth/me` <br />                        |
+| Scope       | If SMART-on-FHIR scopes were provided, they need to be selected and access to them determined. Access control is applied where configured and authorization determined. | `auth/scope`                                                 |
+
+The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
+
+![Auth flow](/img/auth/auth-flow.png)
+
+[Click to Enlarge](/img/auth/auth-flow.png)
+
 ## Resources and Reference
 
 - See [authentication functions](./sdk/classes/MedplumClient#authentication) in the Typescript SDK
