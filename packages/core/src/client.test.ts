@@ -310,10 +310,9 @@ describe('Client', () => {
   test('SignInWithRedirect', async () => {
     // Mock window.location.assign
     global.window = Object.create(window);
+    const assign = jest.fn();
     Object.defineProperty(window, 'location', {
-      value: {
-        assign: jest.fn(),
-      },
+      value: { assign },
       writable: true,
     });
 
@@ -322,6 +321,7 @@ describe('Client', () => {
     // First, test the initial reidrect
     const result1 = await client.signInWithRedirect();
     expect(result1).toBeUndefined();
+    expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
 
     // Mock response code
     Object.defineProperty(window, 'location', {

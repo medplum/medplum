@@ -199,6 +199,7 @@ export interface BaseLoginRequest {
   readonly codeChallengeMethod?: string;
   readonly googleClientId?: string;
   readonly launch?: string;
+  readonly redirectUri?: string;
 }
 
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
@@ -732,12 +733,13 @@ export class MedplumClient extends EventTarget {
    * Returns true if the user is signed in.
    * This may result in navigating away to the sign in page.
    * @category Authentication
+   * @param loginParams Optional login parameters.
    */
-  async signInWithRedirect(): Promise<ProfileResource | void> {
+  async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | void> {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
-      await this.#requestAuthorization();
+      await this.#requestAuthorization(loginParams);
       return undefined;
     } else {
       return this.processCode(code);
@@ -1960,16 +1962,16 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  async #requestAuthorization(): Promise<void> {
-    const { codeChallengeMethod, codeChallenge } = await this.startPkce();
-
+  async #requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
+    const loginRequest = await this.ensureCodeChallenge(loginParams || {});
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', this.#clientId as string);
-    url.searchParams.set('redirect_uri', getBaseUrl());
-    url.searchParams.set('code_challenge_method', codeChallengeMethod);
-    url.searchParams.set('code_challenge', codeChallenge);
+    url.searchParams.set('client_id', loginRequest.clientId || (this.#clientId as string));
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getBaseUrl());
+    url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
+    url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
+    url.searchParams.set('scope', loginRequest.scope || 'openid profile');
     window.location.assign(url.toString());
   }
 
