@@ -14,6 +14,4 @@ rm -rf packages/infra/node_modules
 rm -rf packages/server/node_modules
 rm -rf packages/react/node_modules
 rm package-lock.json
-npm i --legacy-peer-deps
 npm i
-
