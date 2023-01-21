@@ -29,7 +29,7 @@ export interface ReferenceRangeEditorProps {
 // Helper type that groups of qualified intervals by equal filter criteria
 type IntervalGroup = {
   id: string;
-  filters: Record<typeof intervalFilters[number], any>;
+  filters: Record<(typeof intervalFilters)[number], any>;
   intervals: ObservationDefinitionQualifiedInterval[];
 };
 
@@ -393,7 +393,7 @@ function groupQualifiedIntervals(
       groups[groupKey] = {
         id: `group-id-${groupId++}`,
         filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])) as Record<
-          typeof intervalFilters[number],
+          (typeof intervalFilters)[number],
           any
         >,
         intervals: [],
