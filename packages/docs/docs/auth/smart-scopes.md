@@ -39,7 +39,7 @@ Scopes grant read, write, search and update access to specific resources, here a
 - `scope=user/*.rs`: the user is allowed to read and search any type of resource
 - `scope=user/*.cu`: the user is allowed to write (create and update) any type of resource
 - `scope=[array of individual scopes]`
-- `patient=123`: the user is allowed access to resources in the Patient/123 compartment.
+- `patient=123`: the user is allowed access to resources in the Patient/123 [compartment](http://hl7.org/fhir/R4B/compartmentdefinition.html).
 
 ## Authorization UI
 
