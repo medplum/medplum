@@ -11,6 +11,7 @@
   "coverageReporters": ["json", "text"],
   "collectCoverageFrom": [
     "**/src/**/*",
+    "!**/src/__mocks__/**/*.ts",
     "!**/src/migrations/**/*.ts"
   ]
 }

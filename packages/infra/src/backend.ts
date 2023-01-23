@@ -255,7 +255,7 @@ export class BackEnd extends Construct {
     }
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
       image: serverImage,
-      command: [`aws:/medplum/${name}/`],
+      command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
       logging: logDriver,
     });
 
@@ -353,7 +353,7 @@ export class BackEnd extends Construct {
 
     // Route 53
     const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: config.domainName,
+      domainName: config.domainName.split('.').slice(-2).join('.'),
     });
 
     // Route53 alias record for the load balancer
