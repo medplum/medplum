@@ -16,6 +16,7 @@ import {
   Condition,
   DiagnosticReport,
   Encounter,
+  Login,
   Observation,
   OperationOutcome,
   Patient,
@@ -2267,5 +2268,39 @@ describe('FHIR Repo', () => {
       console.log(err);
       console.log(JSON.stringify(err, null, 2));
     }
+  });
+
+  test('Purge Login', async () => {
+    const oldDate = '2000-01-01T00:00:00.000Z';
+
+    // Create a login using super admin with a date in the distant past
+    // This takes advantage of the fact that super admins can set meta.lastUpdated
+    const login = await systemRepo.createResource<Login>({
+      resourceType: 'Login',
+      meta: {
+        lastUpdated: oldDate,
+      },
+      user: { reference: 'system' },
+      authMethod: 'password',
+      authTime: oldDate,
+    });
+
+    const bundle1 = await systemRepo.search({
+      resourceType: 'Login',
+      filters: [{ code: '_lastUpdated', operator: Operator.LESS_THAN_OR_EQUALS, value: oldDate }],
+    });
+    expect(bundleContains(bundle1, login)).toBeTruthy();
+
+    // Purge logins before the cutoff date
+    await systemRepo.purgeResources('Login', oldDate);
+
+    // Make sure the login is truly gone
+    const bundle = await systemRepo.search({
+      resourceType: 'Login',
+      filters: [{ code: '_lastUpdated', operator: Operator.ENDS_BEFORE, value: oldDate }],
+      total: 'accurate',
+      count: 0,
+    });
+    expect(bundle.total).toEqual(0);
   });
 });

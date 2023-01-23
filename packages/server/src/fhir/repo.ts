@@ -82,6 +82,7 @@ import {
   Column,
   Condition,
   Conjunction,
+  DeleteQuery,
   Disjunction,
   Expression,
   InsertQuery,
@@ -742,6 +743,22 @@ export class Repository {
       this.#logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
     }
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param resourceType The FHIR resource type.
+   * @param before The date before which resources should be purged.
+   */
+  async purgeResources(resourceType: ResourceType, before: string): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw forbidden;
+    }
+    await new DeleteQuery(resourceType).where('lastUpdated', Operator.LESS_THAN_OR_EQUALS, before).execute(getClient());
+    await new DeleteQuery(resourceType + '_History')
+      .where('lastUpdated', Operator.LESS_THAN_OR_EQUALS, before)
+      .execute(getClient());
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>> {
