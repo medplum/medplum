@@ -204,6 +204,10 @@ const config = {
                 to: '/pricing',
               },
               {
+                label: 'Careers',
+                to: '/careers',
+              },
+              {
                 label: 'Blog',
                 to: '/blog',
               },
