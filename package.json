@@ -22,15 +22,15 @@
     "@rollup/plugin-json": "6.0.0",
     "@rollup/plugin-node-resolve": "15.0.1",
     "@rollup/plugin-replace": "5.0.2",
-    "@rollup/plugin-terser": "0.2.1",
-    "@rollup/plugin-typescript": "10.0.1",
-    "@types/jest": "29.2.5",
+    "@rollup/plugin-terser": "0.3.0",
+    "@rollup/plugin-typescript": "11.0.0",
+    "@types/jest": "29.2.6",
     "@types/node": "18.11.18",
-    "@typescript-eslint/eslint-plugin": "5.48.0",
-    "@typescript-eslint/parser": "5.48.0",
+    "@typescript-eslint/eslint-plugin": "5.48.2",
+    "@typescript-eslint/parser": "5.48.2",
     "babel-jest": "29.3.1",
     "cross-env": "7.0.3",
-    "eslint": "8.31.0",
+    "eslint": "8.32.0",
     "eslint-config-prettier": "8.6.0",
     "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-react-hooks": "4.6.0",
@@ -39,18 +39,28 @@
     "jest-environment-jsdom": "29.3.1",
     "npm-check-updates": "16.6.2",
     "nyc": "15.1.0",
-    "prettier": "2.8.1",
+    "prettier": "2.8.3",
     "rimraf": "3.0.2",
-    "rollup": "3.9.1",
+    "rollup": "3.10.1",
     "rollup-plugin-copy": "3.4.0",
     "rollup-plugin-peer-deps-external": "2.2.4",
     "source-map-explorer": "2.5.3",
     "ts-node": "10.9.1",
     "tslib": "2.4.1",
-    "turbo": "1.6.3",
+    "turbo": "1.7.0",
     "typescript": "4.9.4",
     "webpack": "5.75.0",
     "webpack-cli": "5.0.1",
     "webpack-dev-server": "4.11.1"
+  },
+  "overrides": {
+    "@docusaurus/core": {
+      "react": "^18",
+      "react-dom": "^18"
+    },
+    "@docusaurus/preset-classic": {
+      "react": "^18",
+      "react-dom": "^18"
+    }
   }
 }

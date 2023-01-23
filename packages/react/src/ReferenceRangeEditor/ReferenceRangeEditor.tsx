@@ -21,6 +21,7 @@ const useStyles = createStyles((theme) => ({
 
 // Properties of qualified intervals used for grouping
 const intervalFilters = ['gender', 'age', 'gestationalAge', 'context', 'appliesTo'] as const;
+
 export interface ReferenceRangeEditorProps {
   definition: ObservationDefinition;
   onSubmit: (result: ObservationDefinition) => void;
@@ -29,7 +30,7 @@ export interface ReferenceRangeEditorProps {
 // Helper type that groups of qualified intervals by equal filter criteria
 type IntervalGroup = {
   id: string;
-  filters: Record<typeof intervalFilters[number], any>;
+  filters: Record<string, any>;
   intervals: ObservationDefinitionQualifiedInterval[];
 };
 
@@ -392,10 +393,7 @@ function groupQualifiedIntervals(
     if (!(groupKey in groups)) {
       groups[groupKey] = {
         id: `group-id-${groupId++}`,
-        filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])) as Record<
-          typeof intervalFilters[number],
-          any
-        >,
+        filters: Object.fromEntries(intervalFilters.map((f) => [f, interval[f]])) as Record<string, any>,
         intervals: [],
       };
     }
