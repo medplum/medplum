@@ -77,7 +77,7 @@ The following function arguments are available to the Bot code, to enable it to 
 | ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
 | `medplum`     | [MedplumClient](../sdk/classes/MedplumClient)  | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
 | `event`       | [BotEvent](../sdk/interfaces/BotEvent)         | The event that object that triggered the Bot                                        |
-| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
+| `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
 
