@@ -42,7 +42,4 @@ We find the following table useful to summarize common data elements found in an
 
 ## Sample Data
 
-The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification and is linked below:
-
-- [Patient 1](https://raw.githubusercontent.com/inferno-framework/inferno-reference-server/master/us-core-r4-resources/d831ec91-c7a3-4a61-9312-7ff0c4a32134.json)
-- [Patient 2](https://raw.githubusercontent.com/inferno-framework/inferno-reference-server/master/us-core-r4-resources/e91975f5-9445-c11f-cabf-c3c6dae161f2.json)
+The [Inferno](https://github.com/inferno-framework) team provides representative sample data that conforms to the USCDI specification. [Download and import](/docs/tutorials/importing-sample-data.md) instructions sample data into your Medplum project.
