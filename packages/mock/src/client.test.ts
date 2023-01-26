@@ -7,7 +7,6 @@ import {
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
-  notFound,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -199,6 +198,7 @@ describe('MockClient', () => {
         'fhir/R4',
         JSON.stringify({
           resourceType: 'Bundle',
+          type: 'batch',
           entry: [
             {
               request: {
@@ -236,7 +236,6 @@ describe('MockClient', () => {
           },
         },
         {
-          resource: notFound,
           response: {
             status: '404',
           },

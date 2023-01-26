@@ -278,17 +278,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         </Panel>
       )}
       {items.map((item) => {
+        const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
           return (
             <HistoryTimelineItem
-              key={item.meta?.versionId}
+              key={key}
               history={history as Bundle<Resource>}
               resource={item}
               onDetails={onVersionDetails}
             />
           );
         }
-        const key = `${item.resourceType}/${item.id}`;
         switch (item.resourceType) {
           case 'AuditEvent':
             return <AuditEventTimelineItem key={key} resource={item} onDetails={onDetails} />;
