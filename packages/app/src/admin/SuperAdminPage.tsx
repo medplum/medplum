@@ -1,7 +1,7 @@
-import { Button, Divider, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Document, Form, FormSection, useMedplum } from '@medplum/react';
+import { convertLocalToIso, DateTimeInput, Document, Form, FormSection, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
@@ -32,6 +32,13 @@ export function SuperAdminPage(): JSX.Element {
   function reindexResourceType(): void {
     medplum
       .post('admin/super/reindex', { resourceType })
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }
+
+  function purgeResources(formData: Record<string, string>): void {
+    medplum
+      .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
       .then(() => showNotification({ color: 'green', message: 'Done' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
@@ -92,6 +99,20 @@ export function SuperAdminPage(): JSX.Element {
             />
           </FormSection>
           <Button onClick={reindexResourceType}>Reindex</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Purge Resources</Title>
+      <p>As system generated resources accumulate, the system may require a purge to remove old resources.</p>
+      <Form onSubmit={purgeResources}>
+        <Stack>
+          <FormSection title="Purge Resource Type" htmlFor="purgeResourceType">
+            <NativeSelect id="purgeResourceType" name="resourceType" data={['', 'AuditEvent', 'Login']} />
+          </FormSection>
+          <FormSection title="Purge Before" htmlFor="before">
+            <DateTimeInput name="before" placeholder="Before Date" />
+          </FormSection>
+          <Button type="submit">Purge</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
