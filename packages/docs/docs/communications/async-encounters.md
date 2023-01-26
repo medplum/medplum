@@ -18,9 +18,9 @@ Alternatively, if your care setting has more of an rolling interaction model (e.
 
 ## Representing Sessions in FHIR
 
-Each session should be represented by an [Encounter](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as [Communication](#) resources and can be linked to the session using the `Communication.encounter` element.
+Each session should be represented by an [Encounter](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as [Communication](/docs/api/fhir/resources/communication) resources and can be linked to the session using the `Communication.encounter` element.
 
-You should record the participating physicians using the `Encounter.participant` element. You can also record any family members who are part of the session here (see our [Family Relationships guide](#) ).
+You should record the participating physicians using the `Encounter.participant` element. You can also record any family members who are part of the session here (see our [Family Relationships guide](/docs/fhir-datastore/family-relationships) ).
 
 :::tip Asynchronous Encounter Ontologies
 
@@ -38,7 +38,7 @@ In some care settings, a session may discuss the health of multiple patients. Fo
 
 In these situations, we'll have to represent distinct "medical encounters" for each patient.
 
-We can use the hierarchical nature of the [Encounter](/docs/api/fhir/resources/encounter) resource to split out medical encounters for each session. The `Encounter.partOf` element creates a parent-child relationship between [Encounters](#), which is perfect for encounters that overlap in time.
+We can use the hierarchical nature of the [Encounter](/docs/api/fhir/resources/encounter) resource to split out medical encounters for each session. The `Encounter.partOf` element creates a parent-child relationship between [Encounters](/docs/api/fhir/resources/encounter), which is perfect for encounters that overlap in time.
 
 To properly represent your asynchronous encounter, you should:
 
@@ -46,8 +46,8 @@ To properly represent your asynchronous encounter, you should:
 2. Create a new [Encounter](/docs/api/fhir/resources/encounter) for each patient to represent a medical encounter
 3. Set the `Encounter.subject` of each medical encounter to the corresponding patient
 4. Populate each medical encounter with the clinical details (diagnoses, reasons for visit) of the corresponding patient.
-5. Set the `Encounter.partOf` element for each medical encounter to refer to the session's [Encounter](#)
+5. Set the `Encounter.partOf` element for each medical encounter to refer to the session's [Encounter](/docs/api/fhir/resources/encounter)
 
-The [Communication](#) resources should still be linked to the "session" encounter, but the clinical details for each patient will live on the medical encounters. You can add an additional value the `Encounter.type` element to tag encounters as either "sessions" or "medical encounters."
+The [Communication](/docs/api/fhir/resources/communication) resources should still be linked to the "session" encounter, but the clinical details for each patient will live on the medical encounters. You can add an additional value the `Encounter.type` element to tag encounters as either "sessions" or "medical encounters."
 
 While creating an [Encounter](/docs/api/fhir/resources/encounter) hierarchy like this is a bit more work up front, it promotes good data hygiene. Separating out medical details for each patient allows for better patient analytics and also helps with [billing](/docs/billing), as payer systems typically expect a single encounter per patient.
