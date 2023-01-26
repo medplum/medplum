@@ -99,10 +99,14 @@ export class Storage extends Construct {
         },
       });
 
+      // Origin access identity
+      const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
+      storageBucket.grantRead(originAccessIdentity);
+
       // CloudFront distribution
       const distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(storageBucket),
+          origin: new origins.S3Origin(storageBucket, { originAccessIdentity }),
           responseHeadersPolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           trustedKeyGroups: [keyGroup],
