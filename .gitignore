@@ -24,10 +24,8 @@ packages/graphiql/dist/
 packages/graphiql/public/
 packages/infra/dist/
 packages/mock/dist/
-packages/seeder/dist/
 packages/react/dist/
 packages/server/dist/
-packages/examples/dist/
 
 # Storybook output
 storybook-static/

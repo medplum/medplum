@@ -5,7 +5,7 @@ dist/**/*.test.js.map
 src/
 babel.config.json
 jest.config.json
-rollup.config.js
+rollup.config.mjs
 tsconfig.cjs.json
 tsconfig.esm.json
 tsconfig.json
