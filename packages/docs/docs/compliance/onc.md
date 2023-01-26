@@ -6,11 +6,25 @@ sidebar_position: 2
 
 :::caution Note
 
-This section is under construction.
+This section is under construction. Certification is in progress and not yet complete.
 
 :::
 
 The following materials are related to ONC Certification.
+
+## Mandatory Disclosures
+
+| Item                           | Description                              |
+| ------------------------------ | ---------------------------------------- |
+| Developer Organization Name    | Orangebot, Inc. DBA Medplum              |
+| Date the product was certified |                                          |
+| Product Name and Version       | Medplum, 2                               |
+| Unique Certification Number    |                                          |
+| Certification Criteria         | [Criteria link](#criteria-certified)     |
+| Pricing                        | [Offering Grid](/pricing)                |
+| Registration Process           | [Instructions](/docs/tutorials/register) |
+
+This Health IT Module is 2015 Edition compliant and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
 
 ## Materials and Usage
 
@@ -26,7 +40,7 @@ The following materials are related to ONC Certification.
 | CMS Queries                   | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
 | EHR Definition                | Description of what defines an EHR                   | [ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                                  |
 
-## Criteria Shortlist
+## Criteria Certified
 
 This is the list of criteria that are already complete or are in active development. Related to this criteria these scripts are for the [Medplum team only](https://drive.google.com/drive/folders/1dvb1FWq_qQ94aBe5SRlxF-3_q04M6gFJ?usp=share_link).
 
@@ -64,8 +78,6 @@ This is the list of criteria extended criteria that will follow the above.
 
 ### CPOE Medication (a1)
 
-Medplum attests to this criteria, links provided below.
-
 - [Medplum App CPOE Medication](https://app.medplum.com/MedicationRequest/new)
 - [Medplum App Medication Requests](https://app.medplum.com/MedicationRequest)
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-medications)
@@ -73,16 +85,12 @@ Medplum attests to this criteria, links provided below.
 
 ### CPOE Laboratory (a2)
 
-Medplum attests to this criteria, links provided below.
-
 - [Medplum App CPOE Lab](https://app.medplum.com/ServiceRequest/new)
 - [Medplum App Service Requests](https://app.medplum.com/ServiceRequest)
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-laboratory)
 - Requires a [Safety Enhanced Design](https://drummondgroup.force.com/hcsportal/s/article/170-315-g-3-Safety-Enhanced-Design) Report
 
 ### CPOE Imaging (a3)
-
-Medplum attests to this criteria, links provided below.
 
 - [HealthIT.gov Reference Material](https://www.healthit.gov/test-method/computerized-provider-order-entry-cpoe-diagnostic-imaging)
 - [Medplum App CPOE Imaging](https://app.medplum.com/ImagingStudy/new)
