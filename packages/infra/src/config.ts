@@ -4,6 +4,7 @@ export interface MedplumInfraConfig {
   accountNumber: string;
   region: string;
   domainName: string;
+  vpcArn: string;
   apiPort: number;
   apiDomainName: string;
   apiSslCertArn: string;
