@@ -113,11 +113,15 @@ export class FrontEnd extends Construct {
         queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
       });
 
+      // Origin access identity
+      const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
+      appBucket.grantRead(originAccessIdentity);
+
       // CloudFront distribution
       const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(appBucket),
+          origin: new origins.S3Origin(appBucket, { originAccessIdentity }),
           responseHeadersPolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
