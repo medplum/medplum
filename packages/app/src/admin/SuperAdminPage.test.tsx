@@ -68,6 +68,24 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
+  test('Purge resources', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Purge Resource Type'), { target: { value: 'AuditEvent' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Purge Before'), { target: { value: '2000-01-01T00:00:00Z' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Purge'));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('Force set password', async () => {
     setup();
 

@@ -106,10 +106,10 @@ export function SuperAdminPage(): JSX.Element {
       <p>As system generated resources accumulate, the system may require a purge to remove old resources.</p>
       <Form onSubmit={purgeResources}>
         <Stack>
-          <FormSection title="Resource Type">
-            <NativeSelect name="resourceType" data={['', 'AuditEvent', 'Login']} />
+          <FormSection title="Purge Resource Type" htmlFor="purgeResourceType">
+            <NativeSelect id="purgeResourceType" name="resourceType" data={['', 'AuditEvent', 'Login']} />
           </FormSection>
-          <FormSection title="Before Date">
+          <FormSection title="Purge Before" htmlFor="before">
             <DateTimeInput name="before" placeholder="Before Date" />
           </FormSection>
           <Button type="submit">Purge</Button>

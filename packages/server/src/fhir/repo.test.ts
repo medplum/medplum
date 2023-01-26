@@ -1,5 +1,6 @@
 import {
   createReference,
+  forbidden,
   getReferenceString,
   isOk,
   normalizeErrorString,
@@ -2267,6 +2268,26 @@ describe('FHIR Repo', () => {
     } catch (err) {
       console.log(err);
       console.log(JSON.stringify(err, null, 2));
+    }
+  });
+
+  test('Purge forbidden', async () => {
+    const author = 'Practitioner/' + randomUUID();
+
+    const repo = new Repository({
+      project: randomUUID(),
+      extendedMode: true,
+      author: {
+        reference: author,
+      },
+    });
+
+    // Try to purge as a regular user
+    try {
+      await repo.purgeResources('Patient', new Date().toISOString());
+      fail('Purge should have failed');
+    } catch (err) {
+      expect(err).toMatchObject(forbidden);
     }
   });
 
