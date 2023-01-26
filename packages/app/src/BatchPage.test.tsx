@@ -3,7 +3,7 @@ import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, RenderResult, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { BatchPage } from './BatchPage';
+import { BatchPage, DEFAULT_VALUE } from './BatchPage';
 
 const medplum = new MockClient();
 
@@ -29,7 +29,7 @@ describe('BatchPage', () => {
     // Upload file
     await act(async () => {
       const fileInput = renderResult.container.querySelector('input[type="file"]') as HTMLInputElement;
-      const files = [new File(['{"resourceType":"Patient"}'], 'patient.json', { type: 'application/json' })];
+      const files = [new File([JSON.stringify(DEFAULT_VALUE)], 'patient.json', { type: 'application/json' })];
       fireEvent.change(fileInput, { target: { files } });
     });
 
@@ -54,16 +54,7 @@ describe('BatchPage', () => {
     await act(async () => {
       fireEvent.change(screen.getByTestId('batch-input'), {
         target: {
-          value: JSON.stringify({
-            resourceType: 'Practitioner',
-            id: '123',
-            meta: {
-              lastUpdated: '2020-01-01T00:00:00.000Z',
-              author: {
-                reference: 'Practitioner/111',
-              },
-            },
-          }),
+          value: JSON.stringify(DEFAULT_VALUE),
         },
       });
     });

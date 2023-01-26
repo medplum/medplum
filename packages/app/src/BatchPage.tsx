@@ -1,11 +1,13 @@
 import { Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
-import { Dropzone } from '@mantine/dropzone';
+import { Dropzone, FileWithPath } from '@mantine/dropzone';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconUpload, IconX } from '@tabler/icons';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 
-const DEFAULT_VALUE = `{
+export const DEFAULT_VALUE = `{
   "resourceType": "Bundle",
   "type": "transaction",
   "entry": [
@@ -30,10 +32,34 @@ export function BatchPage(): JSX.Element {
   const medplum = useMedplum();
   const [output, setOutput] = useState<Bundle>();
 
-  function submitBatch(str: string): void {
-    setOutput(undefined);
-    medplum.executeBatch(JSON.parse(str)).then(setOutput).catch(console.log);
-  }
+  const submitBatch = useCallback(
+    async (str: string) => {
+      try {
+        setOutput(undefined);
+        setOutput(await medplum.executeBatch(JSON.parse(str)));
+        showNotification({ color: 'green', message: 'Success' });
+      } catch (err) {
+        showNotification({ color: 'red', message: normalizeErrorString(err) });
+      }
+    },
+    [medplum]
+  );
+
+  const handleFiles = useCallback(
+    async (files: FileWithPath[]) => {
+      const reader = new FileReader();
+      reader.onload = (e) => submitBatch(e.target?.result as string);
+      reader.readAsText(files[0]);
+    },
+    [submitBatch]
+  );
+
+  const handleJson = useCallback(
+    async (formData: Record<string, string>) => {
+      await submitBatch(formData.input);
+    },
+    [submitBatch]
+  );
 
   return (
     <Document>
@@ -52,14 +78,7 @@ export function BatchPage(): JSX.Element {
             </Tabs.List>
 
             <Tabs.Panel value="upload" pt="xs">
-              <Dropzone
-                onDrop={(files) => {
-                  const reader = new FileReader();
-                  reader.onload = (e) => submitBatch(e.target?.result as string);
-                  reader.readAsText(files[0]);
-                }}
-                accept={['application/json']}
-              >
+              <Dropzone onDrop={handleFiles} accept={['application/json']}>
                 <Group position="center" spacing="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
@@ -84,7 +103,7 @@ export function BatchPage(): JSX.Element {
             </Tabs.Panel>
 
             <Tabs.Panel value="json" pt="xs">
-              <Form onSubmit={(formData: Record<string, string>) => submitBatch(formData.input)}>
+              <Form onSubmit={handleJson}>
                 <JsonInput data-testid="batch-input" name="input" minRows={20} defaultValue={DEFAULT_VALUE} />
                 <Group position="right" mt="xl" noWrap>
                   <Button type="submit">Submit</Button>
