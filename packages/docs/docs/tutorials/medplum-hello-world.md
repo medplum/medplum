@@ -14,7 +14,7 @@ Hello World is built with Medplum's [React Component](https://storybook.medplum.
 This tutorial assumes you have already:
 
 - Registered for a Medplum account. (If not [registration instructions](./register.md))
-- Created a sample patient. (If not [create patient instructions](./create-a-patient.md))
+- Imported one or more sample patients. (If not [import sample data](/docs/tutorials/importing-sample-data.md))
 
 First, make sure you have Node JS and npm installed. If not, follow instructions [here](https://nodejs.org/en/download/).
 
@@ -53,7 +53,7 @@ After entering your credentials, you will prompted to select a Medplum project. 
 
 ### Home Page
 
-Once you log in, you'll be presented with a greeting, along with a list of all the patients in your Medplum project. Right now, there will only be a single patient, but you can repeat the steps in the [create patient tutorial](./create-a-patient.md) to add more patient records.
+Once you log in, you'll be presented with a greeting, along with a list of all the patients in your Medplum project. Assuming you [imported sample data](/docs/tutorials/importing-sample-data.md), there will be two patients.
 
 ### Practitioner Profile
 

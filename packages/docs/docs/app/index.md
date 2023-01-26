@@ -12,7 +12,7 @@ You can use the Medplum app to configure or view resources required for applicat
 
 1. [Register](https://app.medplum.com/register) a new account and project
 2. [Invite](./app/invite) another user to your project
-3. [Create a patient](./tutorials/create-a-patient)
+3. [Import a patient](/docs/tutorials/importing-sample-data.md)
 
 ## Reference
 
