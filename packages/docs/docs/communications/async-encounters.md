@@ -44,7 +44,7 @@ We can use the hierarchical nature of the [Encounter](/docs/api/fhir/resources/e
 
 To properly represent your asynchronous encounter, you should:
 
-1. Create an [Encounter](/docs/api/fhir/resources/encounter) for the session, [as described above ](#representing-sessions-in-fhir)
+1. Create an [Encounter](/docs/api/fhir/resources/encounter) for the session
 2. Create a new [Encounter](/docs/api/fhir/resources/encounter) for each patient to represent a medical encounter
 3. Set the `Encounter.subject` of each medical encounter to the corresponding patient
 4. Populate each medical encounter with the clinical details (diagnoses, reasons for visit) of the corresponding patient.
