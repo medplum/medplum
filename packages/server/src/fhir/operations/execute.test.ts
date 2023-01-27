@@ -4,8 +4,9 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import { loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
+import { getLambdaFunctionName } from './execute';
 
 const app = express();
 let accessToken: string;
@@ -182,5 +183,24 @@ describe('Execute', () => {
       .send({});
     expect(res3.status).toBe(400);
     expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
+  });
+
+  test('Get function name', async () => {
+    const config = getConfig();
+    const normalBot: Bot = { resourceType: 'Bot', id: '123' };
+    const customBot: Bot = {
+      resourceType: 'Bot',
+      id: '456',
+      identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
+    };
+
+    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
+    expect(getLambdaFunctionName(customBot)).toEqual('medplum-bot-lambda-456');
+
+    // Temporarily enable custom bot support
+    config.botCustomFunctionsEnabled = true;
+    expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
+    expect(getLambdaFunctionName(customBot)).toEqual('custom');
+    config.botCustomFunctionsEnabled = false;
   });
 });
