@@ -191,7 +191,7 @@ describe('Execute', () => {
     const customBot: Bot = {
       resourceType: 'Bot',
       id: '456',
-      identifier: [{ system: 'https://medplum.com/custom-function', value: 'custom' }],
+      identifier: [{ system: 'https://medplum.com/bot-external-function-id', value: 'custom' }],
     };
 
     expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');

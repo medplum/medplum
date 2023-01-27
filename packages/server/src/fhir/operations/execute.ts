@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { badRequest, createReference, Hl7Message, resolveId } from '@medplum/core';
+import { badRequest, createReference, getIdentifier, Hl7Message, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
@@ -181,9 +181,9 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
  */
 export function getLambdaFunctionName(bot: Bot): string {
   if (getConfig().botCustomFunctionsEnabled) {
-    const customFunction = bot.identifier?.find((id) => id.system === 'https://medplum.com/custom-function');
+    const customFunction = getIdentifier(bot, 'https://medplum.com/bot-external-function-id');
     if (customFunction) {
-      return customFunction.value as string;
+      return customFunction;
     }
   }
 
