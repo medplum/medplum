@@ -31,22 +31,30 @@ export class BackEnd extends Construct {
 
     const name = config.name;
 
-    // VPC Flow Logs
-    const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
-      logGroupName: '/medplum/flowlogs/' + name,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
-
     // VPC
-    const vpc = new ec2.Vpc(this, 'VPC', {
-      maxAzs: config.maxAzs,
-      flowLogs: {
-        cloudwatch: {
-          destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),
-          trafficType: ec2.FlowLogTrafficType.ALL,
+    let vpc: ec2.IVpc;
+
+    if (config.vpcArn) {
+      // Lookup VPC by ARN
+      vpc = ec2.Vpc.fromLookup(this, 'VPC', { vpcId: config.vpcArn });
+    } else {
+      // VPC Flow Logs
+      const vpcFlowLogs = new logs.LogGroup(this, 'VpcFlowLogs', {
+        logGroupName: '/medplum/flowlogs/' + name,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
+
+      // Create VPC
+      vpc = new ec2.Vpc(this, 'VPC', {
+        maxAzs: config.maxAzs,
+        flowLogs: {
+          cloudwatch: {
+            destination: ec2.FlowLogDestination.toCloudWatchLogs(vpcFlowLogs),
+            trafficType: ec2.FlowLogTrafficType.ALL,
+          },
         },
-      },
-    });
+      });
+    }
 
     // Bot Lambda Role
     const botLambdaRole = new iam.Role(this, 'BotLambdaRole', {
