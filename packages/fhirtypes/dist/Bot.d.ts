@@ -4,6 +4,7 @@
  */
 
 import { Attachment } from './Attachment';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 
 /**
@@ -41,6 +42,11 @@ export interface Bot {
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * An identifier for this bot.
+   */
+  identifier?: Identifier[];
 
   /**
    * A name associated with the Bot.

@@ -858,6 +858,17 @@
             }]
           },
           {
+            "id" : "Bot.identifier",
+            "path" : "Bot.identifier",
+            "short" : "An identifier for this bot",
+            "definition" : "An identifier for this bot.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }]
+          },
+          {
             "id" : "Bot.name",
             "path" : "Bot.name",
             "definition" : "A name associated with the Bot.",

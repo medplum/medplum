@@ -32,6 +32,7 @@ export interface MedplumServerConfig {
   awsRegion: string;
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
+  botCustomFunctionsEnabled?: boolean;
   logAuditEvents?: boolean;
 }
 

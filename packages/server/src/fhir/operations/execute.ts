@@ -136,7 +136,7 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
   const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
 
   const client = new LambdaClient({ region: config.awsRegion });
-  const name = `medplum-bot-lambda-${bot.id}`;
+  const name = getLambdaFunctionName(bot);
   const payload = {
     baseUrl: config.baseUrl,
     accessToken,
@@ -170,6 +170,25 @@ async function runInLambda(request: BotExecutionRequest): Promise<BotExecutionRe
       logResult: (err as Error).message,
     };
   }
+}
+
+/**
+ * Returns the AWS Lambda function name for the given bot.
+ * By default, the function name is based on the bot ID.
+ * If the bot has a custom function, and the server allows it, then that is used instead.
+ * @param bot The Bot resource.
+ * @returns The AWS Lambda function name.
+ */
+export function getLambdaFunctionName(bot: Bot): string {
+  if (getConfig().botCustomFunctionsEnabled) {
+    const customFunction = bot.identifier?.find((id) => id.system === 'https://medplum.com/custom-function');
+    if (customFunction) {
+      return customFunction.value as string;
+    }
+  }
+
+  // By default, use the bot ID as the Lambda function name
+  return `medplum-bot-lambda-${bot.id}`;
 }
 
 /**
