@@ -10,6 +10,8 @@ slug: /careers
 Medplum is an open source API-first electronic health record (EHR). Some of the largest digital health companies, life sciences companies and more use us to build sophisticated medical applications. Our mission is to increase access to and utility of medical data. That
 means you have a unique opportunity to impact the lives of patients, speed medical research and contribute to open source all day.
 
+Medplum is a remote company, but at present we are seeking team members in the SF Bay Area. We anticipate some time each week in working together in person.
+
 ## About the team
 
 Medplum is a small team of industry veterans and repeat founders. Our team members hail from Microsoft, One Medical, Palantir, Y Combinator, and Meta. We take pride in our engineering work, documentation and aspire to engineering excellence and best practices. As a team, we value continuous learning and improvement and working in public.
