@@ -102,6 +102,7 @@ import { MedicinalProductPharmaceutical } from './MedicinalProductPharmaceutical
 import { MedicinalProductUndesirableEffect } from './MedicinalProductUndesirableEffect';
 import { MessageDefinition } from './MessageDefinition';
 import { MessageHeader } from './MessageHeader';
+import { MetadataResource } from './MetadataResource';
 import { MolecularSequence } from './MolecularSequence';
 import { NamingSystem } from './NamingSystem';
 import { NutritionOrder } from './NutritionOrder';
@@ -262,6 +263,7 @@ export type Resource = AccessPolicy
   | MedicinalProductUndesirableEffect
   | MessageDefinition
   | MessageHeader
+  | MetadataResource
   | MolecularSequence
   | NamingSystem
   | NutritionOrder

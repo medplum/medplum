@@ -1,5 +1,5 @@
 import { badRequest, parseJWTPayload } from '@medplum/core';
-import { DomainConfigurationIdentityProvider } from '@medplum/fhirtypes';
+import { IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
@@ -83,7 +83,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
  * @param code The authorization code.
  * @returns ID token claims.
  */
-async function verifyCode(idp: DomainConfigurationIdentityProvider, code: string): Promise<Record<string, unknown>> {
+async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<string, unknown>> {
   const auth = Buffer.from(idp.clientId + ':' + idp.clientSecret).toString('base64');
 
   const params = new URLSearchParams();
