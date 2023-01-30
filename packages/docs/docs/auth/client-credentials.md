@@ -2,7 +2,7 @@
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
+import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
 
 # Client Credentials Authentication
@@ -21,7 +21,7 @@ For this example you will need the `ID` and `Secret`.
 
 Execute a HTTP POST request to the OAuth2 Token endpoint:
 
-<Tabs groupId="language">
+<BrowserOnlyTabs groupId="language">
   <TabItem value="curl" label="cURL">
 
 ```curl
@@ -52,7 +52,7 @@ def get_auth_token(url, client_id, client_secret):
 ```
 
   </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 On success, the response will be a JSON object with the following properties:
 

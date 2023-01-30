@@ -2,8 +2,8 @@
 sidebar_position: 3
 ---
 
-import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import ExampleCode from '!!raw-loader!@site/../examples/src/tutorials/api-basics/basic-fhir-search.ts';
 
@@ -24,7 +24,7 @@ resources with a name like "Alex".
 To execute this search as via API, here's how you would do it using curl.
 In this example, we are using the `_count` parameter to limit to the first 20 results, sorted in descending order by `_lastUpdated`.
 
-<Tabs groupId="language">
+<BrowserOnlyTabs groupId="language">
   <TabItem value="ts" label="Typescript">
     <MedplumCodeBlock language='ts' selectBlocks='search-patients'>
       {ExampleCode}
@@ -38,7 +38,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient?name=Alex&_count=20&_sort=-_lastUp
 ```
 
   </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 ## Use Medplum App to Learn Advanced Search
 
@@ -64,7 +64,7 @@ FHIR supports this by allowing you to pass in FHIR objects as Search parameters.
 
 Here's an example that requests all DiagnosticReports for a given Patient are referenced by their `id`
 
-<Tabs groupId="language">
+<BrowserOnlyTabs groupId="language">
   <TabItem value="ts" label="Typescript">
     <MedplumCodeBlock language='ts' selectBlocks='search-reports'>
       {ExampleCode}
@@ -78,4 +78,4 @@ curl 'https://api.medplum.com/fhir/R4/DiagnosticReport?_count=100&subject=Patien
 ```
 
   </TabItem>
-</Tabs>
+</BrowserOnlyTabs>

@@ -1,4 +1,4 @@
-import Tabs from '@theme/Tabs';
+import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
 
 import CodeBlock from '@theme/CodeBlock';
@@ -91,7 +91,7 @@ After you've answered these questions about your use case, you're ready to make 
 
 import Approach1Diagram from './approach-1.png';
 
-<Tabs>
+<BrowserOnlyTabs>
 <TabItem value="diagram" label="Diagram" default>
 
 <img src={Approach1Diagram} alt="Approach #1" style={{ maxHeight: '400px', width: 'auto' }} />;
@@ -112,7 +112,7 @@ import Approach1Diagram from './approach-1.png';
 </CodeBlock>
 
 </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 If your family members do not participate in clinical/billing activities and patients rarely share family members, the simplest approach is just to store information about family members directly on the [Patient](/docs/api/fhir/resources/patient) resource.
 
@@ -139,7 +139,7 @@ The tradeoff is that if patients share family members (e.g. siblings share the s
 
 import Approach2Diagram from './approach-2.png';
 
-<Tabs>
+<BrowserOnlyTabs>
 <TabItem value="diagram" label="Diagram" default>
 
 <img src={Approach2Diagram} alt="Approach #2" style={{ maxHeight: '400px', width: 'auto' }} />
@@ -168,7 +168,7 @@ import Approach2Diagram from './approach-2.png';
 </CodeBlock>
 
 </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 If family members _do_ participate in clinical/billing activities, then it might make sense to model them explicitly as a separate resource.
 
@@ -196,7 +196,7 @@ Each [RelatedPerson](/docs/api/fhir/resources/relatedperson) can only have **one
 
 import Approach3Diagram from './approach-3.png';
 
-<Tabs>
+<BrowserOnlyTabs>
 <TabItem value="diagram" label="Diagram" default>
 
 <img alt="Approach #3" src={Approach3Diagram} style={{ maxHeight: '400px', width: 'auto' }} />
@@ -232,7 +232,7 @@ import Approach3Diagram from './approach-3.png';
 </CodeBlock>
 
 </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 If your practice begins to have patients who share family members, duplicating their contact information across multiple [RelatedPerson](/docs/api/fhir/resources/relatedperson) resources can quickly become error prone.
 
@@ -258,7 +258,7 @@ The FHIR spec also allows the use of the [Person](/docs/api/fhir/resources/perso
 
 import Approach4Diagram from './approach-4.png';
 
-<Tabs>
+<BrowserOnlyTabs>
 <TabItem value="diagram" label="Diagram" default>
 
 <img src={Approach4Diagram} alt="Approach #4" style={{ maxHeight: '400px', width: 'auto' }} />
@@ -275,7 +275,7 @@ import Approach4Diagram from './approach-4.png';
 </CodeBlock>
 
 </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 For some use cases, it is useful to keep track of the family unit as a whole, rather than as a web of connected [Patients](/docs/api/fhir/resources/patient), [RelatedPersons](/docs/api/fhir/resources/relatedperson), and [Persons](/docs/api/fhir/resources/person).
 
