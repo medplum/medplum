@@ -82,7 +82,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   const aud = params.aud as string | undefined;
-  if (aud !== undefined && aud !== getConfig().baseUrl + 'fhir/R4') {
+  if (!isValidAudience(aud)) {
     sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
     return false;
   }
@@ -119,6 +119,28 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   return true;
+}
+
+/**
+ * Returns true if the audience is valid.
+ * @param aud The user provided audience.
+ * @returns True if the audience is valid; false otherwise.
+ */
+function isValidAudience(aud: string | undefined): boolean {
+  if (!aud) {
+    // Allow missing aud parameter.
+    // Technically, aud is required: https://www.hl7.org/fhir/smart-app-launch/app-launch.html#obtain-authorization-code
+    // However, some FHIR validation tools do not include it, so we silently ignore missing values.
+    return true;
+  }
+
+  try {
+    const audUrl = new URL(aud);
+    const serverUrl = new URL(getConfig().baseUrl);
+    return audUrl.protocol === serverUrl.protocol && audUrl.host === serverUrl.host;
+  } catch (err) {
+    return false;
+  }
 }
 
 /**
