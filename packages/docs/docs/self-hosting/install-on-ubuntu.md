@@ -107,7 +107,7 @@ git clone https://github.com/medplum/medplum.git
 Run the build script
 
 ```bash
-./scripts/build.sh
+cd medplum && ./scripts/build.sh
 ```
 
 (This will take a while.  It downloads all dependencies, performs a full build, and runs all tests.)
