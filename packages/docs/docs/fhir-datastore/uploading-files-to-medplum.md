@@ -1,4 +1,4 @@
-import Tabs from '@theme/Tabs';
+import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
 
 # Upload Files to Medplum
@@ -7,7 +7,7 @@ import TabItem from '@theme/TabItem';
 
 For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
 
-<Tabs groupId="language">
+<BrowserOnlyTabs groupId="language">
   <TabItem value="typescript" label="Typescript">
 
 ```ts
@@ -60,6 +60,6 @@ requests.post(f'{API_URL}/Media', json=media, headers={
 ```
 
   </TabItem>
-</Tabs>
+</BrowserOnlyTabs>
 
 See the [**Client Credentials tutorial**](../auth/client-credentials) guide for how to obtain an access token

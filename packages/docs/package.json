@@ -24,9 +24,9 @@
     "typecheck": "tsc"
   },
   "devDependencies": {
-    "@docusaurus/core": "2.2.0",
-    "@docusaurus/module-type-aliases": "2.2.0",
-    "@docusaurus/preset-classic": "2.2.0",
+    "@docusaurus/core": "2.3.0",
+    "@docusaurus/module-type-aliases": "2.3.0",
+    "@docusaurus/preset-classic": "2.3.0",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
@@ -38,7 +38,7 @@
     "prism-react-renderer": "1.3.5",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.7.0",
+    "react-router-dom": "6.8.0",
     "typedoc": "0.23.24",
     "typedoc-plugin-markdown": "3.14.0",
     "typescript": "4.9.4",
