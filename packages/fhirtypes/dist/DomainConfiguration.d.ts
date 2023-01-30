@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { IdentityProvider } from './IdentityProvider';
 import { Meta } from './Meta';
 
 /**
@@ -49,36 +50,5 @@ export interface DomainConfiguration {
   /**
    * Optional external Identity Provider (IdP) for the domain name.
    */
-  identityProvider?: DomainConfigurationIdentityProvider;
-}
-
-/**
- * Optional external Identity Provider (IdP) for the domain name.
- */
-export interface DomainConfigurationIdentityProvider {
-
-  /**
-   * Remote URL for the external Identity Provider authorize endpoint.
-   */
-  authorizeUrl?: string;
-
-  /**
-   * Remote URL for the external Identity Provider token endpoint.
-   */
-  tokenUrl?: string;
-
-  /**
-   * Remote URL for the external Identity Provider userinfo endpoint.
-   */
-  userInfoUrl?: string;
-
-  /**
-   * External Identity Provider client ID.
-   */
-  clientId?: string;
-
-  /**
-   * External Identity Provider client secret.
-   */
-  clientSecret?: string;
+  identityProvider?: IdentityProvider;
 }
