@@ -8,9 +8,15 @@ You can also see a reference implementation of simple bots *with tests* in our [
 
 ## Set up your test framework
 
-The first step is to set up your test framwork in your Bots package. Medplum Bots will should work with typescript/javascript test runner, and the Medplum team has tested bots with both [jest](https://jestjs.io/docs/expect) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package - no additional steps needed!
+The first step is to set up your test framwork in your Bots package. Medplum Bots will should work with any typescript/javascript test runner, and the Medplum team uses  [jest](https://jestjs.io/docs/expect) to test our Bots. Follow the instructions for your favorite framework to set up you package.
 
-Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains [eslint](#), [tsconfig](#), and [vite.config](#) settings that we recommend for a faster feedback cycle
+::: warning A note about `vitetest`
+
+The Medplum team is a big fan of the [vitest](https://vitest.dev/) framework. It offers a great dev experience 
+
+:::
+
+Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains [eslint](#), [tsconfig](#), and [jest.config](#) settings that we recommend for a faster feedback cycle
 
 ## Write your test file
 
@@ -59,13 +65,32 @@ The Medplum team is working on bringing these features to parity as soon as poss
 
 ### Create mock resource resources
 
-Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and update 
+Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance. 
+
+The finalize-report bot from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](#), an [Observation](#), and a [DiagnosticReport](#) before invoking the bot. 
+
+### Invoke your Bot
+
+After setting up your mock resources, you can invoke your bot by calling your bot's handler function. See the ["Bot Basics" tutorial](/docs/bots/bot-basics#editing-a-bot) for more information about the arguments to `handler`
+
+```typescript
+const contentType = 'application/fhir+json';
+const result = await handler(medplum, {input: inputResource, contentType, secrets: {}})
+```
 
 
 
-TODO:  finalize report bot
+### Query the results
 
-The [patient intake test](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-intake.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example.
+
+
+
+
+::: note A note on idempotency
+
+:::
+
+
 
 
 
