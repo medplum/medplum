@@ -1976,6 +1976,30 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Initiates sign in with an external identity provider.
+   * @param authorizeUrl The external authorization URL.
+   * @param clientId The external client ID.
+   * @param redirectUri The external identity provider redirect URI.
+   * @param baseLogin The Medplum login request.
+   */
+  async signInWithExternalAuth(
+    authorizeUrl: string,
+    clientId: string,
+    redirectUri: string,
+    baseLogin?: Partial<BaseLoginRequest>
+  ): Promise<void> {
+    const loginRequest = await this.ensureCodeChallenge(baseLogin || {});
+    const state = JSON.stringify(loginRequest);
+    const url = new URL(authorizeUrl);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('scope', 'openid profile email');
+    url.searchParams.set('state', state);
+    window.location.assign(url.toString());
+  }
+
+  /**
    * Processes an OAuth authorization code.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.

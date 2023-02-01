@@ -75,7 +75,7 @@ describe('External', () => {
 
     const res = await request(app).get(url.toString().replace('https://example.com', ''));
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Domain not found');
+    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
   test('Missing identity provider', async () => {
@@ -86,7 +86,7 @@ describe('External', () => {
 
     const res = await request(app).get(url.toString().replace('https://example.com', ''));
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Domain does not support external authentication');
+    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
   });
 
   test('Unknown user', async () => {

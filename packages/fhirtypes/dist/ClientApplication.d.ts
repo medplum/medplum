@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { IdentityProvider } from './IdentityProvider';
 import { Meta } from './Meta';
 
 /**
@@ -72,4 +73,9 @@ export interface ClientApplication {
    * Optional launch URI for SMART EHR launch sequence.
    */
   launchUri?: string;
+
+  /**
+   * Optional external Identity Provider (IdP) for the client application.
+   */
+  identityProvider?: IdentityProvider;
 }

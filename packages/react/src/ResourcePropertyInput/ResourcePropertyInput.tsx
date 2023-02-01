@@ -259,15 +259,20 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           outcome={props.outcome}
         />
       );
-    default:
+    default: {
+      let typeName = property.type?.[0]?.code as string;
+      if (typeName === 'BackboneElement' || typeName === 'Element') {
+        typeName = buildTypeName(property.path?.split('.') as string[]);
+      }
       return (
         <BackboneElementInput
-          typeName={buildTypeName(property.path?.split('.') as string[])}
+          typeName={typeName}
           defaultValue={value}
           onChange={props.onChange}
           outcome={props.outcome}
         />
       );
+    }
   }
 }
 

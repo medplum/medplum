@@ -115,17 +115,22 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
-    default:
+    default: {
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
       }
+      let typeName = property.type?.[0]?.code as string;
+      if (typeName === 'BackboneElement' || typeName === 'Element') {
+        typeName = buildTypeName(property.path?.split('.') as string[]);
+      }
       return (
         <BackboneElementDisplay
-          value={{ type: buildTypeName(property?.path?.split('.') as string[]), value }}
+          value={{ type: typeName, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
+    }
   }
 }
 
