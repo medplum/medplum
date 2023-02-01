@@ -1,5 +1,7 @@
 # [Medplum](https://www.medplum.com) &middot; [![GitHub license](https://img.shields.io/badge/license-Apache-blue.svg)](https://github.com/medplum/medplum/blob/main/LICENSE.txt) [![npm version](https://img.shields.io/npm/v/@medplum/core.svg?color=blue)](https://www.npmjs.com/package/@medplum/core) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=medplum_medplum&metric=alert_status&token=207c95a43e7519809d6d336d8cc7837d3e057acf)](https://sonarcloud.io/dashboard?id=medplum_medplum) [![Coverage Status](https://coveralls.io/repos/github/medplum/medplum/badge.svg?branch=main)](https://coveralls.io/github/medplum/medplum?branch=main) [![Featured on Openbase](https://badges.openbase.com/js/featured/@medplum/core.svg?token=UnCQpn8imdOYaqKQa6AI2km3rXx5shpt6bKIoGj3KMk=)](https://openbase.com/js/@medplum/core?utm_source=embedded&utm_medium=badge&utm_campaign=rate-badge)
 
+![Medplum](packages/docs/static/img/cover.webp)
+
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
 - **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
@@ -89,6 +91,12 @@ medplum/
 ### First time setup
 
 See developer setup documentation: https://www.medplum.com/docs/contributing
+
+## Careers
+
+![Medplum is hiring](packages/docs/static/img/hiring.webp)
+
+Medplum is hiring!  Learn more on our [careers page](https://www.medplum.com/careers).
 
 ## License
 
