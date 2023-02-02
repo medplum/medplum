@@ -41,7 +41,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   const body = JSON.parse(state) as ExternalAuthState;
 
-  const idp = await getIdentityProvider(body);
+  const { idp, client } = await getIdentityProvider(body);
   if (!idp) {
     sendOutcome(res, badRequest('Identity provider not found'));
     return;
@@ -54,7 +54,16 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const existingUser = await getUserByEmail(email, body.projectId);
+  let projectId = body.projectId as string | undefined;
+  if (client) {
+    if (projectId !== undefined && projectId !== client.meta?.project) {
+      sendOutcome(res, badRequest('Invalid project'));
+      return;
+    }
+    projectId = client.meta?.project;
+  }
+
+  const existingUser = await getUserByEmail(email, projectId);
   if (!existingUser) {
     sendOutcome(res, badRequest('User not found'));
     return;
@@ -64,7 +73,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     authMethod: 'external',
     email,
     remember: true,
-    projectId: body.projectId,
+    projectId: projectId,
     clientId: body.clientId,
     scope: body.scope || 'openid',
     nonce: body.nonce || randomUUID(),
@@ -75,10 +84,8 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  if (login.membership && body.redirectUri) {
-    // TODO: Verify redirect URI matches client application
+  if (login.membership && body.redirectUri && client?.redirectUri && body.redirectUri.startsWith(client.redirectUri)) {
     const redirectUrl = new URL(body.redirectUri);
-    redirectUrl.searchParams.set('login', login.id as string);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());
     return;
@@ -99,20 +106,24 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
  * @param state The external auth state.
  * @returns External identity provider definition if found.
  */
-async function getIdentityProvider(state: ExternalAuthState): Promise<IdentityProvider | undefined> {
+async function getIdentityProvider(
+  state: ExternalAuthState
+): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   if (state.domain) {
     const domainConfig = await getDomainConfiguration(state.domain);
-    return domainConfig?.identityProvider;
+    if (domainConfig?.identityProvider) {
+      return { idp: domainConfig.identityProvider };
+    }
   }
 
   if (state.clientId) {
-    // TODO: Verify client is trusted
-    // TODO: Verify client and project are compatible
-    const clientApplication = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
-    return clientApplication?.identityProvider;
+    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
+    if (client?.identityProvider) {
+      return { idp: client.identityProvider, client };
+    }
   }
 
-  return undefined;
+  return {};
 }
 
 /**
