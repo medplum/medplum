@@ -1,8 +1,8 @@
 import {
-  buildTypeName,
   formatDateTime,
   formatPeriod,
   formatTiming,
+  getElementDefinitionTypeName,
   getTypedPropertyValue,
   PropertyType,
   TypedValue,
@@ -119,13 +119,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
       }
-      let typeName = property.type?.[0]?.code as string;
-      if (typeName === 'BackboneElement' || typeName === 'Element') {
-        typeName = buildTypeName(property.path?.split('.') as string[]);
-      }
       return (
         <BackboneElementDisplay
-          value={{ type: typeName, value }}
+          value={{ type: getElementDefinitionTypeName(property), value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />

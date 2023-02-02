@@ -1,5 +1,5 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { buildTypeName, capitalize, PropertyType } from '@medplum/core';
+import { capitalize, getElementDefinitionTypeName, PropertyType } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
@@ -259,20 +259,15 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
           outcome={props.outcome}
         />
       );
-    default: {
-      let typeName = property.type?.[0]?.code as string;
-      if (typeName === 'BackboneElement' || typeName === 'Element') {
-        typeName = buildTypeName(property.path?.split('.') as string[]);
-      }
+    default:
       return (
         <BackboneElementInput
-          typeName={typeName}
+          typeName={getElementDefinitionTypeName(property)}
           defaultValue={value}
           onChange={props.onChange}
           outcome={props.outcome}
         />
       );
-    }
   }
 }
 
