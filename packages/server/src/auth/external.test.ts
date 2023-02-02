@@ -16,7 +16,8 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const domain2 = randomUUID() + '.example.com';
 const redirectUri = `https://${domain}/auth/callback`;
-let client: ClientApplication;
+let defaultClient: ClientApplication;
+let externalAuthClient: ClientApplication;
 
 describe('External', () => {
   beforeAll(async () => {
@@ -24,7 +25,7 @@ describe('External', () => {
     await initApp(app, config);
 
     // Create a new project
-    const { project } = await registerNew({
+    const { project, client } = await registerNew({
       firstName: 'External',
       lastName: 'Text',
       projectName: 'External Test Project',
@@ -33,6 +34,7 @@ describe('External', () => {
       remoteAddress: '5.5.5.5',
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
     });
+    defaultClient = client;
 
     const identityProvider = {
       authorizeUrl: 'https://example.com/oauth2/authorize',
@@ -56,7 +58,7 @@ describe('External', () => {
     });
 
     // Create a new client application with external auth
-    client = await createClient(systemRepo, {
+    externalAuthClient = await createClient(systemRepo, {
       project,
       name: 'External Auth Client',
       redirectUri,
@@ -64,7 +66,7 @@ describe('External', () => {
 
     // Update client application with external auth
     await systemRepo.updateResource<ClientApplication>({
-      ...client,
+      ...externalAuthClient,
       identityProvider,
     });
   });
@@ -174,7 +176,7 @@ describe('External', () => {
     url.searchParams.set(
       'state',
       JSON.stringify({
-        clientId: client.id,
+        clientId: externalAuthClient.id,
         redirectUri,
       })
     );
@@ -195,6 +197,29 @@ describe('External', () => {
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 
+  test('Invalid client', async () => {
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        clientId: defaultClient.id,
+        redirectUri,
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+  });
+
   test('Invalid project', async () => {
     const url = new URL('https://example.com/auth/external');
     url.searchParams.set('code', randomUUID());
@@ -202,7 +227,7 @@ describe('External', () => {
       'state',
       JSON.stringify({
         projectId: randomUUID(),
-        clientId: client.id,
+        clientId: externalAuthClient.id,
         redirectUri,
       })
     );
@@ -217,6 +242,29 @@ describe('External', () => {
     const res = await request(app).get(url.toString().replace('https://example.com', ''));
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Invalid project');
+  });
+
+  test('Invalid redirect URI', async () => {
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        clientId: externalAuthClient.id,
+        redirectUri: 'https://nope.example.com',
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
   });
 });
 

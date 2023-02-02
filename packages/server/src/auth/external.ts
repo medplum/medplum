@@ -54,7 +54,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  let projectId = body.projectId as string | undefined;
+  let projectId = body.projectId;
   if (client) {
     if (projectId !== undefined && projectId !== client.meta?.project) {
       sendOutcome(res, badRequest('Invalid project'));
@@ -84,7 +84,11 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
-  if (login.membership && body.redirectUri && client?.redirectUri && body.redirectUri.startsWith(client.redirectUri)) {
+  if (login.membership && body.redirectUri && client?.redirectUri) {
+    if (!body.redirectUri.startsWith(client.redirectUri)) {
+      sendOutcome(res, badRequest('Invalid redirect URI'));
+      return;
+    }
     const redirectUrl = new URL(body.redirectUri);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());
