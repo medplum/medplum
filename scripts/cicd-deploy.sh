@@ -88,8 +88,3 @@ if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   source ./scripts/deploy-server.sh
 fi
-
-if [[ "$DEPLOY_STORYBOOK" = true ]]; then
-  echo "Deploy Storybook"
-  source ./scripts/deploy-storybook.sh
-fi
