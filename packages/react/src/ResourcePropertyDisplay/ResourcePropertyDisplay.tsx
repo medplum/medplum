@@ -1,8 +1,8 @@
 import {
-  buildTypeName,
   formatDateTime,
   formatPeriod,
   formatTiming,
+  getElementDefinitionTypeName,
   getTypedPropertyValue,
   PropertyType,
   TypedValue,
@@ -121,7 +121,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       }
       return (
         <BackboneElementDisplay
-          value={{ type: buildTypeName(property?.path?.split('.') as string[]), value }}
+          value={{ type: getElementDefinitionTypeName(property), value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />

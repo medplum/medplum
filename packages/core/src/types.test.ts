@@ -1,5 +1,11 @@
 import { ResourceType } from '@medplum/fhirtypes';
-import { getPropertyDisplayName, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
+import {
+  getElementDefinitionTypeName,
+  getPropertyDisplayName,
+  globalSchema,
+  indexSearchParameter,
+  indexStructureDefinition,
+} from './types';
 
 describe('Type Utils', () => {
   test('indexStructureDefinition', () => {
@@ -82,5 +88,16 @@ describe('Type Utils', () => {
     expect(getPropertyDisplayName('Patient.name')).toEqual('Name');
     expect(getPropertyDisplayName('Patient.birthDate')).toEqual('Birth Date');
     expect(getPropertyDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
+  });
+
+  test('getElementDefinitionTypeName', () => {
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] })).toEqual('string');
+    expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
+    expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
+      'PatientContact'
+    );
+    expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toEqual(
+      'TimingRepeat'
+    );
   });
 });

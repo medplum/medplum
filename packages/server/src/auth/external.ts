@@ -1,10 +1,11 @@
 import { badRequest, parseJWTPayload } from '@medplum/core';
-import { IdentityProvider } from '@medplum/fhirtypes';
+import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
+import { systemRepo } from '../fhir/repo';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
@@ -12,6 +13,18 @@ import { getDomainConfiguration } from './method';
  * External authentication callback
  * Based on: https://github.com/okta/okta-auth-js/blob/master/samples/generated/express-web-with-oidc/server.js
  */
+
+export interface ExternalAuthState {
+  domain?: string;
+  projectId?: string;
+  clientId?: string;
+  scope?: string;
+  nonce?: string;
+  launch?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  redirectUri?: string;
+}
 
 export const externalCallbackHandler = async (req: Request, res: Response): Promise<void> => {
   const code = req.query.code as string;
@@ -26,28 +39,31 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     return;
   }
 
-  const body = JSON.parse(state);
-  const domain = body.domain;
-  const domainConfig = await getDomainConfiguration(domain);
-  if (!domainConfig) {
-    sendOutcome(res, badRequest('Domain not found'));
-    return;
-  }
+  const body = JSON.parse(state) as ExternalAuthState;
 
-  const idp = domainConfig.identityProvider;
+  const { idp, client } = await getIdentityProvider(body);
   if (!idp) {
-    sendOutcome(res, badRequest('Domain does not support external authentication'));
+    sendOutcome(res, badRequest('Identity provider not found'));
     return;
   }
 
   const userInfo = await verifyCode(idp, code);
   const email = userInfo.email as string;
-  if (!email.endsWith('@' + domain)) {
+  if (body.domain && !email.endsWith('@' + body.domain)) {
     sendOutcome(res, badRequest('Email address does not match domain'));
     return;
   }
 
-  const existingUser = await getUserByEmail(email, body.projectId);
+  let projectId = body.projectId;
+  if (client) {
+    if (projectId !== undefined && projectId !== client.meta?.project) {
+      sendOutcome(res, badRequest('Invalid project'));
+      return;
+    }
+    projectId = client.meta?.project;
+  }
+
+  const existingUser = await getUserByEmail(email, projectId);
   if (!existingUser) {
     sendOutcome(res, badRequest('User not found'));
     return;
@@ -57,6 +73,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     authMethod: 'external',
     email,
     remember: true,
+    projectId: projectId,
     clientId: body.clientId,
     scope: body.scope || 'openid',
     nonce: body.nonce || randomUUID(),
@@ -67,6 +84,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     userAgent: req.get('User-Agent'),
   });
 
+  if (login.membership && body.redirectUri && client?.redirectUri) {
+    if (!body.redirectUri.startsWith(client.redirectUri)) {
+      sendOutcome(res, badRequest('Invalid redirect URI'));
+      return;
+    }
+    const redirectUrl = new URL(body.redirectUri);
+    redirectUrl.searchParams.set('code', login.code as string);
+    res.redirect(redirectUrl.toString());
+    return;
+  }
+
   const signInPage = login.launch ? 'oauth' : 'signin';
   const redirectUrl = new URL(getConfig().appBaseUrl + signInPage);
   redirectUrl.searchParams.set('login', login.id as string);
@@ -76,6 +104,31 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
   res.redirect(redirectUrl.toString());
 };
+
+/**
+ * Tries to find the identity provider configuration.
+ * @param state The external auth state.
+ * @returns External identity provider definition if found.
+ */
+async function getIdentityProvider(
+  state: ExternalAuthState
+): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
+  if (state.domain) {
+    const domainConfig = await getDomainConfiguration(state.domain);
+    if (domainConfig?.identityProvider) {
+      return { idp: domainConfig.identityProvider };
+    }
+  }
+
+  if (state.clientId) {
+    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
+    if (client?.identityProvider) {
+      return { idp: client.identityProvider, client };
+    }
+  }
+
+  return {};
+}
 
 /**
  * Returns ID token claims for the authorization code.

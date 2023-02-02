@@ -352,6 +352,27 @@ describe('Client', () => {
     expect(window.location.assign).toBeCalled();
   });
 
+  test('Sign in with external auth', async () => {
+    global.window = Object.create(window);
+    const assign = jest.fn();
+    Object.defineProperty(window, 'location', {
+      value: { assign },
+      writable: true,
+    });
+
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.signInWithExternalAuth(
+      'https://auth.example.com/authorize',
+      'external-client-123',
+      'https://me.example.com',
+      {
+        clientId: 'medplum-client-123',
+      }
+    );
+    expect(result).toBeUndefined();
+    expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
+  });
+
   test('New project success', async () => {
     const client = new MedplumClient(defaultOptions);
 
