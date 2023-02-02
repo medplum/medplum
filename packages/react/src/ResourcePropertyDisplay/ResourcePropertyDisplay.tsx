@@ -115,7 +115,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
-    default: {
+    default:
       if (!property?.path) {
         throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
       }
@@ -126,7 +126,6 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
-    }
   }
 }
 
