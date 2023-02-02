@@ -756,6 +756,29 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Initiates sign in with an external identity provider.
+   * @param authorizeUrl The external authorization URL.
+   * @param clientId The external client ID.
+   * @param redirectUri The external identity provider redirect URI.
+   * @param baseLogin The Medplum login request.
+   */
+  async signInWithExternalAuth(
+    authorizeUrl: string,
+    clientId: string,
+    redirectUri: string,
+    baseLogin: BaseLoginRequest
+  ): Promise<void> {
+    const loginRequest = await this.ensureCodeChallenge(baseLogin);
+    const url = new URL(authorizeUrl);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('scope', 'openid profile email');
+    url.searchParams.set('state', JSON.stringify(loginRequest));
+    window.location.assign(url.toString());
+  }
+
+  /**
    * Builds a FHIR URL from a collection of URL path components.
    * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
    * @category HTTP
@@ -1972,30 +1995,6 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
     url.searchParams.set('scope', loginRequest.scope || 'openid profile');
-    window.location.assign(url.toString());
-  }
-
-  /**
-   * Initiates sign in with an external identity provider.
-   * @param authorizeUrl The external authorization URL.
-   * @param clientId The external client ID.
-   * @param redirectUri The external identity provider redirect URI.
-   * @param baseLogin The Medplum login request.
-   */
-  async signInWithExternalAuth(
-    authorizeUrl: string,
-    clientId: string,
-    redirectUri: string,
-    baseLogin?: Partial<BaseLoginRequest>
-  ): Promise<void> {
-    const loginRequest = await this.ensureCodeChallenge(baseLogin || {});
-    const state = JSON.stringify(loginRequest);
-    const url = new URL(authorizeUrl);
-    url.searchParams.set('response_type', 'code');
-    url.searchParams.set('client_id', clientId);
-    url.searchParams.set('redirect_uri', redirectUri);
-    url.searchParams.set('scope', 'openid profile email');
-    url.searchParams.set('state', state);
     window.location.assign(url.toString());
   }
 
