@@ -62,5 +62,59 @@
       "react": "^18",
       "react-dom": "^18"
     }
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "extends": [
+      "stylelint-config-standard",
+      "stylelint-config-prettier"
+    ]
+  },
+  "eslintConfig": {
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "parserOptions": {
+      "project": "./tsconfig.base.json"
+    },
+    "plugins": ["@typescript-eslint"],
+    "extends": [
+      "eslint:recommended",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:prettier/recommended",
+      "plugin:react-hooks/recommended"
+    ],
+    "rules": {
+      "@typescript-eslint/explicit-function-return-type": [
+        "error",
+        {
+          "allowExpressions": true
+        }
+      ],
+      "@typescript-eslint/explicit-module-boundary-types": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+          "varsIgnorePattern": "^_"
+        }
+      ],
+      "prefer-promise-reject-errors": "error"
+    },
+    "ignorePatterns": [
+      "dist",
+      "node_modules",
+      "packages/**/dist/",
+      "packages/docs/build/",
+      "packages/docs/docusaurus.config.js",
+      "packages/docs/sidebars.js",
+      "babel.config.js",
+      "jest.sequencer.js",
+      "package-lock.json",
+      "rollup.config.mjs",
+      "webpack.config.js"
+    ]
   }
 }
