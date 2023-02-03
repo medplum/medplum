@@ -12,7 +12,7 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 
 ## Consume event data or webhooks from other platforms
 
-1. [Integrating Logistics (3PL) into your EHR](logistics-into-ehr.md)
+1. [Integrating Logistics (3PL) into your EHR](logistics.md)
 2. [Consuming HL7 Feeds and Converting to FHIR](hl7-into-fhir.md)
 3. Coming Soon: Consuming Lab Results from a lab instrument or LIS
 

@@ -1,4 +1,8 @@
-# Converting an HL7 Feed into FHIR Objects
+---
+sidebar_position: 8
+---
+
+# Converting HL7 to FHIR
 
 HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Some common HL7 feeds include:
 
@@ -40,7 +44,7 @@ When we this implementation is complete we will:
 
 - Make the bot that will listen for HL7 messages
   - First, [create a bot](https://app.medplum.com/admin/project) called ADT Handler Bot and save it
-  - Paste the code below into the Bot you created and save.  You can also find this bot and a corresponding test in the [Sample Bots Github Repository](https://github.com/medplum/medplum-demo-bots/).
+  - Paste the code below into the Bot you created and save. You can also find this bot and a corresponding test in the [Sample Bots Github Repository](https://github.com/medplum/medplum-demo-bots/).
 
 ```js
 import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';

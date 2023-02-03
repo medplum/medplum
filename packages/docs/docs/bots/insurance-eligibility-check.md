@@ -1,4 +1,8 @@
-# Insurance Eligibility Check Using Bots
+---
+sidebar_position: 9
+---
+
+# Insurance Eligibility Check
 
 Health insurance eligibility checks are a way to fetch information about a given policy, including the plan name, type, status (active or inactive) and any associated benefits. You can use eligibility checks to determine whether a patient's plan will cover particular medical service, treatment or equipment. Furthermore, by combining the relevant benefits, you can come up with an estimate of the coverage amount and patient responsibility.
 
