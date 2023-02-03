@@ -11,14 +11,14 @@ const MEDPLUM_BASE_URL = 'https://api.medplum.com/';
  * Your Medplum project ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  */
-const MEDPLUM_PROJECT_ID = 'f4d16028-3de1-4473-bf66-899461b658c6';
+const MEDPLUM_PROJECT_ID = 'MY_PROJECT_ID';
 
 /**
  * Your Medplum client ID.
  * You can find this value on the "Project Admin" page in the Medplum web app.
  * Note that the client must have the correct external auth provider configured.
  */
-const MEDPLUM_CLIENT_ID = 'e5054c52-4f72-4f42-b829-33c7fab5ad91';
+const MEDPLUM_CLIENT_ID = 'MY_CLIENT_ID';
 
 /**
  * Your web application redirect URL.
@@ -31,13 +31,13 @@ const WEB_APP_REDIRECT_URI = 'http://localhost:8000';
  * For example, this would be an Auth0, AWS Cognito, or Okta URL.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_AUTHORIZE_URL = 'https://dev-o5iawa52epeoajk5.us.auth0.com/authorize';
+const EXTERNAL_AUTHORIZE_URL = 'https://my-tenant.us.auth0.com/authorize';
 
 /**
  * External OAuth2 client ID.
  * This value is specific to your external auth provider.
  */
-const EXTERNAL_CLIENT_ID = 'AQsDXia1CzcviCx8k92sb2SNfxG3Wekk';
+const EXTERNAL_CLIENT_ID = 'MY_EXTERNAL_CLIENT_ID';
 
 /**
  * External OAuth2 redirect URI.
