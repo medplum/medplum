@@ -13,7 +13,6 @@ DEPLOY_APP=false
 DEPLOY_BOT_LAYER=false
 DEPLOY_GRAPHIQL=false
 DEPLOY_SERVER=false
-DEPLOY_STORYBOOK=false
 
 #
 # Inspect files changed
@@ -31,7 +30,6 @@ if [[ "$FILES_CHANGED" =~ package-lock.json ]]; then
   DEPLOY_APP=true
   DEPLOY_GRAPHIQL=true
   DEPLOY_SERVER=true
-  DEPLOY_STORYBOOK=true
 fi
 
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
@@ -67,7 +65,6 @@ fi
 
 if [[ "$FILES_CHANGED" =~ packages/react ]]; then
   DEPLOY_APP=true
-  DEPLOY_STORYBOOK=true
 fi
 
 #
@@ -87,9 +84,4 @@ fi
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
   source ./scripts/deploy-server.sh
-fi
-
-if [[ "$DEPLOY_STORYBOOK" = true ]]; then
-  echo "Deploy Storybook"
-  source ./scripts/deploy-storybook.sh
 fi
