@@ -1,19 +1,19 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
 
-# Client Credentials Authentication
+# Client Credentials
 
-The Medplum API uses standard OAuth2/OpenID authentication. "Client Credentials Flow" is recommended for machine-to-machine access.
+The Medplum API uses standard OAuth2/OpenID authentication. The "Client Credentials Flow" is recommended for machine-to-machine access.
 
 ## Obtaining Credentials
 
-This tutorial assumes you already have a Medplum account in good standing. (If not, please [register](https://app.medplum.com/register).)
+This tutorial assumes you already have a Medplum account. (If not, please [register](https://app.medplum.com/register).)
 
-You will need to create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApplication [here](https://app.medplum.com/admin/project/client).
+Create a [ClientApplication](https://app.medplum.com/ClientApplication) if one does not already exist. You can create a new ClientApplication on the [Project Admin page](https://app.medplum.com/admin/project/client).
 
 For this example you will need the `ID` and `Secret`.
 

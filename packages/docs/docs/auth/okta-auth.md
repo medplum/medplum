@@ -1,12 +1,20 @@
-# Enabling Okta Authentication
+---
+sidebar_position: 6
+---
 
-This guide walks through how to set up Okta authentication for your domain. **Okta authentication is enabled at the domain level, that means that once Okta login is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using Okta.** Enabling Okta for a domain will apply to all emails at that domain, including dev accounts and name+text@mydomain.com type emails.
+# Okta Authentication
 
-Users will need a User account of both Medplum and Okta to enable access, Medplum accounts are not automatically provisioned for Okta users.
+This guide walks through how to set up Okta authentication for your domain.
+
+**Okta authentication is enabled at the domain level. That means that once Okta login is enabled for mydomain.com, any user that attempts to sign in with an email on that domain (name@mydomain.com) will be prompted to authenticate using Okta.**
+
+Enabling Okta for a domain will apply to all emails at that domain, including dev accounts and name+text@mydomain.com type emails.
+
+Users will need accounts with both Medplum and Okta to enable access. Medplum accounts are not automatically provisioned for Okta users.
 
 :::caution Note
 
-Okta authentication requires an Enterprise account, for those [self-hosting](/docs/self-hosting), setting it up requires admin privileges.
+Okta authentication requires an Enterprise account. If [self-hosting](/docs/self-hosting), setting it up requires super admin privileges.
 
 :::
 
