@@ -17,5 +17,9 @@
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/core": "*"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
   }
 }

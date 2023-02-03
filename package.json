@@ -65,11 +65,7 @@
   },
   "prettier": {
     "printWidth": 120,
-    "singleQuote": true,
-    "extends": [
-      "stylelint-config-standard",
-      "stylelint-config-prettier"
-    ]
+    "singleQuote": true
   },
   "eslintConfig": {
     "root": true,
