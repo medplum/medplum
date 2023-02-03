@@ -1,4 +1,4 @@
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, MedplumClient } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
@@ -11,24 +11,12 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
   return (
     <ResourceTimeline
       value={props.resource}
-      buildSearchRequests={(resource: Resource) => ({
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'GET',
-              url: `${getReferenceString(resource)}/_history`,
-            },
-          },
-          {
-            request: {
-              method: 'GET',
-              url: `AuditEvent?entity=${getReferenceString(resource)}&_sort=-_lastUpdated`,
-            },
-          },
-        ],
-      })}
+      loadTimelineResources={async (medplum: MedplumClient, resource: Resource) => {
+        return Promise.all([
+          medplum.readHistory(resource.resourceType, resource.id as string),
+          medplum.search('AuditEvent', '_sort=-_lastUpdated&entity=' + getReferenceString(resource)),
+        ]);
+      }}
     />
   );
 }
