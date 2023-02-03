@@ -70,16 +70,11 @@ if (code) {
 // The login button handler
 // The user can click this button to initiate the OAuth flow
 $('login').addEventListener('click', () =>
-  medplum.signInWithExternalAuth(
-    EXTERNAL_AUTHORIZE_URL,
-    EXTERNAL_CLIENT_ID,
-    EXTERNAL_REDIRECT_URI,
-    {
-      projectId: MEDPLUM_PROJECT_ID,
-      clientId: MEDPLUM_CLIENT_ID,
-      redirectUri: WEB_APP_REDIRECT_URI,
-    }
-  )
+  medplum.signInWithExternalAuth(EXTERNAL_AUTHORIZE_URL, EXTERNAL_CLIENT_ID, EXTERNAL_REDIRECT_URI, {
+    projectId: MEDPLUM_PROJECT_ID,
+    clientId: MEDPLUM_CLIENT_ID,
+    redirectUri: WEB_APP_REDIRECT_URI,
+  })
 );
 // end-block signInWithExternalAuth
 
