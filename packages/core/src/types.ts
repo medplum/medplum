@@ -279,6 +279,30 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
           type: 'reference',
           expression: resourceType + '.meta.compartment',
         } as SearchParameter,
+        _profile: {
+          base: [resourceType],
+          code: '_profile',
+          type: 'uri',
+          expression: resourceType + '.meta.profile',
+        } as SearchParameter,
+        _security: {
+          base: [resourceType],
+          code: '_security',
+          type: 'token',
+          expression: resourceType + '.meta.security',
+        } as SearchParameter,
+        _source: {
+          base: [resourceType],
+          code: '_source',
+          type: 'uri',
+          expression: resourceType + '.meta.source',
+        } as SearchParameter,
+        _tag: {
+          base: [resourceType],
+          code: '_tag',
+          type: 'token',
+          expression: resourceType + '.meta.tag',
+        } as SearchParameter,
       };
     }
 

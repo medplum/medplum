@@ -2324,4 +2324,64 @@ describe('FHIR Repo', () => {
     });
     expect(bundle.total).toEqual(0);
   });
+
+  test('Resource search params', async () => {
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
+        security: [{ system: 'http://hl7.org/fhir/v3/Confidentiality', code: 'N' }],
+        source: 'http://example.org',
+        tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
+      },
+    });
+
+    const bundle1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_profile',
+          operator: Operator.EQUALS,
+          value: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient',
+        },
+      ],
+    });
+    expect(bundleContains(bundle1, patient)).toBeTruthy();
+
+    const bundle2 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_security',
+          operator: Operator.EQUALS,
+          value: 'http://hl7.org/fhir/v3/Confidentiality|N',
+        },
+      ],
+    });
+    expect(bundleContains(bundle2, patient)).toBeTruthy();
+
+    const bundle3 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_source',
+          operator: Operator.EQUALS,
+          value: 'http://example.org',
+        },
+      ],
+    });
+    expect(bundleContains(bundle3, patient)).toBeTruthy();
+
+    const bundle4 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_tag',
+          operator: Operator.EQUALS,
+          value: 'http://hl7.org/fhir/v3/ObservationValue|SUBSETTED',
+        },
+      ],
+    });
+    expect(bundleContains(bundle4, patient)).toBeTruthy();
+  });
 });
