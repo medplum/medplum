@@ -1053,7 +1053,7 @@ export class Repository {
       predicate.where(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
     } else if (param.type === 'string') {
       this.#addStringSearchFilter(predicate, details, filter);
-    } else if (param.type === 'token') {
+    } else if (param.type === 'token' || param.type === 'uri') {
       this.#addTokenSearchFilter(predicate, resourceType, details, filter);
     } else if (param.type === 'reference') {
       this.#addReferenceSearchFilter(predicate, details, filter);
@@ -1078,19 +1078,23 @@ export class Repository {
    */
   #trySpecialSearchParameter(predicate: Conjunction, resourceType: string, filter: Filter): boolean {
     const code = filter.code;
-    if (!code.startsWith('_')) {
-      return false;
-    }
 
     if (code === '_id') {
       this.#addTokenSearchFilter(predicate, resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
-    } else if (code === '_lastUpdated') {
-      this.#addDateSearchFilter(predicate, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
-    } else if (code === '_compartment' || code === '_project') {
-      predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
+      return true;
     }
 
-    return true;
+    if (code === '_lastUpdated') {
+      this.#addDateSearchFilter(predicate, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+      return true;
+    }
+
+    if (code === '_compartment' || code === '_project') {
+      predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -1311,7 +1315,9 @@ export class Repository {
    */
   #buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
     if (
-      searchParam.code?.startsWith('_') ||
+      searchParam.code === '_id' ||
+      searchParam.code === '_lastUpdated' ||
+      searchParam.code === '_compartment' ||
       searchParam.type === 'composite' ||
       this.#isIndexTable(resource.resourceType, searchParam)
     ) {
