@@ -21,6 +21,10 @@ export async function initDatabase(config: MedplumDatabaseConfig): Promise<void>
     password: config.password,
   });
 
+  pool.on('error', (err) => {
+    logger.error('Database connection error', err);
+  });
+
   let client: PoolClient | undefined;
   try {
     client = await pool.connect();

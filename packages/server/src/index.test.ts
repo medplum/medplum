@@ -48,6 +48,10 @@ jest.mock('pg', () => {
       return (await this.connect()).query(sql);
     }
 
+    on(): void {
+      // Nothing to do
+    }
+
     end(): void {
       // Nothing to do
     }
