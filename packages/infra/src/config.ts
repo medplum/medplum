@@ -4,7 +4,7 @@ export interface MedplumInfraConfig {
   accountNumber: string;
   region: string;
   domainName: string;
-  vpcArn: string;
+  vpcId: string;
   apiPort: number;
   apiDomainName: string;
   apiSslCertArn: string;
@@ -16,6 +16,7 @@ export interface MedplumInfraConfig {
   storagePublicKey: string;
   maxAzs: number;
   rdsInstances: number;
+  rdsInstanceType: string;
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
