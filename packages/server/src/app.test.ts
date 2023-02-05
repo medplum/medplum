@@ -2,6 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
+import { getClient } from './database';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -73,6 +74,21 @@ describe('App', () => {
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
     expect(console.log).toHaveBeenCalled();
+    await shutdownApp();
+  });
+
+  test('Database disconnect', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+
+    // Mock database disconnect
+    // Error should be logged, but should not crash the server
+    console.log = jest.fn();
+    const error = new Error('Mock database disconnect');
+    getClient().emit('error', error);
+    expect(console.log).toHaveBeenCalledWith('ERROR', expect.anything(), 'Database connection error', error);
+
     await shutdownApp();
   });
 
