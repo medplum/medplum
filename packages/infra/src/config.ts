@@ -16,6 +16,7 @@ export interface MedplumInfraConfig {
   storagePublicKey: string;
   maxAzs: number;
   rdsInstances: number;
+  rdsInstanceType: string;
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;

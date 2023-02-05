@@ -75,11 +75,13 @@ export class BackEnd extends Construct {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
+        instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
       },
       backup: {
         retention: Duration.days(7),
       },
       cloudwatchLogsExports: ['postgresql'],
+      instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
     });
 
     // Redis
