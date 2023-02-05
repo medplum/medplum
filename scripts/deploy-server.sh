@@ -5,11 +5,6 @@ if [[ -z "${DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
-if [[ -z "${ECR_REPOSITORY}" ]]; then
-  echo "ECR_REPOSITORY is missing"
-  exit 1
-fi
-
 if [[ -z "${ECS_CLUSTER}" ]]; then
   echo "ECS_CLUSTER is missing"
   exit 1
@@ -26,9 +21,14 @@ set -e
 # Echo commands
 set -x
 
+# Get version
+VERSION=$(node -p "require('./package.json').version")
+
 # Build server tarball
 tar \
   --exclude='*.js.map' \
+  --exclude='*.cjs.map' \
+  --exclude='*.mjs.map' \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
@@ -41,19 +41,14 @@ tar \
   packages/server/package.json \
   packages/server/dist
 
-# Build the Docker image
-# Tag for both Docker Hub and AWS Elastic Container Registry (ECR)
-docker build . \
-  -t "$DOCKERHUB_REPOSITORY:latest" \
-  -t "$DOCKERHUB_REPOSITORY:$GITHUB_SHA" \
-  -t "$ECR_REPOSITORY:latest" \
-  -t "$ECR_REPOSITORY:$GITHUB_SHA"
-
-# Push the Docker image
-docker push "$DOCKERHUB_REPOSITORY:latest"
-docker push "$DOCKERHUB_REPOSITORY:$GITHUB_SHA"
-docker push "$ECR_REPOSITORY:latest"
-docker push "$ECR_REPOSITORY:$GITHUB_SHA"
+# Build and push Docker images
+docker buildx build \
+  --platform linux/amd64,linux/arm64,linux/arm/v7 \
+  --tag "$DOCKERHUB_REPOSITORY:latest" \
+  --tag "$DOCKERHUB_REPOSITORY:$VERSION" \
+  --tag "$DOCKERHUB_REPOSITORY:$GITHUB_SHA" \
+  --push \
+  .
 
 # Update the medplum fargate service
 aws ecs update-service \
