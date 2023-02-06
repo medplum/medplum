@@ -1,4 +1,4 @@
-import { Group, NativeSelect, NumberInput, TextInput } from '@mantine/core';
+import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
 import React, { useState, WheelEvent } from 'react';
 
@@ -33,13 +33,14 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
           })
         }
       />
-      <NumberInput
+      <TextInput
         id={props.name}
         name={props.name}
         data-testid={props.name + '-value'}
         type="number"
         placeholder="Value"
         defaultValue={value?.value}
+        step="any"
         onWheel={(e: WheelEvent<HTMLInputElement>) => {
           if (props.disableWheel) {
             e.currentTarget.blur();
@@ -48,7 +49,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         onChange={(e) => {
           setValueWrapper({
             ...value,
-            value: e,
+            value: tryParseNumber(e.currentTarget.value),
           });
         }}
       />
@@ -65,4 +66,11 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
       />
     </Group>
   );
+}
+
+function tryParseNumber(str: string): number | undefined {
+  if (!str) {
+    return undefined;
+  }
+  return parseFloat(str);
 }

@@ -33,7 +33,7 @@ export const ScrollWheelDisabled = (): JSX.Element => (
       name="demo"
       disableWheel
       defaultValue={{
-        value: 2,
+        value: 2.2,
         unit: 'ng',
       }}
     />
