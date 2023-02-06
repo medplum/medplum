@@ -153,7 +153,7 @@ const medplum = new MedplumClient({
 });
 
 async function setup(args?: SignInFormProps): Promise<void> {
-  medplum.signOut();
+  await medplum.signOut();
 
   const props = {
     onSuccess: jest.fn(),

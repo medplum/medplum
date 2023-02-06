@@ -117,7 +117,7 @@ const medplum = new MedplumClient({
 });
 
 async function setup(props: RegisterFormProps): Promise<void> {
-  medplum.signOut();
+  await medplum.signOut();
 
   await act(async () => {
     render(
