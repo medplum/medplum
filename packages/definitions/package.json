@@ -11,7 +11,7 @@
     "directory": "packages/definitions"
   },
   "scripts": {
-    "clean": "rimraf dist/index.*",
+    "clean": "rimraf dist/index.js dist/index.d.ts",
     "build": "npm run clean && tsc",
     "test": "jest"
   },
