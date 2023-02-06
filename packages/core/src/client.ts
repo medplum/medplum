@@ -769,7 +769,8 @@ export class MedplumClient extends EventTarget {
    * Does not invalidate tokens with the server.
    * @category Authentication
    */
-  signOut(): void {
+  async signOut(): Promise<void> {
+    await this.post(this.#logoutUrl, {});
     this.clear();
   }
 
