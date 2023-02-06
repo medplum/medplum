@@ -76,6 +76,7 @@ export class BackEnd extends Construct {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
         instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
+        enablePerformanceInsights: true,
       },
       backup: {
         retention: Duration.days(7),
