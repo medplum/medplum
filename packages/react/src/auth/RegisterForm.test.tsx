@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { GoogleCredentialResponse, MedplumClient } from '@medplum/core';
+import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID, webcrypto } from 'crypto';
 import React from 'react';
@@ -87,6 +87,9 @@ function mockFetch(url: string, options: any): Promise<any> {
         name: [{ given: ['Medplum'], family: ['Admin'] }],
       },
     };
+  } else if (url.endsWith('/oauth2/logout')) {
+    status = 200;
+    result = allOk;
   } else {
     console.log(options.method, url);
   }
@@ -114,7 +117,7 @@ const medplum = new MedplumClient({
 });
 
 async function setup(props: RegisterFormProps): Promise<void> {
-  medplum.signOut();
+  await medplum.signOut();
 
   await act(async () => {
     render(

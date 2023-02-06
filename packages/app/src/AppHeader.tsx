@@ -144,8 +144,8 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
             </Menu.Item>
             <Menu.Item
               icon={<IconLogout size={14} stroke={1.5} />}
-              onClick={() => {
-                medplum.signOut();
+              onClick={async () => {
+                await medplum.signOut();
                 navigate('/signin');
               }}
             >

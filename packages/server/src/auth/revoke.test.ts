@@ -23,7 +23,7 @@ describe('Revoke', () => {
     expect(res.status).toBe(401);
   });
 
-  test('User configuration', async () => {
+  test('Revoke session', async () => {
     const email = `alex${randomUUID()}@example.com`;
     const password = randomUUID();
 
