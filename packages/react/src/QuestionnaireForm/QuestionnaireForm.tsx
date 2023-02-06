@@ -66,7 +66,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   function setItems(newResponseItems: QuestionnaireResponseItem[]): void {
     const newResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
-      status: 'completed',
       item: newResponseItems,
     };
     setResponse(newResponse);
@@ -88,6 +87,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
             subject: props.subject,
             source: createReference(source as ProfileResource),
             authored: new Date().toISOString(),
+            status: 'completed',
           });
         }
       }}

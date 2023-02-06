@@ -240,6 +240,31 @@ describe('QuestionnaireForm', () => {
     expect(answers['q6']).toMatchObject({ valueString: 'initial answer' });
   });
 
+  test('Handles submit (empty)', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onSubmit).toBeCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.resourceType).toBe('QuestionnaireResponse');
+    expect(response.status).toBe('completed');
+    expect(response.authored).toBeDefined();
+    expect(response.source).toBeDefined();
+  });
+
   each([
     [QuestionnaireItemType.decimal, 'number', '123.456'],
     [QuestionnaireItemType.integer, 'number', '123'],
