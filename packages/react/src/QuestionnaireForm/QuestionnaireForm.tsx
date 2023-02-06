@@ -320,7 +320,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           defaultValue={initial?.valueQuantity}
           onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
-          disableScroll
+          disableWheel
         />
       );
     case QuestionnaireItemType.choice:

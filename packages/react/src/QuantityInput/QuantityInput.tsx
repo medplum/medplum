@@ -6,12 +6,11 @@ export interface QuantityInputProps {
   name: string;
   defaultValue?: Quantity;
   onChange?: (value: Quantity) => void;
-  disableScroll?: boolean;
+  disableWheel?: boolean;
 }
 
 export function QuantityInput(props: QuantityInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
-  const disableScroll = !!props.disableScroll;
 
   function setValueWrapper(newValue: Quantity): void {
     setValue(newValue);
@@ -42,7 +41,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         placeholder="Value"
         defaultValue={value?.value}
         onWheel={(e: WheelEvent<HTMLInputElement>) => {
-          if (disableScroll) {
+          if (props.disableWheel) {
             e.currentTarget.blur();
           }
         }}

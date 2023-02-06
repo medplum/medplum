@@ -31,7 +31,7 @@ export const ScrollWheelDisabled = (): JSX.Element => (
   <Document>
     <QuantityInput
       name="demo"
-      disableScroll
+      disableWheel
       defaultValue={{
         value: 2,
         unit: 'ng',
