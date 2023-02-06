@@ -63,4 +63,18 @@ describe('QuantityInput', () => {
     expect(lastValue).toBeDefined();
     expect(lastValue).toMatchObject({ comparator: '<', value: 123, unit: 'mg' });
   });
+
+  test('Set value with scroll', async () => {
+    render(<QuantityInput name="a" defaultValue={{ value: 2.3, unit: 'ng' }} />);
+
+    const valueInput = screen.getByPlaceholderText('Value');
+    fireEvent.scroll(valueInput, {
+      deltaY: 100,
+    });
+    fireEvent.change(valueInput, {
+      target: { value: '2.4' },
+    });
+
+    expect(valueInput).toHaveValue(2.4);
+  });
 });
