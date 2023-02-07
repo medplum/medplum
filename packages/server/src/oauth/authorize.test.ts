@@ -1,4 +1,5 @@
-import { ClientApplication, Project } from '@medplum/fhirtypes';
+import { Operator } from '@medplum/core';
+import { ClientApplication, Login, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import setCookieParser from 'set-cookie-parser';
@@ -8,7 +9,9 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig } from '../config';
+import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
+import { revokeLogin } from './utils';
 
 const app = express();
 const email = randomUUID() + '@example.com';
@@ -230,10 +233,20 @@ describe('OAuth Authorize', () => {
       email,
       password,
       scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res1.status).toBe(200);
     expect(res1.body.code).toBeDefined();
     expect(res1.headers['set-cookie']).toBeDefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.id_token).toBeDefined();
 
     const cookies = setCookieParser.parse(res1.headers['set-cookie']);
     expect(cookies.length).toBe(1);
@@ -249,14 +262,72 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
       prompt: 'none',
     });
-    const res2 = await request(app)
+
+    const res3 = await request(app)
       .get('/oauth2/authorize?' + params.toString())
       .set('Cookie', cookie.name + '=' + cookie.value);
-    expect(res2.status).toBe(302);
-    expect(res2.headers.location).toBeDefined();
-    const location = new URL(res2.headers.location);
+    expect(res3.status).toBe(302);
+    expect(res3.headers.location).toBeDefined();
+
+    const location = new URL(res3.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('error')).toBeNull();
+  });
+
+  test('Revoked cookie', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeDefined();
+    expect(res1.headers['set-cookie']).toBeDefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.id_token).toBeDefined();
+
+    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    expect(cookies.length).toBe(1);
+
+    const cookie = cookies[0];
+
+    await revokeLogin(
+      (
+        await systemRepo.search({
+          resourceType: 'Login',
+          filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
+        })
+      )?.entry?.[0]?.resource as Login
+    );
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+      prompt: 'none',
+    });
+
+    const res3 = await request(app)
+      .get('/oauth2/authorize?' + params.toString())
+      .set('Cookie', cookie.name + '=' + cookie.value);
+    expect(res3.status).toBe(302);
+    expect(res3.headers.location).toBeDefined();
+
+    const location = new URL(res3.headers.location);
+    expect(location.host).toBe('example.com');
+    expect(location.searchParams.get('error')).toBe('login_required');
   });
 
   test('Using id_token_hint', async () => {
