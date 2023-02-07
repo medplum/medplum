@@ -352,10 +352,10 @@ function buildWhereCondition(
 ): Expression {
   const parts = query.split('|');
   if (parts.length === 2) {
-    return new Conjunction([
-      new Condition(new Column(tableName, 'system'), Operator.EQUALS, parts[0]),
-      buildValueCondition(selectQuery, subQuery, tableName, operator, parts[1]),
-    ]);
+    const systemCondition = new Condition(new Column(tableName, 'system'), Operator.EQUALS, parts[0]);
+    return parts[1]
+      ? new Conjunction([systemCondition, buildValueCondition(selectQuery, subQuery, tableName, operator, parts[1])])
+      : systemCondition;
   } else {
     return buildValueCondition(selectQuery, subQuery, tableName, operator, query);
   }
