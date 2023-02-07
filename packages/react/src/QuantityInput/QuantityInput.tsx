@@ -1,11 +1,12 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import React, { useState, WheelEvent } from 'react';
 
 export interface QuantityInputProps {
   name: string;
   defaultValue?: Quantity;
   onChange?: (value: Quantity) => void;
+  disableWheel?: boolean;
 }
 
 export function QuantityInput(props: QuantityInputProps): JSX.Element {
@@ -37,15 +38,20 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         name={props.name}
         data-testid={props.name + '-value'}
         type="number"
-        step="any"
         placeholder="Value"
-        defaultValue={value?.value?.toString()}
-        onChange={(e) =>
+        defaultValue={value?.value}
+        step="any"
+        onWheel={(e: WheelEvent<HTMLInputElement>) => {
+          if (props.disableWheel) {
+            e.currentTarget.blur();
+          }
+        }}
+        onChange={(e) => {
           setValueWrapper({
             ...value,
             value: tryParseNumber(e.currentTarget.value),
-          })
-        }
+          });
+        }}
       />
       <TextInput
         placeholder="Unit"
