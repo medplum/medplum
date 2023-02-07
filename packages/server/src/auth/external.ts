@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
+import { logger } from '../logger';
 import { getUserByEmail, tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
@@ -144,16 +145,21 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
   params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
   params.append('code', code);
 
-  const response = await fetch(idp.tokenUrl as string, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      Authorization: `Basic ${auth}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: params.toString(),
-  });
+  try {
+    const response = await fetch(idp.tokenUrl as string, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
 
-  const tokens = await response.json();
-  return parseJWTPayload(tokens.id_token);
+    const tokens = await response.json();
+    return parseJWTPayload(tokens.id_token);
+  } catch (err) {
+    logger.warn('Failed to verify code', err);
+    throw badRequest('Failed to verify code - check your identity provider configuration');
+  }
 }

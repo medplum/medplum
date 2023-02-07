@@ -266,6 +266,31 @@ describe('External', () => {
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Invalid redirect URI');
   });
+
+  test('Invalid token request', async () => {
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        clientId: externalAuthClient.id,
+        redirectUri: 'https://nope.example.com',
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => {
+        throw new Error('Invalid JSON');
+      },
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
+  });
 });
 
 /**
