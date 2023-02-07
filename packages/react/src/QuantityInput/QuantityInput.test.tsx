@@ -64,11 +64,11 @@ describe('QuantityInput', () => {
     expect(lastValue).toMatchObject({ comparator: '<', value: 123, unit: 'mg' });
   });
 
-  test('Set value with scroll', async () => {
+  test('Set value with wheel', async () => {
     render(<QuantityInput name="a" defaultValue={{ value: 2.3, unit: 'ng' }} />);
 
     const valueInput = screen.getByPlaceholderText('Value');
-    fireEvent.scroll(valueInput, {
+    fireEvent.wheel(valueInput, {
       deltaY: 100,
     });
     fireEvent.change(valueInput, {
@@ -76,5 +76,16 @@ describe('QuantityInput', () => {
     });
 
     expect(valueInput).toHaveValue(2.4);
+  });
+
+  test('Disable wheel', async () => {
+    render(<QuantityInput name="a" disableWheel defaultValue={{ value: 2.3, unit: 'ng' }} />);
+
+    const valueInput = screen.getByPlaceholderText('Value');
+
+    fireEvent.wheel(valueInput, {
+      deltaY: 100,
+    });
+    expect(valueInput).toHaveValue(2.3);
   });
 });
