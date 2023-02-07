@@ -218,7 +218,8 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     ],
   });
 
-  return bundle.entry?.[0]?.resource;
+  const login = bundle.entry?.[0]?.resource;
+  return login && login.granted && !login.revoked ? login : undefined;
 }
 
 /**
