@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useState } from 'react';
@@ -99,5 +99,37 @@ describe('useResource', () => {
 
     fireEvent.click(screen.getByText('Click'));
     expect(el.innerHTML).toContain('456');
+  });
+
+  test('Responds to value edit', () => {
+    function TestComponentWrapper(): JSX.Element {
+      const [resource, setResource] = useState<ServiceRequest>({
+        id: '123',
+        meta: { versionId: '1' },
+        resourceType: 'ServiceRequest',
+        status: 'draft',
+      });
+      return (
+        <>
+          <button onClick={() => setResource((sr) => ({ ...sr, status: 'active' }))}>Click</button>
+          <TestComponent value={resource} />
+        </>
+      );
+    }
+
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <TestComponentWrapper />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).not.toContain('active');
+
+    fireEvent.click(screen.getByText('Click'));
+    expect(el.innerHTML).toContain('active');
   });
 });
