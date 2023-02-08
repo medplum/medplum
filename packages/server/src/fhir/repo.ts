@@ -627,7 +627,7 @@ export class Repository {
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
-  async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.#isSuperAdmin()) {
       throw forbidden;
     }
@@ -643,7 +643,7 @@ export class Repository {
    * @param resource The resource.
    * @returns The reindexed resource.
    */
-  async #reindexResourceImpl<T extends Resource>(resource: T): Promise<T> {
+  async #reindexResourceImpl<T extends Resource>(resource: T): Promise<void> {
     (resource.meta as Meta).compartment = this.#getCompartments(resource);
 
     // Note: We don't try/catch this because if connecting throws an exception.
@@ -661,8 +661,6 @@ export class Repository {
     } finally {
       client.release();
     }
-
-    return resource;
   }
 
   /**
@@ -672,14 +670,13 @@ export class Repository {
    * @param resourceType The resource type.
    * @param id The resource ID.
    */
-  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<T> {
+  async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.#isSuperAdmin() && !this.#context.projectAdmin) {
       throw forbidden;
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
-    await addSubscriptionJobs(resource);
-    return resource as T;
+    return addSubscriptionJobs(resource);
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
