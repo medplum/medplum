@@ -24,6 +24,10 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
   const [resource, setResource] = useState<T | undefined>(getInitialResource(medplum, value));
 
   useEffect(() => {
+    setResource(getInitialResource(medplum, value));
+  }, [medplum, value]);
+
+  useEffect(() => {
     let subscribed = true;
 
     if (!resource && value && 'reference' in value && value.reference) {

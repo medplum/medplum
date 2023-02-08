@@ -1,8 +1,8 @@
 import { createReference } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React, { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useResource } from './useResource';
@@ -72,5 +72,64 @@ describe('useResource', () => {
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).toBe('');
+  });
+
+  test('Responds to value change', () => {
+    function TestComponentWrapper(): JSX.Element {
+      const [id, setId] = useState('123');
+      return (
+        <>
+          <button onClick={() => setId('456')}>Click</button>
+          <TestComponent value={{ id, resourceType: 'ServiceRequest' }} />
+        </>
+      );
+    }
+
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <TestComponentWrapper />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).toContain('123');
+
+    fireEvent.click(screen.getByText('Click'));
+    expect(el.innerHTML).toContain('456');
+  });
+
+  test('Responds to value edit', () => {
+    function TestComponentWrapper(): JSX.Element {
+      const [resource, setResource] = useState<ServiceRequest>({
+        id: '123',
+        meta: { versionId: '1' },
+        resourceType: 'ServiceRequest',
+        status: 'draft',
+      });
+      return (
+        <>
+          <button onClick={() => setResource((sr) => ({ ...sr, status: 'active' }))}>Click</button>
+          <TestComponent value={resource} />
+        </>
+      );
+    }
+
+    render(
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum}>
+          <TestComponentWrapper />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).not.toContain('active');
+
+    fireEvent.click(screen.getByText('Click'));
+    expect(el.innerHTML).toContain('active');
   });
 });
