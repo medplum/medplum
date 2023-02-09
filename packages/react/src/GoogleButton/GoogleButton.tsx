@@ -54,22 +54,17 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   return <div ref={parentRef} />;
 }
 
-export function getGoogleClientId(clientId: string | undefined, origin: string | undefined): string | undefined {
+export function getGoogleClientId(clientId: string | undefined): string | undefined {
   if (clientId) {
     return clientId;
   }
 
-  if (!origin) {
-    if (typeof window !== 'undefined') {
-      origin = window.location.protocol + '//' + window.location.host;
-    } else {
-      origin = '';
+  if (typeof window !== 'undefined') {
+    const origin = window.location.protocol + '//' + window.location.host;
+    const authorizedOrigins = process.env.GOOGLE_AUTH_ORIGINS?.split(',') ?? [];
+    if (authorizedOrigins.includes(origin)) {
+      return process.env.GOOGLE_CLIENT_ID;
     }
-  }
-
-  const authorizedOrigins = process.env.GOOGLE_AUTH_ORIGINS?.split(',') ?? [];
-  if (authorizedOrigins.includes(origin)) {
-    return process.env.GOOGLE_CLIENT_ID;
   }
 
   return undefined;

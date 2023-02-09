@@ -10,7 +10,6 @@ import { MfaForm } from './MfaForm';
 import { NewProjectForm } from './NewProjectForm';
 
 export interface SignInFormProps extends BaseLoginRequest {
-  readonly origin?: string;
   readonly login?: string;
   readonly chooseScopes?: boolean;
   readonly onSuccess?: () => void;

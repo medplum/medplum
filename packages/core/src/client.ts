@@ -782,11 +782,6 @@ export class MedplumClient extends EventTarget {
    * @param loginParams Optional login parameters.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | void> {
-    const window = getWindow();
-    if (!window) {
-      // This method is only available in the browser.
-      return;
-    }
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -803,11 +798,6 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   signOutWithRedirect(): void {
-    const window = getWindow();
-    if (!window) {
-      // This method is only available in the browser.
-      return;
-    }
     window.location.assign(this.#logoutUrl);
   }
 
@@ -824,11 +814,6 @@ export class MedplumClient extends EventTarget {
     redirectUri: string,
     baseLogin: BaseLoginRequest
   ): Promise<void> {
-    const window = getWindow();
-    if (!window) {
-      // This method is only available in the browser.
-      return;
-    }
     const loginRequest = await this.ensureCodeChallenge(baseLogin);
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
@@ -2094,11 +2079,6 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   async #requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
-    const window = getWindow();
-    if (!window) {
-      // This method is only available in the browser.
-      return;
-    }
     const loginRequest = await this.ensureCodeChallenge(loginParams || {});
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
@@ -2233,10 +2213,6 @@ export class MedplumClient extends EventTarget {
    */
   #setupStorageListener(): void {
     try {
-      const window = getWindow();
-      if (!window) {
-        return;
-      }
       window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === null || e.key === 'activeLogin') {
           // Storage events fire when different tabs make changes.
