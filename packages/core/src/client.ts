@@ -2084,7 +2084,7 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId || (this.#clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getBaseUrl());
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
     url.searchParams.set('scope', loginRequest.scope || 'openid profile');
@@ -2101,7 +2101,7 @@ export class MedplumClient extends EventTarget {
     formBody.set('grant_type', 'authorization_code');
     formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
-    formBody.set('redirect_uri', getBaseUrl());
+    formBody.set('redirect_uri', getWindowOrigin());
 
     const codeVerifier = sessionStorage.getItem('codeVerifier');
     if (codeVerifier) {
@@ -2254,7 +2254,7 @@ function getDefaultFetch(): FetchLike {
  * Returns the base URL for the current page.
  * @category HTTP
  */
-function getBaseUrl(): string {
+function getWindowOrigin(): string {
   const window = getWindow();
   return window ? window.location.protocol + '//' + window.location.host + '/' : '';
 }

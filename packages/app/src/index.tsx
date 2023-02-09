@@ -4,7 +4,7 @@ import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { App } from './App';
 
 if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
@@ -53,17 +53,19 @@ const theme: MantineThemeOverride = {
   },
 };
 
+const router = createBrowserRouter([{ path: '*', element: <App /> }]);
+
+const navigate = (path: string): Promise<void> => router.navigate(path);
+
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <MedplumProvider medplum={medplum}>
-        <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
-          <NotificationsProvider position="bottom-right">
-            <App />
-          </NotificationsProvider>
-        </MantineProvider>
-      </MedplumProvider>
-    </BrowserRouter>
+    <MedplumProvider medplum={medplum} navigate={navigate}>
+      <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
+        <NotificationsProvider position="bottom-right">
+          <RouterProvider router={router} />
+        </NotificationsProvider>
+      </MantineProvider>
+    </MedplumProvider>
   </React.StrictMode>
 );
