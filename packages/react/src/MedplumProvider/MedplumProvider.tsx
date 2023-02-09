@@ -92,5 +92,5 @@ export function useMedplumProfile(): ProfileResource | undefined {
  * @param path The path to navigate to.
  */
 function defaultNavigate(path: string): void {
-  window.location.href = path;
+  window.location.assign(path);
 }

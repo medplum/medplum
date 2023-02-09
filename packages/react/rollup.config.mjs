@@ -2,10 +2,10 @@ import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
+import svgr from '@svgr/rollup';
 import dotenv from 'dotenv';
 import { mkdirSync, writeFileSync } from 'fs';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
-import svgr from '@svgr/rollup';
 
 dotenv.config();
 
@@ -20,7 +20,6 @@ const globals = {
   '@medplum/mock': 'medplum.mock',
   react: 'React',
   'react-dom': 'ReactDOM',
-  'react-router-dom': 'ReactRouterDOM',
 };
 
 const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
@@ -41,7 +40,7 @@ export default [
         file: 'dist/cjs/index.min.cjs',
         format: 'umd',
         name: 'medplum.react',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
         globals,
       },
@@ -83,7 +82,7 @@ export default [
       {
         file: 'dist/esm/index.min.mjs',
         format: 'esm',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
       },
     ],
