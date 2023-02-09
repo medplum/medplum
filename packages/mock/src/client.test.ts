@@ -421,6 +421,55 @@ describe('MockClient', () => {
     expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
   });
 
+  test('Patch resource preserves original', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Homer'], family: 'Simpson' }],
+    });
+    expect(resource1).toBeDefined();
+
+    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+      {
+        op: 'replace',
+        path: '/name/0/given/0',
+        value: 'Marge',
+      },
+    ]);
+    expect(resource2).toBeDefined();
+    expect(resource2.name?.[0].given?.[0]).toEqual('Marge');
+    expect(resource1.name?.[0].given?.[0]).toEqual('Homer');
+    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+  });
+
+  test('Patch resource errors', async () => {
+    const client = new MockClient();
+
+    const resource1 = await client.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Bart'], family: 'Simpson' }],
+    });
+    expect(resource1).toBeDefined();
+
+    await expect(
+      client.patchResource('Patient', resource1.id as string, [
+        {
+          op: 'test',
+          path: '/name/0/given/0',
+          value: 'Homer',
+        },
+        {
+          op: 'replace',
+          path: '/name/0/given/0',
+          value: 'Marge',
+        },
+      ])
+    ).rejects.toMatchObject({
+      issue: [{ details: { text: 'Test failed: Bart != Homer' } }],
+    });
+  });
+
   test('Preserve history', async () => {
     const client = new MockClient();
 
