@@ -1,6 +1,7 @@
 import { createStyles, Group, Stack, Text, Title } from '@mantine/core';
 import { capitalize, formatDateTime, formatObservationValue } from '@medplum/core';
 import {
+  Annotation,
   DiagnosticReport,
   Observation,
   ObservationComponent,
@@ -56,18 +57,14 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
     return null;
   }
 
-  let textContent = '';
+  const specimenNotes: Annotation[] = specimen?.note || [];
+
+  let presentedFormContent: string | undefined;
 
   if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
     const pf = diagnosticReport.presentedForm[0];
     if (pf.contentType?.startsWith('text/plain') && pf.data) {
-      textContent = window.atob(pf.data);
-    }
-  }
-
-  if (specimen?.note) {
-    for (const note of specimen.note) {
-      textContent += note.text + '\n\n';
+      specimenNotes.push({ text: window.atob(pf.data) });
     }
   }
 
@@ -116,7 +113,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
       {diagnosticReport.result && (
         <ObservationTable displayNotes={props.displayNotes} value={diagnosticReport.result} />
       )}
-      {textContent && <NotesDisplay value={specimen?.note} />}
+      {specimenNotes.length > 0 && <NotesDisplay value={specimenNotes} />}
     </Stack>
   );
 }
@@ -141,8 +138,12 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        {props.value?.map((observation) => (
-          <ObservationRow key={'obs-' + observation.id} displayNotes={props.displayNotes} value={observation} />
+        {props.value?.map((observation, index) => (
+          <ObservationRow
+            key={`obs-${index}-${observation.id}`}
+            displayNotes={props.displayNotes}
+            value={observation}
+          />
         ))}
       </tbody>
     </table>
