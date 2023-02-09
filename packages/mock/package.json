@@ -20,7 +20,7 @@
     "@medplum/core": "*",
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
-    "fast-json-patch": "^3.1.1"
+    "rfc6902": "^5.0.1"
   },
   "devDependencies": {
     "@types/pdfmake": "0.1.21"

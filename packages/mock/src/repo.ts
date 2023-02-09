@@ -1,6 +1,6 @@
 import { badRequest, deepClone, matchesSearchRequest, notFound, SearchRequest } from '@medplum/core';
 import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
-import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
+import { applyPatch, Operation } from 'rfc6902';
 
 export class MemoryRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
@@ -64,18 +64,14 @@ export class MemoryRepository {
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
     const resource = this.readResource(resourceType, id);
-
-    let patchResult;
-    try {
-      patchResult = applyPatch(resource, patch, true);
-    } catch (err) {
-      const patchError = err as JsonPatchError;
-      const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
-      throw badRequest(message);
+    const patchErrors = applyPatch(resource, patch);
+    for (const error of patchErrors) {
+      if (error) {
+        const message = error.message?.split('\n')?.[0] || 'JSONPatch error';
+        throw badRequest(message);
+      }
     }
-
-    const patchedResource = patchResult.newDocument;
-    return this.updateResource(patchedResource);
+    return this.updateResource(resource);
   }
 
   readResource<T extends Resource>(resourceType: string, id: string): T {
