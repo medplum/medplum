@@ -11,7 +11,7 @@ import {
 import React from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { NotesDisplay } from '../NotesDisplay/NotesDisplay';
+import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
@@ -58,8 +58,6 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   }
 
   const specimenNotes: Annotation[] = specimen?.note || [];
-
-  let presentedFormContent: string | undefined;
 
   if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
     const pf = diagnosticReport.presentedForm[0];
@@ -113,7 +111,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
       {diagnosticReport.result && (
         <ObservationTable displayNotes={props.displayNotes} value={diagnosticReport.result} />
       )}
-      {specimenNotes.length > 0 && <NotesDisplay value={specimenNotes} />}
+      {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
     </Stack>
   );
 }
@@ -201,7 +199,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       {displayNotes && (
         <tr>
           <td colSpan={5}>
-            <NotesDisplay value={observation.note} />
+            <NoteDisplay value={observation.note} />
           </td>
         </tr>
       )}

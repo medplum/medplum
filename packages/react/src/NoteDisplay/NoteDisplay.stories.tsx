@@ -2,26 +2,26 @@ import { Meta } from '@storybook/react';
 import React from 'react';
 import { Document } from '../Document/Document';
 import { CreatinineObservation } from '../stories/referenceLab';
-import { NotesDisplay } from './NotesDisplay';
+import { NoteDisplay } from './NoteDisplay';
 export default {
   title: 'Medplum/NotesDisplay',
-  component: NotesDisplay,
+  component: NoteDisplay,
 } as Meta;
 
 export const Simple = (): JSX.Element => (
   <Document>
-    <NotesDisplay value={CreatinineObservation.note?.slice(1)} />
+    <NoteDisplay value={CreatinineObservation.note?.slice(1)} />
   </Document>
 );
 
 export const WithAuthor = (): JSX.Element => (
   <Document>
-    <NotesDisplay value={CreatinineObservation.note?.slice(0, 1)} />
+    <NoteDisplay value={CreatinineObservation.note?.slice(0, 1)} />
   </Document>
 );
 
 export const MultipleNotes = (): JSX.Element => (
   <Document>
-    <NotesDisplay value={CreatinineObservation.note} />
+    <NoteDisplay value={CreatinineObservation.note} />
   </Document>
 );
