@@ -2,6 +2,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import replace from '@rollup/plugin-replace';
 import terser from '@rollup/plugin-terser';
 import typescript from '@rollup/plugin-typescript';
+import svgr from '@svgr/rollup';
 import dotenv from 'dotenv';
 import { mkdirSync, writeFileSync } from 'fs';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
@@ -17,10 +18,8 @@ const globals = {
   '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
-  '@tabler/icons': 'tabler.icons',
   react: 'React',
   'react-dom': 'ReactDOM',
-  'react-router-dom': 'ReactRouterDOM',
 };
 
 const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');
@@ -41,7 +40,7 @@ export default [
         file: 'dist/cjs/index.min.cjs',
         format: 'umd',
         name: 'medplum.react',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
         globals,
       },
@@ -57,6 +56,7 @@ export default [
       }),
       peerDepsExternal(),
       resolve({ extensions }),
+      svgr(),
       typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
       {
         buildEnd: () => {
@@ -82,7 +82,7 @@ export default [
       {
         file: 'dist/esm/index.min.mjs',
         format: 'esm',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
       },
     ],
@@ -97,6 +97,7 @@ export default [
       }),
       peerDepsExternal(),
       resolve({ extensions }),
+      svgr(),
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
       {
         buildEnd: () => {

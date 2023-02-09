@@ -1,7 +1,7 @@
 import { Anchor, TextProps } from '@mantine/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 import { killEvent } from '../utils/dom';
 
 export interface MedplumLinkProps extends TextProps {
@@ -13,7 +13,7 @@ export interface MedplumLinkProps extends TextProps {
 }
 
 export function MedplumLink(props: MedplumLinkProps): JSX.Element {
-  const navigate = useNavigate();
+  const navigate = useMedplumNavigate();
   const { to, suffix, label, onClick, children, ...rest } = props;
 
   let href = getHref(to);

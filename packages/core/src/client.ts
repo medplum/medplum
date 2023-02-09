@@ -456,7 +456,7 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    this.#fetch = options?.fetch || window.fetch.bind(window);
+    this.#fetch = options?.fetch || getDefaultFetch();
     this.#createPdf = options?.createPdf;
     this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
@@ -2084,7 +2084,7 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
     url.searchParams.set('client_id', loginRequest.clientId || (this.#clientId as string));
-    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getBaseUrl());
+    url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
     url.searchParams.set('scope', loginRequest.scope || 'openid profile');
@@ -2101,7 +2101,7 @@ export class MedplumClient extends EventTarget {
     formBody.set('grant_type', 'authorization_code');
     formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
-    formBody.set('redirect_uri', getBaseUrl());
+    formBody.set('redirect_uri', getWindowOrigin());
 
     const codeVerifier = sessionStorage.getItem('codeVerifier');
     if (codeVerifier) {
@@ -2228,11 +2228,35 @@ export class MedplumClient extends EventTarget {
 }
 
 /**
+ * Returns the current window if available.
+ * All access to the current window should use this to support SSR such as Next.js.
+ * @returns The current window or undefined if not available.
+ */
+function getWindow(): Window | undefined {
+  return typeof window === 'undefined' ? undefined : window;
+}
+
+/**
+ * Returns the default fetch method.
+ * The default fetch is currently only available in browser environments.
+ * If you want to use SSR such as Next.js, you should pass a custom fetch function.
+ * @returns The default fetch function for the current environment.
+ */
+function getDefaultFetch(): FetchLike {
+  const window = getWindow();
+  if (!window) {
+    throw new Error('Fetch not available in this environment');
+  }
+  return window.fetch.bind(window);
+}
+
+/**
  * Returns the base URL for the current page.
  * @category HTTP
  */
-function getBaseUrl(): string {
-  return window.location.protocol + '//' + window.location.host + '/';
+function getWindowOrigin(): string {
+  const window = getWindow();
+  return window ? window.location.protocol + '//' + window.location.host + '/' : '';
 }
 
 function ensureTrailingSlash(url: string | undefined): string | undefined {

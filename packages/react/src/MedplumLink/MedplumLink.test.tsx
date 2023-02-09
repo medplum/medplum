@@ -26,6 +26,13 @@ const medplum = new MedplumClient({
 });
 
 function setup(ui: React.ReactElement): void {
+  Object.defineProperty(window, 'location', {
+    value: {
+      assign: jest.fn(),
+    },
+    writable: true,
+  });
+
   render(
     <MemoryRouter>
       <MedplumProvider medplum={medplum}>{ui}</MedplumProvider>

@@ -15,14 +15,22 @@ import {
   Reference,
   SubscriptionChannel,
 } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
+const medplum = new MockClient();
+
 describe('ResourcePropertyDisplay', () => {
+  function setup(children: React.ReactNode): void {
+    render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
+  }
+
   test('Renders null value', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
@@ -32,7 +40,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders boolean true', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -44,7 +52,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders boolean false', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -56,7 +64,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders boolean undefined', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'boolean' }] }}
         propertyType={PropertyType.boolean}
@@ -68,7 +76,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders string', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'string' }] }}
         propertyType={PropertyType.string}
@@ -79,7 +87,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders canonical', () => {
-    render(
+    setup(
       <MemoryRouter>
         <ResourcePropertyDisplay propertyType={PropertyType.canonical} value="Patient/123" />
       </MemoryRouter>
@@ -91,7 +99,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders url', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'url' }] }}
         propertyType={PropertyType.url}
@@ -102,7 +110,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders uri', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'uri' }] }}
         propertyType={PropertyType.uri}
@@ -113,7 +121,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders string array', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'string' }], max: '*' }}
         propertyType={PropertyType.string}
@@ -125,7 +133,7 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Renders markdown', () => {
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'markdown' }] }}
         propertyType={PropertyType.markdown}
@@ -140,7 +148,7 @@ describe('ResourcePropertyDisplay', () => {
       city: 'London',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Address' }] }}
         propertyType={PropertyType.Address}
@@ -156,7 +164,7 @@ describe('ResourcePropertyDisplay', () => {
       text: 'hello',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Annotation' }] }}
         propertyType={PropertyType.Annotation}
@@ -174,7 +182,7 @@ describe('ResourcePropertyDisplay', () => {
       title: 'file.txt',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Attachment' }] }}
         propertyType={PropertyType.Attachment}
@@ -199,7 +207,7 @@ describe('ResourcePropertyDisplay', () => {
       },
     ];
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Attachment' }], max: '*' }}
         propertyType={PropertyType.Attachment}
@@ -215,7 +223,7 @@ describe('ResourcePropertyDisplay', () => {
       text: 'foo',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'CodeableConcept' }] }}
         propertyType={PropertyType.CodeableConcept}
@@ -232,7 +240,7 @@ describe('ResourcePropertyDisplay', () => {
       code: 'test-coding',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Coding' }] }}
         propertyType={PropertyType.Coding}
@@ -249,7 +257,7 @@ describe('ResourcePropertyDisplay', () => {
       value: 'foo@example.com',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'ContactPoint' }] }}
         propertyType={PropertyType.ContactPoint}
@@ -265,7 +273,7 @@ describe('ResourcePropertyDisplay', () => {
       family: 'Smith',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'HumanName' }] }}
         propertyType={PropertyType.HumanName}
@@ -282,7 +290,7 @@ describe('ResourcePropertyDisplay', () => {
       value: 'xyz123',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Identifier' }] }}
         propertyType={PropertyType.Identifier}
@@ -299,7 +307,7 @@ describe('ResourcePropertyDisplay', () => {
       end: '2021-06-30T12:00:00Z',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Period' }] }}
         propertyType={PropertyType.Period}
@@ -316,7 +324,7 @@ describe('ResourcePropertyDisplay', () => {
       unit: 'mg',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Quantity' }] }}
         propertyType={PropertyType.Quantity}
@@ -333,7 +341,7 @@ describe('ResourcePropertyDisplay', () => {
       high: { value: 10, unit: 'mg' },
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Range' }] }}
         propertyType={PropertyType.Range}
@@ -350,7 +358,7 @@ describe('ResourcePropertyDisplay', () => {
       denominator: { value: 10, unit: 'ml' },
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ type: [{ code: 'Ratio' }] }}
         propertyType={PropertyType.Ratio}
@@ -367,7 +375,7 @@ describe('ResourcePropertyDisplay', () => {
       display: 'John Smith',
     };
 
-    render(
+    setup(
       <MemoryRouter>
         <ResourcePropertyDisplay
           property={{ type: [{ code: 'Reference' }] }}
@@ -386,7 +394,7 @@ describe('ResourcePropertyDisplay', () => {
       endpoint: 'https://example.com/hook',
     };
 
-    render(
+    setup(
       <ResourcePropertyDisplay
         property={{ path: 'Subscription.channel', type: [{ code: 'BackboneElement' }] }}
         propertyType={PropertyType.BackboneElement}
@@ -401,7 +409,7 @@ describe('ResourcePropertyDisplay', () => {
     expect.assertions(2);
     console.error = jest.fn();
     try {
-      render(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />);
+      setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />);
     } catch (err) {
       expect((err as Error).message).toMatch('requires element definition');
     }
