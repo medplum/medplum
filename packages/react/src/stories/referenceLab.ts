@@ -1,5 +1,6 @@
 import { createReference } from '@medplum/core';
 import { DiagnosticReport, Observation, ObservationDefinition } from '@medplum/fhirtypes';
+import { HomerDiagnosticReport } from '@medplum/mock';
 
 export const TestosteroneDefinition: ObservationDefinition = {
   resourceType: 'ObservationDefinition',
@@ -615,9 +616,19 @@ export const CreatinineObservation: Observation = {
       },
     },
   ],
+  note: [
+    {
+      text: 'Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM',
+      authorReference: { reference: 'Practitioner/123', display: 'Dr. Alice Smith' },
+    },
+    {
+      text: 'Previously reported as 10 mg/dL on 2/1/2023, 8:40:14 PM Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+    },
+  ],
 };
 
 export const ExampleReport: DiagnosticReport = {
+  ...HomerDiagnosticReport,
   resourceType: 'DiagnosticReport',
   id: 'report-1',
   status: 'final',
@@ -636,10 +647,6 @@ export const ExampleReport: DiagnosticReport = {
       ],
     },
   ],
-  subject: {
-    reference: 'Patient/f201',
-    display: 'Roel',
-  },
   issued: '2013-03-11T10:28:00+01:00',
   performer: [
     {

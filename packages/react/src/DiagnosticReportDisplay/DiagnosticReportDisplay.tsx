@@ -1,6 +1,7 @@
 import { createStyles, Group, Stack, Text, Title } from '@mantine/core';
 import { capitalize, formatDateTime, formatObservationValue } from '@medplum/core';
 import {
+  Annotation,
   DiagnosticReport,
   Observation,
   ObservationComponent,
@@ -10,6 +11,7 @@ import {
 import React from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
@@ -36,10 +38,15 @@ const useStyles = createStyles((theme) => ({
       border: `0.1px solid ${theme.colors.red[5]}`,
     },
   },
+
+  noteBody: { fontSize: theme.fontSizes.sm },
+  noteCite: { fontSize: theme.fontSizes.xs, marginBlockStart: 3 },
+  noteRoot: { padding: 5 },
 }));
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
+  displayNotes?: boolean;
 }
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -50,18 +57,12 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
     return null;
   }
 
-  let textContent = '';
+  const specimenNotes: Annotation[] = specimen?.note || [];
 
   if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
     const pf = diagnosticReport.presentedForm[0];
     if (pf.contentType?.startsWith('text/plain') && pf.data) {
-      textContent = window.atob(pf.data);
-    }
-  }
-
-  if (specimen?.note) {
-    for (const note of specimen.note) {
-      textContent += note.text + '\n\n';
+      specimenNotes.push({ text: window.atob(pf.data) });
     }
   }
 
@@ -107,14 +108,17 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
           </div>
         )}
       </Group>
-      {diagnosticReport.result && <ObservationTable value={diagnosticReport.result} />}
-      {textContent && <pre>{textContent.trim()}</pre>}
+      {diagnosticReport.result && (
+        <ObservationTable displayNotes={props.displayNotes} value={diagnosticReport.result} />
+      )}
+      {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
     </Stack>
   );
 }
 
 export interface ObservationTableProps {
   value?: Observation[] | Reference<Observation>[];
+  displayNotes?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
@@ -133,7 +137,11 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
       </thead>
       <tbody>
         {props.value?.map((observation, index) => (
-          <ObservationRow key={'obs-' + index} value={observation} />
+          <ObservationRow
+            key={`obs-${index}-${observation.id}`}
+            displayNotes={props.displayNotes}
+            value={observation}
+          />
         ))}
       </tbody>
     </table>
@@ -142,48 +150,60 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
 
 interface ObservationRowProps {
   value: Observation | Reference<Observation>;
+  displayNotes?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   const { classes, cx } = useStyles();
   const observation = useResource(props.value);
+
   if (!observation) {
     return null;
   }
+  const displayNotes = props.displayNotes && observation?.note;
 
   const critical = isCritical(observation);
 
   return (
-    <tr className={cx({ [classes.criticalRow]: critical })}>
-      <td>
-        <MedplumLink to={observation}>
-          <CodeableConceptDisplay value={observation.code} />
-        </MedplumLink>
-      </td>
-      <td>
-        <ObservationValueDisplay value={observation} />
-      </td>
-      <td>
-        <ReferenceRangeDisplay value={observation.referenceRange} />
-      </td>
-      <td>
-        {observation.interpretation && observation.interpretation.length > 0 && (
-          <CodeableConceptDisplay value={observation.interpretation[0]} />
-        )}
-      </td>
-      <td>
-        {observation.category && observation.category.length > 0 && (
-          <ul>
-            {observation.category.map((concept, index) => (
-              <li key={`category-${index}`}>
-                <CodeableConceptDisplay value={concept} />
-              </li>
-            ))}
-          </ul>
-        )}
-      </td>
-      <td>{observation.status && <StatusBadge status={observation.status} />}</td>
-    </tr>
+    <>
+      <tr className={cx({ [classes.criticalRow]: critical })}>
+        <td rowSpan={displayNotes ? 2 : 1}>
+          <MedplumLink to={observation}>
+            <CodeableConceptDisplay value={observation.code} />
+          </MedplumLink>
+        </td>
+        <td>
+          <ObservationValueDisplay value={observation} />
+        </td>
+        <td>
+          <ReferenceRangeDisplay value={observation.referenceRange} />
+        </td>
+        <td>
+          {observation.interpretation && observation.interpretation.length > 0 && (
+            <CodeableConceptDisplay value={observation.interpretation[0]} />
+          )}
+        </td>
+        <td>
+          {observation.category && observation.category.length > 0 && (
+            <ul>
+              {observation.category.map((concept, index) => (
+                <li key={`category-${index}`}>
+                  <CodeableConceptDisplay value={concept} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </td>
+        <td>{observation.status && <StatusBadge status={observation.status} />}</td>
+      </tr>
+      {displayNotes && (
+        <tr>
+          <td colSpan={5}>
+            <NoteDisplay value={observation.note} />
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
