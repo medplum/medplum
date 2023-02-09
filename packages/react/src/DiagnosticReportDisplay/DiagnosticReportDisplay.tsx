@@ -46,7 +46,7 @@ const useStyles = createStyles((theme) => ({
 
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
-  displayNotes?: boolean;
+  hideObservationNotes?: boolean;
 }
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -109,7 +109,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
         )}
       </Group>
       {diagnosticReport.result && (
-        <ObservationTable displayNotes={props.displayNotes} value={diagnosticReport.result} />
+        <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
       {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
     </Stack>
@@ -118,7 +118,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
 export interface ObservationTableProps {
   value?: Observation[] | Reference<Observation>[];
-  displayNotes?: boolean;
+  hideObservationNotes?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
@@ -139,7 +139,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         {props.value?.map((observation, index) => (
           <ObservationRow
             key={`obs-${index}-${observation.id}`}
-            displayNotes={props.displayNotes}
+            hideObservationNotes={props.hideObservationNotes}
             value={observation}
           />
         ))}
@@ -150,7 +150,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
 
 interface ObservationRowProps {
   value: Observation | Reference<Observation>;
-  displayNotes?: boolean;
+  hideObservationNotes?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
@@ -160,7 +160,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   if (!observation) {
     return null;
   }
-  const displayNotes = props.displayNotes && observation?.note;
+  const displayNotes = !props.hideObservationNotes && observation?.note;
 
   const critical = isCritical(observation);
 

@@ -131,8 +131,18 @@ describe('DiagnosticReportDisplay', () => {
     ExampleReport.result = [createReference(obs)];
     await medplum.updateResource(ExampleReport);
     await act(async () => {
-      setup({ value: ExampleReport, displayNotes: true });
+      setup({ value: ExampleReport });
     });
     expect(screen.getByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeDefined();
+  });
+
+  test('Hide observation note', async () => {
+    const obs = await medplum.createResource(CreatinineObservation);
+    ExampleReport.result = [createReference(obs)];
+    await medplum.updateResource(ExampleReport);
+    await act(async () => {
+      setup({ value: ExampleReport, hideObservationNotes: true });
+    });
+    expect(screen.queryByText('Previously reported as 167 mg/dL on 2/3/2023, 8:40:14 PM')).toBeNull();
   });
 });

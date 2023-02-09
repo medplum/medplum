@@ -329,7 +329,7 @@ function ResourceTab(props: ResourceTabProps): JSX.Element | null {
     case 'report':
       return (
         <Document>
-          <DiagnosticReportDisplay displayNotes value={props.resource as DiagnosticReport} />
+          <DiagnosticReportDisplay value={props.resource as DiagnosticReport} />
         </Document>
       );
     case 'checklist':
