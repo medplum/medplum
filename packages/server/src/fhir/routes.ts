@@ -1,7 +1,7 @@
 import { allOk, badRequest, created, getStatus } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
-import { Operation } from 'fast-json-patch';
+import { Operation } from 'rfc6902';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth/middleware';
 import { processBatch } from './batch';

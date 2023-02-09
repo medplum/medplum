@@ -551,7 +551,7 @@ describe('Batch', () => {
     expect(results[0].response?.status).toEqual('200');
   });
 
-  test('JSONPatch error messages', async () => {
+  test('JSONPath error messages', async () => {
     const serviceRequest = await repo.createResource<ServiceRequest>({
       resourceType: 'ServiceRequest',
       status: 'active',
@@ -585,7 +585,45 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Operation `path` property must start with "/"'
+      'Invalid JSON Pointer: status'
+    );
+  });
+
+  test('JSONPatch error messages', async () => {
+    const serviceRequest = await repo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/' + randomUUID() },
+    });
+
+    const bundle = await processBatch(repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'PATCH',
+            url: 'ServiceRequest/' + serviceRequest?.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: 'application/json-patch+json',
+            data: Buffer.from(JSON.stringify([{ op: 'not-an-op', path: '/status', value: 'final' }]), 'utf8').toString(
+              'base64'
+            ),
+          },
+        },
+      ],
+    });
+    expect(bundle).toBeDefined();
+    expect(bundle?.entry).toBeDefined();
+
+    const results = bundle?.entry as BundleEntry[];
+    expect(results.length).toEqual(1);
+    expect(results[0].response?.status).toEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+      'Invalid operation: not-an-op'
     );
   });
 

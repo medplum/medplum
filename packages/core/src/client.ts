@@ -292,7 +292,7 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
 
 /**
  * JSONPatch patch operation.
- * Compatible with fast-json-patch Operation.
+ * Compatible with fast-json-patch and rfc6902 Operation.
  */
 export interface PatchOperation {
   readonly op: 'add' | 'remove' | 'replace' | 'copy' | 'move' | 'test';

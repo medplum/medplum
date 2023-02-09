@@ -43,8 +43,8 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { applyPatch, JsonPatchError, Operation } from 'fast-json-patch';
 import { PoolClient } from 'pg';
+import { applyPatch, Operation } from 'rfc6902';
 import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
@@ -723,17 +723,16 @@ export class Repository {
     try {
       const resource = await this.#readResourceImpl(resourceType, id);
 
-      let patchResult;
       try {
-        patchResult = applyPatch(resource, patch, true);
+        const patchResult = applyPatch(resource, patch).filter(Boolean);
+        if (patchResult.length > 0) {
+          throw badRequest(patchResult.map((e) => (e as Error).message).join('\n'));
+        }
       } catch (err) {
-        const patchError = err as JsonPatchError;
-        const message = patchError.message?.split('\n')?.[0] || 'JSONPatch error';
-        throw badRequest(message);
+        throw badRequest(normalizeErrorString(err));
       }
 
-      const patchedResource = patchResult.newDocument;
-      const result = await this.#updateResourceImpl(patchedResource, false);
+      const result = await this.#updateResourceImpl(resource, false);
       this.#logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
       return result;
     } catch (err) {
@@ -1828,7 +1827,8 @@ export class Repository {
    */
   #removeField<T extends Resource>(input: T, path: string): T {
     const patch: Operation[] = [{ op: 'remove', path: `/${path.replaceAll('.', '/')}` }];
-    return applyPatch(input, patch).newDocument;
+    applyPatch(input, patch);
+    return input;
   }
 
   #getResourceAccessPolicy(resourceType: string): AccessPolicyResource | undefined {

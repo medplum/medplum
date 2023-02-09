@@ -1,6 +1,6 @@
 import { allOk, badRequest, created, getReferenceString, getStatus, isOk, notFound } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Resource } from '@medplum/fhirtypes';
-import { Operation } from 'fast-json-patch';
+import { Operation } from 'rfc6902';
 import { URL } from 'url';
 import { Repository } from './repo';
 import { parseSearchUrl } from './search';
