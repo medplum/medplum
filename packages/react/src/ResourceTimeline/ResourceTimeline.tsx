@@ -466,7 +466,7 @@ function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.E
 function DiagnosticReportTimelineItem(props: BaseTimelineItemProps<DiagnosticReport>): JSX.Element {
   return (
     <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
-      <DiagnosticReportDisplay value={props.resource} />
+      <DiagnosticReportDisplay displayNotes value={props.resource} />
     </TimelineItem>
   );
 }
