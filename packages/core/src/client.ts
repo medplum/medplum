@@ -456,7 +456,7 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    this.#fetch = options?.fetch || window.fetch.bind(window);
+    this.#fetch = options?.fetch || getDefaultFetch();
     this.#createPdf = options?.createPdf;
     this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
@@ -782,6 +782,11 @@ export class MedplumClient extends EventTarget {
    * @param loginParams Optional login parameters.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | void> {
+    const window = getWindow();
+    if (!window) {
+      // This method is only available in the browser.
+      return;
+    }
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -798,6 +803,11 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   signOutWithRedirect(): void {
+    const window = getWindow();
+    if (!window) {
+      // This method is only available in the browser.
+      return;
+    }
     window.location.assign(this.#logoutUrl);
   }
 
@@ -814,6 +824,11 @@ export class MedplumClient extends EventTarget {
     redirectUri: string,
     baseLogin: BaseLoginRequest
   ): Promise<void> {
+    const window = getWindow();
+    if (!window) {
+      // This method is only available in the browser.
+      return;
+    }
     const loginRequest = await this.ensureCodeChallenge(baseLogin);
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
@@ -2079,6 +2094,11 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   async #requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
+    const window = getWindow();
+    if (!window) {
+      // This method is only available in the browser.
+      return;
+    }
     const loginRequest = await this.ensureCodeChallenge(loginParams || {});
     const url = new URL(this.#authorizeUrl);
     url.searchParams.set('response_type', 'code');
@@ -2213,6 +2233,10 @@ export class MedplumClient extends EventTarget {
    */
   #setupStorageListener(): void {
     try {
+      const window = getWindow();
+      if (!window) {
+        return;
+      }
       window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === null || e.key === 'activeLogin') {
           // Storage events fire when different tabs make changes.
@@ -2228,11 +2252,35 @@ export class MedplumClient extends EventTarget {
 }
 
 /**
+ * Returns the current window if available.
+ * All access to the current window should use this to support SSR such as Next.js.
+ * @returns The current window or undefined if not available.
+ */
+function getWindow(): Window | undefined {
+  return typeof window === 'undefined' ? undefined : window;
+}
+
+/**
+ * Returns the default fetch method.
+ * The default fetch is currently only available in browser environments.
+ * If you want to use SSR such as Next.js, you should pass a custom fetch function.
+ * @returns The default fetch function for the current environment.
+ */
+function getDefaultFetch(): FetchLike {
+  const window = getWindow();
+  if (!window) {
+    throw new Error('Fetch not available in this environment');
+  }
+  return window.fetch.bind(window);
+}
+
+/**
  * Returns the base URL for the current page.
  * @category HTTP
  */
 function getBaseUrl(): string {
-  return window.location.protocol + '//' + window.location.host + '/';
+  const window = getWindow();
+  return window ? window.location.protocol + '//' + window.location.host + '/' : '';
 }
 
 function ensureTrailingSlash(url: string | undefined): string | undefined {

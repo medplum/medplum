@@ -5,6 +5,7 @@ import typescript from '@rollup/plugin-typescript';
 import dotenv from 'dotenv';
 import { mkdirSync, writeFileSync } from 'fs';
 import peerDepsExternal from 'rollup-plugin-peer-deps-external';
+import svgr from '@svgr/rollup';
 
 dotenv.config();
 
@@ -17,7 +18,6 @@ const globals = {
   '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
-  '@tabler/icons': 'tabler.icons',
   react: 'React',
   'react-dom': 'ReactDOM',
   'react-router-dom': 'ReactRouterDOM',
@@ -57,6 +57,7 @@ export default [
       }),
       peerDepsExternal(),
       resolve({ extensions }),
+      svgr(),
       typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
       {
         buildEnd: () => {
@@ -97,6 +98,7 @@ export default [
       }),
       peerDepsExternal(),
       resolve({ extensions }),
+      svgr(),
       typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
       {
         buildEnd: () => {

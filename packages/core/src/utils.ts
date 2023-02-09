@@ -515,7 +515,17 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
   for (let i = 0; i < bytes.length; i++) {
     result[i] = String.fromCharCode(bytes[i]);
   }
-  return window.btoa(result.join(''));
+  return encodeBase64(result.join(''));
+}
+
+function encodeBase64(input: string): string {
+  if (typeof window !== 'undefined') {
+    return window.btoa(input);
+  }
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(input).toString('base64');
+  }
+  throw new Error('Unable to encode base64');
 }
 
 export function capitalize(word: string): string {

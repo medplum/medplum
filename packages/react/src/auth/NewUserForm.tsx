@@ -11,6 +11,7 @@ import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 
 export interface NewUserFormProps {
   readonly projectId: string;
+  readonly origin?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey: string;
   readonly children?: React.ReactNode;
@@ -18,7 +19,7 @@ export interface NewUserFormProps {
 }
 
 export function NewUserForm(props: NewUserFormProps): JSX.Element {
-  const googleClientId = getGoogleClientId(props.googleClientId);
+  const googleClientId = getGoogleClientId(props.googleClientId, props.origin);
   const recaptchaSiteKey = props.recaptchaSiteKey;
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();

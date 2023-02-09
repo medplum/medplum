@@ -9,6 +9,7 @@ import { NewUserForm } from './NewUserForm';
 export interface RegisterFormProps {
   readonly type: 'patient' | 'project';
   readonly projectId?: string;
+  readonly origin?: string;
   readonly googleClientId?: string;
   readonly recaptchaSiteKey: string;
   readonly children?: React.ReactNode;

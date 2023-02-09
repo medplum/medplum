@@ -14,6 +14,7 @@ import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcome
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
 export interface AuthenticationFormProps extends BaseLoginRequest {
+  readonly origin?: string;
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -31,6 +32,7 @@ export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element 
 }
 
 export interface EmailFormProps extends BaseLoginRequest {
+  readonly origin?: string;
   readonly generatePkce?: boolean;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
@@ -41,7 +43,7 @@ export interface EmailFormProps extends BaseLoginRequest {
 export function EmailForm(props: EmailFormProps): JSX.Element {
   const { setEmail, onRegister, handleAuthResponse, children, ...baseLoginRequest } = props;
   const medplum = useMedplum();
-  const googleClientId = getGoogleClientId(props.googleClientId);
+  const googleClientId = getGoogleClientId(props.googleClientId, props.origin);
 
   const isExternalAuth = useCallback(
     async (authMethod: any): Promise<boolean> => {

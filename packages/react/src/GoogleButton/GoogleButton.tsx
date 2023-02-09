@@ -54,12 +54,19 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   return <div ref={parentRef} />;
 }
 
-export function getGoogleClientId(clientId: string | undefined): string | undefined {
+export function getGoogleClientId(clientId: string | undefined, origin: string | undefined): string | undefined {
   if (clientId) {
     return clientId;
   }
 
-  const origin = window.location.protocol + '//' + window.location.host;
+  if (!origin) {
+    if (typeof window !== 'undefined') {
+      origin = window.location.protocol + '//' + window.location.host;
+    } else {
+      origin = '';
+    }
+  }
+
   const authorizedOrigins = process.env.GOOGLE_AUTH_ORIGINS?.split(',') ?? [];
   if (authorizedOrigins.includes(origin)) {
     return process.env.GOOGLE_CLIENT_ID;
