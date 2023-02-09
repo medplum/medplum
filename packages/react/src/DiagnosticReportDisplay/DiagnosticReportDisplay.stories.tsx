@@ -1,4 +1,5 @@
 import { createReference } from '@medplum/core';
+import { Observation, Reference } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
@@ -51,7 +52,7 @@ export const WithNotes = (): JSX.Element => {
   useEffect(() => {
     (async (): Promise<boolean> => {
       const obs = await medplum.createResource({ ...CreatinineObservation, category: undefined });
-      HomerDiagnosticReport.result && HomerDiagnosticReport.result.push(createReference(obs));
+      (HomerDiagnosticReport.result as Reference<Observation>[]).push(createReference(obs));
 
       await medplum.updateResource(HomerDiagnosticReport);
       return true;

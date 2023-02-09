@@ -9,7 +9,7 @@ const useStyles = createStyles((theme) => ({
 }));
 
 export interface NoteDisplayProps {
-  value?: Annotation | Annotation[];
+  value?: Annotation[];
 }
 
 export function NoteDisplay({ value }: NoteDisplayProps): JSX.Element | null {
@@ -18,11 +18,8 @@ export function NoteDisplay({ value }: NoteDisplayProps): JSX.Element | null {
     return null;
   }
 
-  if (!Array.isArray(value)) {
-    value = [value];
-  }
   return (
-    <Stack justify={'flex-start'} spacing="xs">
+    <Stack justify="flex-start" spacing="xs">
       {value.map(
         (note, index) =>
           note.text && (

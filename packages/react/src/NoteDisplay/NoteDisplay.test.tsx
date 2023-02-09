@@ -18,14 +18,6 @@ describe('DiagnosticReportDisplay', () => {
     );
   }
 
-  test('Renders single note', async () => {
-    await act(async () => {
-      setup({ value: { text: 'Hello World' } });
-    });
-
-    expect(screen.getByText('Hello World')).toBeDefined();
-  });
-
   test('Renders array', async () => {
     await act(async () => {
       setup({ value: [{ text: 'Hello World' }, { text: 'Goodbye Moon' }] });
@@ -38,7 +30,7 @@ describe('DiagnosticReportDisplay', () => {
   test('Renders author by reference', async () => {
     await act(async () => {
       setup({
-        value: { text: 'Hello World', authorReference: { display: 'Medplum Bots' } },
+        value: [{ text: 'Hello World', authorReference: { display: 'Medplum Bots' } }],
       });
     });
 
@@ -48,7 +40,7 @@ describe('DiagnosticReportDisplay', () => {
   test('Renders author by value', async () => {
     await act(async () => {
       setup({
-        value: { text: 'Hello World', authorString: 'Medplum Bots' },
+        value: [{ text: 'Hello World', authorString: 'Medplum Bots' }],
       });
     });
 
