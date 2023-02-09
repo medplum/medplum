@@ -45,7 +45,7 @@ export const WithCategories = (): JSX.Element => {
   );
 };
 
-export const WithNotes = (): JSX.Element => {
+export const HideNotes = (): JSX.Element => {
   const medplum = useMedplum();
   const [loaded, setLoaded] = useState(false);
 
@@ -67,7 +67,7 @@ export const WithNotes = (): JSX.Element => {
 
   return (
     <Document>
-      <DiagnosticReportDisplay displayNotes value={HomerDiagnosticReport} />
+      <DiagnosticReportDisplay hideObservationNotes value={HomerDiagnosticReport} />
     </Document>
   );
 };
