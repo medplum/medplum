@@ -7,7 +7,7 @@ import { NoteDisplay, NoteDisplayProps } from './NoteDisplay';
 
 const medplum = new MockClient();
 
-describe('DiagnosticReportDisplay', () => {
+describe('NoteDisplay', () => {
   function setup(args: NoteDisplayProps): void {
     render(
       <MemoryRouter>
