@@ -272,8 +272,8 @@ protectedRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const resource = await repo.reindexResource(resourceType, id);
-    await sendResponse(res, allOk, resource);
+    await repo.reindexResource(resourceType, id);
+    sendOutcome(res, allOk);
   })
 );
 
@@ -283,8 +283,8 @@ protectedRoutes.post(
   asyncWrap(async (req: Request, res: Response) => {
     const { resourceType, id } = req.params;
     const repo = res.locals.repo as Repository;
-    const resource = await repo.resendSubscriptions(resourceType, id);
-    await sendResponse(res, allOk, resource);
+    await repo.resendSubscriptions(resourceType, id);
+    sendOutcome(res, allOk);
   })
 );
 

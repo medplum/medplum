@@ -346,7 +346,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  async execute(conn: Pool): Promise<any[]> {
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     this.buildSql(sql);
     return sql.execute(conn);

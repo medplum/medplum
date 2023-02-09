@@ -10,7 +10,7 @@ import {
 import { Reference } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
-import { systemRepo } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 
 /**
  * Handles the OAuth/OpenID UserInfo Endpoint.
@@ -21,7 +21,8 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
     sub: res.locals.user,
   };
 
-  const profile = await systemRepo.readReference(res.locals.profile as Reference<ProfileResource>);
+  const repo = res.locals.repo as Repository;
+  const profile = await repo.readReference(res.locals.profile as Reference<ProfileResource>);
 
   if (res.locals.login.scope.includes('profile')) {
     buildProfile(userInfo, profile);
