@@ -50,10 +50,10 @@ export const WithNotes = (): JSX.Element => {
 
   useEffect(() => {
     (async (): Promise<boolean> => {
-      const obs = await medplum.createResource(CreatinineObservation);
-      ExampleReport.result = [createReference(obs)];
+      const obs = await medplum.createResource({ ...CreatinineObservation, category: undefined });
+      HomerDiagnosticReport.result && HomerDiagnosticReport.result.push(createReference(obs));
 
-      await medplum.updateResource(ExampleReport);
+      await medplum.updateResource(HomerDiagnosticReport);
       return true;
     })()
       .then(setLoaded)
@@ -66,7 +66,7 @@ export const WithNotes = (): JSX.Element => {
 
   return (
     <Document>
-      <DiagnosticReportDisplay displayNotes value={ExampleReport} />
+      <DiagnosticReportDisplay displayNotes value={HomerDiagnosticReport} />
     </Document>
   );
 };

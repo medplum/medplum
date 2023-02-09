@@ -156,12 +156,12 @@ interface ObservationRowProps {
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   const { classes, cx } = useStyles();
-  const { displayNotes, value } = props;
-  const observation = useResource(value);
+  const observation = useResource(props.value);
 
   if (!observation) {
     return null;
   }
+  const displayNotes = props.displayNotes && observation?.note;
 
   const critical = isCritical(observation);
 
