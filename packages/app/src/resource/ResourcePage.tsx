@@ -1,6 +1,6 @@
 import { Alert, Anchor, Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isGone, normalizeErrorString, resolveId } from '@medplum/core';
+import { getReferenceString, isGone, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -195,6 +195,7 @@ function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
     <>
       {value?.resourceType === 'ServiceRequest' && statusValueSet && (
         <QuickStatus
+          key={getReferenceString(value)}
           valueSet={{ reference: statusValueSet }}
           defaultValue={(value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
           onChange={onStatusChange}
