@@ -137,6 +137,10 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
+export function isOperationOutcome(value: unknown): value is OperationOutcome {
+  return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
+}
+
 export function isOk(outcome: OperationOutcome): boolean {
   return outcome.id === OK_ID || outcome.id === CREATED_ID || outcome.id === NOT_MODIFIED_ID;
 }
@@ -206,9 +210,8 @@ export function normalizeErrorString(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
-  if (typeof error === 'object' && 'resourceType' in error) {
-    const outcome = error as OperationOutcome;
-    return outcome.issue?.[0]?.details?.text ?? 'Unknown error';
+  if (isOperationOutcome(error)) {
+    return error.issue?.[0]?.details?.text ?? 'Unknown error';
   }
   return JSON.stringify(error);
 }
