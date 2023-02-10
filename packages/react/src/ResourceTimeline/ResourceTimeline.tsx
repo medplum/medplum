@@ -271,6 +271,10 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         </Panel>
       )}
       {items.map((item) => {
+        if (!item) {
+          // TODO: Handle null history items for deleted versions.
+          return null;
+        }
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
           return (

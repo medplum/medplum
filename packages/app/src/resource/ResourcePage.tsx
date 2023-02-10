@@ -1,6 +1,6 @@
 import { Alert, Anchor, Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, isGone, normalizeErrorString, resolveId } from '@medplum/core';
+import { getReferenceString, isGone, isOperationOutcome, normalizeErrorString, resolveId } from '@medplum/core';
 import {
   Bot,
   Bundle,
@@ -20,6 +20,7 @@ import {
   Document,
   EncounterTimeline,
   ErrorBoundary,
+  OperationOutcomeAlert,
   PatientTimeline,
   PlanDefinitionBuilder,
   QuestionnaireBuilder,
@@ -90,9 +91,36 @@ export function ResourcePage(): JSX.Element {
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire> | undefined>();
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   function handleError(error: unknown): void {
-    showNotification({ color: 'red', message: normalizeErrorString(error) });
+    if (isOperationOutcome(error)) {
+      setOutcome(error);
+    } else {
+      showNotification({ color: 'red', message: normalizeErrorString(error) });
+    }
+  }
+
+  function restoreResource(): void {
+    const restoredResource = historyBundle?.entry?.find((e) => !!e.resource)?.resource;
+    if (restoredResource) {
+      onSubmit(restoredResource);
+    } else {
+      showNotification({ color: 'red', message: 'No history to restore' });
+    }
+  }
+
+  function onSubmit(newResource: Resource): void {
+    medplum
+      .updateResource(cleanResource(newResource))
+      .then((result: Resource) => {
+        setOutcome(undefined);
+        setValue(result);
+        showNotification({ color: 'green', message: 'Success' });
+      })
+      .catch((err) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err) });
+      });
   }
 
   useEffect(() => {
@@ -103,6 +131,18 @@ export function ResourcePage(): JSX.Element {
       .then(setQuestionnaires)
       .catch(handleError);
   }, [medplum, resourceType, id]);
+
+  if (outcome && isGone(outcome)) {
+    return (
+      <Document>
+        <Title>Deleted</Title>
+        <p>The resource was deleted.</p>
+        <Button color="red" onClick={restoreResource}>
+          Restore
+        </Button>
+      </Document>
+    );
+  }
 
   if (!value || !historyBundle) {
     return <Loading />;
@@ -115,6 +155,8 @@ export function ResourcePage(): JSX.Element {
       value={value}
       historyBundle={historyBundle}
       questionnaires={questionnaires}
+      onSubmit={onSubmit}
+      outcome={outcome}
     />
   );
 }
@@ -125,6 +167,8 @@ interface ResourcePageBodyProps {
   value: Resource;
   historyBundle: Bundle;
   questionnaires: Bundle<Questionnaire> | undefined;
+  onSubmit: (newResource: Resource) => void;
+  outcome: OperationOutcome | undefined;
 }
 
 function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
@@ -132,7 +176,6 @@ function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { tab } = useParams() as { tab: string };
-  const [error, setError] = useState<OperationOutcome | undefined>();
 
   /**
    * Handles a tab change event.
@@ -140,25 +183,6 @@ function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
    */
   function onTabChange(newTabName: string): void {
     navigate(`/${resourceType}/${id}/${newTabName}`);
-  }
-
-  function onSubmit(newResource: Resource): void {
-    medplum
-      .updateResource(cleanResource(newResource))
-      .then(() => showNotification({ color: 'green', message: 'Success' }))
-      .catch((err) => {
-        setError(err);
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
-      });
-  }
-
-  function restoreResource(): void {
-    const restoredResource = historyBundle?.entry?.find((e) => !!e.resource)?.resource;
-    if (restoredResource) {
-      onSubmit(restoredResource);
-    } else {
-      showNotification({ color: 'red', message: 'No history to restore' });
-    }
   }
 
   function onStatusChange(status: string): void {
@@ -169,20 +193,8 @@ function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
     }
     if (orderDetail[0].text !== status) {
       orderDetail[0].text = status;
-      onSubmit({ ...serviceRequest, orderDetail });
+      props.onSubmit({ ...serviceRequest, orderDetail });
     }
-  }
-
-  if (error && isGone(error)) {
-    return (
-      <Document>
-        <Title>Deleted</Title>
-        <p>The resource was deleted.</p>
-        <Button color="red" onClick={restoreResource}>
-          Restore
-        </Button>
-      </Document>
-    );
   }
 
   const tabs = getTabs(resourceType);
@@ -225,14 +237,14 @@ function ResourcePageBody(props: ResourcePageBodyProps): JSX.Element {
       )}
       {currentTab !== 'editor' && (
         <>
-          {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
+          {props.outcome && <OperationOutcomeAlert issues={props.outcome.issue} />}
           <ErrorBoundary>
             <ResourceTab
               name={currentTab.toLowerCase()}
               resource={value}
               resourceHistory={historyBundle}
-              onSubmit={onSubmit}
-              outcome={error}
+              onSubmit={props.onSubmit}
+              outcome={props.outcome}
             />
           </ErrorBoundary>
         </>

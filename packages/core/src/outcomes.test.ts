@@ -9,6 +9,7 @@ import {
   isGone,
   isNotFound,
   isOk,
+  isOperationOutcome,
   normalizeErrorString,
   notFound,
   notModified,
@@ -66,5 +67,13 @@ describe('Outcomes', () => {
     expect(normalizeErrorString(badRequest('foo'))).toBe('foo');
     expect(normalizeErrorString({ resourceType: 'OperationOutcome' })).toBe('Unknown error');
     expect(normalizeErrorString({ foo: 'bar' })).toBe('{"foo":"bar"}');
+  });
+
+  test('isOperationOutcome', () => {
+    expect(isOperationOutcome(undefined)).toBe(false);
+    expect(isOperationOutcome(null)).toBe(false);
+    expect(isOperationOutcome('foo')).toBe(false);
+    expect(isOperationOutcome({ resourceType: 'Patient' })).toBe(false);
+    expect(isOperationOutcome({ resourceType: 'OperationOutcome' })).toBe(true);
   });
 });

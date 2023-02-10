@@ -43,6 +43,7 @@ export * from './MedplumLink/MedplumLink';
 export * from './MedplumProvider/MedplumProvider';
 export * from './MoneyDisplay/MoneyDisplay';
 export * from './MoneyInput/MoneyInput';
+export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';
