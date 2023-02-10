@@ -183,6 +183,8 @@ function mockHandler(method: string, url: string, options: any): any {
   } else if (method === 'POST' && options?.headers?.['Content-Type'] === 'application/fhir+json') {
     // Default "create" operation returns the body
     result = JSON.parse(options.body);
+  } else {
+    result = notFound;
   }
 
   return {
@@ -205,7 +207,7 @@ function mockFhirBatchHandler(_method: string, _path: string, options: any): Bun
       const method = e?.request?.method as string;
       const resource = mockHandler(method, url, null);
       if (resource?.resourceType === 'OperationOutcome') {
-        return { resource, response: { status: getStatus(resource).toString() } };
+        return { resource, response: { status: getStatus(resource).toString(), outcome: resource } };
       } else if (resource) {
         return { resource, response: { status: '200' } };
       } else {
@@ -1107,6 +1109,19 @@ test('Auto batch multiple requests', async () => {
 
   expect(patient).toBeDefined();
   expect(practitioner).toBeDefined();
+});
+
+test('Auto batch error', async () => {
+  const medplum = new MedplumClient({ ...defaultOptions, autoBatchTime: 100 });
+  try {
+    // Start multiple requests to force a batch
+    const patientPromise = medplum.readResource('Patient', '123');
+    await medplum.readResource('Patient', '9999999-does-not-exist');
+    await patientPromise;
+    throw new Error('Expected error');
+  } catch (err) {
+    expect(err).toMatchObject(notFound);
+  }
 });
 
 function createPdf(
