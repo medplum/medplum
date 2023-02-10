@@ -1787,7 +1787,7 @@ export class Repository {
    * @returns True if the resource should be cached only and not written to the database.
    */
   #isCacheOnly(resource: Resource): boolean {
-    return resource.resourceType === 'Login' && resource.authMethod === 'client';
+    return resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute');
   }
 
   #parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
