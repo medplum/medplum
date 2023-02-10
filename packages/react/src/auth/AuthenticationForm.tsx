@@ -149,7 +149,6 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
       <Stack spacing="xl">
         <PasswordInput
           name="password"
-          type="password"
           label="Password"
           autoComplete="off"
           required={true}
