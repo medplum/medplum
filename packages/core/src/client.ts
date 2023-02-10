@@ -29,6 +29,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
+import { isOk } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -1971,7 +1972,11 @@ export class MedplumClient extends EventTarget {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
       const responseEntry = response.entry?.[i];
-      entry.resolve(responseEntry?.resource);
+      if (responseEntry?.response?.outcome && !isOk(responseEntry.response.outcome as OperationOutcome)) {
+        entry.reject(responseEntry.response.outcome);
+      } else {
+        entry.resolve(responseEntry?.resource);
+      }
     }
   }
 
