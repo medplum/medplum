@@ -494,15 +494,31 @@ export class Repository {
       throw forbidden;
     }
 
+    if (!this.#isCacheOnly(result)) {
+      await this.#writeToDatabase(result);
+    }
+
+    await setCacheEntry(result);
+    await addBackgroundJobs(result);
+    this.#removeHiddenFields(result);
+    return result;
+  }
+
+  /**
+   * Writes the resource to the database.
+   * This is a single atomic operation inside of a transaction.
+   * @param resource The resource to write to the database.
+   */
+  async #writeToDatabase<T extends Resource>(resource: T): Promise<void> {
     // Note: We don't try/catch this because if connecting throws an exception.
     // We don't need to dispose of the client (it will be undefined).
     // https://node-postgres.com/features/transactions
     const client = await getClient().connect();
     try {
       await client.query('BEGIN');
-      await this.#writeResource(client, result);
-      await this.#writeResourceVersion(client, result);
-      await this.#writeLookupTables(client, result);
+      await this.#writeResource(client, resource);
+      await this.#writeResourceVersion(client, resource);
+      await this.#writeLookupTables(client, resource);
       await client.query('COMMIT');
     } catch (err) {
       await client.query('ROLLBACK');
@@ -510,11 +526,6 @@ export class Repository {
     } finally {
       client.release();
     }
-
-    await setCacheEntry(result);
-    await addBackgroundJobs(result);
-    this.#removeHiddenFields(result);
-    return result;
   }
 
   /**
@@ -1767,6 +1778,16 @@ export class Repository {
       }
     }
     return false;
+  }
+
+  /**
+   * Returns true if the resource is "cache only" and not written to the database.
+   * This is a highly specialized use case for internal system resources.
+   * @param resource The candidate resource.
+   * @returns True if the resource should be cached only and not written to the database.
+   */
+  #isCacheOnly(resource: Resource): boolean {
+    return resource.resourceType === 'Login' && resource.authMethod === 'client';
   }
 
   #parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
