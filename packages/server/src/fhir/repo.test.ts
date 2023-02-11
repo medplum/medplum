@@ -37,7 +37,7 @@ import { loadTestConfig } from '../config';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
 import { getRepoForLogin, Repository, systemRepo } from './repo';
-import { parseSearchRequest } from './search';
+import { parseSearchRequest, parseSearchUrl } from './search';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -2260,6 +2260,36 @@ describe('FHIR Repo', () => {
     expect(bundle.entry?.length).toEqual(1);
     expect(bundleContains(bundle, c1)).toBeTruthy();
     expect(bundleContains(bundle, c2)).not.toBeTruthy();
+  });
+
+  test('Condition.code :not next URL', async () => {
+    const p = await systemRepo.createResource({
+      resourceType: 'Patient',
+      name: [{ family: randomUUID() }],
+    });
+
+    await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: createReference(p),
+      code: { coding: [{ system: 'http://snomed.info/sct', code: '165002' }] },
+    });
+
+    await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      subject: createReference(p),
+      code: { coding: [{ system: 'https://example.com', code: 'test' }] },
+    });
+
+    const bundle = await systemRepo.search(
+      parseSearchUrl(
+        new URL(`https://x/Condition?subject=${getReferenceString(p)}&code:not=x&_count=1&_total=accurate`)
+      )
+    );
+    expect(bundle.entry?.length).toEqual(1);
+
+    const nextUrl = bundle.link?.find((l) => l.relation === 'next')?.url;
+    expect(nextUrl).toBeDefined();
+    expect(nextUrl).toContain('code:not=x');
   });
 
   test('Condition.code :in search', async () => {
