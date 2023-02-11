@@ -4,7 +4,7 @@
     "types": ["vitest/globals"],
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "module": "esnext",
     "target": "ES2017"
   },
