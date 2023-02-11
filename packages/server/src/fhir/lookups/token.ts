@@ -118,7 +118,10 @@ export class TokenTable extends LookupTable<Token> {
 
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
-    const sqlOperator = filter.operator === FhirOperator.NOT_EQUALS ? Operator.EQUALS : Operator.NOT_EQUALS;
+    const sqlOperator =
+      filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS
+        ? Operator.EQUALS
+        : Operator.NOT_EQUALS;
     predicate.expressions.push(new Condition(new Column(joinName, 'resourceId'), sqlOperator, null));
   }
 

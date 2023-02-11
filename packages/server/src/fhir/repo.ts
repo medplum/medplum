@@ -1976,6 +1976,7 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
   switch (fhirOperator) {
     case FhirOperator.EQUALS:
       return Operator.EQUALS;
+    case FhirOperator.NOT:
     case FhirOperator.NOT_EQUALS:
       return Operator.NOT_EQUALS;
     case FhirOperator.GREATER_THAN:

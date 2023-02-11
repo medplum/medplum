@@ -208,4 +208,13 @@ describe('Search Utils', () => {
       })
     ).toEqual('?url:above=http%3A%2F%2Facme.org');
   });
+
+  test('Format token not', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Condition',
+        filters: [{ code: 'code', operator: Operator.NOT, value: 'x' }],
+      })
+    ).toEqual('?code:not=x');
+  });
 });
