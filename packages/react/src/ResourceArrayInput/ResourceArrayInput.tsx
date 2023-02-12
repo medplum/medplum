@@ -1,6 +1,6 @@
 import { ActionIcon } from '@mantine/core';
 import { ElementDefinition } from '@medplum/fhirtypes';
-import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
+import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import React, { useRef, useState } from 'react';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';

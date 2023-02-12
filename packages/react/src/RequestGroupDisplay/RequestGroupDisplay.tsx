@@ -1,7 +1,7 @@
 import { Button, Grid, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
-import { IconCheckbox, IconSquare } from '@tabler/icons';
+import { IconCheckbox, IconSquare } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { ResourceName } from '../ResourceName/ResourceName';

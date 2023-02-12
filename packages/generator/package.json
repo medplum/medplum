@@ -23,6 +23,6 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "fhirpath": "3.3.1",
-    "fast-xml-parser": "4.1.1"
+    "fast-xml-parser": "4.1.2"
   }
 }

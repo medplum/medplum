@@ -1,6 +1,6 @@
 import { ActionIcon } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
-import { IconCircleMinus, IconCloudUpload } from '@tabler/icons';
+import { IconCircleMinus, IconCloudUpload } from '@tabler/icons-react';
 import React, { useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';

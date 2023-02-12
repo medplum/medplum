@@ -1,6 +1,6 @@
 import { NativeSelect, TextInput } from '@mantine/core';
 import { Money } from '@medplum/fhirtypes';
-import { IconCurrencyDollar } from '@tabler/icons';
+import { IconCurrencyDollar } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 /*

@@ -22,7 +22,7 @@ import {
   IconPin,
   IconPinnedOff,
   IconTrash,
-} from '@tabler/icons';
+} from '@tabler/icons-react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';

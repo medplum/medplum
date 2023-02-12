@@ -18,6 +18,7 @@ const globals = {
   '@mantine/react': 'mantine.react',
   '@medplum/core': 'medplum.core',
   '@medplum/mock': 'medplum.mock',
+  'prop-types': 'PropTypes',
   react: 'React',
   'react-dom': 'ReactDOM',
 };

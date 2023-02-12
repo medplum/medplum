@@ -1,6 +1,6 @@
 import { Alert } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
-import { IconAlertCircle } from '@tabler/icons';
+import { IconAlertCircle } from '@tabler/icons-react';
 import React, { ErrorInfo, ReactNode } from 'react';
 
 export interface ErrorBoundaryProps {
