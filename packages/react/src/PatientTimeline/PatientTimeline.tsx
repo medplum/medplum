@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Patient, Reference } from '@medplum/fhirtypes';
+import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
+import { Attachment, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
 import React, { useCallback } from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
@@ -8,15 +8,15 @@ export interface PatientTimelineProps {
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
-  const loadTimelineResources = useCallback((medplum: MedplumClient, resource: Patient) => {
+  const loadTimelineResources = useCallback((medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
     return Promise.allSettled([
-      medplum.readHistory('Patient', resource.id as string),
-      medplum.search('Communication', 'subject=' + getReferenceString(resource)),
-      medplum.search('Device', 'patient=' + getReferenceString(resource)),
-      medplum.search('DeviceRequest', 'patient=' + getReferenceString(resource)),
-      medplum.search('DiagnosticReport', 'subject=' + getReferenceString(resource)),
-      medplum.search('Media', 'subject=' + getReferenceString(resource)),
-      medplum.search('ServiceRequest', 'subject=' + getReferenceString(resource)),
+      medplum.readHistory('Patient', id),
+      medplum.search('Communication', 'subject=Patient/' + id),
+      medplum.search('Device', 'patient=Patient/' + id),
+      medplum.search('DeviceRequest', 'patient=Patient/' + id),
+      medplum.search('DiagnosticReport', 'subject=Patient/' + id),
+      medplum.search('Media', 'subject=Patient/' + id),
+      medplum.search('ServiceRequest', 'subject=Patient/' + id),
     ]);
   }, []);
 

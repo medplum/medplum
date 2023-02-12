@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Group, Patient, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
+import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
@@ -11,12 +11,12 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
   return (
     <ResourceTimeline
       value={props.serviceRequest}
-      loadTimelineResources={async (medplum: MedplumClient, resource: ServiceRequest) => {
+      loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
         return Promise.allSettled([
-          medplum.readHistory('ServiceRequest', resource.id as string),
-          medplum.search('Communication', 'based-on=' + getReferenceString(resource)),
-          medplum.search('Media', '_count=100&based-on=' + getReferenceString(resource)),
-          medplum.search('DiagnosticReport', 'based-on=' + getReferenceString(resource)),
+          medplum.readHistory('ServiceRequest', id),
+          medplum.search('Communication', 'based-on=ServiceRequest/' + id),
+          medplum.search('Media', '_count=100&based-on=ServiceRequest/' + id),
+          medplum.search('DiagnosticReport', 'based-on=ServiceRequest/' + id),
         ]);
       }}
       createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({

@@ -6,6 +6,7 @@ import {
   Bundle,
   BundleEntry,
   Communication,
+  Device,
   Encounter,
   ExtractResource,
   OperationOutcome,
@@ -43,6 +44,8 @@ const DEFAULT_CACHE_TIME = 60000; // 60 seconds
 const JSON_CONTENT_TYPE = 'application/json';
 const FHIR_CONTENT_TYPE = 'application/fhir+json';
 const PATCH_CONTENT_TYPE = 'application/json-patch+json';
+
+const system: Device = { resourceType: 'Device', id: 'system', deviceName: [{ name: 'System' }] };
 
 /**
  * The MedplumClientOptions interface defines configuration options for MedplumClient.
@@ -533,9 +536,12 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
-    const url = 'fhir/R4/' + resourceType;
+    this.#invalidateStartsWith(this.fhirUrl(resourceType).toString());
+  }
+
+  #invalidateStartsWith(prefix: string): void {
     for (const key of this.#requestCache.keys()) {
-      if (key.endsWith(url) || key.includes(url + '?')) {
+      if (key.startsWith(prefix)) {
         this.#requestCache.delete(key);
       }
     }
@@ -915,13 +921,7 @@ export class MedplumClient extends EventTarget {
         const bundle = await this.get<Bundle<ExtractResource<K>>>(url, options);
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            const resource = entry.resource;
-            if (resource?.id) {
-              this.#setCacheEntry(
-                this.fhirUrl(resourceType, resource.id).toString(),
-                new ReadablePromise(Promise.resolve(resource))
-              );
-            }
+            this.#cacheResource(entry.resource);
           }
         }
         return bundle;
@@ -1056,6 +1056,9 @@ export class MedplumClient extends EventTarget {
     if (!refString) {
       return undefined;
     }
+    if (refString === 'system') {
+      return system as T;
+    }
     const [resourceType, id] = refString.split('/');
     if (!resourceType || !id) {
       return undefined;
@@ -1113,6 +1116,9 @@ export class MedplumClient extends EventTarget {
     const refString = reference?.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
+    }
+    if (refString === 'system') {
+      return new ReadablePromise(Promise.resolve(system as unknown as T));
     }
     const [resourceType, id] = refString.split('/');
     if (!resourceType || !id) {
@@ -1538,10 +1544,15 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing id');
     }
     this.invalidateSearches(resource.resourceType);
-    const result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
-    // On 304 not modified, result will be undefined
-    // Return the user input instead
-    return result ?? resource;
+    let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    if (!result) {
+      // On 304 not modified, result will be undefined
+      // Return the user input instead
+      // return result ?? resource;
+      result = resource;
+    }
+    this.#cacheResource(result);
+    return result;
   }
 
   /**
@@ -1926,6 +1937,15 @@ export class MedplumClient extends EventTarget {
   #setCacheEntry(key: string, value: ReadablePromise<any>): void {
     if (this.#cacheTime > 0) {
       this.#requestCache.set(key, { requestTime: Date.now(), value });
+    }
+  }
+
+  #cacheResource(resource: Resource | undefined): void {
+    if (resource?.id) {
+      this.#setCacheEntry(
+        this.fhirUrl(resource.resourceType, resource.id).toString(),
+        new ReadablePromise(Promise.resolve(resource))
+      );
     }
   }
 

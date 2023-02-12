@@ -2,21 +2,19 @@ import { Button } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useResource } from '@medplum/react';
 import React, { useRef } from 'react';
+import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
 
 import './BotEditor.css';
 
-export interface BotEditorProps {
-  bot: Bot;
-}
-
-export function BotEditor(props: BotEditorProps): JSX.Element {
+export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
-  const { bot } = props;
+  const { id } = useParams() as { id: string };
+  const bot = useResource<Bot>({ reference: 'Bot/' + id });
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const inputFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
@@ -37,7 +35,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
   async function saveBot(): Promise<void> {
     try {
       const code = await getCode();
-      await medplum.patchResource('Bot', bot.id as string, [
+      await medplum.patchResource('Bot', id, [
         {
           op: 'replace',
           path: '/code',
@@ -53,7 +51,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
   async function deployBot(): Promise<void> {
     try {
       const code = await getCodeOutput();
-      await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), { code });
+      await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
       showNotification({ color: 'green', message: 'Deployed' });
     } catch (err) {
       showNotification({ color: 'red', message: normalizeErrorString(err) });
@@ -63,7 +61,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
   async function executeBot(): Promise<void> {
     try {
       const input = await getSampleInput();
-      const result = await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$execute'), input);
+      const result = await medplum.post(medplum.fhirUrl('Bot', id, '$execute'), input);
       await sendCommand(outputFrameRef.current as HTMLIFrameElement, {
         command: 'setValue',
         value: result,
@@ -74,6 +72,10 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
     }
   }
 
+  if (!bot) {
+    return null;
+  }
+
   return (
     <div className="medplum-bot-editor">
       <CodeEditor
@@ -82,7 +84,7 @@ export function BotEditor(props: BotEditorProps): JSX.Element {
         language="typescript"
         module="commonjs"
         testId="code-frame"
-        defaultValue={props.bot.code || ''}
+        defaultValue={bot.code || ''}
       />
       <CodeEditor
         iframeRef={inputFrameRef}

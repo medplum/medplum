@@ -11,6 +11,7 @@ import {
   Media,
   Reference,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import {
   IconCheck,
@@ -45,7 +46,11 @@ const useStyles = createStyles((theme) => ({
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
-  loadTimelineResources: (medplum: MedplumClient, resource: T) => Promise<PromiseSettledResult<Bundle>[]>;
+  loadTimelineResources: (
+    medplum: MedplumClient,
+    resourceType: ResourceType,
+    id: string
+  ) => Promise<PromiseSettledResult<Bundle>[]>;
   createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
@@ -64,13 +69,16 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   itemsRef.current = items;
 
   const loadTimeline = useCallback(() => {
-    if (!resource) {
-      setItems([]);
-      setHistory({} as Bundle);
-      return;
+    let resourceType: ResourceType;
+    let id: string;
+    if ('resourceType' in props.value) {
+      resourceType = props.value.resourceType;
+      id = props.value.id as string;
+    } else {
+      [resourceType, id] = props.value.reference?.split('/') as [ResourceType, string];
     }
-    loadTimelineResources(medplum, resource).then(handleBatchResponse).catch(console.log);
-  }, [medplum, resource, loadTimelineResources]);
+    loadTimelineResources(medplum, resourceType, id).then(handleBatchResponse).catch(console.log);
+  }, [medplum, props.value, loadTimelineResources]);
 
   useEffect(() => {
     loadTimeline();
