@@ -173,6 +173,7 @@ describe('Login', () => {
   test('Login with access policy', async () => {
     const adminEmail = `admin${randomUUID()}@example.com`;
     const memberEmail = `member${randomUUID()}@example.com`;
+    const compartment = { reference: `Organization/${randomUUID()}` };
 
     // Register and create a project
     const { project, accessToken } = await registerNew({
@@ -190,12 +191,11 @@ describe('Login', () => {
       .send({
         resourceType: 'AccessPolicy',
         name: 'Test Access Policy',
+        compartment,
         resource: [
           {
             resourceType: 'Patient',
-            compartment: {
-              reference: `Organization/${randomUUID()}`,
-            },
+            compartment,
           },
         ],
       });
