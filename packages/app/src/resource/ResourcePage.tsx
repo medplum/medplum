@@ -90,7 +90,6 @@ export function ResourcePage(): JSX.Element {
   const medplum = useMedplum();
   const [value, setValue] = useState<Resource | undefined>();
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
-  const [questionnaires, setQuestionnaires] = useState<Bundle<Questionnaire> | undefined>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   function handleError(error: unknown): void {
@@ -126,10 +125,6 @@ export function ResourcePage(): JSX.Element {
   useEffect(() => {
     medplum.readResource(resourceType, id).then(setValue).catch(handleError);
     medplum.readHistory(resourceType, id).then(setHistoryBundle).catch(handleError);
-    medplum
-      .search('Questionnaire', 'subject-type=' + resourceType)
-      .then(setQuestionnaires)
-      .catch(handleError);
   }, [medplum, resourceType, id]);
 
   if (outcome && isGone(outcome)) {
@@ -154,7 +149,6 @@ export function ResourcePage(): JSX.Element {
       id={id}
       value={value}
       historyBundle={historyBundle}
-      questionnaires={questionnaires}
       onSubmit={onSubmit}
       outcome={outcome}
     />
@@ -166,7 +160,6 @@ interface ResourcePageBodyProps {
   id: string;
   value: Resource;
   historyBundle: Bundle;
-  questionnaires: Bundle<Questionnaire> | undefined;
   onSubmit: (newResource: Resource) => void;
   outcome: OperationOutcome | undefined;
 }

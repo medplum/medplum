@@ -6,7 +6,7 @@ import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, notFound } from './outcomes';
-import { ProfileResource, stringify } from './utils';
+import { createReference, ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
   clientId: 'xyz',
@@ -113,6 +113,18 @@ function mockHandler(method: string, url: string, options: any): any {
     result = {
       resourceType: 'Patient',
       id: '123',
+    };
+  } else if (method === 'GET' && url.endsWith('Patient')) {
+    result = {
+      resourceType: 'Bundle',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '123',
+          },
+        },
+      ],
     };
   } else if (method === 'GET' && url.endsWith('Patient/not-found')) {
     result = { status: 404 };
@@ -869,12 +881,21 @@ describe('Client', () => {
 
   test('Get cached schema', async () => {
     const client = new MedplumClient(defaultOptions);
-    const schema = await client.requestSchema('Patient');
-    expect(schema).toBeDefined();
-    expect(schema.types['Patient']).toBeDefined();
 
-    const schema2 = await client.requestSchema('Patient');
-    expect(schema2).toEqual(schema);
+    // Issue two requests simultaneously
+    const request1 = client.requestSchema('Patient');
+    const request2 = client.requestSchema('Patient');
+
+    const schema1 = await request1;
+    expect(schema1).toBeDefined();
+    expect(schema1.types['Patient']).toBeDefined();
+
+    const schema2 = await request2;
+    expect(schema2).toBeDefined();
+    expect(schema2).toEqual(schema1);
+
+    const schema3 = await client.requestSchema('Patient');
+    expect(schema3).toEqual(schema1);
   });
 
   test('Search', async () => {
@@ -932,6 +953,13 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(result.length).toBe(1);
     expect(result[0].resourceType).toBe('Patient');
+  });
+
+  test('Search and cache', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.search('Patient');
+    expect(result).toBeDefined();
+    expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
   });
 
   test('Search ValueSet', async () => {
