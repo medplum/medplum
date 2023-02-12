@@ -1763,9 +1763,6 @@ export class Repository {
     if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
-    if (!this.#context.accessPolicy) {
-      return true;
-    }
     return this.#matchesAccessPolicy(resource, false);
   }
 
