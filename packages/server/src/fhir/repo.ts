@@ -262,19 +262,20 @@ export class Repository {
       throw forbidden;
     }
 
-    if (!this.#context.accessPolicy) {
-      const cacheRecord = await getCacheEntry<T>(resourceType, id);
-      if (cacheRecord) {
-        if (
-          !this.#isSuperAdmin() &&
-          this.#context.project !== undefined &&
-          cacheRecord.projectId !== undefined &&
-          cacheRecord.projectId !== this.#context.project
-        ) {
-          throw notFound;
-        }
-        return cacheRecord.resource;
+    const cacheRecord = await getCacheEntry<T>(resourceType, id);
+    if (cacheRecord) {
+      if (
+        !this.#isSuperAdmin() &&
+        this.#context.project !== undefined &&
+        cacheRecord.projectId !== undefined &&
+        cacheRecord.projectId !== this.#context.project
+      ) {
+        throw notFound;
       }
+      if (!this.#matchesAccessPolicy(cacheRecord.resource, true)) {
+        throw notFound;
+      }
+      return cacheRecord.resource;
     }
 
     const client = getClient();
@@ -1762,22 +1763,62 @@ export class Repository {
     if (publicResourceTypes.includes(resourceType)) {
       return false;
     }
+    return this.#matchesAccessPolicy(resource, false);
+  }
+
+  /**
+   * Returns true if the resource satisfies the current access policy.
+   * @param resource The resource.
+   * @param readonly True if the resource is being read.
+   * @returns True if the resource matches the access policy.
+   */
+  #matchesAccessPolicy(resource: Resource, readonly: boolean): boolean {
     if (!this.#context.accessPolicy) {
       return true;
     }
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
-        if (
-          (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
-          !resourcePolicy.readonly &&
-          (!resourcePolicy.criteria ||
-            matchesSearchRequest(resource, this.#parseCriteriaAsSearchRequest(resourcePolicy.criteria)))
-        ) {
+        if (this.#matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonly)) {
           return true;
         }
       }
     }
     return false;
+  }
+
+  /**
+   * Returns true if the resource satisfies the specified access policy resource policy.
+   * @param resource The resource.
+   * @param resourcePolicy One per-resource policy section from the access policy.
+   * @param readonly True if the resource is being read.
+   * @returns True if the resource matches the access policy.
+   */
+  #matchesAccessPolicyResourcePolicy(
+    resource: Resource,
+    resourcePolicy: AccessPolicyResource,
+    readonly: boolean
+  ): boolean {
+    const resourceType = resource.resourceType;
+    if (resourcePolicy.resourceType !== resourceType && resourcePolicy.resourceType !== '*') {
+      return false;
+    }
+    if (!readonly && resourcePolicy.readonly) {
+      return false;
+    }
+    if (
+      resourcePolicy.compartment &&
+      !resource.meta?.compartment?.find((c) => c.reference === resourcePolicy.compartment?.reference)
+    ) {
+      // Deprecated - to be removed
+      return false;
+    }
+    if (
+      resourcePolicy.criteria &&
+      !matchesSearchRequest(resource, this.#parseCriteriaAsSearchRequest(resourcePolicy.criteria))
+    ) {
+      return false;
+    }
+    return true;
   }
 
   /**
