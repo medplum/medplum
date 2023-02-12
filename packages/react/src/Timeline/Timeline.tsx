@@ -1,7 +1,7 @@
 import { ActionIcon, Group, Menu, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
-import { IconDots } from '@tabler/icons';
+import { IconDots } from '@tabler/icons-react';
 import React from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';

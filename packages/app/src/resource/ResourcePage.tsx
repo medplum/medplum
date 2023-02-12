@@ -34,7 +34,7 @@ import {
   ServiceRequestTimeline,
   useMedplum,
 } from '@medplum/react';
-import { IconAlertCircle } from '@tabler/icons';
+import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Loading } from '../components/Loading';

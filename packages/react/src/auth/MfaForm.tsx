@@ -1,6 +1,6 @@
 import { Alert, Button, Center, Group, Stack, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
-import { IconAlertCircle } from '@tabler/icons';
+import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';

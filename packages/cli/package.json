@@ -18,7 +18,7 @@
   "dependencies": {
     "@medplum/core": "*",
     "dotenv": "16.0.3",
-    "node-fetch": "2.6.7"
+    "node-fetch": "2.6.9"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",

@@ -1,6 +1,7 @@
 import { createStyles, Navbar, Space, Text } from '@mantine/core';
 import { useMedplumContext } from '@medplum/react';
 import {
+  Icon,
   IconBrandAsana,
   IconBuilding,
   IconForms,
@@ -12,8 +13,7 @@ import {
   IconReportMedical,
   IconStar,
   IconWebhook,
-  TablerIcon,
-} from '@tabler/icons';
+} from '@tabler/icons-react';
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 
@@ -124,7 +124,7 @@ interface NavLinkIconProps {
   className: string;
 }
 
-const resourceTypeToIcon: Record<string, TablerIcon> = {
+const resourceTypeToIcon: Record<string, Icon> = {
   Patient: IconStar,
   Practitioner: IconId,
   Organization: IconBuilding,

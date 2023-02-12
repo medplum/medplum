@@ -4,7 +4,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
-import { IconUpload, IconX } from '@tabler/icons';
+import { IconUpload, IconX } from '@tabler/icons-react';
 import React, { useCallback, useState } from 'react';
 
 export const DEFAULT_VALUE = `{

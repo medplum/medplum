@@ -27,7 +27,7 @@ import {
   IconFilter,
   IconTableExport,
   IconTrash,
-} from '@tabler/icons';
+} from '@tabler/icons-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';

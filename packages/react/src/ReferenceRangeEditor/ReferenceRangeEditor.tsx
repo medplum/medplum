@@ -1,7 +1,7 @@
 import { ActionIcon, Button, createStyles, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { formatRange, getCodeBySystem } from '@medplum/core';
 import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
-import { IconCircleMinus, IconCirclePlus } from '@tabler/icons';
+import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
 import React, { useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
