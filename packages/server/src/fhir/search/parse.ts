@@ -37,7 +37,7 @@ const modifierMap: Record<string, Operator> = {
   above: Operator.ABOVE,
   below: Operator.BELOW,
   text: Operator.TEXT,
-  not: Operator.NOT_EQUALS,
+  not: Operator.NOT,
   in: Operator.IN,
   'not-in': Operator.NOT_IN,
   'of-type': Operator.OF_TYPE,
