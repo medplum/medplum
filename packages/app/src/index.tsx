@@ -11,14 +11,8 @@ if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
-      .then((reg) => {
-        console.log('SW registered: ', reg);
-        return reg.update();
-      })
-      .then((reg) => {
-        console.log('SW updated: ', reg);
-      })
-      .catch((regError) => console.log('SW registration failed: ', regError));
+      .then((reg) => reg.update())
+      .catch((regError) => console.error('SW registration failed: ', regError));
   });
 }
 
