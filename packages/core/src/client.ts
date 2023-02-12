@@ -1594,6 +1594,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the delete operation.
    */
   deleteResource(resourceType: ResourceType, id: string): Promise<any> {
+    this.#deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
   }
@@ -1925,6 +1926,16 @@ export class MedplumClient extends EventTarget {
   #setCacheEntry(key: string, value: ReadablePromise<any>): void {
     if (this.#cacheTime > 0) {
       this.#requestCache.set(key, { requestTime: Date.now(), value });
+    }
+  }
+
+  /**
+   * Deletes a cache entry.
+   * @param key The cache key to delete.
+   */
+  #deleteCacheEntry(key: string): void {
+    if (this.#cacheTime > 0) {
+      this.#requestCache.delete(key);
     }
   }
 
