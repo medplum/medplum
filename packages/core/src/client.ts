@@ -904,7 +904,31 @@ export class MedplumClient extends EventTarget {
     query?: URLSearchParams | string,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
-    return this.get(this.fhirSearchUrl(resourceType, query), options);
+    const url = this.fhirSearchUrl(resourceType, query);
+    const cacheKey = url.toString() + '-search';
+    const cached = this.#getCacheEntry(cacheKey, options);
+    if (cached) {
+      return cached.value;
+    }
+    const promise = new ReadablePromise(
+      (async () => {
+        const bundle = await this.get<Bundle<ExtractResource<K>>>(url, options);
+        if (bundle.entry) {
+          for (const entry of bundle.entry) {
+            const resource = entry.resource;
+            if (resource?.id) {
+              this.#setCacheEntry(
+                this.fhirUrl(resourceType, resource.id).toString(),
+                new ReadablePromise(Promise.resolve(resource))
+              );
+            }
+          }
+        }
+        return bundle;
+      })()
+    );
+    this.#setCacheEntry(cacheKey, promise);
+    return promise;
   }
 
   /**
@@ -1116,12 +1140,20 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The FHIR resource type.
    * @returns Promise to a schema with the requested resource type.
    */
-  async requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
+  requestSchema(resourceType: string): Promise<IndexedStructureDefinition> {
     if (resourceType in globalSchema.types) {
-      return globalSchema;
+      return Promise.resolve(globalSchema);
     }
 
-    const query = `{
+    const cacheKey = resourceType + '-requestSchema';
+    const cached = this.#getCacheEntry(cacheKey, undefined);
+    if (cached) {
+      return cached.value;
+    }
+
+    const promise = new ReadablePromise<IndexedStructureDefinition>(
+      (async () => {
+        const query = `{
       StructureDefinitionList(name: "${resourceType}") {
         name,
         description,
@@ -1151,17 +1183,21 @@ export class MedplumClient extends EventTarget {
       }
     }`.replace(/\s+/g, ' ');
 
-    const response = (await this.graphql(query)) as SchemaGraphQLResponse;
+        const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
-    for (const structureDefinition of response.data.StructureDefinitionList) {
-      indexStructureDefinition(structureDefinition);
-    }
+        for (const structureDefinition of response.data.StructureDefinitionList) {
+          indexStructureDefinition(structureDefinition);
+        }
 
-    for (const searchParameter of response.data.SearchParameterList) {
-      indexSearchParameter(searchParameter);
-    }
+        for (const searchParameter of response.data.SearchParameterList) {
+          indexSearchParameter(searchParameter);
+        }
 
-    return globalSchema;
+        return globalSchema;
+      })()
+    );
+    this.#setCacheEntry(cacheKey, promise);
+    return promise;
   }
 
   /**
@@ -1558,6 +1594,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the delete operation.
    */
   deleteResource(resourceType: ResourceType, id: string): Promise<any> {
+    this.#deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
   }
@@ -1889,6 +1926,16 @@ export class MedplumClient extends EventTarget {
   #setCacheEntry(key: string, value: ReadablePromise<any>): void {
     if (this.#cacheTime > 0) {
       this.#requestCache.set(key, { requestTime: Date.now(), value });
+    }
+  }
+
+  /**
+   * Deletes a cache entry.
+   * @param key The cache key to delete.
+   */
+  #deleteCacheEntry(key: string): void {
+    if (this.#cacheTime > 0) {
+      this.#requestCache.delete(key);
     }
   }
 
