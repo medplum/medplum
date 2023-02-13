@@ -536,12 +536,9 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
-    this.#invalidateStartsWith(this.fhirUrl(resourceType).toString());
-  }
-
-  #invalidateStartsWith(prefix: string): void {
+    const url = 'fhir/R4/' + resourceType;
     for (const key of this.#requestCache.keys()) {
-      if (key.startsWith(prefix)) {
+      if (key.endsWith(url) || key.includes(url + '?')) {
         this.#requestCache.delete(key);
       }
     }
@@ -1940,6 +1937,12 @@ export class MedplumClient extends EventTarget {
     }
   }
 
+  /**
+   * Adds a concrete value as the cache entry for the given resource.
+   * This is used in cases where the resource is loaded indirectly.
+   * For example, when a resource is loaded as part of a Bundle.
+   * @param resource The resource to cache.
+   */
   #cacheResource(resource: Resource | undefined): void {
     if (resource?.id) {
       this.#setCacheEntry(

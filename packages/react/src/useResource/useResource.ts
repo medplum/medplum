@@ -18,13 +18,15 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
   referenceRef.current = undefined;
   resourceRef.current = undefined;
 
-  // Try to convert the value to a reference
+  // Try to convert the value to a reference and resource
   if (value) {
     if ('reference' in value) {
+      // If the input is a reference then we can use it as-is
       referenceRef.current = value as Reference<T>;
     } else if ('resourceType' in value) {
       resourceRef.current = value;
       if ('id' in value) {
+        // If the input is a resource with an ID, then we can still create a reference
         referenceRef.current = { reference: value.resourceType + '/' + value.id };
       }
     }
@@ -40,7 +42,7 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
   // Keep track of the previous resource
   // This is used to detect when the resource has changed
   // We need a React "state" variable to trigger a re-render
-  const [prevResource, setPrevResource] = useState(currentResource);
+  const [prevResource, forceRerender] = useState(currentResource);
 
   // Subscribe to changes to the passed-in value
   useEffect(() => {
@@ -49,7 +51,7 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
         .readReference(referenceRef.current)
         .then((newValue) => {
           if (!deepEquals(newValue, prevResource)) {
-            setPrevResource(newValue);
+            forceRerender(newValue);
           }
         })
         .catch(console.error);
