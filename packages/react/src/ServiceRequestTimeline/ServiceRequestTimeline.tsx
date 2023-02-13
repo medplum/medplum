@@ -12,7 +12,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
     <ResourceTimeline
       value={props.serviceRequest}
       loadTimelineResources={async (medplum: MedplumClient, resource: ServiceRequest) => {
-        return Promise.all([
+        return Promise.allSettled([
           medplum.readHistory('ServiceRequest', resource.id as string),
           medplum.search('Communication', 'based-on=' + getReferenceString(resource)),
           medplum.search('Media', '_count=100&based-on=' + getReferenceString(resource)),

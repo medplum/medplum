@@ -12,7 +12,7 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
     <ResourceTimeline
       value={props.encounter}
       loadTimelineResources={async (medplum: MedplumClient, resource: Encounter) => {
-        return Promise.all([
+        return Promise.allSettled([
           medplum.readHistory('Encounter', resource.id as string),
           medplum.search('Communication', 'encounter=' + getReferenceString(resource)),
           medplum.search('Media', 'encounter=' + getReferenceString(resource)),

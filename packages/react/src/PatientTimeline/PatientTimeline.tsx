@@ -9,7 +9,7 @@ export interface PatientTimelineProps {
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
   const loadTimelineResources = useCallback((medplum: MedplumClient, resource: Patient) => {
-    return Promise.all([
+    return Promise.allSettled([
       medplum.readHistory('Patient', resource.id as string),
       medplum.search('Communication', 'subject=' + getReferenceString(resource)),
       medplum.search('Device', 'patient=' + getReferenceString(resource)),
