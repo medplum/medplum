@@ -45,7 +45,7 @@ const useStyles = createStyles((theme) => ({
 
 export interface ResourceTimelineProps<T extends Resource> {
   value: T | Reference<T>;
-  loadTimelineResources: (medplum: MedplumClient, resource: T) => Promise<Bundle[]>;
+  loadTimelineResources: (medplum: MedplumClient, resource: T) => Promise<PromiseSettledResult<Bundle>[]>;
   createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
   createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
 }
@@ -80,15 +80,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    * Handles a batch request response.
    * @param batchResponse The batch response.
    */
-  function handleBatchResponse(bundles: Bundle[]): void {
+  function handleBatchResponse(batchResponse: PromiseSettledResult<Bundle>[]): void {
+    // console.log('handleBatchResponse', bundles);
     const newItems = [];
 
-    for (const bundle of bundles) {
-      if (!bundle) {
+    for (const settledResult of batchResponse) {
+      if (settledResult.status !== 'fulfilled') {
         // User may not have access to all resource types
         continue;
       }
 
+      const bundle = settledResult.value;
       if (bundle.type === 'history') {
         setHistory(bundle);
       }

@@ -12,7 +12,7 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
     <ResourceTimeline
       value={props.resource}
       loadTimelineResources={async (medplum: MedplumClient, resource: Resource) => {
-        return Promise.all([medplum.readHistory(resource.resourceType, resource.id as string)]);
+        return Promise.allSettled([medplum.readHistory(resource.resourceType, resource.id as string)]);
       }}
     />
   );

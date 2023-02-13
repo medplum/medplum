@@ -9,8 +9,11 @@ import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 
 const medplum = new MockClient();
 
-async function loadTimelineResources(medplum: MedplumClient, resource: Resource): Promise<Bundle[]> {
-  return Promise.all([
+async function loadTimelineResources(
+  medplum: MedplumClient,
+  resource: Resource
+): Promise<PromiseSettledResult<Bundle>[]> {
+  return Promise.allSettled([
     medplum.readHistory(resource.resourceType, resource.id as string),
     medplum.search('Communication', 'encounter=' + getReferenceString(resource)),
     medplum.search('Media', 'encounter=' + getReferenceString(resource)),
