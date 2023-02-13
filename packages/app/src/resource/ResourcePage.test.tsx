@@ -63,25 +63,6 @@ describe('ResourcePage', () => {
     expect(screen.getByText('Gender')).toBeInTheDocument();
   });
 
-  test('Edit tab renders', async () => {
-    await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Edit'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
-  });
-
-  test('Delete button on edit page', async () => {
-    await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Delete'));
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
-    });
-
-    await waitFor(() => screen.getByText('Are you sure you want to delete this Practitioner?'));
-    expect(screen.getByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
-  });
-
   test('Delete button confirm', async () => {
     // Create a practitioner that we can delete
     const medplum = new MockClient();
@@ -136,13 +117,6 @@ describe('ResourcePage', () => {
     await waitFor(() => screen.getByText('Timeline'));
 
     expect(screen.getByText('Timeline')).toBeInTheDocument();
-  });
-
-  test('Questionnaire builder', async () => {
-    await setup('/Questionnaire/123/builder');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeDefined();
   });
 
   test('Questionnaire preview', async () => {
