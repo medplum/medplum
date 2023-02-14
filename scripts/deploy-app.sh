@@ -7,31 +7,11 @@ fi
 
 pushd packages/app
 
-# No cache
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "text/html" \
-  --cache-control "no-cache" \
-  --exclude "*" \
-  --include "*.html"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "application/manifest+json" \
-  --cache-control "no-cache" \
-  --exclude "*" \
-  --include "*.webmanifest"
-
-aws s3 cp dist/service-worker.js "s3://${APP_BUCKET}/" \
-  --content-type "application/javascript" \
-  --cache-control "no-cache"
-
-aws s3 cp dist/service-worker.js.map "s3://${APP_BUCKET}/" \
-  --content-type "application/json" \
-  --cache-control "no-cache"
-
-# Cache forever
+# First deploy hashed files that are cached forever
+# It is important to deploy these files first,
+# because they are referenced by the index.html file.
+# If a user attempts to download a hashed file that doesn't exist,
+# it can cause a bad cache entry in CloudFront.
 
 aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --recursive \
@@ -84,5 +64,32 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.svg"
+
+# Now deploy named files that are not cached.
+# These are small lightweight files that are not hashed.
+# It is important to deploy these files last,
+# because they reference the previously uploaded hashed files.
+
+aws s3 cp dist/ "s3://${APP_BUCKET}/" \
+  --recursive \
+  --content-type "text/html" \
+  --cache-control "no-cache" \
+  --exclude "*" \
+  --include "*.html"
+
+aws s3 cp dist/ "s3://${APP_BUCKET}/" \
+  --recursive \
+  --content-type "application/manifest+json" \
+  --cache-control "no-cache" \
+  --exclude "*" \
+  --include "*.webmanifest"
+
+aws s3 cp dist/service-worker.js "s3://${APP_BUCKET}/" \
+  --content-type "application/javascript" \
+  --cache-control "no-cache"
+
+aws s3 cp dist/service-worker.js.map "s3://${APP_BUCKET}/" \
+  --content-type "application/json" \
+  --cache-control "no-cache"
 
 popd
