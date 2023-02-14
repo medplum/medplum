@@ -8,23 +8,21 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Unit Testing Bots
 
-Unit testing your Bot code is crucial to ensuring accurate data and workflows.
+Unit testing your Bot code is crucial to ensuring accurate data and workflows. This guide will go over the most common unit testing patterns.
 
-Medplum provides tools to help unit testing Bots on your local machine, most important of which is the [`MockClient`](https://github.com/medplum/medplum/blob/main/packages/mock/src/client.ts#L68) class. This guide will go over the most common unit testing patterns.
-
-You can also see a reference implementation of simple bots _with tests_ in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo.
+Medplum provides the [`MockClient`](https://github.com/medplum/medplum/blob/main/packages/mock/src/client.ts#L68) class to help unit test Bots on your local machine. You can also see a reference implementation of simple bots _with tests_ in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo.
 
 ## Set up your test framework
 
 The first step is to set up your test framework in your Bots package. Medplum Bots will should work with any typescript/javascript test runner, and the Medplum team has tested our bots with [jest](https://jestjs.io/) and [vitest](https://vitest.dev/). Follow the instructions for your favorite framework to set up you package.
 
-Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below to make sure your [test queries](##query-the-results) work , either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles).
+Next you'll want to index the FHIR schema definitions. To keep the client small, the `MockClient` class only ships with a subset of the FHIR schema. Index the full schema as shown below, either in a [`beforeAll` function](https://vitest.dev/api/#beforeall) or [setup file](https://vitest.dev/config/#setupfiles), to make sure your [test queries](##query-the-results) work.
 
 <MedplumCodeBlock language="ts" selectBlocks="index-schema">
 {ExampleCode}
 </MedplumCodeBlock>
 
-Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster feedback cycle.
+Our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots) repo also contains recommended [eslintrc](https://github.com/medplum/medplum-demo-bots/blob/main/.eslintrc.json), [tsconfig](https://github.com/medplum/medplum-demo-bots/blob/main/tsconfig.json), and [vite.config](https://github.com/medplum/medplum-demo-bots/blob/main/vite.config.ts) settings for a faster developer feedback cycle.
 
 ## Write your test file
 
@@ -43,13 +41,13 @@ Most bot unit tests follow a common pattern:
 1. Create a Medplum `MockClient`
 2. Create mock resources
 3. Invoke the handler function
-4. Read mock resources and assert test your test criteria
+4. Query mock resources and assert test your test criteria
 
 The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-report.ts) are a great example of this pattern.
 
 ### Create a `MockClient`
 
-The medplum MockClient class extends the MedplumClient class, but stores created resources in local memory rather than persisting them to the server. This presents an API and type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
+The Medplum `MockClient` class extends the `MedplumClient` class, but stores resources in local memory rather than persisting them to the server. This presents a type-compatible interface to the Bot's handler function, which makes it ideal for unit tests.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-client">
 {ExampleCode}
