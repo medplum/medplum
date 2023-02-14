@@ -18,7 +18,6 @@ import {
   normalizeErrorString,
   notFound,
   Operator as FhirOperator,
-  ProfileResource,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -33,10 +32,8 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
-  Login,
   Meta,
   OperationOutcome,
-  ProjectMembership,
   Reference,
   Resource,
   ResourceType,
@@ -77,7 +74,6 @@ import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource, validateResourceType } from './schema';
 import { parseSearchUrl } from './search';
-import { applySmartScopes } from './smart';
 import {
   Column,
   Condition,
@@ -2033,69 +2029,6 @@ function fhirOperatorToSqlOperator(fhirOperator: FhirOperator): Operator {
     default:
       throw new Error(`Unknown FHIR operator: ${fhirOperator}`);
   }
-}
-
-/**
- * Creates a repository object for the user login object.
- * Individual instances of the Repository class manage access rights to resources.
- * Login instances contain details about user compartments.
- * This method ensures that the repository is setup correctly.
- * @param login The user login.
- * @param membership The active project membership.
- * @param strictMode Optional flag to enable strict mode for in-depth FHIR schema validation.
- * @param extendedMode Optional flag to enable extended mode for custom Medplum properties.
- * @param checkReferencesOnWrite Optional flag to enable reference checking on write.
- * @returns A repository configured for the login details.
- */
-export async function getRepoForLogin(
-  login: Login,
-  membership: ProjectMembership,
-  strictMode?: boolean,
-  extendedMode?: boolean,
-  checkReferencesOnWrite?: boolean
-): Promise<Repository> {
-  let accessPolicy: AccessPolicy | undefined = undefined;
-
-  if (membership.accessPolicy) {
-    accessPolicy = await systemRepo.readReference(membership.accessPolicy);
-    accessPolicy = setupAccessPolicy(accessPolicy, membership.profile as Reference<ProfileResource>);
-  }
-
-  if (login.scope) {
-    // If the login specifies SMART scopes,
-    // then set the access policy to use those scopes
-    accessPolicy = applySmartScopes(accessPolicy, login.scope);
-  }
-
-  return new Repository({
-    project: resolveId(membership.project) as string,
-    author: membership.profile as Reference,
-    remoteAddress: login.remoteAddress,
-    superAdmin: login.superAdmin,
-    projectAdmin: membership.admin,
-    accessPolicy,
-    strictMode,
-    extendedMode,
-    checkReferencesOnWrite,
-  });
-}
-
-/**
- * Sets up an AccessPolicy by resolving variables.
- * @param original The original AccessPolicy.
- * @param profile The user profile.
- * @returns The AccessPolicy with variables resolved.
- */
-function setupAccessPolicy(original: AccessPolicy, profile: Reference<ProfileResource>): AccessPolicy {
-  const profileReference = profile.reference as string;
-  const profileId = resolveId(profile) as string;
-  const templateJson = JSON.stringify(original);
-  const policyJson = templateJson
-    .replaceAll('%patient.id', profileId)
-    .replaceAll('%profile.id', profileId)
-    .replaceAll('%patient', profileReference)
-    .replaceAll('%profile', profileReference);
-  return JSON.parse(policyJson) as AccessPolicy;
 }
 
 export const systemRepo = new Repository({

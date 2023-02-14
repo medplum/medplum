@@ -2,16 +2,20 @@ import { createReference, normalizeErrorString, Operator } from '@medplum/core';
 import {
   AccessPolicy,
   ClientApplication,
+  Login,
   Observation,
   OperationOutcome,
   Patient,
+  ProjectMembership,
   Questionnaire,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getRepoForLogin, Repository, systemRepo } from './repo';
+import { getRepoForLogin } from './accesspolicy';
+import { Repository, systemRepo } from './repo';
 
 describe('AccessPolicy', () => {
   beforeAll(async () => {
@@ -1288,6 +1292,97 @@ describe('AccessPolicy', () => {
       throw new Error('Should not be able to update resource');
     } catch (err) {
       expect(normalizeErrorString(err)).toEqual('Forbidden');
+    }
+  });
+
+  test('Compound parameterized access policy', async () => {
+    // Create 3 patients
+    const p1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const p2 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const p3 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    // Create access policy for a patient resource
+    const accessPolicy: AccessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          criteria: 'Patient?_id=%patient.id',
+        },
+      ],
+    });
+
+    // Create project membership parameterized with 2 instances of the access policy
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + randomUUID() },
+      profile: { reference: 'Project/' + randomUUID() },
+      access: [
+        {
+          policy: createReference(accessPolicy),
+          parameter: [{ name: 'patient', valueReference: createReference(p1) }],
+        },
+        {
+          policy: createReference(accessPolicy),
+          parameter: [{ name: 'patient', valueReference: createReference(p2) }],
+        },
+      ],
+    });
+
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+
+    const check1 = await repo2.readResource<Patient>('Patient', p1.id as string);
+    expect(check1.id).toBe(p1.id);
+
+    const check2 = await repo2.readResource<Patient>('Patient', p2.id as string);
+    expect(check2.id).toBe(p2.id);
+
+    try {
+      await repo2.readResource<Patient>('Patient', p3.id as string);
+      throw new Error('Should not be able to read resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Not found');
+    }
+  });
+
+  test('String parameters', async () => {
+    const t1 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
+    const t2 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'completed', intent: 'order' });
+
+    const accessPolicy: AccessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Task',
+          criteria: 'Task?status=%status',
+        },
+      ],
+    });
+
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + randomUUID() },
+      profile: { reference: 'Project/' + randomUUID() },
+      access: [
+        {
+          policy: createReference(accessPolicy),
+          parameter: [{ name: 'status', valueString: 'accepted' }],
+        },
+      ],
+    });
+
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+
+    const check1 = await repo2.readResource<Task>('Task', t1.id as string);
+    expect(check1.id).toBe(t1.id);
+
+    try {
+      await repo2.readResource<Task>('Task', t2.id as string);
+      throw new Error('Should not be able to read resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Not found');
     }
   });
 });

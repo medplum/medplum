@@ -36,7 +36,8 @@ import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { bundleContains } from '../test.setup';
 import { processBatch } from './batch';
-import { getRepoForLogin, Repository, systemRepo } from './repo';
+import { getRepoForLogin } from './accesspolicy';
+import { Repository, systemRepo } from './repo';
 import { parseSearchRequest, parseSearchUrl } from './search';
 
 jest.mock('hibp');

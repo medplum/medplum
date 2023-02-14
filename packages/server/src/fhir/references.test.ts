@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { getRepoForLogin } from './repo';
+import { getRepoForLogin } from './accesspolicy';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
