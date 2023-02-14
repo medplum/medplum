@@ -75,13 +75,11 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
   let resourcePolicies: AccessPolicyResource[] = [];
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(entry, profile);
-    if (replaced) {
-      if (replaced.compartment) {
-        compartment = replaced.compartment;
-      }
-      if (replaced.resource) {
-        resourcePolicies = resourcePolicies.concat(replaced.resource);
-      }
+    if (replaced.compartment) {
+      compartment = replaced.compartment;
+    }
+    if (replaced.resource) {
+      resourcePolicies = resourcePolicies.concat(replaced.resource);
     }
   }
 
@@ -100,9 +98,7 @@ async function buildAccessPolicyResources(
 ): Promise<AccessPolicy> {
   const original = await systemRepo.readReference(access.policy as Reference<AccessPolicy>);
   const params = access.parameter || [];
-  if (!params.find((p) => p.name === 'profile')) {
-    params.push({ name: 'profile', valueReference: profile });
-  }
+  params.push({ name: 'profile', valueReference: profile });
   if (!params.find((p) => p.name === 'patient')) {
     params.push({ name: 'patient', valueReference: profile });
   }

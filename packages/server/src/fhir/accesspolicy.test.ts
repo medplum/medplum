@@ -9,6 +9,7 @@ import {
   ProjectMembership,
   Questionnaire,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -1339,6 +1340,46 @@ describe('AccessPolicy', () => {
 
     try {
       await repo2.readResource<Patient>('Patient', p3.id as string);
+      throw new Error('Should not be able to read resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Not found');
+    }
+  });
+
+  test('String parameters', async () => {
+    const t1 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
+    const t2 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'completed', intent: 'order' });
+
+    const accessPolicy: AccessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Task',
+          criteria: 'Task?status=%status',
+        },
+      ],
+    });
+
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + randomUUID() },
+      profile: { reference: 'Project/' + randomUUID() },
+      access: [
+        {
+          policy: createReference(accessPolicy),
+          parameter: [{ name: 'status', valueString: 'accepted' }],
+        },
+      ],
+    });
+
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+
+    const check1 = await repo2.readResource<Task>('Task', t1.id as string);
+    expect(check1.id).toBe(t1.id);
+
+    try {
+      await repo2.readResource<Task>('Task', t2.id as string);
       throw new Error('Should not be able to read resource');
     } catch (err) {
       expect(normalizeErrorString(err)).toEqual('Not found');
