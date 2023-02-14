@@ -1,5 +1,5 @@
-import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { Attachment, Bundle, Encounter, Resource } from '@medplum/fhirtypes';
+import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
+import { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -11,12 +11,13 @@ const medplum = new MockClient();
 
 async function loadTimelineResources(
   medplum: MedplumClient,
-  resource: Resource
+  resourceType: ResourceType,
+  id: string
 ): Promise<PromiseSettledResult<Bundle>[]> {
   return Promise.allSettled([
-    medplum.readHistory(resource.resourceType, resource.id as string),
-    medplum.search('Communication', 'encounter=' + getReferenceString(resource)),
-    medplum.search('Media', 'encounter=' + getReferenceString(resource)),
+    medplum.readHistory(resourceType, id),
+    medplum.search('Communication', 'encounter=' + resourceType + '/' + id),
+    medplum.search('Media', 'encounter=' + resourceType + '/' + id),
   ]);
 }
 

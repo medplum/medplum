@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import React from 'react';
 import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
@@ -11,8 +11,8 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
   return (
     <ResourceTimeline
       value={props.resource}
-      loadTimelineResources={async (medplum: MedplumClient, resource: Resource) => {
-        return Promise.allSettled([medplum.readHistory(resource.resourceType, resource.id as string)]);
+      loadTimelineResources={async (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
+        return Promise.allSettled([medplum.readHistory(resourceType, id)]);
       }}
     />
   );

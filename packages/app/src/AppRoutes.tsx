@@ -25,8 +25,24 @@ import { MfaPage } from './MfaPage';
 import { OAuthPage } from './OAuthPage';
 import { RegisterPage } from './RegisterPage';
 import { ResetPasswordPage } from './ResetPasswordPage';
+import { ApplyPage } from './resource/ApplyPage';
+import { AppsPage } from './resource/AppsPage';
+import { BlamePage } from './resource/BlamePage';
+import { BotEditor } from './resource/BotEditor';
+import { BuilderPage } from './resource/BuilderPage';
+import { ChecklistPage } from './resource/ChecklistPage';
+import { DeletePage } from './resource/DeletePage';
+import { DetailsPage } from './resource/DetailsPage';
+import { EditPage } from './resource/EditPage';
+import { HistoryPage } from './resource/HistoryPage';
+import { JsonPage } from './resource/JsonPage';
+import { PreviewPage } from './resource/PreviewPage';
+import { QuestionnaireBotsPage } from './resource/QuestionnaireBotsPage';
+import { ReferenceRangesPage } from './resource/ReferenceRangesPage';
+import { ReportPage } from './resource/ReportPage';
 import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
+import { TimelinePage } from './resource/TimelinePage';
 import { SecurityPage } from './SecurityPage';
 import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
@@ -67,8 +83,25 @@ export function AppRoutes(): JSX.Element {
       <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
       <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
       <Route path="/:resourceType/new" element={<CreateResourcePage />} />
-      <Route path="/:resourceType/:id/:tab" element={<ResourcePage />} />
-      <Route path="/:resourceType/:id" element={<ResourcePage />} />
+      <Route path="/:resourceType/:id" element={<ResourcePage />}>
+        <Route index element={<TimelinePage />} />
+        <Route path="apply" element={<ApplyPage />} />
+        <Route path="apps" element={<AppsPage />} />
+        <Route path="blame" element={<BlamePage />} />
+        <Route path="bots" element={<QuestionnaireBotsPage />} />
+        <Route path="builder" element={<BuilderPage />} />
+        <Route path="checklist" element={<ChecklistPage />} />
+        <Route path="delete" element={<DeletePage />} />
+        <Route path="details" element={<DetailsPage />} />
+        <Route path="edit" element={<EditPage />} />
+        <Route path="editor" element={<BotEditor />} />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="json" element={<JsonPage />} />
+        <Route path="preview" element={<PreviewPage />} />
+        <Route path="report" element={<ReportPage />} />
+        <Route path="ranges" element={<ReferenceRangesPage />} />
+        <Route path="timeline" element={<TimelinePage />} />
+      </Route>
       <Route path="/:resourceType" element={<HomePage />} />
       <Route path="/" element={<HomePage />} />
     </Routes>

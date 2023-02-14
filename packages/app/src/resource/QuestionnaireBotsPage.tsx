@@ -4,19 +4,17 @@ import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bot, Resource, Subscription } from '@medplum/fhirtypes';
 import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 
-export interface BotsPageProps {
-  resource: Resource;
-}
-
-export function BotsPage(props: BotsPageProps): JSX.Element {
+export function QuestionnaireBotsPage(): JSX.Element {
   const medplum = useMedplum();
+  const { id } = useParams() as { id: string };
   const [connectBot, setConnectBot] = useState<Resource | undefined>();
   const [updated, setUpdated] = useState<number>(0);
   const subscriptions = medplum
     .searchResources('Subscription', 'status=active&_count=100')
     .read()
-    .filter((s) => isQuestionnaireBotSubscription(s, props.resource));
+    .filter((s) => isQuestionnaireBotSubscription(s, id));
 
   function connectToBot(): void {
     if (connectBot) {
@@ -25,7 +23,7 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
           resourceType: 'Subscription',
           status: 'active',
           reason: (connectBot as Bot).name,
-          criteria: 'QuestionnaireResponse?questionnaire=' + getReferenceString(props.resource),
+          criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/' + id,
           channel: {
             type: 'rest-hook',
             endpoint: getReferenceString(connectBot),
@@ -64,12 +62,10 @@ export function BotsPage(props: BotsPageProps): JSX.Element {
   );
 }
 
-function isQuestionnaireBotSubscription(subscription: Subscription, resource: Resource): boolean {
+function isQuestionnaireBotSubscription(subscription: Subscription, questionnaireId: string): boolean {
   const criteria = subscription.criteria || '';
   const endpoint = subscription.channel?.endpoint || '';
   return (
-    criteria.startsWith('QuestionnaireResponse?') &&
-    criteria.includes(resource.id as string) &&
-    endpoint.startsWith('Bot/')
+    criteria.startsWith('QuestionnaireResponse?') && criteria.includes(questionnaireId) && endpoint.startsWith('Bot/')
   );
 }

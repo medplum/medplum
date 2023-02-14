@@ -1,23 +1,31 @@
 import { Anchor, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { ClientApplication, Patient, Reference, Resource, SmartAppLaunch } from '@medplum/fhirtypes';
-import { Document, MedplumLink, useMedplum } from '@medplum/react';
-import React from 'react';
+import { ClientApplication, Patient, Questionnaire, Reference, ResourceType, SmartAppLaunch } from '@medplum/fhirtypes';
+import { Document, MedplumLink, useMedplum, useResource } from '@medplum/react';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
-export interface AppsPageProps {
-  resource: Resource;
-}
-
-export function AppsPage(props: AppsPageProps): JSX.Element {
+export function AppsPage(): JSX.Element | null {
   const medplum = useMedplum();
-  const questionnaires = medplum.searchResources('Questionnaire', 'subject-type=' + props.resource.resourceType).read();
-  const clientApplications =
-    isSmartLaunchType(props.resource) &&
+  const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
+  const resource = useResource({ reference: resourceType + '/' + id });
+  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>();
+  const [clientApplications, setClientApplications] = useState<ClientApplication[]>();
+
+  useEffect(() => {
     medplum
-      .searchResources('ClientApplication')
-      .read()
-      .filter((c) => c?.launchUri);
+      .searchResources('Questionnaire', 'subject-type=' + resourceType)
+      .then(setQuestionnaires)
+      .catch(console.error);
+    if (isSmartLaunchType(resourceType)) {
+      medplum.searchResources('ClientApplication').then(setClientApplications).catch(console.error);
+    }
+  }, [medplum, resourceType]);
+
+  if (!resource || !questionnaires) {
+    return null;
+  }
 
   if (questionnaires.length === 0 && (!clientApplications || clientApplications.length === 0)) {
     return (
@@ -32,17 +40,21 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
   }
 
   function launchApp(clientApplication: ClientApplication): void {
+    if (!resource) {
+      return;
+    }
+
     const smartAppLaunch: SmartAppLaunch = {
       resourceType: 'SmartAppLaunch',
     };
 
-    switch (props.resource.resourceType) {
+    switch (resource.resourceType) {
       case 'Patient':
-        smartAppLaunch.patient = createReference(props.resource);
+        smartAppLaunch.patient = createReference(resource);
         break;
       case 'Encounter':
-        smartAppLaunch.patient = props.resource.subject as Reference<Patient>;
-        smartAppLaunch.encounter = createReference(props.resource);
+        smartAppLaunch.patient = resource.subject as Reference<Patient>;
+        smartAppLaunch.encounter = createReference(resource);
         break;
     }
 
@@ -62,7 +74,7 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
       {questionnaires.map((questionnaire) => (
         <div key={questionnaire.id}>
           <Title order={3}>
-            <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(props.resource)}`}>
+            <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(resource)}`}>
               {questionnaire.title || questionnaire.name}
             </MedplumLink>
           </Title>
@@ -82,6 +94,6 @@ export function AppsPage(props: AppsPageProps): JSX.Element {
   );
 }
 
-function isSmartLaunchType(resource: Resource): boolean {
-  return resource.resourceType === 'Patient' || resource.resourceType === 'Encounter';
+function isSmartLaunchType(resourceType: ResourceType): boolean {
+  return resourceType === 'Patient' || resourceType === 'Encounter';
 }

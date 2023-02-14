@@ -2,6 +2,7 @@ import { Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
+import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResourceHeader } from './ResourceHeader';
@@ -22,37 +23,43 @@ describe('ResourceHeader', () => {
   }
 
   test('Renders ID', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
     });
 
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
   });
 
   test('Renders single identifier', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'Bundle',
-      id: '123',
+      id,
       identifier: { system: 'abc', value: '456' },
     });
 
-    expect(screen.queryByText('123')).not.toBeInTheDocument();
+    expect(screen.queryByText(id)).not.toBeInTheDocument();
     expect(screen.getByText('abc')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
   });
 
   test('Renders identifier array', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       identifier: [
         { system: 'abc', value: '456' },
         { system: 'def', value: '789' },
       ],
     });
 
-    expect(screen.queryByText('123')).not.toBeInTheDocument();
+    expect(screen.queryByText(id)).not.toBeInTheDocument();
     expect(screen.getByText('abc')).toBeInTheDocument();
     expect(screen.getByText('456')).toBeInTheDocument();
     expect(screen.getByText('def')).toBeInTheDocument();
@@ -63,11 +70,11 @@ describe('ResourceHeader', () => {
     await setup({
       resourceType: 'Organization',
       id: '123',
-      name: 'Test Org',
+      name: 'Test Organization',
     });
 
     expect(screen.queryByText('123')).not.toBeInTheDocument();
-    expect(screen.getByText('Test Org')).toBeInTheDocument();
+    expect(screen.getByText('Test Organization')).toBeInTheDocument();
   });
 
   test('Handles reference', async () => {
@@ -81,41 +88,49 @@ describe('ResourceHeader', () => {
   });
 
   test('Handles null identifier', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       identifier: [null as unknown as Identifier],
     });
 
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
   });
 
   test('Handles missing identifier system', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       identifier: [{ value: 'abc' }],
     });
 
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
     expect(screen.queryByText('abc')).not.toBeInTheDocument();
   });
 
   test('Handles missing identifier value', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       identifier: [{ system: 'abc' }],
     });
 
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
     expect(screen.queryByText('abc')).not.toBeInTheDocument();
   });
 
   test('Renders code and category text', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       code: { text: 'TEST_CODE' },
       category: [{ text: 'TEST_CATEGORY' }],
     });
@@ -125,9 +140,11 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders code and category coding', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       code: { coding: [{ display: 'TEST_CODE' }] },
       category: [{ text: 'TEST_CATEGORY' }],
     });
@@ -137,9 +154,11 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders code without display', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       code: { coding: [{ code: 'TEST_CODE' }] },
     });
 
@@ -147,9 +166,11 @@ describe('ResourceHeader', () => {
   });
 
   test('Renders compound code', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'ServiceRequest',
-      id: '123',
+      id,
       code: { coding: [{ display: 'TEST_CODE1' }, { display: 'TEST_CODE2' }] },
       category: [{ text: 'TEST_CATEGORY' }],
     });
@@ -159,13 +180,15 @@ describe('ResourceHeader', () => {
   });
 
   test('Does not render Bot code', async () => {
+    const id = randomUUID();
+
     await setup({
       resourceType: 'Bot',
-      id: '123',
+      id,
       code: 'console.log("Hello World")',
     });
 
-    expect(screen.getByText('123')).toBeInTheDocument();
+    expect(screen.getByText(id)).toBeInTheDocument();
     expect(screen.queryByText('console.log("Hello World")')).toBeNull();
   });
 });
