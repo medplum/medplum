@@ -749,12 +749,70 @@
           {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
-            "definition" : "The access policy for the user within the project memebership.",
+            "definition" : "The access policy for the user within the project memebership. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
             "min" : 0,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
               "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+            }]
+          },
+          {
+            "id" : "ProjectMembership.access",
+            "path" : "ProjectMembership.access",
+            "definition" : "Extended access configuration using parameterized access policies. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.access.policy",
+            "path" : "ProjectMembership.access.policy",
+            "definition" : "Extended access configuration using parameterized access policies. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [
+              {
+                "code" : "Reference",
+                "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/AccessPolicy"]
+              }
+            ]
+          },
+          {
+            "id" : "ProjectMembership.access.parameter",
+            "path" : "ProjectMembership.access.parameter",
+            "definition" : "User options that control the display of the application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.access.parameter.name",
+            "path" : "ProjectMembership.access.parameter.name",
+            "definition" : "The unique name of the parameter.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "ProjectMembership.access.parameter.value[x]",
+            "path" : "ProjectMembership.access.parameter.value[x]",
+            "short" : "Value of the parameter.",
+            "definition" : "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+            "min" : 1,
+            "max" : "1",
+            "type" : [
+            {
+              "code" : "string"
+            },
+            {
+              "code" : "Reference"
             }]
           },
           {

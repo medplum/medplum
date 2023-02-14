@@ -1,7 +1,8 @@
 import { resolveId, unauthorized } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { getRepoForLogin, systemRepo } from '../fhir/repo';
+import { getRepoForLogin } from '../fhir/accesspolicy';
+import { systemRepo } from '../fhir/repo';
 import { MedplumAccessTokenClaims, verifyJwt } from './keys';
 import { getClientApplicationMembership, timingSafeEqualStr } from './utils';
 

@@ -69,9 +69,17 @@ export interface ProjectMembership {
   profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
-   * The access policy for the user within the project memebership.
+   * The access policy for the user within the project memebership. If the
+   * &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is ignored.
    */
   accessPolicy?: Reference<AccessPolicy>;
+
+  /**
+   * Extended access configuration using parameterized access policies. If
+   * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
+   * ignored.
+   */
+  access?: ProjectMembershipAccess[];
 
   /**
    * The user configuration for the user within the project memebership
@@ -83,4 +91,47 @@ export interface ProjectMembership {
    * Whether this user is a project administrator.
    */
   admin?: boolean;
+}
+
+/**
+ * Extended access configuration using parameterized access policies. If
+ * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
+ * ignored.
+ */
+export interface ProjectMembershipAccess {
+
+  /**
+   * Extended access configuration using parameterized access policies. If
+   * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
+   * ignored.
+   */
+  policy?: Reference<AccessPolicy>;
+
+  /**
+   * User options that control the display of the application.
+   */
+  parameter?: ProjectMembershipAccessParameter[];
+}
+
+/**
+ * User options that control the display of the application.
+ */
+export interface ProjectMembershipAccessParameter {
+
+  /**
+   * The unique name of the parameter.
+   */
+  name?: string;
+
+  /**
+   * Value of the parameter - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  valueString?: string;
+
+  /**
+   * Value of the parameter - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  valueReference?: Reference;
 }
