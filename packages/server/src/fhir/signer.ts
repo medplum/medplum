@@ -1,16 +1,12 @@
 import { Binary } from '@medplum/fhirtypes';
-import crypto from 'crypto';
-import { URL } from 'url';
 import { getConfig } from '../config';
+import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
 
 /**
  * Creates a signed URL for a given URL.
  *
- * Unfortunately, the AWS JS SDK does not include this feature, so we do it manually.
- * Hopefully this will be fixed in the future.
- *
  * Reference:
- * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
+ * https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/modules/_aws_sdk_cloudfront_signer.html
  */
 export class Signer {
   readonly #keyPairId: string;
@@ -26,53 +22,23 @@ export class Signer {
   /**
    * Creates a signed URL.
    * @param url Input URL.
-   * @param expires Date and time in Unix time format (in seconds) and Coordinated Universal Time (UTC)
+   * @param dateLessThan The date for when the signed URL can no longer be accessed. Default is one hour in the future
    * @returns Presigned URL.
    */
-  sign(url: string, expires?: number): string {
-    if (!expires) {
-      // Default to one hour in the future
-      expires = Math.floor(new Date().getTime() / 1000) + 3600;
+  sign(url: string, dateLessThan?: Date): string {
+
+    if (!dateLessThan) {
+      dateLessThan = new Date();
+      dateLessThan.setHours(dateLessThan.getHours() + 1);
     }
 
-    const policy = {
-      Statement: [
-        {
-          Resource: url,
-          Condition: {
-            DateLessThan: {
-              'AWS:EpochTime': expires,
-            },
-          },
-        },
-      ],
-    };
-
-    const result = new URL(url);
-    result.searchParams.set('Expires', expires.toString());
-    result.searchParams.set('Key-Pair-Id', this.#keyPairId);
-    result.searchParams.set('Signature', this.#signPolicy(policy));
-    return result.toString();
-  }
-
-  #signPolicy(policy: any): string {
-    const sign = crypto.createSign('RSA-SHA1');
-    sign.write(JSON.stringify(policy));
-    return this.#queryEncode(sign.sign({ key: this.#privateKey, passphrase: this.#passphrase }, 'base64'));
-  }
-
-  /**
-   * Create a URL safe Base64 encoded string.
-   *
-   * This function will replace all characters that are invalid in a URL query
-   * string with characters that are. AWS will translate these characters back to
-   * their original value before processing.
-   *
-   * For more information, see
-   * http://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-creating-signed-url-canned-policy.html
-   */
-  #queryEncode(str: string): string {
-    return str.replace(/\+/g, '-').replace(/=/g, '_').replace(/\//g, '~');
+    return getSignedUrl({
+      url,
+      keyPairId: this.#keyPairId,
+      dateLessThan: dateLessThan.toISOString(),
+      privateKey: this.#privateKey,
+      passphrase: this.#passphrase,
+    })
   }
 }
 

@@ -1,9 +1,14 @@
 import { generateKeyPairSync } from 'crypto';
-import { URL } from 'url';
 import { Signer } from './signer';
 
 describe('Signer', () => {
-  test('Presign URL', () => {
+
+  let signer: Signer;
+
+  beforeAll(() => {
+
+    jest.useFakeTimers();
+
     const keyId = 'xyz';
     const passphrase = 'top secret';
 
@@ -21,11 +26,22 @@ describe('Signer', () => {
       },
     });
 
-    const signer = new Signer(keyId, privateKey, passphrase);
-    const result = signer.sign('https://example.com/test', new Date().getTime() / 1000 + 3600);
-    expect(result).toBeDefined();
+    signer = new Signer(keyId, privateKey, passphrase);
+  })
 
-    const resultUrl = new URL(result);
-    expect(resultUrl.hostname).toBe('example.com');
+  afterAll(() => {
+    jest.useRealTimers();
+  })
+
+  test('Presign URL', () => {
+    jest.setSystemTime(new Date("2023-02-10T00:00:00.000Z"));
+    const withoutDate = signer.sign('https://example.com/test');
+    expect(withoutDate).toMatch(/^https:\/\/example\.com\/test\?Expires=1675990800&Key-Pair-Id=/);
+  },);
+    
+  test('Presign URL with date', () => {
+    const signDate = new Date("2023-02-10T00:00:00.000Z");
+    const withDate = signer.sign('https://example.com/test', signDate);
+    expect(withDate).toMatch(/^https:\/\/example\.com\/test\?Expires=1675987200&Key-Pair-Id=/);
   });
 });
