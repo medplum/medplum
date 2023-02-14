@@ -1,4 +1,4 @@
-import { Identifier, Reference, Resource } from '@medplum/fhirtypes';
+import { Coding, Identifier, Reference, Resource } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -177,6 +177,19 @@ describe('ResourceHeader', () => {
 
     expect(screen.getByText('TEST_CODE1, TEST_CODE2')).toBeInTheDocument();
     expect(screen.getByText('TEST_CATEGORY')).toBeInTheDocument();
+  });
+
+  test('Renders malformed code', async () => {
+    const id = randomUUID();
+
+    await setup({
+      resourceType: 'ServiceRequest',
+      id,
+      code: { coding: 'not-a-coding' as unknown as Coding[] },
+    });
+
+    expect(screen.getByText(id)).toBeInTheDocument();
+    expect(screen.queryByText('not-a-coding')).not.toBeInTheDocument();
   });
 
   test('Does not render Bot code', async () => {
