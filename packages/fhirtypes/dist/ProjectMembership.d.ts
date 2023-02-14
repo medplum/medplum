@@ -69,15 +69,12 @@ export interface ProjectMembership {
   profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
-   * The access policy for the user within the project memebership. If the
-   * &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is ignored.
+   * The access policy for the user within the project memebership.
    */
   accessPolicy?: Reference<AccessPolicy>;
 
   /**
-   * Extended access configuration using parameterized access policies. If
-   * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
-   * ignored.
+   * Extended access configuration using parameterized access policies.
    */
   access?: ProjectMembershipAccess[];
 
@@ -94,16 +91,13 @@ export interface ProjectMembership {
 }
 
 /**
- * Extended access configuration using parameterized access policies. If
- * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
- * ignored.
+ * Extended access configuration using parameterized access policies.
  */
 export interface ProjectMembershipAccess {
 
   /**
-   * Extended access configuration using parameterized access policies. If
-   * the &quot;access&quot; field is specified, then the &quot;accessPolicy&quot; field is
-   * ignored.
+   * The base access policy used as a template.  Variables in the template
+   * access policy are replaced by the values in the parameter.
    */
   policy?: Reference<AccessPolicy>;
 

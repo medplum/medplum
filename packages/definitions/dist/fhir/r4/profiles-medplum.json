@@ -749,7 +749,7 @@
           {
             "id" : "ProjectMembership.accessPolicy",
             "path" : "ProjectMembership.accessPolicy",
-            "definition" : "The access policy for the user within the project memebership. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
+            "definition" : "The access policy for the user within the project memebership.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -760,7 +760,7 @@
           {
             "id" : "ProjectMembership.access",
             "path" : "ProjectMembership.access",
-            "definition" : "Extended access configuration using parameterized access policies. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
+            "definition" : "Extended access configuration using parameterized access policies.",
             "min" : 0,
             "max" : "*",
             "type" : [{
@@ -770,7 +770,7 @@
           {
             "id" : "ProjectMembership.access.policy",
             "path" : "ProjectMembership.access.policy",
-            "definition" : "Extended access configuration using parameterized access policies. If the \"access\" field is specified, then the \"accessPolicy\" field is ignored.",
+            "definition" : "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
             "min" : 1,
             "max" : "1",
             "type" : [
