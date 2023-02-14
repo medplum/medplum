@@ -8,6 +8,13 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { App } from './App';
 
 if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+  // Clear ServiceWorker cache to clear old versions
+  console.log('Clear ServiceWorker cache...');
+  caches
+    .keys()
+    .then((names) => names.forEach((name) => caches.delete(name)))
+    .catch((regError) => console.error('SW cache clear failed: ', regError));
+
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
