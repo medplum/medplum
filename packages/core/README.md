@@ -58,7 +58,7 @@ Before you begin
 After that, you can use the `startLogin()` method:
 
 ```ts
-const loginResult = await medplum.startLogin(email, password, remember);
+const loginResult = await medplum.startLogin({ email, password, remember });
 const profile = await medplum.processCode(loginResult.code);
 console.log(profile);
 ```
@@ -76,13 +76,17 @@ medplum.signInWithRedirect().then((user) => console.log(user));
 Search for any resource using a [FHIR search](https://www.hl7.org/fhir/search.html) string:
 
 ```ts
-search<T extends Resource>(query: string | SearchRequest, options: RequestInit = {}): ReadablePromise<Bundle<T>>
+search<K extends ResourceType>(
+  resourceType: K,
+  query?: URLSearchParams | string,
+  options: RequestInit = {}
+): ReadablePromise<Bundle<ExtractResource<K>>>
 ```
 
 Example:
 
 ```ts
-const bundle = await medplum.search('Patient?given=eve');
+const bundle = await medplum.search('Patient', 'given=eve');
 bundle.entry.forEach((entry) => console.log(entry.resource));
 ```
 
