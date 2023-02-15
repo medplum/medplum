@@ -6,8 +6,23 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { useResource } from '../useResource/useResource';
 
 export interface ResourceTableProps {
+  /**
+   * The input value either as a resource or a reference.
+   */
   value: Resource | Reference;
+
+  /**
+   * Optional flag to ignore missing values.
+   * By default, missing values are displayed as empty strings.
+   */
   ignoreMissingValues?: boolean;
+
+  /**
+   * Optional flag to force use the input value.
+   * This is useful when you want to display a specific version of the resource,
+   * and not use the latest version.
+   */
+  forceUseInput?: boolean;
 }
 
 export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
@@ -27,7 +42,10 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
 
   return (
     <BackboneElementDisplay
-      value={{ type: value.resourceType, value }}
+      value={{
+        type: value.resourceType,
+        value: props.forceUseInput ? props.value : value,
+      }}
       ignoreMissingValues={props.ignoreMissingValues}
     />
   );
