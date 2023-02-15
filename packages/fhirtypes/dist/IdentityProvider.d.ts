@@ -32,4 +32,9 @@ export interface IdentityProvider {
    * External Identity Provider client secret.
    */
   clientSecret?: string;
+
+  /**
+   * Optional flag to use the subject field instead of the email field.
+   */
+  useSubject?: boolean;
 }

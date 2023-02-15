@@ -18,6 +18,7 @@ const domain2 = randomUUID() + '.example.com';
 const redirectUri = `https://${domain}/auth/callback`;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
+let subjectAuthClient: ClientApplication;
 
 describe('External', () => {
   beforeAll(async () => {
@@ -68,6 +69,22 @@ describe('External', () => {
     await systemRepo.updateResource<ClientApplication>({
       ...externalAuthClient,
       identityProvider,
+    });
+
+    // Create a new client application with external subject auth
+    subjectAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'Subject Auth Client',
+      redirectUri,
+    });
+
+    // Update client application with external auth
+    await systemRepo.updateResource<ClientApplication>({
+      ...subjectAuthClient,
+      identityProvider: {
+        ...identityProvider,
+        useSubject: true,
+      },
     });
   });
 
@@ -291,6 +308,35 @@ describe('External', () => {
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
   });
+
+  test('Subject auth success', async () => {
+    const subject = email;
+
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        clientId: subjectAuthClient.id,
+        redirectUri,
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens('', subject),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toEqual(domain);
+    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.searchParams.get('code')).toBeTruthy();
+  });
 });
 
 /**
@@ -298,8 +344,8 @@ describe('External', () => {
  * @param email The user email address to include in the ID token.
  * @returns Fake tokens to mock the external identity provider.
  */
-function buildTokens(email: string): Record<string, string> {
+function buildTokens(email: string, sub?: string): Record<string, string> {
   return {
-    id_token: 'header.' + Buffer.from(JSON.stringify({ email }), 'ascii').toString('base64') + '.signature',
+    id_token: 'header.' + Buffer.from(JSON.stringify({ email, sub }), 'ascii').toString('base64') + '.signature',
   };
 }
