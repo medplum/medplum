@@ -61,6 +61,7 @@ let tokenExpired = false;
 function mockFetch(url: string, options: any): Promise<any> {
   const { method } = options;
   const response = mockHandler(method, url, options);
+  response.status = response.status || 200;
   return Promise.resolve({
     ok: response.status === 200 || response.status === undefined,
     status: response.status,
@@ -1059,6 +1060,7 @@ describe('Client', () => {
 
   test('setAccessToken', async () => {
     const fetch = jest.fn(async () => ({
+      status: 200,
       json: async () => ({ resourceType: 'Patient' }),
     }));
 
@@ -1152,6 +1154,42 @@ test('Auto batch error', async () => {
   }
 });
 
+test('Retry on 500', async () => {
+  let count = 0;
+
+  const fetch = jest.fn(async () => {
+    if (count === 0) {
+      count++;
+      return { status: 500 };
+    }
+    return {
+      status: 200,
+      json: async () => ({ resourceType: 'Patient' }),
+    };
+  });
+
+  const client = new MedplumClient({ fetch });
+  const patient = await client.readResource('Patient', '123');
+  expect(patient).toBeDefined();
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+test('Log non-JSON response', async () => {
+  const fetch = jest.fn(async () => ({
+    status: 200,
+    json: () => Promise.reject(new Error('Not JSON')),
+  }));
+  console.error = jest.fn();
+  const client = new MedplumClient({ fetch });
+  try {
+    await client.readResource('Patient', '123');
+    fail('Expected error');
+  } catch (err) {
+    expect(err).toBeDefined();
+  }
+  expect(console.error).toHaveBeenCalledTimes(1);
+});
+
 function createPdf(
   docDefinition: TDocumentDefinitions,
   tableLayouts?: { [name: string]: CustomTableLayout },
@@ -1166,6 +1204,10 @@ function createPdf(
     pdfDoc.on('error', reject);
     pdfDoc.end();
   });
+}
+
+function fail(message: string): never {
+  throw new Error(message);
 }
 
 const fonts: TFontDictionary = {
