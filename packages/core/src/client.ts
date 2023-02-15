@@ -1981,7 +1981,7 @@ export class MedplumClient extends EventTarget {
     options.method = method;
     this.#addFetchOptionsDefaults(options);
 
-    const response = await this.#fetch(url, options);
+    const response = await this.#fetchWithRetry(url, options);
     if (response.status === 401) {
       // Refresh and try again
       return this.#handleUnauthenticated(method, url, options);
@@ -1992,11 +1992,32 @@ export class MedplumClient extends EventTarget {
       return undefined as unknown as T;
     }
 
-    const obj = await response.json();
+    let obj: any = undefined;
+    try {
+      obj = await response.json();
+    } catch (err) {
+      console.error('Error parsing response', response.status, err);
+      throw err;
+    }
+
     if (response.status >= 400) {
       throw obj;
     }
     return obj;
+  }
+
+  async #fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
+    const maxRetries = 3;
+    const retryDelay = 200;
+    let response: Response | undefined = undefined;
+    for (let retry = 0; retry < maxRetries; retry++) {
+      response = (await this.#fetch(url, options)) as Response;
+      if (response.status < 500) {
+        return response;
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+    return response as Response;
   }
 
   /**

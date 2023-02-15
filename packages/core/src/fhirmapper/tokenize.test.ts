@@ -17,6 +17,6 @@ describe('Mapping Language Tokenizer', () => {
     `;
 
     const tokens = tokenize(example);
-    console.log(tokens.length);
+    expect(tokens.length).toBe(41);
   });
 });

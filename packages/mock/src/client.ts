@@ -182,6 +182,7 @@ class MockFetchClient {
 
     return Promise.resolve({
       ok: true,
+      status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
     });
