@@ -1,5 +1,5 @@
 import { createReference, ProfileResource, resolveId } from '@medplum/core';
-import { AccessPolicy, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { AccessPolicy, ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
@@ -12,9 +12,13 @@ export async function createProfile(
   resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson',
   firstName: string,
   lastName: string,
-  email: string
+  email: string | undefined
 ): Promise<ProfileResource> {
   logger.info(`Create ${resourceType}: ${firstName} ${lastName}`);
+  let telecom: ContactPoint[] | undefined = undefined;
+  if (email) {
+    telecom = [{ system: 'email', use: 'work', value: email }];
+  }
   const result = await systemRepo.createResource<ProfileResource>({
     resourceType,
     meta: {
@@ -26,13 +30,7 @@ export async function createProfile(
         family: lastName,
       },
     ],
-    telecom: [
-      {
-        system: 'email',
-        use: 'work',
-        value: email,
-      },
-    ],
+    telecom,
   });
   logger.info('Created: ' + result.id);
   return result;
