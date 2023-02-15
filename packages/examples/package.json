@@ -17,6 +17,7 @@
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/core": "*",
+    "@medplum/mock": "*",
     "vitest": "0.22.0"
   }
 }
