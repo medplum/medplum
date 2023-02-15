@@ -68,6 +68,73 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   const itemsRef = useRef<Resource[]>(items);
   itemsRef.current = items;
 
+  /**
+   * Sorts and sets the items.
+   *
+   * Sorting is primarily a function of meta.lastUpdated, but there are special cases.
+   * When displaying connected resources, for example a Communication in the context of an Encounter,
+   * the Communication.sent time is used rather than Communication.meta.lastUpdated.
+   *
+   * Other examples of special cases:
+   * - DiagnosticReport.issued
+   * - Media.issued
+   * - Observation.issued
+   * - DocumentReference.date
+   *
+   * See "sortByDateAndPriority()" for more details.
+   */
+  const sortAndSetItems = useCallback(
+    (newItmes: Resource[]): void => {
+      sortByDateAndPriority(newItmes, resource);
+      newItmes.reverse();
+      setItems(newItmes);
+    },
+    [resource]
+  );
+
+  /**
+   * Handles a batch request response.
+   * @param batchResponse The batch response.
+   */
+  const handleBatchResponse = useCallback(
+    (batchResponse: PromiseSettledResult<Bundle>[]): void => {
+      const newItems = [];
+
+      for (const settledResult of batchResponse) {
+        if (settledResult.status !== 'fulfilled') {
+          // User may not have access to all resource types
+          continue;
+        }
+
+        const bundle = settledResult.value;
+        if (bundle.type === 'history') {
+          setHistory(bundle);
+        }
+
+        if (bundle.entry) {
+          for (const entry of bundle.entry) {
+            newItems.push(entry.resource as Resource);
+          }
+        }
+      }
+
+      sortAndSetItems(newItems);
+    },
+    [sortAndSetItems]
+  );
+
+  /**
+   * Adds an array of resources to the timeline.
+   * @param resource Resource to add.
+   */
+  const addResource = useCallback(
+    (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
+    [sortAndSetItems]
+  );
+
+  /**
+   * Loads the timeline.
+   */
   const loadTimeline = useCallback(() => {
     let resourceType: ResourceType;
     let id: string;
@@ -78,53 +145,9 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       [resourceType, id] = props.value.reference?.split('/') as [ResourceType, string];
     }
     loadTimelineResources(medplum, resourceType, id).then(handleBatchResponse).catch(console.log);
-  }, [medplum, props.value, loadTimelineResources]);
+  }, [medplum, props.value, loadTimelineResources, handleBatchResponse]);
 
-  useEffect(() => {
-    loadTimeline();
-  }, [loadTimeline]);
-
-  /**
-   * Handles a batch request response.
-   * @param batchResponse The batch response.
-   */
-  function handleBatchResponse(batchResponse: PromiseSettledResult<Bundle>[]): void {
-    // console.log('handleBatchResponse', bundles);
-    const newItems = [];
-
-    for (const settledResult of batchResponse) {
-      if (settledResult.status !== 'fulfilled') {
-        // User may not have access to all resource types
-        continue;
-      }
-
-      const bundle = settledResult.value;
-      if (bundle.type === 'history') {
-        setHistory(bundle);
-      }
-
-      if (bundle.entry) {
-        for (const entry of bundle.entry) {
-          newItems.push(entry.resource as Resource);
-        }
-      }
-    }
-
-    sortByDateAndPriority(newItems);
-    newItems.reverse();
-    setItems(newItems);
-  }
-
-  /**
-   * Adds an array of resources to the timeline.
-   * @param resources Array of resources.
-   */
-  function addResources(resources: Resource[]): void {
-    const newItems = [...itemsRef.current, ...resources];
-    sortByDateAndPriority(newItems);
-    newItems.reverse();
-    setItems(newItems);
-  }
+  useEffect(() => loadTimeline(), [loadTimeline]);
 
   /**
    * Adds a Communication resource to the timeline.
@@ -137,9 +160,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     medplum
       .createResource(props.createCommunication(resource, sender, contentString))
-      .then((result) => {
-        addResources([result]);
-      })
+      .then((result) => addResource(result))
       .catch(console.log);
   }
 
@@ -154,7 +175,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     }
     medplum
       .createResource(props.createMedia(resource, sender, attachment))
-      .then((result) => addResources([result]))
+      .then((result) => addResource(result))
       .then(() =>
         updateNotification({
           id: 'upload-notification',
@@ -420,7 +441,7 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
     return (
       <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
         <h3>Created</h3>
-        <ResourceTable value={props.resource} ignoreMissingValues={true} />
+        <ResourceTable value={props.resource} ignoreMissingValues forceUseInput />
       </TimelineItem>
     );
   }
