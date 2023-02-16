@@ -282,6 +282,50 @@ Patient Access is disabled by default. Contact your info@medplum.com if you'd li
 
 You can configure your project to support open registration for patients, therefore it is crucial that you setup a Default Access Policy similar to the one above.
 
+### Account Level Access
+
+Sometimes, a notion of an account is necessary to enable customizable access policies. For example, in a pediatric use case, a parent can have an account that has access to the records of one or more children. This case has three parts.
+
+First, create a parameterized access policy with the resources you want to give access to
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Account Access Policy Template",
+  "compartment": {
+    "reference": "%account"
+  },
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "compartment": {
+        "reference": "%account"
+      },
+      {
+      "resourceType": "Communication",
+      "compartment": {
+        "reference": "%account"
+      }
+    }
+    }
+  ]
+}
+```
+
+Use the above as the default access policy for patients, and add the account compartment to the resources as needed.
+
+```js
+const result = await medplum.updateResource({
+  resourceType: 'Observation',
+  id: 'cb9ca560-fd96-4b22-a81a-285944142c90',
+  compartment: [(reference: 'Account/e8585ae6-921f-415f-984e-dc5695de0e36')],
+});
+```
+
+## Supported Templated Access Policy
+
+Templated Access policies support the following compartment parameters `%account`, `%patient`, and `%organization`.
+
 ## Related Resources
 
 - [Registration React Component](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic)
