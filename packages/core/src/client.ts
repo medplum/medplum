@@ -811,6 +811,7 @@ export class MedplumClient extends EventTarget {
    * @param clientId The external client ID.
    * @param redirectUri The external identity provider redirect URI.
    * @param baseLogin The Medplum login request.
+   * @category Authentication
    */
   async signInWithExternalAuth(
     authorizeUrl: string,
@@ -829,6 +830,7 @@ export class MedplumClient extends EventTarget {
    * @param redirectUri The external identity provider redirect URI.
    * @param loginRequest  The Medplum login request.
    * @returns The external identity provider redirect URI.
+   * @category Authentication
    */
   getExternalAuthRedirectUri(
     authorizeUrl: string,
