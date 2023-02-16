@@ -50,7 +50,7 @@ describe('ResourcePage', () => {
     jest.useRealTimers();
   });
 
-  test.skip('Not found', async () => {
+  test('Not found', async () => {
     await setup('/Practitioner/not-found');
     await waitFor(() => screen.getByText('Not found'));
     expect(screen.getByText('Not found')).toBeInTheDocument();
