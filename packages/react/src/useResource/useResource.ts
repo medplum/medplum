@@ -1,5 +1,5 @@
 import { deepEquals } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
@@ -9,7 +9,10 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
  * @param value The resource or reference to resource.
  * @returns The resolved resource.
  */
-export function useResource<T extends Resource>(value: Reference<T> | T | undefined): T | undefined {
+export function useResource<T extends Resource>(
+  value: Reference<T> | T | undefined,
+  setOutcome?: (outcome: OperationOutcome) => void
+): T | undefined {
   const medplum = useMedplum();
   const referenceRef = useRef<Reference<T> | undefined>(undefined);
   const resourceRef = useRef<T | undefined>(undefined);
@@ -54,9 +57,13 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
             forceRerender(newValue);
           }
         })
-        .catch(console.error);
+        .catch((err) => {
+          if (setOutcome) {
+            setOutcome(err);
+          }
+        });
     }
-  }, [medplum, value, prevResource]);
+  }, [medplum, prevResource, value, setOutcome]);
 
   return currentResource;
 }
