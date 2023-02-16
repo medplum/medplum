@@ -4390,6 +4390,13 @@
               "code": "string"
             }
           ]
+        },
+        "useSubject": {
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
         }
       }
     }
