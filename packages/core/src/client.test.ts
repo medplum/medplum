@@ -414,6 +414,19 @@ describe('Client', () => {
     expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
   });
 
+  test('Get external auth redirect URI', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = client.getExternalAuthRedirectUri(
+      'https://auth.example.com/authorize',
+      'external-client-123',
+      'https://me.example.com',
+      {
+        clientId: 'medplum-client-123',
+      }
+    );
+    expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
+  });
+
   test('New project success', async () => {
     const client = new MedplumClient(defaultOptions);
 
