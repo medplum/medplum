@@ -247,7 +247,7 @@ describe('Admin Invite', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
 
-  test('Invite by sub', async () => {
+  test('Invite by externalId', async () => {
     // First, Alice creates a project
     const { project, accessToken } = await registerNew({
       firstName: 'Alice',
@@ -266,7 +266,7 @@ describe('Admin Invite', () => {
         resourceType: 'Patient',
         firstName: 'Bob',
         lastName: 'Jones',
-        sub: bobSub,
+        externalId: bobSub,
       });
 
     expect(res2.status).toBe(200);

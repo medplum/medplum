@@ -21,9 +21,9 @@ export const inviteValidators = [
   oneOf(
     [
       body('email').isEmail().withMessage('Valid email address is required'),
-      body('sub').notEmpty().withMessage('Subject cannot be empty'),
+      body('externalId').notEmpty().withMessage('External ID cannot be empty'),
     ],
-    'Either email or sub is required'
+    'Either email or externalId is required'
   ),
 ];
 
@@ -54,7 +54,7 @@ export interface InviteRequest {
   readonly firstName: string;
   readonly lastName: string;
   readonly email?: string;
-  readonly sub?: string;
+  readonly externalId?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly sendEmail?: boolean;
 }
@@ -97,20 +97,20 @@ export async function inviteUser(request: InviteRequest): Promise<{ user: User; 
 }
 
 async function createUser(request: InviteRequest): Promise<User> {
-  const { firstName, lastName, email, sub } = request;
+  const { firstName, lastName, email, externalId } = request;
   const password = generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
   let result: User;
 
-  if (sub) {
-    // If creating a user by subject, then we are creating a user for a third-party system.
+  if (externalId) {
+    // If creating a user by externalId, then we are creating a user for a third-party system.
     // The user must be scoped to the project.
     result = await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName,
       lastName,
-      email: sub,
+      email: externalId,
       passwordHash,
       project: createReference(request.project),
     });
