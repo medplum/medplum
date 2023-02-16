@@ -246,4 +246,33 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(0);
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
+
+  test('Invite by externalId', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobSub = randomUUID();
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: bobSub,
+      });
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.profile.resourceType).toBe('Patient');
+    expect(res2.body.profile.telecom).toBeUndefined();
+    expect(SESv2Client).toHaveBeenCalledTimes(0);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(0);
+  });
 });

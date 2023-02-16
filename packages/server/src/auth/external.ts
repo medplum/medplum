@@ -49,7 +49,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   const userInfo = await verifyCode(idp, code);
-  const email = userInfo.email as string;
+  const email = (idp.useSubject ? userInfo.sub : userInfo.email) as string;
   if (body.domain && !email.endsWith('@' + body.domain)) {
     sendOutcome(res, badRequest('Email address does not match domain'));
     return;
