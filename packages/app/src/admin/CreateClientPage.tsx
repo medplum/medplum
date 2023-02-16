@@ -1,4 +1,4 @@
-import { Button, Group, TextInput, Title } from '@mantine/core';
+import { Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -34,7 +34,7 @@ export function CreateClientPage(): JSX.Element {
         }}
       >
         {!success && (
-          <>
+          <Stack>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
               <TextInput
                 id="name"
@@ -67,7 +67,7 @@ export function CreateClientPage(): JSX.Element {
             <Group position="right">
               <Button type="submit">Create Client</Button>
             </Group>
-          </>
+          </Stack>
         )}
         {success && (
           <div data-testid="success">
