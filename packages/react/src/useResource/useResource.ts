@@ -1,5 +1,5 @@
-import { deepEquals } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { deepEquals, MedplumClient } from '@medplum/core';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
@@ -9,35 +9,22 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
  * @param value The resource or reference to resource.
  * @returns The resolved resource.
  */
-export function useResource<T extends Resource>(value: Reference<T> | T | undefined): T | undefined {
+export function useResource<T extends Resource>(
+  value: Reference<T> | T | undefined,
+  setOutcome?: (outcome: OperationOutcome) => void
+): T | undefined {
   const medplum = useMedplum();
   const referenceRef = useRef<Reference<T> | undefined>(undefined);
   const resourceRef = useRef<T | undefined>(undefined);
 
-  // Reset the reference and resource
-  referenceRef.current = undefined;
-  resourceRef.current = undefined;
-
-  // Try to convert the value to a reference and resource
-  if (value) {
-    if ('reference' in value) {
-      // If the input is a reference then we can use it as-is
-      referenceRef.current = value as Reference<T>;
-    } else if ('resourceType' in value) {
-      resourceRef.current = value;
-      if ('id' in value) {
-        // If the input is a resource with an ID, then we can still create a reference
-        referenceRef.current = { reference: value.resourceType + '/' + value.id };
-      }
-    }
-  }
+  // Parse the input value into a reference and resource
+  parseValue(value, referenceRef, resourceRef);
 
   // Priority order:
   // 1. Cached reference
   // 2. Resource passed in as-is
   // 3. Undefined
-  const currentResource =
-    (referenceRef.current && medplum.getCachedReference(referenceRef.current)) || resourceRef.current;
+  const currentResource = getCurrentValue(medplum, referenceRef, resourceRef);
 
   // Keep track of the previous resource
   // This is used to detect when the resource has changed
@@ -54,9 +41,65 @@ export function useResource<T extends Resource>(value: Reference<T> | T | undefi
             forceRerender(newValue);
           }
         })
-        .catch(console.error);
+        .catch((err) => {
+          if (setOutcome) {
+            setOutcome(err);
+          }
+        });
     }
-  }, [medplum, value, prevResource]);
+  }, [medplum, prevResource, value, setOutcome]);
 
   return currentResource;
+}
+
+/**
+ * Parses the input into a reference and resource.
+ * @param value The input value to parse. Can be either a reference or a resource.
+ * @param referenceRef The output reference.
+ * @param resourceRef The output resource.
+ */
+function parseValue<T extends Resource>(
+  value: Reference<T> | T | undefined,
+  referenceRef: React.MutableRefObject<Reference<T> | undefined>,
+  resourceRef: React.MutableRefObject<T | undefined>
+): void {
+  // Reset the reference and resource
+  referenceRef.current = undefined;
+  resourceRef.current = undefined;
+
+  if (!value) {
+    return;
+  }
+
+  if ('reference' in value) {
+    // If the input is a reference then we can use it as-is
+    referenceRef.current = value as Reference<T>;
+  } else if ('resourceType' in value) {
+    resourceRef.current = value;
+    if ('id' in value) {
+      // If the input is a resource with an ID, then we can still create a reference
+      referenceRef.current = { reference: value.resourceType + '/' + value.id };
+    }
+  }
+}
+
+/**
+ * Returns the best currently available value.
+ * This is ***not*** asynchronous and returns immediately.
+ * It attempts to return the value from the cache, or the resource passed in as-is.
+ * @param medplum The Medplum client.
+ * @param referenceRef The reference.
+ * @param resourceRef The resource.
+ * @returns The currently available value.
+ */
+function getCurrentValue<T extends Resource>(
+  medplum: MedplumClient,
+  referenceRef: React.MutableRefObject<Reference<T> | undefined>,
+  resourceRef: React.MutableRefObject<T | undefined>
+): T | undefined {
+  // Priority order:
+  // 1. Cached reference
+  // 2. Resource passed in as-is
+  // 3. Undefined
+  return (referenceRef.current && medplum.getCachedReference(referenceRef.current)) || resourceRef.current;
 }

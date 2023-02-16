@@ -36,7 +36,7 @@ export function JsonPage(): JSX.Element | null {
 
   return (
     <Document>
-      {outcome && <OperationOutcomeAlert issues={outcome.issue} />}
+      {outcome && <OperationOutcomeAlert outcome={outcome} />}
       <Form onSubmit={handleSubmit}>
         <JsonInput
           name="resource"

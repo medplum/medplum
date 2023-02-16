@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { OperationOutcome, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { useState } from 'react';
@@ -9,10 +9,11 @@ import { useResource } from './useResource';
 
 interface TestComponentProps {
   value?: Reference | Resource;
+  setOutcome?: (outcome: OperationOutcome) => void;
 }
 
 function TestComponent(props: TestComponentProps): JSX.Element {
-  const resource = useResource(props.value);
+  const resource = useResource(props.value, props.setOutcome);
   return <div data-testid="test-component">{JSON.stringify(resource)}</div>;
 }
 
@@ -46,6 +47,13 @@ describe('useResource', () => {
     expect(el.innerHTML).toBe('');
   });
 
+  test('Handles invalid value', async () => {
+    await setup(<TestComponent value={{} as unknown as Reference} />);
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).toBe('');
+  });
+
   test('Renders resource', async () => {
     await setup(<TestComponent value={HomerSimpson} />);
     const el = screen.getByTestId('test-component');
@@ -74,6 +82,12 @@ describe('useResource', () => {
     const el = screen.getByTestId('test-component');
     expect(el).toBeInTheDocument();
     expect(el.innerHTML).toBe('');
+  });
+
+  test('Set outcome on error', async () => {
+    const setOutcome = jest.fn();
+    await setup(<TestComponent value={{ reference: 'Patient/not-found' }} setOutcome={setOutcome} />);
+    await waitFor(() => expect(setOutcome).toHaveBeenCalled());
   });
 
   test('Responds to value change', async () => {
