@@ -102,7 +102,11 @@ export class MockClient extends MedplumClient {
       menu: [
         {
           title: 'Favorites',
-          link: [{ name: 'Patients', target: '/Patient' }],
+          link: [
+            { name: 'Patients', target: '/Patient' },
+            { name: 'Active Orders', target: '/ServiceRequest?status=active' },
+            { name: 'Completed Orders', target: '/ServiceRequest?status=completed' },
+          ],
         },
         {
           title: 'Admin',

@@ -11,10 +11,10 @@ import { App } from './App';
 
 const medplum = new MockClient();
 
-async function setup(): Promise<void> {
+async function setup(url = '/'): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[url]} initialIndex={0}>
         <MedplumProvider medplum={medplum}>
           <MantineProvider withGlobalStyles withNormalizeCSS>
             <App />
@@ -76,5 +76,17 @@ describe('App', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Sign out'));
     });
+  });
+
+  test('Active link', async () => {
+    await setup('/ServiceRequest?status=active');
+
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+
+    const activeLink = screen.getByText('Active Orders');
+    const completedLink = screen.getByText('Completed Orders');
+    expect(activeLink.parentElement?.className).not.toEqual(completedLink.parentElement?.className);
   });
 });

@@ -8,6 +8,7 @@ import {
   IconId,
   IconLock,
   IconLockAccess,
+  IconMicroscope,
   IconPackages,
   IconReceipt,
   IconReportMedical,
@@ -15,7 +16,7 @@ import {
   IconWebhook,
 } from '@tabler/icons-react';
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const useStyles = createStyles((theme, _params, getRef) => {
   const icon = getRef('icon');
@@ -97,15 +98,14 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
           <React.Fragment key={`menu-${index}-${config?.menu?.length}`}>
             <Text className={classes.menuTitle}>{menu.title}</Text>
             {menu.link?.map((link) => (
-              <NavLink
+              <NavbarLink
                 key={link.name}
                 to={link.target as string}
                 onClick={(e) => onLinkClick(e, link.target as string)}
-                className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}
               >
                 <NavLinkIcon to={link.target as string} className={classes.linkIcon} />
                 <span>{link.name}</span>
-              </NavLink>
+              </NavbarLink>
             ))}
           </React.Fragment>
         ))}
@@ -117,6 +117,41 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
       </Navbar.Section>
     </Navbar>
   );
+}
+
+interface NavbarLinkProps {
+  to: string;
+  onClick: (e: React.SyntheticEvent, to: string) => void;
+  children: React.ReactNode;
+}
+
+function NavbarLink(props: NavbarLinkProps): JSX.Element {
+  const { classes, cx } = useStyles();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const toUrl = new URL(props.to, window.location.protocol + '//' + window.location.host);
+  const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
+
+  return (
+    <Link to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+      {props.children}
+    </Link>
+  );
+}
+
+/**
+ * Returns true if the search params match.
+ * @param searchParams The current search params.
+ * @param toUrl The destination URL of the link.
+ * @returns True if the search params match.
+ */
+function matchesParams(searchParams: URLSearchParams, toUrl: URL): boolean {
+  for (const [key, value] of toUrl.searchParams.entries()) {
+    if (searchParams.get(key) !== value) {
+      return false;
+    }
+  }
+  return true;
 }
 
 interface NavLinkIconProps {
@@ -135,6 +170,7 @@ const resourceTypeToIcon: Record<string, Icon> = {
   AccessPolicy: IconLockAccess,
   Subscription: IconWebhook,
   batch: IconPackages,
+  Observation: IconMicroscope,
 };
 
 function NavLinkIcon({ to, className }: NavLinkIconProps): JSX.Element {
