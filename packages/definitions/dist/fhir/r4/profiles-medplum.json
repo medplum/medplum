@@ -430,6 +430,16 @@
             }]
           },
           {
+            "id" : "ClientApplication.pkceOptional",
+            "path" : "ClientApplication.pkceOptional",
+            "definition" : "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }]
+          },
+          {
             "id" : "ClientApplication.identityProvider",
             "path" : "ClientApplication.identityProvider",
             "definition" : "Optional external Identity Provider (IdP) for the client application.",
