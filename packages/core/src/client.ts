@@ -2173,6 +2173,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Starts a new PKCE flow.
    * These PKCE values are stateful, and must survive redirects and page refreshes.
+   * @category Authentication
    */
   async startPkce(): Promise<{ codeChallengeMethod: string; codeChallenge: string }> {
     const pkceState = getRandomString();
@@ -2210,6 +2211,7 @@ export class MedplumClient extends EventTarget {
    * Processes an OAuth authorization code.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
+   * @category Authentication
    */
   processCode(code: string): Promise<ProfileResource> {
     const formBody = new URLSearchParams();
@@ -2218,9 +2220,11 @@ export class MedplumClient extends EventTarget {
     formBody.set('code', code);
     formBody.set('redirect_uri', getWindowOrigin());
 
-    const codeVerifier = sessionStorage.getItem('codeVerifier');
-    if (codeVerifier) {
-      formBody.set('code_verifier', codeVerifier);
+    if (typeof sessionStorage !== 'undefined') {
+      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      if (codeVerifier) {
+        formBody.set('code_verifier', codeVerifier);
+      }
     }
 
     return this.#fetchTokens(formBody);
