@@ -1,5 +1,5 @@
-import { resolveId, unauthorized } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { unauthorized } from '@medplum/core';
+import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
@@ -88,7 +88,6 @@ async function setupLocals(req: Request, res: Response, login: Login, membership
   const locals = res.locals;
   locals.login = login;
   locals.membership = membership;
-  locals.user = resolveId(membership.user as Reference<User>);
   locals.profile = membership.profile;
   locals.project = await systemRepo.readReference(membership.project as Reference<Project>);
   locals.repo = await getRepoForLogin(

@@ -28,7 +28,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
-    const user = await systemRepo.readResource<User>('User', res.locals.user as string);
+    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
     const sessions = await getSessions(user);
     security = {
       mfaEnrolled: !!user.mfaEnrolled,

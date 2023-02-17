@@ -18,7 +18,7 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
   const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
 
   // Make sure the login belongs to the current user
-  if (login.user?.reference !== 'User/' + res.locals.user) {
+  if (login.user?.reference !== res.locals.membership.user.reference) {
     sendOutcome(res, badRequest('Invalid login ID'));
     return;
   }

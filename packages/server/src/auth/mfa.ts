@@ -1,5 +1,5 @@
 import { allOk, badRequest } from '@medplum/core';
-import { Login, User } from '@medplum/fhirtypes';
+import { Login, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { authenticator } from 'otplib';
@@ -20,7 +20,7 @@ mfaRouter.get(
   '/status',
   authenticateToken,
   asyncWrap(async (_req: Request, res: Response) => {
-    let user = await systemRepo.readResource<User>('User', res.locals.user as string);
+    let user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
     if (user.mfaEnrolled) {
       res.json({ enrolled: true });
       return;
@@ -50,7 +50,7 @@ mfaRouter.post(
   authenticateToken,
   [body('token').notEmpty().withMessage('Missing token')],
   asyncWrap(async (req: Request, res: Response) => {
-    const user = await systemRepo.readResource<User>('User', res.locals.user as string);
+    const user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
 
     if (user.mfaEnrolled) {
       sendOutcome(res, badRequest('Already enrolled'));

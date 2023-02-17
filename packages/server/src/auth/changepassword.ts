@@ -1,5 +1,5 @@
 import { allOk, badRequest } from '@medplum/core';
-import { User } from '@medplum/fhirtypes';
+import { Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -22,7 +22,7 @@ export async function changePasswordHandler(req: Request, res: Response): Promis
     return;
   }
 
-  const user = await systemRepo.readResource<User>('User', res.locals.user);
+  const user = await systemRepo.readReference<User>(res.locals.membership.user as Reference<User>);
 
   await changePassword({
     user,

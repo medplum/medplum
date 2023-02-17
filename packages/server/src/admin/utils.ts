@@ -28,7 +28,7 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
       {
         code: 'user',
         operator: Operator.EQUALS,
-        value: 'User/' + res.locals.user,
+        value: res.locals.membership.user.reference,
       },
     ],
   });

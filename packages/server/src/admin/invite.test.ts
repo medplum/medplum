@@ -275,4 +275,59 @@ describe('Admin Invite', () => {
     expect(SESv2Client).toHaveBeenCalledTimes(0);
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
+
+  test('Invite as client', async () => {
+    // First, Alice creates a project
+    const { project, accessToken, client } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Get the client membership
+    const res2 = await request(app)
+      .get('/admin/projects/' + project.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.body.project).toBeDefined();
+    expect(res2.body.members).toBeDefined();
+    expect(res2.body.members.length).toEqual(2);
+
+    const clientMembership = res2.body.members.find((m: any) => m.role === 'client');
+    expect(clientMembership).toBeDefined();
+
+    // Get the client membership details
+    const res4 = await request(app)
+      .get('/admin/projects/' + project.id + '/members/' + clientMembership.id)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(200);
+
+    // Promote the client to admin
+    const res7 = await request(app)
+      .post('/admin/projects/' + project.id + '/members/' + clientMembership.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        ...res4.body,
+        admin: true,
+      });
+    expect(res7.status).toBe(200);
+
+    // Call the invite endpoint as the client
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res8 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'))
+      .set('Content-Type', 'application/json')
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res8.status).toBe(200);
+    expect(res8.body.profile.resourceType).toBe('Patient');
+  });
 });

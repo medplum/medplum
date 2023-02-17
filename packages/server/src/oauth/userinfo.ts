@@ -17,12 +17,11 @@ import { Repository } from '../fhir/repo';
  * See: https://openid.net/specs/openid-connect-core-1_0.html#UserInfo
  */
 export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, res: Response) => {
-  const userInfo: Record<string, any> = {
-    sub: res.locals.user,
-  };
-
   const repo = res.locals.repo as Repository;
   const profile = await repo.readReference(res.locals.profile as Reference<ProfileResource>);
+  const userInfo: Record<string, any> = {
+    sub: profile.id,
+  };
 
   if (res.locals.login.scope.includes('profile')) {
     buildProfile(userInfo, profile);
