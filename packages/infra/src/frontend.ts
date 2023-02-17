@@ -151,7 +151,7 @@ export class FrontEnd extends Construct {
       });
 
       const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-        domainName: config.domainName.split('.').slice(-2).join('.'),
+        domainName: config.domainName,
       });
 
       // Route53 alias record for the CloudFront distribution
