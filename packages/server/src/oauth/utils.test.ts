@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
-import { tryLogin, validateLoginRequest } from './utils';
+import { tryLogin, validatePkce } from './utils';
 
 let client: ClientApplication;
 
@@ -184,16 +184,19 @@ describe('OAuth utils', () => {
   test('Missing codeChallengeMethod', () => {
     // If user submits codeChallenge, then codeChallengeMethod is required
     try {
-      validateLoginRequest({
-        clientId: client.id as string,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-        remember: false,
-        codeChallenge: 'xyz',
-      });
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+          codeChallenge: 'xyz',
+        },
+        undefined
+      );
       fail('Expected error');
     } catch (err) {
       const outcome = err as OperationOutcome;
@@ -204,16 +207,19 @@ describe('OAuth utils', () => {
   test('Missing codeChallenge', () => {
     // If user submits codeChallengeMethod, then codeChallenge is required
     try {
-      validateLoginRequest({
-        clientId: client.id as string,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-        remember: false,
-        codeChallengeMethod: 'plain',
-      });
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+          codeChallengeMethod: 'plain',
+        },
+        client
+      );
       fail('Expected error');
     } catch (err) {
       const outcome = err as OperationOutcome;
@@ -223,17 +229,20 @@ describe('OAuth utils', () => {
 
   test('Invalid codeChallengeMethod', () => {
     try {
-      validateLoginRequest({
-        clientId: client.id as string,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-        remember: false,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'xyz',
-      });
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+          codeChallenge: 'xyz',
+          codeChallengeMethod: 'xyz',
+        },
+        client
+      );
       fail('Expected error');
     } catch (err) {
       const outcome = err as OperationOutcome;
@@ -243,33 +252,66 @@ describe('OAuth utils', () => {
 
   test('Plain text code challenge method', () => {
     expect(() =>
-      validateLoginRequest({
-        clientId: client.id as string,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-        remember: false,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-      })
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+          codeChallenge: 'xyz',
+          codeChallengeMethod: 'plain',
+        },
+        client
+      )
     ).not.toThrow();
   });
 
   test('S256 code challenge method', () => {
     expect(() =>
-      validateLoginRequest({
-        clientId: client.id as string,
-        authMethod: 'password',
-        email: 'admin@example.com',
-        password: 'medplum_admin',
-        scope: 'openid',
-        nonce: 'nonce',
-        remember: false,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'S256',
-      })
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+          codeChallenge: 'xyz',
+          codeChallengeMethod: 'S256',
+        },
+        client
+      )
+    ).not.toThrow();
+  });
+
+  test('Client application PKCE optional', () => {
+    const client: ClientApplication = {
+      resourceType: 'ClientApplication',
+      id: randomUUID(),
+      pkceOptional: true,
+    };
+
+    expect(() =>
+      validatePkce(
+        {
+          clientId: client.id as string,
+          authMethod: 'password',
+          email: 'admin@example.com',
+          password: 'medplum_admin',
+          scope: 'openid',
+          nonce: 'nonce',
+          remember: false,
+        },
+        client
+      )
     ).not.toThrow();
   });
 });
+
+function fail(message: string): never {
+  throw new Error(message);
+}

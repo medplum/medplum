@@ -91,6 +91,8 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
   }
 
+  validatePkce(request, client);
+
   let launch: SmartAppLaunch | undefined;
   if (request.launchId) {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
@@ -156,6 +158,12 @@ export function validateLoginRequest(request: LoginRequest): void {
   if (!request.scope) {
     throw badRequest('Invalid scope', 'scope');
   }
+}
+
+export function validatePkce(request: LoginRequest, client: ClientApplication | undefined): void {
+  if (client?.pkceOptional) {
+    return;
+  }
 
   if (!request.codeChallenge && request.codeChallengeMethod) {
     throw badRequest('Invalid code challenge', 'code_challenge');
@@ -172,8 +180,6 @@ export function validateLoginRequest(request: LoginRequest): void {
   ) {
     throw badRequest('Invalid code challenge method', 'code_challenge_method');
   }
-
-  return undefined;
 }
 
 async function authenticate(request: LoginRequest, user: User): Promise<void> {
