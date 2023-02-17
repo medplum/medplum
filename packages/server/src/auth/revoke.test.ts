@@ -1,10 +1,12 @@
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { tryLogin } from '../oauth/utils';
 import { registerNew } from './register';
+import { setPassword } from './setpassword';
 
 const app = express();
 
@@ -99,5 +101,54 @@ describe('Revoke', () => {
       .type('json')
       .send({ loginId: randomUUID() });
     expect(res6.status).toBe(404);
+  });
+
+  test('Different user', async () => {
+    const aliceEmail = `alice${randomUUID()}@example.com`;
+    const alicePassword = randomUUID();
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const bobPassword = randomUUID();
+
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Revoke Project',
+      email: aliceEmail,
+      password: alicePassword,
+      remoteAddress: '5.5.5.5',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+    });
+
+    // Second, Alice invites Bob to the project
+    const { user } = await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'Bob',
+      lastName: 'Jones',
+      email: bobEmail,
+    });
+
+    // Set Bob password
+    await setPassword(user, bobPassword);
+
+    // Login as Bob
+    const bobLogin = await tryLogin({
+      authMethod: 'password',
+      email: bobEmail,
+      password: bobPassword,
+      scope: 'openid',
+      nonce: 'nonce',
+      remember: false,
+    });
+    expect(bobLogin).toBeDefined();
+
+    // Try to revoke Bob's session as Alice
+    // This should fail
+    const revokeResponse = await request(app)
+      .post('/auth/revoke')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send({ loginId: bobLogin.id });
+    expect(revokeResponse.status).toBe(404);
   });
 });

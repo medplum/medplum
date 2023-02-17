@@ -1,4 +1,4 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, notFound } from '@medplum/core';
 import { Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -18,8 +18,8 @@ export async function revokeHandler(req: Request, res: Response): Promise<void> 
   const login = await systemRepo.readResource<Login>('Login', req.body.loginId);
 
   // Make sure the login belongs to the current user
-  if (login.user?.reference !== 'User/' + res.locals.user) {
-    sendOutcome(res, badRequest('Invalid login ID'));
+  if (login.user?.reference !== res.locals.membership.user.reference) {
+    sendOutcome(res, notFound);
     return;
   }
 
