@@ -158,7 +158,7 @@ export async function main(t: readline.Interface): Promise<void> {
   print('You can choose the image to use for the servers.');
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
-  config.serverImage = await ask('Enter the server image:', 'medplum/medplum:latest');
+  config.serverImage = await ask('Enter the server image:', 'medplum/medplum-server:latest');
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
