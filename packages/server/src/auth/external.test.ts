@@ -4,6 +4,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { createClient } from '../admin/client';
+import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -16,6 +17,7 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const domain2 = randomUUID() + '.example.com';
 const redirectUri = `https://${domain}/auth/callback`;
+const externalId = `google-oauth2|${randomUUID()}`;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
@@ -85,6 +87,15 @@ describe('External', () => {
         ...identityProvider,
         useSubject: true,
       },
+    });
+
+    // Invite user with external ID
+    await inviteUser({
+      project,
+      externalId,
+      resourceType: 'Patient',
+      firstName: 'External',
+      lastName: 'User',
     });
   });
 
@@ -310,7 +321,7 @@ describe('External', () => {
   });
 
   test('Subject auth success', async () => {
-    const subject = email;
+    const subject = externalId;
 
     const url = new URL('https://example.com/auth/external');
     url.searchParams.set('code', randomUUID());
@@ -319,6 +330,8 @@ describe('External', () => {
       JSON.stringify({
         clientId: subjectAuthClient.id,
         redirectUri,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
       })
     );
 
@@ -336,6 +349,14 @@ describe('External', () => {
     expect(redirect.host).toEqual(domain);
     expect(redirect.pathname).toEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
+
+    const code = redirect.searchParams.get('code');
+    const tokenResponse = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code,
+      code_verifier: 'xyz',
+    });
+    expect(tokenResponse.body.profile.display).toBe('External User');
   });
 });
 

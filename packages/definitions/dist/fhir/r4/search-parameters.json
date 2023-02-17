@@ -65667,7 +65667,7 @@
       "description" : "The email address of the user",
       "code" : "email",
       "base" : ["User"],
-      "type" : "token",
+      "type" : "string",
       "expression" : "User.email",
       "xpath" : "f:User/f:email",
       "xpathUsage" : "normal"

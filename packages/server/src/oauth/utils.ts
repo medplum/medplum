@@ -484,7 +484,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
     filters: [
       {
         code: 'email',
-        operator: Operator.EQUALS,
+        operator: Operator.EXACT,
         value: email,
       },
       {
@@ -509,7 +509,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
     filters: [
       {
         code: 'email',
-        operator: Operator.EQUALS,
+        operator: Operator.EXACT,
         value: email,
       },
       {
