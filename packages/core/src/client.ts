@@ -811,6 +811,7 @@ export class MedplumClient extends EventTarget {
    * @param clientId The external client ID.
    * @param redirectUri The external identity provider redirect URI.
    * @param baseLogin The Medplum login request.
+   * @category Authentication
    */
   async signInWithExternalAuth(
     authorizeUrl: string,
@@ -819,13 +820,31 @@ export class MedplumClient extends EventTarget {
     baseLogin: BaseLoginRequest
   ): Promise<void> {
     const loginRequest = await this.ensureCodeChallenge(baseLogin);
+    window.location.assign(this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest));
+  }
+
+  /**
+   * Builds the external identity provider redirect URI.
+   * @param authorizeUrl The external authorization URL.
+   * @param clientId The external client ID.
+   * @param redirectUri The external identity provider redirect URI.
+   * @param loginRequest  The Medplum login request.
+   * @returns The external identity provider redirect URI.
+   * @category Authentication
+   */
+  getExternalAuthRedirectUri(
+    authorizeUrl: string,
+    clientId: string,
+    redirectUri: string,
+    loginRequest: BaseLoginRequest
+  ): string {
     const url = new URL(authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
     url.searchParams.set('scope', 'openid profile email');
     url.searchParams.set('state', JSON.stringify(loginRequest));
-    window.location.assign(url.toString());
+    return url.toString();
   }
 
   /**
