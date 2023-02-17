@@ -148,7 +148,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 export function validateLoginRequest(request: LoginRequest): void {
   if (request.authMethod === 'external') {
     if (!request.externalId && !request.email) {
-      throw badRequest('Either externalId or email is required for external auth', 'externalId');
+      throw badRequest('Missing email or externalId', 'externalId');
     }
     if (request.externalId && !request.projectId) {
       throw badRequest('Project ID is required for external ID', 'projectId');
