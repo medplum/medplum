@@ -1,6 +1,6 @@
 import { Binary } from '@medplum/fhirtypes';
 import { getConfig } from '../config';
-import { getSignedUrl } from "@aws-sdk/cloudfront-signer";
+import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 
 /**
  * Creates a signed URL for a given URL.
@@ -26,7 +26,6 @@ export class Signer {
    * @returns Presigned URL.
    */
   sign(url: string, dateLessThan?: Date): string {
-
     if (!dateLessThan) {
       dateLessThan = new Date();
       dateLessThan.setHours(dateLessThan.getHours() + 1);
@@ -38,7 +37,7 @@ export class Signer {
       dateLessThan: dateLessThan.toISOString(),
       privateKey: this.#privateKey,
       passphrase: this.#passphrase,
-    })
+    });
   }
 }
 
