@@ -54,7 +54,7 @@ test('Init tool success', async () => {
     desiredServerCount: 1,
     serverMemory: 512,
     serverCpu: 256,
-    serverImage: 'medplum/medplum:latest',
+    serverImage: 'medplum/medplum-server:latest',
     storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
     apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
     appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
