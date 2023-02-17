@@ -321,8 +321,6 @@ describe('External', () => {
   });
 
   test('Subject auth success', async () => {
-    const subject = externalId;
-
     const url = new URL('https://example.com/auth/external');
     url.searchParams.set('code', randomUUID());
     url.searchParams.set(
@@ -338,7 +336,7 @@ describe('External', () => {
     // Mock the external identity provider
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      json: () => buildTokens('', subject),
+      json: () => buildTokens('', externalId),
     }));
 
     // Simulate the external identity provider callback

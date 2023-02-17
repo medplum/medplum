@@ -110,7 +110,7 @@ async function createUser(request: InviteRequest): Promise<User> {
       resourceType: 'User',
       firstName,
       lastName,
-      email: externalId,
+      externalId,
       passwordHash,
       project: createReference(request.project),
     });

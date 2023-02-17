@@ -90,7 +90,7 @@ describe('OAuth utils', () => {
     } catch (err) {
       const outcome = err as OperationOutcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Email or password is invalid');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
     }
   });
 
