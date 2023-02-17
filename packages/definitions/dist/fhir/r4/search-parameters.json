@@ -65674,6 +65674,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/User-external-id",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "User-external-id",
+      "url" : "https://medplum.com/fhir/SearchParameter/User-external-id",
+      "version" : "4.0.1",
+      "name" : "external-id",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The externalID of the user",
+      "code" : "external-id",
+      "base" : ["User"],
+      "type" : "string",
+      "expression" : "User.externalId",
+      "xpath" : "f:User/f:externalId",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/User-project",
     "resource" : {
       "resourceType" : "SearchParameter",

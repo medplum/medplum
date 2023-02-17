@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
-import { tryLogin, validatePkce } from './utils';
+import { tryLogin, validateLoginRequest, validatePkce } from './utils';
 
 let client: ClientApplication;
 
@@ -90,7 +90,7 @@ describe('OAuth utils', () => {
     } catch (err) {
       const outcome = err as OperationOutcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Email or password is invalid');
+      expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
     }
   });
 
@@ -179,6 +179,38 @@ describe('OAuth utils', () => {
       remember: false,
     });
     expect(login).toBeDefined();
+  });
+
+  test('External auth without email or externalId', () => {
+    try {
+      validateLoginRequest({
+        authMethod: 'external',
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+        projectId: randomUUID(),
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
+    }
+  });
+
+  test('External auth without projectId', () => {
+    try {
+      validateLoginRequest({
+        authMethod: 'external',
+        externalId: randomUUID(),
+        scope: 'openid',
+        nonce: 'nonce',
+        remember: false,
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = err as OperationOutcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
+    }
   });
 
   test('Missing codeChallengeMethod', () => {

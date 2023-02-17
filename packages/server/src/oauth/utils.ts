@@ -28,7 +28,8 @@ import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent'
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
 export interface LoginRequest {
-  readonly email: string;
+  readonly email?: string;
+  readonly externalId?: string;
   readonly authMethod: 'password' | 'google' | 'external';
   readonly password?: string;
   readonly scope: string;
@@ -98,9 +99,15 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
     launch = await systemRepo.readResource<SmartAppLaunch>('SmartAppLaunch', request.launchId);
   }
 
-  const user = await getUserByEmail(request.email, request.projectId);
+  let user: User | undefined = undefined;
+  if (request.externalId) {
+    user = await getUserByExternalId(request.externalId, request.projectId as string);
+  } else if (request.email) {
+    user = await getUserByEmail(request.email, request.projectId);
+  }
+
   if (!user) {
-    throw badRequest('Email or password is invalid');
+    throw badRequest('User not found');
   }
 
   await authenticate(request, user);
@@ -139,8 +146,17 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 }
 
 export function validateLoginRequest(request: LoginRequest): void {
-  if (!request.email) {
-    throw badRequest('Invalid email', 'email');
+  if (request.authMethod === 'external') {
+    if (!request.externalId && !request.email) {
+      throw badRequest('Missing email or externalId', 'externalId');
+    }
+    if (request.externalId && !request.projectId) {
+      throw badRequest('Project ID is required for external ID', 'projectId');
+    }
+  } else {
+    if (!request.email) {
+      throw badRequest('Invalid email', 'email');
+    }
   }
 
   if (!request.authMethod) {
@@ -458,6 +474,32 @@ export async function revokeLogin(login: Login): Promise<void> {
     ...login,
     revoked: true,
   });
+}
+
+/**
+ * Searches for a user by externalId and project.
+ * External ID users are explicitly associated with the project.
+ * @param externalId The external ID.
+ * @param projectId The project ID.
+ * @returns The user if found; otherwise, undefined.
+ */
+export async function getUserByExternalId(externalId: string, projectId: string): Promise<User | undefined> {
+  const bundle = await systemRepo.search({
+    resourceType: 'User',
+    filters: [
+      {
+        code: 'external-id',
+        operator: Operator.EXACT,
+        value: externalId,
+      },
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
+    ],
+  });
+  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 
 /**

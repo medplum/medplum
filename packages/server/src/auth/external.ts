@@ -7,7 +7,7 @@ import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
-import { getUserByEmail, tryLogin } from '../oauth/utils';
+import { tryLogin } from '../oauth/utils';
 import { getDomainConfiguration } from './method';
 
 /*
@@ -49,8 +49,16 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   }
 
   const userInfo = await verifyCode(idp, code);
-  const email = (idp.useSubject ? userInfo.sub : userInfo.email) as string;
-  if (body.domain && !email.endsWith('@' + body.domain)) {
+
+  let email: string | undefined = undefined;
+  let externalId: string | undefined = undefined;
+  if (idp.useSubject) {
+    externalId = userInfo.sub as string;
+  } else {
+    email = userInfo.email as string;
+  }
+
+  if (body.domain && !email?.endsWith('@' + body.domain)) {
     sendOutcome(res, badRequest('Email address does not match domain'));
     return;
   }
@@ -64,15 +72,10 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
     projectId = client.meta?.project;
   }
 
-  const existingUser = await getUserByEmail(email, projectId);
-  if (!existingUser) {
-    sendOutcome(res, badRequest('User not found'));
-    return;
-  }
-
   const login = await tryLogin({
     authMethod: 'external',
     email,
+    externalId,
     remember: true,
     projectId: projectId,
     clientId: body.clientId,
