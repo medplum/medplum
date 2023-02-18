@@ -45,8 +45,6 @@ Create a "medplum" database:
 ```PLpgSQL
 CREATE DATABASE medplum;
 GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
-\c medplum;
-CREATE EXTENSION "uuid-ossp";
 ```
 
 Create a "medplum_test" database:
@@ -54,8 +52,6 @@ Create a "medplum_test" database:
 ```PLpgSQL
 CREATE DATABASE medplum_test;
 GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
-\c medplum_test;
-CREATE EXTENSION "uuid-ossp";
 ```
 
 Exit psql
@@ -96,7 +92,7 @@ Install NodeJS
 sudo apt-get install nodejs
 ```
 
-## Install Medplum
+## Build Medplum
 
 Clone the Medplum repository
 
@@ -104,12 +100,26 @@ Clone the Medplum repository
 git clone https://github.com/medplum/medplum.git
 ```
 
-Run the build script
+Build the server and necessary dependencies
 
 ```bash
-cd medplum && ./scripts/build.sh
+npm run build -- --filter=@medplum/server
 ```
 
-(This will take a while.  It downloads all dependencies, performs a full build, and runs all tests.)
+(This will take a while. It downloads all dependencies, performs a full build, and runs all tests.)
+
+## Run Medplum server
 
 Update the server config at packages/server/medplum.config.json with your configuration
+
+Run in development mode (from the `packages/server` directory):
+
+```bash
+npm run dev
+```
+
+Run in production mode (from the project root directory):
+
+```bash
+node packages/server/dist/index.js
+```
