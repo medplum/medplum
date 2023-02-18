@@ -124,7 +124,7 @@ Register a new Medplum project called "OpenID Certification"
 
 Create two new clients called "OpenID Client 1" and "OpenID Client 2"
 
-Update both clients "Redirect Uri" to "https://localhost.emobix.co.uk:8443/test/a/medplum/callback"
+Update both clients "Redirect URI" to "https://localhost.emobix.co.uk:8443/test/a/medplum/callback"
 
 Make note of the client IDs and client secrets
 
@@ -149,7 +149,7 @@ Be sure to logout between each test by visiting <http://host.docker.internal:810
 
 Create two clients
 
-Set the "Redirect Uri" to "https://localhost.emobix.co.uk:8443/test/a/medplum/callback"
+Set the "Redirect URI" to "https://localhost.emobix.co.uk:8443/test/a/medplum/callback"
 
 - Test Plan: OpenID Connect Core: Basic Certification Profile Authorization server test
 - Server metadata location: discovery
