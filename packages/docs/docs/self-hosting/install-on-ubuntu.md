@@ -80,10 +80,12 @@ Restart redis
 sudo systemctl restart redis-server
 ```
 
-Add the Node.js v16.x Ubuntu repository:
+## Install Node.js
+
+Add the Node.js v18.x Ubuntu repository:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 ```
 
 Install NodeJS
@@ -98,6 +100,13 @@ Clone the Medplum repository
 
 ```bash
 git clone https://github.com/medplum/medplum.git
+cd medplum
+```
+
+Install dependencies
+
+```bash
+npm ci
 ```
 
 Build the server and necessary dependencies
@@ -105,8 +114,6 @@ Build the server and necessary dependencies
 ```bash
 npm run build -- --filter=@medplum/server
 ```
-
-(This will take a while. It downloads all dependencies, performs a full build, and runs all tests.)
 
 ## Run Medplum server
 
