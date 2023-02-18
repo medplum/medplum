@@ -739,6 +739,17 @@
             }]
           },
           {
+            "id" : "ProjectMembership.invitedBy",
+            "path" : "ProjectMembership.invitedBy",
+            "definition" : "The project administrator who invited the user to the project.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Reference",
+              "targetProfile" : ["https://medplum.com/fhir/StructureDefinition/User"]
+            }]
+          },
+          {
             "id" : "ProjectMembership.user",
             "path" : "ProjectMembership.user",
             "definition" : "User that is granted access to the project.",
