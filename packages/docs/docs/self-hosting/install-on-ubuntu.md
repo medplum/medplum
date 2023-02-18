@@ -45,8 +45,6 @@ Create a "medplum" database:
 ```PLpgSQL
 CREATE DATABASE medplum;
 GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
-\c medplum;
-CREATE EXTENSION "uuid-ossp";
 ```
 
 Create a "medplum_test" database:
@@ -54,8 +52,6 @@ Create a "medplum_test" database:
 ```PLpgSQL
 CREATE DATABASE medplum_test;
 GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
-\c medplum_test;
-CREATE EXTENSION "uuid-ossp";
 ```
 
 Exit psql
@@ -84,10 +80,12 @@ Restart redis
 sudo systemctl restart redis-server
 ```
 
-Add the Node.js v16.x Ubuntu repository:
+## Install Node.js
+
+Add the Node.js v18.x Ubuntu repository:
 
 ```bash
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 ```
 
 Install NodeJS
@@ -96,20 +94,39 @@ Install NodeJS
 sudo apt-get install nodejs
 ```
 
-## Install Medplum
+## Build Medplum
 
 Clone the Medplum repository
 
 ```bash
 git clone https://github.com/medplum/medplum.git
+cd medplum
 ```
 
-Run the build script
+Install dependencies
 
 ```bash
-cd medplum && ./scripts/build.sh
+npm ci
 ```
 
-(This will take a while.  It downloads all dependencies, performs a full build, and runs all tests.)
+Build the server and necessary dependencies
+
+```bash
+npm run build -- --filter=@medplum/server
+```
+
+## Run Medplum server
 
 Update the server config at packages/server/medplum.config.json with your configuration
+
+Run in development mode (from the `packages/server` directory):
+
+```bash
+npm run dev
+```
+
+Run in production mode (from the project root directory):
+
+```bash
+node packages/server/dist/index.js
+```

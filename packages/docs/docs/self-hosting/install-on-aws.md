@@ -131,3 +131,24 @@ or
 ```bash
 APP_BUCKET=app.example.com ./scripts/deploy-app.sh
 ```
+
+## Upgrade the server
+
+If using a custom Docker image, first build and deploy your image:
+
+```bash
+# Build and push using normal Docker commands
+docker build . -t "$DOCKER_REPOSITORY:$TAG"
+docker push "$DOCKER_REPOSITORY:$TAG"
+```
+
+To deploy the latest version to your AWS Fargate cluster, use the AWS CLI:
+
+```bash
+# Update the Medplum Fargate service
+aws ecs update-service \
+  --region "$AWS_REGION" \
+  --cluster "$ECS_CLUSTER" \
+  --service "$ECS_SERVICE" \
+  --force-new-deployment
+```
