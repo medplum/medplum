@@ -6,6 +6,7 @@ import {
   matchesSearchRequest,
   normalizeErrorString,
   notFound,
+  OperationOutcomeError,
   SearchRequest,
   SortRule,
 } from '@medplum/core';
@@ -43,6 +44,16 @@ export interface FhirRepository {
    * @returns The FHIR resource.
    */
   readReference<T extends Resource>(reference: Reference<T>): Promise<T>;
+
+  /**
+   * Reads a collection of FHIR resources by reference.
+   *
+   * See: https://www.hl7.org/fhir/http.html#read
+   *
+   * @param references The FHIR references.
+   * @returns The FHIR resources.
+   */
+  readReferences(references: readonly Reference[]): Promise<(Resource | Error)[]>;
 
   /**
    * Returns resource history.
@@ -200,6 +211,10 @@ export class MemoryRepository implements FhirRepository {
       throw badRequest('Invalid reference');
     }
     return this.readResource(parts[0], parts[1]);
+  }
+
+  async readReferences(references: readonly Reference<Resource>[]): Promise<(Resource | OperationOutcomeError)[]> {
+    return Promise.all(references.map((r) => this.readReference(r)));
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {

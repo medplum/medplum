@@ -8,7 +8,8 @@ const extensions = ['.ts'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
-  'rfc6902': 'rfc6902',
+  dataloader: 'dataloader',
+  rfc6902: 'rfc6902',
 };
 
 export default {
