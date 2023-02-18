@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
-import { badRequest } from '@medplum/core';
+import { allOk, badRequest } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -13,6 +13,11 @@ let medplum: MockClient;
 describe('BotEditor', () => {
   async function setup(url: string): Promise<void> {
     medplum = new MockClient();
+
+    // Mock bot operations
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+    medplum.router.router.add('POST', 'Bot/:id/$execute', async () => [allOk]);
+
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>

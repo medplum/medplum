@@ -1,6 +1,6 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { globalSchema, PropertyType } from './types';
-import { capitalize } from './utils';
+import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
+import { capitalize } from '../utils';
 
 export enum SearchParameterType {
   BOOLEAN = 'BOOLEAN',
@@ -52,10 +52,6 @@ function setSearchParamterDetails(resourceType: string, code: string, details: S
 }
 
 function buildSearchParamterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
-  if (searchParam.code === '_lastUpdated') {
-    return { columnName: 'lastUpdated', type: SearchParameterType.DATETIME };
-  }
-
   const code = searchParam.code as string;
   const columnName = convertCodeToColumnName(code);
   const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
@@ -73,9 +69,7 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
 
   for (let i = 1; i < expression.length; i++) {
     const propertyName = expression[i];
-    elementDefinition =
-      globalSchema.types[baseType]?.properties?.[propertyName] ??
-      globalSchema.types[baseType]?.properties?.[propertyName + '[x]'];
+    elementDefinition = getElementDefinition(baseType, propertyName);
     if (!elementDefinition) {
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
@@ -92,8 +86,8 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
     }
 
     if (i < expression.length - 1) {
-      if (propertyType === 'Element' || propertyType === 'BackboneElement') {
-        baseType = baseType + capitalize(propertyName);
+      if (isBackboneElement(propertyType)) {
+        baseType = buildTypeName(elementDefinition.path?.split('.') as string[]);
       } else {
         baseType = propertyType;
       }
@@ -104,6 +98,10 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
   const result = { columnName, type, elementDefinition, array };
   setSearchParamterDetails(resourceType, code, result);
   return result;
+}
+
+function isBackboneElement(propertyType: string): boolean {
+  return propertyType === 'Element' || propertyType === 'BackboneElement';
 }
 
 /**

@@ -2,14 +2,14 @@ import {
   allOk,
   badRequest,
   getStatus,
+  indexStructureDefinition,
   isOk,
   LoginState,
   MedplumClient,
-  notFound,
-  parseSearchDefinition,
   ProfileResource,
 } from '@medplum/core';
-import { Binary, Bundle, BundleEntry, OperationOutcome, Resource, UserConfiguration } from '@medplum/fhirtypes';
+import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
+import { Binary, Resource, SearchParameter, StructureDefinition, UserConfiguration } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -26,7 +26,6 @@ import {
   ExampleQuestionnaireResponse,
   ExampleSubscription,
   exampleValueSet,
-  GraphQLSchemaResponse,
   HomerCommunication,
   HomerDiagnosticReport,
   HomerEncounter,
@@ -46,7 +45,9 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import SearchParameterList from './mocks/searchparameters.json';
 import { ExampleSmartClientApplication } from './mocks/smart';
+import StructureDefinitionList from './mocks/structuredefinitions.json';
 import {
   ExampleWorkflowPlanDefinition,
   ExampleWorkflowQuestionnaire1,
@@ -59,18 +60,21 @@ import {
   ExampleWorkflowTask3,
 } from './mocks/workflow';
 
-import { MemoryRepository } from './repo';
-
 export interface MockClientOptions {
   readonly debug?: boolean;
 }
 
 export class MockClient extends MedplumClient {
+  readonly router: FhirRouter;
+  readonly repo: MemoryRepository;
+  readonly client: MockFetchClient;
   readonly debug: boolean;
   activeLoginOverride?: LoginState;
 
   constructor(clientOptions?: MockClientOptions) {
-    const mockFetchClient = new MockFetchClient(clientOptions?.debug);
+    const router = new FhirRouter();
+    const repo = new MemoryRepository();
+    const client = new MockFetchClient(router, repo, clientOptions?.debug);
 
     super({
       baseUrl: 'https://example.com/',
@@ -79,11 +83,15 @@ export class MockClient extends MedplumClient {
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary | undefined
-      ) => mockFetchClient.mockCreatePdf(docDefinition, tableLayouts, fonts),
+      ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
       fetch: (url: string, options: any) => {
-        return mockFetchClient.mockFetch(url, options);
+        return client.mockFetch(url, options);
       },
     });
+
+    this.router = router;
+    this.repo = repo;
+    this.client = client;
     this.debug = !!clientOptions?.debug;
   }
 
@@ -155,14 +163,25 @@ export class MockClient extends MedplumClient {
 }
 
 class MockFetchClient {
-  readonly mockRepo: MemoryRepository;
+  readonly router: FhirRouter;
+  readonly repo: MemoryRepository;
+  initialized = false;
+  initPromise?: Promise<void>;
 
-  constructor(readonly debug = false) {
-    this.mockRepo = new MemoryRepository();
-    this.initMockRepo();
+  constructor(router: FhirRouter, repo: MemoryRepository, readonly debug = false) {
+    this.router = router;
+    this.repo = new MemoryRepository();
   }
 
   async mockFetch(url: string, options: any): Promise<any> {
+    if (!this.initialized) {
+      if (!this.initPromise) {
+        this.initPromise = this.initMockRepo();
+      }
+      await this.initPromise;
+      this.initialized = true;
+    }
+
     const method = options.method || 'GET';
     const path = url.replace('https://example.com/', '');
 
@@ -206,7 +225,7 @@ class MockFetchClient {
     return Promise.resolve({});
   }
 
-  private async mockHandler(method: string, path: string, options: any): Promise<any> {
+  private async mockHandler(method: HttpMethod, path: string, options: any): Promise<any> {
     if (path.startsWith('admin/')) {
       return this.mockAdminHandler(method, path);
     } else if (path.startsWith('auth/')) {
@@ -237,7 +256,7 @@ class MockFetchClient {
     };
   }
 
-  private mockAuthHandler(method: string, path: string, options: any): any {
+  private mockAuthHandler(method: HttpMethod, path: string, options: any): any {
     if (path.startsWith('auth/method')) {
       return {};
     }
@@ -422,167 +441,99 @@ class MockFetchClient {
     return null;
   }
 
-  private initMockRepo(): void {
-    this.mockRepo.createResource(HomerSimpsonPreviousVersion);
-    this.mockRepo.createResource(HomerSimpson);
-    this.mockRepo.createResource(ExampleAccessPolicy);
-    this.mockRepo.createResource(ExampleStatusValueSet);
-    this.mockRepo.createResource(ExampleUserConfiguration);
-    this.mockRepo.createResource(ExampleBot);
-    this.mockRepo.createResource(ExampleClient);
-    this.mockRepo.createResource(HomerDiagnosticReport);
-    this.mockRepo.createResource(HomerEncounter);
-    this.mockRepo.createResource(HomerCommunication);
-    this.mockRepo.createResource(HomerMedia);
-    this.mockRepo.createResource(HomerObservation1);
-    this.mockRepo.createResource(HomerObservation2);
-    this.mockRepo.createResource(HomerObservation3);
-    this.mockRepo.createResource(HomerObservation4);
-    this.mockRepo.createResource(HomerObservation5);
-    this.mockRepo.createResource(HomerObservation6);
-    this.mockRepo.createResource(HomerObservation7);
-    this.mockRepo.createResource(HomerObservation8);
-    this.mockRepo.createResource(HomerSimpsonSpecimen);
-    this.mockRepo.createResource(TestOrganization);
-    this.mockRepo.createResource(DifferentOrganization);
-    this.mockRepo.createResource(ExampleQuestionnaire);
-    this.mockRepo.createResource(ExampleQuestionnaireResponse);
-    this.mockRepo.createResource(HomerServiceRequest);
-    this.mockRepo.createResource(ExampleSubscription);
-    this.mockRepo.createResource(BartSimpson);
-    this.mockRepo.createResource(DrAliceSmithPreviousVersion);
-    this.mockRepo.createResource(DrAliceSmith);
-    this.mockRepo.createResource(DrAliceSmithSchedule);
-    this.mockRepo.createResource(ExampleWorkflowQuestionnaire1);
-    this.mockRepo.createResource(ExampleWorkflowQuestionnaire2);
-    this.mockRepo.createResource(ExampleWorkflowQuestionnaire3);
-    this.mockRepo.createResource(ExampleWorkflowPlanDefinition);
-    this.mockRepo.createResource(ExampleWorkflowQuestionnaireResponse1);
-    this.mockRepo.createResource(ExampleWorkflowTask1);
-    this.mockRepo.createResource(ExampleWorkflowTask2);
-    this.mockRepo.createResource(ExampleWorkflowTask3);
-    this.mockRepo.createResource(ExampleWorkflowRequestGroup);
-    this.mockRepo.createResource(ExampleSmartClientApplication);
+  private async initMockRepo(): Promise<void> {
+    const defaultResources = [
+      HomerSimpsonPreviousVersion,
+      HomerSimpson,
+      ExampleAccessPolicy,
+      ExampleStatusValueSet,
+      ExampleUserConfiguration,
+      ExampleBot,
+      ExampleClient,
+      HomerDiagnosticReport,
+      HomerEncounter,
+      HomerCommunication,
+      HomerMedia,
+      HomerObservation1,
+      HomerObservation2,
+      HomerObservation3,
+      HomerObservation4,
+      HomerObservation5,
+      HomerObservation6,
+      HomerObservation7,
+      HomerObservation8,
+      HomerSimpsonSpecimen,
+      TestOrganization,
+      DifferentOrganization,
+      ExampleQuestionnaire,
+      ExampleQuestionnaireResponse,
+      HomerServiceRequest,
+      ExampleSubscription,
+      BartSimpson,
+      DrAliceSmithPreviousVersion,
+      DrAliceSmith,
+      DrAliceSmithSchedule,
+      ExampleWorkflowQuestionnaire1,
+      ExampleWorkflowQuestionnaire2,
+      ExampleWorkflowQuestionnaire3,
+      ExampleWorkflowPlanDefinition,
+      ExampleWorkflowQuestionnaireResponse1,
+      ExampleWorkflowTask1,
+      ExampleWorkflowTask2,
+      ExampleWorkflowTask3,
+      ExampleWorkflowRequestGroup,
+      ExampleSmartClientApplication,
+    ];
 
-    DrAliceSmithSlots.forEach((slot) => this.mockRepo.createResource(slot));
+    for (const resource of defaultResources) {
+      await this.repo.createResource(resource);
+    }
+
+    for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
+      indexStructureDefinition(structureDefinition);
+      await this.repo.createResource(structureDefinition);
+    }
+
+    for (const searchParameter of SearchParameterList) {
+      await this.repo.createResource(searchParameter as SearchParameter);
+    }
+
+    DrAliceSmithSlots.forEach((slot) => this.repo.createResource(slot));
   }
 
-  private async mockFhirHandler(method: string, url: string, options: any): Promise<Resource> {
-    const path = url.includes('?') ? url.substring(0, url.indexOf('?')) : url;
-    const match = /fhir\/R4\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?\/?([^/]+)?/.exec(path);
-    const resourceType = match?.[1];
-    const id = match?.[2];
-    const operation = match?.[3];
-    const versionId = match?.[4];
-    if (path.startsWith('fhir/R4/ValueSet/$expand')) {
+  private async mockFhirHandler(method: HttpMethod, url: string, options: any): Promise<Resource> {
+    if (url.startsWith('fhir/R4/ValueSet/$expand')) {
       return exampleValueSet;
-    } else if (path === 'fhir/R4/$graphql') {
-      return this.mockFhirGraphqlHandler(method, path, options);
-    } else if (path === 'not-found' || id === 'not-found') {
-      return notFound;
-    } else if (method === 'POST') {
-      if (resourceType && id && operation) {
-        return allOk;
-      } else if (resourceType) {
-        return this.mockRepo.createResource(JSON.parse(options.body));
-      } else {
-        return this.mockFhirBatchHandler(method, path, options);
-      }
-    } else if (method === 'GET') {
-      if (resourceType && id && versionId) {
-        return this.mockRepo.readVersion(resourceType, id, versionId);
-      } else if (resourceType && id && operation === '_history') {
-        return this.mockRepo.readHistory(resourceType, id);
-      } else if (resourceType && id === '$csv') {
-        return allOk;
-      } else if (resourceType && id) {
-        return this.mockRepo.readResource(resourceType, id);
-      } else if (resourceType) {
-        return this.mockRepo.search(parseSearchDefinition(url));
-      }
-    } else if (method === 'PUT') {
-      return this.mockRepo.updateResource(JSON.parse(options.body));
-    } else if (method === 'PATCH') {
-      if (resourceType && id) {
-        return this.mockRepo.patchResource(resourceType, id, JSON.parse(options.body));
-      }
-    } else if (method === 'DELETE') {
-      if (resourceType && id) {
-        this.mockRepo.deleteResource(resourceType, id);
-        return allOk;
-      }
-    }
-    throw notFound;
-  }
-
-  private mockFhirGraphqlHandler(_method: string, _path: string, options: any): any {
-    const { body } = options;
-    if (body.includes('ResourceList: ServiceRequestList')) {
-      return {
-        data: {
-          ResourceList: [
-            {
-              ...HomerServiceRequest,
-              ObservationList: [
-                HomerObservation1,
-                HomerObservation2,
-                HomerObservation3,
-                HomerObservation4,
-                HomerObservation5,
-                HomerObservation6,
-              ],
-            },
-          ],
-        },
-      };
-    }
-    return GraphQLSchemaResponse;
-  }
-
-  private async mockFhirBatchHandler(_method: string, _path: string, options: any): Promise<Bundle> {
-    const { body } = options;
-    const request = JSON.parse(body) as Bundle;
-    let entry: BundleEntry[] | undefined;
-
-    if (request.entry) {
-      entry = [];
-      for (const input of request.entry) {
-        entry.push(await this.handleBatchEntry(input));
-      }
     }
 
-    return {
-      resourceType: 'Bundle',
-      type: 'batch-response',
-      entry,
+    const parsedUrl = new URL(url, 'https://example.com');
+
+    let pathname = parsedUrl.pathname;
+    if (pathname.includes('fhir/R4')) {
+      pathname = pathname.substring(pathname.indexOf('fhir/R4') + 7);
+    }
+
+    let body = undefined;
+    if (options.body) {
+      body = JSON.parse(options.body);
+    }
+
+    const request: FhirRequest = {
+      method,
+      pathname,
+      body,
+      params: Object.create(null),
+      query: Object.fromEntries(parsedUrl.searchParams),
     };
-  }
 
-  private async handleBatchEntry(input: BundleEntry): Promise<BundleEntry> {
-    try {
-      const url = 'fhir/R4/' + input.request?.url;
-      const method = input.request?.method as string;
-      const resource = await this.mockHandler(method, url, {
-        body: input.resource ? JSON.stringify(input.resource) : undefined,
-      });
-      if (resource?.resourceType === 'OperationOutcome') {
-        return {
-          resource,
-          response: { status: getStatus(resource).toString() },
-        };
-      } else if (resource) {
-        return { resource, response: { status: '200' } };
-      } else {
-        return { resource: notFound, response: { status: '404' } };
+    const result = await this.router.handleRequest(request, this.repo);
+    if (result.length === 1) {
+      if (!isOk(result[0])) {
+        throw result[0];
       }
-    } catch (err) {
-      const outcome = err as OperationOutcome;
-      return {
-        response: {
-          status: getStatus(outcome).toString(),
-          outcome,
-        },
-      };
+      return result[0];
+    } else {
+      return result[1];
     }
   }
 }

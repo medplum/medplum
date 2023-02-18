@@ -1,8 +1,8 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
 import { matchesSearchRequest } from './match';
 import { Operator, parseSearchDefinition, SearchRequest } from './search';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
 
 // Dimensions:
 // 1. Search parameter type
@@ -511,5 +511,31 @@ describe('Search matching', () => {
     expect(matchesSearchRequest(resource2, search1)).toBe(false);
     expect(matchesSearchRequest(resource2, search2)).toBe(true);
     expect(matchesSearchRequest(resource2, search3)).toBe(false);
+  });
+
+  test('Identifier', () => {
+    const identifier = '1234567890';
+
+    const resource: Patient = {
+      resourceType: 'Patient',
+      identifier: [
+        {
+          system: 'test',
+          value: identifier,
+        },
+      ],
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(true);
+
+    const search2: SearchRequest = {
+      resourceType: 'Patient',
+      filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'foo' }],
+    };
+    expect(matchesSearchRequest(resource, search2)).toBe(false);
   });
 });

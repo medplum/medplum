@@ -1,4 +1,4 @@
-import { badRequest, evalFhirPath, formatAddress, formatHumanName } from '@medplum/core';
+import { badRequest, evalFhirPath, formatAddress, formatHumanName, parseSearchRequest } from '@medplum/core';
 import {
   Address,
   BundleEntry,
@@ -12,7 +12,6 @@ import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { isResourceType } from '../schema';
-import { parseSearchRequest } from '../search';
 import { getSearchParameter } from '../structure';
 
 /**

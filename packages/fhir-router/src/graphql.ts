@@ -1,16 +1,30 @@
 import {
+  allOk,
   badRequest,
+  buildTypeName,
+  capitalize,
   Filter,
   forbidden,
+  getElementDefinition,
   getReferenceString,
+  getResourceTypes,
+  getResourceTypeSchema,
+  getSearchParameters,
+  isResourceType,
   LRUCache,
   normalizeErrorString,
   Operator,
+  parseSearchRequest,
   SearchRequest,
 } from '@medplum/core';
-import { OperationOutcome, Project, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { Request, Response } from 'express';
+import {
+  ElementDefinition,
+  ElementDefinitionType,
+  OperationOutcome,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import {
   ASTNode,
   ASTVisitor,
@@ -40,14 +54,8 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { JSONSchema4 } from 'json-schema';
-import { asyncWrap } from '../../async';
-import { getJsonSchemaDefinition, getJsonSchemaResourceTypes } from '../jsonschema';
-import { Repository } from '../repo';
-import { rewriteAttachments, RewriteMode } from '../rewrite';
-import { parseSearchRequest } from '../search';
-import { getSearchParameters } from '../structure';
-import { sendOutcome } from './../outcomes';
+import { FhirRequest, FhirResponse } from './fhirrouter';
+import { FhirRepository } from './repo';
 
 const typeCache: Record<string, GraphQLOutputType | undefined> = {
   base64Binary: GraphQLString,
@@ -69,6 +77,13 @@ const typeCache: Record<string, GraphQLOutputType | undefined> = {
   uri: GraphQLString,
   url: GraphQLString,
   xhtml: GraphQLString,
+  'http://hl7.org/fhirpath/System.Boolean': GraphQLBoolean,
+  'http://hl7.org/fhirpath/System.Date': GraphQLString,
+  'http://hl7.org/fhirpath/System.DateTime': GraphQLString,
+  'http://hl7.org/fhirpath/System.Decimal': GraphQLFloat,
+  'http://hl7.org/fhirpath/System.Integer': GraphQLFloat,
+  'http://hl7.org/fhirpath/System.String': GraphQLString,
+  'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
 
 /**
@@ -89,57 +104,44 @@ let rootSchema: GraphQLSchema | undefined;
  *
  * See: https://www.hl7.org/fhir/graphql.html
  */
-export const graphqlHandler = asyncWrap(async (req: Request, res: Response) => {
+export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
-    sendOutcome(res, badRequest('Must provide query.'));
-    return;
+    return [badRequest('Must provide query.')];
   }
 
   let document: DocumentNode;
   try {
     document = parse(query);
   } catch (err) {
-    sendOutcome(res, badRequest('GraphQL syntax error.'));
-    return;
+    return [badRequest('GraphQL syntax error.')];
   }
 
   const schema = getRootSchema();
   const validationRules = [...specifiedRules, MaxDepthRule];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
-    sendOutcome(res, invalidRequest(validationErrors));
-    return;
+    return [invalidRequest(validationErrors)];
   }
 
   const introspection = isIntrospectionQuery(query);
-  if (introspection && !(res.locals.project as Project).features?.includes('graphql-introspection')) {
-    sendOutcome(res, forbidden);
-    return;
+  if (introspection) {
+    return [forbidden];
   }
 
-  let result = introspection && introspectionResults.get(query);
+  let result: any = introspection && introspectionResults.get(query);
   if (!result) {
     result = await execute({
       schema,
       document,
-      contextValue: { res },
+      contextValue: { repo },
       operationName,
       variableValues: variables,
     });
   }
 
-  if (introspection) {
-    introspectionResults.set(query, result);
-    res.set('Cache-Control', 'public, max-age=31536000');
-  } else {
-    const repo = res.locals.repo as Repository;
-    result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, result);
-  }
-
-  const status = result.data ? 200 : 400;
-  res.status(status).json(result);
-});
+  return [allOk, result];
+}
 
 /**
  * Returns true if the query is a GraphQL introspection query.
@@ -165,16 +167,13 @@ export function getRootSchema(): GraphQLSchema {
 function buildRootSchema(): GraphQLSchema {
   // First, create placeholder types
   // We need this first for circular dependencies
-  for (const resourceType of getJsonSchemaResourceTypes()) {
-    const graphQLType = buildGraphQLType(resourceType);
-    if (graphQLType) {
-      typeCache[resourceType] = graphQLType;
-    }
+  for (const resourceType of getResourceTypes()) {
+    typeCache[resourceType] = buildGraphQLType(resourceType);
   }
 
   // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, any> = {};
-  for (const resourceType of getJsonSchemaResourceTypes()) {
+  for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
 
     // Get resource by ID
@@ -209,9 +208,7 @@ function getGraphQLType(resourceType: string): GraphQLOutputType {
   let result = typeCache[resourceType];
   if (!result) {
     result = buildGraphQLType(resourceType);
-    if (result) {
-      typeCache[resourceType] = result;
-    }
+    typeCache[resourceType] = result;
   }
 
   return result;
@@ -222,14 +219,14 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType {
     return new GraphQLUnionType({
       name: 'ResourceList',
       types: () =>
-        getJsonSchemaResourceTypes()
+        getResourceTypes()
           .map(getGraphQLType)
           .filter((t) => !!t) as GraphQLObjectType[],
       resolveType: resolveTypeByReference,
     });
   }
 
-  const schema = getJsonSchemaDefinition(resourceType);
+  const schema = getResourceTypeSchema(resourceType);
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
@@ -245,21 +242,40 @@ function buildGraphQLFields(resourceType: ResourceType): GraphQLFieldConfigMap<a
 }
 
 function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  const schema = getJsonSchemaDefinition(resourceType);
-  const properties = schema.properties as { [k: string]: JSONSchema4 };
+  const schema = getResourceTypeSchema(resourceType);
+  const properties = schema.properties;
 
-  for (const [propertyName, property] of Object.entries(properties)) {
-    const propertyType = getPropertyType(resourceType, property);
-    const fieldConfig: GraphQLFieldConfig<any, any> = {
-      type: propertyType,
-      description: property.description,
+  if (isResourceType(schema)) {
+    fields.resourceType = {
+      type: new GraphQLNonNull(GraphQLString),
+      description: 'Resource Type',
     };
+  }
 
-    if (resourceType === 'Reference' && propertyName === 'resource') {
-      fieldConfig.resolve = resolveByReference;
+  if (resourceType === 'Reference') {
+    fields.resource = {
+      description: 'Reference',
+      type: getGraphQLType('ResourceList'),
+      resolve: resolveByReference,
+    };
+  }
+
+  for (const key of Object.keys(properties)) {
+    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+    for (const type of elementDefinition.type as ElementDefinitionType[]) {
+      let typeName = type.code as string;
+      if (typeName === 'Element' || typeName === 'BackboneElement') {
+        typeName = buildTypeName(elementDefinition.path?.split('.') as string[]);
+      }
+
+      const fieldConfig: GraphQLFieldConfig<any, any> = {
+        description: elementDefinition.short,
+        type: getPropertyType(elementDefinition, typeName),
+      };
+
+      const propertyName = key.replace('[x]', capitalize(type.code as string));
+      fields[propertyName] = fieldConfig;
     }
-
-    fields[propertyName] = fieldConfig;
   }
 }
 
@@ -292,7 +308,7 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
  * @param fields The fields object to add fields to.
  */
 function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
-  for (const childResourceType of getJsonSchemaResourceTypes()) {
+  for (const childResourceType of getResourceTypes()) {
     const childGraphQLType = getGraphQLType(childResourceType);
     const childSearchParams = getSearchParameters(childResourceType);
     const enumValues: GraphQLEnumValueConfigMap = {};
@@ -362,28 +378,12 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
-function getPropertyType(parentType: string, property: JSONSchema4): GraphQLOutputType {
-  const refStr = getRefString(property);
-  if (refStr) {
-    return getGraphQLType(refStr);
+function getPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
+  const graphqlType = getGraphQLType(typeName);
+  if (elementDefinition.max === '*') {
+    return new GraphQLList(graphqlType);
   }
-
-  const typeStr = property.type;
-  if (typeStr) {
-    if (typeStr === 'array') {
-      return new GraphQLList(getPropertyType(parentType, property.items as JSONSchema4));
-    }
-    return getGraphQLType(typeStr as string);
-  }
-
-  return GraphQLString;
-}
-
-function getRefString(property: any): string | undefined {
-  if (!('$ref' in property)) {
-    return undefined;
-  }
-  return property.$ref.replace('#/definitions/', '');
+  return graphqlType;
 }
 
 /**
@@ -405,7 +405,7 @@ async function resolveBySearch(
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
-  const repo = ctx.res.locals.repo as Repository;
+  const repo = ctx.repo as FhirRepository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
   const bundle = await repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
@@ -423,7 +423,7 @@ async function resolveBySearch(
  * @implements {GraphQLFieldResolver}
  */
 async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
-  const repo = ctx.res.locals.repo as Repository;
+  const repo = ctx.repo as FhirRepository;
   try {
     return await repo.readResource(info.fieldName, args.id);
   } catch (err) {
@@ -441,7 +441,7 @@ async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResol
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
-  const repo = ctx.res.locals.repo as Repository;
+  const repo = ctx.repo as FhirRepository;
   try {
     return await repo.readReference(source as Reference);
   } catch (err) {
@@ -551,7 +551,6 @@ function getDepth(path: ReadonlyArray<string | number>): number {
 function invalidRequest(errors: ReadonlyArray<GraphQLError>): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
-    id: randomUUID(),
     issue: errors.map((error) => ({
       severity: 'error',
       code: 'invalid',

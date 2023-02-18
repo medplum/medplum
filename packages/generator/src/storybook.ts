@@ -46,6 +46,9 @@ const properties = [
   'action',
   'base',
   'expression',
+  'component',
+  'referenceRange',
+  'contentReference',
 ];
 
 const searchParams = [

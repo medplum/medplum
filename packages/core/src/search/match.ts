@@ -1,8 +1,8 @@
 import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { evalFhirPath } from './fhirpath';
+import { evalFhirPath } from '../fhirpath';
+import { globalSchema } from '../types';
+import { getSearchParameterDetails, SearchParameterType } from './details';
 import { Filter, Operator, SearchRequest } from './search';
-import { getSearchParameterDetails, SearchParameterType } from './searchparams';
-import { globalSchema } from './types';
 
 /**
  * Determines if the resource matches the search request.

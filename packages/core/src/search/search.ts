@@ -243,9 +243,6 @@ function formatFilter(filter: Filter): string {
   return `${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`;
 }
 
-function formatSortRules(sortRules: SortRule[] | undefined): string {
-  if (!sortRules || sortRules.length === 0) {
-    return '';
-  }
+function formatSortRules(sortRules: SortRule[]): string {
   return '_sort=' + sortRules.map((sr) => (sr.descending ? '-' + sr.code : sr.code)).join(',');
 }

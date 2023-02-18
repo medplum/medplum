@@ -49,6 +49,13 @@ describe('Search Utils', () => {
     expect(result.total).toBe('accurate');
   });
 
+  test('Parse Patient count and offset', () => {
+    const result = parseSearchDefinition('Patient?_count=10&_offset=20');
+    expect(result.resourceType).toBe('Patient');
+    expect(result.offset).toBe(20);
+    expect(result.count).toBe(10);
+  });
+
   test('Parse modifier operator', () => {
     const result = parseSearchDefinition('Patient?name:contains=alice');
     expect(result).toMatchObject({
@@ -107,6 +114,11 @@ describe('Search Utils', () => {
       total: 'accurate',
     });
     expect(result).toEqual('?_count=5&_fields=id,name&_offset=10&_total=accurate&name=alice');
+  });
+
+  test('Format empty search', () => {
+    const result = formatSearchQuery({ resourceType: 'Patient' });
+    expect(result).toEqual('');
   });
 
   test('Format Patient search sort', () => {

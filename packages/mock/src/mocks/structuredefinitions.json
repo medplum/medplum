@@ -4973,7 +4973,8 @@
             "path": "Observation.component.referenceRange",
             "min": 0,
             "max": "*"
-          }
+          },
+          "contentReference": "#Observation.referenceRange"
         }
       ]
     }
@@ -8586,7 +8587,8 @@
             "path": "PlanDefinition.action.action",
             "min": 0,
             "max": "*"
-          }
+          },
+          "contentReference": "#PlanDefinition.action"
         }
       ]
     }
@@ -10140,7 +10142,8 @@
             "path": "Questionnaire.item.item",
             "min": 0,
             "max": "*"
-          }
+          },
+          "contentReference": "#Questionnaire.item"
         }
       ]
     }
@@ -10719,7 +10722,8 @@
             "path": "QuestionnaireResponse.item.answer.item",
             "min": 0,
             "max": "*"
-          }
+          },
+          "contentReference": "#QuestionnaireResponse.item"
         },
         {
           "id": "QuestionnaireResponse.item.item",
@@ -10730,7 +10734,8 @@
             "path": "QuestionnaireResponse.item.item",
             "min": 0,
             "max": "*"
-          }
+          },
+          "contentReference": "#QuestionnaireResponse.item"
         }
       ]
     }
@@ -14962,6 +14967,11 @@
           "path": "Project.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "string"
@@ -14973,6 +14983,11 @@
           "path": "Project.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -14984,6 +14999,11 @@
           "path": "Project.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -14995,6 +15015,11 @@
           "path": "Project.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"
@@ -15037,6 +15062,17 @@
         {
           "id": "Project.strictMode",
           "path": "Project.strictMode",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
+          "id": "Project.checkReferencesOnWrite",
+          "path": "Project.checkReferencesOnWrite",
           "min": 0,
           "max": "1",
           "type": [
@@ -15224,6 +15260,11 @@
           "path": "Bot.id",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.id",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "string"
@@ -15235,6 +15276,11 @@
           "path": "Bot.meta",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.meta",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "Meta"
@@ -15246,6 +15292,11 @@
           "path": "Bot.implicitRules",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.implicitRules",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "uri"
@@ -15257,6 +15308,11 @@
           "path": "Bot.language",
           "min": 0,
           "max": "1",
+          "base": {
+            "path": "Resource.language",
+            "min": 0,
+            "max": "1"
+          },
           "type": [
             {
               "code": "code"

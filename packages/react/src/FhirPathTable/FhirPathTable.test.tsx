@@ -1,10 +1,12 @@
-import { PropertyType } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, PropertyType } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { FhirPathTable, FhirPathTableProps, FhirPathTableField } from './FhirPathTable';
+import { FhirPathTable, FhirPathTableField, FhirPathTableProps } from './FhirPathTable';
 
 const query = `{
   ResourceList: ServiceRequestList {
@@ -90,6 +92,12 @@ const fields: FhirPathTableField[] = [
 ];
 
 describe('FhirPathTable', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  });
+
   async function setup(args: FhirPathTableProps): Promise<void> {
     await act(async () => {
       render(

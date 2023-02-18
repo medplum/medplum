@@ -28,6 +28,7 @@
     "@aws-sdk/lib-storage": "3.267.0",
     "@medplum/core": "*",
     "@medplum/definitions": "*",
+    "@medplum/fhir-router": "*",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.1",
     "bullmq": "3.6.5",

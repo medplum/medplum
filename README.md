@@ -78,6 +78,7 @@ medplum/
 │   ├── definitions  # Data definitions
 │   ├── docs         # Documentation
 │   ├── examples     # Example code used in documentation
+│   ├── fhir-router  # FHIR URL router
 │   ├── fhirtypes    # FHIR TypeScript definitions
 │   ├── generator    # Code generator utilities
 │   ├── graphiql     # Preconfigured GraphiQL
@@ -96,7 +97,7 @@ See developer setup documentation: https://www.medplum.com/docs/contributing
 
 ![Medplum is hiring](packages/docs/static/img/hiring.webp)
 
-Medplum is hiring!  Learn more on our [careers page](https://www.medplum.com/careers).
+Medplum is hiring! Learn more on our [careers page](https://www.medplum.com/careers).
 
 ## License
 

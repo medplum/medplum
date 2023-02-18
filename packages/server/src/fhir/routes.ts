@@ -1,17 +1,15 @@
-import { allOk, badRequest, created, getStatus } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import { allOk, getStatus, isOk } from '@medplum/core';
+import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
-import { Operation } from 'rfc6902';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth/middleware';
-import { processBatch } from './batch';
 import { bulkDataRouter } from './bulkdata';
 import { getCapabilityStatement } from './metadata';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
-import { graphqlHandler } from './operations/graphql';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
@@ -20,7 +18,6 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { validateResource } from './schema';
-import { parseSearchRequest } from './search';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -90,9 +87,6 @@ protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler))
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
 
-// GraphQL
-protectedRoutes.post('/([$]|%24)graphql', graphqlHandler);
-
 // PlanDefinition $apply operation
 protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
 
@@ -101,157 +95,6 @@ protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraph
 
 // Patient $everything operation
 protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEverythingHandler));
-
-// Execute batch
-protectedRoutes.post(
-  '/',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!isFhirJsonContentType(req)) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
-    const bundle = req.body;
-    if (bundle.resourceType !== 'Bundle') {
-      sendOutcome(res, badRequest('Not a bundle'));
-      return;
-    }
-    const repo = res.locals.repo as Repository;
-    const result = await processBatch(repo, bundle);
-    await sendResponse(res, allOk, result);
-  })
-);
-
-// Search
-protectedRoutes.get(
-  '/:resourceType',
-  asyncWrap(async (req: Request, res: Response) => {
-    const { resourceType } = req.params;
-    const repo = res.locals.repo as Repository;
-    const query = req.query as Record<string, string[] | string | undefined>;
-    const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
-    await sendResponse(res, allOk, bundle);
-  })
-);
-
-// Search by POST
-protectedRoutes.post(
-  '/:resourceType/_search',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!req.is('application/x-www-form-urlencoded')) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
-    const { resourceType } = req.params;
-    const repo = res.locals.repo as Repository;
-    const query = req.body as Record<string, string[] | string | undefined>;
-    const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
-    await sendResponse(res, allOk, bundle);
-  })
-);
-
-// Create resource
-protectedRoutes.post(
-  '/:resourceType',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!isFhirJsonContentType(req)) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
-    const { resourceType } = req.params;
-    const resource = req.body;
-    if (resource.resourceType !== resourceType) {
-      sendOutcome(res, badRequest('Incorrect resource type'));
-      return;
-    }
-    const repo = res.locals.repo as Repository;
-    const result = await repo.createResource(resource);
-    await sendResponse(res, created, result);
-  })
-);
-
-// Read resource by ID
-protectedRoutes.get(
-  '/:resourceType/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    const { resourceType, id } = req.params;
-    const repo = res.locals.repo as Repository;
-    const resource = await repo.readResource(resourceType, id);
-    await sendResponse(res, allOk, resource);
-  })
-);
-
-// Read resource history
-protectedRoutes.get(
-  '/:resourceType/:id/_history',
-  asyncWrap(async (req: Request, res: Response) => {
-    const { resourceType, id } = req.params;
-    const repo = res.locals.repo as Repository;
-    const bundle = await repo.readHistory(resourceType, id);
-    await sendResponse(res, allOk, bundle);
-  })
-);
-
-// Read resource version by version ID
-protectedRoutes.get(
-  '/:resourceType/:id/_history/:vid',
-  asyncWrap(async (req: Request, res: Response) => {
-    const { resourceType, id, vid } = req.params;
-    const repo = res.locals.repo as Repository;
-    const resource = await repo.readVersion(resourceType, id, vid);
-    await sendResponse(res, allOk, resource);
-  })
-);
-
-// Update resource
-protectedRoutes.put(
-  '/:resourceType/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!isFhirJsonContentType(req)) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
-    const { resourceType, id } = req.params;
-    const resource = req.body;
-    if (resource.resourceType !== resourceType) {
-      sendOutcome(res, badRequest('Incorrect resource type'));
-      return;
-    }
-    if (resource.id !== id) {
-      sendOutcome(res, badRequest('Incorrect ID'));
-      return;
-    }
-    const repo = res.locals.repo as Repository;
-    const result = await repo.updateResource(resource);
-    await sendResponse(res, allOk, result);
-  })
-);
-
-// Delete resource
-protectedRoutes.delete(
-  '/:resourceType/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    const { resourceType, id } = req.params;
-    const repo = res.locals.repo as Repository;
-    await repo.deleteResource(resourceType, id);
-    sendOutcome(res, allOk);
-  })
-);
-
-// Patch resource
-protectedRoutes.patch(
-  '/:resourceType/:id',
-  asyncWrap(async (req: Request, res: Response) => {
-    if (!req.is('application/json-patch+json')) {
-      res.status(400).send('Unsupported content type');
-      return;
-    }
-    const { resourceType, id } = req.params;
-    const patch = req.body as Operation[];
-    const repo = res.locals.repo as Repository;
-    const resource = await repo.patchResource(resourceType, id, patch);
-    await sendResponse(res, allOk, resource);
-  })
-);
 
 // Validate create resource
 protectedRoutes.post(
@@ -285,6 +128,33 @@ protectedRoutes.post(
     const repo = res.locals.repo as Repository;
     await repo.resendSubscriptions(resourceType, id);
     sendOutcome(res, allOk);
+  })
+);
+
+// Default route
+protectedRoutes.use(
+  '*',
+  asyncWrap(async (req: Request, res: Response) => {
+    const router = new FhirRouter();
+    const repo = res.locals.repo as Repository;
+
+    const request: FhirRequest = {
+      method: req.method as HttpMethod,
+      pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
+      params: req.params,
+      query: req.query as Record<string, string>,
+      body: req.body,
+    };
+
+    const result = await router.handleRequest(request, repo);
+    if (result.length === 1) {
+      if (!isOk(result[0])) {
+        throw result[0];
+      }
+      sendOutcome(res, result[0]);
+    } else {
+      await sendResponse(res, result[0], result[1]);
+    }
   })
 );
 

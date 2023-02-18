@@ -1,3 +1,4 @@
+import { allOk } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -129,11 +130,14 @@ describe('HomePage', () => {
   });
 
   test('Export button', async () => {
-    // window.confirm = jest.fn(() => false);
     window.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     window.open = jest.fn();
 
-    await setup();
+    // Mock the export operation
+    const medplum = new MockClient();
+    medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
+
+    await setup('/Patient', medplum);
     await waitFor(() => screen.getByText('Export...'));
 
     await act(async () => {

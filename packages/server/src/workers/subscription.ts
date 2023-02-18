@@ -1,4 +1,12 @@
-import { createReference, getExtensionValue, isGone, matchesSearchRequest, Operator, stringify } from '@medplum/core';
+import {
+  createReference,
+  getExtensionValue,
+  isGone,
+  matchesSearchRequest,
+  Operator,
+  parseSearchUrl,
+  stringify,
+} from '@medplum/core';
 import {
   AuditEvent,
   Bot,
@@ -17,7 +25,6 @@ import { URL } from 'url';
 import { MedplumRedisConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
-import { parseSearchUrl } from '../fhir/search';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 

@@ -18,6 +18,7 @@ packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
 packages/examples/dist/
+packages/fhir-router/dist/
 packages/generator/dist/
 packages/generator/output/
 packages/graphiql/dist/

@@ -1,7 +1,7 @@
-import { badRequest, Filter, Operator, SearchRequest, SortRule } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { URL } from 'url';
-import { getSearchParameter } from '../structure';
+import { globalSchema } from '../types';
+import { Filter, Operator, SearchRequest, SortRule } from './search';
 
 /**
  * Parses a FHIR search query.
@@ -62,11 +62,8 @@ export function parseSearchRequest(
  * @returns A parsed SearchRequest.
  */
 export function parseSearchUrl(url: URL): SearchRequest {
-  let resourceType = url.pathname;
-  if (resourceType.includes('/')) {
-    resourceType = resourceType.split('/').pop() as string;
-  }
-  return new SearchParser(resourceType as ResourceType, Object.fromEntries(url.searchParams.entries()));
+  const resourceType = url.pathname.split('/').pop() as ResourceType;
+  return new SearchParser(resourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
 class SearchParser implements SearchRequest {
@@ -106,16 +103,6 @@ class SearchParser implements SearchRequest {
     }
 
     switch (code) {
-      case '_account':
-      case '_compartment':
-      case '_project':
-        this.filters.push({
-          code: code,
-          operator: Operator.EQUALS,
-          value,
-        });
-        break;
-
       case '_sort':
         this.#parseSortRule(value);
         break;
@@ -142,11 +129,12 @@ class SearchParser implements SearchRequest {
         break;
 
       default: {
-        const param = getSearchParameter(this.resourceType, code);
-        if (!param) {
-          throw badRequest('Unknown search parameter: ' + code);
+        const param = globalSchema.types[this.resourceType]?.searchParams?.[code];
+        if (param) {
+          this.#parseParameter(param, modifier, value);
+        } else {
+          this.#parseUnknownParameter(code, modifier, value);
         }
-        this.#parseParameter(param, modifier, value);
       }
     }
   }
@@ -227,6 +215,26 @@ class SearchParser implements SearchRequest {
       value,
       unitSystem,
       unitCode,
+    });
+  }
+
+  #parseUnknownParameter(code: string, modifier: string, value: string): void {
+    let operator = Operator.EQUALS;
+    if (modifier) {
+      operator = modifier as Operator;
+    } else {
+      for (const prefix of Object.keys(prefixMap)) {
+        if (value.match(new RegExp('^' + prefix + '\\d'))) {
+          operator = prefix as Operator;
+          value = value.substring(prefix.length);
+        }
+      }
+    }
+
+    this.filters.push({
+      code,
+      operator,
+      value,
     });
   }
 }
