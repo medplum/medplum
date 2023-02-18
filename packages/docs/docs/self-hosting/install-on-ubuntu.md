@@ -88,7 +88,7 @@ Add the Node.js v18.x Ubuntu repository:
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 ```
 
-Install NodeJS
+Install Node.js
 
 ```bash
 sudo apt-get install nodejs
