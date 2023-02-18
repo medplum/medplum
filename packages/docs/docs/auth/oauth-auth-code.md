@@ -20,7 +20,7 @@ The first step is to configure a [Medplum Client Application](https://app.medplu
 1. Go to the [**Project Admin page**](https://app.medplum.com/admin/project), either by clicking "Project" on the left sidebar, or navigating to https://app.medplum.com/admin/project
 2. Click on the "Secrets" tab
 3. Click "Create New Client" to create your new ClientApplication resource
-4. Set the `Redirect Uri` to the URL to where you would like Medplum to redirect the user after login.
+4. Set the `Redirect URI` to the URL to where you would like Medplum to redirect the user after login.
 5. **(Optional but recommended)** Assign an [Access Policy](./access-control) to your client to restrict the data your application has access to
 
 ![Create Client App](/img/create-client-app.png)

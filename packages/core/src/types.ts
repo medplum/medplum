@@ -329,16 +329,16 @@ export function buildTypeName(components: string[]): string {
   return components.map(capitalize).join('');
 }
 
+/**
+ * Returns a human friendly display name for a FHIR element definition path.
+ * @param path The FHIR element definition path.
+ * @returns The best guess of the display name.
+ */
 export function getPropertyDisplayName(path: string): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
   const propertyName = path.replaceAll('[x]', '').split('.').pop() as string;
-
-  // Special case for ID
-  if (propertyName === 'id') {
-    return 'ID';
-  }
 
   // Split by capital letters
   // Capitalize the first letter of each word
@@ -348,10 +348,20 @@ export function getPropertyDisplayName(path: string): string {
   // the display name is "Birth Date".
   return propertyName
     .split(/(?=[A-Z])/)
-    .map(capitalize)
+    .map(capitalizeDisplayWord)
     .join(' ')
     .replace('_', ' ')
     .replace(/\s+/g, ' ');
+}
+
+const capitalizedWords = new Set(['ID', 'PKCE', 'JWKS', 'URI', 'URL']);
+
+function capitalizeDisplayWord(word: string): string {
+  const upper = word.toUpperCase();
+  if (capitalizedWords.has(upper)) {
+    return upper;
+  }
+  return upper.charAt(0) + word.slice(1);
 }
 
 /**

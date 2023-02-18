@@ -88,6 +88,8 @@ describe('Type Utils', () => {
     expect(getPropertyDisplayName('Patient.name')).toEqual('Name');
     expect(getPropertyDisplayName('Patient.birthDate')).toEqual('Birth Date');
     expect(getPropertyDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
+    expect(getPropertyDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
+    expect(getPropertyDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
   });
 
   test('getElementDefinitionTypeName', () => {

@@ -5,7 +5,7 @@ Medplum is an open source implementation of [SMART App Launch 2.0.0](https://www
 ## Configuring your application
 
 - Create your [Client Application](https://app.medplum.com/admin/clients) in your Medplum project
-- Add the `Jwks Uri`, `Redirect Uri` and `Launch Uri` to the Client Application and save
+- Add the `JWKS URI`, `Redirect URI` and `Launch URI` to the Client Application and save
 
 In the example below, this application is configured to launch Inferno, the testing tool for SMART App Launch.
 
