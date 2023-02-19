@@ -132,7 +132,7 @@ export interface MedplumClientOptions {
    *
    * Default is window.fetch (if available).
    *
-   * For nodejs applications, consider the 'node-fetch' package.
+   * For Node.js applications, consider the 'node-fetch' package.
    */
   fetch?: FetchLike;
 
@@ -154,7 +154,7 @@ export interface MedplumClientOptions {
    * </script>
    * ```
    *
-   * In nodejs applications:
+   * In Node.js applications:
    *
    * ```ts
    * import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -378,7 +378,7 @@ interface AutoBatchEntry<T = any> {
 /**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
- * The client can be used in the browser, in a NodeJS application, or in a Medplum Bot.
+ * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
  *
  * The client provides helpful methods for common operations such as:
  *   1) Authenticating
