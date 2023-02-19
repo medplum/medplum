@@ -27,12 +27,23 @@ export function QuickStatus(props: QuickStatusProps): JSX.Element | null {
     return null;
   }
 
+  const options = [''];
+
+  const valueSetCodes = valueSet.compose?.include?.[0]?.concept?.map((concept) => concept.code);
+  if (valueSetCodes) {
+    options.push(...(valueSetCodes as string[]));
+  }
+
+  if (props.defaultValue && !options.includes(props.defaultValue)) {
+    options.push(props.defaultValue);
+  }
+
   return (
     <div className={classes.container}>
       <NativeSelect
         defaultValue={props.defaultValue}
         onChange={(e) => props.onChange(e.currentTarget.value)}
-        data={valueSet.compose?.include?.[0]?.concept?.map((concept) => concept.code) as string[]}
+        data={options}
       />
     </div>
   );
