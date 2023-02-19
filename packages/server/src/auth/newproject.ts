@@ -1,13 +1,5 @@
 import { badRequest, createReference, ProfileResource } from '@medplum/core';
-import {
-  ClientApplication,
-  Login,
-  Practitioner,
-  Project,
-  ProjectMembership,
-  Reference,
-  User,
-} from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
