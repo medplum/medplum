@@ -25,6 +25,7 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
+import DataLoader from 'dataloader';
 import {
   ASTNode,
   ASTVisitor,
@@ -99,6 +100,11 @@ const introspectionResults = new LRUCache<ExecutionResult>();
  */
 let rootSchema: GraphQLSchema | undefined;
 
+interface GraphQLContext {
+  repo: FhirRepository;
+  dataLoader: DataLoader<Reference, Resource>;
+}
+
 /**
  * Handles FHIR GraphQL requests.
  *
@@ -129,12 +135,14 @@ export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Pr
     return [forbidden];
   }
 
+  const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
+
   let result: any = introspection && introspectionResults.get(query);
   if (!result) {
     result = await execute({
       schema,
       document,
-      contextValue: { repo },
+      contextValue: { repo, dataLoader },
       operationName,
       variableValues: variables,
     });
@@ -172,7 +180,7 @@ function buildRootSchema(): GraphQLSchema {
   }
 
   // Next, fill in all of the type properties
-  const fields: GraphQLFieldConfigMap<any, any> = {};
+  const fields: GraphQLFieldConfigMap<any, GraphQLContext> = {};
   for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
 
@@ -392,7 +400,7 @@ function getPropertyType(elementDefinition: ElementDefinition, typeName: string)
  * The search args should be FHIR search parameters.
  * @param source The source/root.  This should always be null for our top level readers.
  * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  * @implements {GraphQLFieldResolver}
@@ -400,14 +408,13 @@ function getPropertyType(elementDefinition: ElementDefinition, typeName: string)
 async function resolveBySearch(
   source: any,
   args: Record<string, string>,
-  ctx: any,
+  ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
-  const repo = ctx.repo as FhirRepository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
-  const bundle = await repo.search(searchRequest);
+  const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
 
@@ -417,15 +424,19 @@ async function resolveBySearch(
  * There should always be exactly one argument "id".
  * @param _source The source/root.  This should always be null for our top level readers.
  * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResolveInfo): Promise<Resource | undefined> {
-  const repo = ctx.repo as FhirRepository;
+async function resolveById(
+  _source: any,
+  args: any,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<Resource | undefined> {
   try {
-    return await repo.readResource(info.fieldName, args.id);
+    return await ctx.dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
@@ -436,14 +447,13 @@ async function resolveById(_source: any, args: any, ctx: any, info: GraphQLResol
  * This is a special data loader for following Reference objects.
  * @param source The source/root.  This should always be null for our top level readers.
  * @param _args The GraphQL search arguments.
- * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param ctx The GraphQL context.
  * @returns Promise to read the resoure(s) for the query.
  * @implements {GraphQLFieldResolver}
  */
-async function resolveByReference(source: any, _args: any, ctx: any): Promise<Resource | undefined> {
-  const repo = ctx.repo as FhirRepository;
+async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
   try {
-    return await repo.readReference(source as Reference);
+    return await ctx.dataLoader.load(source as Reference);
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }

@@ -1,114 +1,125 @@
 import { createReference, getReferenceString } from '@medplum/core';
-import { Binary, Encounter, Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { Binary, Encounter, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { mkdtempSync, rmSync } from 'fs';
 import { sep } from 'path';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
+import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { addTestUser } from '../../test.setup';
+import { Repository } from '../repo';
 
 const app = express();
 const binaryDir = mkdtempSync(__dirname + sep + 'binary-');
+let practitioner: Practitioner;
 let accessToken: string;
 let binary: Binary;
 let patient: Patient;
 let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
+let bobAccessToken: string;
 
 describe('GraphQL', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+
+    // Setup a new project
+    const aliceRegistration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+    accessToken = aliceRegistration.accessToken;
+    practitioner = aliceRegistration.profile as Practitioner;
+
+    const aliceRepo = new Repository({
+      author: createReference(aliceRegistration.profile),
+      project: aliceRegistration.project.id as string,
+    });
 
     // Create a profile picture
-    const res0 = await request(app)
-      .post(`/fhir/R4/Binary`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Binary',
-      });
-    expect(res0.status).toBe(201);
-    binary = res0.body as Binary;
+    binary = await aliceRepo.createResource<Binary>({ resourceType: 'Binary' });
 
     // Creat a simple patient
-    const res1 = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Patient',
-        name: [
-          {
-            given: ['Alice'],
-            family: 'Smith',
-          },
-        ],
-        photo: [
-          {
-            contentType: 'image/jpeg',
-            url: getReferenceString(binary),
-          },
-        ],
-      });
-    expect(res1.status).toBe(201);
-    patient = res1.body as Patient;
+    patient = await aliceRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['Alice'],
+          family: 'Smith',
+        },
+      ],
+      photo: [
+        {
+          contentType: 'image/jpeg',
+          url: getReferenceString(binary),
+        },
+      ],
+      telecom: [
+        {
+          system: 'email',
+          value: 'alice@example.com',
+        },
+      ],
+      generalPractitioner: [createReference(aliceRegistration.profile as Practitioner)],
+    });
 
     // Create a service request
-    const res2 = await request(app)
-      .post(`/fhir/R4/ServiceRequest`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'ServiceRequest',
-        status: 'active',
-        intent: 'order',
-        code: {
-          text: 'Chest CT',
-        },
-        subject: createReference(patient),
-      } as ServiceRequest);
-    expect(res2.status).toBe(201);
-    serviceRequest = res2.body as ServiceRequest;
+    serviceRequest = await aliceRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      code: {
+        text: 'Chest CT',
+      },
+      subject: createReference(patient),
+    });
 
     // Create an encounter referring to the patient
-    const res3 = await request(app)
-      .post(`/fhir/R4/Encounter`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: {
-          code: 'HH',
-        },
-        subject: createReference(patient),
-        basedOn: [createReference(serviceRequest)],
-      });
-    expect(res3.status).toBe(201);
-    encounter1 = res3.body as Encounter;
+    encounter1 = await aliceRepo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      status: 'in-progress',
+      class: {
+        code: 'HH',
+      },
+      subject: createReference(patient),
+      basedOn: [createReference(serviceRequest)],
+    });
 
     // Create an encounter referring to missing patient
-    const res4 = await request(app)
-      .post(`/fhir/R4/Encounter`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Encounter',
-        status: 'in-progress',
-        class: {
-          code: 'HH',
+    encounter2 = await aliceRepo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      status: 'in-progress',
+      class: {
+        code: 'HH',
+      },
+      subject: { reference: 'Patient/' + randomUUID() },
+    });
+
+    // Invite Bob with the access policy
+    const bobRegistration = await addTestUser(aliceRegistration.project, {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Encounter',
         },
-        subject: {
-          reference: 'Patient/' + randomUUID(),
+        {
+          resourceType: 'Patient',
+          hiddenFields: ['telecom'],
         },
-      });
-    expect(res4.status).toBe(201);
-    encounter2 = res4.body as Encounter;
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=completed',
+        },
+      ],
+    });
+    bobAccessToken = bobRegistration.accessToken;
   });
 
   afterAll(async () => {
@@ -622,5 +633,144 @@ describe('GraphQL', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toEqual('Field "resource" exceeds max depth (depth=9, max=8)');
+  });
+
+  test('Hidden fields in nested lookups', async () => {
+    // Bob does not have access to Patient.telecom
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+        {
+          EncounterList {
+            id
+            meta {
+              lastUpdated
+            }
+            subject {
+              id
+              reference
+              resource {
+                ... on Patient {
+                  name {
+                    given
+                    family
+                  }
+                  telecom {
+                    system
+                    value
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.EncounterList).toBeDefined();
+    expect(res.body.data.EncounterList).toHaveLength(2);
+
+    for (const e of res.body.data.EncounterList) {
+      expect(e.subject.resource?.telecom).not.toBeTruthy();
+    }
+  });
+
+  test('Cannot read resource type', async () => {
+    // Bob does not have access to Practitioner resources
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        Practitioner(id: "${practitioner.id}") {
+          id
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.Practitioner).toBeNull();
+  });
+
+  test('Cannot read resource type in nested lookups', async () => {
+    // Bob does not have access to Practitioner resources
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          generalPractitioner {
+            resource {
+              ... on Practitioner {
+                name {
+                  given
+                  family
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.Patient).toBeDefined();
+    expect(res.body.data.Patient.generalPractitioner[0].resource).toBeNull();
+  });
+
+  test('Access policy criteria', async () => {
+    // Bob can only access ServiceRequest in completed status
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        ServiceRequest(id: "${serviceRequest.id}") {
+          id
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.ServiceRequest).toBeNull();
+  });
+
+  test('Access policy criteria in nested lookups', async () => {
+    // Bob can only access ServiceRequest in completed status
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        Encounter(id: "${encounter1.id}") {
+          id
+          basedOn {
+            resource {
+              ... on ServiceRequest {
+                id
+                status
+              }
+            }
+          }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.Encounter).toBeDefined();
+    expect(res.body.data.Encounter.basedOn[0].resource).toBeNull();
   });
 });

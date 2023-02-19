@@ -1,5 +1,5 @@
-import { isGone } from '@medplum/core';
-import { Binary, Meta, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import { isGone, OperationOutcomeError } from '@medplum/core';
+import { Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { getConfig, MedplumRedisConfig } from '../config';
@@ -155,7 +155,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
   try {
     resource = await systemRepo.readResource(resourceType, id);
   } catch (err) {
-    if (isGone(err as OperationOutcome)) {
+    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
       // If the resource was deleted, then stop processing it.
       return;
     }

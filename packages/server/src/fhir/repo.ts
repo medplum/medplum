@@ -14,9 +14,11 @@ import {
   isGone,
   isNotFound,
   isOk,
+  isOperationOutcome,
   matchesSearchRequest,
   normalizeErrorString,
   notFound,
+  OperationOutcomeError,
   Operator as FhirOperator,
   parseSearchUrl,
   resolveId,
@@ -157,7 +159,7 @@ export interface RepositoryContext {
   extendedMode?: boolean;
 }
 
-export interface CacheEntry<T extends Resource> {
+export interface CacheEntry<T extends Resource = Resource> {
   resource: T;
   projectId: string;
 }
@@ -260,20 +262,16 @@ export class Repository {
 
     const cacheRecord = await getCacheEntry<T>(resourceType, id);
     if (cacheRecord) {
-      if (
-        !this.#isSuperAdmin() &&
-        this.#context.project !== undefined &&
-        cacheRecord.projectId !== undefined &&
-        cacheRecord.projectId !== this.#context.project
-      ) {
-        throw notFound;
-      }
-      if (!this.#matchesAccessPolicy(cacheRecord.resource, true)) {
+      if (!this.#canReadCacheEntry(cacheRecord)) {
         throw notFound;
       }
       return cacheRecord.resource;
     }
 
+    return this.#readResourceFromDatabase(resourceType, id);
+  }
+
+  async #readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const client = getClient();
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', Operator.EQUALS, id);
 
@@ -281,16 +279,78 @@ export class Repository {
 
     const rows = await builder.execute(client);
     if (rows.length === 0) {
-      throw notFound;
+      throw new OperationOutcomeError(notFound);
     }
 
     if (rows[0].deleted) {
-      throw gone;
+      throw new OperationOutcomeError(gone);
     }
 
     const resource = JSON.parse(rows[0].content as string) as T;
     await setCacheEntry(resource);
     return resource;
+  }
+
+  #canReadCacheEntry(cacheEntry: CacheEntry): boolean {
+    if (
+      !this.#isSuperAdmin() &&
+      this.#context.project !== undefined &&
+      cacheEntry.projectId !== undefined &&
+      cacheEntry.projectId !== this.#context.project
+    ) {
+      return false;
+    }
+    if (!this.#matchesAccessPolicy(cacheEntry.resource, true)) {
+      return false;
+    }
+    return true;
+  }
+
+  async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
+    const cacheEntries = await getCacheEntries(references);
+    const result: (Resource | Error)[] = new Array(references.length);
+
+    for (let i = 0; i < result.length; i++) {
+      const reference = references[i];
+      const cacheEntry = cacheEntries[i];
+      let entryResult = await this.#processReadReferenceEntry(reference, cacheEntry);
+      if (entryResult instanceof Error) {
+        this.#logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult);
+      } else {
+        entryResult = this.#removeHiddenFields(entryResult);
+        this.#logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, entryResult);
+      }
+      result[i] = entryResult;
+    }
+
+    return result;
+  }
+
+  async #processReadReferenceEntry(
+    reference: Reference,
+    cacheEntry: CacheEntry | undefined
+  ): Promise<Resource | Error> {
+    try {
+      const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
+      validateResourceType(resourceType);
+
+      if (!this.#canReadResourceType(resourceType)) {
+        return new OperationOutcomeError(forbidden);
+      }
+
+      if (cacheEntry) {
+        if (!this.#canReadCacheEntry(cacheEntry)) {
+          return new OperationOutcomeError(notFound);
+        }
+        return cacheEntry.resource;
+      }
+      return await this.#readResourceFromDatabase(resourceType, id);
+    } catch (err) {
+      if (err instanceof OperationOutcomeError) {
+        return err;
+      }
+      return new Error(normalizeErrorString(err));
+    }
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
@@ -318,7 +378,7 @@ export class Repository {
       try {
         resource = await this.#readResourceImpl<T>(resourceType, id);
       } catch (err) {
-        if (!isGone(err as OperationOutcome)) {
+        if (!(err instanceof OperationOutcomeError) || !isGone(err.outcome)) {
           throw err;
         }
       }
@@ -544,11 +604,15 @@ export class Repository {
     try {
       return await this.#readResourceImpl<T>(resourceType, id);
     } catch (err) {
-      if (!err || typeof err !== 'object' || !('resourceType' in err)) {
+      let existingOutcome: OperationOutcome;
+      if (err instanceof OperationOutcomeError) {
+        existingOutcome = err.outcome;
+      } else if (isOperationOutcome(err)) {
+        existingOutcome = err;
+      } else {
         throw err;
       }
 
-      const existingOutcome = err as OperationOutcome;
       if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
         throw existingOutcome;
       }
@@ -1970,6 +2034,17 @@ export class Repository {
 async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
   const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
   return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+}
+
+/**
+ * Performs a bulk read of cache entries from Redis.
+ * @param references Array of FHIR references.
+ * @returns Array of cache entries or undefined.
+ */
+async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Resource> | undefined)[]> {
+  return (await getRedis().mget(...references.map((r) => r.reference as string))).map((cachedValue) =>
+    cachedValue ? (JSON.parse(cachedValue) as CacheEntry<Resource>) : undefined
+  );
 }
 
 /**

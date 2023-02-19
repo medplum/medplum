@@ -3,6 +3,7 @@ import {
   getExtensionValue,
   isGone,
   matchesSearchRequest,
+  OperationOutcomeError,
   Operator,
   parseSearchUrl,
   stringify,
@@ -11,7 +12,6 @@ import {
   AuditEvent,
   Bot,
   BundleEntry,
-  OperationOutcome,
   Practitioner,
   ProjectMembership,
   Reference,
@@ -238,7 +238,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   try {
     subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err) {
-    if (isGone(err as OperationOutcome)) {
+    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
       // If the subscription was deleted, then stop processing it.
       return;
     }
@@ -255,7 +255,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   try {
     currentVersion = await systemRepo.readResource(resourceType, id);
   } catch (err) {
-    if (isGone(err as OperationOutcome)) {
+    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
       // If the resource was deleted, then stop processing it.
       return;
     }

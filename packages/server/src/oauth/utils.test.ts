@@ -1,3 +1,4 @@
+import { OperationOutcomeError } from '@medplum/core';
 import { ClientApplication, OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -31,7 +32,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Not found');
     }
