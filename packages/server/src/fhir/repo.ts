@@ -607,7 +607,7 @@ export class Repository {
     try {
       return await this.#readResourceImpl<T>(resourceType, id);
     } catch (err) {
-      let existingOutcome: OperationOutcome | undefined = undefined;
+      let existingOutcome: OperationOutcome;
       if (err instanceof OperationOutcomeError) {
         existingOutcome = err.outcome;
       } else if (isOperationOutcome(err)) {
@@ -616,7 +616,6 @@ export class Repository {
         throw err;
       }
 
-      // const existingOutcome = err as OperationOutcome;
       if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
         throw existingOutcome;
       }
