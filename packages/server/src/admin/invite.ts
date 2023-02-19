@@ -57,6 +57,7 @@ export interface InviteRequest {
   readonly externalId?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly sendEmail?: boolean;
+  readonly password?: string;
 }
 
 export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: ProfileResource }> {
@@ -98,7 +99,7 @@ export async function inviteUser(request: InviteRequest): Promise<{ user: User; 
 
 async function createUser(request: InviteRequest): Promise<User> {
   const { firstName, lastName, email, externalId } = request;
-  const password = generateSecret(16);
+  const password = request.password || generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
   let result: User;

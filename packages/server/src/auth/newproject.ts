@@ -1,5 +1,13 @@
-import { badRequest, createReference } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { badRequest, createReference, ProfileResource } from '@medplum/core';
+import {
+  ClientApplication,
+  Login,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { createClient } from '../admin/client';
@@ -67,7 +75,7 @@ export async function createProject(
   projectName: string,
   firstName: string,
   lastName: string
-): Promise<{ project: Project; membership: ProjectMembership; client: ClientApplication }> {
+): Promise<{ project: Project; profile: ProfileResource; membership: ProjectMembership; client: ClientApplication }> {
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
 
   logger.info('Create project ' + projectName);
@@ -94,5 +102,5 @@ export async function createProject(
     membership: createReference(membership),
   });
 
-  return { project, membership, client };
+  return { project, profile, membership, client };
 }
