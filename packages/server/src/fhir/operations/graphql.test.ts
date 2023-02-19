@@ -113,6 +113,10 @@ describe('GraphQL', () => {
           resourceType: 'Patient',
           hiddenFields: ['telecom'],
         },
+        {
+          resourceType: 'ServiceRequest',
+          criteria: 'ServiceRequest?status=completed',
+        },
       ],
     });
     bobAccessToken = bobRegistration.accessToken;
@@ -721,5 +725,52 @@ describe('GraphQL', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeDefined();
     expect(res.body.data.Patient.generalPractitioner[0].resource).toBeNull();
+  });
+
+  test('Access policy criteria', async () => {
+    // Bob can only access ServiceRequest in completed status
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        ServiceRequest(id: "${serviceRequest.id}") {
+          id
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.ServiceRequest).toBeNull();
+  });
+
+  test('Access policy criteria in nested lookups', async () => {
+    // Bob can only access ServiceRequest in completed status
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + bobAccessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        query: `
+      {
+        Encounter(id: "${encounter1.id}") {
+          id
+          basedOn {
+            resource {
+              ... on ServiceRequest {
+                id
+                status
+              }
+            }
+          }
+        }
+      }
+    `,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.data.Encounter).toBeDefined();
+    expect(res.body.data.Encounter.basedOn[0].resource).toBeNull();
   });
 });

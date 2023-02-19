@@ -349,9 +349,6 @@ export class Repository {
       if (err instanceof OperationOutcomeError) {
         return err;
       }
-      if (isOperationOutcome(err)) {
-        return new OperationOutcomeError(err);
-      }
       return new Error(normalizeErrorString(err));
     }
   }
