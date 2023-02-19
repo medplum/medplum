@@ -400,7 +400,7 @@ function getPropertyType(elementDefinition: ElementDefinition, typeName: string)
  * The search args should be FHIR search parameters.
  * @param source The source/root.  This should always be null for our top level readers.
  * @param args The GraphQL search arguments.
- * @param ctx The GraphQL context.  This is the Node IncomingMessage.
+ * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
  * @implements {GraphQLFieldResolver}
@@ -408,14 +408,13 @@ function getPropertyType(elementDefinition: ElementDefinition, typeName: string)
 async function resolveBySearch(
   source: any,
   args: Record<string, string>,
-  ctx: any,
+  ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
-  const repo = ctx.repo as FhirRepository;
   const searchRequest = parseSearchArgs(resourceType, source, args);
-  const bundle = await repo.search(searchRequest);
+  const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
 }
 
@@ -436,9 +435,8 @@ async function resolveById(
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource | undefined> {
-  const dataLoader = ctx.dataLoader as DataLoader<Reference, Resource>;
   try {
-    return await dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
+    return await ctx.dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
@@ -454,9 +452,8 @@ async function resolveById(
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
-  const dataLoader = ctx.dataLoader as DataLoader<Reference, Resource>;
   try {
-    return await dataLoader.load(source as Reference);
+    return await ctx.dataLoader.load(source as Reference);
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }

@@ -313,35 +313,47 @@ export class Repository {
     for (let i = 0; i < result.length; i++) {
       const reference = references[i];
       const cacheEntry = cacheEntries[i];
-      try {
-        const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
-        validateResourceType(resourceType);
-
-        if (!this.#canReadResourceType(resourceType)) {
-          throw new OperationOutcomeError(forbidden);
-        }
-
-        if (cacheEntry) {
-          if (!this.#canReadCacheEntry(cacheEntry)) {
-            result[i] = new OperationOutcomeError(notFound);
-          } else {
-            result[i] = cacheEntry.resource;
-          }
-        } else {
-          result[i] = await this.#readResourceFromDatabase(resourceType, id);
-        }
-      } catch (err) {
-        if (err instanceof OperationOutcomeError) {
-          result[i] = err;
-        } else if (isOperationOutcome(err)) {
-          result[i] = new OperationOutcomeError(err);
-        } else {
-          result[i] = new Error(normalizeErrorString(err));
-        }
+      let entryResult = await this.#processReadReferenceEntry(reference, cacheEntry);
+      if (entryResult instanceof Error) {
+        this.#logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult);
+      } else {
+        entryResult = this.#removeHiddenFields(entryResult);
+        this.#logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, entryResult);
       }
+      result[i] = entryResult;
     }
 
     return result;
+  }
+
+  async #processReadReferenceEntry(
+    reference: Reference,
+    cacheEntry: CacheEntry | undefined
+  ): Promise<Resource | Error> {
+    try {
+      const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
+      validateResourceType(resourceType);
+
+      if (!this.#canReadResourceType(resourceType)) {
+        return new OperationOutcomeError(forbidden);
+      }
+
+      if (cacheEntry) {
+        if (!this.#canReadCacheEntry(cacheEntry)) {
+          return new OperationOutcomeError(notFound);
+        }
+        return cacheEntry.resource;
+      }
+      return await this.#readResourceFromDatabase(resourceType, id);
+    } catch (err) {
+      if (err instanceof OperationOutcomeError) {
+        return err;
+      }
+      if (isOperationOutcome(err)) {
+        return new OperationOutcomeError(err);
+      }
+      return new Error(normalizeErrorString(err));
+    }
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
