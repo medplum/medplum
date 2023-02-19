@@ -122,7 +122,7 @@ export function ResourcePage(): JSX.Element | null {
     <>
       {value?.resourceType === 'ServiceRequest' && statusValueSet && (
         <QuickStatus
-          key={getReferenceString(value)}
+          key={getReferenceString(value) + '-' + (value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
           valueSet={{ reference: statusValueSet }}
           defaultValue={(value as ServiceRequest | undefined)?.orderDetail?.[0]?.text}
           onChange={onStatusChange}
