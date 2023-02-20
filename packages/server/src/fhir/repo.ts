@@ -251,13 +251,13 @@ export class Repository {
 
   async #readResourceImpl<T extends Resource>(resourceType: string, id: string): Promise<T> {
     if (!id || !validator.isUUID(id)) {
-      throw notFound;
+      throw new OperationOutcomeError(notFound);
     }
 
     validateResourceType(resourceType);
 
     if (!this.#canReadResourceType(resourceType)) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     const cacheRecord = await getCacheEntry<T>(resourceType, id);
@@ -267,7 +267,7 @@ export class Repository {
       // Old versions of Medplum did not populate "meta.compartment"
       // So this optimization is blocked until we add a migration.
       // if (!this.#canReadCacheEntry(cacheRecord)) {
-      //   throw notFound;
+      //   throw new OperationOutcomeError(notFound);
       // }
       if (this.#canReadCacheEntry(cacheRecord)) {
         return cacheRecord.resource;
@@ -448,7 +448,7 @@ export class Repository {
   async readVersion<T extends Resource>(resourceType: string, id: string, vid: string): Promise<T> {
     try {
       if (!validator.isUUID(vid)) {
-        throw notFound;
+        throw new OperationOutcomeError(notFound);
       }
 
       await this.#readResourceImpl<T>(resourceType, id);
@@ -461,7 +461,7 @@ export class Repository {
         .execute(client);
 
       if (rows.length === 0) {
-        throw notFound;
+        throw new OperationOutcomeError(notFound);
       }
 
       const result = this.#removeHiddenFields(JSON.parse(rows[0].content as string));
@@ -501,7 +501,7 @@ export class Repository {
     }
 
     if (!this.#canWriteResourceType(resourceType)) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     const existing = await this.#checkExistingResource<T>(resourceType, id, create);
@@ -515,7 +515,7 @@ export class Repository {
 
       if (!this.#canWriteResource(existing)) {
         // Check before the update
-        throw forbidden;
+        throw new OperationOutcomeError(forbidden);
       }
     }
 
@@ -554,7 +554,7 @@ export class Repository {
 
     if (!this.#canWriteResource(result)) {
       // Check after the update
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     if (!this.#isCacheOnly(result)) {
@@ -682,7 +682,7 @@ export class Repository {
    */
   async reindexResourceType(resourceType: string): Promise<void> {
     if (!this.#isSuperAdmin()) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     const client = getClient();
@@ -707,7 +707,7 @@ export class Repository {
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.#isSuperAdmin()) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
@@ -750,7 +750,7 @@ export class Repository {
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.#isSuperAdmin() && !this.#context.projectAdmin) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
@@ -762,7 +762,7 @@ export class Repository {
       const resource = await this.#readResourceImpl(resourceType, id);
 
       if (!this.#canWriteResourceType(resourceType)) {
-        throw forbidden;
+        throw new OperationOutcomeError(forbidden);
       }
 
       await deleteCacheEntry(resourceType, id);
@@ -827,7 +827,7 @@ export class Repository {
    */
   async purgeResources(resourceType: ResourceType, before: string): Promise<void> {
     if (!this.#isSuperAdmin()) {
-      throw forbidden;
+      throw new OperationOutcomeError(forbidden);
     }
     await new DeleteQuery(resourceType).where('lastUpdated', Operator.LESS_THAN_OR_EQUALS, before).execute(getClient());
     await new DeleteQuery(resourceType + '_History')
@@ -841,7 +841,7 @@ export class Repository {
       validateResourceType(resourceType);
 
       if (!this.#canReadResourceType(resourceType)) {
-        throw forbidden;
+        throw new OperationOutcomeError(forbidden);
       }
 
       // Ensure that "count" is set.

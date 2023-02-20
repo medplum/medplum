@@ -1,10 +1,9 @@
-import { createReference, normalizeErrorString, Operator } from '@medplum/core';
+import { createReference, normalizeErrorString, OperationOutcomeError, Operator } from '@medplum/core';
 import {
   AccessPolicy,
   ClientApplication,
   Login,
   Observation,
-  OperationOutcome,
   Patient,
   ProjectMembership,
   Questionnaire,
@@ -51,7 +50,7 @@ describe('AccessPolicy', () => {
       await repo2.readResource('Patient', patient?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -72,7 +71,7 @@ describe('AccessPolicy', () => {
       await repo2.search({ resourceType: 'Patient' });
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -124,7 +123,7 @@ describe('AccessPolicy', () => {
       await repo2.updateResource(patient);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -167,7 +166,7 @@ describe('AccessPolicy', () => {
       await repo2.updateResource(resource);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -210,7 +209,7 @@ describe('AccessPolicy', () => {
       await repo2.updateResource({ ...resource, status: 'completed' });
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -246,7 +245,7 @@ describe('AccessPolicy', () => {
       await repo2.deleteResource('Patient', patient.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -420,7 +419,7 @@ describe('AccessPolicy', () => {
       await repo2.readResource('Patient', patient1?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
 
     // Try to read patient2 with repo1
@@ -429,7 +428,7 @@ describe('AccessPolicy', () => {
       await repo1.readResource('Patient', patient2?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
   });
 
@@ -573,7 +572,7 @@ describe('AccessPolicy', () => {
       await repo2.readResource('Patient', patient1?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
 
     // Try to read patient2 with repo1
@@ -582,7 +581,7 @@ describe('AccessPolicy', () => {
       await repo1.readResource('Patient', patient2?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
   });
 
@@ -636,7 +635,7 @@ describe('AccessPolicy', () => {
       });
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
@@ -736,7 +735,7 @@ describe('AccessPolicy', () => {
       await clientRepo.readResource<Patient>('Patient', patient2?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
 
     // Create an Observation outside of the account
@@ -756,7 +755,7 @@ describe('AccessPolicy', () => {
       await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
     }
   });
 
@@ -819,7 +818,7 @@ describe('AccessPolicy', () => {
       });
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('forbidden');
+      expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
     }
   });
 
