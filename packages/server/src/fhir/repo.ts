@@ -262,10 +262,16 @@ export class Repository {
 
     const cacheRecord = await getCacheEntry<T>(resourceType, id);
     if (cacheRecord) {
-      if (!this.#canReadCacheEntry(cacheRecord)) {
-        throw notFound;
+      // This is an optimization to avoid a database query.
+      // However, it depends on all values in the cache having "meta.compartment"
+      // Old versions of Medplum did not populate "meta.compartment"
+      // So this optimization is blocked until we add a migration.
+      // if (!this.#canReadCacheEntry(cacheRecord)) {
+      //   throw notFound;
+      // }
+      if (this.#canReadCacheEntry(cacheRecord)) {
+        return cacheRecord.resource;
       }
-      return cacheRecord.resource;
     }
 
     return this.#readResourceFromDatabase(resourceType, id);
