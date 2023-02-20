@@ -61307,6 +61307,10 @@
         "pkceOptional": {
           "description": "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",
           "$ref": "#/definitions/boolean"
+        },
+        "identityProvider": {
+          "description": "Optional external Identity Provider (IdP) for the client application.",
+          "$ref": "#/definitions/IdentityProvider"
         }
       },
       "required": [
@@ -61913,6 +61917,35 @@
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
           "pattern": "^[ \\r\\n\\t\\S]+$",
           "type": "string"
+        }
+      }
+    },
+    "IdentityProvider": {
+      "description": "External Identity Provider (IdP) configuration details.",
+      "properties": {
+        "authorizeUrl": {
+          "description": "Remote URL for the external Identity Provider authorize endpoint.",
+          "$ref": "#/definitions/string"
+        },
+        "tokenUrl": {
+          "description": "Remote URL for the external Identity Provider token endpoint.",
+          "$ref": "#/definitions/string"
+        },
+        "userInfoUrl": {
+          "description": "Remote URL for the external Identity Provider userinfo endpoint.",
+          "$ref": "#/definitions/string"
+        },
+        "clientId": {
+          "description": "External Identity Provider client ID.",
+          "$ref": "#/definitions/string"
+        },
+        "clientSecret": {
+          "description": "External Identity Provider client secret.",
+          "$ref": "#/definitions/string"
+        },
+        "useSubject": {
+          "description": "Optional flag to use the subject field instead of the email field.",
+          "$ref": "#/definitions/boolean"
         }
       }
     }
