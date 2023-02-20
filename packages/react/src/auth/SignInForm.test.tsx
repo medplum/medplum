@@ -499,6 +499,34 @@ describe('SignInForm', () => {
     expect(props.onRegister).toBeCalled();
   });
 
+  test('Disable Google auth', async () => {
+    const google = {
+      accounts: {
+        id: {
+          initialize: jest.fn(),
+          renderButton: jest.fn(),
+        },
+      },
+    };
+
+    (window as any).google = google;
+
+    const onSuccess = jest.fn();
+
+    await act(async () => {
+      await setup({
+        onSuccess,
+        disableGoogleAuth: true,
+        googleClientId: '123',
+      });
+    });
+
+    await waitFor(() => screen.getByLabelText('Email', { exact: false }));
+    expect(screen.queryByText('Sign in with Google')).toBeNull();
+    expect(google.accounts.id.initialize).not.toHaveBeenCalled();
+    expect(google.accounts.id.renderButton).not.toHaveBeenCalled();
+  });
+
   test('Google success', async () => {
     const clientId = '123';
     let callback: ((response: GoogleCredentialResponse) => void) | undefined = undefined;
