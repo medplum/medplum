@@ -4,6 +4,8 @@ import {
   getReferenceString,
   isOk,
   normalizeErrorString,
+  notFound,
+  OperationOutcomeError,
   Operator,
   parseSearchRequest,
   parseSearchUrl,
@@ -797,8 +799,7 @@ describe('FHIR Repo', () => {
       await repo2.readResource('Patient', patient1?.id as string);
       fail('Should have thrown');
     } catch (err) {
-      const outcome = err as OperationOutcome;
-      expect(outcome.id).toEqual('not-found');
+      expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
     }
   });
 
@@ -2333,7 +2334,7 @@ describe('FHIR Repo', () => {
       await repo.purgeResources('Patient', new Date().toISOString());
       fail('Purge should have failed');
     } catch (err) {
-      expect(err).toMatchObject(forbidden);
+      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
     }
   });
 
