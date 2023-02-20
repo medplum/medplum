@@ -17,6 +17,7 @@ import { BatchPage } from './BatchPage';
 import { BulkAppPage } from './BulkAppPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
 import { CreateResourcePage } from './CreateResourcePage';
+import { ErrorPage } from './ErrorPage';
 import { FormPage } from './FormPage';
 import { HomePage } from './HomePage';
 import { AssaysPage } from './lab/AssaysPage';
@@ -51,59 +52,61 @@ import { SmartSearchPage } from './SmartSearchPage';
 export function AppRoutes(): JSX.Element {
   return (
     <Routes>
-      <Route path="/signin" element={<SignInPage />} />
-      <Route path="/oauth" element={<OAuthPage />} />
-      <Route path="/resetpassword" element={<ResetPasswordPage />} />
-      <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/changepassword" element={<ChangePasswordPage />} />
-      <Route path="/security" element={<SecurityPage />} />
-      <Route path="/mfa" element={<MfaPage />} />
-      <Route path="/batch" element={<BatchPage />} />
-      <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
-      <Route path="/smart" element={<SmartSearchPage />} />
-      <Route path="/forms/:id" element={<FormPage />} />
-      <Route path="/admin/super" element={<SuperAdminPage />} />
-      <Route path="/admin" element={<ProjectPage />}>
-        <Route path="patients" element={<PatientsPage />} />
-        <Route path="bots/new" element={<CreateBotPage />} />
-        <Route path="bots" element={<BotsPage />} />
-        <Route path="clients/new" element={<CreateClientPage />} />
-        <Route path="clients" element={<ClientsPage />} />
-        <Route path="details" element={<ProjectDetailsPage />} />
-        <Route path="invite" element={<InvitePage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="project" element={<ProjectDetailsPage />} />
-        <Route path="secrets" element={<SecretsPage />} />
-        <Route path="sites" element={<SitesPage />} />
-        <Route path="members/:membershipId" element={<EditMembershipPage />} />
+      <Route errorElement={<ErrorPage />}>
+        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/oauth" element={<OAuthPage />} />
+        <Route path="/resetpassword" element={<ResetPasswordPage />} />
+        <Route path="/setpassword/:id/:secret" element={<SetPasswordPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/changepassword" element={<ChangePasswordPage />} />
+        <Route path="/security" element={<SecurityPage />} />
+        <Route path="/mfa" element={<MfaPage />} />
+        <Route path="/batch" element={<BatchPage />} />
+        <Route path="/bulk/:resourceType" element={<BulkAppPage />} />
+        <Route path="/smart" element={<SmartSearchPage />} />
+        <Route path="/forms/:id" element={<FormPage />} />
+        <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin" element={<ProjectPage />}>
+          <Route path="patients" element={<PatientsPage />} />
+          <Route path="bots/new" element={<CreateBotPage />} />
+          <Route path="bots" element={<BotsPage />} />
+          <Route path="clients/new" element={<CreateClientPage />} />
+          <Route path="clients" element={<ClientsPage />} />
+          <Route path="details" element={<ProjectDetailsPage />} />
+          <Route path="invite" element={<InvitePage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="project" element={<ProjectDetailsPage />} />
+          <Route path="secrets" element={<SecretsPage />} />
+          <Route path="sites" element={<SitesPage />} />
+          <Route path="members/:membershipId" element={<EditMembershipPage />} />
+        </Route>
+        <Route path="/lab/assays" element={<AssaysPage />} />
+        <Route path="/lab/panels" element={<PanelsPage />} />
+        <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
+        <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
+        <Route path="/:resourceType/new" element={<CreateResourcePage />} />
+        <Route path="/:resourceType/:id" element={<ResourcePage />}>
+          <Route index element={<TimelinePage />} />
+          <Route path="apply" element={<ApplyPage />} />
+          <Route path="apps" element={<AppsPage />} />
+          <Route path="blame" element={<BlamePage />} />
+          <Route path="bots" element={<QuestionnaireBotsPage />} />
+          <Route path="builder" element={<BuilderPage />} />
+          <Route path="checklist" element={<ChecklistPage />} />
+          <Route path="delete" element={<DeletePage />} />
+          <Route path="details" element={<DetailsPage />} />
+          <Route path="edit" element={<EditPage />} />
+          <Route path="editor" element={<BotEditor />} />
+          <Route path="history" element={<HistoryPage />} />
+          <Route path="json" element={<JsonPage />} />
+          <Route path="preview" element={<PreviewPage />} />
+          <Route path="report" element={<ReportPage />} />
+          <Route path="ranges" element={<ReferenceRangesPage />} />
+          <Route path="timeline" element={<TimelinePage />} />
+        </Route>
+        <Route path="/:resourceType" element={<HomePage />} />
+        <Route path="/" element={<HomePage />} />
       </Route>
-      <Route path="/lab/assays" element={<AssaysPage />} />
-      <Route path="/lab/panels" element={<PanelsPage />} />
-      <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
-      <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
-      <Route path="/:resourceType/new" element={<CreateResourcePage />} />
-      <Route path="/:resourceType/:id" element={<ResourcePage />}>
-        <Route index element={<TimelinePage />} />
-        <Route path="apply" element={<ApplyPage />} />
-        <Route path="apps" element={<AppsPage />} />
-        <Route path="blame" element={<BlamePage />} />
-        <Route path="bots" element={<QuestionnaireBotsPage />} />
-        <Route path="builder" element={<BuilderPage />} />
-        <Route path="checklist" element={<ChecklistPage />} />
-        <Route path="delete" element={<DeletePage />} />
-        <Route path="details" element={<DetailsPage />} />
-        <Route path="edit" element={<EditPage />} />
-        <Route path="editor" element={<BotEditor />} />
-        <Route path="history" element={<HistoryPage />} />
-        <Route path="json" element={<JsonPage />} />
-        <Route path="preview" element={<PreviewPage />} />
-        <Route path="report" element={<ReportPage />} />
-        <Route path="ranges" element={<ReferenceRangesPage />} />
-        <Route path="timeline" element={<TimelinePage />} />
-      </Route>
-      <Route path="/:resourceType" element={<HomePage />} />
-      <Route path="/" element={<HomePage />} />
     </Routes>
   );
 }
