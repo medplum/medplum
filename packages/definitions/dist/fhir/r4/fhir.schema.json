@@ -61303,6 +61303,10 @@
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",
           "$ref": "#/definitions/string"
+        },
+        "pkceOptional": {
+          "description": "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",
+          "$ref": "#/definitions/boolean"
         }
       },
       "required": [
