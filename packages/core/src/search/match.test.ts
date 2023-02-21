@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Observation, Patient, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
 import { matchesSearchRequest } from './match';
 import { Operator, parseSearchDefinition, SearchRequest } from './search';
@@ -537,5 +537,25 @@ describe('Search matching', () => {
       filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'foo' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
+
+  test('Identifier with system', () => {
+    const identifier = '1234567890';
+
+    const resource: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        {
+          system: 'https://example.com',
+          value: identifier,
+        },
+      ],
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Practitioner',
+      filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'https://example.com|' + identifier }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(true);
   });
 });

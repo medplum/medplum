@@ -96,7 +96,11 @@ class BatchProcessor {
         return buildBundleResponse(badRequest('Multiple matches'));
       }
       if (entries.length === 1) {
-        return buildBundleResponse(allOk, entries[0].resource);
+        const matchingResource = entries[0].resource as Resource;
+        if (entry.fullUrl) {
+          this.#addReplacementId(entry.fullUrl, matchingResource);
+        }
+        return buildBundleResponse(allOk, matchingResource);
       }
     }
 
