@@ -61,8 +61,9 @@ The MockClient does not yet _perfectly_ replicate the functionality of the `Medp
 
 - `medplum.graphql`
 - `medplum.executeBatch`
+- FHIR $ operations
 
-The Medplum team is working on bringing these features to parity as soon as possible. You can join our Github discussion [here](#)
+The Medplum team is working on bringing these features to parity as soon as possible. You can join our Github discussion [here](https://github.com/medplum/medplum/discussions/1218)
 
 :::
 
@@ -70,7 +71,7 @@ The Medplum team is working on bringing these features to parity as soon as poss
 
 Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance.
 
-The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](#), an [Observation](#), and a [DiagnosticReport](#) before invoking the bot.
+The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
   <summary>Example: Create Resources</summary>
