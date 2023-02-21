@@ -650,8 +650,8 @@ export const ExampleReport: DiagnosticReport = {
   issued: '2013-03-11T10:28:00+01:00',
   performer: [
     {
-      reference: 'Organization/f201',
-      display: 'AUMC',
+      reference: 'Organization/123',
+      display: 'Test Organization',
     },
   ],
   result: [createReference(CreatinineObservation)],

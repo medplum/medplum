@@ -13,6 +13,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
+import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { useResource } from '../useResource/useResource';
@@ -91,6 +92,17 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
               </Text>
             </div>
           ))}
+        {diagnosticReport.performer &&
+          diagnosticReport.performer.map((performer) => (
+            <div key={performer.reference}>
+              <Text size="xs" transform="uppercase" color="dimmed">
+                Performer
+              </Text>
+              <Text>
+                <ResourceBadge value={performer} link={true} />
+              </Text>
+            </div>
+          ))}
         {diagnosticReport.issued && (
           <div>
             <Text size="xs" transform="uppercase" color="dimmed">
@@ -132,6 +144,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
           <th>Reference Range</th>
           <th>Interpretation</th>
           <th>Category</th>
+          <th>Performer</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -194,11 +207,16 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
             </ul>
           )}
         </td>
+        <td>
+          {observation.performer?.map((performer) => (
+            <ReferenceDisplay key={performer?.reference} value={performer} />
+          ))}
+        </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>
       {displayNotes && (
         <tr>
-          <td colSpan={5}>
+          <td colSpan={6}>
             <NoteDisplay value={observation.note} />
           </td>
         </tr>
