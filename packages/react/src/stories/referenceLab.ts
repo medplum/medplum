@@ -577,8 +577,8 @@ export const CreatinineObservation: Observation = {
   issued: '2013-04-04T14:34:00+01:00',
   performer: [
     {
-      reference: 'Practitioner/f202',
-      display: 'Luigi Maas',
+      reference: 'Practitioner/123',
+      display: 'Dr. Alice Smith',
     },
   ],
   valueQuantity: {
@@ -650,8 +650,8 @@ export const ExampleReport: DiagnosticReport = {
   issued: '2013-03-11T10:28:00+01:00',
   performer: [
     {
-      reference: 'Organization/f201',
-      display: 'AUMC',
+      reference: 'Organization/123',
+      display: 'Test Organization',
     },
   ],
   result: [createReference(CreatinineObservation)],
