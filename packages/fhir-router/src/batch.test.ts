@@ -1,4 +1,10 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, isOk } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  isOk,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   Bundle,
@@ -6,6 +12,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  Practitioner,
   SearchParameter,
   ServiceRequest,
   Subscription,
@@ -446,6 +453,58 @@ describe('Batch', () => {
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
     expect(results[2].response?.status).toEqual('400');
+  });
+
+  test('Use ifNoneExist result in other reference', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+
+    // Create a Practitioner
+    const identifier = randomUUID();
+    const practitioner = await repo.createResource<Practitioner>({
+      resourceType: 'Practitioner',
+      name: [{ given: ['Batch'], family: 'Test' }],
+      identifier: [{ system: 'https://example.com', value: identifier }],
+    });
+    expect(practitioner.id).toBeDefined();
+
+    // Execute a batch that looks for the practitioner and references the result
+    // Use ifNoneExist, which should return the existing practitioner
+    const urnUuid = 'urn:uuid:' + randomUUID();
+    const bundle = await processBatch(router, repo, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: urnUuid,
+          request: {
+            method: 'POST',
+            url: 'Practitioner',
+            ifNoneExist: 'identifier=https://example.com|' + identifier,
+          },
+          resource: {
+            resourceType: 'Practitioner',
+            identifier: [{ system: 'https://example.com', value: identifier }],
+          },
+        },
+        {
+          request: { method: 'POST', url: 'ServiceRequest' },
+          resource: {
+            resourceType: 'ServiceRequest',
+            status: 'active',
+            intent: 'order',
+            subject: createReference(patient),
+            code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+            requester: { reference: urnUuid },
+          },
+        },
+      ],
+    });
+    expect(bundle).toBeDefined();
+    expect(bundle.entry).toHaveLength(2);
+    expect(bundle.entry?.[0]?.response?.status).toEqual('200');
+    expect((bundle.entry?.[1]?.resource as ServiceRequest).requester?.reference).toEqual(
+      getReferenceString(practitioner)
+    );
   });
 
   test('Process batch update', async () => {

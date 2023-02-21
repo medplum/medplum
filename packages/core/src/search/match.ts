@@ -83,7 +83,7 @@ function matchesTokenFilter(resource: Resource, filter: Filter, searchParam: Sea
   if (details.type === SearchParameterType.BOOLEAN) {
     return matchesBooleanFilter(resource, filter, searchParam);
   } else {
-    return matchesStringFilter(resource, filter, searchParam);
+    return matchesStringFilter(resource, filter, searchParam, true);
   }
 }
 
@@ -94,13 +94,18 @@ function matchesBooleanFilter(resource: Resource, filter: Filter, searchParam: S
   return isNegated(filter.operator) ? !result : result;
 }
 
-function matchesStringFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
+function matchesStringFilter(
+  resource: Resource,
+  filter: Filter,
+  searchParam: SearchParameter,
+  asToken?: boolean
+): boolean {
   const resourceValues = evalFhirPath(searchParam.expression as string, resource);
   const filterValues = filter.value.split(',');
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesStringValue(resourceValue, filter.operator, filterValue);
+      const match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
       if (match) {
         return !negated;
       }
@@ -111,7 +116,19 @@ function matchesStringFilter(resource: Resource, filter: Filter, searchParam: Se
   return negated;
 }
 
-function matchesStringValue(resourceValue: unknown, operator: Operator, filterValue: string): boolean {
+function matchesStringValue(
+  resourceValue: unknown,
+  operator: Operator,
+  filterValue: string,
+  asToken?: boolean
+): boolean {
+  if (asToken && filterValue.includes('|')) {
+    const [system, code] = filterValue.split('|');
+    return (
+      matchesStringValue(resourceValue, operator, system, false) &&
+      (!code || matchesStringValue(resourceValue, operator, code, false))
+    );
+  }
   let str = '';
   if (resourceValue) {
     if (typeof resourceValue === 'string') {
