@@ -1,7 +1,7 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<void> {
   // Cast the Bot input as a Diagnostic report
   const report = event.input;
 

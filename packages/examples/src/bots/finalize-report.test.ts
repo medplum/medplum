@@ -19,7 +19,7 @@ describe('Finalize Report', async () => {
     // end-block create-client
 
     // start-block create-resources
-    //Create the Patient
+    // Create the Patient
     const patient: Patient = await medplum.createResource({
       resourceType: 'Patient',
       name: [
@@ -133,9 +133,9 @@ describe('Finalize Report', async () => {
     const updatedReport = await medplum.readResource('DiagnosticReport', report.id as string);
 
     // Create "spys" to catch calls that modify resources
-    const updateResourceSpy = vi.spyOn(medplum, 'updateResource');
-    const createResourceSpy = vi.spyOn(medplum, 'createResource');
-    const patchResourceSpy = vi.spyOn(medplum, 'patchResource');
+    const updateResourceSpy = spyOn(medplum, 'updateResource');
+    const createResourceSpy = spyOn(medplum, 'createResource');
+    const patchResourceSpy = spyOn(medplum, 'patchResource');
 
     // Invoke the bot a second time
     await handler(medplum, { input: updatedReport, contentType, secrets: {} });
