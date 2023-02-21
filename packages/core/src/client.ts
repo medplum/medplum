@@ -2347,17 +2347,26 @@ export class MedplumClient extends EventTarget {
 }
 
 /**
+ * Returns the current window if available.
+ * All access to the current window should use this to support SSR such as Next.js.
+ * @returns The current window or undefined if not available.
+ */
+function getWindow(): Window | undefined {
+  return typeof window === 'undefined' ? undefined : window;
+}
+
+/**
  * Returns the default fetch method.
  * The default fetch is currently only available in browser environments.
  * If you want to use SSR such as Next.js, you should pass a custom fetch function.
  * @returns The default fetch function for the current environment.
  */
 function getDefaultFetch(): FetchLike {
-  const result = globalThis.fetch;
-  if (!result) {
+  const window = getWindow();
+  if (!window) {
     throw new Error('Fetch not available in this environment');
   }
-  return result;
+  return window.fetch.bind(window);
 }
 
 /**
@@ -2365,10 +2374,8 @@ function getDefaultFetch(): FetchLike {
  * @category HTTP
  */
 function getWindowOrigin(): string {
-  if (typeof window === 'undefined') {
-    return '';
-  }
-  return window.location.protocol + '//' + window.location.host + '/';
+  const window = getWindow();
+  return window ? window.location.protocol + '//' + window.location.host + '/' : '';
 }
 
 function ensureTrailingSlash(url: string | undefined): string | undefined {
