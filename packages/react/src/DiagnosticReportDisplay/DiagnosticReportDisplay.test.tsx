@@ -115,6 +115,18 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Hello world')).toBeDefined();
   });
 
+  test('Renders performer', async () => {
+    const obs = await medplum.createResource(CreatinineObservation);
+    ExampleReport.result = [createReference(obs)];
+    await medplum.updateResource(ExampleReport);
+    await act(async () => {
+      setup({ value: ExampleReport });
+    });
+
+    expect(screen.getByText('Test Organization')).toBeDefined();
+    expect(screen.getByText('Alice Smith')).toBeDefined();
+  });
+
   test('Renders observation category', async () => {
     const obs = await medplum.createResource(CreatinineObservation);
     ExampleReport.result = [createReference(obs)];
