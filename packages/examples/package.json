@@ -15,6 +15,7 @@
     "build": "npm run clean && tsc"
   },
   "devDependencies": {
+    "@jest/globals": "^29.4.3",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",

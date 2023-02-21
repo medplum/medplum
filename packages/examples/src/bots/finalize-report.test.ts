@@ -1,3 +1,4 @@
+import { beforeAll, describe, test, jest } from '@jest/globals';
 import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, DiagnosticReport, Observation, Patient, SearchParameter } from '@medplum/fhirtypes';
@@ -133,9 +134,9 @@ describe('Finalize Report', async () => {
     const updatedReport = await medplum.readResource('DiagnosticReport', report.id as string);
 
     // Create "spys" to catch calls that modify resources
-    const updateResourceSpy = spyOn(medplum, 'updateResource');
-    const createResourceSpy = spyOn(medplum, 'createResource');
-    const patchResourceSpy = spyOn(medplum, 'patchResource');
+    const updateResourceSpy = jest.spyOn(medplum, 'updateResource');
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+    const patchResourceSpy = jest.spyOn(medplum, 'patchResource');
 
     // Invoke the bot a second time
     await handler(medplum, { input: updatedReport, contentType, secrets: {} });
