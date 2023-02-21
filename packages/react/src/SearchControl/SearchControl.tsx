@@ -461,7 +461,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       </Table>
       {resources?.length === 0 && (
         <Container>
-          <Center>
+          <Center style={{ height: 150 }}>
             <Text size="xl" color="dimmed">
               No results
             </Text>
