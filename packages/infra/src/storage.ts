@@ -67,7 +67,7 @@ export class Storage extends Construct {
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
-              "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *.letsdevelo.com;",
+              `default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *.${config.domainName};`,
             override: true,
           },
           contentTypeOptions: { override: true },
