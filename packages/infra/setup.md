@@ -1,42 +1,43 @@
 # Infrastructure Setup Guide
 
 0. Make sure you have the right AWS credentials loaded
+
     `export AWS_PROFILE=demo-admin`
 
 1. Set up a Route53 domain
 
-CLI:
-`aws route53 create-hosted-zone --name medplum-test.letsdevelo.com --caller-reference 123`
-the caller-reference can be any arbitrary string... it's used by AWS to prevent duplicate create operations.
+    CLI:
+    `aws route53 create-hosted-zone --name medplum-test.letsdevelo.com --caller-reference 123`
+    the caller-reference can be any arbitrary string... it's used by AWS to prevent duplicate create operations.
 
-response:
-```json
-{
-    "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/Z06149321Z4IJ2FXQKFY3",
-    "HostedZone": {
-        "Id": "/hostedzone/Z06149321Z4IJ2FXQKFY3",
-        "Name": "medplum-test.letsdevelo.com.",
-        "CallerReference": "123",
-        "Config": {
-            "PrivateZone": false
+    response:
+    ```json
+    {
+        "Location": "https://route53.amazonaws.com/2013-04-01/hostedzone/Z06149321Z4IJ2FXQKFY3",
+        "HostedZone": {
+            "Id": "/hostedzone/Z06149321Z4IJ2FXQKFY3",
+            "Name": "medplum-test.letsdevelo.com.",
+            "CallerReference": "123",
+            "Config": {
+                "PrivateZone": false
+            },
+            "ResourceRecordSetCount": 2
         },
-        "ResourceRecordSetCount": 2
-    },
-    "ChangeInfo": {
-        "Id": "/change/C05527611RL9RRSLGJAH5",
-        "Status": "PENDING",
-        "SubmittedAt": "2023-02-21T19:51:36.097000+00:00"
-    },
-    "DelegationSet": {
-        "NameServers": [
-            "ns-526.awsdns-01.net",
-            "ns-1082.awsdns-07.org",
-            "ns-1906.awsdns-46.co.uk",
-            "ns-343.awsdns-42.com"
-        ]
+        "ChangeInfo": {
+            "Id": "/change/C05527611RL9RRSLGJAH5",
+            "Status": "PENDING",
+            "SubmittedAt": "2023-02-21T19:51:36.097000+00:00"
+        },
+        "DelegationSet": {
+            "NameServers": [
+                "ns-526.awsdns-01.net",
+                "ns-1082.awsdns-07.org",
+                "ns-1906.awsdns-46.co.uk",
+                "ns-343.awsdns-42.com"
+            ]
+        }
     }
-}
-```
+    ```
 
 1. Add the name servers to our google domains (Ask @han to do this)
    In this case it means adding the following NS records to google domains
@@ -501,8 +502,6 @@ C877B11, BackEndVPCPublicSubnet1EIPD431B170, BackEndVPCcloudwatchIAMRole06786F5F
 pcFlowLogs8C3147DB, MedplumTestBackEndDatabaseClusterSecretCA3ACE143fdaad7efa858a3daf9490cf0a702aeb, CDKMetadata, BackEndRedisPassword046FF1F3]. Rollback requested by user.
 ^C
 ╭─coleman@coleman-XPS-15-9520 ~/code/medplum/packages/infra ‹coleman/use-subdomain-for-route-53●› 
-╰─$ aws ssm put-parameter --name /medplum/test/awsRegion --value us-west-2 --type SecureStrin                                                                                                            130 ↵
-╭─coleman@coleman-XPS-15-9520 ~/code/medplum/packages/infra ‹coleman/use-subdomain-for-route-53●› 
 ╰─$ aws s3 rb s3://medplum-test-storage
 ```
 
@@ -517,7 +516,7 @@ pcFlowLogs8C3147DB, MedplumTestBackEndDatabaseClusterSecretCA3ACE143fdaad7efa858
 
    1. Add origin access to both `app` and `storage` buckets using origin access identities (found [here](https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-west-2#/originAccess))
 
-      This looks like adding the following to the bucket policy (replace `E34W9TK5O83D9` with the correct origin identity)
+      This looks like adding the following to the bucket policy (replace `E34W9TK5O83D9` with the correct origin identity, replace the Resource with the correct bucket arn)
 
 ```json
        {
@@ -572,5 +571,12 @@ in full, the policy looks like this
 
    Then restart the fargate server container. This allows the "Download" binary button to work. Otherwise the key id is "unknown" and aws S3 correctly won't render the document
 
+
+## Limitations
+
+1. This does not set up SES emails
+     More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#create-an-ses-email-address)
+1. This does not set up medplum Bots
+     More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#deploy-bot-lambda-layer)
 
 
