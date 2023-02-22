@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
-import { tryLogin, validateLoginRequest, validatePkce } from './utils';
+import { getMembershipsForLogin, tryLogin, validateLoginRequest, validatePkce, verifyMfaToken } from './utils';
 
 let client: ClientApplication;
 
@@ -342,6 +342,46 @@ describe('OAuth utils', () => {
         client
       )
     ).not.toThrow();
+  });
+
+  test('verifyMfaToken login revoked', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', revoked: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login revoked');
+    }
+  });
+
+  test('verifyMfaToken login granted', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', granted: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login granted');
+    }
+  });
+
+  test('verifyMfaToken login already verified', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', mfaVerified: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login already verified');
+    }
+  });
+
+  test('getMembershipsForLogin missing user reference', async () => {
+    try {
+      await getMembershipsForLogin({ resourceType: 'Login', user: {} });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
+    }
   });
 });
 

@@ -273,7 +273,7 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
   }
 
   if (!login.user?.reference) {
-    throw new Error('User reference is missing');
+    throw new OperationOutcomeError(badRequest('User reference is missing'));
   }
 
   const filters: Filter[] = [
