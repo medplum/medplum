@@ -39,7 +39,7 @@
     }
     ```
 
-1. Add the name servers to our google domains (Ask @han to do this)
+1. Add the name servers to our google domains (Ask @hankedori or @cstoltze to do this)
 
    In this case it means adding the following NS records to google domains
 
@@ -581,9 +581,7 @@
 
 ## Limitations
 
-1. This does not set up SES emails
-     More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#create-an-ses-email-address)
-1. This does not set up medplum Bots
-     More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#deploy-bot-lambda-layer)
+1. This does not set up SES emails. More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#create-an-ses-email-address)
+1. This does not set up medplum Bots. More info can be found [here](https://www.medplum.com/docs/self-hosting/install-on-aws#deploy-bot-lambda-layer)
 
 
