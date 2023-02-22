@@ -2353,14 +2353,10 @@ export class MedplumClient extends EventTarget {
  * @returns The default fetch function for the current environment.
  */
 function getDefaultFetch(): FetchLike {
-  if (typeof window === 'undefined') {
+  if (!globalThis.fetch) {
     throw new Error('Fetch not available in this environment');
   }
-  const result = window.fetch;
-  if (!result) {
-    throw new Error('Fetch not available in this environment');
-  }
-  return result;
+  return globalThis.fetch.bind(globalThis);
 }
 
 /**
