@@ -4,7 +4,7 @@ import {
   evalFhirPath,
   globalSchema,
   matchesSearchRequest,
-  normalizeErrorString,
+  normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
   SearchRequest,
@@ -188,10 +188,10 @@ export class MemoryRepository implements FhirRepository {
     try {
       const patchResult = applyPatch(resource, patch).filter(Boolean);
       if (patchResult.length > 0) {
-        throw badRequest(patchResult.map((e) => (e as Error).message).join('\n'));
+        throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
       }
     } catch (err) {
-      throw badRequest(normalizeErrorString(err));
+      throw new OperationOutcomeError(normalizeOperationOutcome(err));
     }
 
     return this.updateResource(resource);
@@ -200,7 +200,7 @@ export class MemoryRepository implements FhirRepository {
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
     const resource = this.#resources?.[resourceType]?.[id] as T | undefined;
     if (!resource) {
-      throw notFound;
+      throw new OperationOutcomeError(notFound);
     }
     return deepClone(resource);
   }
@@ -208,7 +208,7 @@ export class MemoryRepository implements FhirRepository {
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const parts = reference.reference?.split('/');
     if (!parts || parts.length !== 2) {
-      throw badRequest('Invalid reference');
+      throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
   }
@@ -232,7 +232,7 @@ export class MemoryRepository implements FhirRepository {
     await this.readResource(resourceType, id);
     const version = this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
     if (!version) {
-      throw notFound;
+      throw new OperationOutcomeError(notFound);
     }
     return deepClone(version);
   }
@@ -263,7 +263,7 @@ export class MemoryRepository implements FhirRepository {
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
     if (!this.#resources?.[resourceType]?.[id]) {
-      throw notFound;
+      throw new OperationOutcomeError(notFound);
     }
     delete this.#resources[resourceType][id];
   }

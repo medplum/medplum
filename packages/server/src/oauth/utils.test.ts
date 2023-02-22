@@ -1,5 +1,5 @@
 import { OperationOutcomeError } from '@medplum/core';
-import { ClientApplication, OperationOutcome } from '@medplum/fhirtypes';
+import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -51,7 +51,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
     }
@@ -70,7 +70,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
     }
@@ -89,7 +89,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
     }
@@ -108,7 +108,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
@@ -126,7 +126,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
@@ -144,7 +144,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
     }
@@ -163,7 +163,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
     }
@@ -193,7 +193,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
     }
   });
@@ -209,7 +209,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
     }
   });
@@ -232,7 +232,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
     }
   });
@@ -255,7 +255,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
     }
   });
@@ -278,7 +278,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
     }
   });

@@ -6,6 +6,7 @@ import {
   isOk,
   LoginState,
   MedplumClient,
+  OperationOutcomeError,
   ProfileResource,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
@@ -529,7 +530,7 @@ class MockFetchClient {
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
-        throw result[0];
+        throw new OperationOutcomeError(result[0]);
       }
       return result[0];
     } else {

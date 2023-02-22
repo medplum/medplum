@@ -4,6 +4,7 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   isOk,
+  OperationOutcomeError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -37,7 +38,7 @@ describe('Batch', () => {
       await processBatch(router, repo, { resourceType: 'Bundle' });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
       expect(outcome.issue?.[0].details?.text).toContain('Missing bundle type');
     }
@@ -48,7 +49,7 @@ describe('Batch', () => {
       await processBatch(router, repo, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
       expect(outcome.issue?.[0].details?.text).toContain('Unrecognized bundle type');
     }
@@ -59,7 +60,7 @@ describe('Batch', () => {
       await processBatch(router, repo, { resourceType: 'Bundle', type: 'batch' });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
       expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entry');
     }

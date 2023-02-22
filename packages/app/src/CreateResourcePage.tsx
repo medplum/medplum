@@ -1,4 +1,5 @@
 import { Paper, Text } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -8,7 +9,7 @@ export function CreateResourcePage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType } = useParams();
   const medplum = useMedplum();
-  const [error, setError] = useState<OperationOutcome | undefined>();
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
   return (
     <>
@@ -19,13 +20,13 @@ export function CreateResourcePage(): JSX.Element {
         <ResourceForm
           defaultValue={{ resourceType } as Resource}
           onSubmit={(formData: Resource) => {
-            setError(undefined);
+            setOutcome(undefined);
             medplum
               .createResource(formData)
               .then((result) => navigate('/' + result.resourceType + '/' + result.id))
-              .catch(setError);
+              .catch((err) => setOutcome(normalizeOperationOutcome(err)));
           }}
-          outcome={error}
+          outcome={outcome}
         />
       </Document>
     </>

@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bot, Bundle, OperationOutcome, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -82,7 +82,8 @@ describe('ResourcePage', () => {
       await medplum.readResource('Practitioner', practitioner.id as string);
       fail('Should have thrown');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 

@@ -1,4 +1,4 @@
-import { badRequest, notFound } from '@medplum/core';
+import { badRequest, notFound, OperationOutcomeError } from '@medplum/core';
 import { Observation, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MemoryRepository } from './repo';
@@ -32,7 +32,8 @@ describe('MemoryRepository', () => {
       await repo.readReference({});
       fail('Expected error');
     } catch (err) {
-      expect(err).toMatchObject(badRequest('Invalid reference'));
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome).toMatchObject(badRequest('Invalid reference'));
     }
   });
 
@@ -51,7 +52,8 @@ describe('MemoryRepository', () => {
       await repo.readVersion<Patient>('Patient', patient.id as string, randomUUID());
       fail('Expected error');
     } catch (err) {
-      expect(err).toMatchObject(notFound);
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome).toMatchObject(notFound);
     }
   });
 

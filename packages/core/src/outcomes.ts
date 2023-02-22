@@ -189,9 +189,10 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome) {
+  constructor(outcome: OperationOutcome, cause?: unknown) {
     super(outcome?.issue?.[0].details?.text);
     this.outcome = outcome;
+    this.cause = cause;
   }
 }
 

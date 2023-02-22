@@ -1,4 +1,5 @@
 import { Button, Checkbox, Group, Stack, Title } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -25,7 +26,7 @@ export function EditMembershipPage(): JSX.Element {
       medplum
         .delete(`admin/projects/${projectId}/members/${membershipId}`)
         .then(() => setSuccess(true))
-        .catch(setOutcome);
+        .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     }
   }
 
@@ -47,7 +48,7 @@ export function EditMembershipPage(): JSX.Element {
           medplum
             .post(`admin/projects/${projectId}/members/${membershipId}`, updated)
             .then(() => setSuccess(true))
-            .catch(setOutcome);
+            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
         {!success && (

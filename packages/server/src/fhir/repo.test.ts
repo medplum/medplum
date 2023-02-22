@@ -66,7 +66,7 @@ describe('FHIR Repo', () => {
       await systemRepo.readResource('Patient', undefined as unknown as string);
       fail('Should have thrown');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
     }
   });
@@ -76,7 +76,7 @@ describe('FHIR Repo', () => {
       await systemRepo.readResource('Patient', '');
       fail('Should have thrown');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
     }
   });
@@ -86,7 +86,7 @@ describe('FHIR Repo', () => {
       await systemRepo.readResource('Patient', 'x');
       fail('Should have thrown');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
     }
   });
@@ -297,7 +297,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.id).toEqual('not-found');
     }
   });
@@ -1928,7 +1928,7 @@ describe('FHIR Repo', () => {
         name: [{ family: `Test too many requests` }],
       });
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.id).toEqual('too-many-requests');
     }
   });
@@ -2040,7 +2040,7 @@ describe('FHIR Repo', () => {
         ],
       });
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Unknown search parameter: basedOn');
     }
   });

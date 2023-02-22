@@ -1,4 +1,4 @@
-import { allOk, getStatus, isOk } from '@medplum/core';
+import { allOk, getStatus, isOk, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -149,7 +149,7 @@ protectedRoutes.use(
     const result = await router.handleRequest(request, repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
-        throw result[0];
+        throw new OperationOutcomeError(result[0]);
       }
       sendOutcome(res, result[0]);
     } else {

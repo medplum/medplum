@@ -1,4 +1,4 @@
-import { badRequest, parseJWTPayload } from '@medplum/core';
+import { badRequest, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
 import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -163,6 +163,6 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
     return parseJWTPayload(tokens.id_token);
   } catch (err) {
     logger.warn('Failed to verify code', err);
-    throw badRequest('Failed to verify code - check your identity provider configuration');
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

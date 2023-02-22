@@ -40,17 +40,17 @@ export function getJsonSchemaResourceTypes(): string[] {
 
 export function validateResourceWithJsonSchema<T extends Resource>(resource: T): void {
   if (!resource) {
-    throw validationError('Resource is null');
+    throw new OperationOutcomeError(validationError('Resource is null'));
   }
 
   const resourceType = resource.resourceType;
   if (!resourceType) {
-    throw validationError('Missing resource type');
+    throw new OperationOutcomeError(validationError('Missing resource type'));
   }
 
   const definition = getJsonSchemaDefinitions()[resourceType];
   if (!definition) {
-    throw validationError('Unknown resource type');
+    throw new OperationOutcomeError(validationError('Unknown resource type'));
   }
 
   const issues: OperationOutcomeIssue[] = [];

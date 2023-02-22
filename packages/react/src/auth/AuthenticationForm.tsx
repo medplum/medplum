@@ -4,6 +4,7 @@ import {
   GoogleCredentialResponse,
   GoogleLoginRequest,
   LoginAuthenticationResponse,
+  normalizeOperationOutcome,
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import React, { useCallback, useState } from 'react';
@@ -138,7 +139,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           remember: formData.remember === 'on',
         })
         .then(handleAuthResponse)
-        .catch(setOutcome);
+        .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     },
     [medplum, baseLoginRequest, handleAuthResponse]
   );

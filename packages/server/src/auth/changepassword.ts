@@ -1,4 +1,4 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
@@ -43,12 +43,12 @@ export async function changePassword(request: ChangePasswordRequest): Promise<vo
   const oldPasswordHash = request.user.passwordHash as string;
   const bcryptResult = await bcrypt.compare(request.oldPassword, oldPasswordHash);
   if (!bcryptResult) {
-    throw badRequest('Incorrect password', 'oldPassword');
+    throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));
   }
 
   const numPwns = await pwnedPassword(request.newPassword);
   if (numPwns > 0) {
-    throw badRequest('Password found in breach database', 'newPassword');
+    throw new OperationOutcomeError(badRequest('Password found in breach database', 'newPassword'));
   }
 
   const newPasswordHash = await bcrypt.hash(request.newPassword, 10);

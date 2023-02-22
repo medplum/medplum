@@ -14,9 +14,9 @@ import {
   isGone,
   isNotFound,
   isOk,
-  isOperationOutcome,
   matchesSearchRequest,
   normalizeErrorString,
+  normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
   Operator as FhirOperator,
@@ -355,14 +355,14 @@ export class Repository {
       if (err instanceof OperationOutcomeError) {
         return err;
       }
-      return new Error(normalizeErrorString(err));
+      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
     }
   }
 
   async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
     const parts = reference.reference?.split('/');
     if (!parts || parts.length !== 2) {
-      throw badRequest('Invalid reference');
+      throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
   }
@@ -497,7 +497,7 @@ export class Repository {
 
     const { resourceType, id } = resource;
     if (!id) {
-      throw badRequest('Missing id');
+      throw new OperationOutcomeError(badRequest('Missing id'));
     }
 
     if (!this.#canWriteResourceType(resourceType)) {
@@ -507,7 +507,7 @@ export class Repository {
     const existing = await this.#checkExistingResource<T>(resourceType, id, create);
 
     if (await this.#isTooManyVersions(resourceType, id, create)) {
-      throw tooManyRequests;
+      throw new OperationOutcomeError(tooManyRequests);
     }
 
     if (existing) {
@@ -610,21 +610,13 @@ export class Repository {
     try {
       return await this.#readResourceImpl<T>(resourceType, id);
     } catch (err) {
-      let existingOutcome: OperationOutcome;
-      if (err instanceof OperationOutcomeError) {
-        existingOutcome = err.outcome;
-      } else if (isOperationOutcome(err)) {
-        existingOutcome = err;
-      } else {
-        throw err;
+      const outcome = normalizeOperationOutcome(err);
+      if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
+        throw new OperationOutcomeError(outcome, err);
       }
 
-      if (!isOk(existingOutcome) && !isNotFound(existingOutcome) && !isGone(existingOutcome)) {
-        throw existingOutcome;
-      }
-
-      if (!create && isNotFound(existingOutcome) && !this.#canSetId()) {
-        throw existingOutcome;
+      if (!create && isNotFound(outcome) && !this.#canSetId()) {
+        throw new OperationOutcomeError(outcome, err);
       }
 
       // Otherwise, it is ok if the resource is not found.
@@ -804,10 +796,10 @@ export class Repository {
       try {
         const patchResult = applyPatch(resource, patch).filter(Boolean);
         if (patchResult.length > 0) {
-          throw badRequest(patchResult.map((e) => (e as Error).message).join('\n'));
+          throw new OperationOutcomeError(badRequest(patchResult.map((e) => (e as Error).message).join('\n')));
         }
       } catch (err) {
-        throw badRequest(normalizeErrorString(err));
+        throw new OperationOutcomeError(normalizeOperationOutcome(err));
       }
 
       const result = await this.#updateResourceImpl(resource, false);
@@ -1113,7 +1105,7 @@ export class Repository {
 
     const param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
-      throw badRequest(`Unknown search parameter: ${filter.code}`);
+      throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
     }
 
     const lookupTable = this.#getLookupTable(resourceType, param);
@@ -1256,7 +1248,7 @@ export class Repository {
   #addDateSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
     const dateValue = new Date(filter.value);
     if (isNaN(dateValue.getTime())) {
-      throw badRequest(`Invalid date value: ${filter.value}`);
+      throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
     }
     predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }

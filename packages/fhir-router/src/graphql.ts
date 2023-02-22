@@ -12,7 +12,8 @@ import {
   getSearchParameters,
   isResourceType,
   LRUCache,
-  normalizeErrorString,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
   Operator,
   parseSearchRequest,
   SearchRequest,
@@ -438,7 +439,7 @@ async function resolveById(
   try {
     return await ctx.dataLoader.load({ reference: `${info.fieldName}/${args.id}` });
   } catch (err) {
-    throw new Error(normalizeErrorString(err));
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
 }
 
@@ -455,7 +456,7 @@ async function resolveByReference(source: any, _args: any, ctx: GraphQLContext):
   try {
     return await ctx.dataLoader.load(source as Reference);
   } catch (err) {
-    throw new Error(normalizeErrorString(err));
+    throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
 }
 

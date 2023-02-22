@@ -5,7 +5,7 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
-import { getStatus, notFound } from './outcomes';
+import { getStatus, notFound, OperationOutcomeError } from './outcomes';
 import { createReference, ProfileResource, stringify } from './utils';
 
 const defaultOptions = {
@@ -1163,7 +1163,7 @@ test('Auto batch error', async () => {
     await patientPromise;
     throw new Error('Expected error');
   } catch (err) {
-    expect(err).toMatchObject(notFound);
+    expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
   }
 });
 
