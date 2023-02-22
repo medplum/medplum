@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["vitest/globals"],
     "rootDir": "src",
     "outDir": "dist",
     "lib": ["esnext", "dom"],
