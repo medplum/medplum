@@ -4,7 +4,14 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
-import { getMembershipsForLogin, tryLogin, validateLoginRequest, validatePkce, verifyMfaToken } from './utils';
+import {
+  getAuthTokens,
+  getMembershipsForLogin,
+  tryLogin,
+  validateLoginRequest,
+  validatePkce,
+  verifyMfaToken,
+} from './utils';
 
 let client: ClientApplication;
 
@@ -381,6 +388,26 @@ describe('OAuth utils', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
+    }
+  });
+
+  test('getAuthTokens missing user', async () => {
+    try {
+      await getAuthTokens({ resourceType: 'Login', user: {} }, { reference: 'Patient/123' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing user');
+    }
+  });
+
+  test('getAuthTokens Login missing profile', async () => {
+    try {
+      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } }, { reference: 'Patient/123' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
     }
   });
 });
