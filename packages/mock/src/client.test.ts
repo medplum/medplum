@@ -7,16 +7,10 @@ import {
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
+  OperationOutcomeError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
-  Bundle,
-  CodeableConcept,
-  OperationOutcome,
-  Patient,
-  SearchParameter,
-  ServiceRequest,
-} from '@medplum/fhirtypes';
+import { Bundle, CodeableConcept, Patient, SearchParameter, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import { TextEncoder } from 'util';
 import { MockClient } from './client';
@@ -342,7 +336,8 @@ describe('MockClient', () => {
       await client.readResource('Patient', randomUUID());
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 
@@ -361,7 +356,8 @@ describe('MockClient', () => {
       await client.readHistory('Patient', randomUUID());
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 
@@ -383,7 +379,8 @@ describe('MockClient', () => {
       await client.readVersion('Patient', resource1.id as string, randomUUID());
       fail('Expected error');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 
@@ -452,8 +449,8 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    await expect(
-      client.patchResource('Patient', resource1.id as string, [
+    try {
+      await client.patchResource('Patient', resource1.id as string, [
         {
           op: 'test',
           path: '/name/0/given/0',
@@ -464,10 +461,12 @@ describe('MockClient', () => {
           path: '/name/0/given/0',
           value: 'Marge',
         },
-      ])
-    ).rejects.toMatchObject({
-      issue: [{ details: { text: 'Test failed: Bart != Homer' } }],
-    });
+      ]);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0].details?.text).toEqual('Test failed: Bart != Homer');
+    }
   });
 
   test('Preserve history', async () => {
@@ -513,7 +512,8 @@ describe('MockClient', () => {
       await client.readResource('Patient', resource1.id as string);
       fail('Should have thrown');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 
