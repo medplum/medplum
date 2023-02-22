@@ -2,7 +2,7 @@ import { MantineProvider } from '@mantine/core';
 import { NotificationsProvider } from '@mantine/notifications';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bot, Bundle, OperationOutcome, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import { Bot, Bundle, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
