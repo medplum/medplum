@@ -1,0 +1,22 @@
+{
+  "apiPort": 8103,
+  "name": "test",
+  "region": "us-west-2",
+  "accountNumber": "819438846128",
+  "stackName": "MedplumTest",
+  "domainName": "medplum-test.letsdevelo.com",
+  "apiDomainName": "api.medplum-test.letsdevelo.com",
+  "appDomainName": "app.medplum-test.letsdevelo.com",
+  "storageDomainName": "storage.medplum-test.letsdevelo.com",
+  "storageBucketName": "medplum-test-storage",
+  "maxAzs": 2,
+  "rdsInstances": 1,
+  "desiredServerCount": 1,
+  "serverMemory": 512,
+  "serverCpu": 256,
+  "serverImage": "medplum/medplum-server:latest",
+  "storagePublicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA050DU/9LrFDOo3uH7wZ6\nhTrHpKJDgfiDbQksDKbIr/z6gnzJX6S5/U27G0TOYeP/jjy04xMfAWgvk8lqqzRy\ng5YKeKI51ASYYjMy+KzYifl+v+PMdScYhoKmrePFs2d6BH8rOMrI3mitnnQXCYpT\nCweouQkRXryBUnex7Aut2ecV7YX+AhmJFcjoCvshLPC+AKgrogwlLiwRFnVIrAvA\nzaFvQ5EUYiGZD9xef422x/dwugB6nVWoH4tljpzDg73iiNqGE7AhNCGi/oPv52f4\nrs6fulo9XAgrtccQC0xX1MMWs+r8EBljWS0l4DtoXhZ8lPMtaVTqsD+pRwmkw4hD\nXwIDAQAB\n-----END PUBLIC KEY-----\n",
+  "apiSslCertArn": "arn:aws:acm:us-west-2:819438846128:certificate/7d52d66f-5bad-431f-ad7d-5b0912f6b50d",
+  "appSslCertArn": "arn:aws:acm:us-east-1:819438846128:certificate/be456a68-885e-46a7-b741-551502bcd403",
+  "storageSslCertArn": "arn:aws:acm:us-east-1:819438846128:certificate/d01867ed-e1fd-4327-bf7b-522fc826ed54"
+}
