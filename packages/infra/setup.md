@@ -508,8 +508,9 @@ pcFlowLogs8C3147DB, MedplumTestBackEndDatabaseClusterSecretCA3ACE143fdaad7efa858
 
 1. Deploy the medplum app
   1. install dependencies for entire project (`npm install`)
+  1. set the correct MEDPLUM_BASE_URL in packages/app/.env
+        `MEDPLUM_BASE_URL=https://app.medplum-test.letsdevelo.com/api/`
   1. build the entire project (`npm run build`)
-  1. build the medplum app static assets (from the packages/app directory, run `export MEDPLUM_BASE_URL=https://app.medplum-test.letsdevelo.com/api/ && npm run build`)
   1. load the built site into s3 (`APP_BUCKET=app.medplum-test.letsdevelo.com ./scripts/deploy-app.sh`)
 
 1. Fix S3 permissions
@@ -566,5 +567,10 @@ in full, the policy looks like this
 ```
 
       
+1. Add keypair id to aws parameterstore (Can be found in cloudfront keys https://us-east-1.console.aws.amazon.com/cloudfront/v3/home?region=us-east-1#/publickey)
+   `aws ssm put-parameter --name /medplum/test/signingKeyId --value K2FQWT6S8D1BAX --type SecureString`
+
+   Then restart the fargate server container. This allows the "Download" binary button to work. Otherwise the key id is "unknown" and aws S3 correctly won't render the document
+
 
 
