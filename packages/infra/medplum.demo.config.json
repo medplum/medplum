@@ -14,7 +14,7 @@
   "desiredServerCount": 1,
   "serverMemory": 512,
   "serverCpu": 256,
-  "serverImage": "medplum/medplum-server:latest",
+  "serverImage": "medplum/medplum-server:2.0.1",
   "storagePublicKey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA6v40vpDOdFctG/NjKBSA\nvsm7q8zPo7rXD2r3gMC2yHIfWSayHzhn4QXJRgtGJnm4SHJVi8TMig80GTnMOZ30\nsyrt7FGx8D63KDSMWWdg/OnAL5VfIIsDasuyUcHo+DXnS0O/6+AtRoG0Bapyhe0q\nqtMRabAQwb8+XZ1KgXKUdH04bmuoBc/pg129X8hC4FKwDw6Ng/Ay9yJBYw396zJF\ngliaiCzx0NSEioIWAfATWyu673md7tIUOvYgEX0BrpQoBvU75PexwYEgb4bJjIaE\nZSpW+033BzfFB9a+BvzPHncGnu3UOwVITnV5csovShCyfDuoUCrzPxqIn37QKdu1\nvwIDAQAB\n-----END PUBLIC KEY-----\n",
   "apiSslCertArn": "arn:aws:acm:us-west-2:819438846128:certificate/be8b756d-7356-4db5-b1c1-66362c537c29",
   "appSslCertArn": "arn:aws:acm:us-east-1:819438846128:certificate/dc74735f-e2db-4668-9468-d7ad84e691ec",
