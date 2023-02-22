@@ -1,12 +1,4 @@
-import {
-  allOk,
-  badRequest,
-  getReferenceString,
-  getStatus,
-  isOk,
-  normalizeOperationOutcome,
-  parseSearchUrl,
-} from '@medplum/core';
+import { allOk, badRequest, getReferenceString, getStatus, isOk, parseSearchUrl } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
@@ -74,7 +66,7 @@ class BatchProcessor {
       try {
         resultEntries.push(await this.#processBatchEntry(rewritten));
       } catch (err) {
-        resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
+        resultEntries.push(buildBundleResponse(err as OperationOutcome));
       }
     }
 

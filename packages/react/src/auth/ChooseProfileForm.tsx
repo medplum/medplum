@@ -17,7 +17,7 @@ export function ChooseProfileForm(props: ChooseProfileFormProps): JSX.Element {
     <Stack>
       <Center sx={{ flexDirection: 'column' }}>
         <Logo size={32} />
-        <Title order={3}>Choose profile</Title>
+        <Title>Choose profile</Title>
       </Center>
       {props.memberships.map((membership: ProjectMembership) => (
         <UnstyledButton

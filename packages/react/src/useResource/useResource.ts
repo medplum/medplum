@@ -1,4 +1,4 @@
-import { deepEquals, MedplumClient, normalizeOperationOutcome } from '@medplum/core';
+import { deepEquals, MedplumClient } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -16,7 +16,6 @@ export function useResource<T extends Resource>(
   const medplum = useMedplum();
   const referenceRef = useRef<Reference<T> | undefined>(undefined);
   const resourceRef = useRef<T | undefined>(undefined);
-  const lastRequestedRef = useRef<string | undefined>(undefined);
 
   // Parse the input value into a reference and resource
   parseValue(value, referenceRef, resourceRef);
@@ -34,8 +33,7 @@ export function useResource<T extends Resource>(
 
   // Subscribe to changes to the passed-in value
   useEffect(() => {
-    if (referenceRef.current && referenceRef.current.reference !== lastRequestedRef.current) {
-      lastRequestedRef.current = referenceRef.current.reference;
+    if (referenceRef.current) {
       medplum
         .readReference(referenceRef.current)
         .then((newValue) => {
@@ -45,7 +43,7 @@ export function useResource<T extends Resource>(
         })
         .catch((err) => {
           if (setOutcome) {
-            setOutcome(normalizeOperationOutcome(err));
+            setOutcome(err);
           }
         });
     }

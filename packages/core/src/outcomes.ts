@@ -196,21 +196,6 @@ export class OperationOutcomeError extends Error {
 }
 
 /**
- * Normalizes an error object into an OperationOutcome.
- * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
- * @returns The normalized OperationOutcome.
- */
-export function normalizeOperationOutcome(error: unknown): OperationOutcome {
-  if (error instanceof OperationOutcomeError) {
-    return error.outcome;
-  }
-  if (isOperationOutcome(error)) {
-    return error;
-  }
-  return badRequest(normalizeErrorString(error));
-}
-
-/**
  * Normalizes an error object into a displayable error string.
  * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
  * @returns A display string for the error.

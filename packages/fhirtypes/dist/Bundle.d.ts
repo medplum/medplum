@@ -6,7 +6,6 @@
 import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
-import { OperationOutcome } from './OperationOutcome';
 import { Resource } from './Resource';
 import { Signature } from './Signature';
 
@@ -329,7 +328,7 @@ export interface BundleEntryResponse {
    * An OperationOutcome containing hints and warnings produced as part of
    * processing this entry in a batch or transaction.
    */
-  outcome?: OperationOutcome;
+  outcome?: Resource;
 }
 
 /**
