@@ -1,4 +1,5 @@
 import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -17,7 +18,7 @@ export function ChangePasswordPage(): JSX.Element {
           medplum
             .post('auth/changepassword', formData)
             .then(() => setSuccess(true))
-            .catch(setOutcome);
+            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
         <Center sx={{ flexDirection: 'column' }}>

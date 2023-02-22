@@ -1,6 +1,6 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { MockClient } from './client';
 import { HomerSimpson } from './mocks';
@@ -91,7 +91,8 @@ describe('Mock Repo', () => {
       await client.readResource('Patient', resource1.id as string);
       fail('Should have thrown');
     } catch (err) {
-      expect((err as OperationOutcome).id).toEqual('not-found');
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
     }
   });
 

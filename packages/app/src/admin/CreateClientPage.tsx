@@ -1,4 +1,5 @@
 import { Button, Group, Stack, TextInput, Title } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -30,7 +31,7 @@ export function CreateClientPage(): JSX.Element {
             .post('admin/projects/' + projectId + '/client', body)
             .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
             .then(() => setSuccess(true))
-            .catch(setOutcome);
+            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
         {!success && (

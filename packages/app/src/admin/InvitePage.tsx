@@ -1,4 +1,5 @@
 import { Button, Checkbox, Group, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -29,7 +30,7 @@ export function InvitePage(): JSX.Element {
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => setEmailSent(body.sendEmail))
           .then(() => setSuccess(true))
-          .catch(setOutcome);
+          .catch((err) => setOutcome(normalizeOperationOutcome(err)));
       }}
     >
       {!success && (

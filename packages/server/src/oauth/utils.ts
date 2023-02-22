@@ -4,6 +4,7 @@ import {
   Filter,
   getDateProperty,
   getReferenceString,
+  OperationOutcomeError,
   Operator,
   ProfileResource,
   resolveId,
@@ -107,7 +108,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   }
 
   if (!user) {
-    throw badRequest('User not found');
+    throw new OperationOutcomeError(badRequest('User not found'));
   }
 
   await authenticate(request, user);
@@ -148,31 +149,31 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 export function validateLoginRequest(request: LoginRequest): void {
   if (request.authMethod === 'external') {
     if (!request.externalId && !request.email) {
-      throw badRequest('Missing email or externalId', 'externalId');
+      throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));
     }
     if (request.externalId && !request.projectId) {
-      throw badRequest('Project ID is required for external ID', 'projectId');
+      throw new OperationOutcomeError(badRequest('Project ID is required for external ID', 'projectId'));
     }
   } else {
     if (!request.email) {
-      throw badRequest('Invalid email', 'email');
+      throw new OperationOutcomeError(badRequest('Invalid email', 'email'));
     }
   }
 
   if (!request.authMethod) {
-    throw badRequest('Invalid authentication method', 'authMethod');
+    throw new OperationOutcomeError(badRequest('Invalid authentication method', 'authMethod'));
   }
 
   if (request.authMethod === 'password' && !request.password) {
-    throw badRequest('Invalid password', 'password');
+    throw new OperationOutcomeError(badRequest('Invalid password', 'password'));
   }
 
   if (request.authMethod === 'google' && !request.googleCredentials) {
-    throw badRequest('Invalid google credentials', 'googleCredentials');
+    throw new OperationOutcomeError(badRequest('Invalid google credentials', 'googleCredentials'));
   }
 
   if (!request.scope) {
-    throw badRequest('Invalid scope', 'scope');
+    throw new OperationOutcomeError(badRequest('Invalid scope', 'scope'));
   }
 }
 
@@ -182,11 +183,11 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
   }
 
   if (!request.codeChallenge && request.codeChallengeMethod) {
-    throw badRequest('Invalid code challenge', 'code_challenge');
+    throw new OperationOutcomeError(badRequest('Invalid code challenge', 'code_challenge'));
   }
 
   if (request.codeChallenge && !request.codeChallengeMethod) {
-    throw badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw new OperationOutcomeError(badRequest('Invalid code challenge method', 'code_challenge_method'));
   }
 
   if (
@@ -194,7 +195,7 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
     request.codeChallengeMethod !== 'plain' &&
     request.codeChallengeMethod !== 'S256'
   ) {
-    throw badRequest('Invalid code challenge method', 'code_challenge_method');
+    throw new OperationOutcomeError(badRequest('Invalid code challenge method', 'code_challenge_method'));
   }
 }
 
@@ -202,7 +203,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
   if (request.password && user.passwordHash) {
     const bcryptResult = await bcrypt.compare(request.password, user.passwordHash as string);
     if (!bcryptResult) {
-      throw badRequest('Email or password is invalid');
+      throw new OperationOutcomeError(badRequest('Email or password is invalid'));
     }
     return;
   }
@@ -217,7 +218,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
     return;
   }
 
-  throw badRequest('Invalid authentication method');
+  throw new OperationOutcomeError(badRequest('Invalid authentication method'));
 }
 
 /**
@@ -231,25 +232,25 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  */
 export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
   if (login.revoked) {
-    throw badRequest('Login revoked');
+    throw new OperationOutcomeError(badRequest('Login revoked'));
   }
 
   if (login.granted) {
-    throw badRequest('Login granted');
+    throw new OperationOutcomeError(badRequest('Login granted'));
   }
 
   if (login.mfaVerified) {
-    throw badRequest('Login already verified');
+    throw new OperationOutcomeError(badRequest('Login already verified'));
   }
 
   const user = await systemRepo.readReference(login.user as Reference<User>);
   if (!user.mfaEnrolled) {
-    throw badRequest('User not enrolled in MFA');
+    throw new OperationOutcomeError(badRequest('User not enrolled in MFA'));
   }
 
   const secret = user.mfaSecret as string;
   if (!authenticator.check(token, secret)) {
-    throw badRequest('Invalid MFA token');
+    throw new OperationOutcomeError(badRequest('Invalid MFA token'));
   }
 
   return systemRepo.updateResource<Login>({
@@ -272,7 +273,7 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
   }
 
   if (!login.user?.reference) {
-    throw new Error('User reference is missing');
+    throw new OperationOutcomeError(badRequest('User reference is missing'));
   }
 
   const filters: Filter[] = [
@@ -341,15 +342,15 @@ export async function getClientApplicationMembership(
  */
 export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
   if (login.revoked) {
-    throw badRequest('Login revoked');
+    throw new OperationOutcomeError(badRequest('Login revoked'));
   }
 
   if (login.granted) {
-    throw badRequest('Login granted');
+    throw new OperationOutcomeError(badRequest('Login granted'));
   }
 
   if (login.membership) {
-    throw badRequest('Login profile already set');
+    throw new OperationOutcomeError(badRequest('Login profile already set'));
   }
 
   // Find the membership for the user
@@ -357,10 +358,10 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
   } catch (err) {
-    throw badRequest('Profile not found');
+    throw new OperationOutcomeError(badRequest('Profile not found'));
   }
   if (membership.user?.reference !== login.user?.reference) {
-    throw badRequest('Invalid profile');
+    throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
   // Get the project
@@ -368,7 +369,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
 
   // Make sure the membership satisfies the project requirements
   if (project.features?.includes('google-auth-required') && login.authMethod !== 'google') {
-    throw badRequest('Google authentication is required');
+    throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
@@ -390,11 +391,11 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
  */
 export async function setLoginScope(login: Login, scope: string): Promise<Login> {
   if (login.revoked) {
-    throw badRequest('Login revoked');
+    throw new OperationOutcomeError(badRequest('Login revoked'));
   }
 
   if (login.granted) {
-    throw badRequest('Login granted');
+    throw new OperationOutcomeError(badRequest('Login granted'));
   }
 
   // Get existing scope
@@ -406,7 +407,7 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   // If user requests any scope that is not in existing scope, then reject
   for (const scope of submittedScopes) {
     if (!existingScopes.includes(scope)) {
-      throw badRequest('Invalid scope');
+      throw new OperationOutcomeError(badRequest('Invalid scope'));
     }
   }
 
@@ -421,11 +422,11 @@ export async function getAuthTokens(login: Login, profile: Reference<ProfileReso
   const clientId = login.client && resolveId(login.client);
   const userId = resolveId(login.user);
   if (!userId) {
-    throw badRequest('Login missing user');
+    throw new OperationOutcomeError(badRequest('Login missing user'));
   }
 
   if (!login.membership) {
-    throw badRequest('Login missing profile');
+    throw new OperationOutcomeError(badRequest('Login missing profile'));
   }
 
   if (!login.granted) {

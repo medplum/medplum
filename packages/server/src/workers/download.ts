@@ -1,4 +1,4 @@
-import { isGone, OperationOutcomeError } from '@medplum/core';
+import { isGone, normalizeOperationOutcome } from '@medplum/core';
 import { Binary, Meta, Resource } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
@@ -155,7 +155,8 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
   try {
     resource = await systemRepo.readResource(resourceType, id);
   } catch (err) {
-    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isGone(outcome)) {
       // If the resource was deleted, then stop processing it.
       return;
     }

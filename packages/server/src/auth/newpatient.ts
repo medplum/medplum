@@ -1,4 +1,4 @@
-import { badRequest, createReference } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
 import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -71,7 +71,7 @@ export async function createPatient(
   const project = await systemRepo.readResource<Project>('Project', projectId);
 
   if (!project.defaultPatientAccessPolicy) {
-    throw badRequest('Project does not allow open registration');
+    throw new OperationOutcomeError(badRequest('Project does not allow open registration'));
   }
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;

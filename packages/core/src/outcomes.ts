@@ -189,10 +189,26 @@ export function assertOk<T>(outcome: OperationOutcome, resource: T | undefined):
 export class OperationOutcomeError extends Error {
   readonly outcome: OperationOutcome;
 
-  constructor(outcome: OperationOutcome) {
+  constructor(outcome: OperationOutcome, cause?: unknown) {
     super(outcome?.issue?.[0].details?.text);
     this.outcome = outcome;
+    this.cause = cause;
   }
+}
+
+/**
+ * Normalizes an error object into an OperationOutcome.
+ * @param error The error value which could be a string, Error, OperationOutcome, or other unknown type.
+ * @returns The normalized OperationOutcome.
+ */
+export function normalizeOperationOutcome(error: unknown): OperationOutcome {
+  if (error instanceof OperationOutcomeError) {
+    return error.outcome;
+  }
+  if (isOperationOutcome(error)) {
+    return error;
+  }
+  return badRequest(normalizeErrorString(error));
 }
 
 /**

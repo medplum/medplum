@@ -3,7 +3,7 @@ import {
   getExtensionValue,
   isGone,
   matchesSearchRequest,
-  OperationOutcomeError,
+  normalizeOperationOutcome,
   Operator,
   parseSearchUrl,
   stringify,
@@ -238,7 +238,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   try {
     subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
   } catch (err) {
-    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isGone(outcome)) {
       // If the subscription was deleted, then stop processing it.
       return;
     }
@@ -255,7 +256,8 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   try {
     currentVersion = await systemRepo.readResource(resourceType, id);
   } catch (err) {
-    if (err instanceof OperationOutcomeError && isGone(err.outcome)) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isGone(outcome)) {
       // If the resource was deleted, then stop processing it.
       return;
     }

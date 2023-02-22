@@ -1,10 +1,17 @@
 import { OperationOutcomeError } from '@medplum/core';
-import { ClientApplication, OperationOutcome } from '@medplum/fhirtypes';
+import { ClientApplication } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
-import { tryLogin, validateLoginRequest, validatePkce } from './utils';
+import {
+  getAuthTokens,
+  getMembershipsForLogin,
+  tryLogin,
+  validateLoginRequest,
+  validatePkce,
+  verifyMfaToken,
+} from './utils';
 
 let client: ClientApplication;
 
@@ -51,7 +58,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
     }
@@ -70,7 +77,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
     }
@@ -89,7 +96,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
     }
@@ -108,7 +115,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
@@ -126,7 +133,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
@@ -144,7 +151,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
     }
@@ -163,7 +170,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
     }
@@ -193,7 +200,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
     }
   });
@@ -209,7 +216,7 @@ describe('OAuth utils', () => {
       });
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
     }
   });
@@ -232,7 +239,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
     }
   });
@@ -255,7 +262,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
     }
   });
@@ -278,7 +285,7 @@ describe('OAuth utils', () => {
       );
       fail('Expected error');
     } catch (err) {
-      const outcome = err as OperationOutcome;
+      const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
     }
   });
@@ -342,6 +349,66 @@ describe('OAuth utils', () => {
         client
       )
     ).not.toThrow();
+  });
+
+  test('verifyMfaToken login revoked', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', revoked: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login revoked');
+    }
+  });
+
+  test('verifyMfaToken login granted', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', granted: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login granted');
+    }
+  });
+
+  test('verifyMfaToken login already verified', async () => {
+    try {
+      await verifyMfaToken({ resourceType: 'Login', mfaVerified: true }, 'token');
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login already verified');
+    }
+  });
+
+  test('getMembershipsForLogin missing user reference', async () => {
+    try {
+      await getMembershipsForLogin({ resourceType: 'Login', user: {} });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
+    }
+  });
+
+  test('getAuthTokens missing user', async () => {
+    try {
+      await getAuthTokens({ resourceType: 'Login', user: {} }, { reference: 'Patient/123' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing user');
+    }
+  });
+
+  test('getAuthTokens Login missing profile', async () => {
+    try {
+      await getAuthTokens({ resourceType: 'Login', user: { reference: 'User/123' } }, { reference: 'Patient/123' });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
+    }
   });
 });
 

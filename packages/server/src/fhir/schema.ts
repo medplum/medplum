@@ -72,10 +72,10 @@ export function isResourceType(resourceType: string): boolean {
 
 export function validateResourceType(resourceType: string): void {
   if (!resourceType) {
-    throw validationError('Resource type is null');
+    throw new OperationOutcomeError(validationError('Resource type is null'));
   }
   if (!isResourceType(resourceType)) {
-    throw validationError('Unknown resource type');
+    throw new OperationOutcomeError(validationError('Unknown resource type'));
   }
 }
 
@@ -97,12 +97,12 @@ export class FhirSchemaValidator<T extends Resource> {
   validate(): void {
     const resource = this.#root;
     if (!resource) {
-      throw validationError('Resource is null');
+      throw new OperationOutcomeError(validationError('Resource is null'));
     }
 
     const resourceType = resource.resourceType;
     if (!resourceType) {
-      throw validationError('Missing resource type');
+      throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
     // Check for "null" once for the entire object hierarchy
@@ -122,7 +122,7 @@ export class FhirSchemaValidator<T extends Resource> {
   #validateObject(typedValue: TypedValue, path: string): void {
     const definition = this.#schema.types[typedValue.type];
     if (!definition) {
-      throw validationError('Unknown type: ' + typedValue.type);
+      throw new OperationOutcomeError(validationError('Unknown type: ' + typedValue.type));
     }
 
     const propertyDefinitions = definition.properties;

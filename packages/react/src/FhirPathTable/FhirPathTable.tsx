@@ -1,5 +1,5 @@
 import { Button, Loader, Table } from '@mantine/core';
-import { IndexedStructureDefinition, PropertyType } from '@medplum/core';
+import { IndexedStructureDefinition, normalizeOperationOutcome, PropertyType } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
@@ -48,7 +48,10 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
 
   useEffect(() => {
     setOutcome(undefined);
-    medplum.graphql(query).then(setResponse).catch(setOutcome);
+    medplum
+      .graphql(query)
+      .then(setResponse)
+      .catch((err) => setOutcome(normalizeOperationOutcome(err)));
   }, [medplum, query]);
 
   function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {

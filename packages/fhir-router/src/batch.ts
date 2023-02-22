@@ -1,4 +1,13 @@
-import { allOk, badRequest, getReferenceString, getStatus, isOk, parseSearchUrl } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  getReferenceString,
+  getStatus,
+  isOk,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
+  parseSearchUrl,
+} from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
@@ -48,16 +57,16 @@ class BatchProcessor {
   async processBatch(): Promise<Bundle> {
     const bundleType = this.bundle.type;
     if (!bundleType) {
-      throw badRequest('Missing bundle type');
+      throw new OperationOutcomeError(badRequest('Missing bundle type'));
     }
 
     if (bundleType !== 'batch' && bundleType !== 'transaction') {
-      throw badRequest('Unrecognized bundle type');
+      throw new OperationOutcomeError(badRequest('Unrecognized bundle type'));
     }
 
     const entries = this.bundle.entry;
     if (!entries) {
-      throw badRequest('Missing bundle entry');
+      throw new OperationOutcomeError(badRequest('Missing bundle entry'));
     }
 
     const resultEntries: BundleEntry[] = [];
@@ -66,7 +75,7 @@ class BatchProcessor {
       try {
         resultEntries.push(await this.#processBatchEntry(rewritten));
       } catch (err) {
-        resultEntries.push(buildBundleResponse(err as OperationOutcome));
+        resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
       }
     }
 
@@ -133,30 +142,30 @@ class BatchProcessor {
 
   #validateEntry(entry: BundleEntry): void {
     if (!entry.request) {
-      throw badRequest('Missing entry.request');
+      throw new OperationOutcomeError(badRequest('Missing entry.request'));
     }
 
     if (!entry.request.method) {
-      throw badRequest('Missing entry.request.method');
+      throw new OperationOutcomeError(badRequest('Missing entry.request.method'));
     }
 
     if (!entry.request.url) {
-      throw badRequest('Missing entry.request.url');
+      throw new OperationOutcomeError(badRequest('Missing entry.request.url'));
     }
   }
 
   #parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
     if (!patchResource) {
-      throw badRequest('Missing entry.resource');
+      throw new OperationOutcomeError(badRequest('Missing entry.resource'));
     }
 
     if (patchResource.resourceType !== 'Binary') {
-      throw badRequest('Patch resource must be a Binary');
+      throw new OperationOutcomeError(badRequest('Patch resource must be a Binary'));
     }
 
     if (!patchResource.data) {
-      throw badRequest('Missing entry.resource.data');
+      throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
     }
 
     return JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
