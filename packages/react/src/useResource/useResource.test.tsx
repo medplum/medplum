@@ -119,6 +119,7 @@ describe('useResource', () => {
       const [resource, setResource] = useState<ServiceRequest>({
         resourceType: 'ServiceRequest',
         status: 'draft',
+        id: '123',
       });
       return (
         <>
