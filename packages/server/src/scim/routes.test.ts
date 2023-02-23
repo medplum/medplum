@@ -1,8 +1,12 @@
+import { createReference } from '@medplum/core';
+import { AccessPolicy } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
+import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { systemRepo } from '../fhir/repo';
 
 const app = express();
 let accessToken: string;
@@ -11,7 +15,28 @@ describe('SCIM Routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+
+    // First, Alice creates a project
+    const registration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+    accessToken = registration.accessToken;
+
+    // Create default access policy
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: 'Patient' }],
+    });
+
+    // Update project with default access policy
+    await systemRepo.updateResource({
+      ...registration.project,
+      defaultPatientAccessPolicy: createReference(accessPolicy),
+    });
   });
 
   afterAll(async () => {
@@ -23,44 +48,70 @@ describe('SCIM Routes', () => {
       .get(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+
+    const result = res.body;
+    expect(result.totalResults).toBeDefined();
+    expect(result.Resources).toBeDefined();
   });
 
-  test('Create user', async () => {
+  test('Create and update user', async () => {
+    const res1 = await request(app)
+      .post(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        schemas: [
+          'urn:ietf:params:scim:schemas:core:2.0:User',
+          'urn:ietf:params:scim:schemas:extension:medplum:2.0:Patient',
+        ],
+        userName: randomUUID() + '@example.com',
+        name: {
+          givenName: 'SCIM',
+          familyName: 'User',
+        },
+      });
+    expect(res1.status).toBe(201);
+
+    const readResponse = await request(app)
+      .get(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(readResponse.status).toBe(200);
+    expect(readResponse.body.id).toBe(res1.body.id);
+
+    const searchResponse = await request(app)
+      .get(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(searchResponse.status).toBe(200);
+
+    const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
+    expect(searchCheck).toBeDefined();
+
+    const updateResponse = await request(app)
+      .put(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/json')
+      .send({
+        ...res1.body,
+        externalId: randomUUID(),
+      });
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.externalId).toBeDefined();
+  });
+
+  test('Create missing medplum user type', async () => {
     const res = await request(app)
       .post(`/scim/v2/Users`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json')
-      .send({});
-    expect(res.status).toBe(200);
-  });
-
-  test('Read user', async () => {
-    const res = await request(app)
-      .get(`/scim/v2/Users/123`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-  });
-
-  test('Update user', async () => {
-    const res = await request(app)
-      .put(`/scim/v2/Users/123`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/json')
-      .send({});
-    expect(res.status).toBe(200);
-  });
-
-  test('Delete user', async () => {
-    const res = await request(app)
-      .delete(`/scim/v2/Users/123`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
-  });
-
-  test('Patch user', async () => {
-    const res = await request(app)
-      .patch(`/scim/v2/Users/123`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userName: randomUUID() + '@example.com',
+        name: {
+          givenName: 'SCIM',
+          familyName: 'User',
+        },
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');
   });
 });

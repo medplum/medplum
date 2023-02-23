@@ -58,6 +58,11 @@ export interface ProjectMembership {
   project?: Reference<Project>;
 
   /**
+   * The project administrator who invited the user to the project.
+   */
+  invitedBy?: Reference<User>;
+
+  /**
    * User that is granted access to the project.
    */
   user?: Reference<Bot | ClientApplication | User>;

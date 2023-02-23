@@ -59,6 +59,7 @@ export interface InviteRequest {
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly sendEmail?: boolean;
   readonly password?: string;
+  readonly invitedBy?: Reference<User>;
 }
 
 export async function inviteUser(
