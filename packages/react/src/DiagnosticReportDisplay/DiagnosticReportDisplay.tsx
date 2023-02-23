@@ -65,7 +65,12 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
   useEffect(() => {
     if (diagnosticReport?.specimen) {
-      Promise.all(diagnosticReport.specimen.map((ref) => medplum.readReference(ref)))
+      Promise.allSettled(diagnosticReport.specimen.map((ref) => medplum.readReference(ref)))
+        .then((outcomes) =>
+          outcomes
+            .filter((outcome) => outcome.status === 'fulfilled')
+            .map((outcome) => (outcome as PromiseFulfilledResult<Specimen>).value)
+        )
         .then(setSpecimens)
         .catch(console.error);
     }
