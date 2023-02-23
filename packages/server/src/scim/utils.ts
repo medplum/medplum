@@ -19,6 +19,7 @@ export async function searchScimUsers(project: Project): Promise<ScimListRespons
     (
       await systemRepo.search<ProjectMembership>({
         resourceType: 'ProjectMembership',
+        count: 1000,
         filters: [
           {
             code: 'project',
