@@ -123,7 +123,9 @@ describe('useResource', () => {
       });
       return (
         <>
-          <button onClick={() => setResource((sr) => ({ ...sr, status: 'active' }))}>Click</button>
+          <button onClick={() => setResource((sr) => ({ ...sr, status: sr.status === 'active' ? 'draft' : 'active' }))}>
+            Click
+          </button>
           <TestComponent value={resource} />
         </>
       );
@@ -138,7 +140,52 @@ describe('useResource', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Click'));
     });
-
     expect(el.innerHTML).toContain('active');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Click'));
+    });
+    expect(el.innerHTML).not.toContain('active');
+  });
+
+  test('Responds to value edit after cache', async () => {
+    function TestComponentWrapper(): JSX.Element {
+      // Call useResource with a reference to fille the cache
+      useResource({ reference: 'ServiceRequest/123' });
+      const [resource, setResource] = useState<ServiceRequest>({
+        resourceType: 'ServiceRequest',
+        status: 'draft',
+        id: '123',
+      });
+
+      return (
+        <>
+          <button
+            onClick={() => {
+              setResource((sr) => ({ ...sr, status: sr.status === 'active' ? 'draft' : 'active' }));
+            }}
+          >
+            Click
+          </button>
+          <TestComponent value={resource} />
+        </>
+      );
+    }
+
+    await setup(<TestComponentWrapper />);
+
+    const el = screen.getByTestId('test-component');
+    expect(el).toBeInTheDocument();
+    expect(el.innerHTML).not.toContain('active');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Click'));
+    });
+    expect(el.innerHTML).toContain('active');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Click'));
+    });
+    expect(el.innerHTML).not.toContain('active');
   });
 });

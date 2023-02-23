@@ -36,7 +36,7 @@ export function useResource<T extends Resource>(
   useEffect(() => {
     if (resourceRef.current) {
       if (!deepEquals(prevResource, currentResource)) {
-        forceRerender(currentResource);
+        forceRerender(resourceRef.current);
       }
     } else if (referenceRef.current && referenceRef.current.reference !== lastRequestedRef.current) {
       lastRequestedRef.current = referenceRef.current.reference;
@@ -82,10 +82,6 @@ function parseValue<T extends Resource>(
     referenceRef.current = value as Reference<T>;
   } else if ('resourceType' in value) {
     resourceRef.current = value;
-    if ('id' in value) {
-      // If the input is a resource with an ID, then we can still create a reference
-      referenceRef.current = { reference: value.resourceType + '/' + value.id };
-    }
   }
 }
 
