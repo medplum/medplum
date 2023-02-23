@@ -87,7 +87,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   return (
     <Stack>
       <Title>Diagnostic Report</Title>
-      {DiagnosticReportHeader(diagnosticReport)}
+      <DiagnosticReportHeader value={diagnosticReport} />
       {!props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
@@ -97,21 +97,25 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   );
 }
 
-function DiagnosticReportHeader(diagnosticReport: DiagnosticReport): JSX.Element {
+interface DiagnosticReportHeaderProps {
+  value: DiagnosticReport;
+}
+
+function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
   return (
     <Group mt="md" spacing={30}>
-      {diagnosticReport.subject && (
+      {value.subject && (
         <div>
           <Text size="xs" transform="uppercase" color="dimmed">
             Subject
           </Text>
           <Text>
-            <ResourceBadge value={diagnosticReport.subject} link={true} />
+            <ResourceBadge value={value.subject} link={true} />
           </Text>
         </div>
       )}
-      {diagnosticReport.resultsInterpreter &&
-        diagnosticReport.resultsInterpreter.map((interpreter) => (
+      {value.resultsInterpreter &&
+        value.resultsInterpreter.map((interpreter) => (
           <div key={interpreter.reference}>
             <Text size="xs" transform="uppercase" color="dimmed">
               Interpreter
@@ -121,8 +125,8 @@ function DiagnosticReportHeader(diagnosticReport: DiagnosticReport): JSX.Element
             </Text>
           </div>
         ))}
-      {diagnosticReport.performer &&
-        diagnosticReport.performer.map((performer) => (
+      {value.performer &&
+        value.performer.map((performer) => (
           <div key={performer.reference}>
             <Text size="xs" transform="uppercase" color="dimmed">
               Performer
@@ -132,20 +136,20 @@ function DiagnosticReportHeader(diagnosticReport: DiagnosticReport): JSX.Element
             </Text>
           </div>
         ))}
-      {diagnosticReport.issued && (
+      {value.issued && (
         <div>
           <Text size="xs" transform="uppercase" color="dimmed">
             Issued
           </Text>
-          <Text>{formatDateTime(diagnosticReport.issued)}</Text>
+          <Text>{formatDateTime(value.issued)}</Text>
         </div>
       )}
-      {diagnosticReport.status && (
+      {value.status && (
         <div>
           <Text size="xs" transform="uppercase" color="dimmed">
             Status
           </Text>
-          <Text>{capitalize(diagnosticReport.status)}</Text>
+          <Text>{capitalize(value.status)}</Text>
         </div>
       )}
     </Group>
