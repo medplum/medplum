@@ -1,6 +1,5 @@
-import { Resource } from '@medplum/fhirtypes';
 import { Atom, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
-import { PropertyType, TypedValue } from '../types';
+import { isResource, PropertyType, TypedValue } from '../types';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -68,7 +67,7 @@ export class SymbolAtom implements Atom {
       return undefined;
     }
 
-    if ('resourceType' in input && (input as Resource).resourceType === this.name) {
+    if (isResource(input) && input.resourceType === this.name) {
       return typedValue;
     }
 
