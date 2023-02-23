@@ -1,5 +1,5 @@
-import { createReference } from '@medplum/core';
-import { Observation, Reference } from '@medplum/fhirtypes';
+import { createReference, deepClone } from '@medplum/core';
+import { Observation, Reference, Specimen } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 import { Meta } from '@storybook/react';
 import React, { useEffect, useState } from 'react';
@@ -41,6 +41,25 @@ export const WithCategories = (): JSX.Element => {
   return (
     <Document>
       <DiagnosticReportDisplay value={ExampleReport} />
+    </Document>
+  );
+};
+
+export const MultipleSpecimens = (): JSX.Element => {
+  const report = deepClone(HomerDiagnosticReport);
+  report.specimen = [HomerDiagnosticReport.specimen?.[0], HomerDiagnosticReport.specimen?.[0]] as Reference<Specimen>[];
+
+  return (
+    <Document>
+      <DiagnosticReportDisplay value={report} />
+    </Document>
+  );
+};
+
+export const HideSpecimenInfo = (): JSX.Element => {
+  return (
+    <Document>
+      <DiagnosticReportDisplay hideSpecimenInfo value={HomerDiagnosticReport} />
     </Document>
   );
 };

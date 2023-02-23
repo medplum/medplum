@@ -1,4 +1,4 @@
-import { createStyles, Group, Stack, Text, Title } from '@mantine/core';
+import { createStyles, Group, List, Stack, Text, Title } from '@mantine/core';
 import { capitalize, formatDateTime, formatObservationValue } from '@medplum/core';
 import {
   Annotation,
@@ -7,10 +7,12 @@ import {
   ObservationComponent,
   ObservationReferenceRange,
   Reference,
+  Specimen,
 } from '@medplum/fhirtypes';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
@@ -48,17 +50,37 @@ const useStyles = createStyles((theme) => ({
 export interface DiagnosticReportDisplayProps {
   value?: DiagnosticReport | Reference<DiagnosticReport>;
   hideObservationNotes?: boolean;
+  hideSpecimenInfo?: boolean;
 }
 
+DiagnosticReportDisplay.defaultProps = {
+  hideObservationNotes: false,
+  hideSpecimenInfo: false,
+} as DiagnosticReportDisplayProps;
+
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
+  const medplum = useMedplum();
   const diagnosticReport = useResource(props.value);
-  const specimen = useResource(diagnosticReport?.specimen?.[0]);
+  const [specimens, setSpecimens] = useState<Specimen[]>();
+
+  useEffect(() => {
+    if (diagnosticReport?.specimen) {
+      Promise.allSettled(diagnosticReport.specimen.map((ref) => medplum.readReference(ref)))
+        .then((outcomes) =>
+          outcomes
+            .filter((outcome) => outcome.status === 'fulfilled')
+            .map((outcome) => (outcome as PromiseFulfilledResult<Specimen>).value)
+        )
+        .then(setSpecimens)
+        .catch(console.error);
+    }
+  }, [medplum, diagnosticReport]);
 
   if (!diagnosticReport) {
     return null;
   }
 
-  const specimenNotes: Annotation[] = specimen?.note || [];
+  const specimenNotes: Annotation[] = specimens?.flatMap((spec) => spec.note || []) || [];
 
   if (diagnosticReport.presentedForm && diagnosticReport.presentedForm.length > 0) {
     const pf = diagnosticReport.presentedForm[0];
@@ -70,60 +92,96 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   return (
     <Stack>
       <Title>Diagnostic Report</Title>
-      <Group mt="md" spacing={30}>
-        {diagnosticReport.subject && (
-          <div>
-            <Text size="xs" transform="uppercase" color="dimmed">
-              Subject
-            </Text>
-            <Text>
-              <ResourceBadge value={diagnosticReport.subject} link={true} />
-            </Text>
-          </div>
-        )}
-        {diagnosticReport.resultsInterpreter &&
-          diagnosticReport.resultsInterpreter.map((interpreter) => (
-            <div key={interpreter.reference}>
-              <Text size="xs" transform="uppercase" color="dimmed">
-                Interpreter
-              </Text>
-              <Text>
-                <ResourceBadge value={interpreter} link={true} />
-              </Text>
-            </div>
-          ))}
-        {diagnosticReport.performer &&
-          diagnosticReport.performer.map((performer) => (
-            <div key={performer.reference}>
-              <Text size="xs" transform="uppercase" color="dimmed">
-                Performer
-              </Text>
-              <Text>
-                <ResourceBadge value={performer} link={true} />
-              </Text>
-            </div>
-          ))}
-        {diagnosticReport.issued && (
-          <div>
-            <Text size="xs" transform="uppercase" color="dimmed">
-              Issued
-            </Text>
-            <Text>{formatDateTime(diagnosticReport.issued)}</Text>
-          </div>
-        )}
-        {diagnosticReport.status && (
-          <div>
-            <Text size="xs" transform="uppercase" color="dimmed">
-              Status
-            </Text>
-            <Text>{capitalize(diagnosticReport.status)}</Text>
-          </div>
-        )}
-      </Group>
+      <DiagnosticReportHeader value={diagnosticReport} />
+      {!props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
       {specimenNotes.length > 0 && <NoteDisplay value={specimenNotes} />}
+    </Stack>
+  );
+}
+
+interface DiagnosticReportHeaderProps {
+  value: DiagnosticReport;
+}
+
+function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
+  return (
+    <Group mt="md" spacing={30}>
+      {value.subject && (
+        <div>
+          <Text size="xs" transform="uppercase" color="dimmed">
+            Subject
+          </Text>
+          <Text>
+            <ResourceBadge value={value.subject} link={true} />
+          </Text>
+        </div>
+      )}
+      {value.resultsInterpreter &&
+        value.resultsInterpreter.map((interpreter) => (
+          <div key={interpreter.reference}>
+            <Text size="xs" transform="uppercase" color="dimmed">
+              Interpreter
+            </Text>
+            <Text>
+              <ResourceBadge value={interpreter} link={true} />
+            </Text>
+          </div>
+        ))}
+      {value.performer &&
+        value.performer.map((performer) => (
+          <div key={performer.reference}>
+            <Text size="xs" transform="uppercase" color="dimmed">
+              Performer
+            </Text>
+            <Text>
+              <ResourceBadge value={performer} link={true} />
+            </Text>
+          </div>
+        ))}
+      {value.issued && (
+        <div>
+          <Text size="xs" transform="uppercase" color="dimmed">
+            Issued
+          </Text>
+          <Text>{formatDateTime(value.issued)}</Text>
+        </div>
+      )}
+      {value.status && (
+        <div>
+          <Text size="xs" transform="uppercase" color="dimmed">
+            Status
+          </Text>
+          <Text>{capitalize(value.status)}</Text>
+        </div>
+      )}
+    </Group>
+  );
+}
+
+function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
+  return (
+    <Stack spacing={'xs'}>
+      <Title order={2} size="h6">
+        Specimens
+      </Title>
+
+      <List type="ordered">
+        {specimens?.map((specimen, index) => (
+          <List.Item ml={'sm'} key={`specimen-${specimen.id}-${index}`}>
+            <Group spacing={20}>
+              <Group spacing={5}>
+                <Text fw={500}>Collected:</Text> {formatDateTime(specimen.collection?.collectedDateTime)}
+              </Group>
+              <Group spacing={5}>
+                <Text fw={500}>Received:</Text> {formatDateTime(specimen.receivedTime)}
+              </Group>
+            </Group>
+          </List.Item>
+        ))}
+      </List>
     </Stack>
   );
 }
@@ -151,7 +209,7 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
       <tbody>
         {props.value?.map((observation, index) => (
           <ObservationRow
-            key={`obs-${index}-${observation.id}`}
+            key={`obs-${observation.id}-${index}`}
             hideObservationNotes={props.hideObservationNotes}
             value={observation}
           />
