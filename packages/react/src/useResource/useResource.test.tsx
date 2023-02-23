@@ -150,7 +150,7 @@ describe('useResource', () => {
 
   test('Responds to value edit after cache', async () => {
     function TestComponentWrapper(): JSX.Element {
-      // Call useResource with a reference to fille the cache
+      // Call useResource with a reference to fill the cache
       useResource({ reference: 'ServiceRequest/123' });
       const [resource, setResource] = useState<ServiceRequest>({
         resourceType: 'ServiceRequest',
