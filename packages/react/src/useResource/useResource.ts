@@ -34,7 +34,11 @@ export function useResource<T extends Resource>(
 
   // Subscribe to changes to the passed-in value
   useEffect(() => {
-    if (referenceRef.current && referenceRef.current.reference !== lastRequestedRef.current) {
+    if (resourceRef.current) {
+      if (!deepEquals(prevResource, value)) {
+        forceRerender(currentResource);
+      }
+    } else if (referenceRef.current && referenceRef.current.reference !== lastRequestedRef.current) {
       lastRequestedRef.current = referenceRef.current.reference;
       medplum
         .readReference(referenceRef.current)
