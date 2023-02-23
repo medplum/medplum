@@ -90,12 +90,14 @@ export async function initTestAuth(options?: Partial<Project>): Promise<string> 
 
 export async function addTestUser(
   project: Project,
-  accessPolicy: AccessPolicy
+  accessPolicy?: AccessPolicy
 ): Promise<{ user: User; profile: ProfileResource; accessToken: string }> {
-  accessPolicy = await systemRepo.createResource<AccessPolicy>({
-    ...accessPolicy,
-    meta: { project: project.id },
-  });
+  if (accessPolicy) {
+    accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      ...accessPolicy,
+      meta: { project: project.id },
+    });
+  }
 
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
@@ -106,7 +108,8 @@ export async function addTestUser(
     resourceType: 'Patient',
     firstName: 'Bob',
     lastName: 'Jones',
-    accessPolicy: createReference(accessPolicy),
+    accessPolicy: accessPolicy && createReference(accessPolicy),
+    sendEmail: false,
   });
 
   const login = await tryLogin({

@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -163,14 +163,8 @@ describe('Admin Invite', () => {
       password: 'password!@#',
     });
 
-    // Second, Bob creates a project
-    const bobRegistration = await registerNew({
-      firstName: 'Bob',
-      lastName: 'Jones',
-      projectName: 'Bob Project',
-      email: `bob${randomUUID()}@example.com`,
-      password: 'password!@#',
-    });
+    // Second, Alice invites Bob to project
+    const bobRegistration = await addTestUser(aliceRegistration.project);
 
     // Third, Bob tries to invite Carol to Alice's project
     // In this example, Bob is not an admin of Alice's project
