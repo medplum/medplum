@@ -1,6 +1,6 @@
-import { Operator } from '@medplum/core';
-import { BundleEntry, Project, ProjectMembership } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
+import { forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
+import { BundleEntry, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { NextFunction, Request, Response } from 'express';
 import { systemRepo } from '../fhir/repo';
 
 /**
@@ -9,12 +9,12 @@ import { systemRepo } from '../fhir/repo';
  * Assumes that res.locals.user is populated by authenticateToken middleware.
  * @param req The request.
  * @param res The response.
- * @returns Project details if the current user is a project admin; undefined otherwise.
+ * @param next The next handler function.
  */
-export async function verifyProjectAdmin(req: Request, res: Response): Promise<Project | undefined> {
-  const { projectId } = req.params;
-
-  const project = await systemRepo.readResource<Project>('Project', projectId);
+export async function verifyProjectAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const locals = res.locals;
+  const project = locals.project as Project;
+  const user = locals.membership.user as Reference<User>;
 
   const bundle = await systemRepo.search<ProjectMembership>({
     resourceType: 'ProjectMembership',
@@ -23,26 +23,28 @@ export async function verifyProjectAdmin(req: Request, res: Response): Promise<P
       {
         code: 'project',
         operator: Operator.EQUALS,
-        value: 'Project/' + projectId,
+        value: getReferenceString(project),
       },
       {
         code: 'user',
         operator: Operator.EQUALS,
-        value: res.locals.membership.user.reference,
+        value: user.reference as string,
       },
     ],
   });
 
   if (bundle.entry?.length === 0) {
-    return undefined;
+    next(new OperationOutcomeError(forbidden));
+    return;
   }
 
   const membership = bundle.entry?.[0].resource as ProjectMembership;
   if (!membership.admin) {
-    return undefined;
+    next(new OperationOutcomeError(forbidden));
+    return;
   }
 
-  return project;
+  next();
 }
 
 /**

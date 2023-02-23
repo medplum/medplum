@@ -1,10 +1,9 @@
-import { createReference, forbidden } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { AccessPolicy, Bot, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
-import { verifyProjectAdmin } from './utils';
 
 export const createBotValidators = [body('name').notEmpty().withMessage('Bot name is required')];
 
@@ -16,12 +15,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 `;
 
 export async function createBotHandler(req: Request, res: Response): Promise<void> {
-  const project = await verifyProjectAdmin(req, res);
-  if (!project) {
-    sendOutcome(res, forbidden);
-    return;
-  }
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
@@ -30,7 +23,7 @@ export async function createBotHandler(req: Request, res: Response): Promise<voi
 
   const bot = await createBot(res.locals.repo as Repository, {
     ...req.body,
-    project: project,
+    project: res.locals.project,
   });
 
   res.status(201).json(bot);

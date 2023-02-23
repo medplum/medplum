@@ -1,5 +1,13 @@
-import { createReference, forbidden, Operator, ProfileResource } from '@medplum/core';
-import { AccessPolicy, Practitioner, Project, Reference, ResourceType, User } from '@medplum/fhirtypes';
+import { createReference, Operator, ProfileResource } from '@medplum/core';
+import {
+  AccessPolicy,
+  Practitioner,
+  Project,
+  ProjectMembership,
+  Reference,
+  ResourceType,
+  User,
+} from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
@@ -12,7 +20,6 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailWithoutProject } from '../oauth/utils';
-import { verifyProjectAdmin } from './utils';
 
 export const inviteValidators = [
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -28,12 +35,6 @@ export const inviteValidators = [
 ];
 
 export async function inviteHandler(req: Request, res: Response): Promise<void> {
-  const project = await verifyProjectAdmin(req, res);
-  if (!project) {
-    sendOutcome(res, forbidden);
-    return;
-  }
-
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
@@ -42,7 +43,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 
   const { profile } = await inviteUser({
     ...req.body,
-    project: project,
+    project: res.locals.project,
   });
 
   res.status(200).json({ profile });
@@ -60,7 +61,9 @@ export interface InviteRequest {
   readonly password?: string;
 }
 
-export async function inviteUser(request: InviteRequest): Promise<{ user: User; profile: ProfileResource }> {
+export async function inviteUser(
+  request: InviteRequest
+): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
   const project = request.project;
   let user = undefined;
   let existingUser = true;
@@ -88,13 +91,13 @@ export async function inviteUser(request: InviteRequest): Promise<{ user: User; 
     )) as Practitioner;
   }
 
-  await createProjectMembership(user, project, profile, request.accessPolicy);
+  const membership = await createProjectMembership(user, project, profile, request.accessPolicy);
 
   if (request.email && request.sendEmail !== false) {
     await sendInviteEmail(request, user, existingUser, passwordResetUrl);
   }
 
-  return { user, profile };
+  return { user, profile, membership };
 }
 
 async function createUser(request: InviteRequest): Promise<User> {
