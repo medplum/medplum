@@ -35,7 +35,7 @@ export function useResource<T extends Resource>(
   // Subscribe to changes to the passed-in value
   useEffect(() => {
     if (resourceRef.current) {
-      if (!deepEquals(prevResource, value)) {
+      if (!deepEquals(prevResource, currentResource)) {
         forceRerender(currentResource);
       }
     } else if (referenceRef.current && referenceRef.current.reference !== lastRequestedRef.current) {
@@ -53,7 +53,7 @@ export function useResource<T extends Resource>(
           }
         });
     }
-  }, [medplum, prevResource, value, setOutcome]);
+  }, [medplum, prevResource, currentResource, setOutcome]);
 
   return currentResource;
 }
