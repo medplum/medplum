@@ -173,7 +173,7 @@ export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practi
  */
 export function convertToScimUser(user: User, membership: ProjectMembership): ScimUser {
   const config = getConfig();
-  const resourceType = membership.profile?.reference?.split('/')?.shift() as string;
+  const [resourceType, id] = (membership.profile?.reference as string).split('/');
   return {
     schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
     id: membership.id,
@@ -184,7 +184,7 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
       location: config.baseUrl + 'scim/2.0/Users/' + membership.id,
     },
     userType: resourceType,
-    userName: membership.profile?.reference,
+    userName: id,
     externalId: user.externalId,
     name: {
       givenName: user.firstName,

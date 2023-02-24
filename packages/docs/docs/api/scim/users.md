@@ -12,6 +12,8 @@ SCIM resources include a `schemas` property that declares which schemas a resour
 
 The base `User` schema is `urn:ietf:params:scim:schemas:core:2.0:User`.
 
+## User Type and Username
+
 Medplum users always have a corresponding FHIR "profile" resource, which can be a `Patient`, `Practitioner`, or `RelatedPerson`. To specify the desired FHIR resource type, you must include a `userType` property with the FHIR resource type.
 
 For example, consider this `Practitioner`:
@@ -24,12 +26,7 @@ For example, consider this `Practitioner`:
     "givenName": "Alice",
     "familyName": "Smith"
   },
-  "userName": "alice@example.com",
-  "emails": [
-    {
-      "value": "alice@example.com"
-    }
-  ]
+  "emails": [{ "value": "alice@example.com" }]
 }
 ```
 
@@ -43,14 +40,11 @@ For example, consider this `Patient`:
     "givenName": "Bob",
     "familyName": "Jones"
   },
-  "userName": "bob@example.com",
-  "emails": [
-    {
-      "value": "bob@example.com"
-    }
-  ]
+  "emails": [{ "value": "bob@example.com" }]
 }
 ```
+
+The SCIM `userName` property will be the system generated FHIR resource ID.  This can be used in combination with the SCIM `userType` to identify the FHIR resource for the user.
 
 ## Create a user
 
