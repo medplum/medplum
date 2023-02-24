@@ -62,11 +62,11 @@ describe('SCIM Routes', () => {
       .send({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
         userType: 'Patient',
-        userName: randomUUID() + '@example.com',
         name: {
           givenName: 'SCIM',
           familyName: 'User',
         },
+        emails: [{ value: randomUUID() + '@example.com' }],
       });
     expect(res1.status).toBe(201);
 
@@ -116,11 +116,11 @@ describe('SCIM Routes', () => {
       .set('Content-Type', 'application/json')
       .send({
         schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
-        userName: randomUUID() + '@example.com',
         name: {
           givenName: 'SCIM',
           familyName: 'User',
         },
+        emails: [{ value: randomUUID() + '@example.com' }],
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');

@@ -73,7 +73,7 @@ export async function createScimUser(
     resourceType,
     firstName: scimUser.name?.givenName as string,
     lastName: scimUser.name?.familyName as string,
-    email: scimUser.userName,
+    email: scimUser.emails?.[0]?.value,
     externalId: scimUser.externalId,
     sendEmail: false,
     accessPolicy,
@@ -184,13 +184,13 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
       location: config.baseUrl + 'scim/2.0/Users/' + membership.id,
     },
     userType: resourceType,
-    userName: user.email,
+    userName: membership.profile?.reference,
     externalId: user.externalId,
     name: {
       givenName: user.firstName,
       familyName: user.lastName,
     },
-    profile: membership.profile,
+    emails: [{ value: user.email }],
   };
 }
 

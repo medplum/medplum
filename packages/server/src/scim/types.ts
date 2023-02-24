@@ -1,5 +1,3 @@
-import { Reference } from '@medplum/fhirtypes';
-
 /**
  * A complex attribute containing resource metadata.  All "meta"
  * sub-attributes are assigned by the service provider (have a
@@ -98,7 +96,6 @@ export interface ScimUser {
   name?: ScimName;
   phoneNumbers?: ScimPhoneNumber[];
   emails?: ScimEmail[];
-  profile?: Reference;
 }
 
 /**
