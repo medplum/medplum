@@ -3,7 +3,7 @@ import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';
@@ -12,6 +12,7 @@ export function EditMembershipPage(): JSX.Element {
   const { membershipId } = useParams();
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
+  const navigate = useNavigate();
   const membership = medplum.get(`admin/projects/${projectId}/members/${membershipId}`).read();
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy> | undefined>(membership.accessPolicy);
   const [userConfiguration, setUserConfiguration] = useState<Reference<UserConfiguration> | undefined>(
@@ -19,13 +20,14 @@ export function EditMembershipPage(): JSX.Element {
   );
   const [admin, setAdmin] = useState<boolean>(membership.admin);
   const [outcome, setOutcome] = useState<OperationOutcome>();
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<boolean>(false);
 
   function deleteMembership(): void {
     if (window.confirm('Are you sure?')) {
       medplum
         .delete(`admin/projects/${projectId}/members/${membershipId}`)
-        .then(() => setSuccess(true))
+        .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'no-cache' }))
+        .then(() => navigate('/admin/project'))
         .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     }
   }

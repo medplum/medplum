@@ -1,7 +1,7 @@
 import { Text, TextProps } from '@mantine/core';
-import { getDisplayString } from '@medplum/core';
-import { Reference, Resource } from '@medplum/fhirtypes';
-import React from 'react';
+import { getDisplayString, isOk, normalizeErrorString } from '@medplum/core';
+import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import React, { useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { useResource } from '../useResource/useResource';
 
@@ -12,15 +12,20 @@ export interface ResourceNameProps extends TextProps {
 
 export function ResourceName(props: ResourceNameProps): JSX.Element | null {
   const { value, link, ...rest } = props;
-  const resource = useResource(value);
-  if (!resource) {
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
+  const resource = useResource(value, setOutcome);
+  let text: string;
+
+  if (outcome && !isOk(outcome)) {
+    text = `[${normalizeErrorString(outcome)}]`;
+  } else if (resource) {
+    text = getDisplayString(resource);
+  } else {
     return null;
   }
 
-  const text = getDisplayString(resource);
-
   return link ? (
-    <MedplumLink to={resource} {...rest}>
+    <MedplumLink to={value} {...rest}>
       {text}
     </MedplumLink>
   ) : (
