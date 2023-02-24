@@ -208,7 +208,8 @@ describe('EditMembershipPage', () => {
       fireEvent.click(screen.getByText('Remove user'));
     });
 
-    expect(screen.getByText('User updated')).toBeInTheDocument();
+    // Should be back on the project page
+    expect(screen.getAllByText('Project 123')).not.toHaveLength(0);
   });
 
   test('Remove user reject confirm', async () => {

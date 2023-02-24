@@ -54,4 +54,14 @@ describe('ResourceName', () => {
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
+
+  test('Renders operation outcome', async () => {
+    setup({
+      value: { reference: 'Patient/not-found' },
+    });
+
+    await waitFor(() => screen.getByText('[Not found]'));
+
+    expect(screen.getByText('[Not found]')).toBeDefined();
+  });
 });
