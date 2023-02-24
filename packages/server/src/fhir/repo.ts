@@ -1643,6 +1643,14 @@ export class Repository {
    * @returns The project ID.
    */
   #getProjectId(resource: Resource): string | undefined {
+    if (resource.resourceType === 'Project') {
+      return resource.id;
+    }
+
+    if (resource.resourceType === 'ProjectMembership') {
+      return resolveId(resource.project);
+    }
+
     if (publicResourceTypes.includes(resource.resourceType)) {
       return undefined;
     }
