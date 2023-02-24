@@ -60,10 +60,8 @@ describe('SCIM Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/json')
       .send({
-        schemas: [
-          'urn:ietf:params:scim:schemas:core:2.0:User',
-          'urn:ietf:params:scim:schemas:extension:medplum:2.0:Patient',
-        ],
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userType: 'Patient',
         userName: randomUUID() + '@example.com',
         name: {
           givenName: 'SCIM',
@@ -96,6 +94,19 @@ describe('SCIM Routes', () => {
       });
     expect(updateResponse.status).toBe(200);
     expect(updateResponse.body.externalId).toBeDefined();
+
+    const deleteResponse = await request(app)
+      .delete(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(deleteResponse.status).toBe(204);
+
+    const searchResponse2 = await request(app)
+      .get(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(searchResponse2.status).toBe(200);
+
+    const searchCheck2 = searchResponse2.body.Resources.find((user: any) => user.id === res1.body.id);
+    expect(searchCheck2).toBeUndefined();
   });
 
   test('Create missing medplum user type', async () => {

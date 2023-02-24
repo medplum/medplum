@@ -2,7 +2,7 @@ import { Request, Response, Router } from 'express';
 import { verifyProjectAdmin } from '../admin/utils';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth/middleware';
-import { createScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
+import { createScimUser, deleteScimUser, readScimUser, searchScimUsers, updateScimUser } from './utils';
 
 export const scimRouter = Router();
 scimRouter.use(authenticateToken);
@@ -40,5 +40,13 @@ scimRouter.put(
   asyncWrap(async (req: Request, res: Response) => {
     const result = await updateScimUser(res.locals.project, req.body);
     res.status(200).json(result);
+  })
+);
+
+scimRouter.delete(
+  '/Users/:id',
+  asyncWrap(async (req: Request, res: Response) => {
+    await deleteScimUser(res.locals.project, req.params.id);
+    res.sendStatus(204);
   })
 );
