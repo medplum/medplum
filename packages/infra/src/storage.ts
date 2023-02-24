@@ -63,11 +63,18 @@ export class Storage extends Construct {
       });
 
       // HTTP response headers policy
+      const frameAncestors = [
+	      `*.${config.domainName}`
+      ]
+      if (config.storageAllowedFrameAncestors) {
+	      frameAncestors.push(...config.storageAllowedFrameAncestors)
+      }
+
       const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
-              `default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *.${config.domainName}${config.storageAllowedFrameAncestors? " " + config.storageAllowedFrameAncestors.join(" ") : ""};`,
+              `default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors ${frameAncestors.join(' ')};`,
             override: true,
           },
           contentTypeOptions: { override: true },

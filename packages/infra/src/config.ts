@@ -14,7 +14,7 @@ export interface MedplumInfraConfig {
   storageDomainName: string;
   storageSslCertArn: string;
   storagePublicKey: string;
-  storageAllowedFrameAncestors: string[];
+  storageAllowedFrameAncestors?: string[];
   maxAzs: number;
   rdsInstances: number;
   rdsInstanceType: string;
