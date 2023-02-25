@@ -281,6 +281,46 @@
             "type" : [{
               "code" : "string"
             }]
+          },
+          {
+            "id" : "Project.ipAccessRule",
+            "path" : "Project.ipAccessRule",
+            "definition" : "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "BackboneElement"
+            }]
+          },
+          {
+            "id" : "Project.ipAccessRule.name",
+            "path" : "Project.ipAccessRule.name",
+            "definition" : "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.ipAccessRule.value",
+            "path" : "Project.ipAccessRule.value",
+            "definition" : "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "Project.ipAccessRule.action",
+            "path" : "Project.ipAccessRule.action",
+            "definition" : "Access rule can perform one of the following actions: \"allow\" | \"block\".",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }

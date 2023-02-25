@@ -372,6 +372,9 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // Check IP Access Rules
+  await checkIpAccessRules(login, project);
+
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
   // Everything checks out, update the login
@@ -380,6 +383,40 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     membership: createReference(membership),
     superAdmin: project.superAdmin,
   });
+}
+
+/**
+ * Checks a login against the IP Access Rules for a project.
+ * Returns successfully if the login first matches an "allow" rule.
+ * Returns successfully if the login does not match any rules.
+ * Throws an error if the login matches a "block" rule.
+ * @param login The candidate login.
+ * @param project The project.
+ */
+async function checkIpAccessRules(login: Login, project: Project): Promise<void> {
+  if (!login.remoteAddress || !project.ipAccessRule) {
+    return;
+  }
+  for (const rule of project.ipAccessRule) {
+    if (matchesIpAccessRule(login.remoteAddress, rule.value as string)) {
+      if (rule.action === 'allow') {
+        return;
+      }
+      if (rule.action === 'block') {
+        throw new OperationOutcomeError(badRequest('IP address not allowed'));
+      }
+    }
+  }
+}
+
+/**
+ * Returns true if the remote address matches the rule value.
+ * @param remoteAddress The login remote address.
+ * @param ruleValue The IP Access Rule value.
+ * @returns True if the remote address matches the rule value; otherwise false.
+ */
+function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean {
+  return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
 /**
