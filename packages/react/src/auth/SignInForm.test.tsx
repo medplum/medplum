@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { allOk, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
+import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
 import React from 'react';
@@ -90,7 +90,19 @@ function mockFetch(url: string, options: any): Promise<any> {
       login: '1',
       code: '1',
     };
-  } else if (options.method === 'POST' && (url.endsWith('auth/profile') || url.endsWith('auth/scope'))) {
+  } else if (options.method === 'POST' && url.endsWith('auth/profile')) {
+    const { profile } = JSON.parse(options.body);
+    if (profile === '101') {
+      status = 400;
+      result = badRequest('Invalid IP address');
+    } else {
+      status = 200;
+      result = {
+        login: '1',
+        code: '1',
+      };
+    }
+  } else if (options.method === 'POST' && url.endsWith('auth/scope')) {
     status = 200;
     result = {
       login: '1',
@@ -320,6 +332,46 @@ describe('SignInForm', () => {
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
     expect(success).toBe(true);
+  });
+
+  test('Multiple profiles invalid IP address', async () => {
+    let success = false;
+
+    await setup({
+      onSuccess: () => (success = true),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'multiple@medplum.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'admin' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Choose profile')).toBeDefined());
+    expect(screen.getByText('Alice Smith')).toBeInTheDocument();
+    expect(screen.getByText('Bob Jones')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Bob Jones'));
+    });
+
+    await waitFor(() => screen.getByText('Invalid IP address'));
+
+    expect(success).toBe(false);
   });
 
   test('Choose scope', async () => {
