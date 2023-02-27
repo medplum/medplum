@@ -43,7 +43,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { applyPatch, Operation } from 'rfc6902';
 import { URL } from 'url';
 import validator from 'validator';
@@ -781,7 +781,7 @@ export class Repository {
         },
       ]).execute(client);
 
-      await this.#deleteFromLookupTables(resource);
+      await this.#deleteFromLookupTables(client, resource);
       this.#logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
     } catch (err) {
       this.#logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
@@ -1582,9 +1582,9 @@ export class Repository {
   }
 
   /**
-   *
+   * Writes resources values to the lookup tables.
    * @param client The database client inside the transaction.
-   * @param resource
+   * @param resource The resource to index.
    */
   async #writeLookupTables(client: PoolClient, resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
@@ -1592,9 +1592,14 @@ export class Repository {
     }
   }
 
-  async #deleteFromLookupTables(resource: Resource): Promise<void> {
+  /**
+   * Deletes values from lookup tables.
+   * @param client The database client inside the transaction.
+   * @param resource The resource to delete.
+   */
+  async #deleteFromLookupTables(client: Pool | PoolClient, resource: Resource): Promise<void> {
     for (const lookupTable of lookupTables) {
-      await lookupTable.deleteValuesForResource(resource);
+      await lookupTable.deleteValuesForResource(client, resource);
     }
   }
 
