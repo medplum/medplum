@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist/index.js dist/index.d.ts",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc --project tsconfig.build.json",
     "test": "jest"
   },
   "main": "dist/index.js",

@@ -35,7 +35,7 @@ export default [
         file: 'dist/cjs/index.min.cjs',
         format: 'umd',
         name: 'medplum.core',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
         globals,
       },
@@ -50,7 +50,7 @@ export default [
       }),
       json(),
       resolve({ extensions }),
-      typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
+      typescript({ outDir: 'dist/cjs', declaration: false }),
       {
         buildEnd: () => {
           mkdirSync('./dist/cjs', { recursive: true });
@@ -75,7 +75,7 @@ export default [
       {
         file: 'dist/esm/index.min.mjs',
         format: 'esm',
-        plugins: [terser({ sourceMap: true})],
+        plugins: [terser({ sourceMap: true })],
         sourcemapPathTransform,
       },
     ],
@@ -89,7 +89,7 @@ export default [
       }),
       json(),
       resolve({ extensions }),
-      typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
+      typescript({ module: 'es6', outDir: 'dist/esm', declaration: false }),
       {
         buildEnd: () => {
           mkdirSync('./dist/esm/node_modules/tslib', { recursive: true });

@@ -1,9 +1,4 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "lib": ["esnext"]
-  },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "src/__mocks__/**/*.ts"]
+  "include": ["src/**/*.ts"]
 }

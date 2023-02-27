@@ -12,8 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc && npm run rollup",
-    "rollup": "rollup --config rollup.config.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && rollup --config rollup.config.mjs",
     "test": "jest"
   },
   "dependencies": {
@@ -26,11 +25,12 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
   "exports": {
+    "types": "./dist/types/index.d.ts",
     "require": "./dist/cjs/index.cjs",
     "import": "./dist/esm/index.mjs"
   },
-  "types": "dist/types/index.d.ts",
   "sideEffects": false,
   "keywords": [
     "medplum",
