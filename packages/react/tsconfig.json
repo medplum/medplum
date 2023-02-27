@@ -1,10 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "rootDir": "src",
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "emitDeclarationOnly": true,
-    "resolveJsonModule": true
+    "lib": ["esnext", "dom", "dom.iterable"]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

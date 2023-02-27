@@ -59,7 +59,7 @@ export default [
       peerDepsExternal(),
       resolve({ extensions }),
       svgr(),
-      typescript({ tsconfig: 'tsconfig.cjs.json', resolveJsonModule: true }),
+      typescript({ outDir: 'dist/cjs', declaration: false }),
       {
         buildEnd: () => {
           mkdirSync('./dist/cjs', { recursive: true });
@@ -100,7 +100,7 @@ export default [
       peerDepsExternal(),
       resolve({ extensions }),
       svgr(),
-      typescript({ tsconfig: 'tsconfig.esm.json', resolveJsonModule: true }),
+      typescript({ module: 'es6', outDir: 'dist/esm', declaration: false }),
       {
         buildEnd: () => {
           mkdirSync('./dist/esm', { recursive: true });

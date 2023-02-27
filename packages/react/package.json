@@ -13,8 +13,7 @@
   "scripts": {
     "clean": "rimraf dist storybook-static",
     "dev": "start-storybook -p 6006",
-    "build": "npm run clean && npm run rollup",
-    "rollup": "rollup --config rollup.config.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && rollup --config rollup.config.mjs",
     "test": "jest",
     "storybook": "build-storybook"
   },
@@ -78,13 +77,12 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
   "exports": {
-    ".": {
-      "require": "./dist/cjs/index.cjs",
-      "import": "./dist/esm/index.mjs"
-    }
+    "types": "./dist/types/index.d.ts",
+    "require": "./dist/cjs/index.cjs",
+    "import": "./dist/esm/index.mjs"
   },
-  "types": "dist/esm/index.d.ts",
   "sideEffects": false,
   "keywords": [
     "medplum",

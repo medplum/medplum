@@ -44,7 +44,7 @@ export default {
   ],
   plugins: [
     resolve({ extensions }),
-    typescript(),
+    typescript({ declaration: false }),
     json(),
     {
       buildEnd: () => {
