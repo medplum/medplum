@@ -1,7 +1,6 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
-import { getClient } from '../../database';
+import { Pool, PoolClient } from 'pg';
 import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
 
 /**
@@ -92,17 +91,22 @@ export abstract class LookupTable<T> {
 
   /**
    * Returns the existing list of indexed addresses.
+   * @param client The database client.
    * @param resourceType The FHIR resource type.
    * @param resourceId The FHIR resource ID.
    * @returns Promise for the list of indexed addresses.
    */
-  protected async getExistingValues(resourceType: ResourceType, resourceId: string): Promise<T[]> {
+  protected async getExistingValues(
+    client: Pool | PoolClient,
+    resourceType: ResourceType,
+    resourceId: string
+  ): Promise<T[]> {
     const tableName = this.getTableName(resourceType);
     return new SelectQuery(tableName)
       .column('content')
       .where('resourceId', Operator.EQUALS, resourceId)
       .orderBy('index')
-      .execute(getClient())
+      .execute(client)
       .then((result) => result.map((row) => JSON.parse(row.content) as T));
   }
 
@@ -113,7 +117,7 @@ export abstract class LookupTable<T> {
    * @param values The values to insert.
    */
   protected async insertValuesForResource(
-    client: PoolClient,
+    client: Pool | PoolClient,
     resourceType: ResourceType,
     values: Record<string, any>[]
   ): Promise<void> {
@@ -126,12 +130,12 @@ export abstract class LookupTable<T> {
 
   /**
    * Deletes the resource from the lookup table.
+   * @param client The database client.
    * @param resource The resource to delete.
    */
-  async deleteValuesForResource(resource: Resource): Promise<void> {
+  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id as string;
-    const client = getClient();
     await new DeleteQuery(tableName).where('resourceId', Operator.EQUALS, resourceId).execute(client);
   }
 }
