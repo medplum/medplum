@@ -161,7 +161,7 @@ export function indexStructureDefinition(structureDefinition: StructureDefinitio
     elements.forEach((element) => indexType(structureDefinition, element));
 
     // Second pass, build properties
-    elements.forEach((element) => indexProperty(element));
+    elements.forEach((element) => indexProperty(structureDefinition, element));
   }
 }
 
@@ -179,7 +179,13 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
   if (typeCode !== undefined && typeCode !== 'Element' && typeCode !== 'BackboneElement') {
     return;
   }
+
   const parts = path.split('.');
+
+  // Force the first part to be the type name
+  // This is necessary for "SimpleQuantity" and "MoneyQuantity"
+  parts[0] = structureDefinition.name as string;
+
   const typeName = buildTypeName(parts);
   let typeSchema = globalSchema.types[typeName];
 
@@ -200,12 +206,17 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
  * @param element The input ElementDefinition.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
-function indexProperty(element: ElementDefinition): void {
+function indexProperty(structureDefinition: StructureDefinition, element: ElementDefinition): void {
   const path = element.path as string;
   const parts = path.split('.');
   if (parts.length === 1) {
     return;
   }
+
+  // Force the first part to be the type name
+  // This is necessary for "SimpleQuantity" and "MoneyQuantity"
+  parts[0] = structureDefinition.name as string;
+
   const typeName = buildTypeName(parts.slice(0, parts.length - 1));
   const typeSchema = globalSchema.types[typeName];
   if (!typeSchema) {
