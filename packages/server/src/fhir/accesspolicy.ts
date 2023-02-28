@@ -41,6 +41,11 @@ export async function getRepoForLogin(
     accessPolicy = applySmartScopes(accessPolicy, login.scope);
   }
 
+  // Apply project admin access policies
+  // This includes ensuring no admin rights for non-admins
+  // and restricted access for admins
+  accessPolicy = applyProjectAdminAccessPolicy(login, membership, accessPolicy);
+
   return new Repository({
     project: resolveId(membership.project) as string,
     author: membership.profile as Reference,
@@ -112,4 +117,60 @@ async function buildAccessPolicyResources(
     }
   }
   return JSON.parse(json) as AccessPolicy;
+}
+
+/**
+ * Updates the access policy to include project admin rules.
+ * This includes ensuring no admin rights for non-admins and restricted access for admins.
+ * @param login The user login.
+ * @param membership The active project membership.
+ * @param accessPolicy The existing access policy.
+ * @returns Updated access policy with all project admin rules applied.
+ */
+function applyProjectAdminAccessPolicy(
+  login: Login,
+  membership: ProjectMembership,
+  accessPolicy: AccessPolicy | undefined
+): AccessPolicy | undefined {
+  if (login.superAdmin) {
+    // If the user is a super admin, then do not apply any additional access policy rules.
+    return accessPolicy;
+  }
+
+  if (!membership.admin && !accessPolicy) {
+    // Not a project admin and no access policy, so return default access.
+    return undefined;
+  }
+
+  if (accessPolicy) {
+    // If there is an existing access policy
+    // Remove any references to project admin resource types
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => r.resourceType !== 'Project' && r.resourceType !== 'ProjectMembership'
+    );
+  }
+
+  if (membership.admin) {
+    // If the user is a project admin,
+    // then grant limited access to the project admin resource types
+    if (!accessPolicy) {
+      accessPolicy = { resourceType: 'AccessPolicy' };
+    }
+
+    if (!accessPolicy.resource) {
+      accessPolicy.resource = [{ resourceType: '*' }];
+    }
+
+    accessPolicy.resource.push({
+      resourceType: 'Project',
+      readonlyFields: ['superAdmin', 'features'],
+    });
+
+    accessPolicy.resource.push({
+      resourceType: 'ProjectMembership',
+      readonlyFields: ['project', 'user'],
+    });
+  }
+
+  return accessPolicy;
 }
