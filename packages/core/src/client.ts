@@ -868,10 +868,14 @@ export class MedplumClient extends EventTarget {
    */
   fhirSearchUrl(
     resourceType: ResourceType,
-    query: URLSearchParams | string[][] | Record<string, string> | string | undefined
+    query: URLSearchParams | string[][] | Record<string, any> | string | undefined
   ): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
+      // TypeScript definitions for URLSearchParams do not match runtime behavior
+      // The official spec only accepts string values.
+      // Web browsers and Node.js automatically coerce values to strings
+      // See: https://github.com/microsoft/TypeScript/issues/32951
       url.search = new URLSearchParams(query).toString();
     }
     return url;
@@ -927,7 +931,7 @@ export class MedplumClient extends EventTarget {
    */
   search<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, string> | string | undefined,
+    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -975,7 +979,7 @@ export class MedplumClient extends EventTarget {
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, string> | string | undefined,
+    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -1017,7 +1021,7 @@ export class MedplumClient extends EventTarget {
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, string> | string | undefined,
+    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
