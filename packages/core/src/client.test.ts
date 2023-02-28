@@ -956,6 +956,15 @@ describe('Client', () => {
     expect(result[0].resourceType).toBe('Patient');
   });
 
+  test('Search resources with record of string keys and string values', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.searchResources('Patient', { _count: '1', 'name:contains': 'alice' });
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(1);
+    expect(result[0].resourceType).toBe('Patient');
+  });
+
   test('Search resources ReadablePromise', async () => {
     const client = new MedplumClient(defaultOptions);
     const promise1 = client.searchResources('Patient', '_count=1&name:contains=alice');
