@@ -160,7 +160,10 @@
       "JsonWebKey": "#/definitions/JsonWebKey",
       "Bot": "#/definitions/Bot",
       "AccessPolicy": "#/definitions/AccessPolicy",
-      "UserConfiguration": "#/definitions/UserConfiguration"
+      "UserConfiguration": "#/definitions/UserConfiguration",
+      "BulkDataExport": "#/definitions/BulkDataExport",
+      "SmartAppLaunch": "#/definitions/SmartAppLaunch",
+      "DomainConfiguration": "#/definitions/DomainConfiguration"
     }
   },
   "oneOf": [
@@ -628,6 +631,18 @@
     },
     {
       "$ref": "#/definitions/UserConfiguration"
+    },
+    {
+      "$ref": "#/definitions/ProjectMembership"
+    },
+    {
+      "$ref": "#/definitions/BulkDataExport"
+    },
+    {
+      "$ref": "#/definitions/SmartAppLaunch"
+    },
+    {
+      "$ref": "#/definitions/DomainConfiguration"
     }
   ],
   "definitions": {
@@ -1097,6 +1112,18 @@
         },
         {
           "$ref": "#/definitions/UserConfiguration"
+        },
+        {
+          "$ref": "#/definitions/ProjectMembership"
+        },
+        {
+          "$ref": "#/definitions/BulkDataExport"
+        },
+        {
+          "$ref": "#/definitions/SmartAppLaunch"
+        },
+        {
+          "$ref": "#/definitions/DomainConfiguration"
         }
       ]
     },
@@ -61058,7 +61085,7 @@
       "additionalProperties": false
     },
     "Project": {
-      "description": "Medplum project. A Medplum project is the top-level entity for Medplum. A project is an isolated set of resources.",
+      "description": "Encapsulation of resources for a specific project or organization.",
       "properties": {
         "resourceType": {
           "description": "This is a Project resource",
@@ -61096,8 +61123,12 @@
           "description": "Whether this project uses strict FHIR validation.",
           "$ref": "#/definitions/boolean"
         },
+        "checkReferencesOnWrite": {
+          "description": "Whether this project uses referential integrity on write operations such as \u0027create\u0027 and \u0027update\u0027.",
+          "$ref": "#/definitions/boolean"
+        },
         "owner": {
-          "description": "Indicates the user with responsibility for managing the Project.",
+          "description": "The user who owns the project.",
           "$ref": "#/definitions/Reference"
         },
         "features": {
@@ -61124,75 +61155,84 @@
             "$ref": "#/definitions/Project_Site"
           },
           "type": "array"
+        },
+        "ipAccessRule": {
+          "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+          "items": {
+            "$ref": "#/definitions/Project_IpAccessRule"
+          },
+          "type": "array"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "name",
-        "owner"
+        "resourceType"
       ]
     },
     "Project_Secret": {
       "description": "Secure environment variable that can be used to store secrets for bots.",
       "properties": {
         "name": {
-          "description": "A name associated with the Project.",
+          "description": "The secret name.",
+          "$ref": "#/definitions/string"
+        },
+        "valueString": {
+          "description": "The secret value.",
           "$ref": "#/definitions/string"
         },
         "valueBoolean": {
-          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^true|false$",
-          "type": "boolean"
+          "description": "The secret value.",
+          "$ref": "#/definitions/boolean"
         },
         "valueDecimal": {
-          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
-          "type": "number"
+          "description": "The secret value.",
+          "$ref": "#/definitions/decimal"
         },
         "valueInteger": {
-          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^-?([0]|([1-9][0-9]*))$",
-          "type": "number"
-        },
-        "valueString": {
-          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^[ \\r\\n\\t\\S]+$",
-          "type": "string"
+          "description": "The secret value.",
+          "$ref": "#/definitions/integer"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
     },
     "Project_Site": {
       "description": "Web application or web site that is associated with the project.",
       "properties": {
         "name": {
-          "description": "A name associated with the Project.",
+          "description": "Friendly name that will make it easy for you to identify the site in the future.",
           "$ref": "#/definitions/string"
         },
         "domain": {
-          "description": "A name associated with the Project.",
+          "description": "The list of domain names associated with the site. User authentication will be restricted to the domains you enter here, plus any subdomains. In other words, a registration for example.com also registers subdomain.example.com. A valid domain requires a host and must not include any path, port, query or fragment.",
           "items": {
             "$ref": "#/definitions/string"
           },
           "type": "array"
         },
         "googleClientId": {
-          "description": "A name associated with the Project.",
+          "description": "The publicly visible Google Client ID for the site. This is used to authenticate users with Google. This value is available in the Google Developer Console.",
           "$ref": "#/definitions/string"
         },
         "googleClientSecret": {
-          "description": "A name associated with the Project.",
+          "description": "The private Google Client Secret for the site. This value is available in the Google Developer Console.",
           "$ref": "#/definitions/string"
         },
         "recaptchaSiteKey": {
-          "description": "A name associated with the Project.",
+          "description": "The publicly visible reCAPTCHA site key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this site key in the HTML code your site serves to users.",
           "$ref": "#/definitions/string"
         },
         "recaptchaSecretKey": {
-          "description": "A name associated with the Project.",
+          "description": "The private reCAPTCHA secret key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this secret key for communication between your site and reCAPTCHA.",
           "$ref": "#/definitions/string"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "name"
+        "name",
+        "domain"
       ]
     },
     "ProjectMembership": {
@@ -61222,17 +61262,28 @@
           "description": "Project where the memberships are available.",
           "$ref": "#/definitions/Reference"
         },
+        "invitedBy": {
+          "description": "The project administrator who invited the user to the project.",
+          "$ref": "#/definitions/Reference"
+        },
         "user": {
           "description": "User that is granted access to the project.",
           "$ref": "#/definitions/Reference"
         },
         "profile": {
-          "description": "User that is granted access to the project.",
+          "description": "Reference to the resource that represents the user profile within the project.",
           "$ref": "#/definitions/Reference"
         },
         "accessPolicy": {
-          "description": "User that is granted access to the project.",
+          "description": "The access policy for the user within the project memebership.",
           "$ref": "#/definitions/Reference"
+        },
+        "access": {
+          "description": "Extended access configuration using parameterized access policies.",
+          "items": {
+            "$ref": "#/definitions/ProjectMembership_Access"
+          },
+          "type": "array"
         },
         "userConfiguration": {
           "description": "The user configuration for the user within the project memebership such as menu links, saved searches, and features.",
@@ -61243,14 +61294,15 @@
           "$ref": "#/definitions/boolean"
         }
       },
+      "additionalProperties": false,
       "required": [
+        "resourceType",
         "project",
-        "user",
-        "profile"
+        "user"
       ]
     },
     "ClientApplication": {
-      "description": "OAuth client application.",
+      "description": "Medplum client application for automated access.",
       "properties": {
         "resourceType": {
           "description": "This is a ClientApplication resource",
@@ -61268,24 +61320,16 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
-        },
         "name": {
-          "description": "Human friendly display name that describes the client application.",
+          "description": "A name associated with the ClientApplication.",
           "$ref": "#/definitions/string"
         },
         "description": {
-          "description": "A summary, characterization or explanation of the Client Application.",
+          "description": "A summary, characterization or explanation of the ClientApplication.",
           "$ref": "#/definitions/string"
         },
         "secret": {
@@ -61293,16 +61337,16 @@
           "$ref": "#/definitions/string"
         },
         "jwksUri": {
-          "description": "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt)",
-          "$ref": "#/definitions/string"
+          "description": "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt).",
+          "$ref": "#/definitions/uri"
         },
         "redirectUri": {
-          "description": "Redirect URI used when redirecting a client back to the client application.",
-          "$ref": "#/definitions/string"
+          "description": "Optional redirect URI used when redirecting a client back to the client application.",
+          "$ref": "#/definitions/uri"
         },
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/uri"
         },
         "pkceOptional": {
           "description": "Flag to make PKCE optional for this client application. PKCE is required by default for compliance with Smart App Launch. It can be disabled for compatibility with legacy client applications.",
@@ -61313,13 +61357,13 @@
           "$ref": "#/definitions/IdentityProvider"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "resourceType",
-        "secret"
+        "resourceType"
       ]
     },
     "User": {
-      "description": "OAuth user.",
+      "description": "Representation of a human user of the system.",
       "properties": {
         "resourceType": {
           "description": "This is a User resource",
@@ -61337,17 +61381,9 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
-        },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
         },
         "firstName": {
           "description": "The first name or given name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
@@ -61355,6 +61391,10 @@
         },
         "lastName": {
           "description": "The last name or family name of the user. This is the value as entered when the user is created. It is used to populate the profile resource.",
+          "$ref": "#/definitions/string"
+        },
+        "externalId": {
+          "description": "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain\u0027s identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
           "$ref": "#/definitions/string"
         },
         "email": {
@@ -61365,25 +61405,36 @@
           "description": "Whether the system has verified that the user has access to the email address.",
           "$ref": "#/definitions/boolean"
         },
+        "admin": {
+          "description": "DEPRECATED",
+          "$ref": "#/definitions/boolean"
+        },
         "passwordHash": {
-          "description": "Encrypted hash of the user's password.",
+          "description": "Encrypted hash of the user\u0027s password.",
           "$ref": "#/definitions/string"
         },
-        "admin": {
-          "description": "Whether this user is a system administrator.",
+        "mfaSecret": {
+          "description": "Shared secret for MFA authenticator applications.",
+          "$ref": "#/definitions/string"
+        },
+        "mfaEnrolled": {
+          "description": "Whether the user has completed MFA enrollment.",
           "$ref": "#/definitions/boolean"
         },
         "project": {
-          "description": "Project where the memberships are available.",
+          "description": "Optional project if the user only exists for the project. This is used for the project-specific user database.",
           "$ref": "#/definitions/Reference"
         }
       },
+      "additionalProperties": false,
       "required": [
-        "email"
+        "resourceType",
+        "firstName",
+        "lastName"
       ]
     },
     "Login": {
-      "description": "OAuth login.",
+      "description": "Login event and session details.",
       "properties": {
         "resourceType": {
           "description": "This is a Login resource",
@@ -61401,20 +61452,20 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
-        },
         "client": {
           "description": "The client requesting the code.",
+          "$ref": "#/definitions/Reference"
+        },
+        "profileType": {
+          "description": "Optional required profile resource type.",
+          "$ref": "#/definitions/code"
+        },
+        "project": {
+          "description": "Optional required project for the login.",
           "$ref": "#/definitions/Reference"
         },
         "user": {
@@ -61461,6 +61512,10 @@
           "description": "Optional cryptographically random string that your app adds to the initial request and the authorization server includes inside the ID Token, used to prevent token replay attacks.",
           "$ref": "#/definitions/string"
         },
+        "mfaVerified": {
+          "description": "Whether the user has verified using multi-factor authentication (MFA). This will only be set is the user has MFA enabled (see User.mfaEnrolled).",
+          "$ref": "#/definitions/boolean"
+        },
         "granted": {
           "description": "Whether a token has been granted for this login.",
           "$ref": "#/definitions/boolean"
@@ -61469,20 +61524,17 @@
           "description": "Whether this login has been revoked or invalidated.",
           "$ref": "#/definitions/boolean"
         },
-        "compartments": {
-          "description": "Collection of compartments that the user has been granted access.  This is a flattened collection of all ProjectMembership compartments at the time of login.",
-          "items": {
-            "$ref": "#/definitions/Reference"
-          },
-          "type": "array"
-        },
         "admin": {
-          "description": "Whether this login has system administrator privileges.",
+          "description": "DEPRECATED",
           "$ref": "#/definitions/boolean"
         },
         "superAdmin": {
           "description": "Whether this login has super administrator privileges.",
           "$ref": "#/definitions/boolean"
+        },
+        "launch": {
+          "description": "Optional SMART App Launch context for this login.",
+          "$ref": "#/definitions/Reference"
         },
         "remoteAddress": {
           "description": "The Internet Protocol (IP) address of the client or last proxy that sent the request.",
@@ -61492,10 +61544,17 @@
           "description": "The User-Agent request header as sent by the client.",
           "$ref": "#/definitions/string"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "user",
+        "authMethod",
+        "authTime"
+      ]
     },
     "PasswordChangeRequest": {
-      "description": "Password change request for the 'forgot password' flow.",
+      "description": "Password change request for the \u0027forgot password\u0027 flow.",
       "properties": {
         "resourceType": {
           "description": "This is a PasswordChangeRequest resource",
@@ -61513,17 +61572,9 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
-        },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
         },
         "user": {
           "description": "The user requesting the password change.",
@@ -61539,9 +61590,15 @@
         },
         "redirectUri": {
           "description": "Redirect URI used when redirecting a client back to the client application.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/uri"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "user",
+        "secret"
+      ]
     },
     "JsonWebKey": {
       "description": "A JSON object that represents a cryptographic key. The members of the object represent properties of the key, including its value.",
@@ -61562,17 +61619,9 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
-        },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
         },
         "active": {
           "description": "Whether this key is in active use.",
@@ -61644,7 +61693,11 @@
           "description": "The first CRT coefficient.",
           "$ref": "#/definitions/string"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
     },
     "Bot": {
       "description": "Bot account for automated actions.",
@@ -61665,17 +61718,16 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
         },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
+        "identifier": {
+          "description": "An identifier for this bot.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
         },
         "name": {
           "description": "A name associated with the Bot.",
@@ -61701,10 +61753,14 @@
           "description": "Optional flag to indicate that the bot should be run as the user.",
           "$ref": "#/definitions/boolean"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
     },
     "AccessPolicy": {
-      "description": "Access control policy.",
+      "description": "Access Policy for user or user group that defines how entities can or cannot access resources.",
       "properties": {
         "resourceType": {
           "description": "This is a AccessPolicy resource",
@@ -61722,24 +61778,16 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
-        },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
         },
         "name": {
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"
         },
         "compartment": {
-          "description": "Optional compartment restriction for the user account.",
+          "description": "Optional compartment for newly created resources.  If this field is set, any resources created by a user with this access policy will automatically be included in the specified compartment.",
           "$ref": "#/definitions/Reference"
         },
         "resource": {
@@ -61749,7 +61797,11 @@
           },
           "type": "array"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
     },
     "AccessPolicy_Resource": {
       "description": "Access details for a resource type.",
@@ -61784,7 +61836,11 @@
           },
           "type": "array"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
     },
     "UserConfiguration": {
       "description": "User specific configuration for the Medplum application.",
@@ -61805,31 +61861,23 @@
           "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
           "$ref": "#/definitions/uri"
         },
-        "_implicitRules": {
-          "description": "Extensions for implicitRules",
-          "$ref": "#/definitions/Element"
-        },
         "language": {
           "description": "The base language in which the resource is written.",
           "$ref": "#/definitions/code"
-        },
-        "_language": {
-          "description": "Extensions for language",
-          "$ref": "#/definitions/Element"
         },
         "name": {
           "description": "A name associated with the UserConfiguration.",
           "$ref": "#/definitions/string"
         },
         "menu": {
-          "description": "Optional menu of shortcuts to URLs for quick access.",
+          "description": "Optional menu of shortcuts to URLs.",
           "items": {
             "$ref": "#/definitions/UserConfiguration_Menu"
           },
           "type": "array"
         },
         "search": {
-          "description": "Optional collection of search filters for quick access to preconfigured searches.",
+          "description": "Shortcut links to URLs.",
           "items": {
             "$ref": "#/definitions/UserConfiguration_Search"
           },
@@ -61842,13 +61890,17 @@
           },
           "type": "array"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
     },
     "UserConfiguration_Menu": {
       "description": "Optional menu of shortcuts to URLs.",
       "properties": {
         "title": {
-          "description": "The resource type.",
+          "description": "Title of the menu.",
           "$ref": "#/definitions/string"
         },
         "link": {
@@ -61858,7 +61910,11 @@
           },
           "type": "array"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "title"
+      ]
     },
     "UserConfiguration_Menu_Link": {
       "description": "Shortcut links to URLs.",
@@ -61869,12 +61925,17 @@
         },
         "target": {
           "description": "The URL target of the link.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/url"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "target"
+      ]
     },
     "UserConfiguration_Search": {
-      "description": "Optional collection of search filters for quick access to preconfigured searches.",
+      "description": "Shortcut links to URLs.",
       "properties": {
         "name": {
           "description": "The human friendly name of the link.",
@@ -61884,7 +61945,12 @@
           "description": "The rules that the server should use to determine which resources to return.",
           "$ref": "#/definitions/string"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "criteria"
+      ]
     },
     "UserConfiguration_Option": {
       "description": "User options that control the display of the application.",
@@ -61895,30 +61961,29 @@
         },
         "valueBoolean": {
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^true|false$",
-          "type": "boolean"
+          "$ref": "#/definitions/boolean"
         },
         "valueCode": {
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^[^\\s]+(\\s[^\\s]+)*$",
-          "type": "string"
+          "$ref": "#/definitions/code"
         },
         "valueDecimal": {
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$",
-          "type": "number"
+          "$ref": "#/definitions/decimal"
         },
         "valueInteger": {
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^-?([0]|([1-9][0-9]*))$",
-          "type": "number"
+          "$ref": "#/definitions/integer"
         },
         "valueString": {
           "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
-          "pattern": "^[ \\r\\n\\t\\S]+$",
-          "type": "string"
+          "$ref": "#/definitions/string"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id"
+      ]
     },
     "IdentityProvider": {
       "description": "External Identity Provider (IdP) configuration details.",
@@ -61947,7 +62012,280 @@
           "description": "Optional flag to use the subject field instead of the email field.",
           "$ref": "#/definitions/boolean"
         }
-      }
+      },
+      "additionalProperties": false,
+      "required": [
+        "authorizeUrl",
+        "tokenUrl",
+        "userInfoUrl",
+        "clientId",
+        "clientSecret"
+      ]
+    },
+    "Project_IpAccessRule": {
+      "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+      "properties": {
+        "name": {
+          "description": "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
+          "$ref": "#/definitions/string"
+        },
+        "value": {
+          "description": "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
+          "$ref": "#/definitions/string"
+        },
+        "action": {
+          "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "action"
+      ]
+    },
+    "ProjectMembership_Access": {
+      "description": "Extended access configuration using parameterized access policies.",
+      "properties": {
+        "policy": {
+          "description": "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
+          "$ref": "#/definitions/Reference"
+        },
+        "parameter": {
+          "description": "User options that control the display of the application.",
+          "items": {
+            "$ref": "#/definitions/ProjectMembership_Access_Parameter"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "policy"
+      ]
+    },
+    "ProjectMembership_Access_Parameter": {
+      "description": "User options that control the display of the application.",
+      "properties": {
+        "name": {
+          "description": "The unique name of the parameter.",
+          "$ref": "#/definitions/code"
+        },
+        "valueString": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/string"
+        },
+        "valueReference": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
+    },
+    "BulkDataExport": {
+      "description": "User specific configuration for the Medplum application.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a BulkDataExport resource",
+          "const": "BulkDataExport"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "status": {
+          "description": "The status of the request.",
+          "$ref": "#/definitions/code"
+        },
+        "requestTime": {
+          "description": "Indicates the server\u0027s time when the query is requested.",
+          "$ref": "#/definitions/instant"
+        },
+        "transactionTime": {
+          "description": "Indicates the server\u0027s time when the query is run. The response SHOULD NOT include any resources modified after this instant, and SHALL include any matching resources modified up to and including this instant.",
+          "$ref": "#/definitions/instant"
+        },
+        "request": {
+          "description": "The full URL of the original Bulk Data kick-off request. In the case of a POST request, this URL will not include the request parameters.",
+          "$ref": "#/definitions/uri"
+        },
+        "requiresAccessToken": {
+          "description": "Indicates whether downloading the generated files requires the same authorization mechanism as the $export operation itself.",
+          "$ref": "#/definitions/boolean"
+        },
+        "output": {
+          "description": "An array of file items with one entry for each generated file. If no resources are returned from the kick-off request, the server SHOULD return an empty array.",
+          "items": {
+            "$ref": "#/definitions/BulkDataExport_Output"
+          },
+          "type": "array"
+        },
+        "deleted": {
+          "description": "An array of deleted file items following the same structure as the output array.",
+          "items": {
+            "$ref": "#/definitions/BulkDataExport_Deleted"
+          },
+          "type": "array"
+        },
+        "error": {
+          "description": "Array of message file items following the same structure as the output array.",
+          "items": {
+            "$ref": "#/definitions/BulkDataExport_Error"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "status",
+        "requestTime",
+        "request"
+      ]
+    },
+    "BulkDataExport_Output": {
+      "description": "An array of file items with one entry for each generated file. If no resources are returned from the kick-off request, the server SHOULD return an empty array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url"
+      ]
+    },
+    "BulkDataExport_Deleted": {
+      "description": "An array of deleted file items following the same structure as the output array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url"
+      ]
+    },
+    "BulkDataExport_Error": {
+      "description": "Array of message file items following the same structure as the output array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "url"
+      ]
+    },
+    "SmartAppLaunch": {
+      "description": "This resource contains context details for a SMART App Launch.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a SmartAppLaunch resource",
+          "const": "SmartAppLaunch"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "patient": {
+          "description": "Optional patient indicating that the app was launched in the patient context.",
+          "$ref": "#/definitions/Reference"
+        },
+        "encounter": {
+          "description": "Optional encounter indicating that the app was launched in the encounter context.",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType"
+      ]
+    },
+    "DomainConfiguration": {
+      "description": "Domain specific configuration for the Medplum application.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a DomainConfiguration resource",
+          "const": "DomainConfiguration"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "domain": {
+          "description": "Globally unique domain name for this configuration.",
+          "$ref": "#/definitions/uri"
+        },
+        "identityProvider": {
+          "description": "Optional external Identity Provider (IdP) for the domain name.",
+          "$ref": "#/definitions/IdentityProvider"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "domain"
+      ]
     }
   }
 }
