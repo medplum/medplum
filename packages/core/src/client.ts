@@ -191,6 +191,18 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
+/**
+ * QueryTypes defines the different ways to specify FHIR search parameters.
+ *
+ * Can be any valid input to the URLSearchParams() constructor.
+ *
+ * TypeScript definitions for URLSearchParams do not match runtime behavior.
+ * The official spec only accepts string values.
+ * Web browsers and Node.js automatically coerce values to strings.
+ * See: https://github.com/microsoft/TypeScript/issues/32951
+ */
+export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
+
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
@@ -866,16 +878,9 @@ export class MedplumClient extends EventTarget {
    * @param query The FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @returns The well-formed FHIR URL.
    */
-  fhirSearchUrl(
-    resourceType: ResourceType,
-    query: URLSearchParams | string[][] | Record<string, any> | string | undefined
-  ): URL {
+  fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
-      // TypeScript definitions for URLSearchParams do not match runtime behavior
-      // The official spec only accepts string values.
-      // Web browsers and Node.js automatically coerce values to strings
-      // See: https://github.com/microsoft/TypeScript/issues/32951
       url.search = new URLSearchParams(query).toString();
     }
     return url;
@@ -931,7 +936,7 @@ export class MedplumClient extends EventTarget {
    */
   search<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -979,7 +984,7 @@ export class MedplumClient extends EventTarget {
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -1021,7 +1026,7 @@ export class MedplumClient extends EventTarget {
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string[][] | Record<string, any> | string | undefined,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
