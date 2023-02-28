@@ -73,7 +73,7 @@ export async function createScimUser(
     resourceType,
     firstName: scimUser.name?.givenName as string,
     lastName: scimUser.name?.familyName as string,
-    email: scimUser.userName,
+    email: scimUser.emails?.[0]?.value,
     externalId: scimUser.externalId,
     sendEmail: false,
     accessPolicy,
@@ -121,11 +121,34 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
   let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   user.firstName = scimUser.name?.givenName as string;
   user.lastName = scimUser.name?.familyName as string;
-  user.email = scimUser.userName;
   user.externalId = scimUser.externalId;
+
+  if (scimUser.emails?.[0]?.value) {
+    user.email = scimUser.emails?.[0]?.value;
+  }
+
   user = await systemRepo.updateResource(user);
 
   return convertToScimUser(user, membership);
+}
+
+/**
+ * Deletes an existing user.
+ *
+ * See SCIM 3.4.1 - Retrieve a Known Resource
+ * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.1
+ *
+ * @param project The project.
+ * @param id The user ID.
+ * @returns The user.
+ */
+export async function deleteScimUser(project: Project, id: string): Promise<void> {
+  const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
+  if (membership.project?.reference !== getReferenceString(project)) {
+    throw new OperationOutcomeError(forbidden);
+  }
+
+  return systemRepo.deleteResource('ProjectMembership', id);
 }
 
 /**
@@ -139,10 +162,7 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
  * @returns The FHIR profile resource type if found; otherwise, undefined.
  */
 export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practitioner' | 'RelatedPerson' | undefined {
-  const resourceType = scimUser.schemas
-    ?.find((x) => x.startsWith('urn:ietf:params:scim:schemas:extension:medplum:2.0:'))
-    ?.split(':')
-    ?.pop();
+  const resourceType = scimUser.userType;
   if (resourceType === 'Patient' || resourceType === 'Practitioner' || resourceType === 'RelatedPerson') {
     return resourceType;
   }
@@ -157,12 +177,9 @@ export function getScimUserResourceType(scimUser: ScimUser): 'Patient' | 'Practi
  */
 export function convertToScimUser(user: User, membership: ProjectMembership): ScimUser {
   const config = getConfig();
-  const resourceType = membership.profile?.reference?.split('/')?.shift() as string;
+  const [resourceType, id] = (membership.profile?.reference as string).split('/');
   return {
-    schemas: [
-      'urn:ietf:params:scim:schemas:core:2.0:User',
-      'urn:ietf:params:scim:schemas:extension:medplum:2.0:' + resourceType,
-    ],
+    schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
     id: membership.id,
     meta: {
       resourceType: 'User',
@@ -170,12 +187,14 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
       lastModified: membership.meta?.lastUpdated,
       location: config.baseUrl + 'scim/2.0/Users/' + membership.id,
     },
-    userName: user.email,
+    userType: resourceType,
+    userName: id,
     externalId: user.externalId,
     name: {
       givenName: user.firstName,
       familyName: user.lastName,
     },
+    emails: [{ value: user.email }],
   };
 }
 

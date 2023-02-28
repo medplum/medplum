@@ -18,7 +18,6 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { getClient } from '../../database';
 import { Column, Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
 import { getSearchParameters } from '../structure';
 import { LookupTable } from './lookuptable';
@@ -75,11 +74,11 @@ export class TokenTable extends LookupTable<Token> {
     const tokens = getTokens(resource);
     const resourceType = resource.resourceType;
     const resourceId = resource.id as string;
-    const existing = await getExistingValues(resourceType, resourceId);
+    const existing = await getExistingValues(client, resourceType, resourceId);
 
     if (!compareArrays(tokens, existing)) {
       if (existing.length > 0) {
-        await this.deleteValuesForResource(resource);
+        await this.deleteValuesForResource(client, resource);
       }
 
       const values = [];
@@ -315,7 +314,7 @@ function buildSimpleToken(
  * @param resourceId The FHIR resource ID.
  * @returns Promise for the list of indexed tokens  .
  */
-async function getExistingValues(resourceType: ResourceType, resourceId: string): Promise<Token[]> {
+async function getExistingValues(client: PoolClient, resourceType: ResourceType, resourceId: string): Promise<Token[]> {
   const tableName = getTableName(resourceType);
   return new SelectQuery(tableName)
     .column('code')
@@ -323,7 +322,7 @@ async function getExistingValues(resourceType: ResourceType, resourceId: string)
     .column('value')
     .where('resourceId', Operator.EQUALS, resourceId)
     .orderBy('index')
-    .execute(getClient())
+    .execute(client)
     .then((result) =>
       result.map((row) => ({
         code: row.code,

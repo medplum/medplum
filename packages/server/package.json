@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "2.0.4",
+  "version": "2.0.5",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc --project tsconfig.build.json",
     "prestart": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node-dev --poll --respawn --transpile-only src/index.ts",

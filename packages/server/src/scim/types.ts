@@ -90,6 +90,7 @@ export interface ScimUser {
   schemas?: string[];
   id?: string;
   externalId?: string;
+  userType?: string;
   userName?: string;
   meta?: ScimMeta;
   name?: ScimName;

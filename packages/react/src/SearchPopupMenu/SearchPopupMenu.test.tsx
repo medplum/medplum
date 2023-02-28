@@ -1,6 +1,6 @@
 import { Button, Menu } from '@mantine/core';
 import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
@@ -39,7 +39,7 @@ describe('SearchPopupMenu', () => {
 
   test('Invalid resource', () => {
     setup({
-      search: { resourceType: 'xyz' },
+      search: { resourceType: 'xyz' as ResourceType },
     });
   });
 
@@ -607,7 +607,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Renders meta.versionId', async () => {
-    const search = {
+    const search: SearchRequest = {
       resourceType: 'Patient',
       fields: ['meta.versionId'],
     };
@@ -627,7 +627,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Renders _lastUpdated', async () => {
-    const search = {
+    const search: SearchRequest = {
       resourceType: 'Patient',
       fields: ['_lastUpdated'],
     };
@@ -650,7 +650,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Search parameter choice', async () => {
-    const search = {
+    const search: SearchRequest = {
       resourceType: 'Observation',
       fields: ['value[x]'],
     };
@@ -682,7 +682,7 @@ describe('SearchPopupMenu', () => {
       },
     };
 
-    const search = {
+    const search: SearchRequest = {
       resourceType: 'Observation',
       fields: ['subject'],
     };

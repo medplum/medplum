@@ -1,19 +1,10 @@
 import { capitalize, globalSchema, indexStructureDefinition, TypeSchema } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import {
-  Bundle,
-  BundleEntry,
-  CodeSystem,
-  CodeSystemConcept,
-  ElementDefinition,
-  ElementDefinitionType,
-  Resource,
-  ValueSet,
-  ValueSetCompose,
-} from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, ElementDefinition, ElementDefinitionType, Resource } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
+import { getValueSetValues } from './valuesets';
 
 interface Property {
   resourceType: string;
@@ -36,20 +27,11 @@ const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
 const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
 const fhirTypes: FhirType[] = [];
 const fhirTypesMap: Record<string, FhirType> = {};
-const valueSets: Map<string, CodeSystem | ValueSet> = new Map();
 
 export function main(): void {
   buildStructureDefinitions('profiles-types.json');
   buildStructureDefinitions('profiles-resources.json');
   buildStructureDefinitions('profiles-medplum.json');
-
-  const valueSetBundle = readJson('fhir/r4/valuesets.json') as Bundle;
-  for (const entry of valueSetBundle.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
-    if (resource.resourceType === 'CodeSystem' || resource.resourceType === 'ValueSet') {
-      valueSets.set(resource.url as string, resource as CodeSystem | ValueSet);
-    }
-  }
 
   for (const [resourceType, definition] of Object.entries(globalSchema.types)) {
     const fhirType = buildType(resourceType, definition);
@@ -413,64 +395,6 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     return baseType + '[]';
   }
   return baseType;
-}
-
-function getValueSetValues(url: string): string[] {
-  const result: string[] = [];
-  buildValueSetValues(url, result);
-  return result;
-}
-
-function buildValueSetValues(url: string, result: string[]): void {
-  // If the url includes a version, remove it
-  if (url.includes('|')) {
-    url = url.split('|')[0];
-  }
-
-  const resource = valueSets.get(url);
-  if (!resource) {
-    return;
-  }
-
-  if (resource.resourceType === 'ValueSet') {
-    buildValueSetComposeValues(resource.compose, result);
-  }
-
-  if (resource.resourceType === 'CodeSystem') {
-    buildCodeSystemConceptValues(resource.concept, result);
-  }
-}
-
-function buildValueSetComposeValues(compose: ValueSetCompose | undefined, result: string[]): void {
-  if (compose?.include) {
-    for (const include of compose.include) {
-      if (include.concept) {
-        for (const concept of include.concept) {
-          if (concept.code) {
-            result.push(concept.code);
-          }
-        }
-      } else if (include.system) {
-        const includedValues = getValueSetValues(include.system);
-        if (includedValues) {
-          result.push(...includedValues);
-        }
-      }
-    }
-  }
-}
-
-function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined, result: string[]): void {
-  if (!concepts) {
-    return;
-  }
-
-  for (const concept of concepts) {
-    if (concept.code) {
-      result.push(concept.code);
-    }
-    buildCodeSystemConceptValues(concept.concept, result);
-  }
 }
 
 function containsAll(set: Set<string>, values: string[]): boolean {

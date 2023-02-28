@@ -31,7 +31,7 @@ describe('SearchControl', () => {
   }
 
   test('Renders results', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -55,7 +55,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders _lastUpdated filter', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -78,7 +78,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders empty results', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -102,7 +102,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders choice of type', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Observation',
         fields: ['value[x]'],
@@ -121,7 +121,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders with checkboxes', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -147,7 +147,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders empty results with checkboxes', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -172,7 +172,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders search parameter columns', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         fields: ['id', '_lastUpdated', 'name', 'birthDate', 'active', 'email', 'phone'],
@@ -193,7 +193,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders nested properties', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         fields: ['id', '_lastUpdated', 'name', 'address-city', 'address-state'],
@@ -214,7 +214,7 @@ describe('SearchControl', () => {
   });
 
   test('Renders filters', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         fields: ['id', 'name'],
@@ -239,7 +239,7 @@ describe('SearchControl', () => {
   });
 
   test('Next page button', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         count: 1,
@@ -266,7 +266,7 @@ describe('SearchControl', () => {
   });
 
   test('Next page button without onChange listener', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         count: 1,
@@ -290,7 +290,7 @@ describe('SearchControl', () => {
   });
 
   test('Prev page button', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         count: 1,
@@ -394,7 +394,7 @@ describe('SearchControl', () => {
   });
 
   test('Click on row', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -425,7 +425,7 @@ describe('SearchControl', () => {
   });
 
   test('Aux click on row', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -456,7 +456,7 @@ describe('SearchControl', () => {
   });
 
   test('Field editor onOk', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -486,7 +486,7 @@ describe('SearchControl', () => {
   });
 
   test('Field editor onCancel', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -516,7 +516,7 @@ describe('SearchControl', () => {
   });
 
   test('Filter editor onOk', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -546,7 +546,7 @@ describe('SearchControl', () => {
   });
 
   test('Filter editor onCancel', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -576,7 +576,7 @@ describe('SearchControl', () => {
   });
 
   test('Popup menu and prompt', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -615,7 +615,7 @@ describe('SearchControl', () => {
   });
 
   test('Click all checkbox', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -654,7 +654,7 @@ describe('SearchControl', () => {
   });
 
   test('Click row checkbox', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -697,7 +697,7 @@ describe('SearchControl', () => {
   });
 
   test('Activate popup menu', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         fields: ['id', 'name'],
@@ -741,7 +741,7 @@ describe('SearchControl', () => {
   });
 
   test('Hide toolbar', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [
@@ -769,7 +769,7 @@ describe('SearchControl', () => {
   });
 
   test('Hide filters', async () => {
-    const props = {
+    const props: SearchControlProps = {
       search: {
         resourceType: 'Patient',
         filters: [

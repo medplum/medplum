@@ -41,7 +41,7 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
       return;
     }
 
-    await this.deleteValuesForResource(resource);
+    await this.deleteValuesForResource(client, resource);
 
     const values = [];
 

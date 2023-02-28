@@ -12,30 +12,21 @@ SCIM resources include a `schemas` property that declares which schemas a resour
 
 The base `User` schema is `urn:ietf:params:scim:schemas:core:2.0:User`.
 
-Medplum users always have a corresponding FHIR "profile" resource, which can be a `Patient`, `Practitioner`, or `RelatedPerson`. To specify the desired FHIR resource type, you must include an entry in the `schemas` property with one of the following Medplum extensions:
+## User Type and Username
 
-1. `urn:ietf:params:scim:schemas:extension:medplum:2.0:Patient`
-2. `urn:ietf:params:scim:schemas:extension:medplum:2.0:Practitioner`
-3. `urn:ietf:params:scim:schemas:extension:medplum:2.0:RelatedPerson`
+Medplum users always have a corresponding FHIR "profile" resource, which can be a `Patient`, `Practitioner`, or `RelatedPerson`. To specify the desired FHIR resource type, you must include a `userType` property with the FHIR resource type.
 
 For example, consider this `Practitioner`:
 
 ```json
 {
-  "schemas": [
-    "urn:ietf:params:scim:schemas:core:2.0:User",
-    "urn:ietf:params:scim:schemas:extension:medplum:2.0:Practitioner"
-  ],
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userType": "Practitioner",
   "name": {
     "givenName": "Alice",
     "familyName": "Smith"
   },
-  "userName": "alice@example.com",
-  "emails": [
-    {
-      "value": "alice@example.com"
-    }
-  ]
+  "emails": [{ "value": "alice@example.com" }]
 }
 ```
 
@@ -43,22 +34,17 @@ For example, consider this `Patient`:
 
 ```json
 {
-  "schemas": [
-    "urn:ietf:params:scim:schemas:core:2.0:User",
-    "urn:ietf:params:scim:schemas:extension:medplum:2.0:Patient"
-  ],
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userType": "Patient",
   "name": {
     "givenName": "Bob",
     "familyName": "Jones"
   },
-  "userName": "bob@example.com",
-  "emails": [
-    {
-      "value": "bob@example.com"
-    }
-  ]
+  "emails": [{ "value": "bob@example.com" }]
 }
 ```
+
+The SCIM `userName` property will be the system generated FHIR resource ID.  This can be used in combination with the SCIM `userType` to identify the FHIR resource for the user.
 
 ## Create a user
 
@@ -69,10 +55,8 @@ curl https://api.medplum.com/scim/v2/Users \
  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
  -H "Content-Type: application/json" \
  -d '{
-  "schemas": [
-    "urn:ietf:params:scim:schemas:core:2.0:User",
-    "urn:ietf:params:scim:schemas:extension:medplum:2.0:Practitioner"
-  ],
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userType": "Practitioner",
   "name": {
     "givenName": "Alice",
     "familyName": "Smith"
@@ -104,10 +88,8 @@ curl -X PUT https://api.medplum.com/scim/v2/Users \
  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
  -H "Content-Type: application/json" \
  -d '{
-  "schemas": [
-    "urn:ietf:params:scim:schemas:core:2.0:User",
-    "urn:ietf:params:scim:schemas:extension:medplum:2.0:Practitioner"
-  ],
+  "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User"],
+  "userType": "Practitioner",
   "id": "41ecbf96-8296-4fac-801c-5e78042ba436",
   "name": {
     "givenName": "Alice",
@@ -122,6 +104,17 @@ curl -X PUT https://api.medplum.com/scim/v2/Users \
   "externalId": "test-external-id"
 }'
 ```
+
+## Delete a user
+
+Delete a user by making an HTTP `DELETE` request to `https://api.medplum.com/scim/v2/Users/{id}`
+
+```bash
+curl -X DELETE https://api.medplum.com/scim/v2/Users/MY_USER_ID \
+ -H "Authorization: Bearer MY_ACCESS_TOKEN"
+```
+
+Note that deleting the user does not delete any of the corresponding FHIR resources.
 
 ## Search users
 

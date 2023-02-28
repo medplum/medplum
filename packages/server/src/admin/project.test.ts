@@ -79,6 +79,9 @@ describe('Project Admin routes', () => {
       .get('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toEqual('ProjectMembership');
+    expect(res4.body.id).toBeDefined();
+    expect(res4.body.meta.project).toEqual(project.id);
 
     // Try a naughty request using a different resource type
     const res5 = await request(app)
