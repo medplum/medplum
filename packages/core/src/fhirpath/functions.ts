@@ -1543,7 +1543,7 @@ export const functions: Record<string, FhirPathFunction> = {
       if (typeof value === 'number') {
         return { type: PropertyType.BackboneElement, value: { namespace: 'System', name: 'Integer' } };
       }
-      if (value && isResource(value)) {
+      if (isResource(value)) {
         return {
           type: PropertyType.BackboneElement,
           value: { namespace: 'FHIR', name: value.resourceType },
