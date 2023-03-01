@@ -63,7 +63,8 @@ export class BackEnd extends Construct {
 
     // RDS
     let rdsCluster = undefined;
-    if (!config.rdsSecretsArn) {
+    let rdsSecretsArn = config.rdsSecretsArn;
+    if (!rdsSecretsArn) {
       rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
           version: rds.AuroraPostgresEngineVersion.VER_12_9,
@@ -86,6 +87,8 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
       });
+
+      rdsSecretsArn = (rdsCluster.secret as secretsmanager.ISecret).secretArn;
     }
 
     // Redis
@@ -380,7 +383,6 @@ export class BackEnd extends Construct {
     });
 
     // SSM Parameters
-    const rdsSecretsArn = config.rdsSecretsArn || (rdsCluster?.secret?.secretArn as string);
     const databaseSecrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
