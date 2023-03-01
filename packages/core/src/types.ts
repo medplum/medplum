@@ -2,6 +2,7 @@ import {
   Bundle,
   BundleEntry,
   ElementDefinition,
+  Reference,
   Resource,
   SearchParameter,
   StructureDefinition,
@@ -432,6 +433,26 @@ export function getElementDefinition(typeName: string, propertyName: string): El
   }
 
   return property;
+}
+
+/**
+ * Typeguard to validate that an object is a FHIR resource
+ * @param value The object to check
+ * @returns True if the input is of type 'object' and contains property 'resourceType'
+ */
+export function isResource<T extends Resource = Resource>(value: T | Reference<T> | string | undefined): value is T {
+  return typeof value === 'object' && 'resourceType' in value;
+}
+
+/**
+ * Typeguard to validate that an object is a FHIR resource
+ * @param value The object to check
+ * @returns True if the input is of type 'object' and contains property 'reference'
+ */
+export function isReference<T extends Resource>(
+  value: T | Reference<T> | string | undefined
+): value is Reference<T> & { reference: string } {
+  return typeof value === 'object' && 'reference' in value;
 }
 
 /**

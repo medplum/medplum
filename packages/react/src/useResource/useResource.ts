@@ -1,4 +1,4 @@
-import { deepEquals, MedplumClient, normalizeOperationOutcome } from '@medplum/core';
+import { deepEquals, isReference, isResource, MedplumClient, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { useEffect, useRef, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
@@ -73,10 +73,10 @@ function parseValue<T extends Resource>(
     return;
   }
 
-  if ('reference' in value) {
+  if (isReference<T>(value)) {
     // If the input is a reference then we can use it as-is
-    referenceRef.current = value as Reference<T>;
-  } else if ('resourceType' in value) {
+    referenceRef.current = value;
+  } else if (isResource<T>(value)) {
     resourceRef.current = value;
     if ('id' in value) {
       // If the input is a resource with an ID, then we can still create a reference

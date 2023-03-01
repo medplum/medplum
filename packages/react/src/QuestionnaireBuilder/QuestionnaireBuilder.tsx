@@ -1,5 +1,5 @@
 import { Anchor, Button, createStyles, NativeSelect, Textarea, TextInput, Title } from '@mantine/core';
-import { globalSchema, IndexedStructureDefinition } from '@medplum/core';
+import { globalSchema, IndexedStructureDefinition, isResource as isResourceType } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption, Reference } from '@medplum/fhirtypes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
@@ -134,7 +134,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const { classes, cx } = useStyles();
   const resource = props.item as Questionnaire;
   const item = props.item as QuestionnaireItem;
-  const isResource = 'resourceType' in props.item;
+  const isResource = isResourceType(props.item);
   const isContainer = isResource || item.type === QuestionnaireItemType.group;
   const linkId = item.linkId ?? '[untitled]';
   const editing = props.selectedKey === props.item.id;

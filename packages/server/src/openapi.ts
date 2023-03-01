@@ -1,3 +1,4 @@
+import { isResource } from '@medplum/core';
 import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
@@ -515,5 +516,5 @@ function buildPatchPath(): any {
 
 function isResourceType(definition: JSONSchema4): boolean {
   const props = definition?.properties;
-  return !!(props && 'resourceType' in props && 'id' in props && 'meta' in props);
+  return !!(isResource(props) && 'id' in props && 'meta' in props);
 }

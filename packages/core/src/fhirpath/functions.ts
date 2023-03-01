@@ -1,6 +1,6 @@
-import { Reference, Resource } from '@medplum/fhirtypes';
+import { Reference } from '@medplum/fhirtypes';
 import { Atom } from '../fhirlexer';
-import { PropertyType, TypedValue } from '../types';
+import { isResource, PropertyType, TypedValue } from '../types';
 import { calculateAge } from '../utils';
 import { DotAtom, SymbolAtom } from './atoms';
 import { parseDateString } from './date';
@@ -1543,10 +1543,10 @@ export const functions: Record<string, FhirPathFunction> = {
       if (typeof value === 'number') {
         return { type: PropertyType.BackboneElement, value: { namespace: 'System', name: 'Integer' } };
       }
-      if (value && typeof value === 'object' && 'resourceType' in value) {
+      if (isResource(value)) {
         return {
           type: PropertyType.BackboneElement,
-          value: { namespace: 'FHIR', name: (value as Resource).resourceType },
+          value: { namespace: 'FHIR', name: value.resourceType },
         };
       }
       return { type: PropertyType.BackboneElement, value: null };

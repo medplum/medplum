@@ -1,5 +1,5 @@
-import { ElementDefinition, Period, Quantity, Resource } from '@medplum/fhirtypes';
-import { buildTypeName, getElementDefinition, PropertyType, TypedValue } from '../types';
+import { ElementDefinition, Period, Quantity } from '@medplum/fhirtypes';
+import { buildTypeName, getElementDefinition, isResource, PropertyType, TypedValue } from '../types';
 import { capitalize, isEmpty } from '../utils';
 
 /**
@@ -29,8 +29,8 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.string, value };
   } else if (isQuantity(value)) {
     return { type: PropertyType.Quantity, value };
-  } else if (typeof value === 'object' && 'resourceType' in value) {
-    return { type: (value as Resource).resourceType, value };
+  } else if (isResource(value)) {
+    return { type: value.resourceType, value };
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
@@ -123,7 +123,7 @@ function getTypedPropertyValueWithSchema(
 }
 
 function toTypedValueWithType(value: any, type: string): TypedValue {
-  if (type === 'Resource' && typeof value === 'object' && 'resourceType' in value) {
+  if (type === 'Resource' && isResource(value)) {
     type = value.resourceType;
   }
   return { type, value };
@@ -154,7 +154,7 @@ function getTypedPropertyValueWithoutSchema(
     // Examples:
     // value + valueString = ok, because "string" is valid
     // value + valueDecimal = ok, because "decimal" is valid
-    // id + identifiier = not ok, because "entifier" is not a valid type
+    // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
     for (const propertyType in PropertyType) {
       const propertyName = path + capitalize(propertyType);
