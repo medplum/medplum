@@ -62,28 +62,34 @@ export class BackEnd extends Construct {
     });
 
     // RDS
-    const rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
-      engine: rds.DatabaseClusterEngine.auroraPostgres({
-        version: rds.AuroraPostgresEngineVersion.VER_12_9,
-      }),
-      credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
-      defaultDatabaseName: 'medplum',
-      storageEncrypted: true,
-      instances: config.rdsInstances,
-      instanceProps: {
-        vpc: vpc,
-        vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+    let rdsCluster = undefined;
+    let rdsSecretsArn = config.rdsSecretsArn;
+    if (!rdsSecretsArn) {
+      rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
+        engine: rds.DatabaseClusterEngine.auroraPostgres({
+          version: rds.AuroraPostgresEngineVersion.VER_12_9,
+        }),
+        credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
+        defaultDatabaseName: 'medplum',
+        storageEncrypted: true,
+        instances: config.rdsInstances,
+        instanceProps: {
+          vpc: vpc,
+          vpcSubnets: {
+            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          },
+          instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
+          enablePerformanceInsights: true,
         },
-        instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
-        enablePerformanceInsights: true,
-      },
-      backup: {
-        retention: Duration.days(7),
-      },
-      cloudwatchLogsExports: ['postgresql'],
-      instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
-    });
+        backup: {
+          retention: Duration.days(7),
+        },
+        cloudwatchLogsExports: ['postgresql'],
+        instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+      });
+
+      rdsSecretsArn = (rdsCluster.secret as secretsmanager.ISecret).secretArn;
+    }
 
     // Redis
     // Important: For HIPAA compliance, you must specify TransitEncryptionEnabled as true, an AuthToken, and a CacheSubnetGroup.
@@ -357,7 +363,9 @@ export class BackEnd extends Construct {
     });
 
     // Grant RDS access to the fargate group
-    rdsCluster.connections.allowDefaultPortFrom(fargateSecurityGroup);
+    if (rdsCluster) {
+      rdsCluster.connections.allowDefaultPortFrom(fargateSecurityGroup);
+    }
 
     // Grant Redis access to the fargate group
     redisSecurityGroup.addIngressRule(fargateSecurityGroup, ec2.Port.tcp(6379));
@@ -379,7 +387,7 @@ export class BackEnd extends Construct {
       tier: ssm.ParameterTier.STANDARD,
       parameterName: `/medplum/${name}/DatabaseSecrets`,
       description: 'Database secrets ARN',
-      stringValue: rdsCluster.secret?.secretArn as string,
+      stringValue: rdsSecretsArn,
     });
 
     const redisSecretsParameter = new ssm.StringParameter(this, 'RedisSecretsParameter', {

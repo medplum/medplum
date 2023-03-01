@@ -17,6 +17,7 @@ export interface MedplumInfraConfig {
   maxAzs: number;
   rdsInstances: number;
   rdsInstanceType: string;
+  rdsSecretsArn?: string;
   desiredServerCount: number;
   serverImage: string;
   serverMemory: number;
