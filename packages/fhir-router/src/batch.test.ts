@@ -1010,7 +1010,7 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.type).toEqual('batch-response');
+    expect(bundle?.type).toEqual('transaction-response');
     expect(bundle?.entry).toBeDefined();
 
     const results = bundle?.entry as BundleEntry[];
