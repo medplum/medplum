@@ -181,15 +181,13 @@ const publicResourceTypes = [
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-const protectedResourceTypes = [
-  'DomainConfiguration',
-  'JsonWebKey',
-  'Login',
-  'PasswordChangeRequest',
-  'Project',
-  'ProjectMembership',
-  'User',
-];
+const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'PasswordChangeRequest', 'User'];
+
+/**
+ * Project admin resource types are special resources that are only
+ * accessible to project administrators.
+ */
+export const projectAdminResourceTypes = ['Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -1776,7 +1774,7 @@ export class Repository {
     }
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
+        if (this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
           return true;
         }
       }
@@ -1807,7 +1805,7 @@ export class Repository {
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (
-          (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
+          this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType) &&
           !resourcePolicy.readonly
         ) {
           return true;
@@ -1870,7 +1868,7 @@ export class Repository {
     readonly: boolean
   ): boolean {
     const resourceType = resource.resourceType;
-    if (resourcePolicy.resourceType !== resourceType && resourcePolicy.resourceType !== '*') {
+    if (!this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
       return false;
     }
     if (!readonly && resourcePolicy.readonly) {
@@ -1890,6 +1888,24 @@ export class Repository {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Returns true if the resource type matches the access policy resource type.
+   * @param accessPolicyResourceType The resource type from the access policy.
+   * @param resourceType The candidate resource resource type.
+   * @returns True if the resource type matches the access policy resource type.
+   */
+  #matchesAccessPolicyResourceType(accessPolicyResourceType: string | undefined, resourceType: string): boolean {
+    if (accessPolicyResourceType === resourceType) {
+      return true;
+    }
+    if (accessPolicyResourceType === '*' && !projectAdminResourceTypes.includes(resourceType)) {
+      // Project admin resource types are not allowed to be wildcarded
+      // Project admin resource types must be explicitly included
+      return true;
+    }
+    return false;
   }
 
   /**
