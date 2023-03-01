@@ -145,8 +145,8 @@ function applyProjectAdminAccessPolicy(
   if (accessPolicy) {
     // If there is an existing access policy
     // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter((r) =>
-      projectAdminResourceTypes.includes(r.resourceType as string)
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
     );
   }
 
