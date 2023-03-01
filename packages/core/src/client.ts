@@ -191,6 +191,18 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
+/**
+ * QueryTypes defines the different ways to specify FHIR search parameters.
+ *
+ * Can be any valid input to the URLSearchParams() constructor.
+ *
+ * TypeScript definitions for URLSearchParams do not match runtime behavior.
+ * The official spec only accepts string values.
+ * Web browsers and Node.js automatically coerce values to strings.
+ * See: https://github.com/microsoft/TypeScript/issues/32951
+ */
+export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
+
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
@@ -862,13 +874,14 @@ export class MedplumClient extends EventTarget {
    * Builds a FHIR search URL from a search query or structured query object.
    * @category HTTP
    * @category Search
-   * @param query The FHIR search query or structured query object.
+   * @param resourceType The FHIR resource type.
+   * @param query The FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @returns The well-formed FHIR URL.
    */
-  fhirSearchUrl(resourceType: ResourceType, query: URLSearchParams | string | undefined): URL {
+  fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
-      url.search = query.toString();
+      url.search = new URLSearchParams(query).toString();
     }
     return url;
   }
@@ -917,13 +930,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   search<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -965,13 +978,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -1007,13 +1020,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);

@@ -917,7 +917,7 @@ describe('Client', () => {
     const result = await client.search('Patient', 'name:contains=alice');
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('GET');
-    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name:contains=alice');
+    expect((result as any).request.url).toBe('https://x/fhir/R4/Patient?name%3Acontains=alice');
   });
 
   test('Search no filters', async () => {
@@ -950,6 +950,15 @@ describe('Client', () => {
   test('Search resources', async () => {
     const client = new MedplumClient(defaultOptions);
     const result = await client.searchResources('Patient', '_count=1&name:contains=alice');
+    expect(result).toBeDefined();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(1);
+    expect(result[0].resourceType).toBe('Patient');
+  });
+
+  test('Search resources with record of params', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const result = await client.searchResources('Patient', { _count: 1, 'name:contains': 'alice' });
     expect(result).toBeDefined();
     expect(Array.isArray(result)).toBe(true);
     expect(result.length).toBe(1);
