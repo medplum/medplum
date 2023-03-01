@@ -1,6 +1,7 @@
 import { ProfileResource, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
+  AccessPolicyIpAccessRule,
   AccessPolicyResource,
   Login,
   ProjectMembership,
@@ -29,6 +30,31 @@ export async function getRepoForLogin(
   extendedMode?: boolean,
   checkReferencesOnWrite?: boolean
 ): Promise<Repository> {
+  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+
+  return new Repository({
+    project: resolveId(membership.project) as string,
+    author: membership.profile as Reference,
+    remoteAddress: login.remoteAddress,
+    superAdmin: login.superAdmin,
+    projectAdmin: membership.admin,
+    accessPolicy,
+    strictMode,
+    extendedMode,
+    checkReferencesOnWrite,
+  });
+}
+
+/**
+ * Returns the access policy for the login.
+ * @param login The user login.
+ * @param membership The user membership.
+ * @returns The finalized access policy.
+ */
+export async function getAccessPolicyForLogin(
+  login: Login,
+  membership: ProjectMembership
+): Promise<AccessPolicy | undefined> {
   let accessPolicy: AccessPolicy | undefined = undefined;
 
   if (membership.access || membership.accessPolicy) {
@@ -46,17 +72,7 @@ export async function getRepoForLogin(
   // and restricted access for admins
   accessPolicy = applyProjectAdminAccessPolicy(login, membership, accessPolicy);
 
-  return new Repository({
-    project: resolveId(membership.project) as string,
-    author: membership.profile as Reference,
-    remoteAddress: login.remoteAddress,
-    superAdmin: login.superAdmin,
-    projectAdmin: membership.admin,
-    accessPolicy,
-    strictMode,
-    extendedMode,
-    checkReferencesOnWrite,
-  });
+  return accessPolicy;
 }
 
 /**
@@ -78,6 +94,7 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
   const profile = membership.profile as Reference<ProfileResource>;
   let compartment: Reference | undefined = undefined;
   let resourcePolicies: AccessPolicyResource[] = [];
+  let ipAccessRules: AccessPolicyIpAccessRule[] = [];
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(entry, profile);
     if (replaced.compartment) {
@@ -86,9 +103,17 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
     if (replaced.resource) {
       resourcePolicies = resourcePolicies.concat(replaced.resource);
     }
+    if (replaced.ipAccessRule) {
+      ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
+    }
   }
 
-  return { resourceType: 'AccessPolicy', compartment, resource: resourcePolicies };
+  return {
+    resourceType: 'AccessPolicy',
+    compartment,
+    resource: resourcePolicies,
+    ipAccessRule: ipAccessRules,
+  };
 }
 
 /**

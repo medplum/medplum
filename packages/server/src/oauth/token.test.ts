@@ -1,5 +1,5 @@
-import { parseSearchDefinition } from '@medplum/core';
-import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import { createReference, parseSearchDefinition } from '@medplum/core';
+import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, SignJWT } from 'jose';
@@ -42,20 +42,31 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({
+    ({ project, client } = await createTestProject());
+
+    // Create access policy
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: '*' }],
       ipAccessRule: [
         { name: 'Block test', value: '6.6.6.6', action: 'block' },
         { name: 'Allow by default', value: '*', action: 'allow' },
       ],
-    }));
+    });
 
     // Create a test user
-    const { user } = await inviteUser({
+    const { user, membership } = await inviteUser({
       project,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
       email,
+    });
+
+    // Set the access policy
+    await systemRepo.updateResource({
+      ...membership,
+      accessPolicy: createReference(accessPolicy),
     });
 
     // Set the test user password

@@ -10,6 +10,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import {
+  AccessPolicy,
   BundleEntry,
   ClientApplication,
   Login,
@@ -24,6 +25,7 @@ import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { authenticator } from 'otplib';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -372,8 +374,11 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // Get the access policy
+  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+
   // Check IP Access Rules
-  await checkIpAccessRules(login, project);
+  await checkIpAccessRules(login, accessPolicy);
 
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
@@ -391,13 +396,13 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
  * Returns successfully if the login does not match any rules.
  * Throws an error if the login matches a "block" rule.
  * @param login The candidate login.
- * @param project The project.
+ * @param accessPolicy The access policy for the login.
  */
-async function checkIpAccessRules(login: Login, project: Project): Promise<void> {
-  if (!login.remoteAddress || !project.ipAccessRule) {
+async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
+  if (!login.remoteAddress || !accessPolicy?.ipAccessRule) {
     return;
   }
-  for (const rule of project.ipAccessRule) {
+  for (const rule of accessPolicy.ipAccessRule) {
     if (matchesIpAccessRule(login.remoteAddress, rule.value as string)) {
       if (rule.action === 'allow') {
         return;
