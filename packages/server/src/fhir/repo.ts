@@ -187,7 +187,7 @@ const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'P
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-const projectAdminResourceTypes = ['Project', 'ProjectMembership'];
+export const projectAdminResourceTypes = ['Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.

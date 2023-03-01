@@ -7,7 +7,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
-import { Repository, systemRepo } from './repo';
+import { projectAdminResourceTypes, Repository, systemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
 /**
@@ -145,8 +145,8 @@ function applyProjectAdminAccessPolicy(
   if (accessPolicy) {
     // If there is an existing access policy
     // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter(
-      (r) => r.resourceType !== 'Project' && r.resourceType !== 'ProjectMembership'
+    accessPolicy.resource = accessPolicy.resource?.filter((r) =>
+      projectAdminResourceTypes.includes(r.resourceType as string)
     );
   }
 
