@@ -1,5 +1,5 @@
 import { Button, Group, Stack, TextInput } from '@mantine/core';
-import { capitalize, IndexedStructureDefinition } from '@medplum/core';
+import { capitalize, deepClone, IndexedStructureDefinition } from '@medplum/core';
 import { ElementDefinition, ElementDefinitionType, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import React, { useEffect, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
@@ -22,7 +22,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
 
   useEffect(() => {
     if (defaultValue) {
-      setValue(JSON.parse(JSON.stringify(defaultValue)));
+      setValue(deepClone(defaultValue));
       medplum.requestSchema(defaultValue.resourceType).then(setSchema).catch(console.log);
     }
   }, [medplum, defaultValue]);

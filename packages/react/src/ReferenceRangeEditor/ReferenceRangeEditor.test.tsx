@@ -1,12 +1,12 @@
+import { deepClone } from '@medplum/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
-import { deepClone } from '@medplum/core';
+import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';
 
 const medplum = new MockClient();
 
@@ -313,7 +313,7 @@ describe('ReferenceRangeEditor', () => {
    * Test existing ids (numeric + non-numeric).
    */
   test('Interval Ids', async () => {
-    const definition = JSON.parse(JSON.stringify(HDLDefinition));
+    const definition = deepClone(HDLDefinition);
     if (definition.qualifiedInterval?.[0]) {
       definition.qualifiedInterval[0].id = 'id-66';
     }
@@ -348,7 +348,7 @@ describe('ReferenceRangeEditor', () => {
    * Test existing ids (numeric + non-numeric).
    */
   test('Interval Ids with "hole"', async () => {
-    const definition = JSON.parse(JSON.stringify(HDLDefinition));
+    const definition = deepClone(HDLDefinition);
     if (definition.qualifiedInterval?.[0]) {
       definition.qualifiedInterval[0].id = 'id-1';
     }
@@ -417,7 +417,7 @@ describe('ReferenceRangeEditor', () => {
   test('Update Multiple Group Filters', async () => {
     const onSubmit = jest.fn();
     await setup({
-      definition: JSON.parse(JSON.stringify(TestosteroneDefinition)),
+      definition: deepClone(TestosteroneDefinition),
       onSubmit,
     });
 
@@ -464,7 +464,7 @@ describe('ReferenceRangeEditor', () => {
   test('Overlapping Group Filters', async () => {
     const onSubmit = jest.fn();
     await setup({
-      definition: JSON.parse(JSON.stringify(TestosteroneDefinition)),
+      definition: deepClone(TestosteroneDefinition),
       onSubmit,
     });
 
