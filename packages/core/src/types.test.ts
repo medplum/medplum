@@ -8,6 +8,8 @@ import {
   globalSchema,
   indexSearchParameter,
   indexStructureDefinition,
+  isReference,
+  isResource,
   isResourceType,
   TypeSchema,
 } from './types';
@@ -128,5 +130,21 @@ describe('Type Utils', () => {
         },
       } as unknown as TypeSchema)
     ).not.toBeTruthy();
+  });
+
+  test('isResource', () => {
+    expect(isResource(undefined)).toBe(false);
+    expect(isResource('Patient')).toBe(false);
+    expect(isResource({})).toBe(false);
+    expect(isResource({ resourceType: 'Patient' })).toBe(true);
+    expect(isResource({ reference: 'Patient/123' })).toBe(false);
+  });
+
+  test('isReference', () => {
+    expect(isReference(undefined)).toBe(false);
+    expect(isReference('Patient')).toBe(false);
+    expect(isReference({})).toBe(false);
+    expect(isReference({ resourceType: 'Patient' })).toBe(false);
+    expect(isReference({ reference: 'Patient/123' })).toBe(true);
   });
 });
