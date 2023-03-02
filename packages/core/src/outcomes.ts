@@ -137,6 +137,21 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
+export function validationError(details: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    issue: [
+      {
+        severity: 'error',
+        code: 'structure',
+        details: {
+          text: details,
+        },
+      },
+    ],
+  };
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }

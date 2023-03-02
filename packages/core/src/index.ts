@@ -6,6 +6,7 @@ export * from './hl7';
 export * from './jwt';
 export * from './outcomes';
 export * from './readablepromise';
+export * from './schema';
 export * from './search/details';
 export * from './search/match';
 export * from './search/parse';

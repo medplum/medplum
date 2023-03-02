@@ -1,11 +1,10 @@
-import { allOk, badRequest, forbidden } from '@medplum/core';
+import { allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
-import { validateResourceType } from '../fhir/schema';
 import { logger } from '../logger';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';

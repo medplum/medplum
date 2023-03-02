@@ -333,8 +333,13 @@ export function buildTypeName(components: string[]): string {
  * @param typeSchema The type schema to check.
  * @returns True if the type schema is a DomainResource.
  */
-export function isResourceType(typeSchema: TypeSchema): boolean {
-  return typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource';
+export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
+  const baseDefinition = typeSchema.structureDefinition?.baseDefinition;
+  return (
+    typeSchema.structureDefinition?.name === typeSchema.elementDefinition?.path &&
+    (baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource' ||
+      baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource')
+  );
 }
 
 /**
@@ -345,7 +350,7 @@ export function isResourceType(typeSchema: TypeSchema): boolean {
 export function getResourceTypes(): string[] {
   const result: string[] = [];
   for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
-    if (isResourceType(typeSchema)) {
+    if (isResourceTypeSchema(typeSchema)) {
       result.push(resourceType);
     }
   }

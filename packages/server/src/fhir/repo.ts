@@ -28,6 +28,8 @@ import {
   SortRule,
   stringify,
   tooManyRequests,
+  validateResource,
+  validateResourceType,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -75,7 +77,6 @@ import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { validateResource, validateResourceType } from './schema';
 import {
   Column,
   Condition,

@@ -10,7 +10,7 @@ import {
   indexStructureDefinition,
   isReference,
   isResource,
-  isResourceType,
+  isResourceTypeSchema,
   TypeSchema,
 } from './types';
 
@@ -114,9 +114,55 @@ describe('Type Utils', () => {
     );
   });
 
-  test('isResourceType', () => {
+  test('isResourceTypeSchema', () => {
+    indexStructureDefinition({
+      resourceType: 'StructureDefinition',
+      id: '123',
+      name: 'Patient',
+      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+      snapshot: {
+        element: [
+          {
+            id: 'Patient',
+            path: 'Patient',
+          },
+          {
+            id: 'Patient.name',
+            path: 'Patient.name',
+            type: [{ code: 'HumanName' }],
+            max: '*',
+          },
+          {
+            id: 'Patient.contact',
+            path: 'Patient.contact',
+            max: '*',
+            type: [{ code: 'BackboneElement' }],
+          },
+          {
+            id: 'Patient.contact.id',
+            path: 'Patient.contact.id',
+            type: [{ code: 'string' }],
+          },
+        ],
+      },
+    });
+
+    expect(globalSchema.types['Patient']).toBeDefined();
+    expect(isResourceTypeSchema(globalSchema.types['Patient'])).toBeTruthy();
+
+    expect(globalSchema.types['PatientContact']).toBeDefined();
+    expect(isResourceTypeSchema(globalSchema.types['PatientContact'])).toBeFalsy();
+
     expect(
-      isResourceType({
+      isResourceTypeSchema({
+        structureDefinition: {
+          baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Resource',
+        },
+      } as unknown as TypeSchema)
+    ).toBeTruthy();
+
+    expect(
+      isResourceTypeSchema({
         structureDefinition: {
           baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
         },
@@ -124,7 +170,7 @@ describe('Type Utils', () => {
     ).toBeTruthy();
 
     expect(
-      isResourceType({
+      isResourceTypeSchema({
         structureDefinition: {
           baseDefinition: 'http://example.com',
         },

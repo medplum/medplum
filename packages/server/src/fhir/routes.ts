@@ -1,4 +1,4 @@
-import { allOk, getStatus, isOk, OperationOutcomeError } from '@medplum/core';
+import { allOk, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -17,7 +17,6 @@ import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { validateResource } from './schema';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
