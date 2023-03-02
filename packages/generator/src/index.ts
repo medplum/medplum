@@ -195,6 +195,9 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   }
 
   for (const property of fhirType.properties) {
+    if (property.definition.max === '0') {
+      continue;
+    }
     b.newLine();
     writeInterfaceProperty(b, fhirType, property);
   }

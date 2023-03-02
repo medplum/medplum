@@ -33,11 +33,6 @@ export interface SimpleQuantity {
   value?: number;
 
   /**
-   * Not allowed to be used in this context
-   */
-  comparator?: '<' | '<=' | '>=' | '>';
-
-  /**
    * A human-readable form of the unit.
    */
   unit?: string;
