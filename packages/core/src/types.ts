@@ -4,6 +4,7 @@ import {
   ElementDefinition,
   Reference,
   Resource,
+  ResourceType,
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
@@ -348,11 +349,11 @@ export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
  * Note that this is based on globalSchema, and will only return resource types that are currently in memory.
  * @returns An array of all resource types.
  */
-export function getResourceTypes(): string[] {
-  const result: string[] = [];
+export function getResourceTypes(): ResourceType[] {
+  const result: ResourceType[] = [];
   for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
     if (isResourceTypeSchema(typeSchema)) {
-      result.push(resourceType);
+      result.push(resourceType as ResourceType);
     }
   }
   return result;

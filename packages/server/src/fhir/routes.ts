@@ -13,6 +13,7 @@ import { expandOperator } from './operations/expand';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
+import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
@@ -67,6 +68,9 @@ publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 const protectedRoutes = Router();
 protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
+
+// Project $clone
+protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandler));
 
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
