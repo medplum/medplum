@@ -121,9 +121,6 @@ function buildType(resourceType: string, definition: TypeSchema): FhirType | und
 function writeIndexFile(names: string[]): void {
   const b = new FileBuilder();
   for (const resourceType of [...names, 'Resource', 'ResourceType'].sort()) {
-    if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
-      continue;
-    }
     b.append("export * from './" + resourceType + "';");
   }
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
@@ -198,6 +195,9 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   }
 
   for (const property of fhirType.properties) {
+    if (property.definition.max === '0') {
+      continue;
+    }
     b.newLine();
     writeInterfaceProperty(b, fhirType, property);
   }
