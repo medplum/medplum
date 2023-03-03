@@ -23,35 +23,10 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
   const { baseUrl } = getConfig();
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
-  const project = await repo.readResource<Project>('Project', id);
-  const resourceTypes = getResourceTypes();
-
-  const allResources: Resource[] = [];
-  const idMap = new Map<string, string>();
-  const maxResourcesPerResourceType = 1000;
-
-  for (const resourceType of resourceTypes) {
-    const bundle = await repo.search({
-      resourceType,
-      count: maxResourcesPerResourceType,
-      filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id as string }],
-    });
-    if (bundle.entry) {
-      for (const entry of bundle.entry) {
-        if (entry.resource) {
-          idMap.set(entry.resource.id as string, randomUUID());
-          allResources.push(entry.resource);
-        }
-      }
-    }
-  }
-
-  for (const resource of allResources) {
-    await repo.updateResource(rewriteIds(resource));
-  }
-
+  const cloner = new ProjectCloner(repo, id);
+  await cloner.cloneProject();
   res
-    .set('Content-Location', `${baseUrl}fhir/R4/Project/${idMap.get(id)}`)
+    .set('Content-Location', `${baseUrl}fhir/R4/Project/${cloner.idMap.get(id)}`)
     .status(202)
     .json({
       resourceType: 'OperationOutcome',
@@ -65,19 +40,51 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
         },
       ],
     });
+}
 
-  function rewriteIds(resource: Resource): Resource {
-    return JSON.parse(JSON.stringify(resource, rewriteKeyReplacer));
+class ProjectCloner {
+  constructor(readonly repo: Repository, readonly projectId: string, readonly idMap: Map<string, string> = new Map()) {}
+
+  async cloneProject(): Promise<void> {
+    const repo = this.repo;
+    const project = await repo.readResource<Project>('Project', this.projectId);
+    const resourceTypes = getResourceTypes();
+    const allResources: Resource[] = [];
+    const maxResourcesPerResourceType = 1000;
+
+    for (const resourceType of resourceTypes) {
+      const bundle = await repo.search({
+        resourceType,
+        count: maxResourcesPerResourceType,
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id as string }],
+      });
+      if (bundle.entry) {
+        for (const entry of bundle.entry) {
+          if (entry.resource) {
+            this.idMap.set(entry.resource.id as string, randomUUID());
+            allResources.push(entry.resource);
+          }
+        }
+      }
+    }
+
+    for (const resource of allResources) {
+      await repo.updateResource(this.rewriteIds(resource));
+    }
   }
 
-  function rewriteKeyReplacer(key: string, value: unknown): unknown {
-    if ((key === 'id' || key === 'project') && typeof value === 'string' && idMap.has(value)) {
-      return idMap.get(value);
+  rewriteIds(resource: Resource): Resource {
+    return JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
+  }
+
+  rewriteKeyReplacer(key: string, value: unknown): unknown {
+    if ((key === 'id' || key === 'project') && typeof value === 'string' && this.idMap.has(value)) {
+      return this.idMap.get(value);
     }
     if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
       const [resourceType, id] = value.split('/');
-      if (isResourceType(resourceType) && idMap.has(id)) {
-        return resourceType + '/' + idMap.get(id);
+      if (isResourceType(resourceType) && this.idMap.has(id)) {
+        return resourceType + '/' + this.idMap.get(id);
       }
     }
     return value;
