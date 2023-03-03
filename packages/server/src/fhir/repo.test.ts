@@ -2431,4 +2431,34 @@ describe('FHIR Repo', () => {
     });
     expect(bundleContains(bundle4, patient)).toBeTruthy();
   });
+
+  test('Token :text search', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const obs1 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: randomUUID() },
+      subject: createReference(patient),
+    });
+
+    const obs2 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ display: randomUUID() }] },
+      subject: createReference(patient),
+    });
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.TEXT, value: obs1.code?.text as string }],
+    });
+    expect(result1.entry?.[0]?.resource?.id).toEqual(obs1.id);
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.TEXT, value: obs2.code?.coding?.[0]?.display as string }],
+    });
+    expect(result2.entry?.[0]?.resource?.id).toEqual(obs2.id);
+  });
 });

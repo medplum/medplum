@@ -254,7 +254,7 @@ function buildCodeableConceptToken(
   codeableConcept: CodeableConcept | undefined
 ): void {
   if (codeableConcept?.text) {
-    buildSimpleToken(result, searchParam, undefined, codeableConcept.text);
+    buildSimpleToken(result, searchParam, 'text', codeableConcept.text);
   }
   if (codeableConcept?.coding) {
     for (const coding of codeableConcept.coding) {
@@ -270,7 +270,12 @@ function buildCodeableConceptToken(
  * @param coding The Coding object to be indexed.
  */
 function buildCodingToken(result: Token[], searchParam: SearchParameter, coding: Coding | undefined): void {
-  buildSimpleToken(result, searchParam, coding?.system, coding?.code);
+  if (coding) {
+    if (coding.display) {
+      buildSimpleToken(result, searchParam, 'text', coding.display);
+    }
+    buildSimpleToken(result, searchParam, coding.system, coding.code);
+  }
 }
 
 /**
@@ -369,12 +374,17 @@ function buildValueCondition(
   tableName: string,
   operator: FhirOperator,
   value: string
-): Condition {
+): Expression {
   if (operator === FhirOperator.IN) {
     return buildInValueSetCondition(selectQuery, subQuery, tableName, value);
   }
   const column = new Column(tableName, 'value');
-  if (operator === FhirOperator.CONTAINS) {
+  if (operator === FhirOperator.TEXT) {
+    return new Conjunction([
+      new Condition(new Column(tableName, 'system'), Operator.EQUALS, 'text'),
+      new Condition(column, Operator.LIKE, value.trim() + '%'),
+    ]);
+  } else if (operator === FhirOperator.CONTAINS) {
     return new Condition(column, Operator.LIKE, value.trim() + '%');
   } else {
     return new Condition(column, Operator.EQUALS, value.trim());
