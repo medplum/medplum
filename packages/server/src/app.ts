@@ -15,6 +15,7 @@ import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { initBinaryStorage } from './fhir/storage';
+import { getStructureDefinitions } from './fhir/structure';
 import { healthcheckHandler } from './healthcheck';
 import { hl7BodyParser } from './hl7/parser';
 import { logger } from './logger';
@@ -158,6 +159,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export async function initAppServices(config: MedplumServerConfig): Promise<void> {
+  getStructureDefinitions();
   initRedis(config.redis);
   await initDatabase(config.database);
   await seedDatabase();

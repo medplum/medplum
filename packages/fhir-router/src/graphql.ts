@@ -10,7 +10,7 @@ import {
   getResourceTypes,
   getResourceTypeSchema,
   getSearchParameters,
-  isResourceType,
+  isResourceTypeSchema,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
@@ -254,7 +254,7 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
   const schema = getResourceTypeSchema(resourceType);
   const properties = schema.properties;
 
-  if (isResourceType(schema)) {
+  if (isResourceTypeSchema(schema)) {
     fields.resourceType = {
       type: new GraphQLNonNull(GraphQLString),
       description: 'Resource Type',

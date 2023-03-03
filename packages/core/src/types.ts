@@ -329,12 +329,18 @@ export function buildTypeName(components: string[]): string {
 }
 
 /**
- * Returns true if the type schema is a DomainResource.
+ * Returns true if the type schema is a non-abstract FHIR resource.
  * @param typeSchema The type schema to check.
- * @returns True if the type schema is a DomainResource.
+ * @returns True if the type schema is a non-abstract FHIR resource.
  */
-export function isResourceType(typeSchema: TypeSchema): boolean {
-  return typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource';
+export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
+  const structureDefinition = typeSchema.structureDefinition;
+  return (
+    structureDefinition &&
+    structureDefinition.name === typeSchema.elementDefinition?.path &&
+    structureDefinition.kind === 'resource' &&
+    !structureDefinition.abstract
+  );
 }
 
 /**
@@ -345,7 +351,7 @@ export function isResourceType(typeSchema: TypeSchema): boolean {
 export function getResourceTypes(): string[] {
   const result: string[] = [];
   for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
-    if (isResourceType(typeSchema)) {
+    if (isResourceTypeSchema(typeSchema)) {
       result.push(resourceType);
     }
   }

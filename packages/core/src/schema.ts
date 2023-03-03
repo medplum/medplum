@@ -1,19 +1,8 @@
-import {
-  capitalize,
-  getExtensionValue,
-  getTypedPropertyValue,
-  IndexedStructureDefinition,
-  isEmpty,
-  isLowerCase,
-  OperationOutcomeError,
-  PropertyType,
-  toTypedValue,
-  TypedValue,
-} from '@medplum/core';
 import { ElementDefinition, OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { getStructureDefinitions } from './structure';
-import { checkForNull, createStructureIssue, validationError } from './utils';
+import { getTypedPropertyValue, toTypedValue } from './fhirpath';
+import { OperationOutcomeError, validationError } from './outcomes';
+import { globalSchema, PropertyType, TypedValue } from './types';
+import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -61,8 +50,40 @@ const baseResourceProperties = new Set<string>([
   'modifierExtension',
 ]);
 
+/**
+ * Returns true if the given string is a valid FHIR resource type.
+ *
+ * ```ts
+ * isResourceType('Patient'); // true
+ * isResourceType('XYZ'); // false
+ * ```
+ *
+ * Note that this depends on globalSchema, which is populated by the StructureDefinition loader.
+ *
+ * In a server context, you can load all schema definitions:
+ *
+ * ```ts
+ * import { indexStructureDefinitionBundle } from '@medplum/core';
+ * import { readJson } from '@medplum/definitions';
+ * import { Bundle } from '@medplum/fhirtypes';
+ *
+ * indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+ * ```
+ *
+ * In a client context, you can load the schema definitions using MedplumClient:
+ *
+ * ```ts
+ * import { MedplumClient } from '@medplum/core';
+ *
+ * const medplum = new MedplumClient();
+ * await medplum.requestSchema('Patient');
+ * ```
+ *
+ * @param resourceType The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
 export function isResourceType(resourceType: string): boolean {
-  const typeSchema = getStructureDefinitions().types[resourceType];
+  const typeSchema = globalSchema.types[resourceType];
   return (
     typeSchema &&
     typeSchema.structureDefinition.id === resourceType &&
@@ -70,6 +91,40 @@ export function isResourceType(resourceType: string): boolean {
   );
 }
 
+/**
+ * Validates that the given string is a valid FHIR resource type.
+ * On success, silently returns void.
+ * On failure, throws an OperationOutcomeError.
+ *
+ * ```ts
+ * validateResourceType('Patient'); // nothing
+ * validateResourceType('XYZ'); // throws OperationOutcomeError
+ * ```
+ *
+ * Note that this depends on globalSchema, which is populated by the StructureDefinition loader.
+ *
+ * In a server context, you can load all schema definitions:
+ *
+ * ```ts
+ * import { indexStructureDefinitionBundle } from '@medplum/core';
+ * import { readJson } from '@medplum/definitions';
+ * import { Bundle } from '@medplum/fhirtypes';
+ *
+ * indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+ * ```
+ *
+ * In a client context, you can load the schema definitions using MedplumClient:
+ *
+ * ```ts
+ * import { MedplumClient } from '@medplum/core';
+ *
+ * const medplum = new MedplumClient();
+ * await medplum.requestSchema('Patient');
+ * ```
+ *
+ * @param resourceType The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
 export function validateResourceType(resourceType: string): void {
   if (!resourceType) {
     throw new OperationOutcomeError(validationError('Resource type is null'));
@@ -79,17 +134,49 @@ export function validateResourceType(resourceType: string): void {
   }
 }
 
+/**
+ * Validates a candidate FHIR resource object.
+ * On success, silently returns void.
+ * On failure, throws an OperationOutcomeError with issues for each violation.
+ *
+ * ```ts
+ * validateResource({ resourceType: 'Patient' }); // nothing
+ * validateResource({ resourceType: 'XYZ' }); // throws OperationOutcomeError
+ * ```
+ *
+ * Note that this depends on globalSchema, which is populated by the StructureDefinition loader.
+ *
+ * In a server context, you can load all schema definitions:
+ *
+ * ```ts
+ * import { indexStructureDefinitionBundle } from '@medplum/core';
+ * import { readJson } from '@medplum/definitions';
+ * import { Bundle } from '@medplum/fhirtypes';
+ *
+ * indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+ * ```
+ *
+ * In a client context, you can load the schema definitions using MedplumClient:
+ *
+ * ```ts
+ * import { MedplumClient } from '@medplum/core';
+ *
+ * const medplum = new MedplumClient();
+ * await medplum.requestSchema('Patient');
+ * ```
+ *
+ * @param resourceType The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
 export function validateResource<T extends Resource>(resource: T): void {
   new FhirSchemaValidator(resource).validate();
 }
 
 export class FhirSchemaValidator<T extends Resource> {
-  readonly #schema: IndexedStructureDefinition;
   readonly #issues: OperationOutcomeIssue[];
   readonly #root: T;
 
   constructor(root: T) {
-    this.#schema = getStructureDefinitions();
     this.#issues = [];
     this.#root = root;
   }
@@ -113,14 +200,13 @@ export class FhirSchemaValidator<T extends Resource> {
     if (this.#issues.length > 0) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
-        id: randomUUID(),
         issue: this.#issues,
       });
     }
   }
 
   #validateObject(typedValue: TypedValue, path: string): void {
-    const definition = this.#schema.types[typedValue.type];
+    const definition = globalSchema.types[typedValue.type];
     if (!definition) {
       throw new OperationOutcomeError(validationError('Unknown type: ' + typedValue.type));
     }
@@ -177,7 +263,8 @@ export class FhirSchemaValidator<T extends Resource> {
     const { type, value } = typedValue;
 
     if (value === null) {
-      // Null handled separately
+      // Null handled separately, so this code should never be reached
+      // Leaving this check in place for now, in case we change the null handling
       return;
     }
 
@@ -203,7 +290,7 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // Try to get the regex
-    const valueDefinition = this.#schema.types[type]?.properties?.['value'];
+    const valueDefinition = globalSchema.types[type]?.properties?.['value'];
     if (valueDefinition?.type) {
       const regex = getExtensionValue(valueDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
       if (regex) {
@@ -329,6 +416,8 @@ function isChoiceOfType(
       continue;
     }
     if (Array.isArray(typedPropertyValue)) {
+      // At present, there are no choice types that are arrays in the FHIR spec
+      // Leaving this here to make TypeScript happy, and in case that changes
       typedPropertyValue = typedPropertyValue[0];
     }
     if (typedPropertyValue && key === basePropertyName + capitalize(typedPropertyValue.type)) {
@@ -336,4 +425,50 @@ function isChoiceOfType(
     }
   }
   return false;
+}
+
+/**
+ * Recursively checks for null values in an object.
+ *
+ * Note that "null" is a special value in JSON that is not allowed in FHIR.
+ *
+ * @param value Input value of any type.
+ * @param path Path string to the value for OperationOutcome.
+ * @param issues Output list of issues.
+ */
+export function checkForNull(value: unknown, path: string, issues: OperationOutcomeIssue[]): void {
+  if (value === null) {
+    issues.push(createStructureIssue(path, 'Invalid null value'));
+  } else if (Array.isArray(value)) {
+    checkArrayForNull(value, path, issues);
+  } else if (typeof value === 'object') {
+    checkObjectForNull(value as Record<string, unknown>, path, issues);
+  }
+}
+
+function checkArrayForNull(array: unknown[], path: string, issues: OperationOutcomeIssue[]): void {
+  for (let i = 0; i < array.length; i++) {
+    if (array[i] === undefined) {
+      issues.push(createStructureIssue(`${path}[${i}]`, 'Invalid undefined value'));
+    } else {
+      checkForNull(array[i], `${path}[${i}]`, issues);
+    }
+  }
+}
+
+function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
+  for (const [key, value] of Object.entries(obj)) {
+    checkForNull(value, `${path}${path ? '.' : ''}${key}`, issues);
+  }
+}
+
+export function createStructureIssue(expression: string, details: string): OperationOutcomeIssue {
+  return {
+    severity: 'error',
+    code: 'structure',
+    details: {
+      text: details,
+    },
+    expression: [expression],
+  };
 }

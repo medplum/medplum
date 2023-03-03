@@ -1,5 +1,3 @@
-import { OperationOutcomeError } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
 import {
   Account,
   Appointment,
@@ -14,9 +12,19 @@ import {
   Resource,
   SubstanceProtein,
 } from '@medplum/fhirtypes';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { OperationOutcomeError } from './outcomes';
 import { validateResource, validateResourceType } from './schema';
+import { indexStructureDefinitionBundle } from './types';
 
 describe('FHIR schema', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  });
+
   test('validateResourceType', () => {
     // Valid FHIR resource types
     expect(() => validateResourceType('Observation')).not.toThrow();
@@ -468,6 +476,10 @@ describe('FHIR schema', () => {
     ).not.toThrow();
   });
 });
+
+function readJson(filename: string): any {
+  return JSON.parse(readFileSync(resolve(__dirname, '../../definitions/dist/', filename), 'utf8'));
+}
 
 function fail(reason: string): never {
   throw new Error(reason);
