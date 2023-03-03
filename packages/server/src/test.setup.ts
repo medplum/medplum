@@ -75,6 +75,7 @@ export async function initTestAuth(options?: Partial<Project>): Promise<string> 
     client: createReference(client),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
+    superAdmin: options?.superAdmin,
     scope,
   });
 
