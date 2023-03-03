@@ -2,6 +2,7 @@ import {
   getSearchParameterDetails,
   globalSchema,
   indexStructureDefinitionBundle,
+  isResourceTypeSchema,
   SearchParameterDetails,
   SearchParameterType,
   TypeSchema,
@@ -56,25 +57,8 @@ function buildMigrationUp(b: FileBuilder): void {
   builder.append('}');
 }
 
-function isResourceType(typeSchema: TypeSchema): boolean {
-  if (typeSchema.parentType || !typeSchema.properties) {
-    return false;
-  }
-  for (const propertyName of ['id', 'meta', 'implicitRules', 'language']) {
-    if (!(propertyName in typeSchema.properties)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeSchema): void {
-  if (resourceType === 'Resource' || resourceType === 'DomainResource' || resourceType === 'MetadataResource') {
-    // Don't create tables for base types
-    return;
-  }
-
-  if (!isResourceType(fhirType)) {
+  if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;
   }

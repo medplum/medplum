@@ -32,6 +32,7 @@ describe('Type Utils', () => {
       id: '123',
       name: 'Patient',
       baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+      kind: 'resource',
       snapshot: {
         element: [
           {
@@ -120,6 +121,7 @@ describe('Type Utils', () => {
       id: '123',
       name: 'Patient',
       baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+      kind: 'resource',
       snapshot: {
         element: [
           {
@@ -156,7 +158,12 @@ describe('Type Utils', () => {
     expect(
       isResourceTypeSchema({
         structureDefinition: {
-          baseDefinition: 'http://hl7.org/fhir/StructureDefinition/Resource',
+          name: 'XYZ',
+          kind: 'resource',
+          abstract: false,
+        },
+        elementDefinition: {
+          path: 'XYZ',
         },
       } as unknown as TypeSchema)
     ).toBeTruthy();
@@ -164,15 +171,27 @@ describe('Type Utils', () => {
     expect(
       isResourceTypeSchema({
         structureDefinition: {
-          baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
+          name: 'XYZ',
+          kind: 'resource',
+          abstract: true,
+          snapshot: { element: [{ path: 'XYZ' }] },
+        },
+        elementDefinition: {
+          path: 'XYZ',
         },
       } as unknown as TypeSchema)
-    ).toBeTruthy();
+    ).not.toBeTruthy();
 
     expect(
       isResourceTypeSchema({
         structureDefinition: {
-          baseDefinition: 'http://example.com',
+          name: 'XYZ',
+          kind: 'logical',
+          abstract: false,
+          snapshot: { element: [{ path: 'XYZ' }] },
+        },
+        elementDefinition: {
+          path: 'XYZ',
         },
       } as unknown as TypeSchema)
     ).not.toBeTruthy();
