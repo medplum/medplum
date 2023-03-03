@@ -1,6 +1,7 @@
+import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { MedplumClient } from '@medplum/core';
+import { getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
@@ -66,10 +67,27 @@ function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   return medplum.graphql(params.query, params.operationName, params.variables);
 }
 
+const medplumPlugin: GraphiQLPlugin = {
+  title: 'Medplum',
+  icon: () => <Logo size={24} />,
+  content: () => (
+    <div>
+      <p>Medplum GraphiQL</p>
+      <p>User: {getDisplayString(medplum.getProfile() as ProfileResource)}</p>
+      <p>Project: {medplum.getActiveLogin()?.project?.display}</p>
+      <p>
+        <a href="#" onClick={() => medplum.signOut().then(() => window.location.reload())}>
+          Sign out
+        </a>
+      </p>
+    </div>
+  ),
+};
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} />
+    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} plugins={[medplumPlugin]} />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />

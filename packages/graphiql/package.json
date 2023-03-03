@@ -16,12 +16,15 @@
     "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
   },
   "devDependencies": {
+    "@graphiql/react": "0.17.0",
     "@graphiql/toolkit": "0.8.0",
     "@mantine/core": "5.10.5",
     "@mantine/hooks": "5.10.5",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/react": "*",
+    "@types/react": "18.0.28",
+    "@types/react-dom": "18.0.11",
     "babel-loader": "9.1.2",
     "css-loader": "6.7.3",
     "dotenv-webpack": "8.0.1",
