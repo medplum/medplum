@@ -35,6 +35,7 @@ const password = randomUUID();
 let config: MedplumServerConfig;
 let project: Project;
 let client: ClientApplication;
+let pkceOptionalClient: ClientApplication;
 
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
@@ -43,6 +44,12 @@ describe('OAuth2 Token', () => {
 
     // Create a test project
     ({ project, client } = await createTestProject());
+
+    // Create a 2nd client with PKCE optional
+    pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      pkceOptional: true,
+    });
 
     // Create access policy
     const accessPolicy = await systemRepo.createResource<AccessPolicy>({
@@ -312,6 +319,36 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       code_verifier: 'xyz',
     });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
+  test('Authorization code token with code challenge and PKCE optional', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: pkceOptionalClient.id as string,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: pkceOptionalClient.id as string,
+        code: res.body.code,
+      });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
