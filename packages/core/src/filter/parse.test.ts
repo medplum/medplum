@@ -1,5 +1,5 @@
 import { parseFilterParameter } from './parse';
-import { FhirFilterComparison, FhirFilterConnective } from './types';
+import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
 
 describe('_filter Paramter parser', () => {
   test('Simple comparison', () => {
@@ -8,6 +8,20 @@ describe('_filter Paramter parser', () => {
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
+    expect(comp.path).toBe('name');
+    expect(comp.operator).toBe('co');
+    expect(comp.value).toBe('pet');
+  });
+
+  test('Negation', () => {
+    const result = parseFilterParameter('not name co "pet"');
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(FhirFilterNegation);
+
+    const negation = result as FhirFilterNegation;
+    expect(negation.child).toBeInstanceOf(FhirFilterComparison);
+
+    const comp = negation.child as FhirFilterComparison;
     expect(comp.path).toBe('name');
     expect(comp.operator).toBe('co');
     expect(comp.value).toBe('pet');
