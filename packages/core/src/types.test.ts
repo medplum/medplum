@@ -199,6 +199,7 @@ describe('Type Utils', () => {
 
   test('isResource', () => {
     expect(isResource(undefined)).toBe(false);
+    expect(isResource(null)).toBe(false);
     expect(isResource('Patient')).toBe(false);
     expect(isResource({})).toBe(false);
     expect(isResource({ resourceType: 'Patient' })).toBe(true);
@@ -207,6 +208,7 @@ describe('Type Utils', () => {
 
   test('isReference', () => {
     expect(isReference(undefined)).toBe(false);
+    expect(isReference(null)).toBe(false);
     expect(isReference('Patient')).toBe(false);
     expect(isReference({})).toBe(false);
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
