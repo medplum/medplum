@@ -7,31 +7,31 @@ class FilterParameterParser {
   constructor(readonly parser: Parser) {}
 
   parse(): FhirFilterExpression {
+    let result: FhirFilterExpression;
+
     if (this.parser.peek()?.value === '(') {
       this.parser.consume('(');
-      const result = this.parse();
+      result = this.parse();
       this.parser.consume(')');
-      return result;
-    }
-
-    if (this.parser.peek()?.value === 'not') {
+      // return result;
+    } else if (this.parser.peek()?.value === 'not') {
       this.parser.consume('Symbol', 'not');
-      return new FhirFilterNegation(this.parse());
+      result = new FhirFilterNegation(this.parse());
+    } else {
+      result = new FhirFilterComparison(
+        this.parser.consume('Symbol').value,
+        this.parser.consume('Symbol').value,
+        this.parser.consume().value
+      );
     }
-
-    const comp = new FhirFilterComparison(
-      this.parser.consume('Symbol').value,
-      this.parser.consume('Symbol').value,
-      this.parser.consume().value
-    );
 
     const next = this.parser.peek()?.value;
     if (next === 'and' || next === 'or') {
       this.parser.consume('Symbol', next);
-      return new FhirFilterConnective(next, comp, this.parse());
+      return new FhirFilterConnective(next, result, this.parse());
     }
 
-    return comp;
+    return result;
   }
 }
 

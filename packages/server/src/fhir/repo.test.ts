@@ -2461,4 +2461,58 @@ describe('FHIR Repo', () => {
     });
     expect(result2.entry?.[0]?.resource?.id).toEqual(obs2.id);
   });
+
+  test('_filter search', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const statuses: ('preliminary' | 'final')[] = ['preliminary', 'final'];
+    const codes = ['123', '456'];
+    const observations = [];
+
+    for (const status of statuses) {
+      for (const code of codes) {
+        observations.push(
+          await systemRepo.createResource<Observation>({
+            resourceType: 'Observation',
+            subject: createReference(patient),
+            status,
+            code: { coding: [{ code }] },
+          })
+        );
+      }
+    }
+
+    const result = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'subject',
+          operator: Operator.EQUALS,
+          value: getReferenceString(patient),
+        },
+        {
+          code: '_filter',
+          operator: Operator.EQUALS,
+          value: '(status eq preliminary and code eq 123) or (status eq final and code eq 456)',
+        },
+      ],
+    });
+    expect(result.entry).toHaveLength(2);
+
+    // const result2 = await systemRepo.search({
+    //   resourceType: 'Observation',
+    //   filters: [
+    //     {
+    //       code: 'subject',
+    //       operator: Operator.EQUALS,
+    //       value: getReferenceString(patient),
+    //     },
+    //     {
+    //       code: '_filter',
+    //       operator: Operator.EQUALS,
+    //       value: '',
+    //     },
+    //   ],
+    // });
+    // expect(result2.entry).toHaveLength(2);
+  });
 });

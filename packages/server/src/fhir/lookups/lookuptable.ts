@@ -1,7 +1,17 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  DeleteQuery,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  Operator,
+  SelectQuery,
+} from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -40,13 +50,12 @@ export abstract class LookupTable<T> {
   abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
 
   /**
-   * Adds "where" conditions to the select query builder.
+   * Builds a "where" condition for the select query builder.
    * @param selectQuery The select query builder.
    * @param resourceType The FHIR resource type.
-   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, resourceType: ResourceType, predicate: Conjunction, filter: Filter): void {
+  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
     const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
@@ -69,7 +78,7 @@ export abstract class LookupTable<T> {
     }
     subQuery.whereExpr(disjunction);
     selectQuery.join(joinName, 'id', 'resourceId', subQuery);
-    predicate.expressions.push(new Condition(new Column(joinName, columnName), Operator.NOT_EQUALS, null));
+    return new Condition(new Column(joinName, columnName), Operator.NOT_EQUALS, null);
   }
 
   /**

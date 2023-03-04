@@ -99,13 +99,12 @@ export class TokenTable extends LookupTable<Token> {
   }
 
   /**
-   * Adds "where" conditions to the select query builder.
+   * Builds a "where" condition for the select query builder.
    * @param selectQuery The select query builder.
    * @param resourceType The resource type.
-   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, resourceType: ResourceType, predicate: Conjunction, filter: Filter): void {
+  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
     const tableName = getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const subQuery = new SelectQuery(tableName)
@@ -121,7 +120,7 @@ export class TokenTable extends LookupTable<Token> {
       filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS
         ? Operator.EQUALS
         : Operator.NOT_EQUALS;
-    predicate.expressions.push(new Condition(new Column(joinName, 'resourceId'), sqlOperator, null));
+    return new Condition(new Column(joinName, 'resourceId'), sqlOperator, null);
   }
 
   /**
