@@ -14,7 +14,7 @@ describe('_filter Paramter parser', () => {
   });
 
   test('Negation', () => {
-    const result = parseFilterParameter('not name co "pet"');
+    const result = parseFilterParameter('not (name co "pet")');
     expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterNegation);
 
