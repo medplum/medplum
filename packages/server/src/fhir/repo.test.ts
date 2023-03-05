@@ -2497,22 +2497,24 @@ describe('FHIR Repo', () => {
       ],
     });
     expect(result.entry).toHaveLength(2);
+  });
 
-    // const result2 = await systemRepo.search({
-    //   resourceType: 'Observation',
-    //   filters: [
-    //     {
-    //       code: 'subject',
-    //       operator: Operator.EQUALS,
-    //       value: getReferenceString(patient),
-    //     },
-    //     {
-    //       code: '_filter',
-    //       operator: Operator.EQUALS,
-    //       value: '',
-    //     },
-    //   ],
-    // });
-    // expect(result2.entry).toHaveLength(2);
+  test('Type confusion through parameter tampering', async () => {
+    // See: https://codeql.github.com/codeql-query-help/javascript/js-type-confusion-through-parameter-tampering/
+    try {
+      await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_id',
+            operator: Operator.EQUALS,
+            value: ['a', 'b', 'c'] as unknown as string,
+          },
+        ],
+      });
+      throw new Error('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Search filter value must be a string');
+    }
   });
 });

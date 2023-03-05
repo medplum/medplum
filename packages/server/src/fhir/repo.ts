@@ -1122,6 +1122,10 @@ export class Repository {
     searchRequest: SearchRequest,
     filter: Filter
   ): Expression | undefined {
+    if (typeof filter.value !== 'string') {
+      throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
+    }
+
     const specialParamExpression = this.#trySpecialSearchParameter(selectQuery, searchRequest, filter);
     if (specialParamExpression) {
       return specialParamExpression;
@@ -1204,7 +1208,7 @@ export class Repository {
     } else if (filterExpression instanceof FhirFilterComparison) {
       return this.#buildFilterParameterComparison(selectQuery, searchRequest, filterExpression);
     } else {
-      throw new Error('Unknown filter expression type');
+      throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
     }
   }
 
@@ -1233,11 +1237,6 @@ export class Repository {
     searchRequest: SearchRequest,
     filterComparison: FhirFilterComparison
   ): Expression {
-    // return new Condition(
-    //   filterComparison.path,
-    //   fhirOperatorToSqlOperator(filterComparison.operator as FhirOperator),
-    //   filterComparison.value
-    // );
     return this.#buildSearchFilterExpression(selectQuery, searchRequest, {
       code: filterComparison.path,
       operator: filterComparison.operator as FhirOperator,
