@@ -208,6 +208,10 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
+  const project = resource.meta?.project;
+  if (!project) {
+    return [];
+  }
   const bundle = await systemRepo.search<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
@@ -215,7 +219,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: resource.meta?.project as string,
+        value: project,
       },
       {
         code: 'status',
