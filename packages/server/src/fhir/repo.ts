@@ -4,6 +4,10 @@ import {
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
+  FhirFilterComparison,
+  FhirFilterConnective,
+  FhirFilterExpression,
+  FhirFilterNegation,
   Filter,
   forbidden,
   formatSearchQuery,
@@ -20,6 +24,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator as FhirOperator,
+  parseFilterParameter,
   parseSearchUrl,
   resolveId,
   SearchParameterDetails,
@@ -884,7 +889,7 @@ export class Repository {
 
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
     const count = searchRequest.count as number;
@@ -993,7 +998,7 @@ export class Repository {
 
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, searchRequest.resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
   }
@@ -1058,9 +1063,10 @@ export class Repository {
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = this.#parseCriteriaAsSearchRequest(policy.criteria);
-          const accessPolicyConjunction = new Conjunction([]);
-          this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
-          expressions.push(accessPolicyConjunction);
+          const accessPolicyExpression = this.#buildSearchExpression(builder, searchRequest);
+          if (accessPolicyExpression) {
+            expressions.push(accessPolicyExpression);
+          }
         } else {
           // Allow access to all resources in the compartment.
           return;
@@ -1079,29 +1085,53 @@ export class Repository {
    * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
-  #addSearchFilters(selectQuery: SelectQuery, predicate: Conjunction, searchRequest: SearchRequest): void {
-    searchRequest.filters?.forEach((filter) => this.#addSearchFilter(selectQuery, predicate, searchRequest, filter));
+  #addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
+    const expr = this.#buildSearchExpression(selectQuery, searchRequest);
+    if (expr) {
+      selectQuery.predicate.expressions.push(expr);
+    }
+  }
+
+  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
+    const expressions: Expression[] = [];
+    if (searchRequest.filters) {
+      for (const filter of searchRequest.filters) {
+        const expr = this.#buildSearchFilterExpression(selectQuery, searchRequest, filter);
+        if (expr) {
+          expressions.push(expr);
+        }
+      }
+    }
+    if (expressions.length === 0) {
+      return undefined;
+    }
+    if (expressions.length === 1) {
+      return expressions[0];
+    }
+    return new Conjunction(expressions);
   }
 
   /**
    * Adds a single search filter as "WHERE" clause to the query builder.
    * @param selectQuery The select query builder.
-   * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
-  #addSearchFilter(
+  #buildSearchFilterExpression(
     selectQuery: SelectQuery,
-    predicate: Conjunction,
     searchRequest: SearchRequest,
     filter: Filter
-  ): void {
-    const resourceType = searchRequest.resourceType;
-
-    if (this.#trySpecialSearchParameter(predicate, resourceType, filter)) {
-      return;
+  ): Expression | undefined {
+    if (typeof filter.value !== 'string') {
+      throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
     }
 
+    const specialParamExpression = this.#trySpecialSearchParameter(selectQuery, searchRequest, filter);
+    if (specialParamExpression) {
+      return specialParamExpression;
+    }
+
+    const resourceType = searchRequest.resourceType;
     const param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
@@ -1109,25 +1139,24 @@ export class Repository {
 
     const lookupTable = this.#getLookupTable(resourceType, param);
     if (lookupTable) {
-      lookupTable.addWhere(selectQuery, resourceType, predicate, filter);
-      return;
+      return lookupTable.buildWhere(selectQuery, resourceType, filter);
     }
 
     const details = getSearchParameterDetails(resourceType, param);
     if (filter.operator === FhirOperator.MISSING) {
-      predicate.where(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
+      return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
     } else if (param.type === 'string') {
-      this.#addStringSearchFilter(predicate, details, filter);
+      return this.#buildStringSearchFilter(details, filter);
     } else if (param.type === 'token' || param.type === 'uri') {
-      this.#addTokenSearchFilter(predicate, resourceType, details, filter);
+      return this.#buildTokenSearchFilter(resourceType, details, filter);
     } else if (param.type === 'reference') {
-      this.#addReferenceSearchFilter(predicate, details, filter);
+      return this.#buildReferenceSearchFilter(details, filter);
     } else if (param.type === 'date') {
-      this.#addDateSearchFilter(predicate, details, filter);
+      return this.#buildDateSearchFilter(details, filter);
     } else if (param.type === 'quantity') {
-      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
+      return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
     } else {
-      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+      return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
     }
   }
 
@@ -1136,59 +1165,104 @@ export class Repository {
    *
    * See: https://www.hl7.org/fhir/search.html#all
    *
-   * @param predicate The predicate conjunction.
    * @param resourceType The resource type.
    * @param filter The search filter.
    * @returns True if the search parameter is a special code.
    */
-  #trySpecialSearchParameter(predicate: Conjunction, resourceType: string, filter: Filter): boolean {
+  #trySpecialSearchParameter(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filter: Filter
+  ): Expression | undefined {
+    const resourceType = searchRequest.resourceType;
     const code = filter.code;
 
     if (code === '_id') {
-      this.#addTokenSearchFilter(predicate, resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
-      return true;
+      return this.#buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
     }
 
     if (code === '_lastUpdated') {
-      this.#addDateSearchFilter(predicate, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
-      return true;
+      return this.#buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
     }
 
     if (code === '_compartment' || code === '_project') {
-      predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
-      return true;
+      return new Condition('compartments', Operator.ARRAY_CONTAINS, filter.value, 'UUID[]');
     }
 
-    return false;
+    if (code === '_filter') {
+      return this.#buildFilterParameterExpression(selectQuery, searchRequest, parseFilterParameter(filter.value));
+    }
+
+    return undefined;
+  }
+
+  #buildFilterParameterExpression(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterExpression: FhirFilterExpression
+  ): Expression {
+    if (filterExpression instanceof FhirFilterNegation) {
+      return this.#buildFilterParameterNegation(selectQuery, searchRequest, filterExpression);
+    } else if (filterExpression instanceof FhirFilterConnective) {
+      return this.#buildFilterParameterConnective(selectQuery, searchRequest, filterExpression);
+    } else if (filterExpression instanceof FhirFilterComparison) {
+      return this.#buildFilterParameterComparison(selectQuery, searchRequest, filterExpression);
+    } else {
+      throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
+    }
+  }
+
+  #buildFilterParameterNegation(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterNegation: FhirFilterNegation
+  ): Expression {
+    return new Negation(this.#buildFilterParameterExpression(selectQuery, searchRequest, filterNegation.child));
+  }
+
+  #buildFilterParameterConnective(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterConnective: FhirFilterConnective
+  ): Expression {
+    const expressions = [
+      this.#buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.left),
+      this.#buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.right),
+    ];
+    return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
+  }
+
+  #buildFilterParameterComparison(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterComparison: FhirFilterComparison
+  ): Expression {
+    return this.#buildSearchFilterExpression(selectQuery, searchRequest, {
+      code: filterComparison.path,
+      operator: filterComparison.operator as FhirOperator,
+      value: filterComparison.value,
+    }) as Expression;
   }
 
   /**
    * Adds a string search filter as "WHERE" clause to the query builder.
-   * @param predicate The select query predicate conjunction.
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addStringSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     if (filter.operator === FhirOperator.EXACT) {
-      predicate.where(details.columnName, Operator.EQUALS, filter.value);
-    } else {
-      predicate.where(details.columnName, Operator.LIKE, '%' + filter.value + '%');
+      return new Condition(details.columnName, Operator.EQUALS, filter.value);
     }
+    return new Condition(details.columnName, Operator.LIKE, '%' + filter.value + '%');
   }
 
   /**
    * Adds a token search filter as "WHERE" clause to the query builder.
-   * @param predicate The select query predicate conjunction.
    * @param resourceType The resource type.
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addTokenSearchFilter(
-    predicate: Conjunction,
-    resourceType: string,
-    details: SearchParameterDetails,
-    filter: Filter
-  ): void {
+  #buildTokenSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
     const column = new Column(resourceType, details.columnName);
     const expressions = [];
     for (const valueStr of filter.value.split(',')) {
@@ -1208,10 +1282,9 @@ export class Repository {
     }
     const disjunction = new Disjunction(expressions);
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-      predicate.whereExpr(new Negation(disjunction));
-    } else {
-      predicate.whereExpr(disjunction);
+      return new Negation(disjunction);
     }
+    return disjunction;
   }
 
   /**
@@ -1220,7 +1293,7 @@ export class Repository {
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addReferenceSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildReferenceSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const values = [];
     for (const value of filter.value.split(',')) {
       if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
@@ -1230,12 +1303,12 @@ export class Repository {
       }
     }
     if (details.array) {
-      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, values);
-    } else if (values.length === 1) {
-      predicate.where(details.columnName, Operator.EQUALS, values[0]);
-    } else {
-      predicate.where(details.columnName, Operator.IN, values);
+      return new Condition(details.columnName, Operator.ARRAY_CONTAINS, values);
     }
+    if (values.length === 1) {
+      return new Condition(details.columnName, Operator.EQUALS, values[0]);
+    }
+    return new Condition(details.columnName, Operator.IN, values);
   }
 
   /**
@@ -1244,12 +1317,12 @@ export class Repository {
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addDateSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildDateSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const dateValue = new Date(filter.value);
     if (isNaN(dateValue.getTime())) {
       throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
     }
-    predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }
 
   /**
