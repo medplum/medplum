@@ -538,6 +538,106 @@ describe('MockClient', () => {
     );
     expect(slots.length).toBeGreaterThan(0);
   });
+
+  test('Identifier search', async () => {
+    const medplum = new MockClient();
+    // Create an original Patient with several identifiers
+    const patient1: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'SS',
+                display: 'Social Security Number',
+              },
+            ],
+            text: 'Social Security Number',
+          },
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: '999-47-5984',
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'DL',
+                display: "Driver's License",
+              },
+            ],
+            text: "Driver's License",
+          },
+          system: 'urn:oid:2.16.840.1.113883.4.3.25',
+          value: 'S99985931',
+        },
+      ],
+      birthDate: '1948-07-01',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+    });
+
+    expect(patient1).toBeDefined();
+
+    const existingPatients = await medplum.search('Patient', 'identifier=999-47-5984');
+    expect(existingPatients.total).toEqual(1);
+  });
+});
+
+test('Search one', async () => {
+  const medplum = new MockClient();
+  // Create an original Patient with several identifiers
+  const patient1: Patient = await medplum.createResource({
+    resourceType: 'Patient',
+    identifier: [
+      {
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'SS',
+              display: 'Social Security Number',
+            },
+          ],
+          text: 'Social Security Number',
+        },
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '999-47-5984',
+      },
+      {
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'DL',
+              display: "Driver's License",
+            },
+          ],
+          text: "Driver's License",
+        },
+        system: 'urn:oid:2.16.840.1.113883.4.3.25',
+        value: 'S99985931',
+      },
+    ],
+    birthDate: '1948-07-01',
+    name: [
+      {
+        family: 'Smith',
+        given: ['John'],
+      },
+    ],
+  });
+
+  expect(patient1).toBeDefined();
+
+  const existingPatient = await medplum.searchOne('Patient', 'identifier=999-47-5984');
+  expect(existingPatient).toBeDefined();
 });
 
 function fail(reason: string): never {
