@@ -2492,7 +2492,7 @@ describe('FHIR Repo', () => {
         {
           code: '_filter',
           operator: Operator.EQUALS,
-          value: '(status eq preliminary and code eq 123) or (status eq final and code eq 456)',
+          value: '(status eq preliminary and code eq 123) or (not (status eq preliminary) and code eq 456)',
         },
       ],
     });

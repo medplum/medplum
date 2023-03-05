@@ -13,10 +13,11 @@ class FilterParameterParser {
       this.parser.consume('(');
       result = this.parse();
       this.parser.consume(')');
-      // return result;
     } else if (this.parser.peek()?.value === 'not') {
       this.parser.consume('Symbol', 'not');
+      this.parser.consume('(');
       result = new FhirFilterNegation(this.parse());
+      this.parser.consume(')');
     } else {
       result = new FhirFilterComparison(
         this.parser.consume('Symbol').value,

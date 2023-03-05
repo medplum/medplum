@@ -161,6 +161,50 @@ describe('_filter Paramter parser', () => {
     expect(fourth.value).toBe('456');
   });
 
+  test('Nested negation', () => {
+    const result = parseFilterParameter(
+      '(status eq preliminary and code eq 123) or (not (status eq preliminary) and code eq 456)'
+    );
+    expect(result).toBeDefined();
+    expect(result).toBeInstanceOf(FhirFilterConnective);
+
+    const connective1 = result as FhirFilterConnective;
+    expect(connective1.keyword).toBe('or');
+    expect(connective1.left).toBeInstanceOf(FhirFilterConnective);
+    expect(connective1.right).toBeInstanceOf(FhirFilterConnective);
+
+    const connective2 = connective1.left as FhirFilterConnective;
+    expect(connective2.keyword).toBe('and');
+    expect(connective2.left).toBeInstanceOf(FhirFilterComparison);
+    expect(connective2.right).toBeInstanceOf(FhirFilterComparison);
+
+    const connective3 = connective1.right as FhirFilterConnective;
+    expect(connective3.keyword).toBe('and');
+    expect(connective3.left).toBeInstanceOf(FhirFilterNegation);
+    expect(connective3.right).toBeInstanceOf(FhirFilterComparison);
+
+    const first = connective2.left as FhirFilterComparison;
+    expect(first.path).toBe('status');
+    expect(first.operator).toBe('eq');
+    expect(first.value).toBe('preliminary');
+
+    const second = connective2.right as FhirFilterComparison;
+    expect(second.path).toBe('code');
+    expect(second.operator).toBe('eq');
+    expect(second.value).toBe('123');
+
+    const negation = connective3.left as FhirFilterNegation;
+    const third = negation.child as FhirFilterComparison;
+    expect(third.path).toBe('status');
+    expect(third.operator).toBe('eq');
+    expect(third.value).toBe('preliminary');
+
+    const fourth = connective3.right as FhirFilterComparison;
+    expect(fourth.path).toBe('code');
+    expect(fourth.operator).toBe('eq');
+    expect(fourth.value).toBe('456');
+  });
+
   test('Observation with system and code', () => {
     const result = parseFilterParameter('code eq http://loinc.org|1234-5');
     expect(result).toBeDefined();
