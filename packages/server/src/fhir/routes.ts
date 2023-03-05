@@ -10,6 +10,7 @@ import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
+import { expungeHandler } from './operations/expunge';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
@@ -98,6 +99,9 @@ protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraph
 
 // Patient $everything operation
 protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEverythingHandler));
+
+// $expunge operation
+protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
 
 // Validate create resource
 protectedRoutes.post(

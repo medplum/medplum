@@ -816,6 +816,21 @@ export class Repository {
   }
 
   /**
+   * Permanently deletes the specified resource and all of its history.
+   * This is only available to the system and super admin accounts.
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   */
+  async expungeResource(resourceType: string, id: string): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    await new DeleteQuery(resourceType).where('id', Operator.EQUALS, id).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', Operator.EQUALS, id).execute(getClient());
+    await deleteCacheEntry(resourceType, id);
+  }
+
+  /**
    * Purges resources of the specified type that were last updated before the specified date.
    * This is only available to the system and super admin accounts.
    * @param resourceType The FHIR resource type.
