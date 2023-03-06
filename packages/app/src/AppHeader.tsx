@@ -79,7 +79,7 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
           width={260}
           shadow="xl"
           position="bottom-end"
-          transition="pop-top-right"
+          transitionProps={{ transition: 'pop-top-right' }}
           opened={userMenuOpened}
           onClose={() => setUserMenuOpened(false)}
         >

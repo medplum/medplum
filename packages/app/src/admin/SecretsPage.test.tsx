@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
@@ -15,9 +15,8 @@ async function setup(url: string): Promise<void> {
       <MedplumProvider medplum={medplum}>
         <MemoryRouter initialEntries={[url]} initialIndex={0}>
           <MantineProvider withGlobalStyles withNormalizeCSS>
-            <NotificationsProvider>
-              <AppRoutes />
-            </NotificationsProvider>
+            <Notifications />
+            <AppRoutes />
           </MantineProvider>
         </MemoryRouter>
       </MedplumProvider>

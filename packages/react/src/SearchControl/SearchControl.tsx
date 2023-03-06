@@ -471,17 +471,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       {lastResult?.total !== undefined && lastResult.total > 0 && (
         <Center m="md" p="md">
           <Pagination
-            page={getPage(search)}
+            value={getPage(search)}
             total={getTotalPages(search, lastResult.total)}
             onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
-            getItemAriaLabel={(page) => {
-              switch (page) {
-                case 'prev':
-                  return 'Previous page';
+            getControlProps={(control) => {
+              switch (control) {
+                case 'previous':
+                  return { 'aria-label': 'Previous page' };
                 case 'next':
-                  return 'Next page';
+                  return { 'aria-label': 'Next page' };
                 default:
-                  return undefined;
+                  return {};
               }
             }}
           />

@@ -166,7 +166,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     .sort();
 
   return (
-    <Modal title="Fields" closeButtonLabel="Close" opened={props.visible} onClose={props.onCancel}>
+    <Modal title="Fields" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
       <div>
         <table style={{ margin: 'auto' }}>
           <thead>

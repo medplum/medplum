@@ -236,7 +236,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       title: 'Initializing upload...',
       message: 'Please wait...',
       autoClose: false,
-      disallowClose: true,
+      withCloseButton: false,
     });
   }
 
@@ -247,7 +247,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       title: 'Uploading...',
       message: getProgressMessage(e),
       autoClose: false,
-      disallowClose: true,
+      withCloseButton: false,
     });
   }
 

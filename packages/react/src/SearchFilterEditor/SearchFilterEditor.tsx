@@ -44,7 +44,13 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   const filters = search.filters || [];
 
   return (
-    <Modal title="Filters" closeButtonLabel="Close" size={900} opened={props.visible} onClose={props.onCancel}>
+    <Modal
+      title="Filters"
+      closeButtonProps={{ 'aria-label': 'Close' }}
+      size={900}
+      opened={props.visible}
+      onClose={props.onCancel}
+    >
       <div>
         <table>
           <colgroup>

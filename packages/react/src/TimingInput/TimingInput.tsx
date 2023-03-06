@@ -96,7 +96,12 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
   }
 
   return (
-    <Modal title="Timing" closeButtonLabel="Close" opened={props.visible} onClose={() => props.onCancel()}>
+    <Modal
+      title="Timing"
+      closeButtonProps={{ 'aria-label': 'Close' }}
+      opened={props.visible}
+      onClose={() => props.onCancel()}
+    >
       <div style={{ padding: '5px 20px', textAlign: 'left' }}>
         <FormSection title="Starts on" htmlFor={'timing-dialog-start'}>
           <DateTimeInput name={'timing-dialog-start'} onChange={(newValue) => setStart(newValue)} />
