@@ -65617,6 +65617,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-profile-type",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+      "version" : "4.0.1",
+      "name" : "profile-type",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "Resource type of the user profile associated with the project membership",
+      "code" : "profile-type",
+      "base" : ["ProjectMembership"],
+      "type" : "token",
+      "expression" : "ProjectMembership.profile.resolve().resourceType",
+      "xpath" : "f:ProjectMembership/f:profile",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",
