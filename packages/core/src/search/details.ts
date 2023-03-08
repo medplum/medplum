@@ -170,7 +170,7 @@ function simplifyExpression(input: string): string {
     result = result.replaceAll('[0]', '');
   }
 
-  const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.where('];
+  const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.resolve(', '.where('];
   for (const stopString of stopStrings) {
     if (result.includes(stopString)) {
       result = result.substring(0, result.indexOf(stopString));
