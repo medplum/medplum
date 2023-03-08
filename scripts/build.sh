@@ -8,6 +8,9 @@ set -e
 # Echo commands
 set -x
 
+# Set node options
+export NODE_OPTIONS='--max-old-space-size=4096'
+
 # Diagnostics
 node --version
 npm --version
