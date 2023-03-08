@@ -44,7 +44,6 @@ import {
   BundleLink,
   Meta,
   OperationOutcome,
-  ProjectMembership,
   Reference,
   Resource,
   ResourceType,

@@ -766,7 +766,7 @@
             "id" : "ProjectMembership.profile",
             "path" : "ProjectMembership.profile",
             "definition" : "Reference to the resource that represents the user profile within the project.",
-            "min" : 0,
+            "min" : 1,
             "max" : "1",
             "type" : [{
               "code" : "Reference",
