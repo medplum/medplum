@@ -19,7 +19,6 @@ import React from 'react';
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 const useStyles = createStyles((theme) => {
-  // const icon = getRef('icon');
   const icon = getStylesRef('icon');
   return {
     menuTitle: {
