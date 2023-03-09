@@ -1,14 +1,14 @@
 {
-  "name": "@medplum/infra",
+  "name": "@medplum/cdk",
   "version": "2.0.6",
-  "description": "Medplum Infra as Code",
+  "description": "Medplum CDK Infra as Code",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/infra"
+    "directory": "packages/cdk"
   },
   "scripts": {
     "clean": "rimraf dist cdk.out",

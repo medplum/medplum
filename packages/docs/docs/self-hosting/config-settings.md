@@ -11,7 +11,7 @@ There are two distinct config files:
 1. CDK config - settings that define AWS infrastructure
 2. Server config - settings that define the Medplum API server runtime
 
-The recommended way to author these config settings is the infra `init` tool. See [Install on AWS](/docs/self-hosting/install-on-aws) for more details.
+The recommended way to author these config settings is the CDK infra `init` tool. See [Install on AWS](/docs/self-hosting/install-on-aws) for more details.
 
 ## CDK config
 
