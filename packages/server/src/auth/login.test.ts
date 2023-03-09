@@ -226,32 +226,15 @@ describe('Login', () => {
     const id = paths[paths.length - 2];
     const secret = paths[paths.length - 1];
 
-    // Get the project details
-    // Make sure the new member is in the members list
-    // Get the project details and members
-    // 3 members total (1 admin, 1 client, 1 invited)
-    const res3 = await request(app)
-      .get('/admin/projects/' + project.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res3.status).toBe(200);
-    expect(res3.body.project).toBeDefined();
-    expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(3);
-
-    const owner = res3.body.members.find((m: any) => m.role === 'owner');
-    expect(owner).toBeDefined();
-    const member = res3.body.members.find((m: any) => m.role === 'member');
-    expect(member).toBeDefined();
-
     // Get the new membership details
     const res4 = await request(app)
-      .get('/admin/projects/' + project.id + '/members/' + member.id)
+      .get('/admin/projects/' + project.id + '/members/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
 
     // Set the new member's access policy
     const res5 = await request(app)
-      .post('/admin/projects/' + project.id + '/members/' + member.id)
+      .post('/admin/projects/' + project.id + '/members/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .type('json')
       .send({
@@ -264,16 +247,10 @@ describe('Login', () => {
     // Make sure the access policy is set
     // 3 members total (1 admin, 1 client, 1 invited)
     const res6 = await request(app)
-      .get('/admin/projects/' + project.id)
+      .get('/admin/projects/' + project.id + '/members/' + res2.body.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
-    expect(res6.body.project).toBeDefined();
-    expect(res6.body.members).toBeDefined();
-    expect(res6.body.members.length).toEqual(3);
-
-    const member2 = res6.body.members.find((m: any) => m.role === 'member');
-    expect(member2).toBeDefined();
-    expect(member2.accessPolicy).toBeDefined();
+    expect(res6.body.accessPolicy).toBeDefined();
 
     // Now try to login as the new member
     // First, set the password

@@ -14,7 +14,6 @@ export function ProjectDetailsPage(): JSX.Element {
       <DescriptionList>
         <DescriptionListEntry term="ID">{result.project.id}</DescriptionListEntry>
         <DescriptionListEntry term="Name">{result.project.name}</DescriptionListEntry>
-        <DescriptionListEntry term="Members">{result.members?.length}</DescriptionListEntry>
       </DescriptionList>
     </>
   );
