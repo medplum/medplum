@@ -427,7 +427,6 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
   return (
     <Radio.Group
       name={name}
-      orientation="vertical"
       defaultValue={defaultValue}
       onChange={(newValue) => {
         const option = options.find((option) => option[0] === newValue);

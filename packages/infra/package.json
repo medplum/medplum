@@ -18,13 +18,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.282.0",
-    "@aws-sdk/client-ssm": "3.282.0",
-    "@aws-sdk/client-sts": "3.282.0",
-    "aws-cdk-lib": "2.66.1",
-    "cdk": "2.66.1",
-    "cdk-nag": "2.22.22",
-    "cdk-serverless-clamscan": "2.4.187",
-    "constructs": "10.1.264"
+    "@aws-sdk/client-acm": "3.287.0",
+    "@aws-sdk/client-ssm": "3.287.0",
+    "@aws-sdk/client-sts": "3.287.0",
+    "aws-cdk-lib": "2.68.0",
+    "cdk": "2.68.0",
+    "cdk-nag": "2.22.30",
+    "cdk-serverless-clamscan": "2.4.195",
+    "constructs": "10.1.272"
   }
 }

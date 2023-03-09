@@ -1,4 +1,4 @@
-import { createStyles, Navbar, Space, Text } from '@mantine/core';
+import { createStyles, getStylesRef, Navbar, Space, Text } from '@mantine/core';
 import { useMedplumContext } from '@medplum/react';
 import {
   Icon,
@@ -18,8 +18,8 @@ import {
 import React from 'react';
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-const useStyles = createStyles((theme, _params, getRef) => {
-  const icon = getRef('icon');
+const useStyles = createStyles((theme) => {
+  const icon = getStylesRef('icon');
   return {
     menuTitle: {
       margin: '20px 0 4px 6px',

@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
@@ -18,13 +18,12 @@ describe('AppsPage', () => {
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <MantineProvider>
-              <NotificationsProvider>
-                <ErrorBoundary>
-                  <Suspense fallback={<Loading />}>
-                    <AppRoutes />
-                  </Suspense>
-                </ErrorBoundary>
-              </NotificationsProvider>
+              <Notifications />
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <AppRoutes />
+                </Suspense>
+              </ErrorBoundary>
             </MantineProvider>
           </MemoryRouter>
         </MedplumProvider>
