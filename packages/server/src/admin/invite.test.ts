@@ -1,4 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { getReferenceString } from '@medplum/core';
+import { BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -149,8 +151,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile.resourceType).toBe('Practitioner');
-    expect(res3.body.profile.id).toBe(res2.body.id);
+    expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
   });
 
   test('Access denied', async () => {
@@ -264,8 +265,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(res2.body.profile.resourceType).toBe('Patient');
-    expect(res2.body.profile.telecom).toBeUndefined();
+    expect(res2.body.profile.reference).toContain('Patient/');
     expect(SESv2Client).toHaveBeenCalledTimes(0);
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
@@ -282,14 +282,13 @@ describe('Admin Invite', () => {
 
     // Get the client membership
     const res2 = await request(app)
-      .get('/admin/projects/' + project.id)
+      .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(client))
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.body.project).toBeDefined();
-    expect(res2.body.members).toBeDefined();
-    expect(res2.body.members.length).toEqual(2);
 
-    const clientMembership = res2.body.members.find((m: any) => m.role === 'client');
+    const clientMembership = res2.body.entry.find(
+      (e: BundleEntry<ProjectMembership>) => e.resource?.profile?.reference === getReferenceString(client)
+    )?.resource;
     expect(clientMembership).toBeDefined();
 
     // Get the client membership details
@@ -322,6 +321,6 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
     expect(res8.status).toBe(200);
-    expect(res8.body.profile.resourceType).toBe('Patient');
+    expect(res8.body.profile.reference).toContain('Patient/');
   });
 });

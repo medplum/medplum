@@ -1,4 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -54,7 +55,6 @@ describe('Project Admin routes', () => {
         lastName: 'Jones',
         email: `bob${randomUUID()}@example.com`,
       });
-
     expect(res2.status).toBe(200);
 
     // Get the project details
@@ -62,16 +62,16 @@ describe('Project Admin routes', () => {
     // Get the project details and members
     // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
-      .get('/admin/projects/' + project.id)
+      .get('/fhir/R4/ProjectMembership')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.body.project).toBeDefined();
-    expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(3);
+    expect(res3.body.entry).toBeDefined();
+    expect(res3.body.entry.length).toEqual(3);
 
-    const owner = res3.body.members.find((m: any) => m.role === 'owner');
+    const members = res3.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+    const owner = members.find((m) => m.admin);
     expect(owner).toBeDefined();
-    const member = res3.body.members.find((m: any) => m.role === 'member');
+    const member = members.find((m) => m.id === res2.body.id) as ProjectMembership;
     expect(member).toBeDefined();
 
     // Get the new membership details
@@ -115,19 +115,12 @@ describe('Project Admin routes', () => {
       });
     expect(res7.status).toBe(200);
 
-    // Get the project details
     // Make sure the new member is an admin
-    // 3 members total (1 admin, 1 client, 1 invited)
     const res8 = await request(app)
-      .get('/admin/projects/' + project.id)
+      .get('/fhir/R4/ProjectMembership/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res8.status).toBe(200);
-    expect(res8.body.project).toBeDefined();
-    expect(res8.body.members).toBeDefined();
-    expect(res8.body.members.length).toEqual(3);
-
-    const admin = res8.body.members.find((m: any) => m.role === 'admin');
-    expect(admin).toBeDefined();
+    expect(res8.body.admin).toBe(true);
   });
 
   test('Get project access denied', async () => {
@@ -148,10 +141,13 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
 
     expect(res3.status).toBe(200);
-    expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(3);
-    expect(res3.body.members[0].id).toBeDefined();
-    expect(res3.body.members[1].id).toBeDefined();
+
+    // Try to access Alice's project members using Alices's access token
+    const membersRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken);
+    expect(membersRes.status).toBe(200);
+    const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
 
     // Try to access Alice's project using Bob's access token
     // Should fail
@@ -164,7 +160,7 @@ describe('Project Admin routes', () => {
     // Try to access Alice's project members using Bob's access token
     // Should fail
     const res5 = await request(app)
-      .get('/admin/projects/' + aliceRegistration.project.id + '/members/' + res3.body.members[0].id)
+      .get('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res5.status).toBe(403);
@@ -172,7 +168,7 @@ describe('Project Admin routes', () => {
     // Try to edit Alice's project members using Bob's access token
     // Should fail
     const res6 = await request(app)
-      .post('/admin/projects/' + aliceRegistration.project.id + '/members/' + res3.body.members[0].id)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken)
       .type('json')
       .send({ resourceType: 'ProjectMembership' });
@@ -221,7 +217,7 @@ describe('Project Admin routes', () => {
     // Try to delete Alice's project members using Bob's access token
     // Should fail
     const res11 = await request(app)
-      .delete('/admin/projects/' + aliceRegistration.project.id + '/members/' + res3.body.members[0].id)
+      .delete('/admin/projects/' + aliceRegistration.project.id + '/members/' + members[0].id)
       .set('Authorization', 'Bearer ' + bobRegistration.accessToken);
 
     expect(res11.status).toBe(403);
@@ -301,12 +297,21 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.project).toBeDefined();
-    expect(res3.body.members).toBeDefined();
-    expect(res3.body.members.length).toEqual(3);
 
-    const owner = res3.body.members.find((m: any) => m.role === 'owner');
+    // Try to access Alice's project members using Alices's access token
+    const membersRes = await request(app)
+      .get('/fhir/R4/ProjectMembership')
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(membersRes.status).toBe(200);
+    const members = membersRes.body.entry.map((e: any) => e.resource) as ProjectMembership[];
+
+    const owner = members.find(
+      (m) => m.profile?.reference?.startsWith('Practitioner/') && m.admin
+    ) as ProjectMembership;
     expect(owner).toBeDefined();
-    const member = res3.body.members.find((m: any) => m.role === 'member');
+    const member = members.find(
+      (m) => m.profile?.reference?.startsWith('Practitioner/') && !m.admin
+    ) as ProjectMembership;
     expect(member).toBeDefined();
 
     // Get the new membership details as Alice
@@ -330,8 +335,6 @@ describe('Project Admin routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.project).toBeDefined();
-    expect(res6.body.members).toBeDefined();
-    expect(res6.body.members.length).toEqual(2);
 
     // Alice try to delete her own membership
     // This should fail

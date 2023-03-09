@@ -41,12 +41,12 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const { profile } = await inviteUser({
+  const { membership } = await inviteUser({
     ...req.body,
     project: res.locals.project,
   });
 
-  res.status(200).json({ profile });
+  res.status(200).json(membership);
 }
 
 export interface InviteRequest {
