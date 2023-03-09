@@ -48,14 +48,14 @@ const useStyles = createStyles((theme) => ({
     border: 0,
     color: theme.colors.gray[5],
     fontFamily: theme.fontFamilyMonospace,
-    padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
     textAlign: 'right',
   },
 
   line: {
     fontFamily: theme.fontFamilyMonospace,
     fontSize: theme.fontSizes.sm,
-    padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
   },
 
   pre: {
