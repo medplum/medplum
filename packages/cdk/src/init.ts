@@ -373,13 +373,13 @@ async function listCertificates(region: string): Promise<CertificateSummary[]> {
  *
  * 1. If the certificate already exists, return the ARN.
  * 2. If the certificate does not exist, and the user wants to create a new certificate, create it and return the ARN.
- * 3. If the certificate does not exist, and the user does not want to create a new certificate, return "TODO".
+ * 3. If the certificate does not exist, and the user does not want to create a new certificate, return a placeholder.
  *
  * @param config In-progress config settings.
  * @param allCerts List of all existing certificates.
  * @param region The AWS region where the certificate is needed.
  * @param certName The name of the certificate (api, app, or storage).
- * @returns The ARN of the certificate or "TODO" if a new certificate is needed.
+ * @returns The ARN of the certificate or placeholder if a new certificate is needed.
  */
 async function processCert(
   config: MedplumInfraConfig,
