@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist cdk.out",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "init": "ts-node src/init.ts",
     "cdk": "cdk",
     "test": "jest"
@@ -26,5 +26,8 @@
     "cdk-nag": "2.22.30",
     "cdk-serverless-clamscan": "2.4.195",
     "constructs": "10.1.272"
+  },
+  "bin": {
+    "medplum-cdk-init": "./dist/cjs/init.cjs"
   }
 }

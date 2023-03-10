@@ -63,6 +63,6 @@ export function main(context?: Record<string, string>): void {
   app.synth();
 }
 
-if (process.argv[1].endsWith('index.ts')) {
+if (require.main === module) {
   main();
 }
