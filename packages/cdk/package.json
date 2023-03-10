@@ -15,7 +15,7 @@
     "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "init": "ts-node src/init.ts",
     "cdk": "cdk",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@aws-sdk/client-acm": "3.287.0",

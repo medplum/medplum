@@ -7,10 +7,17 @@ import { resolve } from 'path';
 import readline from 'readline';
 import { MedplumInfraConfig } from './config';
 
+type MedplumDomainType = 'api' | 'app' | 'storage';
+type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
+type MedplumDomainCertSetting = `${MedplumDomainType}SslCertArn`;
+
+const getDomainSetting = (domain: MedplumDomainType): MedplumDomainSetting => `${domain}DomainName`;
+const getDomainCertSetting = (domain: MedplumDomainType): MedplumDomainCertSetting => `${domain}SslCertArn`;
+
 let terminal: readline.Interface;
 
 export async function main(t: readline.Interface): Promise<void> {
-  const config = { apiPort: 8103 } as MedplumInfraConfig;
+  const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
   terminal = t;
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
@@ -185,31 +192,6 @@ export async function main(t: readline.Interface): Promise<void> {
   const allCerts = await listAllCertificates(config.region);
   print('Found ' + allCerts.length + ' certificate(s).');
 
-  const doCert = async (region: string, certName: 'api' | 'app' | 'storage'): Promise<boolean> => {
-    const subdomain = config[(certName + 'DomainName') as 'apiDomainName' | 'appDomainName' | 'storageDomainName'];
-    const setting = (certName + 'SslCertArn') as 'apiSslCertArn' | 'appSslCertArn' | 'storageSslCertArn';
-    const existingCert = allCerts.find(
-      (cert) => cert.CertificateArn?.includes(region) && cert.DomainName === subdomain
-    );
-    let arn = 'TODO';
-    print('');
-    if (existingCert) {
-      print(`Found existing certificate for "${subdomain}".`);
-      arn = existingCert.CertificateArn as string;
-    } else {
-      print(`No existing certificate found for "${subdomain}".`);
-      if (await yesOrNo('Do you want to create a new certificate?')) {
-        arn = await requestCert(region, subdomain);
-      } else {
-        print(`Please certificate ARN in the config file in the "${setting}" setting.`);
-      }
-    }
-    print('Certificate ARN: ' + arn);
-    config[setting] = arn;
-    writeConfig(configFileName, config);
-    return true;
-  };
-
   // Process certificates for each subdomain
   // Note: The "api" certificate must be created in the same region as the API
   // Note: The "app" and "storage" certificates must be created in us-east-1
@@ -218,9 +200,10 @@ export async function main(t: readline.Interface): Promise<void> {
     { region: 'us-east-1', certName: 'app' },
     { region: 'us-east-1', certName: 'storage' },
   ] as const) {
-    if (!(await doCert(region, certName))) {
-      return;
-    }
+    print('');
+    const arn = await processCert(config, allCerts, region, certName);
+    config[getDomainCertSetting(certName)] = arn;
+    writeConfig(configFileName, config);
   }
 
   header('AWS PARAMETER STORE');
@@ -339,11 +322,16 @@ function writeConfig(configFileName: string, config: MedplumInfraConfig): void {
  * @param region The AWS region.
  * @returns The AWS account ID.
  */
-async function getAccountId(region: string): Promise<string> {
-  const client = new STSClient({ region });
-  const command = new GetCallerIdentityCommand({});
-  const response = await client.send(command);
-  return response.Account as string;
+async function getAccountId(region: string): Promise<string | undefined> {
+  try {
+    const client = new STSClient({ region });
+    const command = new GetCallerIdentityCommand({});
+    const response = await client.send(command);
+    return response.Account as string;
+  } catch (err) {
+    console.log('Warning: Unable to get AWS account ID', (err as Error).message);
+    return undefined;
+  }
 }
 
 /**
@@ -369,10 +357,52 @@ async function listAllCertificates(region: string): Promise<CertificateSummary[]
  * @returns The list of AWS Certificates.
  */
 async function listCertificates(region: string): Promise<CertificateSummary[]> {
-  const client = new ACMClient({ region });
-  const command = new ListCertificatesCommand({ MaxItems: 1000 });
-  const response = await client.send(command);
-  return response.CertificateSummaryList as CertificateSummary[];
+  try {
+    const client = new ACMClient({ region });
+    const command = new ListCertificatesCommand({ MaxItems: 1000 });
+    const response = await client.send(command);
+    return response.CertificateSummaryList as CertificateSummary[];
+  } catch (err) {
+    console.log('Warning: Unable to list certificates', (err as Error).message);
+    return [];
+  }
+}
+
+/**
+ * Processes a required certificate.
+ *
+ * 1. If the certificate already exists, return the ARN.
+ * 2. If the certificate does not exist, and the user wants to create a new certificate, create it and return the ARN.
+ * 3. If the certificate does not exist, and the user does not want to create a new certificate, return a placeholder.
+ *
+ * @param config In-progress config settings.
+ * @param allCerts List of all existing certificates.
+ * @param region The AWS region where the certificate is needed.
+ * @param certName The name of the certificate (api, app, or storage).
+ * @returns The ARN of the certificate or placeholder if a new certificate is needed.
+ */
+async function processCert(
+  config: MedplumInfraConfig,
+  allCerts: CertificateSummary[],
+  region: string,
+  certName: 'api' | 'app' | 'storage'
+): Promise<string> {
+  const domainName = config[getDomainSetting(certName)];
+  const existingCert = allCerts.find((cert) => cert.CertificateArn?.includes(region) && cert.DomainName === domainName);
+  if (existingCert) {
+    print(`Found existing certificate for "${domainName}" in "${region}.`);
+    return existingCert.CertificateArn as string;
+  }
+
+  print(`No existing certificate found for "${domainName}" in "${region}.`);
+  if (!(await yesOrNo('Do you want to request a new certificate?'))) {
+    print(`Please add your certificate ARN to the config file in the "${getDomainCertSetting(certName)}" setting.`);
+    return 'TODO';
+  }
+
+  const arn = await requestCert(region, domainName);
+  print('Certificate ARN: ' + arn);
+  return arn;
 }
 
 /**
@@ -382,14 +412,23 @@ async function listCertificates(region: string): Promise<CertificateSummary[]> {
  * @returns The AWS Certificate ARN on success, or undefined on failure.
  */
 async function requestCert(region: string, domain: string): Promise<string> {
-  const validationMethod = await choose('Validate certificate using DNS or email validation?', ['dns', 'email'], 'dns');
-  const client = new ACMClient({ region });
-  const command = new RequestCertificateCommand({
-    DomainName: domain,
-    ValidationMethod: validationMethod.toUpperCase(),
-  });
-  const response = await client.send(command);
-  return response.CertificateArn as string;
+  try {
+    const validationMethod = await choose(
+      'Validate certificate using DNS or email validation?',
+      ['dns', 'email'],
+      'dns'
+    );
+    const client = new ACMClient({ region });
+    const command = new RequestCertificateCommand({
+      DomainName: domain,
+      ValidationMethod: validationMethod.toUpperCase(),
+    });
+    const response = await client.send(command);
+    return response.CertificateArn as string;
+  } catch (err) {
+    console.log('Error: Unable to request certificate', (err as Error).message);
+    return 'TODO';
+  }
 }
 
 /**
@@ -457,12 +496,7 @@ async function writeParameters(region: string, prefix: string, params: Record<st
 }
 
 if (require.main === module) {
-  main(
-    readline.createInterface({
-      input: process.stdin,
-      output: process.stdout,
-    })
-  )
+  main(readline.createInterface({ input: process.stdin, output: process.stdout }))
     .then(() => process.exit(0))
     .catch((err) => {
       console.error((err as Error).message);
