@@ -54,7 +54,7 @@ See the [Creating and sharing Lambda layers](https://docs.aws.amazon.com/lambda/
 Most AWS resources are automatically created using CDK, but some either cannot or are not recommended. Use the Medplum `init` tool to setup those resources and build the config file.
 
 ```bash
-cd packages/infra
+cd packages/cdk
 npm run init
 ```
 

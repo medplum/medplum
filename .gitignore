@@ -11,6 +11,7 @@ node_modules/
 
 # Output
 packages/app/dist/
+packages/cdk/dist/
 packages/cli/dist/
 packages/core/dist/
 packages/core/docs/
@@ -23,7 +24,6 @@ packages/generator/dist/
 packages/generator/output/
 packages/graphiql/dist/
 packages/graphiql/public/
-packages/infra/dist/
 packages/mock/dist/
 packages/react/dist/
 packages/server/dist/
