@@ -10,7 +10,7 @@ import { MedplumInfraConfig } from './config';
 let terminal: readline.Interface;
 
 export async function main(t: readline.Interface): Promise<void> {
-  const config = { apiPort: 8103 } as MedplumInfraConfig;
+  const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
   terminal = t;
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
@@ -339,11 +339,16 @@ function writeConfig(configFileName: string, config: MedplumInfraConfig): void {
  * @param region The AWS region.
  * @returns The AWS account ID.
  */
-async function getAccountId(region: string): Promise<string> {
-  const client = new STSClient({ region });
-  const command = new GetCallerIdentityCommand({});
-  const response = await client.send(command);
-  return response.Account as string;
+async function getAccountId(region: string): Promise<string | undefined> {
+  try {
+    const client = new STSClient({ region });
+    const command = new GetCallerIdentityCommand({});
+    const response = await client.send(command);
+    return response.Account as string;
+  } catch (err) {
+    console.log('Warning: Unable to get AWS account ID', (err as Error).message);
+  }
+  return undefined;
 }
 
 /**
