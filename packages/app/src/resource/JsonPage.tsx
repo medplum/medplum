@@ -44,6 +44,7 @@ export function JsonPage(): JSX.Element | null {
           minRows={24}
           defaultValue={stringify(resource, true)}
           formatOnBlur
+          deserialize={JSON.parse}
         />
         <Group position="right" mt="xl" noWrap>
           <Button type="submit">OK</Button>
