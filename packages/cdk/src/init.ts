@@ -7,11 +7,10 @@ import { resolve } from 'path';
 import readline from 'readline';
 import { MedplumInfraConfig } from './config';
 
-const config = { apiPort: 8103 } as MedplumInfraConfig;
-
 let terminal: readline.Interface;
 
 export async function main(t: readline.Interface): Promise<void> {
+  const config = { apiPort: 8103 } as MedplumInfraConfig;
   terminal = t;
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
@@ -111,7 +110,7 @@ export async function main(t: readline.Interface): Promise<void> {
 
   header('STORAGE BUCKET');
   print('Medplum uses an S3 bucket to store binary content such as file uploads.');
-  print('Medplum will create a new S3 bucket for you.');
+  print('Medplum will create a the S3 bucket as part of the CloudFormation stack.');
   config.storageBucketName = await ask('Enter your storage bucket name:', 'medplum-' + config.name + '-storage');
   writeConfig(configFileName, config);
 
@@ -122,28 +121,41 @@ export async function main(t: readline.Interface): Promise<void> {
   print('If you want to use all availability zones, choose a large number such as 99.');
   print('If you want to restrict the number, for example to manage EIP limits,');
   print('then choose a small number such as 1 or 2.');
-  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [1, 2, 3], 2);
+  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [1, 2, 3, 99], 2);
 
   header('DATABASE INSTANCES');
-  print('Medplum uses a relational database to store all data.');
-  print('Medplum will create a new RDS database for you.');
-  print('If you need high availability, you can choose multiple instances.');
-  print('Use 1 for a single instance, or 2 for a primary and a standby.');
-  config.rdsInstances = await chooseInt('Enter the number of database instances:', [1, 2], 1);
+  print('Medplum uses a relational database to store data.');
+  print('You can set up your own database,');
+  print('or Medplum can create a new RDS database as part of the CloudFormation stack.');
+  if (await yesOrNo('Do you want to create a new RDS database as part of the CloudFormation stack?')) {
+    print('Medplum will create a new RDS database as part of the CloudFormation stack.');
+    print('');
+    print('If you need high availability, you can choose multiple instances.');
+    print('Use 1 for a single instance, or 2 for a primary and a standby.');
+    config.rdsInstances = await chooseInt('Enter the number of database instances:', [1, 2], 1);
+  } else {
+    print('Medplum will not create a new RDS database.');
+    print('Please create a new RDS database and enter the database name, username, and password.');
+    print('Set the AWS Secrets Manager secret ARN in the config file in the "rdsSecretsArn" setting.');
+    config.rdsSecretsArn = 'TODO';
+  }
+  writeConfig(configFileName, config);
 
   header('SERVER INSTANCES');
   print('Medplum uses AWS Fargate to run the API servers.');
-  print('Medplum will create a new Fargate cluster for you.');
+  print('Medplum will create a new Fargate cluster as part of the CloudFormation stack.');
   print('Fargate will automatically scale the number of servers up and down.');
   print('If you need high availability, you can choose multiple instances.');
-  config.desiredServerCount = await chooseInt('Enter the number of server instances:', [1, 2, 3, 4], 1);
+  config.desiredServerCount = await chooseInt('Enter the number of server instances:', [1, 2, 3, 4, 6, 8], 1);
+  writeConfig(configFileName, config);
 
   header('SERVER MEMORY');
   print('You can choose the amount of memory for each server instance.');
   print('The default is 512 MB, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096], 512);
+  config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096, 8192, 16384], 512);
+  writeConfig(configFileName, config);
 
   header('SERVER CPU');
   print('You can choose the amount of CPU for each server instance.');
@@ -151,7 +163,8 @@ export async function main(t: readline.Interface): Promise<void> {
   print('The default is 256, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048], 256);
+  config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048, 4096, 8192, 16384], 256);
+  writeConfig(configFileName, config);
 
   header('SERVER IMAGE');
   print('Medplum uses Docker images for the API servers.');
@@ -159,10 +172,10 @@ export async function main(t: readline.Interface): Promise<void> {
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
   config.serverImage = await ask('Enter the server image:', 'medplum/medplum-server:latest');
+  writeConfig(configFileName, config);
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
-  await checkOk('Do you want to generate a signing key for the "storage" domain?');
   const { privateKey, publicKey, passphrase } = generateSigningKey();
   config.storagePublicKey = publicKey;
   writeConfig(configFileName, config);
@@ -178,15 +191,18 @@ export async function main(t: readline.Interface): Promise<void> {
     const existingCert = allCerts.find(
       (cert) => cert.CertificateArn?.includes(region) && cert.DomainName === subdomain
     );
-    let arn = undefined;
+    let arn = 'TODO';
     print('');
     if (existingCert) {
       print(`Found existing certificate for "${subdomain}".`);
       arn = existingCert.CertificateArn as string;
     } else {
       print(`No existing certificate found for "${subdomain}".`);
-      await checkOk('Do you want to request a new certificate?');
-      arn = await requestCert(region, subdomain);
+      if (await yesOrNo('Do you want to create a new certificate?')) {
+        arn = await requestCert(region, subdomain);
+      } else {
+        print(`Please certificate ARN in the config file in the "${setting}" setting.`);
+      }
     }
     print('Certificate ARN: ' + arn);
     config[setting] = arn;
@@ -366,10 +382,11 @@ async function listCertificates(region: string): Promise<CertificateSummary[]> {
  * @returns The AWS Certificate ARN on success, or undefined on failure.
  */
 async function requestCert(region: string, domain: string): Promise<string> {
+  const validationMethod = await choose('Validate certificate using DNS or email validation?', ['dns', 'email'], 'dns');
   const client = new ACMClient({ region });
   const command = new RequestCertificateCommand({
     DomainName: domain,
-    ValidationMethod: 'DNS',
+    ValidationMethod: validationMethod.toUpperCase(),
   });
   const response = await client.send(command);
   return response.CertificateArn as string;
