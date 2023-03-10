@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "test": "jest"
   },
   "dependencies": {
@@ -25,7 +25,7 @@
     "@medplum/mock": "*"
   },
   "bin": {
-    "medplum": "./dist/index.js"
+    "medplum": "./dist/cjs/index.cjs"
   },
   "keywords": [
     "medplum",

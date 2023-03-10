@@ -11,6 +11,5 @@ storybook-static/
 babel.config.json
 jest.config.json
 rollup.config.mjs
-tsconfig.cjs.json
-tsconfig.esm.json
+tsconfig.build.json
 tsconfig.json
