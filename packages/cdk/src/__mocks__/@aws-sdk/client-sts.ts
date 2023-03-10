@@ -3,8 +3,13 @@ export class GetCallerIdentityCommand {
 }
 
 export class STSClient {
+  constructor(readonly config?: any) {}
+
   async send(command: any): Promise<any> {
     if (command instanceof GetCallerIdentityCommand) {
+      if (this.config?.region === 'us-bad-1') {
+        throw new Error('Invalid region');
+      }
       return {};
     }
 
