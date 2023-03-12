@@ -21,7 +21,7 @@ import { PoolClient } from 'pg';
 import { Column, Condition, Conjunction, Disjunction, Expression, Operator, SelectQuery } from '../sql';
 import { getSearchParameters } from '../structure';
 import { LookupTable } from './lookuptable';
-import { compareArrays } from './util';
+import { compareArrays, deriveIdentifierSearchParameter } from './util';
 
 interface Token {
   readonly code: string;
@@ -200,14 +200,31 @@ function getTokens(resource: Resource): Token[] {
   if (searchParams) {
     for (const searchParam of Object.values(searchParams)) {
       if (isIndexed(searchParam, resource.resourceType)) {
-        const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
-        for (const typedValue of typedValues) {
-          buildTokens(result, searchParam, typedValue);
-        }
+        buildTokensForSearchParameter(result, typedResource, searchParam);
+      }
+      if (searchParam.type === 'reference') {
+        buildTokensForSearchParameter(result, typedResource, deriveIdentifierSearchParameter(searchParam));
       }
     }
   }
   return result;
+}
+
+/**
+ * Builds a list of zero or more tokens for a search parameter and resource.
+ * @param result The result array where tokens will be added.
+ * @param typedResource The typed resource.
+ * @param searchParam The search parameter.
+ */
+function buildTokensForSearchParameter(
+  result: Token[],
+  typedResource: TypedValue[],
+  searchParam: SearchParameter
+): void {
+  const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
+  for (const typedValue of typedValues) {
+    buildTokens(result, searchParam, typedValue);
+  }
 }
 
 /**

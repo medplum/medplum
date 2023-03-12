@@ -78,6 +78,7 @@ import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { TokenTable } from './lookups/token';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
 import { validateReferences } from './references';
@@ -1147,9 +1148,15 @@ export class Repository {
     }
 
     const resourceType = searchRequest.resourceType;
-    const param = getSearchParameter(resourceType, filter.code);
+    let param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
+    }
+
+    if (filter.operator === FhirOperator.IDENTIFIER) {
+      param = deriveIdentifierSearchParameter(param);
+      filter.code = param.code as string;
+      filter.operator = FhirOperator.EQUALS;
     }
 
     const lookupTable = this.#getLookupTable(resourceType, param);
