@@ -15,7 +15,7 @@ describe('ServiceRequestTimeline', () => {
     await act(async () => {
       render(
         <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
+          <MedplumProvider medplum={medplum} navigate={jest.fn()}>
             <ServiceRequestTimeline {...args} />
           </MedplumProvider>
         </MemoryRouter>
