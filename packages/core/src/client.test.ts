@@ -2,7 +2,6 @@ import { Bundle, BundleEntry, Patient, SearchParameter, StructureDefinition } fr
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
-import { URLSearchParams } from 'url';
 import { TextEncoder } from 'util';
 import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, notFound, OperationOutcomeError } from './outcomes';
