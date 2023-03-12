@@ -1128,7 +1128,7 @@ export class Repository {
   }
 
   /**
-   * Adds a single search filter as "WHERE" clause to the query builder.
+   * Builds a single search filter as "WHERE" clause to the query builder.
    * @param selectQuery The select query builder.
    * @param searchRequest The search request.
    * @param filter The search filter.
@@ -1164,6 +1164,21 @@ export class Repository {
       return lookupTable.buildWhere(selectQuery, resourceType, filter);
     }
 
+    // Not any special cases, just a normal search parameter.
+    return this.#buildNormalSearchFilterExpression(resourceType, param, filter);
+  }
+
+  /**
+   * Builds a search filter expression for a normal search parameter.
+   *
+   * Not any special cases, just a normal search parameter.
+   *
+   * @param resourceType The FHIR resource type.
+   * @param param The FHIR search parameter.
+   * @param filter The search filter.
+   * @returns A SQL "WHERE" clause expression.
+   */
+  #buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
     const details = getSearchParameterDetails(resourceType, param);
     if (filter.operator === FhirOperator.MISSING) {
       return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
