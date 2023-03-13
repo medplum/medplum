@@ -300,6 +300,12 @@ export class BackEnd extends Construct {
       securityGroups: [fargateSecurityGroup],
     });
 
+    // Add dependencies - make sure Fargate service is created after RDS and Redis
+    if (rdsCluster) {
+      fargateService.node.addDependency(rdsCluster);
+    }
+    fargateService.node.addDependency(redisCluster);
+
     // Load Balancer Target Group
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       vpc: vpc,
