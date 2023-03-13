@@ -28,4 +28,5 @@ export interface MedplumInfraConfig {
   clamscanEnabled: boolean;
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
+  skipDns?: boolean;
 }

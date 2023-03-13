@@ -370,17 +370,21 @@ export class BackEnd extends Construct {
     // Grant Redis access to the fargate group
     redisSecurityGroup.addIngressRule(fargateSecurityGroup, ec2.Port.tcp(6379));
 
-    // Route 53
-    const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-      domainName: config.domainName.split('.').slice(-2).join('.'),
-    });
+    // DNS
+    let record = undefined;
+    if (!config.skipDns) {
+      // Route 53
+      const zone = route53.HostedZone.fromLookup(this, 'Zone', {
+        domainName: config.domainName.split('.').slice(-2).join('.'),
+      });
 
-    // Route53 alias record for the load balancer
-    const record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
-      recordName: config.apiDomainName,
-      target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
-      zone: zone,
-    });
+      // Route53 alias record for the load balancer
+      record = new route53.ARecord(this, 'LoadBalancerAliasRecord', {
+        recordName: config.apiDomainName,
+        target: route53.RecordTarget.fromAlias(new targets.LoadBalancerTarget(loadBalancer)),
+        zone: zone,
+      });
+    }
 
     // SSM Parameters
     const databaseSecrets = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
@@ -405,7 +409,7 @@ export class BackEnd extends Construct {
     });
 
     // Debug
-    console.log('ARecord', record.domainName);
+    console.log('ARecord', record?.domainName);
     console.log('DatabaseSecretsParameter', databaseSecrets.parameterArn);
     console.log('RedisSecretsParameter', redisSecretsParameter.parameterArn);
     console.log('RedisCluster', redisCluster.attrPrimaryEndPointAddress);

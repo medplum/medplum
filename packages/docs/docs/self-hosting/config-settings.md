@@ -50,6 +50,7 @@ Here is a full example. See the table below for details on each setting.
 | `clamscanEnabled`            | Boolean flag to enable [Serverless ClamScan antivirus](https://github.com/awslabs/cdk-serverless-clamscan)                                                                                                                                                                                        |
 | `clamscanLoggingBucket`      | The logging bucket that you created before.                                                                                                                                                                                                                                                       |
 | `clamscanLoggingPrefix`      | A directory prefix to use for the S3 logs. For example, `clamscan`.                                                                                                                                                                                                                               |
+| `skipDns`                    | Optional flag to skip all DNS entries. Use this option if you do not use Route 53, or if the Route 53 hosted zone is in a different AWS account.                                                                                                                                                  |
 
 Here is the server configuration for the Medplum staging environment:
 
