@@ -116,19 +116,23 @@ export class Storage extends Construct {
         webAclId: waf.attrArn,
       });
 
-      const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-        domainName: config.domainName.split('.').slice(-2).join('.'),
-      });
+      // DNS
+      let record = undefined;
+      if (!config.skipDns) {
+        const zone = route53.HostedZone.fromLookup(this, 'Zone', {
+          domainName: config.domainName.split('.').slice(-2).join('.'),
+        });
 
-      // Route53 alias record for the CloudFront distribution
-      const record = new route53.ARecord(this, 'StorageAliasRecord', {
-        recordName: config.storageDomainName,
-        target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
-        zone,
-      });
+        // Route53 alias record for the CloudFront distribution
+        record = new route53.ARecord(this, 'StorageAliasRecord', {
+          recordName: config.storageDomainName,
+          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
+          zone,
+        });
+      }
 
       // Debug
-      console.log('ARecord', record.domainName);
+      console.log('ARecord', record?.domainName);
     }
   }
 }
