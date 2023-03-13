@@ -78,6 +78,7 @@ import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { TokenTable } from './lookups/token';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
 import { validateReferences } from './references';
@@ -1127,7 +1128,7 @@ export class Repository {
   }
 
   /**
-   * Adds a single search filter as "WHERE" clause to the query builder.
+   * Builds a single search filter as "WHERE" clause to the query builder.
    * @param selectQuery The select query builder.
    * @param searchRequest The search request.
    * @param filter The search filter.
@@ -1147,9 +1148,15 @@ export class Repository {
     }
 
     const resourceType = searchRequest.resourceType;
-    const param = getSearchParameter(resourceType, filter.code);
+    let param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
+    }
+
+    if (filter.operator === FhirOperator.IDENTIFIER) {
+      param = deriveIdentifierSearchParameter(param);
+      filter.code = param.code as string;
+      filter.operator = FhirOperator.EQUALS;
     }
 
     const lookupTable = this.#getLookupTable(resourceType, param);
@@ -1157,6 +1164,21 @@ export class Repository {
       return lookupTable.buildWhere(selectQuery, resourceType, filter);
     }
 
+    // Not any special cases, just a normal search parameter.
+    return this.#buildNormalSearchFilterExpression(resourceType, param, filter);
+  }
+
+  /**
+   * Builds a search filter expression for a normal search parameter.
+   *
+   * Not any special cases, just a normal search parameter.
+   *
+   * @param resourceType The FHIR resource type.
+   * @param param The FHIR search parameter.
+   * @param filter The search filter.
+   * @returns A SQL "WHERE" clause expression.
+   */
+  #buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
     const details = getSearchParameterDetails(resourceType, param);
     if (filter.operator === FhirOperator.MISSING) {
       return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);

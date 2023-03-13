@@ -7,6 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchDefinition,
   parseSearchRequest,
   parseSearchUrl,
   SearchRequest,
@@ -2316,6 +2317,36 @@ describe('FHIR Repo', () => {
     expect(bundle.entry?.length).toEqual(1);
     expect(bundleContains(bundle, c1)).toBeTruthy();
     expect(bundleContains(bundle, c2)).not.toBeTruthy();
+  });
+
+  test('Reference identifier search', async () => {
+    const code = randomUUID();
+
+    const c1 = await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      code: { coding: [{ code }] },
+      subject: { identifier: { system: 'mrn', value: '123456' } },
+    });
+
+    const c2 = await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      code: { coding: [{ code }] },
+      subject: { identifier: { system: 'xyz', value: '123456' } },
+    });
+
+    // Search with system
+    const bundle1 = await systemRepo.search(
+      parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456`)
+    );
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, c1)).toBeTruthy();
+    expect(bundleContains(bundle1, c2)).not.toBeTruthy();
+
+    // Search without system
+    const bundle2 = await systemRepo.search(parseSearchDefinition(`Condition?code=${code}&subject:identifier=123456`));
+    expect(bundle2.entry?.length).toEqual(2);
+    expect(bundleContains(bundle2, c1)).toBeTruthy();
+    expect(bundleContains(bundle2, c2)).toBeTruthy();
   });
 
   test('Purge forbidden', async () => {
