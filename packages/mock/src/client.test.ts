@@ -640,6 +640,16 @@ test('Search one', async () => {
   expect(existingPatient).toBeDefined();
 });
 
+test('Project admin', async () => {
+  const medplum = new MockClient();
+
+  const project = await medplum.get('admin/project/123');
+  expect(project).toBeDefined();
+
+  const membership = await medplum.get('admin/project/123/membership/456');
+  expect(membership).toBeDefined();
+});
+
 function fail(reason: string): never {
   throw new Error(reason);
 }
