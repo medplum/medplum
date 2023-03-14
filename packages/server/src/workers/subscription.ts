@@ -314,15 +314,16 @@ async function sendRestHook(
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
+    const success = response.status >= 200 && response.status < 400;
     await createSubscriptionEvent(
       subscription,
       resource,
       startTime,
-      response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+      success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`
     );
 
-    if (response.status >= 400) {
+    if (!success) {
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {

@@ -95,6 +95,45 @@ describe('Subscription Worker', () => {
     );
   });
 
+  test('Status code 201', async () => {
+    const url = 'https://example.com/subscription';
+
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+    });
+    expect(subscription).toBeDefined();
+
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 201 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: stringify(patient),
+      })
+    );
+  });
+
   test('Send subscription with custom headers', async () => {
     const url = 'https://example.com/subscription';
 
