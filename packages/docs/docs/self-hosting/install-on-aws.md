@@ -196,7 +196,7 @@ RECAPTCHA_SITE_KEY=***Your reCAPTCHA site key for user verification***
 From the root of the Medplum repo, run:
 
 ```bash
-npm run build
+npm run build -- --filter=@medplum/app
 ```
 
 See the [Build](/docs/contributing/run-the-stack#build) page for more details.
