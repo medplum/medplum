@@ -48,6 +48,10 @@ describe('EditMembershipPage', () => {
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
+
+    const badgeElement = screen.getByText('Alice Smith');
+    expect(badgeElement).toBeInTheDocument();
+    expect(badgeElement).toBeInstanceOf(HTMLAnchorElement);
   });
 
   test('Submit success', async () => {

@@ -46,6 +46,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import { TestProject, TestProjectMembersihp } from './mocks/project';
 import SearchParameterList from './mocks/searchparameters.json';
 import { ExampleSmartClientApplication } from './mocks/smart';
 import StructureDefinitionList from './mocks/structuredefinitions.json';
@@ -240,16 +241,17 @@ class MockFetchClient {
     }
   }
 
-  private mockAdminHandler(_method: string, path: string): any {
-    if (path.startsWith('admin/projects/123')) {
+  private async mockAdminHandler(_method: string, path: string): Promise<any> {
+    const projectMatch = path.match(/^admin\/projects\/([\w-]+)$/);
+    if (projectMatch) {
       return {
-        project: { id: '123', name: 'Project 123' },
-        members: [
-          { id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' }, role: 'owner' },
-          { id: '888', profile: { reference: 'ClientApplication/123', display: 'Test Client' }, role: 'client' },
-          { id: '999', profile: { reference: 'Bot/123', display: 'Test Bot' }, role: 'bot' },
-        ],
+        project: await this.repo.readResource('Project', projectMatch[1]),
       };
+    }
+
+    const membershipMatch = path.match(/^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/);
+    if (membershipMatch) {
+      return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
 
     return {
@@ -484,6 +486,8 @@ class MockFetchClient {
       ExampleWorkflowTask3,
       ExampleWorkflowRequestGroup,
       ExampleSmartClientApplication,
+      TestProject,
+      TestProjectMembersihp,
     ];
 
     for (const resource of defaultResources) {
