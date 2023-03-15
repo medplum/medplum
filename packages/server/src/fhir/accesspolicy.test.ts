@@ -1512,5 +1512,14 @@ describe('AccessPolicy', () => {
     expect(check6.id).toEqual(check4.id);
     expect(check6.meta?.versionId).toEqual(check5.meta?.versionId);
     expect(check6.project?.reference).toEqual(check4.project?.reference);
+
+    // Try to create a new project
+    // This should fail
+    try {
+      await repo2.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      throw new Error('Should not be able to create resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Forbidden');
+    }
   });
 });
