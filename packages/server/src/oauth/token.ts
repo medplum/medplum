@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getClientApplicationMembership, revokeLogin, timingSafeEqualStr } from './utils';
+import { getAuthTokens, getClient, getClientApplicationMembership, revokeLogin, timingSafeEqualStr } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -166,7 +166,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   let client: ClientApplication | undefined;
   if (clientId) {
     try {
-      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+      client = await getClient(clientId);
     } catch (err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return undefined;
