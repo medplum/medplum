@@ -12,7 +12,7 @@ On the Medplum app and in external applications that use Medplum auth, developer
 
 ## Explicit Account Creation Required
 
-When using external identity providers, you must explicitly invite users to your Project before access will be granted. Accounts are not automatically made for all identities in your external provider. You can [create accounts](/docs/auth/user-guide) programmatically, or invite them manually from the Medplum app.
+When using external identity providers, you must explicitly invite users to your Project before access will be granted. Accounts are not automatically made for all identities in your external provider. You can [create accounts](/docs/auth/user-management-guide) programmatically, or invite them manually from the Medplum app.
 
 ## Using These Guides
 
