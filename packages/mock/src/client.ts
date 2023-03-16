@@ -6,6 +6,7 @@ import {
   isOk,
   LoginState,
   MedplumClient,
+  MedplumClientOptions,
   OperationOutcomeError,
   ProfileResource,
 } from '@medplum/core';
@@ -62,7 +63,7 @@ import {
   ExampleWorkflowTask3,
 } from './mocks/workflow';
 
-export interface MockClientOptions {
+export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
 }
 
@@ -79,8 +80,8 @@ export class MockClient extends MedplumClient {
     const client = new MockFetchClient(router, repo, clientOptions?.debug);
 
     super({
-      baseUrl: 'https://example.com/',
-      clientId: 'my-client-id',
+      baseUrl: clientOptions?.baseUrl || 'https://example.com/',
+      clientId: clientOptions?.clientId,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
@@ -434,10 +435,11 @@ class MockFetchClient {
     }
   }
 
-  private mockOAuthHandler(_method: string, path: string, _options: any): any {
+  private mockOAuthHandler(_method: string, path: string, options: any): any {
     if (path.startsWith('oauth2/token')) {
+      const clientId = (options.body as URLSearchParams).get('client_id') || 'my-client-id';
       return {
-        access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+        access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
       };
     }
 
@@ -541,4 +543,8 @@ class MockFetchClient {
       return result[1];
     }
   }
+}
+
+function base64Encode(str: string): string {
+  return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
 }

@@ -19,8 +19,7 @@ interface MedplumBotConfig {
   readonly dist?: string;
 }
 
-// const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-const baseUrl = 'http://localhost:8103/';
+const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
 const credentialsFileName = resolve(homedir(), '.medplum', 'credentials.json');
@@ -51,7 +50,7 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
     case 'login':
       await startLogin(medplum);
       break;
-    case 'me':
+    case 'whoami':
       printMe(medplum);
       break;
     case 'save-bot':
@@ -138,6 +137,10 @@ async function openBrowser(url: string): Promise<void> {
   exec(cmd);
 }
 
+/**
+ * Prints the current user and project.
+ * @param medplum The Medplum client.
+ */
 function printMe(medplum: MedplumClient): void {
   const loginState = medplum.getActiveLogin();
   if (loginState) {
