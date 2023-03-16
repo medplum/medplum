@@ -26,6 +26,22 @@ describe('Search matching', () => {
     expect(matchesSearchRequest({ resourceType: 'Patient' }, { resourceType: 'Observation' })).toBe(false);
   });
 
+  test('Matches _id', () => {
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'Project', id: '123' },
+        { resourceType: 'Project', filters: [{ code: '_id', operator: Operator.EQUALS, value: '123' }] }
+      )
+    ).toBe(true);
+
+    expect(
+      matchesSearchRequest(
+        { resourceType: 'Observation', id: '123' },
+        { resourceType: 'Observation', filters: [{ code: '_id', operator: Operator.EQUALS, value: '456' }] }
+      )
+    ).toBe(false);
+  });
+
   test('Unknown filter', () => {
     expect(
       matchesSearchRequest(
