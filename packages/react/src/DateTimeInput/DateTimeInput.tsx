@@ -8,6 +8,7 @@ export interface DateTimeInputProps {
   name?: string;
   placeholder?: string;
   defaultValue?: string;
+  required?: boolean;
   outcome?: OperationOutcome;
   onChange?: (value: string) => void;
 }
@@ -27,6 +28,7 @@ export function DateTimeInput(props: DateTimeInputProps): JSX.Element {
       name={props.name}
       data-testid={props.name}
       placeholder={props.placeholder}
+      required={props.required}
       type={getInputType()}
       defaultValue={convertIsoToLocal(props.defaultValue)}
       error={getErrorsForInput(props.outcome, props.name)}
