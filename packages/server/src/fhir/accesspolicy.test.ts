@@ -1522,4 +1522,66 @@ describe('AccessPolicy', () => {
       expect(normalizeErrorString(err)).toEqual('Forbidden');
     }
   });
+
+  test('Project admin can modify meta.account', async () => {
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+
+    const adminMembership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      admin: true,
+    });
+
+    const nonAdminMembership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      admin: false,
+    });
+
+    const adminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, adminMembership, true, true);
+    const nonAdminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, nonAdminMembership, true, true);
+    const account1 = randomUUID();
+    const account2 = randomUUID();
+
+    // Create a patient with account as project admin
+    // Project admin should be allowed to set account
+    const patient1 = await adminRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        project: project.id,
+        account: { reference: 'Organization/' + account1 },
+      },
+    });
+    expect(patient1).toBeDefined();
+    expect(patient1.meta?.account?.reference).toEqual('Organization/' + account1);
+
+    // Update the patient with account as project admin
+    // Project admin should be allowed to set account
+    const patient2 = await adminRepo.updateResource<Patient>({
+      ...patient1,
+      meta: {
+        ...patient1.meta,
+        account: { reference: 'Organization/' + account2 },
+      },
+    });
+    expect(patient2).toBeDefined();
+    expect(patient2.meta?.account?.reference).toEqual('Organization/' + account2);
+
+    // Attempt to change the account as non-admin
+    // This should be silently ignored
+    const patient3 = await nonAdminRepo.updateResource<Patient>({
+      ...patient2,
+      meta: {
+        ...patient2.meta,
+        account: { reference: 'Organization/' + randomUUID() },
+      },
+    });
+    expect(patient3).toBeDefined();
+    expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
+    expect(patient3.meta?.account?.reference).toEqual('Organization/' + account2);
+  });
 });
