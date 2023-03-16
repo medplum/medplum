@@ -6,6 +6,7 @@ import { loadTestConfig } from '../config';
 import { createTestClient } from '../test.setup';
 import {
   getAuthTokens,
+  getClient,
   getMembershipsForLogin,
   tryLogin,
   validateLoginRequest,
@@ -409,6 +410,12 @@ describe('OAuth utils', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
     }
+  });
+
+  test('CLI client', async () => {
+    const client = await getClient('medplum-cli');
+    expect(client).toBeDefined();
+    expect(client?.id).toEqual('medplum-cli');
   });
 });
 

@@ -87,12 +87,30 @@ export interface GoogleCredentialClaims extends JWTPayload {
   readonly picture: string;
 }
 
+/**
+ * Returns the client application by ID.
+ * Handles special cases for "built-in" clients.
+ * @param clientId The client ID.
+ * @returns The client application.
+ */
+export async function getClient(clientId: string): Promise<ClientApplication> {
+  if (clientId === 'medplum-cli') {
+    return {
+      resourceType: 'ClientApplication',
+      id: 'medplum-cli',
+      redirectUri: 'http://localhost:9615',
+      pkceOptional: true,
+    };
+  }
+  return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+}
+
 export async function tryLogin(request: LoginRequest): Promise<Login> {
   validateLoginRequest(request);
 
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
+    client = await getClient(request.clientId);
   }
 
   validatePkce(request, client);

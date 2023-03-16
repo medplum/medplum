@@ -1,11 +1,10 @@
 import { badRequest } from '@medplum/core';
-import { ClientApplication, ResourceType } from '@medplum/fhirtypes';
+import { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
-import { tryLogin } from '../oauth/utils';
+import { getClient, tryLogin } from '../oauth/utils';
 import { sendLoginResult } from './utils';
 
 export const loginValidators = [
@@ -34,7 +33,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   // For OAuth2 flow, check the clientId
   const clientId = req.body.clientId;
   if (clientId) {
-    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    const client = await getClient(clientId);
     const clientProjectId = client.meta?.project as string;
     if (projectId !== undefined && projectId !== clientProjectId) {
       sendOutcome(res, badRequest('Invalid projectId'));

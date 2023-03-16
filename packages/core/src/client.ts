@@ -1845,6 +1845,7 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current access token.
    * @category Authentication
    */
   getAccessToken(): string | undefined {
@@ -1852,6 +1853,7 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Sets the current access token.
    * @category Authentication
    */
   setAccessToken(accessToken: string): void {
@@ -2224,14 +2226,15 @@ export class MedplumClient extends EventTarget {
    * Processes an OAuth authorization code.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
+   * @param loginParams Optional login parameters.
    * @category Authentication
    */
-  processCode(code: string): Promise<ProfileResource> {
+  processCode(code: string, loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource> {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
-    formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
-    formBody.set('redirect_uri', getWindowOrigin());
+    formBody.set('client_id', loginParams?.clientId || (this.#clientId as string));
+    formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');

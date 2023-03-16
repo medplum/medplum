@@ -11,6 +11,7 @@
     "directory": "packages/cli"
   },
   "scripts": {
+    "medplum": "ts-node src/index.ts",
     "clean": "rimraf dist",
     "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "test": "jest"
