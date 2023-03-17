@@ -71,8 +71,8 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
 
   return (
     <InfoBar>
-      {entries.map((entry, index) => (
-        <InfoBar.Entry key={`${entry.key}-${index}`}>
+      {entries.map((entry) => (
+        <InfoBar.Entry key={`${entry.key}-${entry.value}`}>
           <InfoBar.Key>{entry.key}</InfoBar.Key>
           <InfoBar.Value>{entry.value}</InfoBar.Value>
         </InfoBar.Entry>
