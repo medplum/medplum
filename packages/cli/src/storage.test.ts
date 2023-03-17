@@ -7,26 +7,12 @@ jest.mock('os');
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 
-// unlinkSync
-// existsSync
-// readFileSync
-// writeFileSync
-
 describe('FileSystemStorage', () => {
-  // beforeEach(() => {
-  //   jest.resetModules();
-  //   (os.homedir as unknown as jest.Mock).mockReturnValue(true);
-  // });
-
   beforeAll(async () => {
-    // const config = await loadTestConfig();
-    // await initApp(app, config);
-    // accessToken = await initTestAuth();
     (os.homedir as unknown as jest.Mock).mockReturnValue(testHomeDir);
   });
 
   afterAll(async () => {
-    // await shutdownApp();
     rmSync(testHomeDir, { recursive: true, force: true });
   });
 

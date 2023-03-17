@@ -32,15 +32,6 @@ export class FileSystemStorage extends ClientStorage {
     this.#writeFile(data);
   }
 
-  // getObject<T>(key: string): T | undefined {
-  //   const str = this.getString(key);
-  //   return str ? (JSON.parse(str) as T) : undefined;
-  // }
-
-  // setObject<T>(key: string, value: T): void {
-  //   this.setString(key, value ? JSON.stringify(value) : undefined);
-  // }
-
   #readFile(): Record<string, string> | undefined {
     if (existsSync(this.#fileName)) {
       return JSON.parse(readFileSync(this.#fileName, 'utf8'));
