@@ -55,4 +55,26 @@ describe('SqlBuilder', () => {
     new SelectQuery('MyTable').column('id').where('name', Operator.NOT_EQUALS, null).buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
   });
+
+  test('Select value in subquery with type', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .where('name', Operator.IN_SUBQUERY, new SelectQuery('MyLookup').column('values'), 'TEXT[]')
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name"=ANY((SELECT "MyLookup"."values" FROM "MyLookup")::TEXT[])'
+    );
+  });
+
+  test('Select value in subquery without type', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .where('name', Operator.IN_SUBQUERY, new SelectQuery('MyLookup').column('values'))
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name"=ANY(SELECT "MyLookup"."values" FROM "MyLookup")'
+    );
+  });
 });
