@@ -180,11 +180,7 @@ export class Disjunction extends Connective {
 }
 
 export class Join {
-  constructor(
-    readonly joinItem: string | SelectQuery,
-    readonly joinAlias: string | undefined,
-    readonly onExpression: Expression
-  ) {}
+  constructor(readonly joinItem: string | SelectQuery, readonly joinAlias: string, readonly onExpression: Expression) {}
 }
 
 export class OrderBy {
@@ -320,7 +316,7 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joins.length + 1}`;
   }
 
-  join(joinItem: string | SelectQuery, joinAlias: string | undefined, onExpression: Expression): this {
+  join(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join(joinItem, joinAlias, onExpression));
     return this;
   }
@@ -415,10 +411,8 @@ export class SelectQuery extends BaseQuery {
         join.joinItem.buildSql(sql);
         sql.append(' ) ');
       }
-      if (join.joinAlias) {
-        sql.append(' AS ');
-        sql.appendIdentifier(join.joinAlias);
-      }
+      sql.append(' AS ');
+      sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
       join.onExpression.buildSql(sql);
     }
