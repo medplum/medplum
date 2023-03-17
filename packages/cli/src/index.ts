@@ -1,12 +1,13 @@
-import { getDisplayString, LoginState, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import { exec } from 'child_process';
 import dotenv from 'dotenv';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { createServer } from 'http';
 import fetch from 'node-fetch';
-import { homedir, platform } from 'os';
+import { platform } from 'os';
 import { resolve } from 'path';
+import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly bots?: MedplumBotConfig[];
@@ -22,7 +23,6 @@ interface MedplumBotConfig {
 const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
-const credentialsFileName = resolve(homedir(), '.medplum', 'credentials.json');
 
 export async function main(medplum: MedplumClient, argv: string[]): Promise<void> {
   if (argv.length < 3) {
@@ -37,44 +37,50 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
     await medplum.startClientLogin(clientId, clientSecret);
   }
 
-  // Read credentials from file
-  await readCredentials(medplum);
-
-  medplum.addEventListener('change', async () => {
-    // On changes (such as refresh), save the credentials to file
-    await writeCredentials(medplum);
-  });
-
-  const command = argv[2];
-  switch (command) {
-    case 'login':
-      await startLogin(medplum);
-      break;
-    case 'whoami':
-      printMe(medplum);
-      break;
-    case 'save-bot':
-      await runBotCommands(medplum, argv, ['save']);
-      break;
-    case 'deploy-bot':
-      await runBotCommands(medplum, argv, ['save', 'deploy']);
-      break;
-    default:
-      console.log(`Unknown command: ${command}`);
-  }
-}
-
-async function readCredentials(medplum: MedplumClient): Promise<void> {
-  if (existsSync(credentialsFileName)) {
-    const loginState = JSON.parse(readFileSync(credentialsFileName, 'utf8'));
-    await medplum.setActiveLogin(loginState as LoginState);
-  }
-}
-
-async function writeCredentials(medplum: MedplumClient): Promise<void> {
-  const loginState = medplum.getActiveLogin();
-  if (loginState) {
-    writeFileSync(credentialsFileName, JSON.stringify(loginState, null, 2), 'utf8');
+  try {
+    const command = argv[2].toLowerCase();
+    switch (command) {
+      //
+      // Auth commands
+      //
+      case 'login':
+        await startLogin(medplum);
+        break;
+      case 'whoami':
+        printMe(medplum);
+        break;
+      //
+      // REST commands
+      //
+      case 'delete':
+        prettyPrint(await medplum.delete(cleanUrl(argv[3])));
+        break;
+      case 'get':
+        prettyPrint(await medplum.get(cleanUrl(argv[3])));
+        break;
+      case 'patch':
+        prettyPrint(await medplum.patch(cleanUrl(argv[3]), parseBody(argv[4])));
+        break;
+      case 'post':
+        prettyPrint(await medplum.post(cleanUrl(argv[3]), parseBody(argv[4])));
+        break;
+      case 'put':
+        prettyPrint(await medplum.put(cleanUrl(argv[3]), parseBody(argv[4])));
+        break;
+      //
+      // Bot commands
+      //
+      case 'save-bot':
+        await runBotCommands(medplum, argv, ['save']);
+        break;
+      case 'deploy-bot':
+        await runBotCommands(medplum, argv, ['save', 'deploy']);
+        break;
+      default:
+        console.log(`Unknown command: ${command}`);
+    }
+  } catch (err) {
+    console.error('Error: ' + normalizeErrorString(err));
   }
 }
 
@@ -96,7 +102,6 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
     if (url.pathname === '/' && code) {
       try {
         const profile = await medplum.processCode(code, { clientId, redirectUri });
-        await writeCredentials(medplum);
         res.writeHead(200, { 'Content-Type': 'text/plain' });
         res.end(`Signed in as ${getDisplayString(profile)}. You may close this window.`);
       } catch (err) {
@@ -149,6 +154,31 @@ function printMe(medplum: MedplumClient): void {
   } else {
     console.log('Not logged in');
   }
+}
+
+function cleanUrl(input: string): string {
+  const knownPrefixes = ['admin/', 'auth/', 'fhir/R4'];
+  if (knownPrefixes.some((p) => input.startsWith(p))) {
+    // If the URL starts with a known prefix, return it as-is
+    return input;
+  }
+  // Otherwise, default to FHIR
+  return 'fhir/R4/' + input;
+}
+
+function parseBody(input: string | undefined): any {
+  if (!input) {
+    return undefined;
+  }
+  try {
+    return JSON.parse(input);
+  } catch (err) {
+    return input;
+  }
+}
+
+function prettyPrint(input: unknown): void {
+  console.log(JSON.stringify(input, null, 2));
 }
 
 async function runBotCommands(medplum: MedplumClient, argv: string[], commands: string[]): Promise<void> {
@@ -243,6 +273,6 @@ function readFileContents(fileName: string): string | undefined {
 
 if (require.main === module) {
   dotenv.config();
-  const medplum = new MedplumClient({ fetch, baseUrl });
+  const medplum = new MedplumClient({ fetch, baseUrl, storage: new FileSystemStorage() });
   main(medplum, process.argv).catch((err) => console.error('Unhandled error:', err));
 }
