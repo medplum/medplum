@@ -2597,4 +2597,33 @@ describe('FHIR Repo', () => {
       expect((err as Error).message).toEqual('Search filter value must be a string');
     }
   });
+
+  test('Lookup table exact match with comma disjunction', async () => {
+    const family = randomUUID();
+    const p1 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['x'], family }] });
+    const p2 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['xx'], family }] });
+    const p3 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['y'], family }] });
+    const p4 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['yy'], family }] });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'given',
+          operator: Operator.EXACT,
+          value: 'x,y',
+        },
+        {
+          code: 'family',
+          operator: Operator.EXACT,
+          value: family,
+        },
+      ],
+    });
+    expect(bundle?.entry?.length).toEqual(2);
+    expect(bundleContains(bundle, p1)).toBeTruthy();
+    expect(bundleContains(bundle, p2)).not.toBeTruthy();
+    expect(bundleContains(bundle, p3)).toBeTruthy();
+    expect(bundleContains(bundle, p4)).not.toBeTruthy();
+  });
 });

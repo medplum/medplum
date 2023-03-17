@@ -21,6 +21,7 @@ export enum Operator {
   IN = ' IN ',
   ARRAY_CONTAINS = 'ARRAY_CONTAINS',
   TSVECTOR_MATCH = '@@',
+  IN_SUBQUERY = 'IN_SUBQUERY',
 }
 
 export class Column {
@@ -55,6 +56,8 @@ export class Condition implements Expression {
   buildSql(sql: SqlBuilder): void {
     if (this.operator === Operator.ARRAY_CONTAINS) {
       this.buildArrayCondition(sql);
+    } else if (this.operator === Operator.IN_SUBQUERY) {
+      this.buildInSubqueryCondition(sql);
     } else {
       this.buildSimpleCondition(sql);
     }
@@ -70,6 +73,19 @@ export class Condition implements Expression {
     sql.append(']');
     if (this.parameterType) {
       sql.append('::' + this.parameterType);
+    }
+    sql.append(')');
+  }
+
+  protected buildInSubqueryCondition(sql: SqlBuilder): void {
+    sql.appendColumn(this.column);
+    sql.append('=ANY(');
+    if (this.parameterType) {
+      sql.append('(');
+    }
+    (this.parameter as SelectQuery).buildSql(sql);
+    if (this.parameterType) {
+      sql.append(')::' + this.parameterType);
     }
     sql.append(')');
   }
@@ -164,7 +180,7 @@ export class Disjunction extends Connective {
 }
 
 export class Join {
-  constructor(readonly joinName: string, readonly onExpression: Expression, readonly subQuery?: SelectQuery) {}
+  constructor(readonly joinItem: string | SelectQuery, readonly joinAlias: string, readonly onExpression: Expression) {}
 }
 
 export class OrderBy {
@@ -300,17 +316,8 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joins.length + 1}`;
   }
 
-  join(joinName: string, leftColumnName: string, joinColumnName: string, subQuery?: SelectQuery): this {
-    this.joinExpr(
-      joinName,
-      new Condition(new Column(this.tableName, leftColumnName), Operator.EQUALS, new Column(joinName, joinColumnName)),
-      subQuery
-    );
-    return this;
-  }
-
-  joinExpr(joinName: string, onExpression: Expression, subQuery?: SelectQuery): this {
-    this.joins.push(new Join(joinName, onExpression, subQuery));
+  join(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+    this.joins.push(new Join(joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -397,12 +404,15 @@ export class SelectQuery extends BaseQuery {
 
     for (const join of this.joins) {
       sql.append(' LEFT JOIN ');
-      if (join.subQuery) {
+      if (typeof join.joinItem === 'string') {
+        sql.appendIdentifier(join.joinItem);
+      } else {
         sql.append(' ( ');
-        join.subQuery.buildSql(sql);
+        join.joinItem.buildSql(sql);
         sql.append(' ) ');
       }
-      sql.appendIdentifier(join.joinName);
+      sql.append(' AS ');
+      sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
       join.onExpression.buildSql(sql);
     }
