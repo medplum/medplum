@@ -78,7 +78,11 @@ export abstract class LookupTable<T> {
       }
     }
     subQuery.whereExpr(disjunction);
-    selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    selectQuery.join(
+      subQuery,
+      joinName,
+      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId'))
+    );
     return new Condition(new Column(joinName, columnName), Operator.NOT_EQUALS, null);
   }
 
@@ -95,7 +99,11 @@ export abstract class LookupTable<T> {
     const subQuery = new SelectQuery(tableName)
       .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
       .orderBy('resourceId');
-    selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    selectQuery.join(
+      subQuery,
+      joinName,
+      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId'))
+    );
     selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 
