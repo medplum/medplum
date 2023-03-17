@@ -532,10 +532,6 @@ export class Repository {
       },
     });
 
-    if (await this.#isNotModified(existing, updated)) {
-      return existing as T;
-    }
-
     const resultMeta = {
       ...updated?.meta,
       versionId: randomUUID(),
@@ -556,6 +552,10 @@ export class Repository {
     }
 
     resultMeta.compartment = this.#getCompartments(result);
+
+    if (this.#isNotModified(existing, result)) {
+      return existing as T;
+    }
 
     if (!this.#canWriteResource(result)) {
       // Check after the update
@@ -659,7 +659,7 @@ export class Repository {
    * @param updated The updated resource.
    * @returns True if the resource is not modified.
    */
-  async #isNotModified(existing: Resource | undefined, updated: Resource): Promise<boolean> {
+  #isNotModified(existing: Resource | undefined, updated: Resource): boolean {
     if (!existing) {
       return false;
     }
@@ -746,7 +746,7 @@ export class Repository {
    * @param id The resource ID.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
-    if (!this.#isSuperAdmin() && !this.#context.projectAdmin) {
+    if (!this.#isSuperAdmin() && !this.#isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
@@ -1818,7 +1818,7 @@ export class Repository {
     create: boolean
   ): Promise<Reference | undefined> {
     const account = updated.meta?.account;
-    if (account && this.#canWriteMeta()) {
+    if (account && this.#canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
       return account;
     }
@@ -1863,6 +1863,10 @@ export class Repository {
    */
   #canWriteMeta(): boolean {
     return this.#isSuperAdmin();
+  }
+
+  #canWriteAccount(): boolean {
+    return this.#isSuperAdmin() || this.#isProjectAdmin();
   }
 
   /**
@@ -2103,16 +2107,11 @@ export class Repository {
   }
 
   #isSuperAdmin(): boolean {
-    return !!this.#context.superAdmin || this.#isAdminClient();
+    return !!this.#context.superAdmin;
   }
 
-  /**
-   * Deprecated, for removal.
-   * @deprecated
-   */
-  #isAdminClient(): boolean {
-    const { adminClientId } = getConfig();
-    return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
+  #isProjectAdmin(): boolean {
+    return !!this.#context.projectAdmin;
   }
 
   /**

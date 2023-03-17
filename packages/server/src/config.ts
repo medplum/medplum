@@ -26,7 +26,6 @@ export interface MedplumServerConfig {
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
   recaptchaSecretKey?: string;
-  adminClientId?: string;
   maxJsonSize: string;
   allowedOrigins?: string;
   awsRegion: string;
