@@ -39,6 +39,7 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
+import { getClient } from '../database';
 import { bundleContains } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
@@ -2491,6 +2492,54 @@ describe('FHIR Repo', () => {
       filters: [{ code: 'code', operator: Operator.TEXT, value: obs2.code?.coding?.[0]?.display as string }],
     });
     expect(result2.entry?.[0]?.resource?.id).toEqual(obs2.id);
+  });
+
+  test('Duplicate :text tokens', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const obs1 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://example.com',
+            code: 'HDL',
+            display: 'HDL',
+          },
+        ],
+        text: 'HDL',
+      },
+      subject: createReference(patient),
+    });
+
+    const result = await getClient().query(
+      'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
+      [obs1.id]
+    );
+
+    expect(result.rows).toMatchObject([
+      {
+        code: 'code',
+        system: 'text',
+        value: 'HDL',
+      },
+      {
+        code: 'code',
+        system: 'https://example.com',
+        value: 'HDL',
+      },
+      {
+        code: 'combo-code',
+        system: 'text',
+        value: 'HDL',
+      },
+      {
+        code: 'combo-code',
+        system: 'https://example.com',
+        value: 'HDL',
+      },
+    ]);
   });
 
   test('_filter search', async () => {

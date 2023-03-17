@@ -41,6 +41,6 @@ export function deriveIdentifierSearchParameter(inputParam: SearchParameter): Se
     code: inputParam.code + ':identifier',
     base: inputParam.base,
     type: 'token',
-    expression: inputParam.expression + '.identifier',
+    expression: `(${inputParam.expression}).identifier`,
   };
 }
