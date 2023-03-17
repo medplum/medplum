@@ -152,6 +152,10 @@ function isIndexed(searchParam: SearchParameter, resourceType: string): boolean 
     return false;
   }
 
+  if (searchParam.code?.endsWith(':identifier')) {
+    return true;
+  }
+
   const details = getSearchParameterDetails(resourceType, searchParam);
   const elementDefinition = details.elementDefinition;
   if (!elementDefinition?.type) {
@@ -321,7 +325,11 @@ function buildSimpleToken(
   system: string | undefined,
   value: string | undefined
 ): void {
-  if (system || value) {
+  // Only add the token if there is a system or a value, and if it is not already in the list.
+  if (
+    (system || value) &&
+    !result.some((token) => token.code === searchParam.code && token.system === system && token.value === value)
+  ) {
     result.push({
       code: searchParam.code as string,
       system,
