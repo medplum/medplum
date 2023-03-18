@@ -131,6 +131,11 @@ describe('CLI', () => {
     expect(console.error).toBeCalledWith(expect.stringMatching('Not found'));
   });
 
+  test('Get admin urls', async () => {
+    await main(medplum, ['node', 'index.js', 'get', 'admin/projects/123']);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Project 123'));
+  });
+
   test('Post command', async () => {
     await main(medplum, ['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));

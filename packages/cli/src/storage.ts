@@ -18,8 +18,7 @@ export class FileSystemStorage extends ClientStorage {
   }
 
   getString(key: string): string | undefined {
-    const data = this.#readFile();
-    return data ? (data[key] as string) : undefined;
+    return this.#readFile()?.[key];
   }
 
   setString(key: string, value: string | undefined): void {
