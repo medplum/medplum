@@ -137,6 +137,13 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
+   * Storage implementation.
+   *
+   * Default is window.localStorage (if available), or an in-memory storage implementation.
+   */
+  storage?: ClientStorage;
+
+  /**
    * Create PDF implementation.
    *
    * Default is none, and PDF generation is disabled.
@@ -473,8 +480,8 @@ export class MedplumClient extends EventTarget {
     }
 
     this.#fetch = options?.fetch || getDefaultFetch();
+    this.#storage = options?.storage || new ClientStorage();
     this.#createPdf = options?.createPdf;
-    this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;

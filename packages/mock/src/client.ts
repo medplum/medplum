@@ -82,6 +82,7 @@ export class MockClient extends MedplumClient {
     super({
       baseUrl: clientOptions?.baseUrl || 'https://example.com/',
       clientId: clientOptions?.clientId,
+      storage: clientOptions?.storage,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
