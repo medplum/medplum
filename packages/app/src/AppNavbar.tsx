@@ -133,7 +133,7 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
 
   return (
-    <Link to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+    <Link onClick={props.onClick} className={cx(classes.link, { [classes.linkActive]: isActive })}>
       {props.children}
     </Link>
   );
