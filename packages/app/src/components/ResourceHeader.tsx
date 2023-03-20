@@ -1,6 +1,6 @@
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
+import { MedplumLink, useResource } from '@medplum/react';
 import React from 'react';
 import { InfoBar } from './InfoBar';
 
@@ -14,7 +14,9 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
     return null;
   }
 
-  const entries: { key: string; value: string | undefined }[] = [{ key: 'Type', value: resource.resourceType }];
+  const entries: { key: string; value: string | React.ReactNode | undefined }[] = [
+    { key: 'Type', value: <MedplumLink to={`/${resource.resourceType}`}>{resource.resourceType}</MedplumLink> },
+  ];
 
   function addEntry(key: string | undefined, value: string | undefined): void {
     if (key && value) {
