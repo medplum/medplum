@@ -1,4 +1,4 @@
-import { Button } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
@@ -102,15 +102,17 @@ export function BotEditor(): JSX.Element | null {
       />
       <BotRunner iframeRef={outputFrameRef} className="medplum-bot-output-frame" testId="output-frame" />
       <div className="medplum-bot-buttons">
-        <Button type="button" onClick={() => saveBot()}>
-          Save
-        </Button>
-        <Button type="button" onClick={() => deployBot()}>
-          Deploy
-        </Button>
-        <Button type="button" onClick={() => executeBot()}>
-          Execute
-        </Button>
+        <Group position="right">
+          <Button type="button" onClick={() => saveBot()}>
+            Save
+          </Button>
+          <Button type="button" onClick={() => deployBot()}>
+            Deploy
+          </Button>
+          <Button type="button" onClick={() => executeBot()}>
+            Execute
+          </Button>
+        </Group>
       </div>
     </div>
   );
