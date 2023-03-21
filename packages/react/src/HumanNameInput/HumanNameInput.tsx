@@ -57,6 +57,7 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       <NativeSelect
         defaultValue={value?.use}
+        name={props.name + '-use'}
         data-testid="use"
         onChange={(e) =>
           setUse(e.currentTarget.value as 'temp' | 'old' | 'usual' | 'official' | 'nickname' | 'anonymous' | 'maiden')
@@ -65,17 +66,25 @@ export function HumanNameInput(props: HumanNameInputProps): JSX.Element {
       />
       <TextInput
         placeholder="Prefix"
+        name={props.name + '-prefix'}
         defaultValue={value?.prefix?.join(' ')}
         onChange={(e) => setPrefix(e.currentTarget.value)}
       />
       <TextInput
         placeholder="Given"
+        name={props.name + '-given'}
         defaultValue={value?.given?.join(' ')}
         onChange={(e) => setGiven(e.currentTarget.value)}
       />
-      <TextInput placeholder="Family" defaultValue={value?.family} onChange={(e) => setFamily(e.currentTarget.value)} />
+      <TextInput
+        name={props.name + '-family'}
+        placeholder="Family"
+        defaultValue={value?.family}
+        onChange={(e) => setFamily(e.currentTarget.value)}
+      />
       <TextInput
         placeholder="Suffix"
+        name={props.name + '-suffix'}
         defaultValue={value?.suffix?.join(' ')}
         onChange={(e) => setSuffix(e.currentTarget.value)}
       />
