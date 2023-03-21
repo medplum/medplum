@@ -128,10 +128,10 @@ async function openBrowser(url: string): Promise<void> {
   switch (os) {
     case 'openbsd':
     case 'linux':
-      cmd = `xdg-open ${url}`;
+      cmd = `xdg-open '${url}'`;
       break;
     case 'darwin':
-      cmd = `open ${url}`;
+      cmd = `open '${url}'`;
       break;
     case 'win32':
       cmd = `cmd /c start "" "${url}"`;
