@@ -121,7 +121,7 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
 
 interface NavbarLinkProps {
   to: string;
-  onClick: (e: React.SyntheticEvent, to: string) => void;
+  onClick: React.MouseEventHandler;
   children: React.ReactNode;
 }
 
@@ -133,7 +133,7 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
 
   return (
-    <Link to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+    <Link onClick={props.onClick} to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
       {props.children}
     </Link>
   );
