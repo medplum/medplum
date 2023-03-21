@@ -2626,4 +2626,34 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle, p3)).toBeTruthy();
     expect(bundleContains(bundle, p4)).not.toBeTruthy();
   });
+
+  test('Duplicate rows from token lookup', async () => {
+    const code = randomUUID();
+
+    const p = await systemRepo.createResource({ resourceType: 'Patient' });
+    const s = await systemRepo.createResource({
+      resourceType: 'ServiceRequest',
+      subject: createReference(p),
+      status: 'active',
+      intent: 'order',
+      category: [
+        {
+          text: code,
+          coding: [
+            {
+              system: 'https://example.com/category',
+              code,
+            },
+          ],
+        },
+      ],
+    });
+
+    const bundle = await systemRepo.search<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      filters: [{ code: 'category', operator: Operator.EQUALS, value: code }],
+    });
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundleContains(bundle, s)).toBeTruthy();
+  });
 });
