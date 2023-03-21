@@ -340,6 +340,7 @@ export class SelectQuery extends BaseQuery {
     this.#buildSelect(sql);
     this.#buildFrom(sql);
     this.buildConditions(sql);
+    this.#buildGroupBy(sql);
     this.#buildOrderBy(sql);
 
     if (this.limit_ > 0) {
@@ -418,12 +419,27 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
+  #buildGroupBy(sql: SqlBuilder): void {
+    if (this.joins.length > 0) {
+      sql.append(' GROUP BY ');
+      sql.appendIdentifier(this.tableName);
+      sql.append('.');
+      sql.appendIdentifier('id');
+    }
+  }
+
   #buildOrderBy(sql: SqlBuilder): void {
     let first = true;
 
     for (const orderBy of this.orderBys) {
       sql.append(first ? ' ORDER BY ' : ', ');
+      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
+        sql.append('MIN(');
+      }
       sql.appendColumn(orderBy.column);
+      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
+        sql.append(')');
+      }
       sql.append(orderBy.descending ? ' DESC' : ' ASC');
       first = false;
     }
