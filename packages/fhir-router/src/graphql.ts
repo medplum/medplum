@@ -531,7 +531,7 @@ const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
     path: ReadonlyArray<string | number>
   ): any {
     const depth = getDepth(path);
-    const maxDepth = 8;
+    const maxDepth = 12;
     if (depth > maxDepth) {
       const fieldName = node.name.value;
       context.reportError(
