@@ -20,7 +20,7 @@ Alternatively, if your care setting has more of an rolling interaction model (e.
 
 Each session should be represented by an [Encounter](/docs/api/fhir/resources/encounter) resource. All of the messages that are part of this session should be represented as [Communication](/docs/api/fhir/resources/communication) resources and can be linked to the session using the `Communication.encounter` element.
 
-![Async Encounters](/img/communications/async-encounters1.png)
+![Async Encounters](./async-encounters1.svg)
 
 You should record the participating physicians using the `Encounter.participant` element. You can also record any family members who are part of the session here (see our [Family Relationships guide](/docs/fhir-datastore/family-relationships) ).
 
@@ -52,6 +52,6 @@ To properly represent your asynchronous encounter, you should:
 
 The [Communication](/docs/api/fhir/resources/communication) resources should still be linked to the "session" encounter, but the clinical details for each patient will live on the medical encounters. You can add an additional value the `Encounter.type` element to tag encounters as either "sessions" or "medical encounters."
 
-![Async Encounters](/img/communications/async-encounters2.png)
+![Async Encounters](./async-encounters2.svg)
 
 While creating an [Encounter](/docs/api/fhir/resources/encounter) hierarchy like this is a bit more work up front, it promotes good data hygiene. A well documented encounter, with the correct practitioner, diagnosis codes, service type _per patient_ is critical to [billing](/docs/billing), and it is important for patient analytics use cases, such as computing quality of care metrics.
