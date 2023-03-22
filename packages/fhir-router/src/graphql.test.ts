@@ -544,7 +544,7 @@ describe('GraphQL', () => {
     const res1 = await graphqlHandler(request1, repo);
     expect(res1[0]).toMatchObject(allOk);
 
-    // 10 levels of nesting is too much
+    // 14 levels of nesting is too much
     const request2: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -567,6 +567,13 @@ describe('GraphQL', () => {
                           resource {
                             ...on ServiceRequest {
                               id
+                              basedOn {
+                                resource {
+                                  ...on ServiceRequest {
+                                    id
+                                  }
+                                }
+                              }
                             }
                           }
                         }
@@ -581,8 +588,59 @@ describe('GraphQL', () => {
     `,
       },
     };
+
     const res2 = await graphqlHandler(request2, repo);
-    expect(res2[0]?.issue?.[0]?.details?.text).toEqual('Field "resource" exceeds max depth (depth=9, max=8)');
+    expect(res2[0]?.issue?.[0]?.details?.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
+
+    // Customer request for patients and children via RelatedPerson links
+    const request3: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `{
+          PatientList {
+            resourceType
+            id
+            name {
+              given
+              family
+            }
+            link {
+              other {
+                reference
+                resource {
+                  ... on RelatedPerson {
+                    id
+                    resourceType
+                    relationship {
+                      coding {
+                        code
+                      }
+                    }
+                    patient {
+                      reference
+                      resource {
+                        ... on Patient {
+                          name {
+                            given
+                            family
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`,
+      },
+    };
+
+    const res3 = await graphqlHandler(request3, repo);
+    expect(res3[0]).toMatchObject(allOk);
   });
 
   test('StructureDefinition query', async () => {
