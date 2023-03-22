@@ -1,5 +1,5 @@
 import { forbidden, OperationOutcomeError } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
+import { Project, ProjectMembership } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 
 /**
@@ -9,8 +9,9 @@ import { NextFunction, Request, Response } from 'express';
  * @param next The next handler function.
  */
 export async function verifyProjectAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const project = res.locals.project as Project;
   const membership = res.locals.membership as ProjectMembership;
-  if (!membership.admin) {
+  if (!project.superAdmin && !membership.admin) {
     next(new OperationOutcomeError(forbidden));
     return;
   }
