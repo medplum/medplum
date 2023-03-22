@@ -33,7 +33,7 @@ import { generateAccessToken, generateIdToken, generateRefreshToken, generateSec
 export interface LoginRequest {
   readonly email?: string;
   readonly externalId?: string;
-  readonly authMethod: 'password' | 'google' | 'external';
+  readonly authMethod: 'password' | 'google' | 'external' | 'exchange';
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
@@ -167,7 +167,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 }
 
 export function validateLoginRequest(request: LoginRequest): void {
-  if (request.authMethod === 'external') {
+  if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     if (!request.externalId && !request.email) {
       throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));
     }
@@ -233,7 +233,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
     return;
   }
 
-  if (request.authMethod === 'external') {
+  if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     // Verified by external auth provider
     return;
   }
