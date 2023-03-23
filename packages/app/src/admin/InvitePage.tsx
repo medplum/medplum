@@ -77,7 +77,7 @@ export function InvitePage(): JSX.Element {
           </p>
         </div>
       )}
-      {success && outcome == null && (
+      {success && outcome === undefined && (
         <div data-testid="success">
           <p>User created</p>
           {emailSent && <p>Email sent</p>}
