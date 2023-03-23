@@ -377,7 +377,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
 function formatFilter(filter: Filter): string {
   const modifier = filter.operator in MODIFIER_OPERATORS ? ':' + filter.operator : '';
-  const prefix = filter.operator != Operator.EQUALS && filter.operator in PREFIX_OPERATORS ? filter.operator : '';
+  const prefix = filter.operator !== Operator.EQUALS && filter.operator in PREFIX_OPERATORS ? filter.operator : '';
   return `${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`;
 }
 
