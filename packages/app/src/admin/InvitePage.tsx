@@ -1,10 +1,16 @@
-import { Button, Checkbox, Group, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
+import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome, ProfileResource } from '@medplum/core';
+import { AccessPolicy, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
+
+interface InviteResult {
+  profile: ProfileResource;
+  membership: ProjectMembership;
+}
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
@@ -12,7 +18,7 @@ export function InvitePage(): JSX.Element {
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [emailSent, setEmailSent] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [result, setResult] = useState<InviteResult | undefined>(undefined);
 
   return (
     <Form
@@ -27,14 +33,25 @@ export function InvitePage(): JSX.Element {
         };
         medplum
           .post('admin/projects/' + projectId + '/invite', body)
-          .then((message) => (message.error ? setOutcome(normalizeOperationOutcome(message.error)) : null))
-          .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
-          .then(() => setEmailSent(body.sendEmail))
-          .then(() => setSuccess(true))
-          .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+          .then((response: InviteResult | OperationOutcome) => {
+            medplum.invalidateSearches('Patient');
+            medplum.invalidateSearches('Practitioner');
+            medplum.invalidateSearches('ProjectMembership');
+            if (isOperationOutcome(response)) {
+              setOutcome(response);
+            } else {
+              setResult(response);
+            }
+            setEmailSent(body.sendEmail);
+            showNotification({ color: 'green', message: 'Invite success' });
+          })
+          .catch((err) => {
+            showNotification({ color: 'red', message: normalizeErrorString(err) });
+            setOutcome(normalizeOperationOutcome(err));
+          });
       }}
     >
-      {!success && !outcome && (
+      {!result && !outcome && (
         <Stack>
           <Title>Invite new member</Title>
           <NativeSelect
@@ -77,13 +94,21 @@ export function InvitePage(): JSX.Element {
           </p>
         </div>
       )}
-      {success && !outcome && (
+      {result && (
         <div data-testid="success">
-          <p>User created</p>
-          {emailSent && <p>Email sent</p>}
-          <p>
-            Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
-          </p>
+          <Text>User created</Text>
+          {emailSent && <Text>Email sent</Text>}
+          <List>
+            <List.Item>
+              <MedplumLink to={result.membership}>Go to new membership</MedplumLink>
+            </List.Item>
+            <List.Item>
+              <MedplumLink to={result.profile}>Go to new profile</MedplumLink>
+            </List.Item>
+            <List.Item>
+              <MedplumLink to="/admin/users">Back to users list</MedplumLink>
+            </List.Item>
+          </List>
         </div>
       )}
     </Form>
