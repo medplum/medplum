@@ -269,15 +269,25 @@ describe('CLI', () => {
   });
 
   test('Create bot success', async () => {
-    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
-      `import { BotEvent, MedplumClient } from '@medplum/core';
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
 
-    export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
-      // Your code here
-    }
-    `
-    );
+    // (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+    //   JSON.stringify({
+    //     bots: [
+    //       {
+    //         name: 'hello-world',
+    //         id: 1,
+    //         source: 'src/hello-world.ts',
+    //         dist: 'dist/hello-world.js',
+    //       },
+    //     ],
+    //   })
+    // );
     await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot', '1', 'src/hello-world.ts']);
+
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
+    const check = await medplum.readResource('Bot', bot.id as string);
+    expect(check.code).toBeDefined();
+    expect(check.code).not.toEqual('');
   });
 });

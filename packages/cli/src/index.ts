@@ -224,33 +224,26 @@ async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> 
   }
   const botName = argv[3];
   const projectId = argv[4];
-  let sourceFile;
-
-  const codeContent = readFileContents(argv[5]);
-  if (codeContent === '') {
-    console.log('Error: File does not exist, creating default code');
-    sourceFile = `import { BotEvent, MedplumClient } from '@medplum/core';
-
-    export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
-      // Your code here
-    }
-    `;
-  } else {
-    sourceFile = codeContent;
-  }
+  const sourceFile = argv[5];
 
   try {
-    const bot = await medplum.createResource<Bot>({
-      meta: {
-        project: projectId,
-      },
-      resourceType: 'Bot',
+    const body = {
       name: botName,
-      description: botName,
-      runtimeVersion: 'awslambda',
-      code: sourceFile,
-    });
+      description: '',
+    };
+    const newBot = await medplum.post('admin/projects/' + projectId + '/invite', body);
+    const bot = await medplum.readResource('Bot', newBot.id);
+
+    const botConfig = {
+      name: botName,
+      id: newBot.id,
+      source: sourceFile,
+    };
+    await saveBot(medplum, botConfig as MedplumBotConfig, bot);
     console.log(`Success! Bot created: ${bot.id}`);
+
+    const config = readConfig();
+    config?.bots?.push(botConfig as MedplumBotConfig);
   } catch (err) {
     console.log('Error while creating new bot ', err);
   }
