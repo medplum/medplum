@@ -17,7 +17,6 @@ export const newUserValidators = [
   body('lastName').notEmpty().withMessage('Last name is required'),
   body('email').isEmail().withMessage('Valid email address is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
 ];
 
 /**
@@ -56,9 +55,16 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     }
   }
 
-  if (!(await verifyRecaptcha(secretKey as string, req.body.recaptchaToken))) {
-    sendOutcome(res, badRequest('Recaptcha failed'));
-    return;
+  if (secretKey) {
+    if (!req.body.recaptchaToken) {
+      sendOutcome(res, badRequest('Recaptcha token is required'));
+      return;
+    }
+
+    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
+      sendOutcome(res, badRequest('Recaptcha failed'));
+      return;
+    }
   }
 
   // If the user is a practitioner, then projectId should be undefined

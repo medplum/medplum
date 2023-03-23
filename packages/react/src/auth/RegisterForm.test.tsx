@@ -6,9 +6,12 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import * as Recaptcha from '../utils/recaptcha';
 import { RegisterForm, RegisterFormProps } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
+const mockrecaptcha = Recaptcha as jest.Mocked<typeof Recaptcha>;
+const getRecaptchaSpy = jest.spyOn(mockrecaptcha, 'getRecaptcha');
 
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
@@ -154,9 +157,12 @@ describe('RegisterForm', () => {
     });
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('Register new project success', async () => {
     const onSuccess = jest.fn();
-
     await setup({
       type: 'project',
       recaptchaSiteKey,
@@ -200,7 +206,59 @@ describe('RegisterForm', () => {
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+    expect(getRecaptchaSpy).toHaveBeenCalled();
 
+    expect(onSuccess).toHaveBeenCalled();
+  });
+
+  test('Register new project success with empty recaptchaSiteKey', async () => {
+    const onSuccess = jest.fn();
+
+    await setup({
+      type: 'project',
+      recaptchaSiteKey: '',
+      onSuccess,
+    });
+
+    expect(screen.getByText('My Register Form')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('First Name', { exact: false }), { target: { value: 'First' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Last Name', { exact: false }), { target: { value: 'Last' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'new-user@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'new-password' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Create account'));
+    });
+
+    await waitFor(() => screen.getByLabelText('Project Name', { exact: false }));
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Project Name', { exact: false }), { target: { value: 'My Project' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Create project' }));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+
+    expect(getRecaptchaSpy).not.toBeCalled();
     expect(onSuccess).toHaveBeenCalled();
   });
 

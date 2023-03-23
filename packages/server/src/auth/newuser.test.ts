@@ -6,7 +6,7 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
@@ -17,9 +17,11 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('New user', () => {
+  let prevRecaptchaSecretKey: string | undefined;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    prevRecaptchaSecretKey = getConfig().recaptchaSecretKey;
   });
 
   afterAll(async () => {
@@ -31,6 +33,7 @@ describe('New user', () => {
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    getConfig().recaptchaSecretKey = prevRecaptchaSecretKey;
   });
 
   test('Success', async () => {
@@ -332,5 +335,22 @@ describe('New user', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.login).toBeDefined();
     expect(res2.body.code).toBeUndefined();
+  });
+
+  test('Success when config has empty recaptchaSecretKey and missing recaptcha token', async () => {
+    getConfig().recaptchaSecretKey = '';
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
   });
 });
