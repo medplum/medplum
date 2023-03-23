@@ -1,4 +1,4 @@
-import { Condition, Negation, Operator, SelectQuery, SqlBuilder } from './sql';
+import { Column, Condition, Negation, Operator, SelectQuery, SqlBuilder } from './sql';
 
 describe('SqlBuilder', () => {
   test('Select', () => {
@@ -76,5 +76,11 @@ describe('SqlBuilder', () => {
     expect(sql.toString()).toBe(
       'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name"=ANY(SELECT "MyLookup"."values" FROM "MyLookup")'
     );
+  });
+
+  test('Select group by', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable').column('id').groupBy('name').groupBy(new Column('MyTable', 'email')).buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" GROUP BY "MyTable"."name", "MyTable"."email"');
   });
 });
