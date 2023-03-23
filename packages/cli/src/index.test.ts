@@ -267,4 +267,17 @@ describe('CLI', () => {
     expect(check.code).toBeDefined();
     expect(check.code).not.toEqual('');
   });
+
+  test('Create bot success', async () => {
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      `import { BotEvent, MedplumClient } from '@medplum/core';
+
+    export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+      // Your code here
+    }
+    `
+    );
+    await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot', '1', 'src/hello-world.ts']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
+  });
 });

@@ -76,6 +76,9 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
       case 'deploy-bot':
         await runBotCommands(medplum, argv, ['save', 'deploy']);
         break;
+      case 'create-bot':
+        await createBot(medplum, argv);
+        break;
       default:
         console.log(`Unknown command: ${command}`);
     }
@@ -208,6 +211,48 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
 
   if (commands.includes('deploy')) {
     await deployBot(medplum, botConfig, bot);
+  }
+}
+
+async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
+  if (argv.length < 4) {
+    console.log(`Usage: medplum ${argv[2]} <bot-name>`);
+    return;
+  }
+  if (argv.length < 6) {
+    console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file>`);
+  }
+  const botName = argv[3];
+  const projectId = argv[4];
+  let sourceFile;
+
+  const codeContent = readFileContents(argv[5]);
+  if (codeContent === '') {
+    console.log('Error: File does not exist, creating default code');
+    sourceFile = `import { BotEvent, MedplumClient } from '@medplum/core';
+
+    export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+      // Your code here
+    }
+    `;
+  } else {
+    sourceFile = codeContent;
+  }
+
+  try {
+    const bot = await medplum.createResource<Bot>({
+      meta: {
+        project: projectId,
+      },
+      resourceType: 'Bot',
+      name: botName,
+      description: botName,
+      runtimeVersion: 'awslambda',
+      code: sourceFile,
+    });
+    console.log(`Success! Bot created: ${bot.id}`);
+  } catch (err) {
+    console.log('Error while creating new bot ', err);
   }
 }
 
