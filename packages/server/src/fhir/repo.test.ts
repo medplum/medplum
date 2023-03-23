@@ -2607,6 +2607,7 @@ describe('FHIR Repo', () => {
 
     const bundle = await systemRepo.search({
       resourceType: 'Patient',
+      total: 'accurate',
       filters: [
         {
           code: 'given',
@@ -2621,6 +2622,7 @@ describe('FHIR Repo', () => {
       ],
     });
     expect(bundle?.entry?.length).toEqual(2);
+    expect(bundle.total).toEqual(2);
     expect(bundleContains(bundle, p1)).toBeTruthy();
     expect(bundleContains(bundle, p2)).not.toBeTruthy();
     expect(bundleContains(bundle, p3)).toBeTruthy();

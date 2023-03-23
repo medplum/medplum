@@ -901,7 +901,8 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
+      .column({ tableName: resourceType, columnName: 'content' })
+      .groupBy({ tableName: resourceType, columnName: 'id' });
 
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, resourceType);

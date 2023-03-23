@@ -183,6 +183,10 @@ export class Join {
   constructor(readonly joinItem: string | SelectQuery, readonly joinAlias: string, readonly onExpression: Expression) {}
 }
 
+export class GroupBy {
+  constructor(readonly column: Column) {}
+}
+
 export class OrderBy {
   constructor(readonly column: Column, readonly descending?: boolean) {}
 }
@@ -289,6 +293,7 @@ export abstract class BaseQuery {
 export class SelectQuery extends BaseQuery {
   readonly columns: Column[];
   readonly joins: Join[];
+  readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
   limit_: number;
   offset_: number;
@@ -297,6 +302,7 @@ export class SelectQuery extends BaseQuery {
     super(tableName);
     this.columns = [];
     this.joins = [];
+    this.groupBys = [];
     this.orderBys = [];
     this.limit_ = 0;
     this.offset_ = 0;
@@ -318,6 +324,11 @@ export class SelectQuery extends BaseQuery {
 
   join(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
     this.joins.push(new Join(joinItem, joinAlias, onExpression));
+    return this;
+  }
+
+  groupBy(column: Column | string): this {
+    this.groupBys.push(new GroupBy(getColumn(column, this.tableName)));
     return this;
   }
 
@@ -420,11 +431,12 @@ export class SelectQuery extends BaseQuery {
   }
 
   #buildGroupBy(sql: SqlBuilder): void {
-    if (this.joins.length > 0) {
-      sql.append(' GROUP BY ');
-      sql.appendIdentifier(this.tableName);
-      sql.append('.');
-      sql.appendIdentifier('id');
+    let first = true;
+
+    for (const groupBy of this.groupBys) {
+      sql.append(first ? ' GROUP BY ' : ', ');
+      sql.appendColumn(groupBy.column);
+      first = false;
     }
   }
 

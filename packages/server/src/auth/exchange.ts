@@ -105,9 +105,7 @@ async function getExternalUserInfo(
       },
     });
 
-    const result = await response.json();
-    console.log('user info result', JSON.stringify(result, null, 2));
-    return result;
+    return await response.json();
   } catch (err) {
     logger.warn('Failed to verify code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
