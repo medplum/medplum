@@ -672,6 +672,31 @@ export class Repository {
   }
 
   /**
+   * Rebuilds compartments for all resources of the specified type.
+   * This is only available to super admins.
+   * @param resourceType The resource type.
+   */
+  async rebuildCompartmentsForResourceType(resourceType: string): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
+    const client = getClient();
+    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
+    this.#addDeletedFilter(builder);
+
+    await builder.executeCursor(client, async (row: any) => {
+      try {
+        const resource = JSON.parse(row.content) as Resource;
+        (resource.meta as Meta).compartment = this.#getCompartments(resource);
+        await this.#updateResourceImpl(JSON.parse(row.content) as Resource, false);
+      } catch (err) {
+        logger.error('Failed to rebuild compartments for resource', normalizeErrorString(err));
+      }
+    });
+  }
+
+  /**
    * Reindexes all resources of the specified type.
    * This is only available to the system account.
    * This should not result in any change to resources or history.
