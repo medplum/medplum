@@ -47,7 +47,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
       project: res.locals.project,
     });
     res.status(200).json(membership);
-  } catch (err) {
+  } catch (err: any) {
     logger.info(err.message);
     res.status(200).json({ error: err.message });
   }
