@@ -1,6 +1,6 @@
 # Patient Deduplication Architectures
 
-As we discuss in this [blog post,](/blog/patient-deduplication) deduplicating patient records from multiple sources is a nuanced workflow. We've put together this this guide to go over the basics of merging patient records, and review some of the most important technical design considerations when building a patient deduplication pipeline.
+Deduplicating patient records from multiple sources is a nuanced workflow. We've put together this this guide to go over the basics of merging patient records, and review some of the most important technical design considerations when building a patient deduplication pipeline.
 
 We've organized the guide as follows:
 
@@ -15,7 +15,7 @@ We've organized the guide as follows:
 
 Before we get started, let's define some terminology.
 
-In this guide, we will call the output of your deduplication pipeline the **target system**. Each input system that contributes patient data will be called a **source system.**
+In this guide, we will call each input system that contributes patient data a **source system.** The output of your deduplication pipeline will be called the **target system**.
 
 Most pipelines make a copy of each patient record from the source system into the target system. We will call these copies **source records.** The final, combined patient record will be called the **master record**.
 
@@ -39,15 +39,15 @@ We'll discuss each of these in depth. The most important factors to consider whe
 
 - **Prevalence of duplicates:** Making estimate of your duplication rate, both _within_ and _between_ source systems, will help you determine the complexity needed in your deduplication pipeline. Some applications have rare duplication rates (e.g. < 1%) while others have frequent duplicates (10-50%). Still others have very bi-modal duplication patterns (e.g 99% of records have 0 duplicates, 1% of records have 5+ duplicates).
 
-- **Duration of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, with the target system quickly replacing them as the source of truth. Examples include migrating from legacy systems into medplum, ingestion from one-time data sources. In contrast, some source systems are long lived or permanent. This is the case when deduplicating patients from multiple healthcare providers, or when building pipelines from Health Information Exchanges (HIEs).
+- **Lifetime of source systems:** Some pipelines are built to ingest patient data from short-lived source systems, and target system quickly replace them as the source of truth. For example, when migrating from legacy systems into medplum. In contrast, some source systems are long lived or permanent, as when deduplicating patients from multiple healthcare providers or from Health Information Exchanges (HIEs).
 
-- **Frequency of unmerging patients:** No deduplication system will be 100% perfect. Certain architectural choices make it easier or harder to unmerge patient records once merged, and the right choice for you will depend on the cost of an incorrect merge and the frequency with which you will unmerge records.
+- **Cost of false positives:** No deduplication system will be 100% perfect, and some patients records will be merged incorrectly. Certain architectural choices make it easier or harder to unmerge patient records once merged. The right choice for you will depend on your confidence threshold for performing a merge and on cost of an incorrect merge.
 
-- **Downstream application:** The right deduplication architecture will ultimately depend on how the deduplicated data will be used. Target systems that serve web and mobile applications will have different priorities than that systems that serve as data aggregators. Services that target providers will have different considerations than a system that will also support patient login.
+- **Downstream application:** The right deduplication architecture will ultimately depend on how the deduplicated data will be used. Target systems that serve web and mobile applications will have different priorities than that systems that serve as data aggregators. For example, some systems support patient login and a merge will show a whole new set of data to a user, merging for this use case should be distinct from merging for population health or insurance billing purposes.
 
 ## Linking Patient Records in FHIR
 
-The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.
+**The FHIR [Patient](/docs/api/fhir/resources) has features to represent the link between source and master records.**
 
 The `Patient.active` element is used to indicate the master record for the patient. When there are multiple `Patient` resources per-patient in the target system, all but the master record should be marked as "inactive."
 
@@ -72,7 +72,7 @@ The Medplum team recommends starting with a batch pipeline. If your source syste
 
 Batch pipelines run as offline jobs that considers all records at once to produce pairs of patient matches. As this is an N<sup>2</sup> problem, they are primarily constrained by memory rather than latency.
 
-Typically, these pipelines compute matches in a data warehouse, compute engine, but can also can also be computed in a Medplum Bot with sufficient memory. A typical workflow is:
+Typically, these pipelines compute matches in a data warehouse, compute engine, but can also can also be computed in a [Medplum Bot](/docs/bots) with sufficient memory. A typical workflow is:
 
 1. Export patient data from Medplum into the appropriate data warehouse or compute engine (e.g. [Spark](https://spark.apache.org/)). Note that even large patient datasets should be able to fit into local memory (1M patients < 10GB), so distributed computation is not strictly required. See our [analytics guide](/docs/analytics) for more info.
 2. Use [matching rules](#matching-rules) to detect pairs of records. Because this is an N<sup>2</sup> operation, we recommend using some form of exact matching rules to reduce the cardinality of the problem, before applying "fuzzy matching."
@@ -98,12 +98,12 @@ Incremental pipelines can often be implemented using [Medplum Bots](/docs/bots),
 
 The best deduplication systems use a library of matching rules with different strengths and weaknesses. While the effectiveness of different patient matching rules will vary depending on the clinical context, here we suggest some rules to get you started.
 
-These have been trialed in previous deduplication projects, and are rated by their false positive rates (i.e. incorrect matches) and false negative rates (i.e. missed matches).
+These have been trialed in previous deduplication projects, and are rated by their false positive rates (i.e. incorrect matches) and false negative rates (i.e. missed matches). Note that three matching identifiers is the standard.
 
-1. **Exact match on name, gender, email address / phone number: ** We recommend starting here. Email and phone act as pseudo-unique identifiers, and have a very low false positive rate. Using name and gender help eliminate false positives caused by family members sharing the same contact info. Note that phone numbers should be normalized before use.
+1. **Exact match on email address / phone number, name, gender, and date of birth:** We recommend starting here. Email and phone act as pseudo-unique identifiers, and have a very low false positive rate. Using name, gender, and date of birth help eliminate false positives caused by family members sharing the same contact info. Note that phone numbers should be normalized before use.
 2. **Exact match on first name, last name, date of birth, and postal code:** These matches have a high probability of being true positives, and can be used without email or phone number. Note that false positives can still occur, and we recommend human review of these matches.
 3. **Phonetic match first match on first and last name, date of birth, and postal code:** Phonetic matching algorithms such as [Soundex](https://en.wikipedia.org/wiki/Soundex) or [Metaphone](https://en.wikipedia.org/wiki/Metaphone) can be used to increase the match rate on names and accounts for transcription error. Additionally, setting a threshold on the [edit distance](https://en.wikipedia.org/wiki/Levenshtein_distance) between the names can help accommodate misspellings.
-4. **Phonetic match first name, date of birth: ** This rule excludes last names, to account for patients who have changed their surnames (e.g. after getting married). It also excludes address information to account for patients who move. While this rule will catch more matches, it has a significantly higher false positive rate, and should definitely be coupled with human review.
+4. **Phonetic match first name, date of birth:** This rule excludes last names, to account for patients who have changed their surnames (e.g. after getting married). It also excludes address information to account for patients who move. While this rule will catch more matches, it has a significantly higher false positive rate, and should definitely be coupled with human review.
 5. **Machine Learning:** After you have built up a dataset of matching patient pairs that have been reviewed by a human, you are in a good position to train a machine learning model. The most common setup is to treat this as a [binary classification problem](https://www.learndatasci.com/glossary/binary-classification) that outputs a match/no-match decision for a candidate (patient, patient) pair, and then use your [merge rules](#merge-rules) to convert these pairs into a single master record.
 
 ## Merge Rules {#merge-rules}
@@ -180,7 +180,7 @@ The tradeoff primary will be dictated by the downstream applications and the fre
 
 #### Rewriting references to master record
 
-Rewriting all references to point to the master record simplifies queries for client applications. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
+Rewriting all references to point to the master record simplifies queries for client applications, and most mature implementations for patient care should target this approach. Web and mobile apps can ignore the existence of source records and simply query for clinical resources associated with the master record. For temporary source systems, this configuration also simplifies the elimination of source records over time.
 
 However, this approach complicates the unmerge operation. Unmerging a single `Patient` might require rewriting references for a large number of clinical resources. Additionally, we will need to maintain information about the source patient for each clinical resource, which we can do by setting the `Resource.meta.source` element to a value corresponding to the source system.
 
@@ -190,4 +190,4 @@ Maintaining references to source records is preferable when absolute clarity abo
 
 ## Conclusion
 
-While this guide might not be exhaustive, this guide serves as a starting point for building a production-ready deduplication workflow. While it requires some planning up front, reconciling patient data from multiple sources can create a powerful data asset to power your clinical workflows.
+While this guide might not be exhaustive, this guide serves as a starting point for building a production-ready deduplication workflow. While it requires some planning up front, reconciling patient data from multiple sources can create a powerful data asset to power your clinical workflows. You can also check out our [blog post](/blog/patient-deduplication) on the topic for more information.
