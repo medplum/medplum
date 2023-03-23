@@ -61,7 +61,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       return;
     }
 
-    if (!(await verifyRecaptcha(secretKey as string, req.body.recaptchaToken))) {
+    if (!(await verifyRecaptcha(secretKey, req.body.recaptchaToken))) {
       sendOutcome(res, badRequest('Recaptcha failed'));
       return;
     }
