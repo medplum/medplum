@@ -41,12 +41,16 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  const { membership } = await inviteUser({
-    ...req.body,
-    project: res.locals.project,
-  });
-
-  res.status(200).json(membership);
+  try {
+    const { membership } = await inviteUser({
+      ...req.body,
+      project: res.locals.project,
+    });
+    res.status(200).json(membership);
+  } catch (err) {
+    logger.info(err.message);
+    res.status(200).json({ error: err.message });
+  }
 }
 
 export interface InviteRequest {
@@ -95,7 +99,11 @@ export async function inviteUser(
   const membership = await createProjectMembership(user, project, profile, request.accessPolicy);
 
   if (request.email && request.sendEmail !== false) {
-    await sendInviteEmail(request, user, existingUser, passwordResetUrl);
+    try {
+      await sendInviteEmail(request, user, existingUser, passwordResetUrl);
+    } catch (err) {
+      throw new Error('Could not send email. Make sure you have AWS SES set up.');
+    }
   }
 
   return { user, profile, membership };

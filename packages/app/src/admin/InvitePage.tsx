@@ -27,13 +27,14 @@ export function InvitePage(): JSX.Element {
         };
         medplum
           .post('admin/projects/' + projectId + '/invite', body)
+          .then((message) => (message.error ? setOutcome(normalizeOperationOutcome(message.error)) : null))
           .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
           .then(() => setEmailSent(body.sendEmail))
           .then(() => setSuccess(true))
           .catch((err) => setOutcome(normalizeOperationOutcome(err)));
       }}
     >
-      {!success && (
+      {!success && outcome == null && (
         <Stack>
           <Title>Invite new member</Title>
           <NativeSelect
@@ -67,7 +68,16 @@ export function InvitePage(): JSX.Element {
           </Group>
         </Stack>
       )}
-      {success && (
+      {outcome != null && (
+        <div data-testid="success">
+          <p>User created, email couldn't be sent</p>
+          <p>{outcome.issue?.[0].details?.text}</p>
+          <p>
+            Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
+          </p>
+        </div>
+      )}
+      {success && outcome == null && (
         <div data-testid="success">
           <p>User created</p>
           {emailSent && <p>Email sent</p>}
