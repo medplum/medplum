@@ -338,7 +338,7 @@ describe('New user', () => {
   });
 
   test('Success when config has empty recaptchaSecretKey and missing recaptcha token', async () => {
-    getConfig().recaptchaSecretKey = "";
+    getConfig().recaptchaSecretKey = '';
     const res = await request(app)
       .post('/auth/newuser')
       .type('json')

@@ -10,7 +10,7 @@ import * as Recaptcha from '../utils/recaptcha';
 import { RegisterForm, RegisterFormProps } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
-const mockrecaptcha = Recaptcha as jest.Mocked<typeof Recaptcha>
+const mockrecaptcha = Recaptcha as jest.Mocked<typeof Recaptcha>;
 const getRecaptchaSpy = jest.spyOn(mockrecaptcha, 'getRecaptcha');
 
 function mockFetch(url: string, options: any): Promise<any> {
@@ -157,7 +157,7 @@ describe('RegisterForm', () => {
     });
   });
 
-  afterEach(() => {    
+  afterEach(() => {
     jest.clearAllMocks();
   });
 
