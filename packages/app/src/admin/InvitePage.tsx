@@ -68,16 +68,16 @@ export function InvitePage(): JSX.Element {
           </Group>
         </Stack>
       )}
-      {outcome != null && (
+      {outcome && (
         <div data-testid="success">
           <p>User created, email couldn't be sent</p>
-          <p>{outcome.issue?.[0].details?.text}</p>
+          <p>Could not send email. Make sure you have AWS SES set up.</p>
           <p>
             Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
           </p>
         </div>
       )}
-      {success && outcome === undefined && (
+      {success && !outcome && (
         <div data-testid="success">
           <p>User created</p>
           {emailSent && <p>Email sent</p>}

@@ -1,4 +1,4 @@
-import { createReference, Operator, ProfileResource } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, Operator, ProfileResource } from '@medplum/core';
 import {
   AccessPolicy,
   Practitioner,
@@ -48,8 +48,8 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     });
     res.status(200).json(membership);
   } catch (err: any) {
-    logger.info(err.message);
-    res.status(200).json({ error: err.message });
+    logger.info(err);
+    res.status(200).json({ error: err });
   }
 }
 
@@ -102,7 +102,7 @@ export async function inviteUser(
     try {
       await sendInviteEmail(request, user, existingUser, passwordResetUrl);
     } catch (err) {
-      throw new Error('Could not send email. Make sure you have AWS SES set up.');
+      throw new OperationOutcomeError(badRequest('Could not send email. Make sure you have AWS SES set up.'), err);
     }
   }
 
