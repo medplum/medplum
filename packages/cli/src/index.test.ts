@@ -267,4 +267,16 @@ describe('CLI', () => {
     expect(check.code).toBeDefined();
     expect(check.code).not.toEqual('');
   });
+
+  test('Create bot success', async () => {
+    await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot', '1', 'src/hello-world.ts']);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
+  });
+
+  test('Create bot error with lack of commands', async () => {
+    await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot']);
+    expect(console.log).toBeCalledWith(
+      expect.stringMatching('Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file>')
+    );
+  });
 });
