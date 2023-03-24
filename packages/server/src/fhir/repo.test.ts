@@ -2368,6 +2368,15 @@ describe('FHIR Repo', () => {
     expect(bundle2.entry?.length).toEqual(2);
     expect(bundleContains(bundle2, c1)).toBeTruthy();
     expect(bundleContains(bundle2, c2)).toBeTruthy();
+
+    // Search with count
+    const bundle3 = await systemRepo.search(
+      parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456&_total=accurate`)
+    );
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundle3.total).toBe(1);
+    expect(bundleContains(bundle3, c1)).toBeTruthy();
+    expect(bundleContains(bundle3, c2)).not.toBeTruthy();
   });
 
   test('Purge forbidden', async () => {

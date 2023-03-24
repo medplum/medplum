@@ -1181,8 +1181,11 @@ export class Repository {
 
     if (filter.operator === FhirOperator.IDENTIFIER) {
       param = deriveIdentifierSearchParameter(param);
-      filter.code = param.code as string;
-      filter.operator = FhirOperator.EQUALS;
+      filter = {
+        ...filter,
+        code: param.code as string,
+        operator: FhirOperator.EQUALS,
+      };
     }
 
     const lookupTable = this.#getLookupTable(resourceType, param);
