@@ -41,11 +41,16 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
     return;
   }
 
+  const inviteRequest = { ...req.body } as InviteRequest;
+  const { projectId } = req.params;
+  if (res.locals.project.superAdmin) {
+    inviteRequest.project = await systemRepo.readResource('Project', projectId as string);
+  } else {
+    inviteRequest.project = res.locals.project;
+  }
+
   try {
-    const { membership } = await inviteUser({
-      ...req.body,
-      project: res.locals.project,
-    });
+    const { membership } = await inviteUser(inviteRequest);
     res.status(200).json(membership);
   } catch (err: any) {
     logger.info(err);
@@ -54,16 +59,16 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 }
 
 export interface InviteRequest {
-  readonly project: Project;
-  readonly resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
-  readonly firstName: string;
-  readonly lastName: string;
-  readonly email?: string;
-  readonly externalId?: string;
-  readonly accessPolicy?: Reference<AccessPolicy>;
-  readonly sendEmail?: boolean;
-  readonly password?: string;
-  readonly invitedBy?: Reference<User>;
+  project: Project;
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
+  firstName: string;
+  lastName: string;
+  email?: string;
+  externalId?: string;
+  accessPolicy?: Reference<AccessPolicy>;
+  sendEmail?: boolean;
+  password?: string;
+  invitedBy?: Reference<User>;
 }
 
 export async function inviteUser(
