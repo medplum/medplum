@@ -1,10 +1,10 @@
-import { forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
+import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
 import { Login, Project, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { getConfig } from '../../config';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
+import { sendResponse } from '../routes';
 
 /**
  * Handles a Project clone request.
@@ -20,37 +20,23 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
     return;
   }
 
-  const { baseUrl } = getConfig();
   const { id } = req.params;
   const repo = res.locals.repo as Repository;
   const cloner = new ProjectCloner(repo, id);
-  await cloner.cloneProject();
-  res
-    .set('Content-Location', `${baseUrl}fhir/R4/Project/${cloner.idMap.get(id)}`)
-    .status(202)
-    .json({
-      resourceType: 'OperationOutcome',
-      issue: [
-        {
-          severity: 'information',
-          code: 'informational',
-          details: {
-            text: 'Accepted',
-          },
-        },
-      ],
-    });
+  const result = await cloner.cloneProject();
+  await sendResponse(res, created, result);
 }
 
 class ProjectCloner {
   constructor(readonly repo: Repository, readonly projectId: string, readonly idMap: Map<string, string> = new Map()) {}
 
-  async cloneProject(): Promise<void> {
+  async cloneProject(): Promise<Project> {
     const repo = this.repo;
     const project = await repo.readResource<Project>('Project', this.projectId);
     const resourceTypes = getResourceTypes();
     const allResources: Resource[] = [];
     const maxResourcesPerResourceType = 1000;
+    let newProject: Project | undefined = undefined;
 
     for (const resourceType of resourceTypes) {
       const bundle = await repo.search({
@@ -69,8 +55,15 @@ class ProjectCloner {
     }
 
     for (const resource of allResources) {
-      await repo.updateResource(this.rewriteIds(resource));
+      // Use updateResource to create with specified ID
+      // That feature is only available to super admins
+      const result = await repo.updateResource(this.rewriteIds(resource));
+      if (result.resourceType === 'Project') {
+        newProject = result;
+      }
     }
+
+    return newProject as Project;
   }
 
   rewriteIds(resource: Resource): Resource {
