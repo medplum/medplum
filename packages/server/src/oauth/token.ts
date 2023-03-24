@@ -1,5 +1,5 @@
 import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
-import { ClientApplication, Login, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
@@ -89,6 +89,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const project = await systemRepo.readReference(membership.project as Reference<Project>);
   const scope = (req.body.scope || 'openid') as string;
 
   const login = await systemRepo.createResource<Login>({
@@ -99,6 +100,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
+    superAdmin: project.superAdmin,
     scope,
   });
 
