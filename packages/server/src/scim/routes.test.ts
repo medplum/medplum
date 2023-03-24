@@ -7,6 +7,7 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
+import { addTestUser } from '../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -124,5 +125,37 @@ describe('SCIM Routes', () => {
       });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Missing Medplum user type');
+  });
+
+  test('Search users as super admin', async () => {
+    // Create new project
+    const registration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Make the project super admin
+    await systemRepo.updateResource({
+      ...registration.project,
+      superAdmin: true,
+    });
+
+    // Add another user
+    // This user is a super admin
+    // This user is not a project admin
+    // They should still be allowed to use SCIM
+    const { accessToken } = await addTestUser(registration.project);
+
+    const res = await request(app)
+      .get(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+
+    const result = res.body;
+    expect(result.totalResults).toBeDefined();
+    expect(result.Resources).toBeDefined();
   });
 });
