@@ -34,7 +34,7 @@ export function InvitePage(): JSX.Element {
           .catch((err) => setOutcome(normalizeOperationOutcome(err)));
       }}
     >
-      {!success && outcome == null && (
+      {!success && !outcome && (
         <Stack>
           <Title>Invite new member</Title>
           <NativeSelect
