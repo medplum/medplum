@@ -153,3 +153,15 @@ medplum post admin/projects/cabd683a-dc09-492f-a513-416c6f3c16bd/invite '{ \
     "email": "bob@example.com" \
 }'
 ```
+
+Expunge a project completely:
+
+:::danger
+
+This command permanently deletes all data in the project. This is irreversible. This is the equivalent of `sudo rm -rf`, so please use extreme caution.
+
+:::
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$expunge'
+```
