@@ -59,10 +59,9 @@ describe('Project clone', () => {
       .set('Content-Type', 'application/fhir+json')
       .set('X-Medplum', 'extended')
       .send({});
-    expect(res.status).toBe(202);
-    expect(res.headers['content-location']).toBeDefined();
+    expect(res.status).toBe(201);
 
-    const newProjectId = res.headers['content-location']?.split('/').pop();
+    const newProjectId = res.body.id;
     expect(newProjectId).toBeDefined();
     expect(isUUID(newProjectId)).toBe(true);
     expect(newProjectId).not.toEqual(project.id);
