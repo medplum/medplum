@@ -1102,14 +1102,14 @@ export class Repository {
    * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
-  #addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
+  #addSearchFilters(selectQuery: SelectQuery, searchRequest: Readonly<SearchRequest>): void {
     const expr = this.#buildSearchExpression(selectQuery, searchRequest);
     if (expr) {
       selectQuery.predicate.expressions.push(expr);
     }
   }
 
-  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
+  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: Readonly<SearchRequest>): Expression | undefined {
     const expressions: Expression[] = [];
     if (searchRequest.filters) {
       for (const filter of searchRequest.filters) {
@@ -1136,8 +1136,8 @@ export class Repository {
    */
   #buildSearchFilterExpression(
     selectQuery: SelectQuery,
-    searchRequest: SearchRequest,
-    filter: Filter
+    searchRequest: Readonly<SearchRequest>,
+    filter: Readonly<Filter>
   ): Expression | undefined {
     if (typeof filter.value !== 'string') {
       throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
@@ -1156,8 +1156,11 @@ export class Repository {
 
     if (filter.operator === FhirOperator.IDENTIFIER) {
       param = deriveIdentifierSearchParameter(param);
-      filter.code = param.code as string;
-      filter.operator = FhirOperator.EQUALS;
+      filter = {
+        ...filter,
+        code: param.code as string,
+        operator: FhirOperator.EQUALS,
+      };
     }
 
     const lookupTable = this.#getLookupTable(resourceType, param);
@@ -1368,7 +1371,7 @@ export class Repository {
    * @param builder The client query builder.
    * @param searchRequest The search request.
    */
-  #addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
+  #addSortRules(builder: SelectQuery, searchRequest: Readonly<SearchRequest>): void {
     searchRequest.sortRules?.forEach((sortRule) => this.#addOrderByClause(builder, searchRequest, sortRule));
   }
 
@@ -1378,7 +1381,7 @@ export class Repository {
    * @param searchRequest The search request.
    * @param sortRule The sort rule.
    */
-  #addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+  #addOrderByClause(builder: SelectQuery, searchRequest: Readonly<SearchRequest>, sortRule: Readonly<SortRule>): void {
     if (sortRule.code === '_lastUpdated') {
       builder.orderBy('lastUpdated', !!sortRule.descending);
       return;
