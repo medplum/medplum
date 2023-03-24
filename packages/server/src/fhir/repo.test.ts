@@ -1486,6 +1486,26 @@ describe('FHIR Repo', () => {
     await systemRepo.reindexResourceType('Practitioner');
   });
 
+  test('Rebuild compartments as non-admin', async () => {
+    const repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
+
+    try {
+      await repo.rebuildCompartmentsForResourceType('Practitioner');
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
+  });
+
+  test('Rebuild compartments success', async () => {
+    await systemRepo.rebuildCompartmentsForResourceType('Practitioner');
+  });
+
   test('Remove property', async () => {
     const value = randomUUID();
 

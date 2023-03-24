@@ -2,11 +2,10 @@ import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title }
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { convertLocalToIso, DateTimeInput, Document, Form, FormSection, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import React from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
-  const [resourceType, setResourceType] = useState('');
 
   function rebuildStructureDefinitions(): void {
     medplum
@@ -29,9 +28,16 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
-  function reindexResourceType(): void {
+  function reindexResourceType(formData: Record<string, string>): void {
     medplum
-      .post('admin/super/reindex', { resourceType })
+      .post('admin/super/reindex', formData)
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }
+
+  function rebuildCompartments(formData: Record<string, string>): void {
+    medplum
+      .post('admin/super/compartments', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
@@ -88,17 +94,26 @@ export function SuperAdminPage(): JSX.Element {
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
         properly.
       </p>
-      <Form>
+      <Form onSubmit={reindexResourceType}>
         <Stack>
           <FormSection title="Resource Type">
-            <TextInput
-              name="resourceType"
-              placeholder="Resource Type"
-              defaultValue={resourceType}
-              onChange={(e) => setResourceType(e.currentTarget.value)}
-            />
+            <TextInput name="resourceType" placeholder="Reindex Resource Type" />
           </FormSection>
-          <Button onClick={reindexResourceType}>Reindex</Button>
+          <Button type="submit">Reindex</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Rebuild Compartments</Title>
+      <p>
+        When Medplum changes how resource compartments are derived, the system may require a rebuild for old resources
+        to take effect.
+      </p>
+      <Form onSubmit={rebuildCompartments}>
+        <Stack>
+          <FormSection title="Resource Type">
+            <TextInput name="resourceType" placeholder="Compartments Resource Type" />
+          </FormSection>
+          <Button type="submit">Rebuild Compartments</Button>
         </Stack>
       </Form>
       <Divider my="lg" />

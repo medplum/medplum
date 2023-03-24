@@ -88,6 +88,31 @@ superAdminRouter.post(
   })
 );
 
+// POST to /admin/super/compartments
+// to rebuild compartments for a resource type.
+// Run this after major changes to how compartments are constructed.
+superAdminRouter.post(
+  '/compartments',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!res.locals.login.superAdmin) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const resourceType = req.body.resourceType;
+    validateResourceType(resourceType);
+
+    // Start reindex in the background
+    // This can take a long time, so we don't want to block the response
+    systemRepo
+      .rebuildCompartmentsForResourceType(resourceType)
+      .then(() => logger.info(`Rebuilding compartments for ${resourceType} completed`))
+      .catch((err) => logger.error(`Rebuilding compartments for ${resourceType} failed: ${err}`));
+
+    sendOutcome(res, allOk);
+  })
+);
+
 // POST to /admin/super/setpassword
 // to force set a User password.
 superAdminRouter.post(
