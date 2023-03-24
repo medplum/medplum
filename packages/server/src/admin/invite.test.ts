@@ -352,7 +352,9 @@ describe('Admin Invite', () => {
       });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);
-    expect(res2.body.error).toBe('Could not send email. Make sure you have AWS SES set up.');
+    expect(res2.body.error.outcome.issue?.[0].details.text).toBe(
+      'Could not send email. Make sure you have AWS SES set up.'
+    );
     expect(SendEmailCommand).not.toHaveBeenCalled();
   });
 });
