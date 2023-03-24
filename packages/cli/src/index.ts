@@ -215,12 +215,9 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
 }
 
 async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
-  if (argv.length < 4) {
-    console.log(`Usage: medplum ${argv[2]} <bot-name>`);
-    return;
-  }
   if (argv.length < 6) {
     console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file>`);
+    return;
   }
   const botName = argv[3];
   const projectId = argv[4];
@@ -310,7 +307,7 @@ function readFileContents(fileName: string): string | undefined {
 
 function addBotToConfig(botConfig: MedplumBotConfig): void {
   const config = readConfig();
-  config?.bots?.push(botConfig as MedplumBotConfig);
+  config?.bots?.push(botConfig);
   writeFile('medplum.config.json', JSON.stringify(config), () => {
     console.log(`Bot added to config: ${botConfig.id}`);
   });
