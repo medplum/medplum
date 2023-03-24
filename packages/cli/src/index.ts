@@ -2,7 +2,7 @@ import { getDisplayString, MedplumClient, normalizeErrorString } from '@medplum/
 import { Bot, OperationOutcome } from '@medplum/fhirtypes';
 import { exec } from 'child_process';
 import dotenv from 'dotenv';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFile } from 'fs';
 import { createServer } from 'http';
 import fetch from 'node-fetch';
 import { platform } from 'os';
@@ -242,8 +242,7 @@ async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> 
     await saveBot(medplum, botConfig as MedplumBotConfig, bot);
     console.log(`Success! Bot created: ${bot.id}`);
 
-    const config = readConfig();
-    config?.bots?.push(botConfig as MedplumBotConfig);
+    addBotToConfig(botConfig);
   } catch (err) {
     console.log('Error while creating new bot ', err);
   }
@@ -307,6 +306,14 @@ function readFileContents(fileName: string): string | undefined {
     return '';
   }
   return readFileSync(path, 'utf8');
+}
+
+function addBotToConfig(botConfig: MedplumBotConfig): void {
+  const config = readConfig();
+  config?.bots?.push(botConfig as MedplumBotConfig);
+  writeFile('medplum.config.json', JSON.stringify(config), () => {
+    console.log(`Bot added to config: ${botConfig.id}`);
+  });
 }
 
 if (require.main === module) {
