@@ -1102,14 +1102,14 @@ export class Repository {
    * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
-  #addSearchFilters(selectQuery: SelectQuery, searchRequest: Readonly<SearchRequest>): void {
+  #addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
     const expr = this.#buildSearchExpression(selectQuery, searchRequest);
     if (expr) {
       selectQuery.predicate.expressions.push(expr);
     }
   }
 
-  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: Readonly<SearchRequest>): Expression | undefined {
+  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
     const expressions: Expression[] = [];
     if (searchRequest.filters) {
       for (const filter of searchRequest.filters) {
@@ -1136,8 +1136,8 @@ export class Repository {
    */
   #buildSearchFilterExpression(
     selectQuery: SelectQuery,
-    searchRequest: Readonly<SearchRequest>,
-    filter: Readonly<Filter>
+    searchRequest: SearchRequest,
+    filter: Filter
   ): Expression | undefined {
     if (typeof filter.value !== 'string') {
       throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
@@ -1371,7 +1371,7 @@ export class Repository {
    * @param builder The client query builder.
    * @param searchRequest The search request.
    */
-  #addSortRules(builder: SelectQuery, searchRequest: Readonly<SearchRequest>): void {
+  #addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
     searchRequest.sortRules?.forEach((sortRule) => this.#addOrderByClause(builder, searchRequest, sortRule));
   }
 
@@ -1381,7 +1381,7 @@ export class Repository {
    * @param searchRequest The search request.
    * @param sortRule The sort rule.
    */
-  #addOrderByClause(builder: SelectQuery, searchRequest: Readonly<SearchRequest>, sortRule: Readonly<SortRule>): void {
+  #addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
     if (sortRule.code === '_lastUpdated') {
       builder.orderBy('lastUpdated', !!sortRule.descending);
       return;
