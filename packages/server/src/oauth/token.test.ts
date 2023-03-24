@@ -1,4 +1,4 @@
-import { createReference, parseSearchDefinition } from '@medplum/core';
+import { createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -224,6 +224,24 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Token for client in super admin', async () => {
+    const { client } = await createTestProject({ superAdmin: true });
+    const res1 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.error).toBeUndefined();
+    expect(res1.body.access_token).toBeDefined();
+
+    // Expect login to be a super admin login
+    const claims = parseJWTPayload(res1.body.access_token);
+    expect(claims.login_id).toBeDefined();
+    const login = await systemRepo.readResource<Login>('Login', claims.login_id as string);
+    expect(login.superAdmin).toBe(true);
   });
 
   test('Token for authorization_code with missing code', async () => {
