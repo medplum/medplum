@@ -12,9 +12,9 @@ export function SignInPage(): JSX.Element {
       onSuccess={() => navigate(searchParams.get('next') || '/')}
       onForgotPassword={() => navigate('/resetpassword')}
       onRegister={() => navigate('/register')}
-      googleClientId={process.env.GOOGLE_CLIENT_ID}
-      login={searchParams.get('login') as string | undefined}
-      projectId={searchParams.get('project') as string | undefined}
+      googleClientId={process.env.GOOGLE_CLIENT_ID || undefined}
+      login={searchParams.get('login') || undefined}
+      projectId={searchParams.get('project') || undefined}
     >
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>
