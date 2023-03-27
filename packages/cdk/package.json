@@ -18,14 +18,14 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.287.0",
-    "@aws-sdk/client-ssm": "3.287.0",
-    "@aws-sdk/client-sts": "3.287.0",
-    "aws-cdk-lib": "2.68.0",
-    "cdk": "2.68.0",
-    "cdk-nag": "2.22.30",
-    "cdk-serverless-clamscan": "2.4.195",
-    "constructs": "10.1.272"
+    "@aws-sdk/client-acm": "3.299.0",
+    "@aws-sdk/client-ssm": "3.299.0",
+    "@aws-sdk/client-sts": "3.299.0",
+    "aws-cdk-lib": "2.70.0",
+    "cdk": "2.70.0",
+    "cdk-nag": "2.23.5",
+    "cdk-serverless-clamscan": "2.4.207",
+    "constructs": "10.1.291"
   },
   "bin": {
     "medplum-cdk-init": "./dist/cjs/init.cjs"
