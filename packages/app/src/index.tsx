@@ -6,6 +6,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { App } from './App';
+import { Chat } from './components/Chat';
 import { getConfig } from './config';
 
 if ('serviceWorker' in navigator) {
@@ -67,6 +68,7 @@ export async function initApp(): Promise<void> {
         <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
           <Notifications position="bottom-right" />
           <RouterProvider router={router} />
+          <Chat />
         </MantineProvider>
       </MedplumProvider>
     </React.StrictMode>
