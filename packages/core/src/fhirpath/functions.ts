@@ -1497,13 +1497,21 @@ export const functions: Record<string, FhirPathFunction> = {
           if (ref.resource) {
             return toTypedValue(ref.resource);
           }
-          refStr = ref.reference;
+          if (ref.reference) {
+            refStr = ref.reference;
+          } else if (ref.type && ref.identifier) {
+            refStr = `${ref.type}?identifier=${ref.identifier.system}|${ref.identifier.value}`;
+          }
         }
-        if (!refStr) {
-          return { type: PropertyType.BackboneElement, value: null };
+        if (refStr?.includes('?')) {
+          const [resourceType] = refStr.split('?');
+          return { type: resourceType, value: { resourceType } };
         }
-        const [resourceType, id] = refStr.split('/');
-        return { type: PropertyType.BackboneElement, value: { resourceType, id } };
+        if (refStr?.includes('/')) {
+          const [resourceType, id] = refStr.split('/');
+          return { type: resourceType, value: { resourceType, id } };
+        }
+        return { type: PropertyType.BackboneElement, value: undefined };
       })
       .filter((e) => !!e.value);
   },
