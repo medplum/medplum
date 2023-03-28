@@ -57,17 +57,24 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
   let projectId = req.body.projectId as string | undefined;
+
+  // For OAuth2 flow, check the clientId
+  const clientId = req.body.clientId;
+  if (clientId) {
+    const client = await getClient(clientId);
+    const clientProjectId = client.meta?.project as string;
+    if (projectId !== undefined && projectId !== clientProjectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+    projectId = clientProjectId;
+  }
+
   const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-
-    if (!projectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-
     const project = await getProjectByGoogleClientId(googleClientId, projectId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
@@ -80,18 +87,6 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     }
 
     projectId = project.id;
-  }
-
-  // For OAuth2 flow, check the clientId
-  const clientId = req.body.clientId;
-  if (clientId) {
-    const client = await getClient(clientId);
-    const clientProjectId = client.meta?.project as string;
-    if (projectId !== undefined && projectId !== clientProjectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-    projectId = clientProjectId;
   }
 
   const googleJwt = req.body.googleCredential as string;
@@ -152,22 +147,30 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   await sendLoginResult(res, login);
 }
 
-async function getProjectByGoogleClientId(googleClientId: string, projectId: string): Promise<Project | undefined> {
+async function getProjectByGoogleClientId(
+  googleClientId: string,
+  projectId: string | undefined
+): Promise<Project | undefined> {
+  const filters = [
+    {
+      code: 'google-client-id',
+      operator: Operator.EQUALS,
+      value: googleClientId,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: '_id',
+      operator: Operator.EQUALS,
+      value: projectId,
+    });
+  }
+
   const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
-    filters: [
-      {
-        code: '_id',
-        operator: Operator.EQUALS,
-        value: projectId,
-      },
-      {
-        code: 'google-client-id',
-        operator: Operator.EQUALS,
-        value: googleClientId,
-      },
-    ],
+    filters,
   });
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
