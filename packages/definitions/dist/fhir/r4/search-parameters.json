@@ -65790,6 +65790,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Bot-identifier",
+      "url" : "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+      "version" : "4.0.1",
+      "name" : "name",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The identifier of the bot",
+      "code" : "identifier",
+      "base" : ["Bot"],
+      "type" : "token",
+      "expression" : "Bot.identifier",
+      "xpath" : "f:Bot/f:identifier",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-name",
     "resource" : {
       "resourceType" : "SearchParameter",

@@ -80,6 +80,7 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
+protectedRoutes.post('/Bot/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 
 // Bot $deploy operation
