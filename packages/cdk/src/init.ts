@@ -242,8 +242,13 @@ export async function main(t: readline.Interface): Promise<void> {
   print('You can now proceed to deploying the Medplum infrastructure with CDK.');
   print('Run:');
   print('');
+  print(`    npx cdk bootstrap -c config=${configFileName}`);
   print(`    npx cdk synth -c config=${configFileName}`);
-  print(`    npx cdk deploy -c config=${configFileName}`);
+  if (config.region === 'us-east-1') {
+    print(`    npx cdk deploy -c config=${configFileName}`);
+  } else {
+    print(`    npx cdk deploy -c config=${configFileName} --all`);
+  }
   print('');
   print('See Medplum documentation for more information:');
   print('');
@@ -491,7 +496,10 @@ async function writeParameter(region: string, key: string, value: string): Promi
  */
 async function writeParameters(region: string, prefix: string, params: Record<string, string | number>): Promise<void> {
   for (const [key, value] of Object.entries(params)) {
-    await writeParameter(region, prefix + key, value.toString());
+    const valueStr = value.toString();
+    if (valueStr) {
+      await writeParameter(region, prefix + key, valueStr);
+    }
   }
 }
 
