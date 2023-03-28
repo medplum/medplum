@@ -34,6 +34,7 @@ import {
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -2377,6 +2378,51 @@ describe('FHIR Repo', () => {
     expect(bundle3.total).toBe(1);
     expect(bundleContains(bundle3, c1)).toBeTruthy();
     expect(bundleContains(bundle3, c2)).not.toBeTruthy();
+  });
+
+  test('Task patient identifier search', async () => {
+    const identifier = randomUUID();
+
+    // Create a Task with a patient identifier reference _with_ Reference.type
+    const task1 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'accepted',
+      intent: 'order',
+      for: {
+        type: 'Patient',
+        identifier: { system: 'mrn', value: identifier },
+      },
+    });
+
+    // Create a Task with a patient identifier reference _without_ Reference.type
+    const task2 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'accepted',
+      intent: 'order',
+      for: {
+        identifier: { system: 'mrn', value: identifier },
+      },
+    });
+
+    // Search by "subject"
+    // This will include both Tasks, because the "subject" search parameter does not care about "type"
+    const bundle1 = await systemRepo.search(
+      parseSearchDefinition(`Task?subject:identifier=mrn|${identifier}&_total=accurate`)
+    );
+    expect(bundle1.total).toEqual(2);
+    expect(bundle1.entry?.length).toEqual(2);
+    expect(bundleContains(bundle1, task1)).toBeTruthy();
+    expect(bundleContains(bundle1, task2)).toBeTruthy();
+
+    // Search by "patient"
+    // This will only include the Task with the explicit "Patient" type, because the "patient" search parameter does care about "type"
+    const bundle2 = await systemRepo.search(
+      parseSearchDefinition(`Task?patient:identifier=mrn|${identifier}&_total=accurate`)
+    );
+    expect(bundle2.total).toEqual(1);
+    expect(bundle2.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2, task1)).toBeTruthy();
+    expect(bundleContains(bundle2, task2)).not.toBeTruthy();
   });
 
   test('Purge forbidden', async () => {
