@@ -987,7 +987,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns Promise to the search result bundle.
+   * @returns Promise to the first search result.
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
@@ -1029,7 +1029,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns Promise to the search result bundle.
+   * @returns Promise to the array of search results.
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
