@@ -24,6 +24,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Bot',
+        identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
         name: 'Test Bot',
         runtimeVersion: 'awslambda',
         code: `
@@ -202,5 +203,26 @@ describe('Execute', () => {
     expect(getLambdaFunctionName(normalBot)).toEqual('medplum-bot-lambda-123');
     expect(getLambdaFunctionName(customBot)).toEqual('custom');
     config.botCustomFunctionsEnabled = false;
+  });
+
+  test('Execute by identifier', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/$execute?identifier=${bot.identifier?.[0]?.system}|${bot.identifier?.[0]?.value}`)
+      .set('Content-Type', 'text/plain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send('input');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+    expect(res.text).toEqual('input');
+  });
+
+  test('Missing parameters', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/$execute`)
+      .set('Content-Type', 'text/plain')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send('input');
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toEqual('Must specify bot ID or identifier.');
   });
 });
