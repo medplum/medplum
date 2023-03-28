@@ -1008,6 +1008,16 @@
             }]
           },
           {
+            "id": "Bot.scheduledTiming",
+            "path": "Bot.scheduledTiming",
+            "definition": "A schedule for the bot to be executed.",
+            "min": 0,
+            "max": "1",
+            "type": [{
+              "code": "Timing"
+            }]
+          },
+          {
             "id" : "Bot.code",
             "path" : "Bot.code",
             "definition" : "Bot logic script.",
