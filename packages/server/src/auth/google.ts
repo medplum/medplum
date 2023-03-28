@@ -57,13 +57,18 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
   let projectId = req.body.projectId as string | undefined;
-
   const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    const project = await getProjectByGoogleClientId(googleClientId);
+
+    if (!projectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+
+    const project = await getProjectByGoogleClientId(googleClientId, projectId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
@@ -147,11 +152,16 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   await sendLoginResult(res, login);
 }
 
-async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {
+async function getProjectByGoogleClientId(googleClientId: string, projectId: string): Promise<Project | undefined> {
   const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
     filters: [
+      {
+        code: '_id',
+        operator: Operator.EQUALS,
+        value: projectId,
+      },
       {
         code: 'google-client-id',
         operator: Operator.EQUALS,
