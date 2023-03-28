@@ -101,16 +101,16 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     throw new Error('Missing issuer');
   }
 
-  const searchResult = await systemRepo.search({
+  const searchResult = await systemRepo.searchResources<JsonWebKey>({
     resourceType: 'JsonWebKey',
     filters: [{ code: 'active', operator: Operator.EQUALS, value: 'true' }],
   });
 
   let jsonWebKeys: JsonWebKey[] | undefined;
 
-  if (searchResult?.entry && searchResult.entry.length > 0) {
-    logger.info(`Loaded ${searchResult.entry.length} key(s) from the database`);
-    jsonWebKeys = searchResult.entry.map((entry) => entry.resource as JsonWebKey);
+  if (searchResult.length > 0) {
+    logger.info(`Loaded ${searchResult.length} key(s) from the database`);
+    jsonWebKeys = searchResult;
   } else {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md

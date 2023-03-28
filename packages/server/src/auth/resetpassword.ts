@@ -1,5 +1,5 @@
 import { allOk, badRequest, createReference, Operator } from '@medplum/core';
-import { BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
+import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
@@ -26,7 +26,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  const existingBundle = await systemRepo.search<User>({
+  const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
     filters: [
       {
@@ -37,12 +37,10 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     ],
   });
 
-  if ((existingBundle.entry as BundleEntry[]).length === 0) {
+  if (!user) {
     sendOutcome(res, badRequest('User not found', 'email'));
     return;
   }
-
-  const user = existingBundle?.entry?.[0]?.resource as User;
 
   const url = await resetPassword(user);
 

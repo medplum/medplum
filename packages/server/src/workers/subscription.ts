@@ -11,7 +11,6 @@ import {
 import {
   AuditEvent,
   Bot,
-  BundleEntry,
   Practitioner,
   ProjectMembership,
   Reference,
@@ -212,7 +211,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
   if (!project) {
     return [];
   }
-  const bundle = await systemRepo.search<Subscription>({
+  return systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
@@ -228,7 +227,6 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  return (bundle.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
 /**

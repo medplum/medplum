@@ -1,10 +1,10 @@
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema } from '../types';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
-export interface SearchRequest {
-  readonly resourceType: ResourceType;
+export interface SearchRequest<T extends Resource = Resource> {
+  readonly resourceType: T['resourceType'];
   filters?: Filter[];
   sortRules?: SortRule[];
   offset?: number;
