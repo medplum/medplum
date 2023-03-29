@@ -71,11 +71,6 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (projectId !== undefined && project.id !== projectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-
     projectId = project.id;
   }
 
