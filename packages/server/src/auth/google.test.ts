@@ -263,7 +263,7 @@ describe('Google Auth', () => {
         },
       ],
     });
-    console.log(project);
+
     // Try to login with the custom Google client
     // This should succeed
     const res2 = await request(app)
