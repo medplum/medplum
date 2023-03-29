@@ -99,21 +99,30 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
   }
   const timingToCronFormat = convertTimingToCron(resource.scheduledTiming);
 
+  // JobId and repeatable instructions
+  const jobOptions = { ...timingToCronFormat, jobId: resource.id };
   await addScheduledTimingJobData(
     {
       resourceType: resource.resourceType,
       id: resource.id as string,
     },
-    timingToCronFormat
+    jobOptions
   );
 }
 
 /**
- * Adds a scheduled timing job to the queue.
+ * Adds a scheduled timing job to the queue, and removes the previous job for bot
+ * if it exists
  * @param job The scheduled timing job details.
  * @param repeatable The repeat format that instructs BullMQ when to run the job
  */
 async function addScheduledTimingJobData(job: ScheduledTimingJobData, repeatable: Repeatable): Promise<void> {
+  // Check if there was a job previously for this bot, if there was, we remove it.
+  const previousJob = await queue?.getJob(job.id);
+  if (previousJob) {
+    logger.debug(`Found a previous job for bot ${job.id}, updating...`);
+    await previousJob.remove();
+  }
   logger.debug('Adding Scheduled Timing job');
   // Parameters of queue.add https://api.docs.bullmq.io/classes/Queue.html#add
   if (queue) {
