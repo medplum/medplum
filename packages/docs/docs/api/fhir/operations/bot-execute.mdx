@@ -2,88 +2,61 @@
 sidebar_position: 2
 ---
 
-import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/validate-a-resource.ts';
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bot-execute.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Bot Execute
 
-Medplum includes a custom FHIR operation called `$execute` to invoke a bot.
+To directly invoke a Medplum Bot you can use the custom FHIR operation called `$execute`.
 
 If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
 
 ## Invoke a bot by ID
 
+Invoke a bot by ID when you know the Bot's ID in advance.
+
 ```
 POST [base]/Bot/[id]/$execute
-```
-
-## Invoke a bot by identifier
-
-```
-POST [base]/Bot/$execute?identifier=[system]|[code]
-```
-
-Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
-
-> This operation may be used during design and development to validate application design. It can also be used at run-time. One possible use might be that a client asks the server whether a proposed update is valid as the user is editing a dialog and displays an updated error to the user. The operation can be used as part of a light-weight two phase commit protocol but there is no expectation that the server will hold the content of the resource after this operation is used, or that the server guarantees to successfully perform an actual create, update or delete after the validation operation completes.
-
-## Invoke the validate operation
-
-```
-[base]/[Resource]/$validate
 ```
 
 For example:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Patient/$validate' \
+curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
   -X POST \
-  -H "Content-Type: application/fhir+json" \
+  -H "Content-Type: application/json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
-  -d '{"resourceType":"Patient"}'
+  -d '{"foo":"bar"}'
 ```
 
-The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `validateResource` convenience method:
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method:
 
-<MedplumCodeBlock language="ts" selectBlocks="validate" showLineNumbers>
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-id" showLineNumbers>
   {ExampleCode}
 </MedplumCodeBlock>
 
-### Valid Response
+## Invoke a bot by identifier
 
-Example outcome when the resource is valid:
+Sometimes you may not know the Medplum Bot ID in advance. In that case, you can invoke a Bot by `Identifier`.
 
-```json
-{
-  "resourceType": "OperationOutcome",
-  "id": "ok",
-  "issue": [
-    {
-      "severity": "information",
-      "code": "informational",
-      "details": {
-        "text": "All OK"
-      }
-    }
-  ]
-}
+This is particularly useful when the same conceptual bot exists in multiple Medplum projects. Each bot will have a different ID, but they can all have the same identifier.
+
+```
+POST [base]/Bot/$execute?identifier=[system]|[code]
 ```
 
-### Invalid Response
+For example:
 
-Example outcome when the resource is not valid:
-
-```json
-{
-  "resourceType": "OperationOutcome",
-  "id": "3820fda7-c6d4-4207-b597-90631f0881f9",
-  "issue": [
-    {
-      "severity": "error",
-      "code": "structure",
-      "details": { "text": "Invalid additional property \"Patient.foo\"" },
-      "expression": ["Patient.foo"]
-    }
-  ]
-}
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"foo":"bar"}'
 ```
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
+
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-identifier" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
