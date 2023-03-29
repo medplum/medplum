@@ -96,7 +96,7 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
     return;
   }
   let cron;
-  //   const cron = resource.cronTiming ? convertTimingToCron(resource.cronTiming) : resource.cronString;
+  // Validate the cron format
   if (resource.cronTiming) {
     cron = convertTimingToCron(resource.cronTiming);
     if (!cron) {
@@ -112,10 +112,10 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
   if (!cron) {
     return;
   }
-  const crontObject = { repeat: { pattern: cron } };
+  const cronObject = { repeat: { pattern: cron } };
 
   // JobId and repeatable instructions
-  const jobOptions = { ...crontObject, jobId: resource.id };
+  const jobOptions = { ...cronObject, jobId: resource.id };
   await addScheduledTimingJobData(
     {
       resourceType: resource.resourceType,
