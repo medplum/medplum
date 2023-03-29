@@ -5,7 +5,23 @@ sidebar_position: 2
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/validate-a-resource.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
-# Validate a resource
+# Bot Execute
+
+Medplum includes a custom FHIR operation called `$execute` to invoke a bot.
+
+If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
+
+## Invoke a bot by ID
+
+```
+POST [base]/Bot/[id]/$execute
+```
+
+## Invoke a bot by identifier
+
+```
+POST [base]/Bot/$execute?identifier=[system]|[code]
+```
 
 Medplum implements the FHIR [`$validate` operation](https://www.hl7.org/fhir/resource-operation-validate.html)
 
