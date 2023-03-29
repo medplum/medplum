@@ -8,9 +8,9 @@ import { URL } from 'url';
 import { getConfig } from '../config';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
-import { getClient, getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { isExternalAuth } from './method';
-import { sendLoginResult } from './utils';
+import { sendLoginResult, getProjectIdByClientId } from './utils';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -57,18 +57,8 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
   let projectId = req.body.projectId as string | undefined;
-
-  // For OAuth2 flow, check the clientId
   const clientId = req.body.clientId;
-  if (clientId) {
-    const client = await getClient(clientId);
-    const clientProjectId = client.meta?.project as string;
-    if (projectId !== undefined && projectId !== clientProjectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-    projectId = clientProjectId;
-  }
+  projectId = await getProjectIdByClientId(res, clientId, projectId);
 
   const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {

@@ -1,11 +1,12 @@
-import { createReference, ProfileResource, resolveId } from '@medplum/core';
+import { badRequest, createReference, ProfileResource, resolveId } from '@medplum/core';
 import { AccessPolicy, ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
-import { getMembershipsForLogin } from '../oauth/utils';
+import { getClient, getMembershipsForLogin } from '../oauth/utils';
+import { sendOutcome } from '../fhir/outcomes';
 
 export async function createProfile(
   project: Project,
@@ -138,4 +139,30 @@ export async function verifyRecaptcha(secretKey: string, recaptchaToken: string)
   const response = await fetch(url, { method: 'POST' });
   const json = (await response.json()) as { success: boolean };
   return json.success;
+}
+
+/**
+ * For OAuth2 flow, check the clientId
+ * @param res The response object
+ * @param clientId clientId from the client
+ * @param projectId projectId from the client
+ * @returns
+ */
+export async function getProjectIdByClientId(
+  res: Response,
+  clientId: string,
+  projectId: string | undefined
+): Promise<string | undefined> {
+  // For OAuth2 flow, check the clientId
+  if (clientId) {
+    const client = await getClient(clientId);
+    const clientProjectId = client.meta?.project as string;
+    if (projectId !== undefined && projectId !== clientProjectId) {
+      sendOutcome(res, badRequest('Invalid projectId'));
+      return;
+    }
+    return clientProjectId;
+  }
+
+  return projectId;
 }
