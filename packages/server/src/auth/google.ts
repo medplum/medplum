@@ -58,7 +58,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // The only rule is that they have to match
   let projectId = req.body.projectId as string | undefined;
   const clientId = req.body.clientId;
-  projectId = await getProjectIdByClientId(res, clientId, projectId);
+  projectId = await getProjectIdByClientId(clientId, projectId);
 
   const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {

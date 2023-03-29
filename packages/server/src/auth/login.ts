@@ -27,9 +27,8 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
   // 1) Passed in explicitly as projectId
   // 2) Implicit with clientId
   // The only rule is that they have to match
-  let projectId = req.body.projectId as string | undefined;
   const clientId = req.body.clientId;
-  projectId = await getProjectIdByClientId(res, clientId, projectId);
+  const projectId = await getProjectIdByClientId(req.body.clientId, req.body.projectId as string | undefined);
 
   const login = await tryLogin({
     authMethod: 'password',
