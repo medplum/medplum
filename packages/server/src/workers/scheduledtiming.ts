@@ -97,7 +97,16 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
   if (!resource.scheduledTiming) {
     return;
   }
+
+  if (!resource.scheduledTiming.repeat) {
+    return;
+  }
+
   const timingToCronFormat = convertTimingToCron(resource.scheduledTiming);
+
+  if (!timingToCronFormat) {
+    return;
+  }
 
   // JobId and repeatable instructions
   const jobOptions = { ...timingToCronFormat, jobId: resource.id };
@@ -136,7 +145,7 @@ async function addScheduledTimingJobData(job: ScheduledTimingJobData, repeatable
  * BullMQ repeat option, which conducts the job has a cron-parser's pattern
  * @param timing The scheduled timing property from the bot, which is a Timing Type.
  */
-export function convertTimingToCron(timing: Timing): Repeatable {
+export function convertTimingToCron(timing: Timing): Repeatable | undefined {
   let minute = '*';
   let hour = '*';
   // The timing input doesn't have a feature for this
@@ -145,11 +154,17 @@ export function convertTimingToCron(timing: Timing): Repeatable {
   const month = '*';
   let dayOfWeek = '*';
 
-  const repeat = timing.repeat?.period ? timing.repeat.period : 0;
+  if (!timing.repeat) {
+    return undefined;
+  }
+
+  // if period isn't available, we'll have it at 1
+  const repeat = timing.repeat?.period ? timing.repeat.period : 1;
+
   // Keep it a max rate of Once a minute for the time being
   if (repeat > 24 && repeat < 60) {
     // If more than once an hour we'll need to add to the rate of every Nth min
-    const timesAnHour = Math.ceil(60 / repeat);
+    const timesAnHour = Math.ceil((24 * 60) / repeat);
     minute = `*/${timesAnHour}`;
   } else {
     const timesADay = Math.ceil(24 / repeat);
