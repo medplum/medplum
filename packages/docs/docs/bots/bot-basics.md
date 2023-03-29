@@ -163,7 +163,7 @@ Let's walk through each of the parameters here in more detail.
 
 You can find the `id` of your Bot by clicking on the **Details** tab of the Bot resource. In this example, it is ` 43ac3060-ff20-49e8-9682-bf91ab3a5191`
 
-![Find your Bot ID](/img/app/bots/find_bot_id.png)
+<img src="/img/app/bots/find_bot_id.png" width="50%" height="50%" alt="Find your Bot ID" title="Find your Bot ID" />
 
 #### `CONTENT_TYPE`
 
@@ -182,6 +182,8 @@ This is the `access_token` you receive after completing the OAuth authentication
 #### `INPUT_DATA`
 
 This is the input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.
+
+Read more in the [Bot `$execute`](/docs/api/fhir/operations/bot-execute) documentation.
 
 ### _Executing automatically using a [`Subscription`](../fhir-basics#subscriptions-listening-for-changes)_
 
