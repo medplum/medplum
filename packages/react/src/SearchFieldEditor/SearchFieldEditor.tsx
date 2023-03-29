@@ -104,20 +104,20 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
    * Moves the selection up one position in the list.
    */
   function onMoveUp(): void {
-    const currentField = state.search.fields ?? [];
+    const currentFields = state.search.fields ?? [];
     const field = selectedRef.current?.value;
-    if (field) {
-      const newFields = [...currentField];
-      const index = newFields.indexOf(field);
-      swapFields(newFields, index, index - 1);
-
-      setState({
-        search: {
-          ...state.search,
-          fields: newFields,
-        },
-      });
+    if (!field) {
+      return;
     }
+
+    const newFields = [...currentFields];
+    const index = newFields.indexOf(field);
+    if (index <= 0) {
+      return;
+    }
+
+    swapFields(newFields, index, index - 1);
+    setState({ search: { ...state.search, fields: newFields } });
   }
 
   /**
@@ -125,20 +125,20 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
    * Moves the selection down one position in the list.
    */
   function onMoveDown(): void {
-    const currentField = state.search.fields ?? [];
+    const currentFields = state.search.fields ?? [];
     const field = selectedRef.current?.value;
-    if (field) {
-      const newFields = [...currentField];
-      const index = newFields.indexOf(field);
-      swapFields(newFields, index, index + 1);
-
-      setState({
-        search: {
-          ...state.search,
-          fields: newFields,
-        },
-      });
+    if (!field) {
+      return;
     }
+
+    const newFields = [...currentFields];
+    const index = newFields.indexOf(field);
+    if (index >= newFields.length - 1) {
+      return;
+    }
+
+    swapFields(newFields, index, index + 1);
+    setState({ search: { ...state.search, fields: newFields } });
   }
 
   /**
