@@ -1,9 +1,101 @@
-import { convertTimingToCron } from './scheduledtiming';
+import { Repository, systemRepo } from '../fhir/repo';
+import { loadTestConfig } from '../config';
+import { initAppServices, shutdownApp } from '../app';
+import { Bot } from '@medplum/fhirtypes';
+import { createTestProject } from '../test.setup';
+import { createReference } from '@medplum/core';
+import { closeSubscriptionWorker } from './subscription';
+import { convertTimingToCron, getScheduledTimingQueue } from './scheduledtiming';
 
 jest.mock('node-fetch');
 
+// let repo: Repository;
+
+describe('Scheduled Timing Worker', () => {
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initAppServices(config);
+
+    // Create a project
+    const botProjectDetails = await createTestProject();
+    new Repository({
+      extendedMode: true,
+      project: botProjectDetails.project.id,
+      author: createReference(botProjectDetails.client),
+    });
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+    await closeSubscriptionWorker(); // Double close to ensure quite ignore
+  });
+
+  test('should add a job to the queue when a bot with scheduled timing is created', async () => {
+    // Add the bot and check that a job was added to the queue.
+    const queue = getScheduledTimingQueue() as any;
+    queue.add.mockClear();
+    const bot = await systemRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      scheduledTiming: {
+        repeat: {
+          period: 30,
+          dayOfWeek: ['mon', 'wed', 'fri'],
+        },
+      },
+    });
+    expect(bot).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+  });
+
+  test('should not have added a job to the queue due to schedule timing not created', async () => {
+    // Add the bot and check that a job was added to the queue.
+    const queue = getScheduledTimingQueue() as any;
+    queue.add.mockClear();
+    const bot = await systemRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      scheduledTiming: {},
+    });
+    // Bot should have still been created
+    expect(bot).toBeDefined();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Update queue after updating bot scheduledTiming', async () => {
+    // Add the bot and check that a job was added to the queue.
+    const queue = getScheduledTimingQueue() as any;
+    queue.add.mockClear();
+    const bot = await systemRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      scheduledTiming: {
+        repeat: {
+          period: 30,
+          dayOfWeek: ['mon', 'wed', 'fri'],
+        },
+      },
+    });
+
+    await systemRepo.updateResource({
+      resourceType: 'Bot',
+      id: bot.id,
+      scheduledTiming: {
+        repeat: {
+          period: 10,
+          dayOfWeek: ['mon'],
+        },
+      },
+    });
+
+    expect(bot).toBeDefined();
+    expect(queue.getJob).toBeCalled();
+    expect(queue.add).toBeCalledTimes(2);
+  });
+});
+
 describe('convertTimingToCron', () => {
-  test('cron pattern for repeat periods of every 2nd hour', () => {
+  test('cron pattern for repeating job 15 times a day', () => {
     const timing = {
       repeat: {
         period: 15,
@@ -21,7 +113,7 @@ describe('convertTimingToCron', () => {
     expect(result).toEqual(expected);
   });
 
-  test('cron pattern for repeat periods of every 30 min', () => {
+  test('cron pattern for repeating job 48 times a day', () => {
     const timing = {
       repeat: {
         period: 48,
