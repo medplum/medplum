@@ -73,10 +73,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 The following function arguments are available to the Bot code, to enable it to do the functionality it requires.
 
-| Name          | Type                                           | Description                                                                         |
-| ------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `medplum`     | [MedplumClient](../sdk/classes/MedplumClient)  | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
-| `event`       | [BotEvent](../sdk/interfaces/BotEvent)         | The event that object that triggered the Bot                                        |
+| Name          | Type                                                                        | Description                                                                         |
+| ------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `medplum`     | [MedplumClient](../sdk/classes/MedplumClient)                               | An instance of the medplum JS SDK ([documentation](../sdk/))                        |
+| `event`       | [BotEvent](../sdk/interfaces/BotEvent)                                      | The event that object that triggered the Bot                                        |
 | `event.input` | `string` &#124; `Resource` &#124; `Hl7Message` &#124; `Record<string, any>` | The bot input, usually a FHIR resource or content that was posted to a bot endpoint |
 
 In this example, we'll assume the input is a `Patient` resource and print out the patient's name.
@@ -135,7 +135,7 @@ Once your bot has been [saved](#editing-a-bot) and [deployed](#deploying-a-bot),
 There are a few different ways a bot can be executed:
 
 1. Clicking the "Execute" button in the **Bot Code Editor**
-1. Sending a POST request to the `$execute` endpoint
+1. Sending a POST request to the [`$execute` endpoint](/docs/api/fhir/operations/bot-execute)
 1. Setting up a [Subscription](../fhir-basics#subscriptions-listening-for-changes) to execute the Bot automatically based on changes (see next section).
 
 ### _Executing from the Code Editor_
