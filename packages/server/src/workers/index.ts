@@ -2,6 +2,7 @@ import { Resource } from '@medplum/fhirtypes';
 import { MedplumRedisConfig } from '../config';
 import { logger } from '../logger';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
+import { addScheduledTimingJobs, closeScheduledTimingWorker, initScheduledTimingWorker } from './scheduledtiming';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 
 /**
@@ -11,6 +12,7 @@ export function initWorkers(config: MedplumRedisConfig): void {
   logger.debug('Initializing workers...');
   initSubscriptionWorker(config);
   initDownloadWorker(config);
+  initScheduledTimingWorker(config);
   logger.debug('Workers initialized');
 }
 
@@ -20,6 +22,7 @@ export function initWorkers(config: MedplumRedisConfig): void {
 export async function closeWorkers(): Promise<void> {
   await closeSubscriptionWorker();
   await closeDownloadWorker();
+  await closeScheduledTimingWorker();
 }
 
 /**
@@ -29,4 +32,5 @@ export async function closeWorkers(): Promise<void> {
 export async function addBackgroundJobs(resource: Resource): Promise<void> {
   await addSubscriptionJobs(resource);
   await addDownloadJobs(resource);
+  await addScheduledTimingJobs(resource);
 }
