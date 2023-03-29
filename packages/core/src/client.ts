@@ -1704,10 +1704,10 @@ export class MedplumClient extends EventTarget {
   ): Promise<any> {
     let url;
     if (typeof idOrIdentifier === 'string') {
-      const id = idOrIdentifier as string;
+      const id = idOrIdentifier;
       url = this.fhirUrl('Bot', id, '$execute');
     } else {
-      const identifier = idOrIdentifier as Identifier;
+      const identifier = idOrIdentifier;
       url = this.fhirUrl('Bot', '$execute') + `?identifier=${identifier.system}|${identifier.value}`;
     }
     return this.post(url, body, contentType, options);
