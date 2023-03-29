@@ -94,22 +94,15 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
     // For now we have only the bot to execute on a timed job
     return;
   }
-  if (!resource.scheduledTiming) {
+  const cron = resource.cronTiming ? convertTimingToCron(resource.cronTiming) : resource.cronString;
+
+  if (!cron) {
     return;
   }
-
-  if (!resource.scheduledTiming.repeat) {
-    return;
-  }
-
-  const timingToCronFormat = convertTimingToCron(resource.scheduledTiming);
-
-  if (!timingToCronFormat) {
-    return;
-  }
+  const crontObject = { repeat: { pattern: cron } };
 
   // JobId and repeatable instructions
-  const jobOptions = { ...timingToCronFormat, jobId: resource.id };
+  const jobOptions = { ...crontObject, jobId: resource.id };
   await addScheduledTimingJobData(
     {
       resourceType: resource.resourceType,
@@ -145,7 +138,7 @@ async function addScheduledTimingJobData(job: ScheduledTimingJobData, repeatable
  * BullMQ repeat option, which conducts the job has a cron-parser's pattern
  * @param timing The scheduled timing property from the bot, which is a Timing Type.
  */
-export function convertTimingToCron(timing: Timing): Repeatable | undefined {
+export function convertTimingToCron(timing: Timing): string | undefined {
   let minute = '*';
   let hour = '*';
   // The timing input doesn't have a feature for this
@@ -182,7 +175,7 @@ export function convertTimingToCron(timing: Timing): Repeatable | undefined {
     dayOfWeek = daysCronFormat.join(',');
   }
   const cronPattern = `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
-  return { repeat: { pattern: cronPattern } };
+  return cronPattern;
 }
 
 export async function execBot(job: Job<ScheduledTimingJobData>): Promise<void> {

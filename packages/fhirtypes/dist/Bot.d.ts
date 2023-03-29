@@ -73,7 +73,12 @@ export interface Bot {
   /**
    * A schedule for the bot to be executed.
    */
-  scheduledTiming?: Timing;
+  cronTiming?: Timing;
+
+  /**
+   * A schedule for the bot to be executed.
+   */
+  cronString?: string;
 
   /**
    * Bot logic script.

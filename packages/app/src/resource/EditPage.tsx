@@ -22,7 +22,7 @@ export function EditPage(): JSX.Element | null {
         showNotification({ color: 'red', message: normalizeErrorString(err) });
       });
   }, [medplum, resourceType, id]);
-  console.log(value)
+
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
       setOutcome(undefined);

@@ -1008,13 +1008,15 @@
             }]
           },
           {
-            "id": "Bot.scheduledTiming",
-            "path": "Bot.scheduledTiming",
+            "id": "Bot.cron[x]",
+            "path": "Bot.cron[x]",
             "definition": "A schedule for the bot to be executed.",
             "min": 0,
             "max": "1",
             "type": [{
               "code": "Timing"
+            }, {
+              "code": "string"
             }]
           },
           {
