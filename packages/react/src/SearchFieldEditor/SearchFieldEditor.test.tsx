@@ -225,6 +225,12 @@ describe('SearchFieldEditor', () => {
       (screen.getByTestId('selected') as HTMLSelectElement).value = 'birthDate';
     });
 
+    // Click "Up" once to move the field up
+    await act(async () => {
+      fireEvent.click(screen.getByText('Up'));
+    });
+
+    // Click "Up" again, this should be a no-op
     await act(async () => {
       fireEvent.click(screen.getByText('Up'));
     });
@@ -255,6 +261,12 @@ describe('SearchFieldEditor', () => {
       (screen.getByTestId('selected') as HTMLSelectElement).value = 'name';
     });
 
+    // Click "Down" once to move the field down
+    await act(async () => {
+      fireEvent.click(screen.getByText('Down'));
+    });
+
+    // Click "Down" again even though at the bottom, this should be a no-op
     await act(async () => {
       fireEvent.click(screen.getByText('Down'));
     });
