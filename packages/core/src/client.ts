@@ -9,6 +9,7 @@ import {
   Device,
   Encounter,
   ExtractResource,
+  Identifier,
   OperationOutcome,
   Patient,
   Project,
@@ -1665,6 +1666,51 @@ export class MedplumClient extends EventTarget {
    */
   validateResource<T extends Resource>(resource: T): Promise<OperationOutcome> {
     return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource);
+  }
+
+  /**
+   * Executes a bot by ID.
+   * @param id The Bot ID.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(id: string, body: any, contentType?: string, options?: RequestInit): Promise<any>;
+
+  /**
+   * Executes a bot by Identifier.
+   * @param id The Bot Identifier.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(identifier: Identifier, body: any, contentType?: string, options?: RequestInit): Promise<any>;
+
+  /**
+   * Executes a bot by ID or Identifier.
+   * @param idOrIdentifier The Bot ID or Identifier.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(
+    idOrIdentifier: string | Identifier,
+    body: any,
+    contentType?: string,
+    options: RequestInit = {}
+  ): Promise<any> {
+    let url;
+    if (typeof idOrIdentifier === 'string') {
+      const id = idOrIdentifier;
+      url = this.fhirUrl('Bot', id, '$execute');
+    } else {
+      const identifier = idOrIdentifier;
+      url = this.fhirUrl('Bot', '$execute') + `?identifier=${identifier.system}|${identifier.value}`;
+    }
+    return this.post(url, body, contentType, options);
   }
 
   /**

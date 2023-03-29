@@ -1,4 +1,12 @@
-import { Bundle, BundleEntry, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  BundleEntry,
+  Identifier,
+  Patient,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -880,6 +888,25 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect((result as any).request.options.method).toBe('POST');
     expect((result as any).request.url).toBe('https://x/fhir/R4/Patient/$validate');
+  });
+
+  test('Execute bot', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const bot = await client.createResource<Bot>({
+      resourceType: 'Bot',
+      id: '123',
+      name: 'Test Bot',
+      identifier: [{ system: 'https://example.com', value: '123' }],
+      code: 'export async function handler() {}',
+    });
+
+    // Execute by ID
+    const result1 = await client.executeBot(bot.id as string, {});
+    expect(result1).toBeDefined();
+
+    // Execute by Identifier
+    const result2 = await client.executeBot(bot.identifier?.[0] as Identifier, {});
+    expect(result2).toBeDefined();
   });
 
   test('Request schema', async () => {
