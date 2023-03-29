@@ -36,6 +36,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
+import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   AccessPolicyResource,
@@ -216,10 +217,11 @@ const maxSearchResults = 1000;
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository {
+export class Repository extends BaseRepository implements FhirRepository {
   readonly #context: RepositoryContext;
 
   constructor(context: RepositoryContext) {
+    super();
     this.#context = context;
     if (!this.#context.author?.reference) {
       throw new Error('Invalid author reference');

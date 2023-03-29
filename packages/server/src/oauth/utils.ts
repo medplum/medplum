@@ -11,7 +11,6 @@ import {
 } from '@medplum/core';
 import {
   AccessPolicy,
-  BundleEntry,
   ClientApplication,
   Login,
   Project,
@@ -312,13 +311,11 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
     });
   }
 
-  const bundle = await systemRepo.search<ProjectMembership>({
+  let memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 100,
     filters,
   });
-
-  let memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map((e) => e.resource as ProjectMembership);
 
   const profileType = login.profileType;
   if (profileType) {

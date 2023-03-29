@@ -1,5 +1,7 @@
+import { Patient } from '@medplum/fhirtypes';
 import { Atom } from '../fhirlexer';
 import { PropertyType, TypedValue } from '../types';
+import { createReference, getReferenceString } from '../utils';
 import { LiteralAtom } from './atoms';
 import { FhirPathFunction, functions } from './functions';
 import { booleanToTypedValue, toTypedValue } from './utils';
@@ -621,31 +623,43 @@ describe('FHIRPath functions', () => {
   // Other
 
   test('resolve', () => {
-    expect(functions.resolve([toTypedValue('Patient/123')])).toEqual([
-      {
-        type: PropertyType.BackboneElement,
-        value: { resourceType: 'Patient', id: '123' },
-      },
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: '123',
+      identifier: [{ system: 'https://example.com', value: '123456' }],
+      name: [{ family: 'Simpson', given: ['Homer'] }],
+    };
+
+    // Canonical string resolves to patient-like with resourceType and id
+    expect(functions.resolve([toTypedValue(getReferenceString(patient))])).toEqual([
+      toTypedValue({ resourceType: 'Patient', id: '123' }),
     ]);
-    expect(functions.resolve([{ type: PropertyType.Reference, value: { reference: 'Patient/123' } }])).toEqual([
-      {
-        type: PropertyType.BackboneElement,
-        value: { resourceType: 'Patient', id: '123' },
-      },
+
+    // Reference resolves to patient-like with resourceType and id
+    expect(functions.resolve([toTypedValue(createReference(patient))])).toEqual([
+      toTypedValue({ resourceType: 'Patient', id: '123' }),
     ]);
+
+    // Number resolves to nothing
     expect(functions.resolve([toTypedValue(123)])).toEqual([]);
+
+    // Reference with embedded resource resolves to resource
+    // We don't normally use embeded resources, except in GraphQL queries
+    expect(functions.resolve([toTypedValue({ reference: getReferenceString(patient), resource: patient })])).toEqual([
+      toTypedValue(patient),
+    ]);
+
+    // Identifier references with a "type" should resolve to patient search reference
     expect(
       functions.resolve([
-        toTypedValue({
-          reference: 'Patient/123',
-          resource: {
-            resourceType: 'Patient',
-            id: '123',
-            name: [{ family: 'Simpson', given: ['Homer'] }],
-          },
-        }),
+        { type: PropertyType.Reference, value: { type: 'Patient', identifier: patient.identifier?.[0] } },
       ])
-    ).toEqual([toTypedValue({ resourceType: 'Patient', id: '123', name: [{ family: 'Simpson', given: ['Homer'] }] })]);
+    ).toEqual([toTypedValue({ resourceType: 'Patient' })]);
+
+    // Identifier references without a "type" resolves to nothing
+    expect(
+      functions.resolve([{ type: PropertyType.Reference, value: { identifier: patient.identifier?.[0] } }])
+    ).toEqual([]);
   });
 
   test('as', () => {

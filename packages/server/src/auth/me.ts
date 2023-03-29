@@ -1,5 +1,5 @@
 import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
-import { BundleEntry, Login, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import { Login, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { UAParser } from 'ua-parser-js';
 import { systemRepo } from '../fhir/repo';
@@ -73,7 +73,7 @@ async function getUserConfiguration(membership: ProjectMembership): Promise<User
 }
 
 async function getSessions(user: User): Promise<UserSession[]> {
-  const logins = await systemRepo.search<Login>({
+  const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
       {
@@ -90,8 +90,7 @@ async function getSessions(user: User): Promise<UserSession[]> {
   });
 
   const result = [];
-  for (const e of logins.entry as BundleEntry<Login>[]) {
-    const login = e.resource as Login;
+  for (const login of logins) {
     if (!login.membership || login.revoked) {
       continue;
     }

@@ -19,6 +19,12 @@ npm install @medplum/mock
 Note the following peer dependencies:
 
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
+- [@medplum/fhir-router](https://www.npmjs.com/package/@medplum/fhir-router)
+- If you want to use JSONPatch:
+  - [rfc6902](https://www.npmjs.com/package/rfc6902)
+- If you want to use GraphQL:
+  - [graphql](https://www.npmjs.com/package/graphql)
+  - [dataloader](https://www.npmjs.com/package/dataloader)
 
 ## Usage
 

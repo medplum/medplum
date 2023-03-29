@@ -1,10 +1,10 @@
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema } from '../types';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
-export interface SearchRequest {
-  readonly resourceType: ResourceType;
+export interface SearchRequest<T extends Resource = Resource> {
+  readonly resourceType: T['resourceType'];
   filters?: Filter[];
   sortRules?: SortRule[];
   offset?: number;
@@ -111,10 +111,10 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
  * @param query The collection of query string parameters.
  * @returns A parsed SearchRequest.
  */
-export function parseSearchRequest(
-  resourceType: ResourceType,
+export function parseSearchRequest<T extends Resource = Resource>(
+  resourceType: T['resourceType'],
   query: Record<string, string[] | string | undefined>
-): SearchRequest {
+): SearchRequest<T> {
   return parseSearchImpl(resourceType, query);
 }
 
@@ -123,9 +123,9 @@ export function parseSearchRequest(
  * @param url The search URL.
  * @returns A parsed SearchRequest.
  */
-export function parseSearchUrl(url: URL): SearchRequest {
+export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
   const resourceType = url.pathname.split('/').filter(Boolean).pop() as ResourceType;
-  return parseSearchImpl(resourceType, Object.fromEntries(url.searchParams.entries()));
+  return parseSearchImpl<T>(resourceType, Object.fromEntries(url.searchParams.entries()));
 }
 
 /**
@@ -133,15 +133,15 @@ export function parseSearchUrl(url: URL): SearchRequest {
  * @param url The URL to parse.
  * @returns Parsed search definition.
  */
-export function parseSearchDefinition(url: string): SearchRequest {
-  return parseSearchUrl(new URL(url, 'https://example.com/'));
+export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
+  return parseSearchUrl<T>(new URL(url, 'https://example.com/'));
 }
 
-function parseSearchImpl(
-  resourceType: ResourceType,
+function parseSearchImpl<T extends Resource = Resource>(
+  resourceType: T['resourceType'],
   query: Record<string, string[] | string | undefined>
-): SearchRequest {
-  const searchRequest: SearchRequest = {
+): SearchRequest<T> {
+  const searchRequest: SearchRequest<T> = {
     resourceType,
   };
 

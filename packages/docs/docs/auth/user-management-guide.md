@@ -69,7 +69,7 @@ Prepare JSON payload:
   "lastName": "Simpson",
   "resourceType": "Patient",
   "email": "homer@example.com",
-  "sendEmail": "false"
+  "sendEmail": false
 }
 ```
 
