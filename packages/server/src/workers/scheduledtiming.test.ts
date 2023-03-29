@@ -59,6 +59,20 @@ describe('Scheduled Timing Worker', () => {
     expect(queue.add).toHaveBeenCalled();
   });
 
+  test('should not add a job to the queue when a bot with cronString', async () => {
+    // Add the bot and check that a job was added to the queue.
+    const queue = getScheduledTimingQueue() as any;
+    queue.add.mockClear();
+    const bot = await systemRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      cronString: 'testing',
+    });
+    expect(bot).toBeDefined();
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+
   test('should not have added a job to the queue due to a cron not created', async () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getScheduledTimingQueue() as any;

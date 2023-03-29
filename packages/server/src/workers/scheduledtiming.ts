@@ -6,6 +6,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
+import { isValidCron } from 'cron-validator';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
@@ -94,8 +95,20 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
     // For now we have only the bot to execute on a timed job
     return;
   }
-  const cron = resource.cronTiming ? convertTimingToCron(resource.cronTiming) : resource.cronString;
-
+  let cron;
+  //   const cron = resource.cronTiming ? convertTimingToCron(resource.cronTiming) : resource.cronString;
+  if (resource.cronTiming) {
+    cron = convertTimingToCron(resource.cronTiming);
+    if (!cron) {
+      return;
+    }
+  } else {
+    if (resource.cronString && isValidCron(resource.cronString)) {
+      cron = resource.cronString;
+    } else {
+      return;
+    }
+  }
   if (!cron) {
     return;
   }
