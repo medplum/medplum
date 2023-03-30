@@ -100,12 +100,14 @@ export async function addScheduledTimingJobs(resource: Resource): Promise<void> 
   if (resource.cronTiming) {
     cron = convertTimingToCron(resource.cronTiming);
     if (!cron) {
+      logger.debug('cronTiming had the wrong format for a timed cron job');
       return;
     }
   } else {
     if (resource.cronString && isValidCron(resource.cronString)) {
       cron = resource.cronString;
     } else {
+      logger.debug('cronString had the wrong format for a timed cron job');
       return;
     }
   }
@@ -242,7 +244,6 @@ async function findProjectMembership(project: string, profile: Reference): Promi
  * @param outcome The outcome code.
  * @param outcomeDesc The outcome description text.
  */
-// console.log("if i forget to ask, don't PR")
 async function createAuditEventForScheduledJob(
   bot: Bot,
   startTime: string,
@@ -252,7 +253,7 @@ async function createAuditEventForScheduledJob(
   const entity = [
     {
       what: createReference(bot),
-      role: { code: '', display: 'Domain' },
+      role: { code: '4', display: 'Domain' },
     },
   ];
 
