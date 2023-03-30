@@ -184,10 +184,6 @@ const config = {
                 to: '/about',
               },
               {
-                label: 'Services',
-                to: '/services',
-              },
-              {
                 label: 'Security',
                 to: '/security',
               },
