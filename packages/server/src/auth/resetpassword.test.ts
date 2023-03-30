@@ -6,7 +6,7 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
 
@@ -17,6 +17,8 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('Reset Password', () => {
+  const testRecaptchaSecretKey = 'testrecaptchasecretkey';
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -33,6 +35,7 @@ describe('Reset Password', () => {
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    getConfig().recaptchaSecretKey = testRecaptchaSecretKey;
   });
 
   test('Blank email address', async () => {
@@ -92,6 +95,34 @@ describe('Reset Password', () => {
     const res2 = await request(app).post('/auth/resetpassword').type('json').send({
       email,
       recaptchaToken: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    expect(args.Destination.ToAddresses[0]).toBe(email);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Medplum Password Reset');
+  });
+
+  test('Success with no recaptcha secret key and missing recaptchaToken', async () => {
+    getConfig().recaptchaSecretKey = '';
+
+    const email = `george${randomUUID()}@example.com`;
+
+    await registerNew({
+      firstName: 'George',
+      lastName: 'Washington',
+      projectName: 'Washington Project',
+      email,
+      password: 'password!@#',
+    });
+
+    const res2 = await request(app).post('/auth/resetpassword').type('json').send({
+      email,
+      recaptchaToken: '',
     });
     expect(res2.status).toBe(200);
     expect(SESv2Client).toHaveBeenCalledTimes(1);

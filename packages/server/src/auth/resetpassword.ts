@@ -9,10 +9,7 @@ import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { verifyRecaptcha } from './utils';
 
-export const resetPasswordValidators = [
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
-];
+export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
@@ -21,9 +18,18 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  if (!(await verifyRecaptcha(getConfig().recaptchaSecretKey as string, req.body.recaptchaToken))) {
-    sendOutcome(res, badRequest('Recaptcha failed'));
-    return;
+  const recaptchaSecretKey = getConfig().recaptchaSecretKey;
+
+  if (recaptchaSecretKey) {
+    if (!req.body.recaptchaToken) {
+      sendOutcome(res, badRequest('Recaptcha token is required'));
+      return;
+    }
+
+    if (!(await verifyRecaptcha(recaptchaSecretKey, req.body.recaptchaToken))) {
+      sendOutcome(res, badRequest('Recaptcha failed'));
+      return;
+    }
   }
 
   const user = await systemRepo.searchOne<User>({
