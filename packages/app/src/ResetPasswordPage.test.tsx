@@ -68,6 +68,7 @@ describe('ResetPasswordPage', () => {
   });
 
   test('Submit success without recaptcha site key', async () => {
+    process.env.RECAPTCHA_SITE_KEY = '';
     setup();
 
     await act(async () => {
