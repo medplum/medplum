@@ -20,7 +20,6 @@ interface MedplumBotConfig {
   readonly dist?: string;
 }
 
-const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
 
@@ -90,7 +89,7 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
 async function startLogin(medplum: MedplumClient): Promise<void> {
   await startWebServer(medplum);
 
-  const loginUrl = new URL('/oauth2/authorize', baseUrl);
+  const loginUrl = new URL('/oauth2/authorize', medplum.getBaseUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
   loginUrl.searchParams.set('scope', 'openid');
@@ -315,6 +314,7 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 
 if (require.main === module) {
   dotenv.config();
+  const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
   const medplum = new MedplumClient({ fetch, baseUrl, storage: new FileSystemStorage() });
   main(medplum, process.argv).catch((err) => console.error('Unhandled error:', err));
 }
