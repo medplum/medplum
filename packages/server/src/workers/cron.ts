@@ -195,15 +195,14 @@ export function convertTimingToCron(timing: Timing): string | undefined {
     }
     dayOfWeek = daysCronFormat.join(',');
   }
-  const cronPattern = `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
-  return cronPattern;
+  return `${minute} ${hour} ${dayOfMonth} ${month} ${dayOfWeek}`;
 }
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
   const startTime = new Date().toISOString();
-  const bot = await systemRepo.readReference<Bot>({ reference: job.id });
-  const project = bot.meta?.project as string;
+  const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.id });
 
+  const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
 
   if (!runAs) {

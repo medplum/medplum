@@ -1,14 +1,16 @@
 import { Repository, systemRepo } from '../fhir/repo';
 import { loadTestConfig } from '../config';
 import { initAppServices, shutdownApp } from '../app';
-import { Bot, Project } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { createTestProject } from '../test.setup';
 import { createReference } from '@medplum/core';
-import { convertTimingToCron, getCronQueue } from './cron';
+import { convertTimingToCron, CronJobData, execBot, getCronQueue } from './cron';
 import { randomUUID } from 'crypto';
+import { Job } from 'bullmq';
 
 jest.mock('node-fetch');
 
+let botProject: Project;
 let botRepo: Repository;
 
 describe('Cron Worker', () => {
@@ -18,6 +20,7 @@ describe('Cron Worker', () => {
 
     // Create a project
     const botProjectDetails = await createTestProject();
+    botProject = botProjectDetails.project;
     botRepo = new Repository({
       extendedMode: true,
       project: botProjectDetails.project.id,
@@ -151,6 +154,41 @@ describe('Cron Worker', () => {
     });
     expect(bot).toBeDefined();
     expect(queue.add).not.toBeCalled();
+  });
+
+  test('Bot should execute successfully', async () => {
+    const queue = getCronQueue() as any;
+    queue.add.mockClear();
+
+    const bot = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      cronTiming: {
+        repeat: {
+          period: 30,
+          dayOfWeek: ['mon', 'wed', 'fri'],
+        },
+      },
+    });
+    await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(botProject),
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+
+    // Create a job object to pass to execBot
+    const job: Job<CronJobData> = {
+      id: bot.id,
+      data: {
+        resourceType: 'Bot',
+        id: bot.id,
+      },
+    } as Job<CronJobData>;
+
+    await execBot(job);
+    const bundle = await botRepo.search<AuditEvent>({ resourceType: 'AuditEvent' });
+    expect(bundle.entry?.length).toEqual(1);
   });
 });
 
