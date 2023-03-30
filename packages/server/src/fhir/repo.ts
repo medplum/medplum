@@ -1246,7 +1246,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const code = filter.code;
 
     if (code === '_id') {
-      return this.#buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
+      return this.#buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
     }
 
     if (code === '_lastUpdated') {
@@ -1254,7 +1254,11 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     if (code === '_compartment' || code === '_project') {
-      return new Condition('compartments', Operator.ARRAY_CONTAINS, filter.value, 'UUID[]');
+      return this.#buildTokenSearchFilter(
+        resourceType,
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        filter
+      );
     }
 
     if (code === '_filter') {
@@ -1337,11 +1341,15 @@ export class Repository extends BaseRepository implements FhirRepository {
       let value: string | boolean = valueStr;
       if (details.type === SearchParameterType.BOOLEAN) {
         value = valueStr === 'true';
+      } else if (details.type === SearchParameterType.UUID) {
+        if (!validator.isUUID(valueStr)) {
+          value = '00000000-0000-0000-0000-000000000000';
+        }
       } else if (valueStr.includes('|')) {
         value = valueStr.split('|').pop() as string;
       }
       if (details.array) {
-        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value));
+        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
       } else if (filter.operator === FhirOperator.CONTAINS) {
         expressions.push(new Condition(column, Operator.LIKE, '%' + value + '%'));
       } else {
