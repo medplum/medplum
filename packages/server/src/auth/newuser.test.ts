@@ -172,6 +172,55 @@ describe('New user', () => {
     expect(res.body.code).toBeUndefined();
   });
 
+  test('Custom recaptcha client with incorrect project ID', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the recaptcha site key
+    // and the default access policy
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+          recaptchaSecretKey,
+        },
+      ],
+      defaultPatientAccessPolicy: {
+        reference: 'AccessPolicy/' + randomUUID(),
+      },
+    });
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: randomUUID(),
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey,
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
+  });
+
   test('Custom recaptcha client missing access policy', async () => {
     const email = `recaptcha-client${randomUUID()}@example.com`;
     const password = 'password!@#';
