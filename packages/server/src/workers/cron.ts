@@ -1,18 +1,19 @@
-import { createReference, Operator } from '@medplum/core';
-import { AuditEvent, Bot, Practitioner, ProjectMembership, Reference, Resource, Timing } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Bot, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumRedisConfig } from '../config';
-import { executeBot } from '../fhir/operations/execute';
+import { executeBot, isBotEnabled } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { isValidCron } from 'cron-validator';
+import { createAuditEvent, findProjectMembership } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
 /*
- * The ScheduleTiming worker inspects resources takes a bot,
- * if it has the scheduledTiming property, will add it as a repeatable
+ * The Cron worker inspects resources takes a bot,
+ * if it has the Cron property, will add it as a repeatable
  * Cron job
  */
 // Repeatable is based on BullMQ docs https://docs.bullmq.io/guide/jobs/repeatable
@@ -25,28 +26,28 @@ interface Repeatable {
   jobId?: string;
 }
 
-export interface ScheduledTimingJobData {
+export interface CronJobData {
   readonly resourceType: string;
   readonly id: string;
 }
 
-const queueName = 'ScheduledTimingQueue';
-const jobName = 'ScheduledTimingJobData';
+const queueName = 'CronQueue';
+const jobName = 'CronJobData';
 
-let queue: Queue<ScheduledTimingJobData> | undefined = undefined;
-let worker: Worker<ScheduledTimingJobData> | undefined = undefined;
+let queue: Queue<CronJobData> | undefined = undefined;
+let worker: Worker<CronJobData> | undefined = undefined;
 
 /**
- * Initializes the scheduled timing worker.
+ * Initializes the Cron worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  */
-export function initScheduledTimingWorker(config: MedplumRedisConfig): void {
+export function initCronWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config,
   };
 
-  queue = new Queue<ScheduledTimingJobData>(queueName, {
+  queue = new Queue<CronJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -56,17 +57,17 @@ export function initScheduledTimingWorker(config: MedplumRedisConfig): void {
       },
     },
   });
-  worker = new Worker<ScheduledTimingJobData>(queueName, execBot, defaultOptions);
+  worker = new Worker<CronJobData>(queueName, execBot, defaultOptions);
   worker.on('completed', (job) => logger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => logger.info(`Failed job ${job?.id} with ${err}`));
 }
 
 /**
- * Shuts down the ScheduledTiming worker.
+ * Shuts down the Cron worker.
  * Closes the BullMQ job queue.
  * Clsoes the BullMQ worker.
  */
-export async function closeScheduledTimingWorker(): Promise<void> {
+export async function closeCronWorker(): Promise<void> {
   if (queue) {
     await queue.close();
     queue = undefined;
@@ -79,82 +80,88 @@ export async function closeScheduledTimingWorker(): Promise<void> {
 }
 
 /**
- * Returns the ScheduledTiming queue instance.
+ * Returns theCron queue instance.
  * This is used by the unit tests.
- * @returns The ScheduledTiming queue (if available).
+ * @returns The Cron queue (if available).
  */
-export function getScheduledTimingQueue(): Queue<ScheduledTimingJobData> | undefined {
+export function getCronQueue(): Queue<CronJobData> | undefined {
   return queue;
 }
 
 /**
  * @param resource The resource that was created or updated.
  */
-export async function addScheduledTimingJobs(resource: Resource): Promise<void> {
+export async function addCronJobs(resource: Resource): Promise<void> {
   if (resource.resourceType !== 'Bot') {
     // For now we have only the bot to execute on a timed job
     return;
   }
+  const bot = resource;
+  const botEnabled = await isBotEnabled(bot);
+
+  if (!botEnabled) {
+    logger.debug('Bot not enabled. Bot needs to be enabled to run cron job');
+    return;
+  }
+
   let cron;
   // Validate the cron format
-  if (resource.cronTiming) {
-    cron = convertTimingToCron(resource.cronTiming);
+  if (bot.cronTiming) {
+    cron = convertTimingToCron(bot.cronTiming);
     if (!cron) {
       logger.debug('cronTiming had the wrong format for a timed cron job');
       return;
     }
   } else {
-    if (resource.cronString && isValidCron(resource.cronString)) {
-      cron = resource.cronString;
+    if (bot.cronString && isValidCron(bot.cronString)) {
+      cron = bot.cronString;
     } else {
       logger.debug('cronString had the wrong format for a timed cron job');
       return;
     }
   }
-  if (!cron) {
-    return;
-  }
+
   const cronObject = { repeat: { pattern: cron } };
 
   // JobId and repeatable instructions
-  const jobOptions = { ...cronObject, jobId: resource.id };
-  await addScheduledTimingJobData(
+  const jobOptions = { ...cronObject, jobId: bot.id };
+  await addCronJobData(
     {
-      resourceType: resource.resourceType,
-      id: resource.id as string,
+      resourceType: bot.resourceType,
+      id: bot.id as string,
     },
     jobOptions
   );
 }
 
 /**
- * Adds a scheduled timing job to the queue, and removes the previous job for bot
+ * Adds a Cron job to the queue, and removes the previous job for bot
  * if it exists
- * @param job The scheduled timing job details.
+ * @param job The Cron job details.
  * @param repeatable The repeat format that instructs BullMQ when to run the job
  */
-async function addScheduledTimingJobData(job: ScheduledTimingJobData, repeatable: Repeatable): Promise<void> {
+async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise<void> {
   // Check if there was a job previously for this bot, if there was, we remove it.
   const previousJob = await queue?.getJob(job.id);
   if (previousJob) {
     logger.debug(`Found a previous job for bot ${job.id}, updating...`);
     await previousJob.remove();
   }
-  logger.debug('Adding Scheduled Timing job');
+  logger.debug('Adding Cron job');
   // Parameters of queue.add https://api.docs.bullmq.io/classes/Queue.html#add
   if (queue) {
     await queue.add(jobName, job, repeatable);
   } else {
-    logger.debug('Scheduled Timing queue not initialized');
+    logger.debug('Cron queue not initialized');
   }
 }
 
 /**
  * BullMQ repeat option, which conducts the job has a cron-parser's pattern
- * @param timing The scheduled timing property from the bot, which is a Timing Type.
+ * @param timing The Cron property from the bot, which is a Timing Type.
  */
 export function convertTimingToCron(timing: Timing): string | undefined {
-  let minute = '*';
+  let minute = '0';
   let hour = '*';
   // The timing input doesn't have a feature for this
   const dayOfMonth = '*';
@@ -176,7 +183,6 @@ export function convertTimingToCron(timing: Timing): string | undefined {
     minute = `*/${timesAnHour}`;
   } else {
     const timesADay = Math.ceil(24 / repeat);
-    minute = '0';
     hour = `*/${timesADay}`;
   }
 
@@ -193,7 +199,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
   return cronPattern;
 }
 
-export async function execBot(job: Job<ScheduledTimingJobData>): Promise<void> {
+export async function execBot(job: Job<CronJobData>): Promise<void> {
   const startTime = new Date().toISOString();
   const bot = await systemRepo.readReference<Bot>({ reference: job.id });
   const project = bot.meta?.project as string;
@@ -214,76 +220,5 @@ export async function execBot(job: Job<ScheduledTimingJobData>): Promise<void> {
     outcome = AuditEventOutcome.MajorFailure;
     logResult = (error as Error).message;
   }
-  await createAuditEventForScheduledJob(bot, startTime, outcome, logResult);
-}
-
-async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    count: 1,
-    filters: [
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: `Project/${project}`,
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
-  return bundle.entry?.[0]?.resource;
-}
-
-/**
- * Creates an AuditEvent for a scheduled timing job attempt.
- * @param bot The bot that triggered the job.
- * @param startTime The time the subscription attempt started.
- * @param outcome The outcome code.
- * @param outcomeDesc The outcome description text.
- */
-async function createAuditEventForScheduledJob(
-  bot: Bot,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string
-): Promise<void> {
-  const entity = [
-    {
-      what: createReference(bot),
-      role: { code: '4', display: 'Domain' },
-    },
-  ];
-
-  await systemRepo.createResource<AuditEvent>({
-    resourceType: 'AuditEvent',
-    meta: {
-      project: bot.meta?.project,
-      account: bot.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: {
-      code: 'transmit',
-    },
-    agent: [
-      {
-        type: {
-          text: 'scheduled timing job',
-        },
-        requestor: false,
-      },
-    ],
-    source: {
-      observer: createReference(bot) as Reference as Reference<Practitioner>,
-    },
-    entity,
-    outcome,
-    outcomeDesc,
-  });
+  await createAuditEvent(bot, startTime, outcome, logResult);
 }

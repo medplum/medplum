@@ -1,23 +1,24 @@
 import { Repository, systemRepo } from '../fhir/repo';
 import { loadTestConfig } from '../config';
 import { initAppServices, shutdownApp } from '../app';
-import { Bot } from '@medplum/fhirtypes';
+import { Bot, Project } from '@medplum/fhirtypes';
 import { createTestProject } from '../test.setup';
 import { createReference } from '@medplum/core';
-import { convertTimingToCron, getScheduledTimingQueue } from './scheduledtiming';
+import { convertTimingToCron, getCronQueue } from './cron';
+import { randomUUID } from 'crypto';
 
 jest.mock('node-fetch');
 
-// let repo: Repository;
+let botRepo: Repository;
 
-describe('Scheduled Timing Worker', () => {
+describe('Cron Worker', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
 
     // Create a project
     const botProjectDetails = await createTestProject();
-    new Repository({
+    botRepo = new Repository({
       extendedMode: true,
       project: botProjectDetails.project.id,
       author: createReference(botProjectDetails.client),
@@ -30,9 +31,9 @@ describe('Scheduled Timing Worker', () => {
 
   test('should add a job to the queue when a bot with cronTiming is created', async () => {
     // Add the bot and check that a job was added to the queue.
-    const queue = getScheduledTimingQueue() as any;
+    const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await systemRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'bot-1',
       cronTiming: {
@@ -48,9 +49,9 @@ describe('Scheduled Timing Worker', () => {
 
   test('should add a job to the queue when a bot with cronString added', async () => {
     // Add the bot and check that a job was added to the queue.
-    const queue = getScheduledTimingQueue() as any;
+    const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await systemRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'bot-1',
       cronString: '* */2 * * 4,5',
@@ -61,9 +62,9 @@ describe('Scheduled Timing Worker', () => {
 
   test('should not add a job to the queue when a bot with cronString', async () => {
     // Add the bot and check that a job was added to the queue.
-    const queue = getScheduledTimingQueue() as any;
+    const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await systemRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'bot-1',
       cronString: 'testing',
@@ -74,9 +75,9 @@ describe('Scheduled Timing Worker', () => {
 
   test('should not have added a job to the queue due to a cron not created', async () => {
     // Add the bot and check that a job was added to the queue.
-    const queue = getScheduledTimingQueue() as any;
+    const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await systemRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'bot-1',
     });
@@ -85,11 +86,11 @@ describe('Scheduled Timing Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
-  test('Update queue after updating bot scheduledTiming', async () => {
+  test('Update queue after updating bot', async () => {
     // Add the bot and check that a job was added to the queue.
-    const queue = getScheduledTimingQueue() as any;
+    const queue = getCronQueue() as any;
     queue.add.mockClear();
-    const bot = await systemRepo.createResource<Bot>({
+    const bot = await botRepo.createResource<Bot>({
       resourceType: 'Bot',
       name: 'bot-1',
       cronTiming: {
@@ -100,7 +101,7 @@ describe('Scheduled Timing Worker', () => {
       },
     });
 
-    await systemRepo.updateResource({
+    await botRepo.updateResource({
       resourceType: 'Bot',
       id: bot.id,
       cronTiming: {
@@ -114,6 +115,42 @@ describe('Scheduled Timing Worker', () => {
     expect(bot).toBeDefined();
     expect(queue.getJob).toBeCalled();
     expect(queue.add).toBeCalledTimes(2);
+  });
+
+  test('Job should not be in queue if bot is not enabled', async () => {
+    // Create a simple project with no advanced features enabled
+    const queue = getCronQueue() as any;
+    queue.add.mockClear();
+
+    // Create one simple project with no advanced features enabled
+    const testProject = await systemRepo.createResource<Project>({
+      resourceType: 'Project',
+      name: 'Test Project',
+      owner: {
+        reference: 'User/' + randomUUID(),
+      },
+    });
+
+    const repo = new Repository({
+      extendedMode: true,
+      project: testProject.id,
+      author: {
+        reference: 'ClientApplication/' + randomUUID(),
+      },
+    });
+
+    const bot = await repo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      cronTiming: {
+        repeat: {
+          period: 30,
+          dayOfWeek: ['mon', 'wed', 'fri'],
+        },
+      },
+    });
+    expect(bot).toBeDefined();
+    expect(queue.add).not.toBeCalled();
   });
 });
 
