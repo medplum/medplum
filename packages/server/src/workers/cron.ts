@@ -1,8 +1,8 @@
 import { createReference } from '@medplum/core';
-import { Bot, Resource, Timing } from '@medplum/fhirtypes';
+import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumRedisConfig } from '../config';
-import { executeBot, isBotEnabled } from '../fhir/operations/execute';
+import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
@@ -96,11 +96,14 @@ export async function addCronJobs(resource: Resource): Promise<void> {
     // For now we have only the bot to execute on a timed job
     return;
   }
-  const bot = resource;
-  const botEnabled = await isBotEnabled(bot);
 
-  if (!botEnabled) {
-    logger.debug('Bot not enabled. Bot needs to be enabled to run cron job');
+  const bot = resource;
+  // Adding a new feature for project that allows users to add a cron
+  const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
+  const isCronEnabled = !!project.features?.includes('cron');
+
+  if (!isCronEnabled) {
+    logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
     return;
   }
 

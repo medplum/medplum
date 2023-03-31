@@ -120,7 +120,7 @@ describe('Cron Worker', () => {
     expect(queue.add).toBeCalledTimes(2);
   });
 
-  test('Job should not be in queue if bot is not enabled', async () => {
+  test('Job should not be in queue if cron is not enabled', async () => {
     // Create a simple project with no advanced features enabled
     const queue = getCronQueue() as any;
     queue.add.mockClear();

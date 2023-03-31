@@ -27,7 +27,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
       reference: 'User/' + randomUUID(),
     },
     strictMode: true,
-    features: ['bots', 'email', 'graphql-introspection'],
+    features: ['bots', 'email', 'graphql-introspection', 'cron'],
     secret: [
       {
         name: 'foo',
