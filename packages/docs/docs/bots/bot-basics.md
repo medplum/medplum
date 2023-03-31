@@ -240,6 +240,12 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 
 ![All Audit Event](/img/app/bots/all_audit_events.png)
 
+### Creating a Cron job for your Bot
+
+Adding a cron job so your bot can automatically run on a set schedule can be done in a few quick steps. 
+
+Click here to [Create a Cron Job](/docs/bots/bot-cron-job)
+
 ## Software Development Lifecycle
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
