@@ -4,6 +4,7 @@ import {
   Binary,
   Bundle,
   Condition,
+  HumanName,
   ImplementationGuide,
   Media,
   Observation,
@@ -474,6 +475,18 @@ describe('FHIR schema', () => {
         item: [{ linkId: 'test', type: 'string', text: 'test', _text: { extension: [] } }],
       })
     ).not.toThrow();
+  });
+
+  test('Array mismatch', () => {
+    // Send an array for a single value property
+    expect(() => validateResource({ resourceType: 'Patient', birthDate: ['1990-01-01'] as unknown as string })).toThrow(
+      'Expected single value for property (Patient.birthDate)'
+    );
+
+    // Send a single value for an array property
+    expect(() =>
+      validateResource({ resourceType: 'Patient', name: { family: 'foo' } as unknown as HumanName[] })
+    ).toThrow('Expected array for property (Patient.name)');
   });
 });
 

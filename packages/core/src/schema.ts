@@ -242,6 +242,10 @@ export class FhirSchemaValidator<T extends Resource> {
         this.#checkPropertyValue(path, elementDefinition, item);
       }
     } else {
+      if (Array.isArray(value)) {
+        this.#issues.push(createStructureIssue(path, 'Expected single value for property'));
+        return;
+      }
       this.#checkPropertyValue(path, elementDefinition, value as TypedValue);
     }
   }
