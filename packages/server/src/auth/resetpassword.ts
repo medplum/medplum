@@ -1,4 +1,4 @@
-import { allOk, badRequest, createReference, Operator } from '@medplum/core';
+import { allOk, badRequest, createReference, Operator, resolveId } from '@medplum/core';
 import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -81,6 +81,9 @@ export async function resetPassword(user: User): Promise<string> {
   // Create the password change request
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
+    meta: {
+      project: resolveId(user.project),
+    },
     user: createReference(user),
     secret: generateSecret(16),
   });

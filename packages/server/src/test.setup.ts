@@ -106,7 +106,7 @@ export async function addTestUser(
     project,
     email,
     password,
-    resourceType: 'Patient',
+    resourceType: 'Practitioner',
     firstName: 'Bob',
     lastName: 'Jones',
     accessPolicy: accessPolicy && createReference(accessPolicy),
