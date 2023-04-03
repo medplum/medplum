@@ -116,8 +116,39 @@ describe('Cron Worker', () => {
     });
 
     expect(bot).toBeDefined();
-    expect(queue.getJob).toBeCalled();
+    expect(queue.getRepeatableJobs).toBeCalled();
     expect(queue.add).toBeCalledTimes(2);
+  });
+
+  test('Find a previous job to remove after updating bot', async () => {
+    const queue = getCronQueue() as any;
+    const bot = await botRepo.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'bot-1',
+      cronString: '* * * * *',
+    });
+
+    expect(bot).toBeDefined();
+    expect(queue.getRepeatableJobs).toBeCalled();
+    expect(queue.add).toBeCalled();
+
+    queue.getRepeatableJobs.mockImplementation(() => [
+      {
+        key: `CronJobData:${bot.id}:::* * * * *`,
+      },
+    ]);
+    await botRepo.updateResource({
+      resourceType: 'Bot',
+      id: bot.id,
+      cronTiming: {
+        repeat: {
+          period: 10,
+          dayOfWeek: ['mon'],
+        },
+      },
+    });
+
+    expect(queue.removeRepeatableByKey).toBeCalled();
   });
 
   test('Job should not be in queue if cron is not enabled', async () => {
@@ -182,7 +213,7 @@ describe('Cron Worker', () => {
       id: bot.id,
       data: {
         resourceType: 'Bot',
-        id: bot.id,
+        botId: bot.id,
       },
     } as Job<CronJobData>;
 

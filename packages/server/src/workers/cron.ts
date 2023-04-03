@@ -28,7 +28,7 @@ interface Repeatable {
 
 export interface CronJobData {
   readonly resourceType: string;
-  readonly id: string;
+  readonly botId: string;
 }
 
 const queueName = 'CronQueue';
@@ -118,6 +118,10 @@ export async function addCronJobs(resource: Resource): Promise<void> {
   } else {
     if (bot.cronString && isValidCron(bot.cronString)) {
       cron = bot.cronString;
+    } else if (bot.cronString === '') {
+      await removeBullMQJobByKey(bot.id as string);
+      logger.debug(`no job for bot: ${bot.id}`);
+      return;
     } else {
       logger.debug('cronString had the wrong format for a timed cron job');
       return;
@@ -131,7 +135,7 @@ export async function addCronJobs(resource: Resource): Promise<void> {
   await addCronJobData(
     {
       resourceType: bot.resourceType,
-      id: bot.id as string,
+      botId: bot.id as string,
     },
     jobOptions
   );
@@ -145,11 +149,7 @@ export async function addCronJobs(resource: Resource): Promise<void> {
  */
 async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise<void> {
   // Check if there was a job previously for this bot, if there was, we remove it.
-  const previousJob = await queue?.getJob(job.id);
-  if (previousJob) {
-    logger.debug(`Found a previous job for bot ${job.id}, updating...`);
-    await previousJob.remove();
-  }
+  await removeBullMQJobByKey(job.botId);
   logger.debug('Adding Cron job');
   // Parameters of queue.add https://api.docs.bullmq.io/classes/Queue.html#add
   if (queue) {
@@ -203,7 +203,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
 
 export async function execBot(job: Job<CronJobData>): Promise<void> {
   const startTime = new Date().toISOString();
-  const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.id });
+  const bot = await systemRepo.readReference<Bot>({ reference: 'Bot/' + job.data.botId });
 
   const project = bot.meta?.project as string;
   const runAs = await findProjectMembership(project, createReference(bot));
@@ -223,4 +223,15 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
     logResult = (error as Error).message;
   }
   await createAuditEvent(bot, startTime, outcome, logResult);
+}
+
+async function removeBullMQJobByKey(botId: string): Promise<void> {
+  const previousJobs = await queue?.getRepeatableJobs();
+  previousJobs?.map(async (p) => {
+    if (p.key.includes(botId)) {
+      const keyToRemove = p.key;
+      await queue?.removeRepeatableByKey(keyToRemove);
+      logger.debug(`Found a previous job for bot ${botId}, updating...`);
+    }
+  });
 }
