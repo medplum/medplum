@@ -1,5 +1,6 @@
 import {
   createReference,
+  getExtension,
   getExtensionValue,
   isGone,
   matchesSearchRequest,
@@ -26,6 +27,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
+import { BackgroundJobContext } from './context';
 
 /*
  * The subscription worker inspects every resource change,
@@ -113,8 +115,9 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * not to re-evaluate the subscription.
  *
  * @param resource The resource that was created or updated.
+ * @param context The background job context.
  */
-export async function addSubscriptionJobs(resource: Resource): Promise<void> {
+export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
@@ -122,7 +125,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
   const subscriptions = await getSubscriptions(resource);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    if (matchesCriteria(resource, subscription)) {
+    if (matchesCriteria(resource, subscription, context)) {
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -139,7 +142,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
  * @param subscription The subscription.
  * @returns True if the resource matches the subscription criteria.
  */
-function matchesCriteria(resource: Resource, subscription: Subscription): boolean {
+function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): boolean {
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
@@ -160,6 +163,17 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
   if (resource.resourceType !== searchRequest.resourceType) {
     logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
+    );
+    return false;
+  }
+
+  const supportedInteractionExtension = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
+  );
+  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
+    logger.debug(
+      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
     );
     return false;
   }
@@ -359,7 +373,12 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
     }
   }
 
-  const secret = getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
+  // Look for signature secret in Medplum extension
+  // Note that the first version of the extension used a different URL
+  // We still support the old URL for backwards compatibility
+  const secret =
+    getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
+    getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
