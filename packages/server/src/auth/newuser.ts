@@ -39,7 +39,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
     // If the recaptcha site key is not the main Medplum recaptcha site key,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey);
+    project = await getProjectByRecaptchaSiteKey(recaptchaSiteKey, req.body.projectId as string | undefined);
     if (!project) {
       sendOutcome(res, badRequest('Invalid recaptchaSiteKey'));
       return;
@@ -124,17 +124,30 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   return result;
 }
 
-async function getProjectByRecaptchaSiteKey(recaptchaSiteKey: string): Promise<Project | undefined> {
+async function getProjectByRecaptchaSiteKey(
+  recaptchaSiteKey: string,
+  projectId: string | undefined
+): Promise<Project | undefined> {
+  const filters = [
+    {
+      code: 'recaptcha-site-key',
+      operator: Operator.EQUALS,
+      value: recaptchaSiteKey,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: '_id',
+      operator: Operator.EQUALS,
+      value: projectId,
+    });
+  }
+
   const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
-    filters: [
-      {
-        code: 'recaptcha-site-key',
-        operator: Operator.EQUALS,
-        value: recaptchaSiteKey,
-      },
-    ],
+    filters,
   });
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

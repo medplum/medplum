@@ -1004,6 +1004,36 @@ describe('FHIR Repo', () => {
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
+  test('Non UUID _id', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: 'x',
+        },
+      ],
+    });
+
+    expect(searchResult1?.entry?.length).toEqual(0);
+  });
+
+  test('Non UUID _compartment', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_compartment',
+          operator: Operator.EQUALS,
+          value: 'x',
+        },
+      ],
+    });
+
+    expect(searchResult1?.entry?.length).toEqual(0);
+  });
+
   test('Filter by _project', async () => {
     const project1 = randomUUID();
     const project2 = randomUUID();

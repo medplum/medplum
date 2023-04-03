@@ -11,6 +11,7 @@ export enum SearchParameterType {
   DATE = 'DATE',
   DATETIME = 'DATETIME',
   PERIOD = 'PERIOD',
+  UUID = 'UUID',
 }
 
 export interface SearchParameterDetails {

@@ -5,27 +5,35 @@ import { Document, Form, getErrorsForInput, getRecaptcha, initRecaptcha, Logo, u
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
-
 export function ResetPasswordPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
+  const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
 
   useEffect(() => {
-    initRecaptcha(recaptchaSiteKey);
-  }, []);
+    if (recaptchaSiteKey) {
+      initRecaptcha(recaptchaSiteKey);
+    }
+  }, [recaptchaSiteKey]);
 
   return (
     <Document width={450}>
       <Form
         style={{ maxWidth: 400 }}
-        onSubmit={(formData: Record<string, string>) => {
-          getRecaptcha(recaptchaSiteKey)
-            .then((recaptchaToken: string) => medplum.post('auth/resetpassword', { ...formData, recaptchaToken }))
+        onSubmit={async (formData: Record<string, string>) => {
+          let recaptchaToken = '';
+          if (recaptchaSiteKey) {
+            recaptchaToken = await getRecaptcha(recaptchaSiteKey);
+          }
+
+          medplum
+            .post('auth/resetpassword', { ...formData, recaptchaToken })
             .then(() => setSuccess(true))
-            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+            .catch((err) => {
+              setOutcome(normalizeOperationOutcome(err));
+            });
         }}
       >
         <Stack spacing="lg" mb="xl" align="center">

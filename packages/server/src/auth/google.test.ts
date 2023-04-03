@@ -277,7 +277,7 @@ describe('Google Auth', () => {
     expect(res2.status).toBe(200);
   });
 
-  test('Custom Google client wrong project', async () => {
+  test('Custom Google client wrong projectId', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
@@ -342,7 +342,7 @@ describe('Google Auth', () => {
     expect(res.body.code).toBeDefined();
   });
 
-  test('Custom Google client wrong project', async () => {
+  test('ClientId with incorrect projectId', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
 
