@@ -569,7 +569,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     await setCacheEntry(result);
-    await addBackgroundJobs(result);
+    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.#removeHiddenFields(result);
     return result;
   }
@@ -778,7 +778,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource);
+    return addSubscriptionJobs(resource, { interaction: 'update' });
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
