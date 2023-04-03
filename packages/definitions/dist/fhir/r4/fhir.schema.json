@@ -61291,7 +61291,8 @@
       "required": [
         "resourceType",
         "project",
-        "user"
+        "user",
+        "profile"
       ]
     },
     "ClientApplication": {
@@ -61737,6 +61738,14 @@
         "photo": {
           "description": "Image of the bot.",
           "$ref": "#/definitions/Attachment"
+        },
+        "cronTiming": {
+          "description": "A schedule for the bot to be executed.",
+          "$ref": "#/definitions/Timing"
+        },
+        "cronString": {
+          "description": "A schedule for the bot to be executed.",
+          "$ref": "#/definitions/string"
         },
         "code": {
           "description": "Bot logic script.",

@@ -1008,6 +1008,18 @@
             }]
           },
           {
+            "id": "Bot.cron[x]",
+            "path": "Bot.cron[x]",
+            "definition": "A schedule for the bot to be executed.",
+            "min": 0,
+            "max": "1",
+            "type": [{
+              "code": "Timing"
+            }, {
+              "code": "string"
+            }]
+          },
+          {
             "id" : "Bot.code",
             "path" : "Bot.code",
             "definition" : "Bot logic script.",

@@ -6,6 +6,7 @@
 import { Attachment } from './Attachment';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
+import { Timing } from './Timing';
 
 /**
  * Bot account for automated actions.
@@ -68,6 +69,16 @@ export interface Bot {
    * Image of the bot.
    */
   photo?: Attachment;
+
+  /**
+   * A schedule for the bot to be executed.
+   */
+  cronTiming?: Timing;
+
+  /**
+   * A schedule for the bot to be executed.
+   */
+  cronString?: string;
 
   /**
    * Bot logic script.

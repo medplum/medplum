@@ -191,6 +191,10 @@ While using the `$execute` endpoint allows developers to trigger Bots from 3rd p
 
 Let's connect our bot to [`Patient`](../api/fhir/resources/patient) resources. That means that the Bot code will run on any "create" or "update" operation to any [`Patient`](../api/fhir/resources/patient).
 
+:::note
+Bots can be run as a cron job. [Click Here](/docs/bots/bot-cron-job) to learn more.
+:::
+
 First, go to the [Subscription](https://app.medplum.com/Subscription) resources page.
 
 Then click on the "New..."
