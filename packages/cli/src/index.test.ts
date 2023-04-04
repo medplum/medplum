@@ -299,6 +299,37 @@ describe('CLI', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 2/));
   });
 
+  test('Deploy bot multiple bot ending with bot name that has no match ', async () => {
+    // Create the bot
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+    const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    // Setup bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        bots: [
+          {
+            name: 'hello-world',
+            id: bot.id,
+            source: 'src/hello-world.ts',
+            dist: 'dist/hello-world.js',
+          },
+          {
+            name: 'hello-world-2',
+            id: bot2.id,
+            source: 'src/hello-world.ts',
+            dist: 'dist/hello-world.js',
+          },
+        ],
+      })
+    );
+
+    await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
+    expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
+  });
+
   test('Create bot success', async () => {
     await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot', '1', 'src/hello-world.ts']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Success! Bot created:'));
