@@ -265,8 +265,7 @@ describe('Login', () => {
     const res8 = await request(app).post('/auth/login').type('json').send({
       email: memberEmail,
       password: 'my-new-password',
-      scope: 'openid',
-      remember: true,
+      scope: 'openid offline',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
@@ -281,7 +280,7 @@ describe('Login', () => {
     });
     expect(res9.status).toBe(200);
     expect(res9.body.token_type).toBe('Bearer');
-    expect(res9.body.scope).toBe('openid');
+    expect(res9.body.scope).toBe('openid offline');
     expect(res9.body.expires_in).toBe(3600);
     expect(res9.body.id_token).toBeDefined();
     expect(res9.body.access_token).toBeDefined();
@@ -349,8 +348,7 @@ describe('Login', () => {
     const res8 = await request(app).post('/auth/login').type('json').send({
       email,
       password,
-      scope: 'openid',
-      remember: true,
+      scope: 'openid offline',
     });
     expect(res8.status).toBe(400);
     expect(res8.body).toMatchObject({
@@ -393,8 +391,7 @@ describe('Login', () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       email,
       password,
-      scope: 'openid',
-      remember: true,
+      scope: 'openid offline',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
@@ -408,8 +405,7 @@ describe('Login', () => {
       resourceType: 'Practitioner',
       email,
       password,
-      scope: 'openid',
-      remember: true,
+      scope: 'openid offline',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });
@@ -422,8 +418,7 @@ describe('Login', () => {
       resourceType: 'Patient',
       email,
       password,
-      scope: 'openid',
-      remember: true,
+      scope: 'openid offline',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
     });

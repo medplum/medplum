@@ -119,7 +119,6 @@ export async function addTestUser(
     password,
     scope: 'openid',
     nonce: 'nonce',
-    remember: false,
   });
 
   const accessToken = await generateAccessToken({

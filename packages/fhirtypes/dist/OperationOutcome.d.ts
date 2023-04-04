@@ -14,6 +14,7 @@ import { Resource } from './Resource';
  * from a system action.
  */
 export interface OperationOutcome {
+
   /**
    * This is a OperationOutcome resource
    */
@@ -102,6 +103,7 @@ export interface OperationOutcome {
  * action.
  */
 export interface OperationOutcomeIssue {
+
   /**
    * Unique id for the element within a resource (for internal references).
    * This may be any string value that does not contain spaces.
@@ -149,38 +151,10 @@ export interface OperationOutcomeIssue {
    * IssueType value set, and may additional provide its own code for the
    * error in the details element.
    */
-  code?:
-    | 'invalid'
-    | 'structure'
-    | 'required'
-    | 'value'
-    | 'invariant'
-    | 'security'
-    | 'login'
-    | 'unknown'
-    | 'expired'
-    | 'forbidden'
-    | 'suppressed'
-    | 'processing'
-    | 'not-supported'
-    | 'duplicate'
-    | 'multiple-matches'
-    | 'not-found'
-    | 'deleted'
-    | 'too-long'
-    | 'code-invalid'
-    | 'extension'
-    | 'too-costly'
-    | 'business-rule'
-    | 'conflict'
-    | 'transient'
-    | 'lock-error'
-    | 'no-store'
-    | 'exception'
-    | 'timeout'
-    | 'incomplete'
-    | 'throttled'
-    | 'informational';
+  code?: 'invalid' | 'structure' | 'required' | 'value' | 'invariant' | 'security' | 'login' | 'unknown' | 'expired' |
+      'forbidden' | 'suppressed' | 'processing' | 'not-supported' | 'duplicate' | 'multiple-matches' | 'not-found' |
+      'deleted' | 'too-long' | 'code-invalid' | 'extension' | 'too-costly' | 'business-rule' | 'conflict' | 'transient' |
+      'lock-error' | 'no-store' | 'exception' | 'timeout' | 'incomplete' | 'throttled' | 'informational';
 
   /**
    * Additional details about the error. This may be a text description of

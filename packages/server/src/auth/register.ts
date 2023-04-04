@@ -50,11 +50,10 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: 'openid',
+    scope: 'openid offline',
     nonce: randomUUID(),
     email: request.email,
     password: request.password,
-    remember: true,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });
