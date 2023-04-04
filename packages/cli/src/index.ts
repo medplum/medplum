@@ -197,8 +197,8 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
     return;
   }
 
-  for (let i = 0; i < botConfigs.length; i++) {
-    await runBotConfig(botConfigs[i], medplum, argv, commands);
+  for (const botConfig of botConfigs) {
+    await runBotConfig(botConfig, medplum, argv, commands);
   }
 
   console.log(`Number of bots deployed: ${botConfigs.length}`);
