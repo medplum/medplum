@@ -1,16 +1,11 @@
 import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome, ProfileResource } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome, InviteResult, InviteBody } from '@medplum/core';
+import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
-
-interface InviteResult {
-  profile: ProfileResource;
-  membership: ProjectMembership;
-}
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
@@ -23,7 +18,7 @@ export function InvitePage(): JSX.Element {
   return (
     <Form
       onSubmit={(formData: Record<string, string>) => {
-        const body = {
+        const body: InviteBody = {
           resourceType: formData.resourceType,
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -32,7 +27,7 @@ export function InvitePage(): JSX.Element {
           accessPolicy,
         };
         medplum
-          .post('admin/projects/' + projectId + '/invite', body)
+          .invite(projectId, body)
           .then((response: InviteResult | OperationOutcome) => {
             medplum.invalidateSearches('Patient');
             medplum.invalidateSearches('Practitioner');

@@ -2,6 +2,7 @@
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
 import {
+  AccessPolicy,
   Binary,
   Bundle,
   BundleEntry,
@@ -35,7 +36,7 @@ import { isOk, normalizeOperationOutcome, OperationOutcomeError } from './outcom
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
+import { arrayBufferToBase64, createReference, InviteResult, ProfileResource } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
 
@@ -312,6 +313,15 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly contentType: string;
   readonly input: T;
   readonly secrets: Record<string, ProjectSecret>;
+}
+
+export interface InviteBody {
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
+  firstName: string;
+  lastName: string;
+  email?: string;
+  sendEmail?: boolean;
+  accessPolicy?: Reference<AccessPolicy>;
 }
 
 /**
@@ -2342,6 +2352,16 @@ export class MedplumClient extends EventTarget {
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
     return this.#fetchTokens(formBody);
+  }
+
+  /**
+   * Invite a user to a project.
+   * @param projectId 
+   * @param body 
+   * @returns Promise that returns an invite result or an operation outcome.
+   */
+  async invite(projectId: string, body: InviteBody): Promise<InviteResult | OperationOutcome> {
+    return this.post('admin/projects' + projectId + '/invites', body);
   }
 
   /**
