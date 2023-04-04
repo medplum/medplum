@@ -402,7 +402,7 @@ export function getPropertyDisplayName(path: string): string {
     .replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'PKCE', 'JWKS', 'URI', 'URL']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
