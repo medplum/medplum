@@ -10,7 +10,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { isExternalAuth } from './method';
-import { sendLoginResult, getProjectIdByClientId } from './utils';
+import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -117,11 +117,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     authMethod: 'google',
     email: claims.email,
     googleCredentials: claims,
-    remember: true,
     projectId,
     clientId,
     resourceType,
-    scope: req.body.scope || 'openid',
+    scope: req.body.scope || 'openid offline',
     nonce: req.body.nonce || randomUUID(),
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,

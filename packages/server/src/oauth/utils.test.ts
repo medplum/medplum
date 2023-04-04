@@ -36,7 +36,6 @@ describe('OAuth utils', () => {
         password: 'medplum_admin',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -55,7 +54,6 @@ describe('OAuth utils', () => {
         password: 'medplum_admin',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -74,7 +72,6 @@ describe('OAuth utils', () => {
         password: '',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -93,7 +90,6 @@ describe('OAuth utils', () => {
         password: 'medplum_admin',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -112,7 +108,6 @@ describe('OAuth utils', () => {
         password: 'medplum_admin',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -130,7 +125,6 @@ describe('OAuth utils', () => {
         email: 'admin@example.com',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -148,7 +142,6 @@ describe('OAuth utils', () => {
         email: 'admin@example.com',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -167,7 +160,6 @@ describe('OAuth utils', () => {
         password: 'medplum_admin',
         scope: '',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -185,7 +177,6 @@ describe('OAuth utils', () => {
       password: 'medplum_admin',
       scope: 'openid',
       nonce: 'nonce',
-      remember: false,
     });
     expect(login).toBeDefined();
   });
@@ -196,7 +187,6 @@ describe('OAuth utils', () => {
         authMethod: 'external',
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
         projectId: randomUUID(),
       });
       fail('Expected error');
@@ -213,7 +203,6 @@ describe('OAuth utils', () => {
         externalId: randomUUID(),
         scope: 'openid',
         nonce: 'nonce',
-        remember: false,
       });
       fail('Expected error');
     } catch (err) {
@@ -233,7 +222,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
           codeChallenge: 'xyz',
         },
         undefined
@@ -256,7 +244,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
           codeChallengeMethod: 'plain',
         },
         client
@@ -278,7 +265,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
           codeChallenge: 'xyz',
           codeChallengeMethod: 'xyz',
         },
@@ -301,7 +287,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
           codeChallenge: 'xyz',
           codeChallengeMethod: 'plain',
         },
@@ -320,7 +305,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
           codeChallenge: 'xyz',
           codeChallengeMethod: 'S256',
         },
@@ -345,7 +329,6 @@ describe('OAuth utils', () => {
           password: 'medplum_admin',
           scope: 'openid',
           nonce: 'nonce',
-          remember: false,
         },
         client
       )

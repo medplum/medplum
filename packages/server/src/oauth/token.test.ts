@@ -448,7 +448,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.error_description).toBe('Token revoked');
   });
 
-  test('Authorization code token success with refresh', async () => {
+  test('Authorization code token success with refresh using legacy remember flag', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
       password,
@@ -466,6 +466,54 @@ describe('OAuth2 Token', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+  });
+
+  test('Authorization code token success with refresh using scope=offline', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+  });
+
+  test('Authorization code token success with refresh using scope=offline_access', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -579,7 +627,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: true,
+      scope: 'openid offline',
     });
     expect(res.status).toBe(200);
 
@@ -615,7 +663,6 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: false,
     });
     expect(res.status).toBe(200);
 
@@ -656,7 +703,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -681,7 +728,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -717,7 +764,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: true,
+      scope: 'openid offline',
     });
     expect(res.status).toBe(200);
 
@@ -764,7 +811,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -808,7 +855,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -848,7 +895,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -888,7 +935,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -935,7 +982,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -1016,7 +1063,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 

@@ -36,7 +36,6 @@ export interface LoginRequest {
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
-  readonly remember: boolean;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
   readonly clientId?: string;
@@ -46,6 +45,8 @@ export interface LoginRequest {
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
+  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  readonly remember?: boolean;
 }
 
 export interface TokenResult {
@@ -132,7 +133,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 
   await authenticate(request, user);
 
-  const refreshSecret = request.remember ? generateSecret(32) : undefined;
+  const refreshSecret = includeRefreshToken(request) ? generateSecret(32) : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -645,4 +646,23 @@ export function timingSafeEqualStr(a: string, b: string): boolean {
   const buf1 = Buffer.from(a);
   const buf2 = Buffer.from(b);
   return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
+}
+
+/**
+ * Determines if the login request should include a refresh token.
+ * @param request The login request.
+ * @returns True if the login should include a refresh token.
+ */
+function includeRefreshToken(request: LoginRequest): boolean {
+  // Deprecated legacy "remember" flag
+  if (request.remember) {
+    return true;
+  }
+
+  // Check for offline scope
+  // Google calls it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
+  // Auth0 calls it "offline_access": https://auth0.com/docs/secure/tokens/refresh-tokens/get-refresh-tokens
+  // We support both
+  const scopeArray = request.scope.split(' ');
+  return scopeArray.includes('offline') || scopeArray.includes('offline_access');
 }
