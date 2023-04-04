@@ -280,7 +280,7 @@ describe('Login', () => {
     });
     expect(res9.status).toBe(200);
     expect(res9.body.token_type).toBe('Bearer');
-    expect(res9.body.scope).toBe('openid');
+    expect(res9.body.scope).toBe('openid offline');
     expect(res9.body.expires_in).toBe(3600);
     expect(res9.body.id_token).toBeDefined();
     expect(res9.body.access_token).toBeDefined();
