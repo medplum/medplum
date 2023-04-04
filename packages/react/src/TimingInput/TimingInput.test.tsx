@@ -37,6 +37,54 @@ describe('TimingInput', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  test('Add repeat', async () => {
+    const onChange = jest.fn();
+
+    render(<TimingInput name="example" defaultValue={{}} onChange={onChange} />);
+    expect(screen.getByText('Edit')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+
+    expect(screen.getByText('Timing')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Repeat'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onChange).toHaveBeenCalledWith({ repeat: { period: 1, periodUnit: 'd' } });
+  });
+
+  test('Remove repeat', async () => {
+    const onChange = jest.fn();
+
+    render(
+      <TimingInput name="example" defaultValue={{ repeat: { period: 1, periodUnit: 'd' } }} onChange={onChange} />
+    );
+    expect(screen.getByText('Edit')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Edit'));
+    });
+
+    expect(screen.getByText('Timing')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Repeat'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('OK'));
+    });
+
+    expect(onChange).toHaveBeenCalledWith({});
+  });
+
   test('Change start', async () => {
     const onChange = jest.fn();
 
@@ -73,14 +121,18 @@ describe('TimingInput', () => {
     expect(screen.getByText('Timing')).toBeDefined();
 
     await act(async () => {
-      fireEvent.change(screen.getByDisplayValue('day'), { target: { value: 'month' } });
+      fireEvent.change(screen.getByDisplayValue('1'), { target: { value: '2' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByDisplayValue('day'), { target: { value: 'mo' } });
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('OK'));
     });
 
-    expect(onChange).toHaveBeenCalled();
+    expect(onChange).toHaveBeenCalledWith({ repeat: { period: 2, periodUnit: 'mo' } });
   });
 
   test('Change day of week', async () => {

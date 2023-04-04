@@ -1,4 +1,4 @@
-import { Button, Chip, Group, Modal, NativeSelect, NumberInput, Stack, Switch } from '@mantine/core';
+import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
@@ -106,13 +106,13 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
           <>
             <FormSection title="Repeat every" htmlFor={'timing-dialog-period'}>
               <Group spacing="xs" grow noWrap>
-                <NumberInput
+                <TextInput
                   type="number"
                   step={1}
                   id="timing-dialog-period"
                   name="timing-dialog-period"
                   defaultValue={value?.repeat?.period || 1}
-                  onChange={(newValue) => setPeriod(newValue || 1)}
+                  onChange={(e) => setPeriod(parseInt(e.currentTarget.value) || 1)}
                 />
                 <NativeSelect
                   id="timing-dialog-periodUnit"
