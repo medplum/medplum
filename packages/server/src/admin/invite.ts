@@ -19,7 +19,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { generateSecret } from '../oauth/keys';
-import { getUserByEmailWithoutProject } from '../oauth/utils';
+import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 
 export const inviteValidators = [
   body('resourceType').isIn(['Patient', 'Practitioner', 'RelatedPerson']).withMessage('Resource type is required'),
@@ -81,7 +81,11 @@ export async function inviteUser(
   let profile = undefined;
 
   if (request.email) {
-    user = await getUserByEmailWithoutProject(request.email);
+    if (request.resourceType === 'Patient') {
+      user = await getUserByEmailInProject(request.email, project.id as string);
+    } else {
+      user = await getUserByEmailWithoutProject(request.email);
+    }
     profile = await searchForExistingProfile(project, request.resourceType, request.email);
   }
 
@@ -119,29 +123,25 @@ async function createUser(request: InviteRequest): Promise<User> {
   const password = request.password || generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcrypt.hash(password, 10);
-  let result: User;
 
-  if (externalId) {
-    // If creating a user by externalId, then we are creating a user for a third-party system.
-    // The user must be scoped to the project.
-    result = await systemRepo.createResource<User>({
-      resourceType: 'User',
-      firstName,
-      lastName,
-      externalId,
-      passwordHash,
-      project: createReference(request.project),
-    });
-  } else {
-    // Otherwise, we are creating a user for Medplum.
-    result = await systemRepo.createResource<User>({
-      resourceType: 'User',
-      firstName,
-      lastName,
-      email,
-      passwordHash,
-    });
+  let project: Reference<Project> | undefined = undefined;
+  if (request.resourceType === 'Patient' || externalId) {
+    // Users can optionally be scoped to a project.
+    // We force users to be scoped to a project if:
+    // 1) They are a patient
+    // 2) They are a practitioner with an externalId
+    project = createReference(request.project);
   }
+
+  const result = await systemRepo.createResource<User>({
+    resourceType: 'User',
+    firstName,
+    lastName,
+    email,
+    externalId,
+    passwordHash,
+    project,
+  });
 
   logger.info('Created: ' + result.id);
   return result;

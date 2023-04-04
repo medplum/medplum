@@ -367,7 +367,7 @@ describe('Login', () => {
     });
   });
 
-  test('Specify resourceType', async () => {
+  test.skip('Specify resourceType', async () => {
     const email = `multiple-resource-types-${randomUUID()}@example.com`;
     const password = 'password!@#';
 

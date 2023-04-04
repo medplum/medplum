@@ -65941,5 +65941,25 @@
       "xpath" : "f:DomainConfiguration/f:domain",
       "xpathUsage" : "normal"
     }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/PasswordChangeRequest-user",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "PasswordChangeRequest-user",
+      "url" : "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
+      "version" : "4.0.1",
+      "name" : "publisher",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The user for the password change request.",
+      "code" : "user",
+      "base" : ["PasswordChangeRequest"],
+      "type" : "reference",
+      "expression" : "PasswordChangeRequest.user",
+      "xpath" : "f:PasswordChangeRequest/f:user",
+      "xpathUsage" : "normal",
+      "target" : ["User"]
+    }
   }]
 }

@@ -197,6 +197,11 @@ function applyProjectAdminAccessPolicy(
       criteria: `ProjectMembership?project=${membership.project?.reference}`,
       readonlyFields: ['project', 'user'],
     });
+
+    accessPolicy.resource.push({
+      resourceType: 'PasswordChangeRequest',
+      readonly: true,
+    });
   }
 
   return accessPolicy;

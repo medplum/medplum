@@ -189,13 +189,13 @@ const publicResourceTypes = [
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'PasswordChangeRequest', 'User'];
+const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
 
 /**
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = ['Project', 'ProjectMembership'];
+export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
