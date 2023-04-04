@@ -268,7 +268,7 @@ describe('CLI', () => {
     expect(check.code).not.toEqual('');
   });
 
-  test('Deploy bot multiple bot success', async () => {
+  test('Deploy bot multiple bot ending with bot name success ', async () => {
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
@@ -279,13 +279,13 @@ describe('CLI', () => {
       JSON.stringify({
         bots: [
           {
-            name: 'hello-world-1',
+            name: 'hello-world-staging',
             id: bot.id,
             source: 'src/hello-world.ts',
             dist: 'dist/hello-world.js',
           },
           {
-            name: 'hello-world-2',
+            name: 'hello-world-2-staging',
             id: bot2.id,
             source: 'src/hello-world.ts',
             dist: 'dist/hello-world.js',
@@ -294,7 +294,7 @@ describe('CLI', () => {
       })
     );
 
-    await main(medplum, ['node', 'index.js', 'deploy-bot', 'hello-world']);
+    await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 2/));
   });

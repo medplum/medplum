@@ -299,11 +299,19 @@ async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bo
 }
 
 function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const configs = readConfig()?.bots?.filter((b) => b.name.includes(botName));
-  if (!configs) {
+  if (botName[0] === '*') {
+    const botConfigs = readConfig()?.bots?.filter((b) => b.name.endsWith(botName.slice(1)));
+    if (!botConfigs) {
+      return [];
+    }
+    return botConfigs;
+  }
+
+  const botConfig = readConfig()?.bots?.find((b) => b.name === botName);
+  if (!botConfig) {
     return [];
   }
-  return configs;
+  return [botConfig];
 }
 
 function readConfig(): MedplumConfig | undefined {
