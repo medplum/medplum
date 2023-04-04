@@ -234,13 +234,13 @@ export interface BaseLoginRequest {
   readonly googleClientId?: string;
   readonly launch?: string;
   readonly redirectUri?: string;
-  /** @deprecated Use scope of "offline" or "offline_access" instead. */
-  readonly remember?: boolean;
 }
 
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
+  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  readonly remember?: boolean;
 }
 
 export interface NewUserRequest {
@@ -250,6 +250,7 @@ export interface NewUserRequest {
   readonly password: string;
   readonly recaptchaToken: string;
   readonly recaptchaSiteKey?: string;
+  readonly remember?: boolean;
   readonly projectId?: string;
 }
 
