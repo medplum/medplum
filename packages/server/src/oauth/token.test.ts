@@ -638,7 +638,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -650,7 +650,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -739,7 +739,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -751,7 +751,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -775,7 +775,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -822,7 +822,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -838,7 +838,7 @@ describe('OAuth2 Token', () => {
       });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -866,7 +866,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -906,7 +906,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -946,7 +946,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -994,7 +994,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -1007,7 +1007,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -1020,7 +1020,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res4.status).toBe(200);
     expect(res4.body.token_type).toBe('Bearer');
-    expect(res4.body.scope).toBe('openid');
+    expect(res4.body.scope).toBe('openid offline');
     expect(res4.body.expires_in).toBe(3600);
     expect(res4.body.id_token).toBeDefined();
     expect(res4.body.access_token).toBeDefined();
@@ -1075,7 +1075,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.patient).toEqual(testPatient.profile.id);
   });
 
