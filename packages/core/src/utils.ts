@@ -29,7 +29,7 @@ export type ProfileResource = Patient | Practitioner | RelatedPerson;
  */
 export interface InviteResult {
   profile: ProfileResource;
-  membership: ProjectMembership; 
+  membership: ProjectMembership;
 }
 
 /**

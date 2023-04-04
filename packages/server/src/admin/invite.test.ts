@@ -266,6 +266,7 @@ describe('Admin Invite', () => {
 
     expect(res2.status).toBe(200);
     expect(res2.body.profile.reference).toContain('Patient/');
+    expect(res2.body.admin).toBe(undefined);
     expect(SESv2Client).toHaveBeenCalledTimes(0);
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
@@ -322,6 +323,62 @@ describe('Admin Invite', () => {
       });
     expect(res8.status).toBe(200);
     expect(res8.body.profile.reference).toContain('Patient/');
+  });
+
+  test('Invite user as admin', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        admin: true,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.admin).toBe(true);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+  });
+
+  test('Invite user with admin flag as false', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        admin: false,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.admin).toBe(false);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
   });
 
   test('Email sending error due to SES not being set up', async () => {

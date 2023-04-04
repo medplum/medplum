@@ -1,6 +1,12 @@
 import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome, InviteResult, InviteBody } from '@medplum/core';
+import {
+  isOperationOutcome,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  InviteResult,
+  InviteBody,
+} from '@medplum/core';
 import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
@@ -18,16 +24,17 @@ export function InvitePage(): JSX.Element {
   return (
     <Form
       onSubmit={(formData: Record<string, string>) => {
-        const body: InviteBody = {
-          resourceType: formData.resourceType,
+        const body = {
+          resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           sendEmail: formData.sendEmail === 'on',
           accessPolicy,
+          admin: formData.isAdmin === 'on',
         };
         medplum
-          .invite(projectId, body)
+          .invite(projectId, body as InviteBody)
           .then((response: InviteResult | OperationOutcome) => {
             medplum.invalidateSearches('Patient');
             medplum.invalidateSearches('Practitioner');
@@ -37,7 +44,7 @@ export function InvitePage(): JSX.Element {
             } else {
               setResult(response);
             }
-            setEmailSent(body.sendEmail);
+            setEmailSent(body.sendEmail ?? false);
             showNotification({ color: 'green', message: 'Invite success' });
           })
           .catch((err) => {
@@ -75,6 +82,7 @@ export function InvitePage(): JSX.Element {
             <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
+          <Checkbox name="isAdmin" label="Admin" />
           <Group position="right">
             <Button type="submit">Invite</Button>
           </Group>

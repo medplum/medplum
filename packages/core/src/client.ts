@@ -2357,12 +2357,12 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Invite a user to a project.
-   * @param projectId The project ID. 
+   * @param projectId The project ID.
    * @param body The InviteBody.
    * @returns Promise that returns an invite result or an operation outcome.
    */
   async invite(projectId: string, body: InviteBody): Promise<InviteResult | OperationOutcome> {
-    return this.post('admin/projects' + projectId + '/invites', body);
+    return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
   /**
