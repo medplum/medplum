@@ -69,6 +69,7 @@ export interface InviteRequest {
   sendEmail?: boolean;
   password?: string;
   invitedBy?: Reference<User>;
+  admin?: boolean;
 }
 
 export async function inviteUser(
@@ -101,7 +102,7 @@ export async function inviteUser(
     )) as Practitioner;
   }
 
-  const membership = await createProjectMembership(user, project, profile, request.accessPolicy);
+  const membership = await createProjectMembership(user, project, profile, request.accessPolicy, request.admin);
 
   if (request.email && request.sendEmail !== false) {
     try {

@@ -322,6 +322,7 @@ export interface InviteBody {
   email?: string;
   sendEmail?: boolean;
   accessPolicy?: Reference<AccessPolicy>;
+  admin?: boolean;
 }
 
 /**
@@ -2356,8 +2357,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Invite a user to a project.
-   * @param projectId 
-   * @param body 
+   * @param projectId The project ID. 
+   * @param body The InviteBody.
    * @returns Promise that returns an invite result or an operation outcome.
    */
   async invite(projectId: string, body: InviteBody): Promise<InviteResult | OperationOutcome> {
