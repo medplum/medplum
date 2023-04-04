@@ -187,6 +187,13 @@ Where `<bot-name>` is the `name` property that you set for your bot in `medplum.
 npx medplum deploy-bot my-first-bot
 ```
 
+Deploying multiple bots using a wild card \* at the start of `<bot-name>` to filter for a group of bots.
+This would allow us to deploy bots as part of a CI/CD pipeline, without having to update the command every time a new bot is added.
+
+```bash
+npx medplum deploy-bot *-staging
+```
+
 Running this command does two things:
 
 1. Save the Typescript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
