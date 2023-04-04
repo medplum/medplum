@@ -13,7 +13,7 @@ describe('CSV Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ strictMode: false });
   });
 
   afterAll(async () => {
@@ -118,6 +118,50 @@ describe('CSV Export', () => {
     expect(res3.text).toContain('Alice Smith');
     expect(res3.text).toContain('test1');
     expect(res3.text).toContain('Shipped');
+  });
+
+  test('Handle malformed data', async () => {
+    const serviceRequest: ServiceRequest = {
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: {
+        reference: 'Patient/' + randomUUID(),
+        display: 'Alice Smith',
+      },
+      code: {
+        coding: [
+          {
+            system: 'https://example.com',
+            code: ['test1'] as unknown as string, // Force malformed data
+          },
+        ],
+      },
+      orderDetail: [
+        {
+          text: 'Shipped',
+        },
+      ],
+    };
+
+    // Create a service requeset that we want to export
+    const res1 = await request(app)
+      .post(`/fhir/R4/ServiceRequest`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(serviceRequest);
+    expect(res1.status).toBe(201);
+
+    const res3 = await request(app)
+      .get(
+        `/fhir/R4/ServiceRequest/$csv?_fields=id,subject,code,orderDetail&subject=${serviceRequest.subject?.reference}`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res3.status).toBe(200);
+    expect(res3.text).toContain(res1.body.id);
+    expect(res3.text).toContain('Alice Smith');
+    expect(res3.text).toContain('Shipped');
+    expect(res3.text).not.toContain('test1');
   });
 
   test('Invalid resource type', async () => {

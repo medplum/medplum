@@ -64,7 +64,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
     for (const expression of expressions) {
       const values = evalFhirPath(expression, resource);
       if (values.length > 0) {
-        row.push(csvEscape(values[0]));
+        row.push(tryCsvExcape(values[0]));
       } else {
         row.push('');
       }
@@ -80,6 +80,15 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   // Respond with the CSV content
   // Use Content-Disposition to force file download
   res.type('text/csv').set('Content-Disposition', 'attachment; filename=export.csv').send(content);
+}
+
+function tryCsvExcape(input: unknown): string {
+  try {
+    return csvEscape(input);
+  } catch (err) {
+    // Silently ignore malformed data in projects that do not use "strict" mode
+    return '';
+  }
 }
 
 function csvEscape(input: unknown): string {

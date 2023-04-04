@@ -90,7 +90,7 @@ export class TokenTable extends LookupTable<Token> {
           code: token.code,
           index: i,
           system: token.system?.trim(),
-          value: token.value?.trim(),
+          value: token.value?.trim?.(),
         });
       }
 
