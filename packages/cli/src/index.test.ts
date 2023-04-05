@@ -268,7 +268,7 @@ describe('CLI', () => {
     expect(check.code).not.toEqual('');
   });
 
-  test('Deploy bot multiple bot ending with bot name success ', async () => {
+  test('Deploy bot for multiple bots matching ending wild card', async () => {
     // Create the bot
     const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
     const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
@@ -295,6 +295,37 @@ describe('CLI', () => {
     );
 
     await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 2/));
+  });
+
+  test('Deploy bot multiple bot with multiple wildcards * ', async () => {
+    // Create the bot
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+    const bot2 = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    // Setup bot config
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        bots: [
+          {
+            name: 'hello-world-staging',
+            id: bot.id,
+            source: 'src/hello-world.ts',
+            dist: 'dist/hello-world.js',
+          },
+          {
+            name: 'hello-world-2-staging',
+            id: bot2.id,
+            source: 'src/hello-world.ts',
+            dist: 'dist/hello-world.js',
+          },
+        ],
+      })
+    );
+
+    await main(medplum, ['node', 'index.js', 'deploy-bot', 'he**llo*']);
     expect(console.log).toBeCalledWith(expect.stringMatching(/Success/));
     expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 2/));
   });

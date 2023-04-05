@@ -299,19 +299,12 @@ async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bo
 }
 
 function readBotConfigs(botName: string): MedplumBotConfig[] {
-  if (botName[0] === '*') {
-    const botConfigs = readConfig()?.bots?.filter((b) => b.name.endsWith(botName.slice(1)));
-    if (!botConfigs) {
-      return [];
-    }
-    return botConfigs;
-  }
-
-  const botConfig = readConfig()?.bots?.find((b) => b.name === botName);
-  if (!botConfig) {
+  const regExBotName = new RegExp('^' + botName.replace(/\*/g, '.*') + '$');
+  const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
+  if (!botConfigs) {
     return [];
   }
-  return [botConfig];
+  return botConfigs;
 }
 
 function readConfig(): MedplumConfig | undefined {
