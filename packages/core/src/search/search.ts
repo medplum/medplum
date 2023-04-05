@@ -12,6 +12,7 @@ export interface SearchRequest<T extends Resource = Resource> {
   fields?: string[];
   name?: string;
   total?: 'none' | 'estimate' | 'accurate';
+  include?: string;
   revInclude?: string;
 }
 
@@ -189,6 +190,10 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
     case '_summary':
       searchRequest.total = 'estimate';
       searchRequest.count = 0;
+      break;
+
+    case '_include':
+      searchRequest.include = value;
       break;
 
     case '_revinclude':

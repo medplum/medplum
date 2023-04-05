@@ -548,6 +548,13 @@ describe('Search parser', () => {
     });
   });
 
+  test('_include', () => {
+    expect(parseSearchRequest('MedicationRequest', { _include: 'MedicationRequest:patient' })).toMatchObject({
+      resourceType: 'MedicationRequest',
+      include: 'MedicationRequest:patient',
+    });
+  });
+
   test('_revinclude', () => {
     expect(parseSearchRequest('Patient', { _revinclude: 'Provenance:target' })).toMatchObject({
       resourceType: 'Patient',

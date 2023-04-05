@@ -2152,6 +2152,37 @@ describe('FHIR Repo', () => {
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
   });
 
+  test('Include references success', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const order = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: createReference(patient),
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      include: 'ServiceRequest:subject',
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, order)).toBeTruthy();
+    expect(bundleContains(bundle, patient)).toBeTruthy();
+  });
+
+  test('Include references invalid search param', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'ServiceRequest',
+        include: 'ServiceRequest:xyz',
+      });
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid include parameter: ServiceRequest:xyz');
+    }
+  });
+
   test('Reverse include Provenance', async () => {
     const family = randomUUID();
 
