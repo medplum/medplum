@@ -2230,7 +2230,9 @@ async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Res
 async function setCacheEntry(resource: Resource): Promise<void> {
   await getRedis().set(
     getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId: resource.meta?.project })
+    JSON.stringify({ resource, projectId: resource.meta?.project }),
+    'EX',
+    24 * 60 * 60 // 24 hours in seconds
   );
 }
 
