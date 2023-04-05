@@ -190,15 +190,30 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
   }
 
   const botName = argv[3];
-  const botConfig = readBotConfig(botName);
-  if (!botConfig) {
+
+  const botConfigs = readBotConfigs(botName);
+  if (botConfigs.length === 0) {
     console.log(`Error: ${botName} not found`);
     return;
   }
 
+  for (const botConfig of botConfigs) {
+    await runBotConfig(botConfig, medplum, argv, commands);
+  }
+
+  console.log(`Number of bots deployed: ${botConfigs.length}`);
+}
+
+async function runBotConfig(
+  botConfig: MedplumBotConfig,
+  medplum: MedplumClient,
+  argv: string[],
+  commands: string[]
+): Promise<void> {
   let bot;
   try {
     bot = await medplum.readResource('Bot', botConfig.id);
+    console.log(`Initialized Bot -> ${bot.name}...`);
   } catch (err) {
     console.log('Error: ' + normalizeErrorString(err));
     return;
@@ -285,8 +300,17 @@ async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bo
   }
 }
 
-function readBotConfig(botName: string): MedplumBotConfig | undefined {
-  return readConfig()?.bots?.find((b) => b.name === botName);
+function escapeRegex(str: string): string {
+  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+function readBotConfigs(botName: string): MedplumBotConfig[] {
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
+  const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
+  if (!botConfigs) {
+    return [];
+  }
+  return botConfigs;
 }
 
 function readConfig(): MedplumConfig | undefined {
