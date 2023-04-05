@@ -291,8 +291,8 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * @returns The client ID and secret on success, or an error message on failure.
  */
 async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
-  if (req.body.client_assertion_type === 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
-    return parseClientAssertion(req.body.client_assertion);
+  if (req.body.client_assertion_type) {
+    return parseClientAssertion(req.body.client_assertion_type, req.body.client_assertion);
   }
 
   const authHeader = req.headers.authorization;
@@ -322,10 +322,15 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * 3. https://docs.oracle.com/en/cloud/get-started/subscriptions-cloud/csimg/obtaining-access-token-using-self-signed-client-assertion.html
  * 4. https://darutk.medium.com/oauth-2-0-client-authentication-4b5f929305d4
  *
+ * @param clientAssertiontype The client assertion type.
  * @param clientAssertion The client assertion JWT.
- * @returns
+ * @returns The parsed client ID and secret on success, or an error message on failure.
  */
-async function parseClientAssertion(clientAssertion: string): Promise<ClientIdAndSecret> {
+async function parseClientAssertion(clientAssertiontype: string, clientAssertion: string): Promise<ClientIdAndSecret> {
+  if (clientAssertiontype !== 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer') {
+    return { error: 'Unsupported client assertion type' };
+  }
+
   const { tokenUrl } = getConfig();
   const claims = parseJWTPayload(clientAssertion);
 
