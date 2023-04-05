@@ -11,6 +11,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
+import { grantBucketAccessToOriginAccessIdentity } from './oai';
 import { awsManagedRules } from './waf';
 
 /**
@@ -115,7 +116,7 @@ export class FrontEnd extends Construct {
 
       // Origin access identity
       const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      appBucket.grantRead(originAccessIdentity);
+      grantBucketAccessToOriginAccessIdentity(this, appBucket, originAccessIdentity);
 
       // CloudFront distribution
       const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
