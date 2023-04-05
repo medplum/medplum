@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 toc_max_heading_level: 2
+tags: [auth]
 ---
 
 # OAuth2 Authorization
