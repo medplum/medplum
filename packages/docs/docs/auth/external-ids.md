@@ -1,5 +1,6 @@
 ---
 sidebar_position: 8
+tags: [auth]
 ---
 
 # Using External IDs

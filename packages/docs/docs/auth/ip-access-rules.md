@@ -1,5 +1,6 @@
 ---
 sidebar_position: 11
+tags: [auth]
 ---
 
 # IP Address Rules

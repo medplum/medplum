@@ -1,5 +1,6 @@
 ---
 sidebar_position: 2
+tags: [auth]
 ---
 
 # User Management Guide
