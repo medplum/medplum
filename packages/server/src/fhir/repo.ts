@@ -4,6 +4,7 @@ import {
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
+  evalFhirPathTyped,
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterExpression,
@@ -18,6 +19,7 @@ import {
   isGone,
   isNotFound,
   isOk,
+  isResource,
   matchesSearchRequest,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -26,6 +28,7 @@ import {
   Operator as FhirOperator,
   parseFilterParameter,
   parseSearchUrl,
+  PropertyType,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -33,6 +36,7 @@ import {
   SortRule,
   stringify,
   tooManyRequests,
+  toTypedValue,
   validateResource,
   validateResourceType,
 } from '@medplum/core';
@@ -950,21 +954,12 @@ export class Repository extends BaseRepository implements FhirRepository {
         } as BundleEntry)
     );
 
-    if (searchRequest.revInclude) {
-      const [nestedResourceType, nested] = searchRequest.revInclude.split(':');
-      const nestedSearchRequest: SearchRequest = {
-        resourceType: nestedResourceType as ResourceType,
-        filters: [
-          {
-            code: nested,
-            operator: FhirOperator.EQUALS,
-            value: resources.map(getReferenceString).join(','),
-          },
-        ],
-      };
+    if (searchRequest.include) {
+      entries.push(...(await this.#getSearchIncludeEntries(searchRequest.include, resources)));
+    }
 
-      const nestedSearchEntries = await this.#getSearchEntries(nestedSearchRequest);
-      entries.push(...nestedSearchEntries.entry);
+    if (searchRequest.revInclude) {
+      entries.push(...(await this.#getSearchRevIncludeEntries(searchRequest.revInclude, resources)));
     }
 
     for (const entry of entries) {
@@ -975,6 +970,66 @@ export class Repository extends BaseRepository implements FhirRepository {
       entry: entries as BundleEntry<T>[],
       hasMore: rows.length > count,
     };
+  }
+
+  /**
+   * Returns bundle entries for the resources that are included in the search result.
+   *
+   * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
+   *
+   * @param include The include parameter.
+   * @param resources The base search result resources.
+   * @returns The bundle entries for the included resources.
+   */
+  async #getSearchIncludeEntries(include: string, resources: Resource[]): Promise<BundleEntry[]> {
+    const [nestedResourceType, nested] = include.split(':');
+    const searchParam = getSearchParameter(nestedResourceType, nested);
+    if (!searchParam) {
+      throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${include}`));
+    }
+
+    const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
+
+    const references = fhirPathResult
+      .filter((typedValue) => typedValue.type === PropertyType.Reference)
+      .map((typedValue) => typedValue.value as Reference);
+
+    const readResult = await this.readReferences(references);
+
+    const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
+
+    return includedResources.map(
+      (resource: Resource) =>
+        ({
+          fullUrl: this.#getFullUrl(resource.resourceType, resource.id as string),
+          resource,
+        } as BundleEntry)
+    ) as BundleEntry[];
+  }
+
+  /**
+   * Returns bundle entries for the resources that are reverse included in the search result.
+   *
+   * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
+   *
+   * @param revInclude The revInclude parameter.
+   * @param resources The base search result resources.
+   * @returns The bundle entries for the reverse included resources.
+   */
+  async #getSearchRevIncludeEntries(revInclude: string, resources: Resource[]): Promise<BundleEntry[]> {
+    const [nestedResourceType, nested] = revInclude.split(':');
+    const nestedSearchRequest: SearchRequest = {
+      resourceType: nestedResourceType as ResourceType,
+      filters: [
+        {
+          code: nested,
+          operator: FhirOperator.EQUALS,
+          value: resources.map(getReferenceString).join(','),
+        },
+      ],
+    };
+
+    return (await this.#getSearchEntries(nestedSearchRequest)).entry;
   }
 
   /**
