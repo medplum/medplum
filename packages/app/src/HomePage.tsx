@@ -75,7 +75,7 @@ export function HomePage(): JSX.Element {
               }
             : undefined
         }
-        onExport={() => {
+        onExportCSV={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
             .download(url)
@@ -84,6 +84,7 @@ export function HomePage(): JSX.Element {
             })
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
+        onExportUUIDBundle={() => {}}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
             medplum.invalidateSearches(search.resourceType as ResourceType);

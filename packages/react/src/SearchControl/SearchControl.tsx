@@ -39,6 +39,7 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
+import { SearchExportDisplay } from '../SearchExportDisplay/SearchExportDisplay';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -80,7 +81,8 @@ export interface SearchControlProps {
   onClick?: (e: SearchClickEvent) => void;
   onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
-  onExport?: () => void;
+  onExportCSV?: () => void;
+  onExportUUIDBundle?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
   onBulk?: (ids: string[]) => void;
@@ -92,6 +94,7 @@ interface SearchControlState {
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
   filterDialogVisible: boolean;
+  exportEditorVisible: boolean;
   filterDialogFilter?: Filter;
   filterDialogSearchParam?: SearchParameter;
 }
@@ -150,6 +153,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     selected: {},
     fieldEditorVisible: false,
     filterEditorVisible: false,
+    exportEditorVisible: false,
     filterDialogVisible: false,
   });
 
@@ -320,13 +324,13 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 New...
               </Button>
             )}
-            {!isMobile && props.onExport && (
+            {!isMobile && (props.onExportCSV || props.onExportUUIDBundle) && (
               <Button
                 compact
                 variant={buttonVariant}
                 color={buttonColor}
                 leftIcon={<IconTableExport size={iconSize} />}
-                onClick={props.onExport}
+                onClick={() => setState({ ...stateRef.current, exportEditorVisible: true })}
               >
                 Export...
               </Button>
@@ -523,6 +527,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setState({
             ...stateRef.current,
             filterEditorVisible: false,
+          });
+        }}
+      />
+      <SearchExportDisplay
+        visible={stateRef.current.exportEditorVisible}
+        exportCSV={props.onExportCSV}
+        exportUUIDBundle={props.onExportUUIDBundle}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            exportEditorVisible: false,
           });
         }}
       />
