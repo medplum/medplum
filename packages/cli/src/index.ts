@@ -214,26 +214,28 @@ async function runBotCommands(medplum: MedplumClient, argv: string[], commands: 
 }
 
 async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
-  if (argv.length < 6) {
-    console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file>`);
+  if (argv.length < 7) {
+    console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file> <dist-file>`);
     return;
   }
   const botName = argv[3];
   const projectId = argv[4];
   const sourceFile = argv[5];
+  const distFile = argv[6];
 
   try {
     const body = {
       name: botName,
       description: '',
     };
-    const newBot = await medplum.post('admin/projects/' + projectId + '/invite', body);
+    const newBot = await medplum.post('admin/projects/' + projectId + '/bot', body);
     const bot = await medplum.readResource('Bot', newBot.id);
 
     const botConfig = {
       name: botName,
       id: newBot.id,
       source: sourceFile,
+      dist: distFile,
     };
     await saveBot(medplum, botConfig as MedplumBotConfig, bot);
     console.log(`Success! Bot created: ${bot.id}`);
