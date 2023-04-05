@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, Practitioner, SearchParameter } from '@medplum/fhirtypes';
+import { ActivityDefinition, Bundle, Observation, Patient, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
 import { matchesSearchRequest } from './match';
 import { Operator, parseSearchDefinition, SearchRequest } from './search';
@@ -239,6 +239,23 @@ describe('Search matching', () => {
         }
       )
     ).toBe(true);
+  });
+
+  test('URI filter', () => {
+    const activityDefinition: ActivityDefinition = { resourceType: 'ActivityDefinition', url: 'http://example.com' };
+
+    expect(
+      matchesSearchRequest(activityDefinition, {
+        resourceType: 'ActivityDefinition',
+        filters: [{ code: 'url', operator: Operator.EQUALS, value: 'http://example.com' }],
+      })
+    ).toBe(true);
+    expect(
+      matchesSearchRequest(activityDefinition, {
+        resourceType: 'ActivityDefinition',
+        filters: [{ code: 'url', operator: Operator.EQUALS, value: 'http://foobar.com' }],
+      })
+    ).toBe(false);
   });
 
   describe('Token', () => {
