@@ -14,7 +14,6 @@ describe('CloudWatch Logs', () => {
   beforeEach(async () => {
     console.error = jest.fn();
     console.info = jest.fn();
-    // console.log = jest.fn();
 
     (CloudWatchLogsClient as unknown as jest.Mock).mockClear();
     (CreateLogGroupCommand as unknown as jest.Mock).mockClear();

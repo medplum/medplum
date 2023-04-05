@@ -87,7 +87,7 @@ describe('Logger', () => {
     expect(console.log).toHaveBeenCalledWith('{"resourceType":"AuditEvent"}');
   });
 
-  test('Log to CloudWatch Logs', async () => {
+  test('AuditEvent to CloudWatch Logs', async () => {
     console.info = jest.fn();
     console.log = jest.fn();
 

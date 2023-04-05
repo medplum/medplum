@@ -1,12 +1,3 @@
-// import {
-//   CloudWatchLogsClient,
-//   CreateLogGroupCommand,
-//   CreateLogStreamCommand,
-//   InputLogEvent,
-//   PutLogEventsCommand,
-//   ResourceAlreadyExistsException,
-// } from '@aws-sdk/client-cloudwatch-logs';
-
 export const CreateLogGroupCommand = jest.fn(() => ({}));
 
 export const CreateLogStreamCommand = jest.fn(() => ({}));
