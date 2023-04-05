@@ -11,7 +11,7 @@ import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
-import { MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
+import { InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, notFound, OperationOutcomeError } from './outcomes';
 import { createReference, ProfileResource, stringify } from './utils';
 
@@ -494,6 +494,19 @@ describe('Client', () => {
     tokenExpired = true;
     const result2 = await client.get('expired');
     expect(result2).toBeDefined();
+  });
+
+  test('Invite user', async () => {
+    const client = new MedplumClient(defaultOptions);
+    const body: InviteBody = {
+      resourceType: 'Patient',
+      firstName: 'Sally',
+      lastName: 'Foo',
+      email: 'sally@foomedical.com',
+      sendEmail: true,
+    };
+    const result = await client.invite('123', body);
+    expect(result).toBeDefined();
   });
 
   test('HTTP GET', async () => {

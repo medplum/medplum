@@ -1,16 +1,17 @@
 import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isOperationOutcome, normalizeErrorString, normalizeOperationOutcome, ProfileResource } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  isOperationOutcome,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  InviteResult,
+  InviteBody,
+} from '@medplum/core';
+import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
-
-interface InviteResult {
-  profile: ProfileResource;
-  membership: ProjectMembership;
-}
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
@@ -24,15 +25,16 @@ export function InvitePage(): JSX.Element {
     <Form
       onSubmit={(formData: Record<string, string>) => {
         const body = {
-          resourceType: formData.resourceType,
+          resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
           firstName: formData.firstName,
           lastName: formData.lastName,
           email: formData.email,
           sendEmail: formData.sendEmail === 'on',
           accessPolicy,
+          admin: formData.isAdmin === 'on',
         };
         medplum
-          .post('admin/projects/' + projectId + '/invite', body)
+          .invite(projectId, body as InviteBody)
           .then((response: InviteResult | OperationOutcome) => {
             medplum.invalidateSearches('Patient');
             medplum.invalidateSearches('Practitioner');
@@ -42,7 +44,7 @@ export function InvitePage(): JSX.Element {
             } else {
               setResult(response);
             }
-            setEmailSent(body.sendEmail);
+            setEmailSent(body.sendEmail ?? false);
             showNotification({ color: 'green', message: 'Invite success' });
           })
           .catch((err) => {
@@ -80,6 +82,7 @@ export function InvitePage(): JSX.Element {
             <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
+          <Checkbox name="isAdmin" label="Admin" />
           <Group position="right">
             <Button type="submit">Invite</Button>
           </Group>
