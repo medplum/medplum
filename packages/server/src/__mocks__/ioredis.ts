@@ -20,7 +20,13 @@ class Redis {
     this.values.set(key, value);
   }
 
-  async del(key: string): Promise<void> {
+  async del(key: string | string[]): Promise<void> {
+    if (Array.isArray(key)) {
+      key.forEach((k) => {
+        this.values.delete(k);
+      });
+      return;
+    }
     this.values.delete(key);
   }
 
