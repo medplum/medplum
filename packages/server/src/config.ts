@@ -33,6 +33,8 @@ export interface MedplumServerConfig {
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
   logAuditEvents?: boolean;
+  auditEventLogGroup?: string;
+  auditEventLogStream?: string;
 }
 
 /**

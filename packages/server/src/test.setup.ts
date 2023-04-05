@@ -162,3 +162,22 @@ export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
 export function bundleContains(bundle: Bundle, resource: Resource): boolean {
   return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
 }
+
+/**
+ * Waits for a function to evaluate successfully.
+ * Use this to wait for async behaviors without a handle.
+ * @param fn Function to call.
+ */
+export function waitFor(fn: () => void): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setInterval(() => {
+      try {
+        fn();
+        clearTimeout(timer);
+        resolve();
+      } catch (err) {
+        // ignore
+      }
+    }, 100);
+  });
+}
