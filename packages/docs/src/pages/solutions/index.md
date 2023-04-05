@@ -22,15 +22,13 @@ Build a custom experience for clinical research including schedule of assessment
 
 Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/solutions/lab)
 
+## CMS FHIR for Payors
+
+Quickly comply with CMS 9115 FHIR requirements for payors with easy to implement interfaces and turnkey solution for CARIN Blue Button and DaVinci Implementation Guides. [Learn More](/docs/compliance/cms-fhir)
+
 ## Interoperability Service
 
 Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted. [Learn More](/products/integration)
-
-:::caution Note
-
-The solutions below are under construction. Check back frequently for updates.
-
-:::
 
 ## Sidecar Application
 

@@ -331,7 +331,7 @@ export default function PricingPage(): JSX.Element {
                   <a href="https://buy.stripe.com/fZeeXv2Or0uM1MY3cd">Start Now</a>
                 </td>
                 <td>
-                  <a href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">Start Now</a>
+                  <a href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</a>
                 </td>
                 <td>
                   <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>

@@ -20,4 +20,5 @@ These are advanced guides, and intended for developers and sys admins with exper
 
 ## Reference
 
-See [self-hosting features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on Github.
+- See articles related to [self-hosting](/blog/tags/self-host) on the Medplum blog.
+- See [self-hosting features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on Github.
