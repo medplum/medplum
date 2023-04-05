@@ -4,7 +4,6 @@ import { exec } from 'child_process';
 import dotenv from 'dotenv';
 import { existsSync, readFileSync, writeFile } from 'fs';
 import { createServer } from 'http';
-import { escapeRegExp } from 'lodash';
 import fetch from 'node-fetch';
 import { platform } from 'os';
 import { resolve } from 'path';
@@ -299,8 +298,12 @@ async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bo
   }
 }
 
+function escapeRegex(str: string): string {
+  return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
 function readBotConfigs(botName: string): MedplumBotConfig[] {
-  const regExBotName = new RegExp('^' + escapeRegExp(botName).replace(/\\\*/g, '.*') + '$');
+  const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
     return [];
