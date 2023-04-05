@@ -117,15 +117,8 @@ Running this command does the following:
 If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
 :::
 
-## Linking your code to a Bot Resource (Skip ahead if you created your bot on the CLI)
 
-If you prefer to create the bot on the Medplum App, you can follow the instructions on the [Bot Basics tutorial](./bot-basics/#creating-a-bot) to create a new Bot resource.
-
-Then the next step will be to create a [`Bot` resource](/docs/api/fhir/medplum/bot) using the Medplum App and link your code to the resource.
-
-Next, we need to tell the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) which `.ts` and `.js` files are associated with the resource by editing the `medplum.config.json` field.
-
-Open the the file `medplum.config.json` and add the following entry to the `bots` array.
+After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this: 
 
 ```js
 {
