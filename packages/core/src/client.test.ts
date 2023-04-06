@@ -12,8 +12,8 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
-import { getStatus, notFound, OperationOutcomeError } from './outcomes';
-import { createReference, ProfileResource, stringify } from './utils';
+import { OperationOutcomeError, getStatus, notFound } from './outcomes';
+import { ProfileResource, createReference, stringify } from './utils';
 
 const defaultOptions = {
   clientId: 'xyz',
@@ -204,7 +204,10 @@ function mockHandler(method: string, url: string, options: any): any {
     // Default "create" operation returns the body
     result = JSON.parse(options.body);
   } else {
-    result = notFound;
+    result = {
+      ...notFound,
+      status: 404,
+    };
   }
 
   return {
@@ -1185,6 +1188,17 @@ test('Auto batch single request', async () => {
   const medplum = new MedplumClient({ ...defaultOptions, autoBatchTime: 100 });
   const patient = await medplum.readResource('Patient', '123');
   expect(patient).toBeDefined();
+});
+
+test('Auto batch single request error', async () => {
+  const medplum = new MedplumClient({ ...defaultOptions, autoBatchTime: 100 });
+  try {
+    await medplum.readResource('Patient', 'xyz-not-found');
+    fail('Expected error');
+  } catch (err) {
+    const outcome = (err as OperationOutcomeError).outcome;
+    expect(outcome).toMatchObject(notFound);
+  }
 });
 
 test('Auto batch multiple requests', async () => {
