@@ -1,6 +1,7 @@
 import { createStyles, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
+  deepClone,
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
@@ -10,11 +11,11 @@ import {
   SortRule,
 } from '@medplum/core';
 import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { MemoizedSearchControl, useMedplum, SearchLoadEvent } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loading } from './components/Loading';
-import { blobToJson, getUUIDBundleData } from './utils';
+import { getFHIRBundle } from './utils';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -33,6 +34,7 @@ export function HomePage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
+  const [loadResponse, setLoadResponse] = useState<SearchLoadEvent>();
 
   useEffect(() => {
     // Parse the search from the URL
@@ -80,19 +82,16 @@ export function HomePage(): JSX.Element {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
             .download(url)
-            .then((blob) => {
+            .then((blob: Blob) => {
               window.open(window.URL.createObjectURL(blob), '_blank');
             })
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
-        onExportUUIDBundle={() => {
-          const url = medplum.fhirUrl(search.resourceType) + formatSearchQuery(search);
-          medplum
-            .download(url)
-            .then((blob) => {
-              getUUIDBundleData(blob).then((c) => console.log(c));
-            })
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        onExportFHIRBundle={() => {
+          if (loadResponse) {
+            const fhirEntries = deepClone(loadResponse.response.entry);
+            getFHIRBundle(fhirEntries);
+          }
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -115,6 +114,7 @@ export function HomePage(): JSX.Element {
         onBulk={(ids: string[]) => {
           navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
         }}
+        onLoad={setLoadResponse}
       />
     </Paper>
   );

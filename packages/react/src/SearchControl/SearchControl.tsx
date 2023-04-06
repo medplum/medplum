@@ -82,7 +82,7 @@ export interface SearchControlProps {
   onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
   onExportCSV?: () => void;
-  onExportUUIDBundle?: () => void;
+  onExportFHIRBundle?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
   onBulk?: (ids: string[]) => void;
@@ -324,7 +324,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 New...
               </Button>
             )}
-            {!isMobile && (props.onExportCSV || props.onExportUUIDBundle) && (
+            {!isMobile && (props.onExportCSV || props.onExportFHIRBundle) && (
               <Button
                 compact
                 variant={buttonVariant}
@@ -533,7 +533,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       <SearchExportDisplay
         visible={stateRef.current.exportEditorVisible}
         exportCSV={props.onExportCSV}
-        exportUUIDBundle={props.onExportUUIDBundle}
+        exportFHIRBundle={props.onExportFHIRBundle}
         onCancel={() => {
           setState({
             ...stateRef.current,

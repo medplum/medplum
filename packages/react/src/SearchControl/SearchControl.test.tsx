@@ -352,6 +352,12 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
+    await waitFor(() => screen.getByText('Export as CSV'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export as CSV'));
+    });
+
     expect(onExportCSV).toBeCalled();
   });
 
