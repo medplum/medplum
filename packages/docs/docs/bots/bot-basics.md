@@ -205,7 +205,7 @@ To ensure the Subscription is running, change "Status" to `Active`
 
 ![Activate Subscription](/img/app/bots/subscription_active.png)
 
-Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](../fhir-datastore/basic-fhir-search) for a primer.
+Specify which Resources will trigger this subscription using a FHIR search string. If you're not familiar with FHIR search semantics, check out [this tutorial](../search/basic-search) for a primer.
 
 For this example, we will trigger the Subscription after a change to _any_ `Patient` resource.
 
