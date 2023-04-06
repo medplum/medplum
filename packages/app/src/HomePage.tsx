@@ -14,6 +14,7 @@ import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loading } from './components/Loading';
+import { blobToJson, getUUIDBundleData } from './utils';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -84,7 +85,15 @@ export function HomePage(): JSX.Element {
             })
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
-        onExportUUIDBundle={() => {}}
+        onExportUUIDBundle={() => {
+          const url = medplum.fhirUrl(search.resourceType) + formatSearchQuery(search);
+          medplum
+            .download(url)
+            .then((blob) => {
+              getUUIDBundleData(blob).then((c) => console.log(c));
+            })
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
             medplum.invalidateSearches(search.resourceType as ResourceType);

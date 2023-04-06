@@ -76,3 +76,59 @@ export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any
 export function getProjectId(medplum: MedplumClient): string {
   return resolveId(medplum.getActiveLogin()?.project) as string;
 }
+
+export async function getUUIDBundleData(blob: any): Promise<string> {
+  const dictionary = await blobToJson(blob);
+  const uuidBundle = cleanUpBundle(dictionary.entry);
+  return uuidBundle;
+}
+
+export function cleanUpBundle(input: any): any {
+  for (const entry of input) {
+    const meta = entry.resource.meta;
+    delete meta.versionId;
+    delete meta.lastUpdated;
+    if (Object.keys(meta).length === 0) {
+      delete entry.resource.meta;
+    }
+  }
+
+  return JSON.stringify(
+    {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: input.map((resource: any) => ({
+        fullUrl: 'urn:uuid:' + resource.id,
+        request: { method: 'POST', url: resource.resourceType },
+        resource,
+      })),
+    },
+    replacer,
+    2
+  );
+}
+
+export async function blobToJson(blob: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function () {
+      try {
+        const json = JSON.parse(reader.result as any);
+        resolve(json);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.readAsText(blob);
+  });
+}
+
+function replacer(key: any, value: any) {
+  // Filtering out properties
+  if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
+    // Input: "Patient/{id}"
+    // Output: "urn:uuid:{id}"
+    return 'urn:uuid:' + value.split('/')[1];
+  }
+  return value;
+}
