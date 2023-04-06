@@ -16,35 +16,47 @@ await medplum.search('Patient', 'birthdate=1940-03-29');
 
 /*
 // start-block searchSingleReturn
-// Returns
+// returns
 {
   resourceType: 'Bundle',
   type: 'searchset',
-  total: 2,
   entry: [
     {
-      fullUrl: 'http://example.com/Patient/1',
+      fullUrl: 'http://api.medplum.com/Patient/1',
       resource: {
         resourceType: 'Patient',
         id: '1',
+        name: [
+          {
+            given: ['John'],
+            family: 'Doe',
+          },
+        ],
         birthDate: '1940-03-29',
       },
     },
     {
-      fullUrl: 'http://example.com/Patient/2',
+      fullUrl: 'http://api.medplum.com/Patient/2',
       resource: {
         resourceType: 'Patient',
         id: '2',
+        name: [
+          {
+            given: ['Homer'],
+            family: 'Simpson',
+          },
+        ],
         birthDate: '1940-03-29',
       },
     },
   ],
+  total: 2,
   link: [
     {
       relation: 'self',
-      url: 'http://example.com/Patient?birthdate=1940-03-29',
+      url: 'http://api.medplum.com/Patient?birthdate=1940-03-29',
     },
-  ]
+  ],
 }
 // end-block searchSingleReturn
 */
@@ -52,7 +64,7 @@ await medplum.search('Patient', 'birthdate=1940-03-29');
 // start-block searchResourcesSingle
 await medplum.searchResources('Patient', { birthdate: '1940-03-29' });
 
-// Returns
+// returns
 // [
 //   {
 //     resourceType: 'Patient',
@@ -92,7 +104,22 @@ curl https://api.medplum.com/fhir/R4/Patient?name=Simpson&birthdate=1940-03-29
 // start-block searchAnd
 await medplum.searchResources('Patient', { name: 'Simpson', birthdate: '1940-03-29' });
 // OR
-await medplum.searchResources('Patient', 'name=Simpson&birthdate=1970-01-01');
+await medplum.searchResources('Patient', 'name=Simpson&birthdate=1940-03-29');
+
+// returns
+// [
+//   {
+//     resourceType: 'Patient',
+//     id: '2',
+//     name: [
+//       {
+//         given: ['Homer'],
+//         family: 'Simpson',
+//       },
+//     ],
+//     birthDate: '1940-03-29',
+//   },
+// ]
 // end-block searchAnd
 
 // start-block searchReference
