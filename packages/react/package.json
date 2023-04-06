@@ -12,10 +12,10 @@
   },
   "scripts": {
     "clean": "rimraf dist storybook-static",
-    "dev": "start-storybook -p 6006",
+    "dev": "storybook dev -p 6006",
     "build": "npm run clean && tsc --project tsconfig.build.json && rollup --config rollup.config.mjs",
     "test": "jest",
-    "storybook": "build-storybook"
+    "storybook": "storybook build"
   },
   "devDependencies": {
     "@emotion/react": "11.10.6",
@@ -29,9 +29,8 @@
     "@storybook/addon-actions": "7.0.2",
     "@storybook/addon-essentials": "7.0.2",
     "@storybook/addon-links": "7.0.2",
-    "@storybook/builder-webpack5": "7.0.2",
-    "@storybook/manager-webpack5": "6.5.16",
     "@storybook/react": "7.0.2",
+    "@storybook/react-webpack5": "7.0.2",
     "@svgr/rollup": "7.0.0",
     "@tabler/icons-react": "2.14.0",
     "@testing-library/dom": "9.2.0",
@@ -43,14 +42,15 @@
     "@types/react-dom": "18.0.11",
     "@types/react-router-dom": "5.3.3",
     "dotenv-webpack": "8.0.1",
+    "html-webpack-plugin": "5.5.0",
     "identity-obj-proxy": "3.0.0",
     "jest": "29.5.0",
     "jest-each": "29.5.0",
-    "html-webpack-plugin": "5.5.0",
     "react": "18.2.0",
     "react-docgen-typescript-plugin": "1.0.5",
     "react-dom": "18.2.0",
     "rimraf": "4.4.1",
+    "storybook": "7.0.2",
     "typescript": "5.0.3"
   },
   "peerDependencies": {
