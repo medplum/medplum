@@ -19,6 +19,9 @@
     "ssh2": "1.11.0",
     "ssh2-sftp-client": "9.0.4"
   },
+  "devDependencies": {
+    "@types/node-fetch": "2.6.3"
+  },
   "keywords": [
     "medplum",
     "aws",

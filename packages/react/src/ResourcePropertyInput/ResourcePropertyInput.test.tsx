@@ -583,7 +583,11 @@ describe('ResourcePropertyInput', () => {
       name: 'managingOrganization',
       property,
     });
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+
+    const comboboxes = screen.getAllByRole('combobox');
+    expect(comboboxes).toHaveLength(2);
+    expect(comboboxes[0]).toBeInstanceOf(HTMLSelectElement);
+    expect(comboboxes[1]).toBeInstanceOf(HTMLInputElement);
   });
 
   test('Type selector', async () => {
