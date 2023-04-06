@@ -1,0 +1,305 @@
+---
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/search/basic-search.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Basic Search
+
+## Intro
+
+One of the most basic operations when working with the Medplum FHIR API is to query resources that fulfill certain criteria.
+
+The FHIR specification defines [rich search semantics](https://www.hl7.org/fhir/R4/search.html) to support these use cases, and this guide will cover some of the basic search operations to get you started. If you're new to FHIR, we'd recommend checking out our [FHIR Basics](/docs/fhir-basics) page first.
+
+## Search Parameters
+
+To maintain performance, FHIR doesn't allow Resources to be queried by arbitrary elements. Instead, it defines a set of **search parameters** for each Resource Type.
+
+Let's look at a few examples with the `Patient` resource. The [`Patient` reference docs](/docs/api/fhir/resources/patient#search-parameters) have a table that list out all the available search parameters.
+
+<br />
+
+| Search Parameter | Type   | Description                 | Expression        |
+| ---------------- | ------ | --------------------------- | ----------------- |
+| birthdate        | `date` | The patient's date of birth | Patient.birthDate |
+
+Some search parameters, such as `birthdate`, map directly to a top-level element, `Patient.birthDate` . (Note that the search parameter is **all lowercase**, even though the element is camel case)
+
+<br />
+
+| Search Parameter | Type     | Description                    | Expression           |
+| ---------------- | -------- | ------------------------------ | -------------------- |
+| address-city     | `string` | A city specified in an address | Patient.address.city |
+
+Some search parameters map to nested elements, such as `address-city`, which maps to `Patient.address.city`. Since `Patient.address`
+is an array element, this search parameter will search _all_ addresses saved to the `Patient`.
+
+<br />
+
+| Search Parameter | Type   | Description                                                         | Expression       |
+| ---------------- | ------ | ------------------------------------------------------------------- | ---------------- |
+| death-date       | `date` | The date of death has been provided and satisfies this search value | Patient.deceased |
+
+Lastly, _some_ search parameters rename/alias the target element. For example, the `death-date` maps to the `Patient.deceased` element.
+
+## Basic Search
+
+To search for resources, you can simply add search parameters and values as query parameters in your `GET` request.
+
+The [Medplum Client SDK](/docs/sdk/classes/MedplumClient) also provides the `search` helper method, which accepts a `string` or `object`.
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchSingle">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchSingleCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+This request will return a [FHIR `Bundle`](/docs/api/fhir/resources/bundle) resource, which contains the query results as well as some metadata. The `Bundle.entry` element will contain an array with each `Bundle.entry[i].resource` being a search result.
+
+<MedplumCodeBlock language="ts" selectBlocks="searchSingleReturn">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Because iterating over the `Bundle.entry` array is such a common pattern, the Medplum SDK provides the `searchResources` convenience method that unwraps the bundle and returns an array of resources.
+
+<MedplumCodeBlock language="ts" selectBlocks="searchAnd">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Searching Multiple Criteria
+
+You can perform and AND search by specifying multiple query parameters
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchAnd">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchAndCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+Specifying comma separated values performs an OR operation for that search parameter
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchOr">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchOrCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Searching by Reference
+
+You can use `reference` search parameters to search for resources based on the resources they refer to.
+
+The syntax for this kind of search is `[parameter]=[resourceType]/[id]`. You can use the [`getReferenceString()`](/docs/sdk/modules#getreferencestring) utility method to help with construct your query.
+
+For example, to search for all `Observation` resources that reference a `Patient` with the ID `"1234"`:
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchReference">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchReferenceCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Strings vs. Tokens
+
+FHIR defines two different types of "string" search parameters: `string` and `token`. Their search behaviors are quite different, and it's important to understand the difference.
+
+| `string`                                                                                  | `token`                                                                      |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| <p>Case insensitive</p><p>Match strings that _start with_ query</p><p>No `system` URL</p> | <p>Case sensitive</p><p>_Exact_ string match</p><p>Optional `system` URL</p> |
+
+### string
+
+A `string` search parameter is used when searching for a specific word or phrase within a resource. This type of search is more general and allows for partial matches, such as searching for patients whose names contain the word "Smith". Searches are **case insensitive**, and any result that **starts with** the query string will be returned.
+
+:::note Example
+
+For example, the following search will return patients with the names `"eve"`, `"Eve"`, `"Evelyn`", but _not_ `"Steve"`
+
+`medplum.search('Patient', 'name=eve')`
+
+You can use the `:contains` modifier to search _anywhere_ inside the target string, and the `:exact` modifier to perform a case-sensitive, exact string match (see below)
+
+:::
+
+### token
+
+A `token` search parameter is used when searching for exact matches of a specific code or identifier, such as a medical terminology code ([`CodeableConcept`](/docs/api/fhir/datatypes/codeableconcept)) or a unique patient identifier ( [`Identifier`](/docs/api/fhir/datatypes/identifier) ). By default, searching a `token` performs a **case-sensitive, exact string match.**
+
+Additionally, many `token` elements are namespaced by a `system` string. This is because FHIR resources often contain codes or identifiers that come from different code systems, such as LOINC or SNOMED CT, which may use the same code or identifier for different concepts.
+
+You can restrict your `token` search to a specific system by using the syntax `<parameter>=<system>|<value>`
+
+:::note Example
+
+The following search would find all patients with _any_ identifier that equals `"12345"`
+
+`medplum.search('Patient', 'identifier=12345')`
+
+If we only wanted to search for patients whose social security number was `"12345"`, we could use the system string `"http://hl7.org/fhir/sid/us-ssn"` as follows:
+
+`medplum.search('Patient', 'identifier=http://hl7.org/fhir/sid/us-ssn|12345')`
+
+:::
+
+## Search Modifiers {#search-modifiers}
+
+The FHIR spec includes a set of **modifiers** to change the way a specific search parameters behave. They are used by appending the string `:<modifier-name>` to the search parameter. While the [FHIR search specification](http://hl7.org/fhir/R4/search.html) details all the available modifiers, we'll describe some of the most common modifiers here.
+
+### `:not`
+
+`:not` excludes the specified values from results.
+For example, search for all `Tasks` where status _is not_ `completed`:
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchNot">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchNotCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### `:missing`
+
+`:missing` specifies whether or not to include values where the specified search parameter is present/absent
+
+For example, searching for all `Patients` with missing `birthDates`.
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchMissing">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchMissingCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+### `:contains`
+
+`:contains` allows you to perform a partial match on `string` search parameters.
+
+For example, searching for `Patients` whose name includes the substring `"stein"`
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchContains">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchContainsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Searching by Comparison
+
+FHIR provides a mechanism to search for resources that have a value greater or less than a certain threshold, or that have a value within a specific range, by adding a prefix to your query value. The table below lists the common prefixes used for `quantity`, `number`, and `date` search parameters:
+
+| Prefix | Description              |
+| ------ | ------------------------ |
+| `eq`   | equal                    |
+| `ne`   | not equal                |
+| `gt`   | greater than             |
+| `lt`   | less than                |
+| `ge`   | greater than or equal to |
+| `le`   | less than or equal to    |
+| `sa`   | starts after             |
+| `eb`   | ends before              |
+
+<br />
+This example shows how to find all `RiskAssessments` with a `probability` greater than 0.8.
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchGreaterThan">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchGreaterThanCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<br />
+You can search an inclusive range using an AND search
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchInclusiveRange">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchInclusiveRangeCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+:::caution Note
+
+Because we are specifying the `value-quantity` parameter twice in this query, we must pass a `string[][]` as the second argument to `searchResources()`
+
+:::
+
+<br />
+You can search an exclusive range using an OR search
+
+<Tabs>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchExclusiveRange">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchExclusiveRangeCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+## Conclusion
+
+This article covers the basic FHIR search functionality needed to build a healthcare application. The next guides will cover more advanced topics such as paginated search and using GraphQL for retrieving linked Resources.

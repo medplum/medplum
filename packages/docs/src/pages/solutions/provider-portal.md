@@ -25,7 +25,7 @@ Sending notifications via email, SMS or via integration into tools is a common n
 
 ### Search
 
-Sophisticated records search helps providers get to clarity on what's needed for patients. Medplum has a powerful [search API](/docs/fhir-datastore/basic-fhir-search) and [search SDK](/docs/sdk/classes/MedplumClient), [search input](https://storybook.medplum.com/?path=/docs/medplum-resourceinput--practitioners) and [search results control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes)
+Sophisticated records search helps providers get to clarity on what's needed for patients. Medplum has a powerful [search API](/docs/search/basic-search) and [search SDK](/docs/sdk/classes/MedplumClient), [search input](https://storybook.medplum.com/?path=/docs/medplum-resourceinput--practitioners) and [search results control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes)
 
 ### Collaboration and Messaging
 
