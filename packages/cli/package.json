@@ -23,7 +23,8 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",
-    "@medplum/mock": "*"
+    "@medplum/mock": "*",
+    "@types/node-fetch": "2.6.3"
   },
   "bin": {
     "medplum": "./dist/cjs/index.cjs"
