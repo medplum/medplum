@@ -11,6 +11,7 @@ import {
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { MedplumInfraConfig } from './config';
+import { grantBucketAccessToOriginAccessIdentity } from './oai';
 import { awsManagedRules } from './waf';
 
 /**
@@ -101,7 +102,7 @@ export class Storage extends Construct {
 
       // Origin access identity
       const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      storageBucket.grantRead(originAccessIdentity);
+      grantBucketAccessToOriginAccessIdentity(this, storageBucket, originAccessIdentity);
 
       // CloudFront distribution
       const distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
