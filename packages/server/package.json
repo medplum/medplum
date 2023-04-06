@@ -19,6 +19,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudwatch-logs": "3.299.0",
     "@aws-sdk/client-lambda": "3.299.0",
     "@aws-sdk/client-s3": "3.299.0",
     "@aws-sdk/client-secrets-manager": "3.299.0",

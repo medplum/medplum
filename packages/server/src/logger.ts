@@ -1,5 +1,6 @@
 import { AuditEvent } from '@medplum/fhirtypes';
-import { getConfig } from './config';
+import { MedplumServerConfig, getConfig } from './config';
+import { CloudWatchLogger } from './util/cloudwatch';
 
 /*
  * Once upon a time, we used Winston, and that was fine.
@@ -48,8 +49,26 @@ export const logger = {
   },
 
   logAuditEvent(auditEvent: AuditEvent): void {
-    if (getConfig().logAuditEvents) {
-      console.log(JSON.stringify(auditEvent));
+    const config = getConfig();
+    if (config.logAuditEvents) {
+      if (config.auditEventLogGroup) {
+        getCloudWatchLogger(config).write(JSON.stringify(auditEvent));
+      } else {
+        console.log(JSON.stringify(auditEvent));
+      }
     }
   },
 };
+
+let cloudWatchLogger: CloudWatchLogger | undefined = undefined;
+
+function getCloudWatchLogger(config: MedplumServerConfig): CloudWatchLogger {
+  if (!cloudWatchLogger) {
+    cloudWatchLogger = cloudWatchLogger = new CloudWatchLogger(
+      config.awsRegion,
+      config.auditEventLogGroup as string,
+      config.auditEventLogStream
+    );
+  }
+  return cloudWatchLogger;
+}
