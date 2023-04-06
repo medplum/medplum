@@ -44,7 +44,7 @@ function buildSpec(): any {
 function buildBaseSpec(): OpenAPIObjectWithPaths {
   const config = getConfig();
   return {
-    openapi: '3.0.2',
+    openapi: '3.1.0',
     info: {
       title: 'Medplum - OpenAPI 3.0',
       description:
