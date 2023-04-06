@@ -32,11 +32,11 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { isOk, normalizeOperationOutcome, OperationOutcomeError } from './outcomes';
+import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, InviteResult, ProfileResource } from './utils';
+import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
+import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
 
@@ -2135,7 +2135,11 @@ export class MedplumClient extends EventTarget {
     // If there is only one request in the batch, just execute it
     if (entries.length === 1) {
       const entry = entries[0];
-      entry.resolve(await this.#request(entry.method, this.#fhirBaseUrl + entry.url, entry.options));
+      try {
+        entry.resolve(await this.#request(entry.method, this.#fhirBaseUrl + entry.url, entry.options));
+      } catch (err) {
+        entry.reject(new OperationOutcomeError(normalizeOperationOutcome(err)));
+      }
       return;
     }
 
