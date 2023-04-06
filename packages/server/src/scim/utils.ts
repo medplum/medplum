@@ -109,7 +109,7 @@ export async function readScimUser(project: Project, id: string): Promise<ScimUs
  * @returns The updated user.
  */
 export async function updateScimUser(project: Project, scimUser: ScimUser): Promise<ScimUser> {
-  const membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', scimUser.id as string);
+  let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', scimUser.id as string);
   if (membership.project?.reference !== getReferenceString(project)) {
     throw new OperationOutcomeError(forbidden);
   }
@@ -117,13 +117,15 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
   let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   user.firstName = scimUser.name?.givenName as string;
   user.lastName = scimUser.name?.familyName as string;
-  user.externalId = scimUser.externalId;
 
   if (scimUser.emails?.[0]?.value) {
     user.email = scimUser.emails?.[0]?.value;
   }
 
   user = await systemRepo.updateResource(user);
+
+  membership.externalId = scimUser.externalId;
+  membership = await systemRepo.updateResource(membership);
 
   return convertToScimUser(user, membership);
 }
@@ -185,7 +187,7 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
     },
     userType: resourceType,
     userName: id,
-    externalId: user.externalId,
+    externalId: membership.externalId,
     name: {
       givenName: user.firstName,
       familyName: user.lastName,

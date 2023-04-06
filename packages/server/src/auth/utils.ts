@@ -1,5 +1,5 @@
 import { badRequest, createReference, OperationOutcomeError, ProfileResource, resolveId } from '@medplum/core';
-import { AccessPolicy, ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import fetch from 'node-fetch';
 import { systemRepo } from '../fhir/repo';
@@ -40,17 +40,15 @@ export async function createProjectMembership(
   user: User,
   project: Project,
   profile: ProfileResource,
-  accessPolicy?: Reference<AccessPolicy>,
-  admin?: boolean
+  details?: Partial<ProjectMembership>
 ): Promise<ProjectMembership> {
   logger.info('Create project membership: ' + project.name);
   const result = await systemRepo.createResource<ProjectMembership>({
+    ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),
     user: createReference(user),
     profile: createReference(profile),
-    accessPolicy,
-    admin,
   });
   logger.info('Created: ' + result.id);
   return result;
