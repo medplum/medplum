@@ -81,7 +81,7 @@ class BatchProcessor {
 
     return {
       resourceType: 'Bundle',
-      type: 'batch-response',
+      type: (bundleType + '-response') as 'batch-response' | 'transaction-response',
       entry: resultEntries,
     };
   }

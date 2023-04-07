@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.0.5",
+  "version": "2.0.13",
   "description": "Medplum Command Line Interface",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -11,8 +11,9 @@
     "directory": "packages/cli"
   },
   "scripts": {
+    "medplum": "ts-node src/index.ts",
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "test": "jest"
   },
   "dependencies": {
@@ -22,10 +23,11 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",
-    "@medplum/mock": "*"
+    "@medplum/mock": "*",
+    "@types/node-fetch": "2.6.3"
   },
   "bin": {
-    "medplum": "./dist/index.js"
+    "medplum": "./dist/cjs/index.cjs"
   },
   "keywords": [
     "medplum",

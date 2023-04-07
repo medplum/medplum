@@ -2,6 +2,7 @@
 // https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
 
 import {
+  AccessPolicy,
   Binary,
   Bundle,
   BundleEntry,
@@ -9,6 +10,7 @@ import {
   Device,
   Encounter,
   ExtractResource,
+  Identifier,
   OperationOutcome,
   Patient,
   Project,
@@ -30,11 +32,11 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { isOk, normalizeOperationOutcome, OperationOutcomeError } from './outcomes';
+import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
+import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
+import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
 
@@ -137,6 +139,13 @@ export interface MedplumClientOptions {
   fetch?: FetchLike;
 
   /**
+   * Storage implementation.
+   *
+   * Default is window.localStorage (if available), or an in-memory storage implementation.
+   */
+  storage?: ClientStorage;
+
+  /**
    * Create PDF implementation.
    *
    * Default is none, and PDF generation is disabled.
@@ -191,6 +200,18 @@ export interface FetchLike {
   (url: string, options?: any): Promise<any>;
 }
 
+/**
+ * QueryTypes defines the different ways to specify FHIR search parameters.
+ *
+ * Can be any valid input to the URLSearchParams() constructor.
+ *
+ * TypeScript definitions for URLSearchParams do not match runtime behavior.
+ * The official spec only accepts string values.
+ * Web browsers and Node.js automatically coerce values to strings.
+ * See: https://github.com/microsoft/TypeScript/issues/32951
+ */
+export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
+
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
@@ -219,6 +240,7 @@ export interface BaseLoginRequest {
 export interface EmailPasswordLoginRequest extends BaseLoginRequest {
   readonly email: string;
   readonly password: string;
+  /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
 
@@ -292,6 +314,16 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly contentType: string;
   readonly input: T;
   readonly secrets: Record<string, ProjectSecret>;
+}
+
+export interface InviteBody {
+  resourceType: 'Patient' | 'Practitioner' | 'RelatedPerson';
+  firstName: string;
+  lastName: string;
+  email?: string;
+  sendEmail?: boolean;
+  accessPolicy?: Reference<AccessPolicy>;
+  admin?: boolean;
 }
 
 /**
@@ -461,8 +493,8 @@ export class MedplumClient extends EventTarget {
     }
 
     this.#fetch = options?.fetch || getDefaultFetch();
+    this.#storage = options?.storage || new ClientStorage();
     this.#createPdf = options?.createPdf;
-    this.#storage = new ClientStorage();
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
@@ -862,13 +894,14 @@ export class MedplumClient extends EventTarget {
    * Builds a FHIR search URL from a search query or structured query object.
    * @category HTTP
    * @category Search
-   * @param query The FHIR search query or structured query object.
+   * @param resourceType The FHIR resource type.
+   * @param query The FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @returns The well-formed FHIR URL.
    */
-  fhirSearchUrl(resourceType: ResourceType, query: URLSearchParams | string | undefined): URL {
+  fhirSearchUrl(resourceType: ResourceType, query: QueryTypes): URL {
     const url = this.fhirUrl(resourceType);
     if (query) {
-      url.search = query.toString();
+      url.search = new URLSearchParams(query).toString();
     }
     return url;
   }
@@ -917,13 +950,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
    * @returns Promise to the search result bundle.
    */
   search<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -965,13 +998,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns Promise to the search result bundle.
+   * @returns Promise to the first search result.
    */
   searchOne<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -1007,13 +1040,13 @@ export class MedplumClient extends EventTarget {
    *
    * @category Search
    * @param resourceType The FHIR resource type.
-   * @param query The search query as either a string or a structured search object.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns Promise to the search result bundle.
+   * @returns Promise to the array of search results.
    */
   searchResources<K extends ResourceType>(
     resourceType: K,
-    query?: URLSearchParams | string,
+    query?: QueryTypes,
     options: RequestInit = {}
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
@@ -1648,6 +1681,51 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Executes a bot by ID.
+   * @param id The Bot ID.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(id: string, body: any, contentType?: string, options?: RequestInit): Promise<any>;
+
+  /**
+   * Executes a bot by Identifier.
+   * @param id The Bot Identifier.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(identifier: Identifier, body: any, contentType?: string, options?: RequestInit): Promise<any>;
+
+  /**
+   * Executes a bot by ID or Identifier.
+   * @param idOrIdentifier The Bot ID or Identifier.
+   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
+   * @param contentType The content type to be included in the "Content-Type" header.
+   * @param options Optional fetch options.
+   * @returns The Bot return value.
+   */
+  executeBot(
+    idOrIdentifier: string | Identifier,
+    body: any,
+    contentType?: string,
+    options: RequestInit = {}
+  ): Promise<any> {
+    let url;
+    if (typeof idOrIdentifier === 'string') {
+      const id = idOrIdentifier;
+      url = this.fhirUrl('Bot', id, '$execute');
+    } else {
+      const identifier = idOrIdentifier;
+      url = this.fhirUrl('Bot', '$execute') + `?identifier=${identifier.system}|${identifier.value}`;
+    }
+    return this.post(url, body, contentType, options);
+  }
+
+  /**
    * Executes a batch or transaction of FHIR operations.
    *
    * Example:
@@ -1832,6 +1910,7 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current access token.
    * @category Authentication
    */
   getAccessToken(): string | undefined {
@@ -1839,6 +1918,7 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Sets the current access token.
    * @category Authentication
    */
   setAccessToken(accessToken: string): void {
@@ -2055,7 +2135,11 @@ export class MedplumClient extends EventTarget {
     // If there is only one request in the batch, just execute it
     if (entries.length === 1) {
       const entry = entries[0];
-      entry.resolve(await this.#request(entry.method, this.#fhirBaseUrl + entry.url, entry.options));
+      try {
+        entry.resolve(await this.#request(entry.method, this.#fhirBaseUrl + entry.url, entry.options));
+      } catch (err) {
+        entry.reject(new OperationOutcomeError(normalizeOperationOutcome(err)));
+      }
       return;
     }
 
@@ -2211,14 +2295,15 @@ export class MedplumClient extends EventTarget {
    * Processes an OAuth authorization code.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
+   * @param loginParams Optional login parameters.
    * @category Authentication
    */
-  processCode(code: string): Promise<ProfileResource> {
+  processCode(code: string, loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource> {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
-    formBody.set('client_id', this.#clientId as string);
     formBody.set('code', code);
-    formBody.set('redirect_uri', getWindowOrigin());
+    formBody.set('client_id', loginParams?.clientId || (this.#clientId as string));
+    formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');
@@ -2273,6 +2358,16 @@ export class MedplumClient extends EventTarget {
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
     return this.#fetchTokens(formBody);
+  }
+
+  /**
+   * Invite a user to a project.
+   * @param projectId The project ID.
+   * @param body The InviteBody.
+   * @returns Promise that returns an invite result or an operation outcome.
+   */
+  async invite(projectId: string, body: InviteBody): Promise<InviteResult | OperationOutcome> {
+    return this.post('admin/projects/' + projectId + '/invite', body);
   }
 
   /**

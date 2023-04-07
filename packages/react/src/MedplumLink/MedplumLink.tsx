@@ -1,4 +1,5 @@
 import { Anchor, TextProps } from '@mantine/core';
+import { isReference, isResource } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import React from 'react';
 import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
@@ -44,9 +45,9 @@ function getHref(to: Resource | Reference | string | undefined): string {
   if (to) {
     if (typeof to === 'string') {
       return getStringHref(to);
-    } else if ('resourceType' in to) {
+    } else if (isResource(to)) {
       return getResourceHref(to);
-    } else if ('reference' in to) {
+    } else if (isReference(to)) {
       return getReferenceHref(to);
     }
   }

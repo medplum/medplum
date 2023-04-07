@@ -36,6 +36,7 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);
     case 'string':
+    case 'uri':
       return matchesStringFilter(resource, filter, searchParam);
     case 'token':
       return matchesTokenFilter(resource, filter, searchParam);

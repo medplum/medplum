@@ -1,5 +1,5 @@
-import { parseSearchDefinition } from '@medplum/core';
-import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import { createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
+import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, SignJWT } from 'jose';
@@ -35,6 +35,7 @@ const password = randomUUID();
 let config: MedplumServerConfig;
 let project: Project;
 let client: ClientApplication;
+let pkceOptionalClient: ClientApplication;
 
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
@@ -42,20 +43,37 @@ describe('OAuth2 Token', () => {
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject({
+    ({ project, client } = await createTestProject());
+
+    // Create a 2nd client with PKCE optional
+    pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      pkceOptional: true,
+    });
+
+    // Create access policy
+    const accessPolicy = await systemRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [{ resourceType: '*' }],
       ipAccessRule: [
         { name: 'Block test', value: '6.6.6.6', action: 'block' },
         { name: 'Allow by default', value: '*', action: 'allow' },
       ],
-    }));
+    });
 
     // Create a test user
-    const { user } = await inviteUser({
+    const { user, membership } = await inviteUser({
       project,
       resourceType: 'Practitioner',
       firstName: 'Test',
       lastName: 'User',
       email,
+    });
+
+    // Set the access policy
+    await systemRepo.updateResource({
+      ...membership,
+      accessPolicy: createReference(accessPolicy),
     });
 
     // Set the test user password
@@ -208,6 +226,24 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid client');
   });
 
+  test('Token for client in super admin', async () => {
+    const { client } = await createTestProject({ superAdmin: true });
+    const res1 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.error).toBeUndefined();
+    expect(res1.body.access_token).toBeDefined();
+
+    // Expect login to be a super admin login
+    const claims = parseJWTPayload(res1.body.access_token);
+    expect(claims.login_id).toBeDefined();
+    const login = await systemRepo.readResource<Login>('Login', claims.login_id as string);
+    expect(login.superAdmin).toBe(true);
+  });
+
   test('Token for authorization_code with missing code', async () => {
     const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
@@ -310,6 +346,36 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeUndefined();
   });
 
+  test('Authorization code token with code challenge and PKCE optional', async () => {
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: pkceOptionalClient.id as string,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: pkceOptionalClient.id as string,
+        code: res.body.code,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
+  });
+
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
@@ -382,7 +448,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.error_description).toBe('Token revoked');
   });
 
-  test('Authorization code token success with refresh', async () => {
+  test('Authorization code token success with refresh using legacy remember flag', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email,
       password,
@@ -400,6 +466,54 @@ describe('OAuth2 Token', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+  });
+
+  test('Authorization code token success with refresh using scope=offline', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+  });
+
+  test('Authorization code token success with refresh using scope=offline_access', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline_access',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline_access');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -513,7 +627,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: true,
+      scope: 'openid offline',
     });
     expect(res.status).toBe(200);
 
@@ -524,7 +638,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -536,7 +650,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -549,7 +663,6 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: false,
     });
     expect(res.status).toBe(200);
 
@@ -590,7 +703,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -615,7 +728,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: codeHash,
         codeChallengeMethod: 'S256',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -626,7 +739,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -638,7 +751,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -651,7 +764,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
-      remember: true,
+      scope: 'openid offline',
     });
     expect(res.status).toBe(200);
 
@@ -662,7 +775,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -698,7 +811,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -709,7 +822,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -725,7 +838,7 @@ describe('OAuth2 Token', () => {
       });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -742,7 +855,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -753,7 +866,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -782,7 +895,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -793,7 +906,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -822,7 +935,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -833,7 +946,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -869,7 +982,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -881,7 +994,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
@@ -894,7 +1007,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res3.status).toBe(200);
     expect(res3.body.token_type).toBe('Bearer');
-    expect(res3.body.scope).toBe('openid');
+    expect(res3.body.scope).toBe('openid offline');
     expect(res3.body.expires_in).toBe(3600);
     expect(res3.body.id_token).toBeDefined();
     expect(res3.body.access_token).toBeDefined();
@@ -907,7 +1020,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res4.status).toBe(200);
     expect(res4.body.token_type).toBe('Bearer');
-    expect(res4.body.scope).toBe('openid');
+    expect(res4.body.scope).toBe('openid offline');
     expect(res4.body.expires_in).toBe(3600);
     expect(res4.body.id_token).toBeDefined();
     expect(res4.body.access_token).toBeDefined();
@@ -950,7 +1063,7 @@ describe('OAuth2 Token', () => {
         clientId: client.id as string,
         codeChallenge: 'xyz',
         codeChallengeMethod: 'plain',
-        remember: true,
+        scope: 'openid offline',
       });
     expect(res.status).toBe(200);
 
@@ -962,7 +1075,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid offline');
     expect(res2.body.patient).toEqual(testPatient.profile.id);
   });
 
@@ -1143,6 +1256,38 @@ describe('OAuth2 Token', () => {
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Invalid client assertion signature',
+    });
+  });
+
+  test('Client assertion invalid assertion type', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ invalid: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Unsupported client assertion type',
     });
   });
 

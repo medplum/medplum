@@ -4,25 +4,19 @@ sidebar_position: 2
 
 # ONC Certification
 
-:::caution Note
-
-This section is under construction. Certification is in progress and not yet complete.
-
-:::
-
-The following materials are related to ONC Certification.
+Medplum is ONC Certified. Below are certification resources and documentation.
 
 ## Mandatory Disclosures
 
-| Item                           | Description                              |
-| ------------------------------ | ---------------------------------------- |
-| Developer Organization Name    | Orangebot, Inc. DBA Medplum              |
-| Date the product was certified | 02/07/2023                               |
-| Product Name and Version       | Medplum, 2                               |
-| Unique Certification Number    |                                          |
-| Certification Criteria         | [Criteria link](#criteria-certified)     |
-| Pricing                        | [Offering Grid](/pricing)                |
-| Registration Process           | [Instructions](/docs/tutorials/register) |
+| Item                           | Description                                                                    |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| Developer Organization Name    | Medplum                                                                        |
+| Date the product was certified | 02/07/2023                                                                     |
+| Product Name and Version       | Medplum, 2                                                                     |
+| Unique Certification Number    | [15.04.04.3147.Medp.02.00.0.230307](https://chpl.healthit.gov/#/listing/11256) |
+| Certification Criteria         | [Criteria link](#criteria-certified)                                           |
+| Pricing                        | [Offering Grid](/pricing)                                                      |
+| Registration Process           | [Instructions](/docs/tutorials/register)                                       |
 
 This Health IT Module is 2015 Edition compliant and has been certified by an ONC-ACB in accordance with the applicable certification criteria adopted by the Secretary of Health and Human Services. This certification does not represent an endorsement by the U.S. Department of Health and Human Services.
 
@@ -53,12 +47,14 @@ The following criteria are required for CHPL listing: [d12](#encrypt-authenticat
 
 ## Materials and Usage
 
-| Resource Name                 | Description                                          | Access                                                                                                                                                        |
-| ----------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Checklist                     | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
-| Decision Guide                | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
-| Certified Product List (CHPL) | Search tool for certified products                   | [HealthIT.gov](https://chpl.healthit.gov/#/search)                                                                                                            |
-| ONC 2015E Cures Base EHR      | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
-| CMS-specific CEHRT            | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
-| CMS Queries                   | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
-| EHR Definition                | Description of what defines an EHR                   | [ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                                  |
+| Resource Name            | Description                                          | Access                                                                                                                                                        |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compliance Certificate   | Medplum Compliance Certificate                       | [Request Access](https://drive.google.com/file/d/1CzoraC0umiuNeIlvXgn5HUdL0e38MFrc/view?usp=sharing)                                                          |
+| Checklist                | Checklist for certification                          | [Request Access](https://docs.google.com/spreadsheets/d/1c4-Rd6_tveid-qrkPDZmD1FaA-fRQSI-/edit?usp=sharing&ouid=115651930576812038339&rtpof=true&sd=true)     |
+| Decision Guide           | Decision framework for which certification to pursue | [Request Access](https://chpl.healthit.gov/#/search)                                                                                                          |
+| ONC 2015E Cures Base EHR | Requirements for a basic EHR per Cures Act           | [HealthIT.gov](https://www.healthit.gov/topic/certification-ehrs/2015-edition-test-method/2015-edition-cures-update-base-electronic-health-record-definition) |
+| CMS-specific CEHRT       | Certification for CMS reimbursement                  | [CMS.gov](https://www.cms.gov/Regulations-and-Guidance/Legislation/EHRIncentivePrograms/Certification)                                                        |
+| CMS Queries              | CMS reportable metrics                               | [Request Access](https://docs.google.com/spreadsheets/d/1OoEcFjiHXHfnZn0y3eQ5D7hjijpr0dop5ckEwnOnSmo/edit#gid=0)                                              |
+| EHR Definition           | Description of what defines an EHR                   | [ecfr.gov](https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-D/part-170/subpart-A/section-170.102)                                                  |
+
+![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

@@ -26,7 +26,6 @@ export interface MedplumServerConfig {
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
   recaptchaSecretKey?: string;
-  adminClientId?: string;
   maxJsonSize: string;
   allowedOrigins?: string;
   awsRegion: string;
@@ -34,6 +33,8 @@ export interface MedplumServerConfig {
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
   logAuditEvents?: boolean;
+  auditEventLogGroup?: string;
+  auditEventLogStream?: string;
 }
 
 /**

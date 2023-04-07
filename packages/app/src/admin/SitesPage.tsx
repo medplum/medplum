@@ -1,6 +1,6 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IndexedStructureDefinition } from '@medplum/core';
+import { deepClone, IndexedStructureDefinition } from '@medplum/core';
 import { OperationOutcome, ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
@@ -19,7 +19,7 @@ export function SitesPage(): JSX.Element {
 
   useEffect(() => {
     if (projectDetails) {
-      setSites(JSON.parse(JSON.stringify(projectDetails.project.site || [])));
+      setSites(deepClone(projectDetails.project.site || []));
     }
   }, [medplum, projectDetails]);
 

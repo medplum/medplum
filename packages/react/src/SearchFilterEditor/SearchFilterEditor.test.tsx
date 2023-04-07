@@ -118,7 +118,9 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Edit'));
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen
+      .getAllByRole('combobox')
+      .find((e) => e.getAttribute('name') === 'filter-value-id') as HTMLInputElement;
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
     });

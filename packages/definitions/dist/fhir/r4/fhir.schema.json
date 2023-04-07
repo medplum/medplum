@@ -61155,13 +61155,6 @@
             "$ref": "#/definitions/Project_Site"
           },
           "type": "array"
-        },
-        "ipAccessRule": {
-          "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
-          "items": {
-            "$ref": "#/definitions/Project_IpAccessRule"
-          },
-          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -61298,7 +61291,8 @@
       "required": [
         "resourceType",
         "project",
-        "user"
+        "user",
+        "profile"
       ]
     },
     "ClientApplication": {
@@ -61745,6 +61739,14 @@
           "description": "Image of the bot.",
           "$ref": "#/definitions/Attachment"
         },
+        "cronTiming": {
+          "description": "A schedule for the bot to be executed.",
+          "$ref": "#/definitions/Timing"
+        },
+        "cronString": {
+          "description": "A schedule for the bot to be executed.",
+          "$ref": "#/definitions/string"
+        },
         "code": {
           "description": "Bot logic script.",
           "$ref": "#/definitions/string"
@@ -61794,6 +61796,13 @@
           "description": "Access details for a resource type.",
           "items": {
             "$ref": "#/definitions/AccessPolicy_Resource"
+          },
+          "type": "array"
+        },
+        "ipAccessRule": {
+          "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+          "items": {
+            "$ref": "#/definitions/AccessPolicy_IpAccessRule"
           },
           "type": "array"
         }
@@ -62020,28 +62029,6 @@
         "userInfoUrl",
         "clientId",
         "clientSecret"
-      ]
-    },
-    "Project_IpAccessRule": {
-      "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
-      "properties": {
-        "name": {
-          "description": "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
-          "$ref": "#/definitions/string"
-        },
-        "value": {
-          "description": "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
-          "$ref": "#/definitions/string"
-        },
-        "action": {
-          "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
-          "$ref": "#/definitions/string"
-        }
-      },
-      "additionalProperties": false,
-      "required": [
-        "value",
-        "action"
       ]
     },
     "ProjectMembership_Access": {
@@ -62285,6 +62272,28 @@
       "required": [
         "resourceType",
         "domain"
+      ]
+    },
+    "AccessPolicy_IpAccessRule": {
+      "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+      "properties": {
+        "name": {
+          "description": "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
+          "$ref": "#/definitions/string"
+        },
+        "value": {
+          "description": "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
+          "$ref": "#/definitions/string"
+        },
+        "action": {
+          "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "action"
       ]
     }
   }

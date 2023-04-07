@@ -48,6 +48,10 @@ describe('EditMembershipPage', () => {
     await waitFor(() => screen.getByText('Save'));
 
     expect(screen.getByText('Save')).toBeInTheDocument();
+
+    const badgeElement = screen.getByText('Alice Smith');
+    expect(badgeElement).toBeInTheDocument();
+    expect(badgeElement).toBeInstanceOf(HTMLAnchorElement);
   });
 
   test('Submit success', async () => {
@@ -69,8 +73,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    // There are 2 autocompletes.  Access policy is the first.
-    const input = screen.getAllByRole('searchbox')[0] as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Access Policy') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {
@@ -105,8 +108,7 @@ describe('EditMembershipPage', () => {
 
     expect(screen.getByText('Save')).toBeInTheDocument();
 
-    // There are 2 autocompletes.  User configuration is the second.
-    const input = screen.getAllByRole('searchbox')[1] as HTMLInputElement;
+    const input = screen.getByPlaceholderText('User Configuration') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {

@@ -1,135 +1,66 @@
-import { capitalize, globalSchema, indexStructureDefinition, TypeSchema } from '@medplum/core';
+import {
+  buildTypeName,
+  capitalize,
+  globalSchema,
+  indexStructureDefinitionBundle,
+  isLowerCase,
+  isResourceTypeSchema,
+  TypeSchema,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, ElementDefinition, ElementDefinitionType, Resource } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinition, ElementDefinitionType } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder, wordWrap } from './filebuilder';
 import { getValueSetValues } from './valuesets';
 
-interface Property {
-  resourceType: string;
-  name: string;
-  definition: ElementDefinition;
-}
-
-interface FhirType {
-  definition: TypeSchema;
-  inputName: string;
-  parentType?: string;
-  outputName: string;
-  properties: Property[];
-  subTypes: FhirType[];
-  resource: boolean;
-  domainResource: boolean;
-}
-
-const baseResourceProperties = ['id', 'meta', 'implicitRules', 'language'];
-const domainResourceProperties = ['text', 'contained', 'extension', 'modifierExtension'];
-const fhirTypes: FhirType[] = [];
-const fhirTypesMap: Record<string, FhirType> = {};
+const subTypesMap = new Map<string, TypeSchema[]>();
 
 export function main(): void {
-  buildStructureDefinitions('profiles-types.json');
-  buildStructureDefinitions('profiles-resources.json');
-  buildStructureDefinitions('profiles-medplum.json');
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
 
-  for (const [resourceType, definition] of Object.entries(globalSchema.types)) {
-    const fhirType = buildType(resourceType, definition);
-    if (fhirType) {
-      fhirTypes.push(fhirType);
-      fhirTypesMap[fhirType.outputName] = fhirType;
-    }
-  }
-
-  const parentTypes: Record<string, FhirType> = {};
-  for (const fhirType of fhirTypes) {
-    if (!fhirType.parentType) {
-      parentTypes[fhirType.outputName] = fhirType;
-    }
-  }
-
-  for (const fhirType of fhirTypes) {
+  for (const fhirType of Object.values(globalSchema.types)) {
     if (fhirType.parentType) {
-      fhirTypesMap[fhirType.parentType].subTypes.push(fhirType);
+      subTypesMap.set(fhirType.parentType, [...(subTypesMap.get(fhirType.parentType) || []), fhirType]);
     }
   }
 
   mkdirSync(resolve(__dirname, '../../fhirtypes/dist'), { recursive: true });
-  writeIndexFile(Object.keys(parentTypes).sort());
-  writeResourceFile(
-    Object.entries(parentTypes)
-      .filter((e) => e[1].resource)
-      .map((e) => e[0])
-      .sort()
-  );
+  writeIndexFile();
+  writeResourceFile();
   writeResourceTypeFile();
-  Object.values(parentTypes).forEach((fhirType) => writeInterfaceFile(fhirType));
-}
 
-function buildStructureDefinitions(fileName: string): void {
-  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
-    if (
-      resource.resourceType === 'StructureDefinition' &&
-      resource.name &&
-      resource.name !== 'Resource' &&
-      resource.name !== 'BackboneElement' &&
-      resource.name !== 'DomainResource' &&
-      resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])
-    ) {
-      indexStructureDefinition(resource);
+  for (const type of Object.values(globalSchema.types)) {
+    if (isResourceTypeSchema(type)) {
+      writeInterfaceFile(type);
     }
   }
 }
 
-function buildType(resourceType: string, definition: TypeSchema): FhirType | undefined {
-  if (!definition.properties) {
-    return undefined;
-  }
+function writeIndexFile(): void {
+  const names = Object.values(globalSchema.types)
+    .filter(
+      (t) => t.structureDefinition.name !== 'DomainResource' && !t.parentType && !isLowerCase(t.display.charAt(0))
+    )
+    .map((t) => t.structureDefinition.name as string);
+  names.push('ResourceType');
+  names.sort();
 
-  const properties: Property[] = [];
-  const propertyNames = new Set<string>();
-
-  for (const [propertyName, propertyDefinition] of Object.entries(definition.properties)) {
-    if (propertyName.startsWith('_')) {
-      continue;
-    }
-
-    properties.push({
-      resourceType,
-      name: propertyName,
-      definition: propertyDefinition,
-    });
-
-    propertyNames.add(propertyName);
-  }
-
-  return {
-    definition,
-    inputName: resourceType,
-    parentType: definition.parentType,
-    outputName: resourceType,
-    properties,
-    subTypes: [],
-    resource: containsAll(propertyNames, baseResourceProperties),
-    domainResource: containsAll(propertyNames, domainResourceProperties),
-  };
-}
-
-function writeIndexFile(names: string[]): void {
   const b = new FileBuilder();
-  for (const resourceType of [...names, 'Resource', 'ResourceType'].sort()) {
-    if (resourceType === 'MoneyQuantity' || resourceType === 'SimpleQuantity') {
-      continue;
-    }
+  for (const resourceType of names) {
     b.append("export * from './" + resourceType + "';");
   }
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/index.d.ts'), b.toString(), 'utf8');
 }
 
-function writeResourceFile(names: string[]): void {
+function writeResourceFile(): void {
+  const names = Object.values(globalSchema.types)
+    .filter(isResourceTypeSchema)
+    .map((t) => t.structureDefinition.name as string)
+    .sort();
+
   const b = new FileBuilder();
   for (const resourceType of names) {
     b.append('import { ' + resourceType + " } from './" + resourceType + "';");
@@ -157,8 +88,8 @@ function writeResourceTypeFile(): void {
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
 }
 
-function writeInterfaceFile(fhirType: FhirType): void {
-  if (fhirType.properties.length === 0 && fhirType.subTypes.length === 0) {
+function writeInterfaceFile(fhirType: TypeSchema): void {
+  if (Object.values(fhirType.properties).length === 0) {
     return;
   }
 
@@ -174,35 +105,42 @@ function writeInterfaceFile(fhirType: FhirType): void {
   }
 
   writeInterface(b, fhirType);
-  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/' + fhirType.outputName + '.d.ts'), b.toString(), 'utf8');
+  writeFileSync(
+    resolve(__dirname, '../../fhirtypes/dist/' + fhirType.structureDefinition.name + '.d.ts'),
+    b.toString(),
+    'utf8'
+  );
 }
 
-function writeInterface(b: FileBuilder, fhirType: FhirType): void {
-  if (!fhirType.properties || fhirType.properties.length === 0) {
+function writeInterface(b: FileBuilder, fhirType: TypeSchema): void {
+  if (Object.values(fhirType.properties).length === 0) {
     return;
   }
 
-  const resourceType = fhirType.outputName;
+  const typeName = buildTypeName((fhirType.elementDefinition.path as string).split('.'));
   const genericTypes = ['Bundle', 'BundleEntry', 'Reference'];
-  const genericModifier = genericTypes.includes(resourceType) ? '<T extends Resource = Resource>' : '';
+  const genericModifier = genericTypes.includes(typeName) ? '<T extends Resource = Resource>' : '';
 
   b.newLine();
-  generateJavadoc(b, fhirType.definition.description);
-  b.append('export interface ' + resourceType + genericModifier + ' {');
+  generateJavadoc(b, fhirType.elementDefinition.definition);
+  b.append('export interface ' + typeName + genericModifier + ' {');
   b.indentCount++;
 
-  if (fhirType.resource) {
+  if (isResourceTypeSchema(fhirType)) {
     b.newLine();
-    generateJavadoc(b, `This is a ${resourceType} resource`);
-    b.append(`readonly resourceType: '${resourceType}';`);
+    generateJavadoc(b, `This is a ${typeName} resource`);
+    b.append(`readonly resourceType: '${typeName}';`);
   }
 
-  for (const property of fhirType.properties) {
+  for (const property of Object.values(fhirType.properties)) {
+    if (property.max === '0') {
+      continue;
+    }
     b.newLine();
     writeInterfaceProperty(b, fhirType, property);
   }
 
-  if (fhirType.outputName === 'Reference') {
+  if (typeName === 'Reference') {
     b.newLine();
     generateJavadoc(b, 'Optional Resource referred to by this reference.');
     b.append('resource?: T;');
@@ -211,35 +149,42 @@ function writeInterface(b: FileBuilder, fhirType: FhirType): void {
   b.indentCount--;
   b.append('}');
 
-  fhirType.subTypes.sort((t1, t2) => t1.outputName.localeCompare(t2.outputName));
+  const subTypes = subTypesMap.get(typeName);
+  if (subTypes) {
+    subTypes.sort((t1, t2) => (t1.elementDefinition.path as string).localeCompare(t2.elementDefinition.path as string));
 
-  for (const subType of fhirType.subTypes) {
-    writeInterface(b, subType);
+    for (const subType of subTypes) {
+      writeInterface(b, subType);
+    }
   }
 }
 
-function writeInterfaceProperty(b: FileBuilder, fhirType: FhirType, property: Property): void {
+function writeInterfaceProperty(b: FileBuilder, fhirType: TypeSchema, property: ElementDefinition): void {
   for (const typeScriptProperty of getTypeScriptProperties(property)) {
     b.newLine();
-    generateJavadoc(b, property.definition.definition);
+    generateJavadoc(b, property.definition);
     b.append(typeScriptProperty.name + '?: ' + typeScriptProperty.typeName + ';');
   }
 }
 
-function buildImports(fhirType: FhirType, includedTypes: Set<string>, referencedTypes: Set<string>): void {
-  includedTypes.add(fhirType.outputName);
+function buildImports(fhirType: TypeSchema, includedTypes: Set<string>, referencedTypes: Set<string>): void {
+  const typeName = buildTypeName((fhirType.elementDefinition.path as string).split('.'));
+  includedTypes.add(typeName);
 
-  for (const property of fhirType.properties) {
+  for (const property of Object.values(fhirType.properties)) {
     for (const typeScriptProperty of getTypeScriptProperties(property)) {
       cleanReferencedType(typeScriptProperty.typeName).forEach((cleanName) => referencedTypes.add(cleanName));
     }
   }
 
-  for (const subType of fhirType.subTypes) {
-    buildImports(subType, includedTypes, referencedTypes);
+  const subTypes = subTypesMap.get(typeName);
+  if (subTypes) {
+    for (const subType of subTypes) {
+      buildImports(subType, includedTypes, referencedTypes);
+    }
   }
 
-  if (fhirType.outputName === 'Reference') {
+  if (typeName === 'Reference') {
     referencedTypes.add('Resource');
   }
 }
@@ -249,7 +194,12 @@ function cleanReferencedType(typeName: string): string[] {
     return ['Resource'];
   }
 
-  if (typeName.startsWith("'") || isLowerCase(typeName.charAt(0)) || typeName === 'BundleEntry<T>[]') {
+  if (
+    typeName.startsWith("'") ||
+    typeName.includes("' | '") ||
+    isLowerCase(typeName.charAt(0)) ||
+    typeName === 'BundleEntry<T>[]'
+  ) {
     return [];
   }
 
@@ -262,29 +212,24 @@ function cleanReferencedType(typeName: string): string[] {
   return [typeName.replace('[]', '')];
 }
 
-function getTypeScriptProperties(property: Property): { name: string; typeName: string }[] {
-  if (
-    property.name === 'resource' &&
-    ['BundleEntry', 'OperationOutcome', 'Reference'].includes(property.resourceType)
-  ) {
+function getTypeScriptProperties(property: ElementDefinition): { name: string; typeName: string }[] {
+  if (property.path === 'Bundle.entry.resource' || property.path === 'Reference.resource') {
     return [{ name: 'resource', typeName: 'T' }];
   }
 
-  if (property.resourceType === 'Bundle' && property.name === 'entry') {
+  if (property.path === 'Bundle.entry') {
     return [{ name: 'entry', typeName: 'BundleEntry<T>[]' }];
   }
 
+  const name = (property.path as string).split('.').pop() as string;
   const result = [];
-  if (property.definition.contentReference) {
-    const baseName = property.definition.contentReference.replace('#', '').split('.').map(capitalize).join('');
-    const typeName = property.definition.max === '*' ? baseName + '[]' : baseName;
-    result.push({
-      name: property.name,
-      typeName,
-    });
-  } else if (property.name.endsWith('[x]')) {
-    const baseName = property.name.replace('[x]', '');
-    const propertyTypes = property.definition.type as ElementDefinitionType[];
+  if (property.contentReference) {
+    const baseName = property.contentReference.replace('#', '').split('.').map(capitalize).join('');
+    const typeName = property.max === '*' ? baseName + '[]' : baseName;
+    result.push({ name, typeName });
+  } else if (name.endsWith('[x]')) {
+    const baseName = name.replace('[x]', '');
+    const propertyTypes = property.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
       const code = propertyType.code as string;
       result.push({
@@ -294,8 +239,8 @@ function getTypeScriptProperties(property: Property): { name: string; typeName: 
     }
   } else {
     result.push({
-      name: property.name,
-      typeName: getTypeScriptTypeForProperty(property, property.definition?.type?.[0] as ElementDefinitionType),
+      name,
+      typeName: getTypeScriptTypeForProperty(property, property?.type?.[0] as ElementDefinitionType),
     });
   }
 
@@ -318,7 +263,7 @@ function generateJavadoc(b: FileBuilder, text: string | undefined): void {
   b.append(' */');
 }
 
-function getTypeScriptTypeForProperty(property: Property, typeDefinition: ElementDefinitionType): string {
+function getTypeScriptTypeForProperty(property: ElementDefinition, typeDefinition: ElementDefinitionType): string {
   let baseType = typeDefinition.code as string;
 
   switch (baseType) {
@@ -335,14 +280,14 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
     case 'xhtml':
     case 'http://hl7.org/fhirpath/System.String':
       baseType = 'string';
-      if (property.definition.binding?.valueSet && property.definition.binding.strength === 'required') {
-        if (property.definition.binding.valueSet === 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1') {
+      if (property.binding?.valueSet && property.binding.strength === 'required') {
+        if (property.binding.valueSet === 'http://hl7.org/fhir/ValueSet/resource-types|4.0.1') {
           baseType = 'ResourceType';
         } else if (
-          property.definition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
-          property.definition.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
+          property.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/all-types|4.0.1' &&
+          property.binding.valueSet !== 'http://hl7.org/fhir/ValueSet/defined-types|4.0.1'
         ) {
-          const values = getValueSetValues(property.definition.binding.valueSet);
+          const values = getValueSetValues(property.binding.valueSet);
           if (values && values.length > 0) {
             baseType = "'" + values.join("' | '") + "'";
           }
@@ -371,7 +316,7 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
 
     case 'Element':
     case 'BackboneElement':
-      baseType = property.resourceType + capitalize(property.name);
+      baseType = buildTypeName((property.path as string).split('.'));
       break;
 
     case 'Reference':
@@ -388,26 +333,13 @@ function getTypeScriptTypeForProperty(property: Property, typeDefinition: Elemen
       break;
   }
 
-  if (property.definition.max === '*') {
+  if (property.max === '*') {
     if (baseType.includes("' | '")) {
       return `(${baseType})[]`;
     }
     return baseType + '[]';
   }
   return baseType;
-}
-
-function containsAll(set: Set<string>, values: string[]): boolean {
-  for (const value of values) {
-    if (!set.has(value)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function isLowerCase(c: string): boolean {
-  return c === c.toLowerCase();
 }
 
 function escapeHtml(unsafe: string): string {

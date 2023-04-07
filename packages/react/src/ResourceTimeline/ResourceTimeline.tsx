@@ -236,7 +236,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       title: 'Initializing upload...',
       message: 'Please wait...',
       autoClose: false,
-      disallowClose: true,
+      withCloseButton: false,
     });
   }
 
@@ -247,7 +247,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       title: 'Uploading...',
       message: getProgressMessage(e),
       autoClose: false,
-      disallowClose: true,
+      withCloseButton: false,
     });
   }
 
@@ -514,7 +514,7 @@ function getProgressMessage(e: ProgressEvent): string {
 }
 
 function formatFileSize(bytes: number): string {
-  if (bytes == 0) {
+  if (bytes === 0) {
     return '0.00 B';
   }
   const e = Math.floor(Math.log(bytes) / Math.log(1024));

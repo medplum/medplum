@@ -6,7 +6,7 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 import { registerNew } from './register';
@@ -17,9 +17,11 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('New user', () => {
+  let prevRecaptchaSecretKey: string | undefined;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    prevRecaptchaSecretKey = getConfig().recaptchaSecretKey;
   });
 
   afterAll(async () => {
@@ -31,6 +33,7 @@ describe('New user', () => {
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
     setupRecaptchaMock(fetch as unknown as jest.Mock, true);
+    getConfig().recaptchaSecretKey = prevRecaptchaSecretKey;
   });
 
   test('Success', async () => {
@@ -167,6 +170,55 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Custom recaptcha client with incorrect project ID', async () => {
+    const email = `recaptcha-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const recaptchaSiteKey = 'recaptcha-site-key-' + randomUUID();
+    const recaptchaSecretKey = 'recaptcha-secret-key-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the recaptcha site key
+    // and the default access policy
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          recaptchaSiteKey,
+          recaptchaSecretKey,
+        },
+      ],
+      defaultPatientAccessPolicy: {
+        reference: 'AccessPolicy/' + randomUUID(),
+      },
+    });
+
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        projectId: randomUUID(),
+        firstName: 'Custom',
+        lastName: 'Recaptcha',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaSiteKey,
+        recaptchaToken: 'xyz',
+      });
+
+    expect(res.status).toBe(400);
+    expect((res.body as OperationOutcome).issue?.[0]?.details?.text).toBe('Invalid recaptchaSiteKey');
   });
 
   test('Custom recaptcha client missing access policy', async () => {
@@ -332,5 +384,22 @@ describe('New user', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.login).toBeDefined();
     expect(res2.body.code).toBeUndefined();
+  });
+
+  test('Success when config has empty recaptchaSecretKey and missing recaptcha token', async () => {
+    getConfig().recaptchaSecretKey = '';
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
   });
 });

@@ -6,6 +6,6 @@
     "slug": "/tutorials/authentication-and-security",
     "title": "Authentication and Security",
     "description": "Learn about Medplum's Security Features",
-    "keywords": ["guides", "security"]
+    "keywords": ["guides", "security", "auth"]
   }
 }

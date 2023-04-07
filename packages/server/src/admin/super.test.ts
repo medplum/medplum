@@ -201,6 +201,42 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Rebuild compartments access denied', async () => {
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Rebuild compartments success', async () => {
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('Rebuild compartments invalid resource type', async () => {
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        resourceType: 'XYZ',
+      });
+
+    expect(res.status).toBe(400);
+  });
+
   test('Set password access denied', async () => {
     const res = await request(app)
       .post('/admin/super/setpassword')

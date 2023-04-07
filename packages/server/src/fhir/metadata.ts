@@ -1,4 +1,4 @@
-import { TypeSchema } from '@medplum/core';
+import { isResourceType, TypeSchema } from '@medplum/core';
 import {
   CapabilityStatement,
   CapabilityStatementRest,
@@ -9,7 +9,6 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { getConfig, MedplumServerConfig } from '../config';
-import { isResourceType } from './schema';
 import { getStructureDefinitions } from './structure';
 
 /**

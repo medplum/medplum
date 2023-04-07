@@ -1,17 +1,15 @@
-import { badRequest, evalFhirPath, formatAddress, formatHumanName, parseSearchRequest } from '@medplum/core';
 import {
-  Address,
-  BundleEntry,
-  CodeableConcept,
-  ContactPoint,
-  HumanName,
-  Reference,
-  ResourceType,
-} from '@medplum/fhirtypes';
+  badRequest,
+  evalFhirPath,
+  formatAddress,
+  formatHumanName,
+  isResourceType,
+  parseSearchRequest,
+} from '@medplum/core';
+import { Address, CodeableConcept, ContactPoint, HumanName, Reference, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
-import { isResourceType } from '../schema';
 import { getSearchParameter } from '../structure';
 
 /**
@@ -52,21 +50,21 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   const repo = res.locals.repo as Repository;
   const searchRequest = parseSearchRequest(resourceType, query);
   searchRequest.count = 10000;
-  const bundle = await repo.search(searchRequest);
+  const resources = await repo.searchResources(searchRequest);
   const output: string[][] = [];
 
   // Header row
   output.push(columnNames);
 
   // For each resource...
-  for (const entry of bundle.entry as BundleEntry[]) {
+  for (const resource of resources) {
     const row: string[] = [];
 
     // For each column...
     for (const expression of expressions) {
-      const values = evalFhirPath(expression, entry.resource);
+      const values = evalFhirPath(expression, resource);
       if (values.length > 0) {
-        row.push(csvEscape(values[0]));
+        row.push(tryCsvExcape(values[0]));
       } else {
         row.push('');
       }
@@ -82,6 +80,15 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   // Respond with the CSV content
   // Use Content-Disposition to force file download
   res.type('text/csv').set('Content-Disposition', 'attachment; filename=export.csv').send(content);
+}
+
+function tryCsvExcape(input: unknown): string {
+  try {
+    return csvEscape(input);
+  } catch (err) {
+    // Silently ignore malformed data in projects that do not use "strict" mode
+    return '';
+  }
 }
 
 function csvEscape(input: unknown): string {

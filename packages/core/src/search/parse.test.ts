@@ -1,9 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
-import { URL } from 'url';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '../types';
-import { parseSearchRequest, parseSearchUrl } from './parse';
-import { Operator } from './search';
+import { Operator, parseSearchRequest, parseSearchUrl } from './search';
 
 describe('Search parser', () => {
   beforeAll(() => {
@@ -15,15 +13,12 @@ describe('Search parser', () => {
   test('Parse Patient search', () => {
     expect(parseSearchRequest('Patient', {})).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
-      filters: [],
     });
   });
 
   test('Parse Patient _id', () => {
     expect(parseSearchRequest('Patient', { _id: '1' })).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: '_id', operator: Operator.EQUALS, value: '1' }],
     });
   });
@@ -31,7 +26,6 @@ describe('Search parser', () => {
   test('Parse _account', () => {
     expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=123'))).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: '_account', operator: Operator.EQUALS, value: '123' }],
     });
   });
@@ -39,7 +33,6 @@ describe('Search parser', () => {
   test('Parse _account:not', () => {
     expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account:not=123'))).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: '_account', operator: Operator.NOT, value: '123' }],
     });
   });
@@ -47,7 +40,6 @@ describe('Search parser', () => {
   test('Parse _account not equals', () => {
     expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_account=ne123'))).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: '_account', operator: Operator.NOT_EQUALS, value: '123' }],
     });
   });
@@ -55,7 +47,6 @@ describe('Search parser', () => {
   test('Parse Patient _id:not', () => {
     expect(parseSearchUrl(new URL('https://example.com/fhir/R4/Patient?_id:not=1'))).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: '_id', operator: Operator.NOT, value: '1' }],
     });
   });
@@ -63,7 +54,6 @@ describe('Search parser', () => {
   test('Parse name without value', () => {
     expect(parseSearchRequest('Patient', { name: undefined })).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: 'name', operator: Operator.EQUALS, value: '' }],
     });
   });
@@ -71,7 +61,6 @@ describe('Search parser', () => {
   test('Parse Patient name search', () => {
     expect(parseSearchRequest('Patient', { name: 'Homer' })).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Homer' }],
     });
   });
@@ -79,7 +68,6 @@ describe('Search parser', () => {
   test('Parse Patient name missing', () => {
     expect(parseSearchRequest('Patient', { 'name:missing': 'true' })).toMatchObject({
       resourceType: 'Patient',
-      sortRules: [],
       filters: [{ code: 'name', operator: Operator.MISSING, value: 'true' }],
     });
   });
@@ -369,6 +357,17 @@ describe('Search parser', () => {
     });
   });
 
+  test('Parse reference identifier', () => {
+    expect(
+      parseSearchRequest('Observation', { 'subject:identifier': 'http://acme.org/fhir/identifier/mrn|123456' })
+    ).toMatchObject({
+      resourceType: 'Observation',
+      filters: [
+        { code: 'subject', operator: Operator.IDENTIFIER, value: 'http://acme.org/fhir/identifier/mrn|123456' },
+      ],
+    });
+  });
+
   // Quantity
 
   test('Parse search quantity equals', () => {
@@ -498,7 +497,6 @@ describe('Search parser', () => {
           descending: false,
         },
       ],
-      filters: [],
     });
   });
 
@@ -511,7 +509,6 @@ describe('Search parser', () => {
           descending: true,
         },
       ],
-      filters: [],
     });
   });
 
@@ -528,7 +525,6 @@ describe('Search parser', () => {
           descending: false,
         },
       ],
-      filters: [],
     });
   });
 
@@ -549,6 +545,13 @@ describe('Search parser', () => {
           value: '2019-01-02',
         },
       ],
+    });
+  });
+
+  test('_include', () => {
+    expect(parseSearchRequest('MedicationRequest', { _include: 'MedicationRequest:patient' })).toMatchObject({
+      resourceType: 'MedicationRequest',
+      include: 'MedicationRequest:patient',
     });
   });
 

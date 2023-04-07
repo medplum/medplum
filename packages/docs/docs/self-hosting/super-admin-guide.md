@@ -47,6 +47,10 @@ From time to time, Medplum will make changes to custom resources. The server run
 
 From time to time, Medplum makes changes to the underlying search indexing logic. This usually happens when adding support for new FHIR search capabilities. Resource indexes are updated automatically on every `create` or `update` operation. Use the "Reindex Resources" button to reindex existing resources.
 
+### Rebuild Compartments
+
+From time to time, Medplum makes changes to the underlying compartment logic. This can happen when adding enhancements to compartment features, or new compartment definitions. Compartments are updated automatically on every `create` or `update` operation. Use the "Rebuild Compartments" button to rebuild compartments for all existing resources.
+
 ### Purge Resources
 
 Some system generated resources can accumulate and lead to degraded performance. Use the "Purge Resources" form to permanently delete resources from the database. Note that this operation is a true `DELETE`, and not the normal "soft delete", so this is permanent. Medplum recommends backing up all data, or synchronizing data to a data warehouse before using this feature.

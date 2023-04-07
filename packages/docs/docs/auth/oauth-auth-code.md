@@ -1,6 +1,7 @@
 ---
 sidebar_position: 1
 toc_max_heading_level: 2
+tags: [auth]
 ---
 
 # OAuth2 Authorization
@@ -17,13 +18,10 @@ We also have a **[minimal demo on Github](https://github.com/medplum/medplum-oau
 
 The first step is to configure a [Medplum Client Application](https://app.medplum.com/ClientApplication) for your application on the Medplum Server.
 
-1. Go to the [**Project Admin page**](https://app.medplum.com/admin/project), either by clicking "Project" on the left sidebar, or navigating to https://app.medplum.com/admin/project
-2. Click on the "Secrets" tab
-3. Click "Create New Client" to create your new ClientApplication resource
-4. Set the `Redirect URI` to the URL to where you would like Medplum to redirect the user after login.
-5. **(Optional but recommended)** Assign an [Access Policy](./access-control) to your client to restrict the data your application has access to
-
-![Create Client App](/img/create-client-app.png)
+1. Go to the [**Project Admin clients page**](https://app.medplum.com/admin/clients), either by clicking "Project" on the left sidebar, or navigating to https://app.medplum.com/admin/project
+2. Click "Create New Client" to create your new ClientApplication resource
+3. Set the `Redirect URI` to the URL to where you would like Medplum to redirect the user after login.
+4. **(Optional but recommended)** Assign an [Access Policy](./access-control) to your client to restrict the data your application has access to
 
 ## Authorize your client
 

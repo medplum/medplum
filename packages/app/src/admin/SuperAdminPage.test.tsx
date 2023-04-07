@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -14,9 +14,8 @@ function setup(): void {
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
         <MantineProvider withGlobalStyles withNormalizeCSS>
-          <NotificationsProvider>
-            <AppRoutes />
-          </NotificationsProvider>
+          <Notifications />
+          <AppRoutes />
         </MantineProvider>
       </MemoryRouter>
     </MedplumProvider>
@@ -58,11 +57,25 @@ describe('SuperAdminPage', () => {
     setup();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Resource Type'), { target: { value: 'Patient' } });
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Rebuild compartments for resource type', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Compartments Resource Type'), { target: { value: 'Project' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Rebuild Compartments' }));
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();

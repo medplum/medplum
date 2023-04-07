@@ -1,5 +1,6 @@
 ---
-sidebar_position: 3
+sidebar_position: 4
+tags: [auth]
 ---
 
 # Access Controls
@@ -113,6 +114,56 @@ The following policy uses a FHIR Search Query to grant access only to Patients w
   ]
 }
 ```
+
+### Parameterized Policies (Beta)
+
+:::caution
+
+This feature is still in Beta. If you have questions about your specific AccessPolicy needs, please [reach out to the Medplum team.](https://discord.gg/UBAWwvrVeN)
+
+:::
+
+For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "id": "123",
+  "name": "Parameterized Access Policy",
+  "resource": [
+    {
+      "resourceType": "Patient",
+      "criteria": "Patient?organization=%provider_organization"
+    }
+  ]
+}
+```
+
+This policy acts like a template, that can be instantiated (potentially multiple times) on a user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
+
+```js
+{
+  "resourceType": "ProjectMembership",
+  "access": [
+    // Provide access to Patients in Organization/abc
+    {
+      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "parameter": [
+        { "name": "provider_organization", "valueReference": { "reference": "Organization/abc" },
+      ]
+    },
+    // Provide access to Patients in Organization/def
+    {
+      "policy": { "reference": "AccessPolicy/123", "display": "Parameterized Access Policy" },
+      "parameter": [
+        { "name": "provider_organization", "valueReference": { "reference": "Organization/def" },
+      ]
+    }
+  ]
+}
+```
+
+See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
 ### Healthcare Partnerships
 

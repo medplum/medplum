@@ -44,7 +44,7 @@ export function ProjectPage(): JSX.Element {
           </Tabs>
         </ScrollArea>
       </Paper>
-      <Document width={700}>
+      <Document>
         <Outlet />
       </Document>
     </>

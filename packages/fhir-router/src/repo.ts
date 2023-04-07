@@ -13,6 +13,14 @@ import {
 import { Bundle, BundleEntry, Reference, Resource } from '@medplum/fhirtypes';
 import { applyPatch, Operation } from 'rfc6902';
 
+/**
+ * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
+ * A FHIR repository is responsible for storing and retrieving FHIR resources.
+ * It is used by the FHIR router to implement the FHIR REST API.
+ * The primary implementations at this time are:
+ *  1. MemoryRepository - A repository that stores resources in memory.
+ *  2. Server Repository - A repository that stores resources in a relational database.
+ */
 export interface FhirRepository {
   /**
    * Creates a FHIR resource.
@@ -120,13 +128,88 @@ export interface FhirRepository {
    * @returns The search results.
    */
   search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>>;
+
+  /**
+   * Searches for a single FHIR resource.
+   *
+   * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
+   *
+   * The return value is the resource, if available; otherwise, undefined.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param searchRequest The FHIR search request.
+   * @returns Promise to the first search result or undefined.
+   */
+  searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined>;
+
+  /**
+   * Sends a FHIR search request for an array of resources.
+   *
+   * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
+   *
+   * The return value is an array of resources.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param searchRequest The FHIR search request.
+   * @returns Promise to the array of search results.
+   */
+  searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]>;
 }
 
-export class MemoryRepository implements FhirRepository {
+export abstract class BaseRepository {
+  /**
+   * Searches for FHIR resources.
+   *
+   * See: https://www.hl7.org/fhir/http.html#search
+   *
+   * @param searchRequest The FHIR search request.
+   * @returns The search results.
+   */
+  abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
+
+  /**
+   * Searches for a single FHIR resource.
+   *
+   * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
+   *
+   * The return value is the resource, if available; otherwise, undefined.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param searchRequest The FHIR search request.
+   * @returns Promise to the first search result or undefined.
+   */
+  async searchOne<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T | undefined> {
+    const bundle = await this.search({ ...searchRequest, count: 1 });
+    return bundle.entry?.[0]?.resource as T | undefined;
+  }
+
+  /**
+   * Sends a FHIR search request for an array of resources.
+   *
+   * This is a convenience method for `search()` that returns the resources as an array rather than a `Bundle`.
+   *
+   * The return value is an array of resources.
+   *
+   * See FHIR search for full details: https://www.hl7.org/fhir/search.html
+   *
+   * @param searchRequest The FHIR search request.
+   * @returns Promise to the array of search results.
+   */
+  async searchResources<T extends Resource>(searchRequest: SearchRequest<T>): Promise<T[]> {
+    const bundle = await this.search(searchRequest);
+    return bundle.entry?.map((e) => e.resource as T) || [];
+  }
+}
+
+export class MemoryRepository extends BaseRepository implements FhirRepository {
   readonly #resources: Record<string, Record<string, Resource>>;
   readonly #history: Record<string, Record<string, Resource[]>>;
 
   constructor() {
+    super();
     this.#resources = {};
     this.#history = {};
   }

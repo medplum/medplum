@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { createReference, isResource } from '@medplum/core';
 import { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
 import React from 'react';
@@ -17,7 +17,7 @@ export function UserConfigurationInput(props: UserConfigurationInputProps): JSX.
       defaultValue={props.defaultValue}
       placeholder="User Configuration"
       onChange={(newValue) => {
-        if (newValue && 'resourceType' in newValue) {
+        if (isResource(newValue)) {
           props.onChange(createReference(newValue));
         } else {
           props.onChange(undefined);

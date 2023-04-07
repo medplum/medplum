@@ -65617,6 +65617,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-profile-type",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-profile-type",
+      "version" : "4.0.1",
+      "name" : "profile-type",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "Resource type of the user profile associated with the project membership",
+      "code" : "profile-type",
+      "base" : ["ProjectMembership"],
+      "type" : "token",
+      "expression" : "ProjectMembership.profile.resolve().resourceType",
+      "xpath" : "f:ProjectMembership/f:profile",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",
@@ -65771,6 +65790,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Bot-identifier",
+      "url" : "https://medplum.com/fhir/SearchParameter/Bot-identifier",
+      "version" : "4.0.1",
+      "name" : "name",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The identifier of the bot",
+      "code" : "identifier",
+      "base" : ["Bot"],
+      "type" : "token",
+      "expression" : "Bot.identifier",
+      "xpath" : "f:Bot/f:identifier",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-name",
     "resource" : {
       "resourceType" : "SearchParameter",
@@ -65902,6 +65940,26 @@
       "expression" : "DomainConfiguration.domain",
       "xpath" : "f:DomainConfiguration/f:domain",
       "xpathUsage" : "normal"
+    }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/PasswordChangeRequest-user",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "PasswordChangeRequest-user",
+      "url" : "https://medplum.com/fhir/SearchParameter/PasswordChangeRequest-user",
+      "version" : "4.0.1",
+      "name" : "publisher",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The user for the password change request.",
+      "code" : "user",
+      "base" : ["PasswordChangeRequest"],
+      "type" : "reference",
+      "expression" : "PasswordChangeRequest.user",
+      "xpath" : "f:PasswordChangeRequest/f:user",
+      "xpathUsage" : "normal",
+      "target" : ["User"]
     }
   }]
 }

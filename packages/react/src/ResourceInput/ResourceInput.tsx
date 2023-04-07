@@ -74,6 +74,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
 
   return (
     <Autocomplete
+      name={props.name}
       itemComponent={ItemComponent}
       value={value}
       data={data}

@@ -104,7 +104,13 @@ export function BatchPage(): JSX.Element {
 
             <Tabs.Panel value="json" pt="xs">
               <Form onSubmit={handleJson}>
-                <JsonInput data-testid="batch-input" name="input" minRows={20} defaultValue={DEFAULT_VALUE} />
+                <JsonInput
+                  data-testid="batch-input"
+                  name="input"
+                  minRows={20}
+                  defaultValue={DEFAULT_VALUE}
+                  deserialize={JSON.parse}
+                />
                 <Group position="right" mt="xl" noWrap>
                   <Button type="submit">Submit</Button>
                 </Group>

@@ -36,6 +36,9 @@ export interface ResourcePropertyDisplayProps {
   link?: boolean;
 }
 
+/**
+ * Low-level component that renders a property from a given resource, given type information
+ */
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
 

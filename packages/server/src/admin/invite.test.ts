@@ -1,4 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { getReferenceString } from '@medplum/core';
+import { BundleEntry, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -8,7 +10,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
+import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock } from '../test.setup';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
@@ -149,8 +151,7 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile.resourceType).toBe('Practitioner');
-    expect(res3.body.profile.id).toBe(res2.body.id);
+    expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
   });
 
   test('Access denied', async () => {
@@ -264,8 +265,8 @@ describe('Admin Invite', () => {
       });
 
     expect(res2.status).toBe(200);
-    expect(res2.body.profile.resourceType).toBe('Patient');
-    expect(res2.body.profile.telecom).toBeUndefined();
+    expect(res2.body.profile.reference).toContain('Patient/');
+    expect(res2.body.admin).toBe(undefined);
     expect(SESv2Client).toHaveBeenCalledTimes(0);
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
@@ -282,14 +283,13 @@ describe('Admin Invite', () => {
 
     // Get the client membership
     const res2 = await request(app)
-      .get('/admin/projects/' + project.id)
+      .get('/fhir/R4/ProjectMembership?profile=' + getReferenceString(client))
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.body.project).toBeDefined();
-    expect(res2.body.members).toBeDefined();
-    expect(res2.body.members.length).toEqual(2);
 
-    const clientMembership = res2.body.members.find((m: any) => m.role === 'client');
+    const clientMembership = res2.body.entry.find(
+      (e: BundleEntry<ProjectMembership>) => e.resource?.profile?.reference === getReferenceString(client)
+    )?.resource;
     expect(clientMembership).toBeDefined();
 
     // Get the client membership details
@@ -322,6 +322,122 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
     expect(res8.status).toBe(200);
-    expect(res8.body.profile.resourceType).toBe('Patient');
+    expect(res8.body.profile.reference).toContain('Patient/');
+  });
+
+  test('Invite user as admin', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        admin: true,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.admin).toBe(true);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+  });
+
+  test('Invite user with admin flag as false', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        admin: false,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.admin).toBe(false);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+  });
+
+  test('Email sending error due to SES not being set up', async () => {
+    // AWS is mocked to not be set up
+    (SESv2Client as unknown as jest.Mock).mockImplementation(() => {
+      throw new Error('error');
+    });
+
+    // First, Alice creates a project
+    const aliceRegistration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+    const bobEmail = `bob${randomUUID()}@example.com`;
+
+    // Alice invites Bob. Under normal circumstances the email would be sent
+    const res2 = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + aliceRegistration.accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+      });
+    expect(res2.status).toBe(200);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(res2.body.error.outcome.issue?.[0].details.text).toBe(
+      'Could not send email. Make sure you have AWS SES set up.'
+    );
+    expect(SendEmailCommand).not.toHaveBeenCalled();
+  });
+
+  test('Super admin invite to different project', async () => {
+    // First, Alice creates a project
+    const aliceRegistration = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // As a super admin, invite Bob to Alice's project
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    const res = await request(app)
+      .post('/admin/projects/' + aliceRegistration.project.id + '/invite')
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: `bob${randomUUID()}@example.com`,
+        sendEmail: false,
+      });
+    expect(res.status).toBe(200);
+    expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceRegistration.project));
   });
 });

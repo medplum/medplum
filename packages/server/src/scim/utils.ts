@@ -1,5 +1,5 @@
 import { badRequest, forbidden, getReferenceString, OperationOutcomeError, Operator } from '@medplum/core';
-import { BundleEntry, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
@@ -15,21 +15,17 @@ import { ScimListResponse, ScimUser } from './types';
  * @returns List of SCIM users in the project.
  */
 export async function searchScimUsers(project: Project): Promise<ScimListResponse<ScimUser>> {
-  const memberships = (
-    (
-      await systemRepo.search<ProjectMembership>({
-        resourceType: 'ProjectMembership',
-        count: 1000,
-        filters: [
-          {
-            code: 'project',
-            operator: Operator.EQUALS,
-            value: getReferenceString(project),
-          },
-        ],
-      })
-    ).entry as BundleEntry<ProjectMembership>[]
-  ).map((m) => m.resource as ProjectMembership);
+  const memberships = await systemRepo.searchResources<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    count: 1000,
+    filters: [
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: getReferenceString(project),
+      },
+    ],
+  });
 
   const users = await systemRepo.readReferences(memberships.map((m) => m.user as Reference<User>));
   const result = [];

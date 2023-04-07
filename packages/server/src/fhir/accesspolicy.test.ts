@@ -1,10 +1,17 @@
-import { createReference, normalizeErrorString, OperationOutcomeError, Operator } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  normalizeErrorString,
+  OperationOutcomeError,
+  Operator,
+} from '@medplum/core';
 import {
   AccessPolicy,
   ClientApplication,
   Login,
   Observation,
   Patient,
+  Project,
   ProjectMembership,
   Questionnaire,
   ServiceRequest,
@@ -1295,13 +1302,21 @@ describe('AccessPolicy', () => {
   });
 
   test('Compound parameterized access policy', async () => {
+    const project = randomUUID();
+    const adminRepo = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      project,
+      strictMode: true,
+      extendedMode: true,
+    });
+
     // Create 3 patients
-    const p1 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-    const p2 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-    const p3 = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const p1 = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const p2 = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const p3 = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
 
     // Create access policy for a patient resource
-    const accessPolicy: AccessPolicy = await systemRepo.createResource<AccessPolicy>({
+    const accessPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
       resourceType: 'AccessPolicy',
       resource: [
         {
@@ -1315,8 +1330,8 @@ describe('AccessPolicy', () => {
     const membership = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       user: { reference: 'User/' + randomUUID() },
-      project: { reference: 'Project/' + randomUUID() },
-      profile: { reference: 'Project/' + randomUUID() },
+      project: { reference: 'Project/' + project },
+      profile: { reference: 'Practitioner/' + randomUUID() },
       access: [
         {
           policy: createReference(accessPolicy),
@@ -1346,10 +1361,18 @@ describe('AccessPolicy', () => {
   });
 
   test('String parameters', async () => {
-    const t1 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
-    const t2 = await systemRepo.createResource<Task>({ resourceType: 'Task', status: 'completed', intent: 'order' });
+    const project = randomUUID();
+    const adminRepo = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      project,
+      strictMode: true,
+      extendedMode: true,
+    });
 
-    const accessPolicy: AccessPolicy = await systemRepo.createResource<AccessPolicy>({
+    const t1 = await adminRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
+    const t2 = await adminRepo.createResource<Task>({ resourceType: 'Task', status: 'completed', intent: 'order' });
+
+    const accessPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
       resourceType: 'AccessPolicy',
       resource: [
         {
@@ -1362,8 +1385,8 @@ describe('AccessPolicy', () => {
     const membership = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
       user: { reference: 'User/' + randomUUID() },
-      project: { reference: 'Project/' + randomUUID() },
-      profile: { reference: 'Project/' + randomUUID() },
+      project: { reference: 'Project/' + project },
+      profile: { reference: 'Practitioner/' + randomUUID() },
       access: [
         {
           policy: createReference(accessPolicy),
@@ -1383,5 +1406,182 @@ describe('AccessPolicy', () => {
     } catch (err) {
       expect(normalizeErrorString(err)).toEqual('Not found');
     }
+  });
+
+  test('Project admin with access policy', async () => {
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+
+    const adminRepo = new Repository({
+      author: { reference: 'Practitioner/' + randomUUID() },
+      project: project.id,
+      strictMode: true,
+      extendedMode: true,
+    });
+
+    const patient = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const task = await adminRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
+
+    const accessPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+        },
+      ],
+    });
+
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      accessPolicy: createReference(accessPolicy),
+      admin: true,
+    });
+
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership);
+
+    const check1 = await repo2.readResource<Task>('Patient', patient.id as string);
+    expect(check1.id).toBe(patient.id);
+
+    const check2 = await repo2.readResource<Project>('Project', project.id as string);
+    expect(check2.id).toEqual(project.id);
+
+    const check3 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+    expect(check3.id).toEqual(membership.id);
+
+    try {
+      await repo2.readResource<Task>('Task', task.id as string);
+      throw new Error('Should not be able to read resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Forbidden');
+    }
+  });
+
+  test('Project admin cannot modify protected fields', async () => {
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+
+    const membership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      admin: true,
+    });
+
+    const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, true, true);
+
+    const check1 = await repo2.readResource<Project>('Project', project.id as string);
+    expect(check1.id).toEqual(project.id);
+
+    // Try to change the project name
+    // This should succeed
+    const check2 = await repo2.updateResource<Project>({ ...check1, name: 'Updated name' });
+    expect(check2.id).toEqual(project.id);
+    expect(check2.name).toEqual('Updated name');
+    expect(check2.meta?.versionId).not.toEqual(project.meta?.versionId);
+    expect(check2.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
+
+    // Try to change protected fields
+    // This should be a no-op
+    const check3 = await repo2.updateResource<Project>({ ...check2, superAdmin: true, features: ['bots'] });
+    expect(check3.id).toEqual(project.id);
+    expect(check3.meta?.versionId).toEqual(check2.meta?.versionId);
+    expect(check3.superAdmin).toBeUndefined();
+    expect(check3.features).toBeUndefined();
+
+    const check4 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
+    expect(check4.id).toEqual(membership.id);
+
+    // Try to change the membership
+    // This should succeed
+    const check5 = await repo2.updateResource<ProjectMembership>({
+      ...check4,
+      profile: { reference: 'Practitioner/' + randomUUID() },
+    });
+    expect(check5.id).toEqual(check4.id);
+    expect(check5.meta?.versionId).not.toEqual(check4.meta?.versionId);
+    expect(check5.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
+
+    // Try to change protected fields
+    // This should be a no-op
+    const check6 = await repo2.updateResource<ProjectMembership>({
+      ...check5,
+      project: { reference: 'Project/' + randomUUID() },
+    });
+    expect(check6.id).toEqual(check4.id);
+    expect(check6.meta?.versionId).toEqual(check5.meta?.versionId);
+    expect(check6.project?.reference).toEqual(check4.project?.reference);
+
+    // Try to create a new project
+    // This should fail
+    try {
+      await repo2.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+      throw new Error('Should not be able to create resource');
+    } catch (err) {
+      expect(normalizeErrorString(err)).toEqual('Forbidden');
+    }
+  });
+
+  test('Project admin can modify meta.account', async () => {
+    const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+
+    const adminMembership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      admin: true,
+    });
+
+    const nonAdminMembership = await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      user: { reference: 'User/' + randomUUID() },
+      project: { reference: 'Project/' + project.id },
+      profile: { reference: 'Practitioner/' + randomUUID() },
+      admin: false,
+    });
+
+    const adminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, adminMembership, true, true);
+    const nonAdminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, nonAdminMembership, true, true);
+    const account1 = randomUUID();
+    const account2 = randomUUID();
+
+    // Create a patient with account as project admin
+    // Project admin should be allowed to set account
+    const patient1 = await adminRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: {
+        project: project.id,
+        account: { reference: 'Organization/' + account1 },
+      },
+    });
+    expect(patient1).toBeDefined();
+    expect(patient1.meta?.account?.reference).toEqual('Organization/' + account1);
+
+    // Update the patient with account as project admin
+    // Project admin should be allowed to set account
+    const patient2 = await adminRepo.updateResource<Patient>({
+      ...patient1,
+      meta: {
+        ...patient1.meta,
+        account: { reference: 'Organization/' + account2 },
+      },
+    });
+    expect(patient2).toBeDefined();
+    expect(patient2.meta?.account?.reference).toEqual('Organization/' + account2);
+
+    // Attempt to change the account as non-admin
+    // This should be silently ignored
+    const patient3 = await nonAdminRepo.updateResource<Patient>({
+      ...patient2,
+      meta: {
+        ...patient2.meta,
+        account: { reference: 'Organization/' + randomUUID() },
+      },
+    });
+    expect(patient3).toBeDefined();
+    expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
+    expect(patient3.meta?.account?.reference).toEqual('Organization/' + account2);
   });
 });

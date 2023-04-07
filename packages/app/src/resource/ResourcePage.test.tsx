@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bot, Bundle, Practitioner, SearchParameter } from '@medplum/fhirtypes';
@@ -18,13 +18,12 @@ describe('ResourcePage', () => {
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <MantineProvider>
-              <NotificationsProvider>
-                <ErrorBoundary>
-                  <Suspense fallback={<Loading />}>
-                    <AppRoutes />
-                  </Suspense>
-                </ErrorBoundary>
-              </NotificationsProvider>
+              <Notifications />
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <AppRoutes />
+                </Suspense>
+              </ErrorBoundary>
             </MantineProvider>
           </MemoryRouter>
         </MedplumProvider>
@@ -146,7 +145,7 @@ describe('ResourcePage', () => {
 
     // Select "Test Bot" in the bot input field
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByRole('combobox') as HTMLInputElement;
 
     // Enter "Simpson"
     await act(async () => {

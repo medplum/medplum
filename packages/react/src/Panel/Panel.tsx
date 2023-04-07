@@ -9,7 +9,7 @@ export interface PanelStylesParams {
 const useStyles = createStyles((theme, { width, fill }: PanelStylesParams) => ({
   paper: {
     maxWidth: width,
-    margin: `${theme.spacing.xl}px auto`,
+    margin: `${theme.spacing.xl} auto`,
     padding: fill ? 0 : theme.spacing.md,
     '@media (max-width: 800px)': {
       padding: fill ? 0 : 8,

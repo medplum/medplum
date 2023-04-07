@@ -6,7 +6,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { createTestClient } from '../test.setup';
+import { createTestClient, createTestProject } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
 
 const app = express();
@@ -182,5 +182,14 @@ describe('Auth middleware', () => {
       .get('/fhir/R4/Patient')
       .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
     expect(res.status).toBe(401);
+  });
+
+  test('Basic auth with super admin client', async () => {
+    const { client } = await createTestProject({ superAdmin: true });
+    const res = await request(app)
+      .get('/fhir/R4/Project?_total=accurate')
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64'));
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBeGreaterThan(1);
   });
 });

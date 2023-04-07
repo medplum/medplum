@@ -42,7 +42,8 @@ async function authenticateBearerToken(req: Request, res: Response, token: strin
     }
 
     const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-    await setupLocals(req, res, login, membership);
+    const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+    await setupLocals(req, res, login, project, membership);
   } catch (err) {
     throw new OperationOutcomeError(unauthorized);
   }
@@ -71,25 +72,33 @@ async function authenticateBasicAuth(req: Request, res: Response, token: string)
     throw new OperationOutcomeError(unauthorized);
   }
 
-  const login: Login = {
-    resourceType: 'Login',
-    authMethod: 'client',
-  };
-
   const membership = await getClientApplicationMembership(client);
   if (!membership) {
     throw new OperationOutcomeError(unauthorized);
   }
 
-  await setupLocals(req, res, login, membership);
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  const login: Login = {
+    resourceType: 'Login',
+    authMethod: 'client',
+    superAdmin: project.superAdmin,
+  };
+
+  await setupLocals(req, res, login, project, membership);
 }
 
-async function setupLocals(req: Request, res: Response, login: Login, membership: ProjectMembership): Promise<void> {
+async function setupLocals(
+  req: Request,
+  res: Response,
+  login: Login,
+  project: Project,
+  membership: ProjectMembership
+): Promise<void> {
   const locals = res.locals;
   locals.login = login;
+  locals.project = project;
   locals.membership = membership;
   locals.profile = membership.profile;
-  locals.project = await systemRepo.readReference(membership.project as Reference<Project>);
   locals.repo = await getRepoForLogin(
     login,
     membership,

@@ -13,3 +13,10 @@ For example, after a lab test is completed, a [DiagnosticReport](/docs/api/fhir/
 For resources to be billed appropriately, they often need to be tagged with CPT Codes, LOINC or SNOMED ontologies. To accomplish this, resources are often tagged with a [Codeable Concept](/docs/fhir-basics#codeable-concepts-standarding-data). Coding will be determined by the service provided.
 
 Through automation and integration, more complex scenarios like determining authorization or checking whether insurance is active can be automated via [bots](/docs/bots/insurance-eligibility-check.md).
+
+## Sample Integrations
+
+The [medplum-demo-bots](https://github.com/medplum/medplum-demo-bots) Github repository has sample billing integrations that demonstrate how to maintain and synchronize billing data.
+
+- [Stripe](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots) integration shows how to keep invoices and payments synchronized between Medplum and Stripe.
+- [Candid Health](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health) integration shows how to prepare an Encounter resource and associated metadata for submission.

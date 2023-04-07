@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 
+# Fail on error
+set -e
+
+# Echo commands
+set -x
+
 rm -rf node_modules
-rm -rf packages/app/node_modules
-rm -rf packages/cli/node_modules
-rm -rf packages/core/node_modules
-rm -rf packages/docs/node_modules
-rm -rf packages/definitions/node_modules
-rm -rf packages/docs/node_modules
-rm -rf packages/fhirtypes/node_modules
-rm -rf packages/generator/node_modules
-rm -rf packages/graphiql/node_modules
-rm -rf packages/infra/node_modules
-rm -rf packages/server/node_modules
-rm -rf packages/react/node_modules
 rm package-lock.json
+
+for dir in `ls packages`; do
+  if test -f "packages/$dir/node_modules"; then
+    rm -rf "packages/$dir/node_modules"
+  fi
+done
+
 npm i

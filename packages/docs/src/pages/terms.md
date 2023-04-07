@@ -146,4 +146,39 @@ You also acknowledge and understand that, with respect to any dispute with the R
 - YOU ARE GIVING UP YOUR RIGHT TO SERVE AS A REPRESENTATIVE, AS A PRIVATE ATTORNEY GENERAL, OR IN ANY OTHER REPRESENTATIVE CAPACITY, OR TO PARTICIPATE AS A MEMBER OF A CLASS OF CLAIMANTS, IN ANY LAWSUIT INVOLVING ANY SUCH DISPUTE; AND
 - YOU MUST FILE ANY CLAIM WITHIN ONE (1) YEAR AFTER SUCH CLAIM AROSE OR IT IS FOREVER BARRED.
 
-Last Updated: 2022-04-05
+## UMLS Notices
+
+Bodenreider O. The Unified Medical Language System (UMLS): integrating biomedical terminology. Nucleic Acids Res. 2004 Jan 1;32(Database issue):D267-70. doi: 10.1093/nar/gkh061. PubMed PMID: 14681409; PubMed Central PMCID: PMC308795.
+
+### CPT2022
+
+CPT™ only Copyright 2021 American Medical Association. All rights Reserved. No fee schedules, basic unit, relative values or related listings are included in CPT™. AMA does not directly or indirectly practice medicine or dispense medical services. AMA assumes no liability for data contained herein.
+
+#### U.S. Government Rights
+
+This product includes CPT™ which is commercial technical data and/or computer data bases and/or commercial computer software and/or commercial computer software documentation, as applicable which were developed exclusively at private expense by the American Medical Association, 515 North State Street, Chicago, Illinois, 60610. U.S. Government rights to use, modify, reproduce, release, perform, display, or disclose these technical data and/or computer data bases and/or computer software and/or computer software documentation are subject to the limited rights restrictions of DFARS 252.227-7015(b)(2) (June 1995) and/or subject to the restrictions of DFARS 227.7202-1(a) (June 1995) and DFARS 227.7202-3(a) (June 1995), as applicable for U.S. Department of Defense procurements and the limited rights restrictions of FAR 52.227-14 (June 1987) and/or subject to the restricted rights provisions of FAR 52.227-14 (June 1987) and FAR 52.227-19 (June 1987), as applicable, and any applicable agency FAR Supplements, for non-Department of Defense Federal procurements.
+
+### LNC273
+
+This product includes all, or a portion of, or is derived from content from LOINC that is subject to a license from Regenstrief Institute, Inc. Your use of LOINC content also is subject to this license, a copy of which is available https://loinc.org/license/. The current complete LOINC distribution is available for download at http://loinc.org. The LOINC Table and LOINC codes are copyright © 1995-2020, Regenstrief Institute, Inc. and the Logical Observation Identifiers Names and Codes (LOINC) Committee. The LOINC Table, LOINC Table Core, LOINC Panels and Forms File, LOINC Answer File, LOINC Part File, LOINC Group File, LOINC Document Ontology File, LOINC Hierarchies, LOINC Linguistic Variants File, LOINC/RSNA Radiology Playbook, LOINC/IEEE Medical Device Code Mapping Table, LOINC Display Name File, LOINC Consumer Name File, and LOINC Change Snapshot File are copyright © 1995-2020, Regenstrief Institute, Inc. All rights reserved. THE LOINC TABLE (IN ALL FORMATS), LOINC TABLE CORE, LOINC PANELS AND FORMS FILE, LOINC ANSWER FILE, LOINC PART FILE, LOINC GROUP FILE, LOINC DOCUMENT ONTOLOGY FILE, LOINC HIERARCHIES, LOINC LINGUISTIC VARIANTS FILE, LOINC/RSNA RADIOLOGY PLAYBOOK, LOINC/IEEE MEDICAL DEVICE CODE MAPPING TABLE, LOINC DISPLAY NAME FILE, LOINC CONSUMER NAME FILE, AND LOINC CHANGE SNAPSHOT FILE ARE PROVIDED "AS IS." ANY EXPRESS OR IMPLIED WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. LOINC® is a registered United States trademark of Regenstrief Institute, Inc. A small portion of LOINC content may include content (e.g., survey instruments) that is subject to copyrights owned by third parties. Such content has been mapped to LOINC terms under applicable copyright and terms of use. Notice of such third-party copyright and license terms would need to be included if such content is included.
+
+### UCUM License Notice
+
+Copyright 1999-2022 Regenstrief Institute, Inc. All rights reserved. Licensed under the UCUM License, Version 1.0 (the “License”); you may not use this file except in compliance with the License. You may obtain a copy of the License at:
+
+https://unitsofmeasure.org/license
+
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an _“AS IS” BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND_, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+
+### RxNorm
+
+This product uses publicly available data courtesy of the U.S. National Library of Medicine (NLM), National Institutes of Health, Department of Health and Human Services; NLM is not responsible for the product and does not endorse or recommend this or any other product.
+Nelson SJ, Zeng K, Kilbourne J, Powell T, Moore R. Normalized names for clinical drugs: RxNorm at 6 years. J Am Med Inform Assoc. 2011 Jul-Aug;18(4)441-8. doi: 10.1136/amiajnl-2011-000116. Epub 2011 Apr 21. PubMed PMID: 21515544; PubMed Central PMCID: PMC3128404.
+
+Courtesy of the U.S. National Library of Medicine.
+
+### SNOMED
+
+This material includes SNOMED Clinical Terms® (SNOMED CT®) which is used by permission of the International Health Terminology Standards Development Organisation (IHTSDO). All rights reserved. SNOMED CT®, was originally created by The College of American Pathologists. "SNOMED" and "SNOMED CT" are registered trademarks of the IHTSDO.
+
+Last Updated: 2023-03-18

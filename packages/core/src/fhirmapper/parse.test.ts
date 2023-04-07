@@ -1565,4 +1565,29 @@ describe('FHIR Mapping Language parser', () => {
 
     expect(parseMappingLanguage(input)).toMatchObject(expected);
   });
+
+  test('Unexpected token', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+    foo
+    `;
+
+    expect(() => parseMappingLanguage(input)).toThrowError('Unexpected token: foo');
+  });
+
+  test('Multiple imports', () => {
+    const input = `
+    map "http://hl7.org/fhir/StructureMap/tutorial" = tutorial
+    imports "http://hl7.org/fhir/StructureMap/x"
+    imports "http://hl7.org/fhir/StructureMap/y"
+    imports "http://hl7.org/fhir/StructureMap/z"
+    `;
+
+    const result = parseMappingLanguage(input);
+    expect(result.import).toMatchObject([
+      'http://hl7.org/fhir/StructureMap/x',
+      'http://hl7.org/fhir/StructureMap/y',
+      'http://hl7.org/fhir/StructureMap/z',
+    ]);
+  });
 });

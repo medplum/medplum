@@ -97,37 +97,6 @@ export interface Project {
    * Web application or web site that is associated with the project.
    */
   site?: ProjectSite[];
-
-  /**
-   * Use IP Access Rules to allowlist, block, and challenge traffic based
-   * on the visitor IP address.
-   */
-  ipAccessRule?: ProjectIpAccessRule[];
-}
-
-/**
- * Use IP Access Rules to allowlist, block, and challenge traffic based
- * on the visitor IP address.
- */
-export interface ProjectIpAccessRule {
-
-  /**
-   * Friendly name that will make it easy for you to identify the IP Access
-   * Rule in the future.
-   */
-  name?: string;
-
-  /**
-   * An IP Access rule will apply a certain action to incoming traffic
-   * based on the visitor IP address or IP range.
-   */
-  value?: string;
-
-  /**
-   * Access rule can perform one of the following actions: &quot;allow&quot; |
-   * &quot;block&quot;.
-   */
-  action?: string;
 }
 
 /**

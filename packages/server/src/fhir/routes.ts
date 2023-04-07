@@ -1,4 +1,4 @@
-import { allOk, getStatus, isOk, OperationOutcomeError } from '@medplum/core';
+import { allOk, getStatus, isOk, OperationOutcomeError, validateResource } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -10,14 +10,15 @@ import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
+import { expungeHandler } from './operations/expunge';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
+import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { validateResource } from './schema';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -69,6 +70,9 @@ const protectedRoutes = Router();
 protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
 
+// Project $clone
+protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandler));
+
 // ValueSet $expand operation
 protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 
@@ -76,6 +80,7 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
+protectedRoutes.post('/Bot/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 
 // Bot $deploy operation
@@ -95,6 +100,9 @@ protectedRoutes.get('/:resourceType/:id/([$]|%24)graph', asyncWrap(resourceGraph
 
 // Patient $everything operation
 protectedRoutes.get('/Patient/:id/([$]|%24)everything', asyncWrap(patientEverythingHandler));
+
+// $expunge operation
+protectedRoutes.post('/:resourceType/:id/([$]|%24)expunge', asyncWrap(expungeHandler));
 
 // Validate create resource
 protectedRoutes.post(

@@ -1,9 +1,10 @@
-import { ResourceType } from '@medplum/fhirtypes';
+import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { globalSchema } from '../types';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
-export interface SearchRequest {
-  readonly resourceType: ResourceType;
+export interface SearchRequest<T extends Resource = Resource> {
+  readonly resourceType: T['resourceType'];
   filters?: Filter[];
   sortRules?: SortRule[];
   offset?: number;
@@ -11,6 +12,7 @@ export interface SearchRequest {
   fields?: string[];
   name?: string;
   total?: 'none' | 'estimate' | 'accurate';
+  include?: string;
   revInclude?: string;
 }
 
@@ -62,138 +64,279 @@ export enum Operator {
 
   // All
   MISSING = 'missing',
+
+  // Reference
+  IDENTIFIER = 'identifier',
 }
 
-const MODIFIER_OPERATORS: Operator[] = [
-  Operator.CONTAINS,
-  Operator.EXACT,
-  Operator.TEXT,
-  Operator.NOT,
-  Operator.ABOVE,
-  Operator.BELOW,
-  Operator.IN,
-  Operator.NOT_IN,
-  Operator.OF_TYPE,
-  Operator.MISSING,
-];
-
-const PREFIX_OPERATORS: Operator[] = [
-  Operator.NOT_EQUALS,
-  Operator.GREATER_THAN,
-  Operator.LESS_THAN,
-  Operator.GREATER_THAN_OR_EQUALS,
-  Operator.LESS_THAN_OR_EQUALS,
-  Operator.STARTS_AFTER,
-  Operator.ENDS_BEFORE,
-  Operator.APPROXIMATELY,
-];
+/**
+ * Parameter names may specify a modifier as a suffix.
+ * The modifiers are separated from the parameter name by a colon.
+ * See: https://www.hl7.org/fhir/search.html#modifiers
+ */
+const MODIFIER_OPERATORS: Record<string, Operator> = {
+  contains: Operator.CONTAINS,
+  exact: Operator.EXACT,
+  above: Operator.ABOVE,
+  below: Operator.BELOW,
+  text: Operator.TEXT,
+  not: Operator.NOT,
+  in: Operator.IN,
+  'not-in': Operator.NOT_IN,
+  'of-type': Operator.OF_TYPE,
+  missing: Operator.MISSING,
+  identifier: Operator.IDENTIFIER,
+};
 
 /**
- * Parses a URL into a SearchRequest.
- *
- * See the FHIR search spec: http://hl7.org/fhir/r4/search.html
- *
+ * For the ordered parameter types of number, date, and quantity,
+ * a prefix to the parameter value may be used to control the nature
+ * of the matching.
+ * See: https://www.hl7.org/fhir/search.html#prefix
+ */
+const PREFIX_OPERATORS: Record<string, Operator> = {
+  eq: Operator.EQUALS,
+  ne: Operator.NOT_EQUALS,
+  lt: Operator.LESS_THAN,
+  le: Operator.LESS_THAN_OR_EQUALS,
+  gt: Operator.GREATER_THAN,
+  ge: Operator.GREATER_THAN_OR_EQUALS,
+  sa: Operator.STARTS_AFTER,
+  eb: Operator.ENDS_BEFORE,
+  ap: Operator.APPROXIMATELY,
+};
+
+/**
+ * Parses a search URL into a search request.
+ * @param resourceType The FHIR resource type.
+ * @param query The collection of query string parameters.
+ * @returns A parsed SearchRequest.
+ */
+export function parseSearchRequest<T extends Resource = Resource>(
+  resourceType: T['resourceType'],
+  query: Record<string, string[] | string | undefined>
+): SearchRequest<T> {
+  return parseSearchImpl(resourceType, query);
+}
+
+/**
+ * Parses a search URL into a search request.
+ * @param url The search URL.
+ * @returns A parsed SearchRequest.
+ */
+export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
+  const resourceType = url.pathname.split('/').filter(Boolean).pop() as ResourceType;
+  return parseSearchImpl<T>(resourceType, Object.fromEntries(url.searchParams.entries()));
+}
+
+/**
+ * Parses a URL string into a SearchRequest.
  * @param url The URL to parse.
  * @returns Parsed search definition.
  */
-export function parseSearchDefinition(url: string): SearchRequest {
-  const location = new URL(url, 'https://example.com/');
-  const resourceType = location.pathname
-    .replace(/(^\/)|(\/$)/g, '') // Remove leading and trailing slashes
-    .split('/')
-    .pop() as ResourceType;
-  const params = new URLSearchParams(location.search);
-  let filters: Filter[] | undefined = undefined;
-  let sortRules: SortRule[] | undefined = undefined;
-  let fields: string[] | undefined = undefined;
-  let offset = undefined;
-  let count = undefined;
-  let total = undefined;
+export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
+  return parseSearchUrl<T>(new URL(url, 'https://example.com/'));
+}
 
-  params.forEach((value, key) => {
-    if (key === '_fields') {
-      fields = value.split(',');
-    } else if (key === '_offset') {
-      offset = parseInt(value);
-    } else if (key === '_count') {
-      count = parseInt(value);
-    } else if (key === '_total') {
-      total = value;
-    } else if (key === '_sort') {
-      sortRules = sortRules || [];
-      sortRules.push(parseSortRule(value));
-    } else {
-      filters = filters || [];
-      filters.push(parseSearchFilter(key, value));
-    }
-  });
-
-  return {
+function parseSearchImpl<T extends Resource = Resource>(
+  resourceType: T['resourceType'],
+  query: Record<string, string[] | string | undefined>
+): SearchRequest<T> {
+  const searchRequest: SearchRequest<T> = {
     resourceType,
-    filters,
-    fields,
-    offset,
-    count,
-    total,
-    sortRules,
   };
+
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value)) {
+      value.forEach((element) => parseKeyValue(searchRequest, key, element));
+    } else {
+      parseKeyValue(searchRequest, key, value ?? '');
+    }
+  }
+
+  return searchRequest;
 }
 
-/**
- * Parses a URL query parameter into a sort rule.
- *
- * By default, the sort rule is the field name.
- *
- * Sort rules can be reversed into descending order by prefixing the field name with a minus sign.
- *
- * See sorting: http://hl7.org/fhir/r4/search.html#_sort
- *
- * @param value The URL parameter value.
- * @returns The parsed sort rule.
- */
-function parseSortRule(value: string): SortRule {
-  if (value.startsWith('-')) {
-    return { code: value.substring(1), descending: true };
+function parseKeyValue(searchRequest: SearchRequest, key: string, value: string): void {
+  let code;
+  let modifier;
+
+  const colonIndex = key.indexOf(':');
+  if (colonIndex >= 0) {
+    code = key.substring(0, colonIndex);
+    modifier = key.substring(colonIndex + 1);
   } else {
-    return { code: value };
+    code = key;
+    modifier = '';
+  }
+
+  switch (code) {
+    case '_sort':
+      parseSortRule(searchRequest, value);
+      break;
+
+    case '_count':
+      searchRequest.count = parseInt(value);
+      break;
+
+    case '_offset':
+      searchRequest.offset = parseInt(value);
+      break;
+
+    case '_total':
+      searchRequest.total = value as 'none' | 'estimate' | 'accurate';
+      break;
+
+    case '_summary':
+      searchRequest.total = 'estimate';
+      searchRequest.count = 0;
+      break;
+
+    case '_include':
+      searchRequest.include = value;
+      break;
+
+    case '_revinclude':
+      searchRequest.revInclude = value;
+      break;
+
+    case '_fields':
+      searchRequest.fields = value.split(',');
+      break;
+
+    default: {
+      const param = globalSchema.types[searchRequest.resourceType]?.searchParams?.[code];
+      if (param) {
+        parseParameter(searchRequest, param, modifier, value);
+      } else {
+        parseUnknownParameter(searchRequest, code, modifier, value);
+      }
+    }
   }
 }
 
-/**
- * Parses a URL query parameter into a search filter.
- *
- * FHIR search filters can be specified as modifiers or prefixes.
- *
- * For string properties, modifiers are appended to the key, e.g. "name:contains=eve".
- *
- * For date and numeric properties, prefixes are prepended to the value, e.g. "birthdate=gt2000".
- *
- * See the FHIR search spec: http://hl7.org/fhir/r4/search.html
- *
- * @param key The URL parameter key.
- * @param value The URL parameter value.
- * @returns The parsed search filter.
- */
-function parseSearchFilter(key: string, value: string): Filter {
-  let code = key;
+function parseSortRule(searchRequest: SearchRequest, value: string): void {
+  for (const field of value.split(',')) {
+    let code;
+    let descending = false;
+    if (field.startsWith('-')) {
+      code = field.substring(1);
+      descending = true;
+    } else {
+      code = field;
+    }
+    if (!searchRequest.sortRules) {
+      searchRequest.sortRules = [];
+    }
+    searchRequest.sortRules.push({ code, descending });
+  }
+}
+
+function parseParameter(
+  searchRequest: SearchRequest,
+  searchParam: SearchParameter,
+  modifier: string,
+  value: string
+): void {
+  if (modifier === 'missing') {
+    addFilter(searchRequest, {
+      code: searchParam.code as string,
+      operator: Operator.MISSING,
+      value,
+    });
+    return;
+  }
+  switch (searchParam.type) {
+    case 'number':
+    case 'date':
+      parsePrefixType(searchRequest, searchParam, value);
+      break;
+    case 'reference':
+    case 'string':
+    case 'token':
+    case 'uri':
+      parseModifierType(searchRequest, searchParam, modifier, value);
+      break;
+    case 'quantity':
+      parseQuantity(searchRequest, searchParam, value);
+      break;
+  }
+}
+
+function parsePrefixType(searchRequest: SearchRequest, param: SearchParameter, input: string): void {
+  const { operator, value } = parsePrefix(input);
+  addFilter(searchRequest, {
+    code: param.code as string,
+    operator,
+    value,
+  });
+}
+
+function parseModifierType(
+  searchRequest: SearchRequest,
+  param: SearchParameter,
+  modifier: string,
+  value: string
+): void {
+  addFilter(searchRequest, {
+    code: param.code as string,
+    operator: parseModifier(modifier),
+    value,
+  });
+}
+
+function parseQuantity(searchRequest: SearchRequest, param: SearchParameter, input: string): void {
+  const [prefixNumber, unitSystem, unitCode] = input.split('|');
+  const { operator, value } = parsePrefix(prefixNumber);
+  addFilter(searchRequest, {
+    code: param.code as string,
+    operator,
+    value,
+    unitSystem,
+    unitCode,
+  });
+}
+
+function parseUnknownParameter(searchRequest: SearchRequest, code: string, modifier: string, value: string): void {
   let operator = Operator.EQUALS;
-
-  for (const modifier of MODIFIER_OPERATORS) {
-    const modifierIndex = code.indexOf(':' + modifier);
-    if (modifierIndex !== -1) {
-      operator = modifier;
-      code = code.substring(0, modifierIndex);
+  if (modifier) {
+    operator = modifier as Operator;
+  } else if (value.length >= 2) {
+    const prefix = value.substring(0, 2);
+    if (prefix in PREFIX_OPERATORS) {
+      if (value.length === 2 || value.at(2)?.match(/\d/)) {
+        operator = prefix as Operator;
+        value = value.substring(prefix.length);
+      }
     }
   }
 
-  for (const prefix of PREFIX_OPERATORS) {
-    if (value.match(new RegExp('^' + prefix + '\\d'))) {
-      operator = prefix;
-      value = value.substring(prefix.length);
-    }
-  }
+  addFilter(searchRequest, {
+    code,
+    operator,
+    value,
+  });
+}
 
-  return { code, operator, value };
+function parsePrefix(input: string): { operator: Operator; value: string } {
+  const prefix = input.substring(0, 2);
+  const prefixOperator = PREFIX_OPERATORS[prefix];
+  if (prefixOperator) {
+    return { operator: prefixOperator, value: input.substring(2) };
+  }
+  return { operator: Operator.EQUALS, value: input };
+}
+
+function parseModifier(modifier: string): Operator {
+  return MODIFIER_OPERATORS[modifier] || Operator.EQUALS;
+}
+
+function addFilter(searchRequest: SearchRequest, filter: Filter): void {
+  if (searchRequest.filters) {
+    searchRequest.filters.push(filter);
+  } else {
+    searchRequest.filters = [filter];
+  }
 }
 
 /**
@@ -238,8 +381,8 @@ export function formatSearchQuery(definition: SearchRequest): string {
 }
 
 function formatFilter(filter: Filter): string {
-  const modifier = MODIFIER_OPERATORS.includes(filter.operator) ? ':' + filter.operator : '';
-  const prefix = PREFIX_OPERATORS.includes(filter.operator) ? filter.operator : '';
+  const modifier = filter.operator in MODIFIER_OPERATORS ? ':' + filter.operator : '';
+  const prefix = filter.operator !== Operator.EQUALS && filter.operator in PREFIX_OPERATORS ? filter.operator : '';
   return `${filter.code}${modifier}=${prefix}${encodeURIComponent(filter.value)}`;
 }
 

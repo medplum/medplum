@@ -199,7 +199,7 @@ describe('Google Auth', () => {
     expect(res2.body.code).toBeDefined();
   });
 
-  test('Custom Google client wrong project', async () => {
+  test('Custom Google client success', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
     const googleClientId = 'google-client-id-' + randomUUID();
@@ -231,12 +231,90 @@ describe('Google Auth', () => {
       .post('/auth/google')
       .type('json')
       .send({
+        googleClientId: googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+  });
+
+  test('Custom Google client with project success', async () => {
+    const email = `google-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const googleClientId = 'google-client-id-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the google client ID
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          googleClientId,
+        },
+      ],
+    });
+
+    // Try to login with the custom Google client
+    // This should succeed
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: project.id,
+        googleClientId: googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+      });
+    expect(res2.status).toBe(200);
+  });
+
+  test('Custom Google client wrong projectId', async () => {
+    const email = `google-client${randomUUID()}@example.com`;
+    const password = 'password!@#';
+    const googleClientId = 'google-client-id-' + randomUUID();
+
+    // Register and create a project
+    const { project } = await registerNew({
+      firstName: 'Google',
+      lastName: 'Google',
+      projectName: 'Require Google Auth',
+      email,
+      password,
+    });
+
+    // As a super admin, set the google client ID
+    await systemRepo.updateResource({
+      ...project,
+      site: [
+        {
+          name: 'Test Site',
+          domain: ['example.com'],
+          googleClientId,
+        },
+      ],
+    });
+
+    // Try to login with the custom Google client
+    // This should fail
+    const res2 = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
         projectId: randomUUID(),
         googleClientId: googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Invalid projectId');
+    expect(res2.body.issue[0].details.text).toEqual('Invalid googleClientId');
   });
 
   test('Custom OAuth client success', async () => {
@@ -264,7 +342,7 @@ describe('Google Auth', () => {
     expect(res.body.code).toBeDefined();
   });
 
-  test('Custom Google client wrong project', async () => {
+  test('ClientId with incorrect projectId', async () => {
     const email = `google-client${randomUUID()}@example.com`;
     const password = 'password!@#';
 

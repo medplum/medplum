@@ -1,5 +1,6 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
+tags: [auth]
 ---
 
 import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';

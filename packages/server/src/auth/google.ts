@@ -1,5 +1,5 @@
 import { badRequest, Operator } from '@medplum/core';
-import { ClientApplication, Project, ResourceType, User } from '@medplum/fhirtypes';
+import { Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -10,7 +10,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
 import { isExternalAuth } from './method';
-import { sendLoginResult } from './utils';
+import { getProjectIdByClientId, sendLoginResult } from './utils';
 
 /*
  * Integrating Google Sign-In into your web app
@@ -57,36 +57,21 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
   let projectId = req.body.projectId as string | undefined;
+  const clientId = req.body.clientId;
+  projectId = await getProjectIdByClientId(clientId, projectId);
 
   const googleClientId = req.body.googleClientId;
   if (googleClientId !== getConfig().googleClientId) {
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    const project = await getProjectByGoogleClientId(googleClientId);
+    const project = await getProjectByGoogleClientId(googleClientId, projectId);
     if (!project) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
     }
 
-    if (projectId !== undefined && project.id !== projectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-
     projectId = project.id;
-  }
-
-  // For OAuth2 flow, check the clientId
-  const clientId = req.body.clientId;
-  if (clientId) {
-    const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    const clientProjectId = client.meta?.project as string;
-    if (projectId !== undefined && projectId !== clientProjectId) {
-      sendOutcome(res, badRequest('Invalid projectId'));
-      return;
-    }
-    projectId = clientProjectId;
   }
 
   const googleJwt = req.body.googleCredential as string;
@@ -132,11 +117,10 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     authMethod: 'google',
     email: claims.email,
     googleCredentials: claims,
-    remember: true,
     projectId,
     clientId,
     resourceType,
-    scope: req.body.scope || 'openid',
+    scope: req.body.scope || 'openid offline',
     nonce: req.body.nonce || randomUUID(),
     launchId: req.body.launch,
     codeChallenge: req.body.codeChallenge,
@@ -147,17 +131,30 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   await sendLoginResult(res, login);
 }
 
-async function getProjectByGoogleClientId(googleClientId: string): Promise<Project | undefined> {
+async function getProjectByGoogleClientId(
+  googleClientId: string,
+  projectId: string | undefined
+): Promise<Project | undefined> {
+  const filters = [
+    {
+      code: 'google-client-id',
+      operator: Operator.EQUALS,
+      value: googleClientId,
+    },
+  ];
+
+  if (projectId) {
+    filters.push({
+      code: '_id',
+      operator: Operator.EQUALS,
+      value: projectId,
+    });
+  }
+
   const bundle = await systemRepo.search<Project>({
     resourceType: 'Project',
     count: 1,
-    filters: [
-      {
-        code: 'google-client-id',
-        operator: Operator.EQUALS,
-        value: googleClientId,
-      },
-    ],
+    filters,
   });
   return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }

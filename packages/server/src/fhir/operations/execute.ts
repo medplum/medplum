@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { badRequest, createReference, getIdentifier, Hl7Message, resolveId } from '@medplum/core';
+import { badRequest, createReference, getIdentifier, Hl7Message, Operator, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
@@ -7,6 +7,7 @@ import { asyncWrap } from '../../async';
 import { getConfig } from '../../config';
 import { generateAccessToken } from '../../oauth/keys';
 import { AuditEventOutcome } from '../../util/auditevent';
+import { sendOutcome } from '../outcomes';
 import { Repository, systemRepo } from '../repo';
 
 export const EXECUTE_CONTENT_TYPES = [
@@ -37,14 +38,15 @@ export interface BotExecutionResult {
  * Assumes that input content-type is output content-type.
  */
 export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
-  const { id } = req.params;
-  const repo = res.locals.repo as Repository;
-
   // First read the bot as the user to verify access
-  await repo.readResource<Bot>('Bot', id);
+  const userBot = await getBotForRequest(req, res);
+  if (!userBot) {
+    sendOutcome(res, badRequest('Must specify bot ID or identifier.'));
+    return;
+  }
 
   // Then read the bot as system user to load extended metadata
-  const bot = await systemRepo.readResource<Bot>('Bot', id);
+  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
 
   // Execute the bot
   const result = await executeBot({
@@ -67,6 +69,37 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     .type(getResponseContentType(req))
     .send(result.returnValue || badRequest(result.logResult));
 });
+
+/**
+ * Returns the Bot for the execute request.
+ * If using "/Bot/:id/$execute", then the bot ID is read from the path parameter.
+ * If using "/Bot/$execute?identifier=...", then the bot is searched by identifier.
+ * Otherwise, returns undefined.
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @returns The bot, or undefined if not found.
+ */
+async function getBotForRequest(req: Request, res: Response): Promise<Bot | undefined> {
+  const repo = res.locals.repo as Repository;
+
+  // Prefer to search by ID from path parameter
+  const { id } = req.params;
+  if (id) {
+    return repo.readResource<Bot>('Bot', id);
+  }
+
+  // Otherwise, search by identifier
+  const { identifier } = req.query;
+  if (identifier && typeof identifier === 'string') {
+    return repo.searchOne<Bot>({
+      resourceType: 'Bot',
+      filters: [{ code: 'identifier', operator: Operator.EXACT, value: identifier }],
+    });
+  }
+
+  // If no bot ID or identifier, return undefined
+  return undefined;
+}
 
 /**
  * Executes a Bot.

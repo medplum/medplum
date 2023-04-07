@@ -1,13 +1,14 @@
 import { ProfileResource, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
+  AccessPolicyIpAccessRule,
   AccessPolicyResource,
   Login,
   ProjectMembership,
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
-import { Repository, systemRepo } from './repo';
+import { projectAdminResourceTypes, Repository, systemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
 /**
@@ -29,17 +30,7 @@ export async function getRepoForLogin(
   extendedMode?: boolean,
   checkReferencesOnWrite?: boolean
 ): Promise<Repository> {
-  let accessPolicy: AccessPolicy | undefined = undefined;
-
-  if (membership.access || membership.accessPolicy) {
-    accessPolicy = await buildAccessPolicy(membership);
-  }
-
-  if (login.scope) {
-    // If the login specifies SMART scopes,
-    // then set the access policy to use those scopes
-    accessPolicy = applySmartScopes(accessPolicy, login.scope);
-  }
+  const accessPolicy = await getAccessPolicyForLogin(login, membership);
 
   return new Repository({
     project: resolveId(membership.project) as string,
@@ -52,6 +43,36 @@ export async function getRepoForLogin(
     extendedMode,
     checkReferencesOnWrite,
   });
+}
+
+/**
+ * Returns the access policy for the login.
+ * @param login The user login.
+ * @param membership The user membership.
+ * @returns The finalized access policy.
+ */
+export async function getAccessPolicyForLogin(
+  login: Login,
+  membership: ProjectMembership
+): Promise<AccessPolicy | undefined> {
+  let accessPolicy: AccessPolicy | undefined = undefined;
+
+  if (membership.access || membership.accessPolicy) {
+    accessPolicy = await buildAccessPolicy(membership);
+  }
+
+  if (login.scope) {
+    // If the login specifies SMART scopes,
+    // then set the access policy to use those scopes
+    accessPolicy = applySmartScopes(accessPolicy, login.scope);
+  }
+
+  // Apply project admin access policies
+  // This includes ensuring no admin rights for non-admins
+  // and restricted access for admins
+  accessPolicy = applyProjectAdminAccessPolicy(login, membership, accessPolicy);
+
+  return accessPolicy;
 }
 
 /**
@@ -73,6 +94,7 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
   const profile = membership.profile as Reference<ProfileResource>;
   let compartment: Reference | undefined = undefined;
   let resourcePolicies: AccessPolicyResource[] = [];
+  let ipAccessRules: AccessPolicyIpAccessRule[] = [];
   for (const entry of access) {
     const replaced = await buildAccessPolicyResources(entry, profile);
     if (replaced.compartment) {
@@ -81,9 +103,17 @@ async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessP
     if (replaced.resource) {
       resourcePolicies = resourcePolicies.concat(replaced.resource);
     }
+    if (replaced.ipAccessRule) {
+      ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
+    }
   }
 
-  return { resourceType: 'AccessPolicy', compartment, resource: resourcePolicies };
+  return {
+    resourceType: 'AccessPolicy',
+    compartment,
+    resource: resourcePolicies,
+    ipAccessRule: ipAccessRules,
+  };
 }
 
 /**
@@ -112,4 +142,67 @@ async function buildAccessPolicyResources(
     }
   }
   return JSON.parse(json) as AccessPolicy;
+}
+
+/**
+ * Updates the access policy to include project admin rules.
+ * This includes ensuring no admin rights for non-admins and restricted access for admins.
+ * @param login The user login.
+ * @param membership The active project membership.
+ * @param accessPolicy The existing access policy.
+ * @returns Updated access policy with all project admin rules applied.
+ */
+function applyProjectAdminAccessPolicy(
+  login: Login,
+  membership: ProjectMembership,
+  accessPolicy: AccessPolicy | undefined
+): AccessPolicy | undefined {
+  if (login.superAdmin) {
+    // If the user is a super admin, then do not apply any additional access policy rules.
+    return accessPolicy;
+  }
+
+  if (!membership.admin && !accessPolicy) {
+    // Not a project admin and no access policy, so return default access.
+    return undefined;
+  }
+
+  if (accessPolicy) {
+    // If there is an existing access policy
+    // Remove any references to project admin resource types
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
+    );
+  }
+
+  if (membership.admin) {
+    // If the user is a project admin,
+    // then grant limited access to the project admin resource types
+    if (!accessPolicy) {
+      accessPolicy = { resourceType: 'AccessPolicy' };
+    }
+
+    if (!accessPolicy.resource) {
+      accessPolicy.resource = [{ resourceType: '*' }];
+    }
+
+    accessPolicy.resource.push({
+      resourceType: 'Project',
+      criteria: `Project?_id=${resolveId(membership.project)}`,
+      readonlyFields: ['superAdmin', 'features'],
+    });
+
+    accessPolicy.resource.push({
+      resourceType: 'ProjectMembership',
+      criteria: `ProjectMembership?project=${membership.project?.reference}`,
+      readonlyFields: ['project', 'user'],
+    });
+
+    accessPolicy.resource.push({
+      resourceType: 'PasswordChangeRequest',
+      readonly: true,
+    });
+  }
+
+  return accessPolicy;
 }

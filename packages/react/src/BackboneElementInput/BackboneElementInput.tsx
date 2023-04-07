@@ -47,6 +47,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
         }
 
         const [propertyValue, propertyType] = getValueAndType(typedValue, key);
+        const required = property.min !== undefined && property.min > 0;
 
         if (property.type.length === 1 && property.type[0].code === 'boolean') {
           return (
@@ -75,6 +76,7 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
             key={key}
             title={getPropertyDisplayName(key)}
             description={property.definition}
+            withAsterisk={required}
             htmlFor={key}
             outcome={props.outcome}
           >
@@ -83,7 +85,6 @@ export function BackboneElementInput(props: BackboneElementInputProps): JSX.Elem
               name={key}
               defaultValue={propertyValue}
               defaultPropertyType={propertyType}
-              outcome={props.outcome}
               onChange={(newValue: any, propName?: string) => {
                 setValueWrapper(setPropertyValue(value, key, propName ?? key, entry[1], newValue));
               }}

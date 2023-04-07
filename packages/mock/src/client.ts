@@ -6,6 +6,7 @@ import {
   isOk,
   LoginState,
   MedplumClient,
+  MedplumClientOptions,
   OperationOutcomeError,
   ProfileResource,
 } from '@medplum/core';
@@ -46,6 +47,7 @@ import {
   TestOrganization,
 } from './mocks';
 import { ExampleAccessPolicy, ExampleStatusValueSet, ExampleUserConfiguration } from './mocks/accesspolicy';
+import { TestProject, TestProjectMembersihp } from './mocks/project';
 import SearchParameterList from './mocks/searchparameters.json';
 import { ExampleSmartClientApplication } from './mocks/smart';
 import StructureDefinitionList from './mocks/structuredefinitions.json';
@@ -61,7 +63,7 @@ import {
   ExampleWorkflowTask3,
 } from './mocks/workflow';
 
-export interface MockClientOptions {
+export interface MockClientOptions extends MedplumClientOptions {
   readonly debug?: boolean;
 }
 
@@ -78,8 +80,9 @@ export class MockClient extends MedplumClient {
     const client = new MockFetchClient(router, repo, clientOptions?.debug);
 
     super({
-      baseUrl: 'https://example.com/',
-      clientId: 'my-client-id',
+      baseUrl: clientOptions?.baseUrl || 'https://example.com/',
+      clientId: clientOptions?.clientId,
+      storage: clientOptions?.storage,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
@@ -240,16 +243,17 @@ class MockFetchClient {
     }
   }
 
-  private mockAdminHandler(_method: string, path: string): any {
-    if (path.startsWith('admin/projects/123')) {
+  private async mockAdminHandler(_method: string, path: string): Promise<any> {
+    const projectMatch = path.match(/^admin\/projects\/([\w-]+)$/);
+    if (projectMatch) {
       return {
-        project: { id: '123', name: 'Project 123' },
-        members: [
-          { id: '123', profile: { reference: 'Practitioner/123', display: 'Alice Smith' }, role: 'owner' },
-          { id: '888', profile: { reference: 'ClientApplication/123', display: 'Test Client' }, role: 'client' },
-          { id: '999', profile: { reference: 'Bot/123', display: 'Test Bot' }, role: 'bot' },
-        ],
+        project: await this.repo.readResource('Project', projectMatch[1]),
       };
+    }
+
+    const membershipMatch = path.match(/^admin\/projects\/([\w-]+)\/members\/([\w-]+)$/);
+    if (membershipMatch) {
+      return this.repo.readResource('ProjectMembership', membershipMatch[2]);
     }
 
     return {
@@ -432,10 +436,11 @@ class MockFetchClient {
     }
   }
 
-  private mockOAuthHandler(_method: string, path: string, _options: any): any {
+  private mockOAuthHandler(_method: string, path: string, options: any): any {
     if (path.startsWith('oauth2/token')) {
+      const clientId = (options.body as URLSearchParams).get('client_id') || 'my-client-id';
       return {
-        access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'my-client-id' })) + '.signature',
+        access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
       };
     }
 
@@ -484,6 +489,8 @@ class MockFetchClient {
       ExampleWorkflowTask3,
       ExampleWorkflowRequestGroup,
       ExampleSmartClientApplication,
+      TestProject,
+      TestProjectMembersihp,
     ];
 
     for (const resource of defaultResources) {
@@ -537,4 +544,8 @@ class MockFetchClient {
       return result[1];
     }
   }
+}
+
+function base64Encode(str: string): string {
+  return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
 }

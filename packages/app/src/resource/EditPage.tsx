@@ -1,28 +1,39 @@
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum, useResource } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 
 export function EditPage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
-  const resource = useResource({ reference: resourceType + '/' + id });
+  const [value, setValue] = useState<Resource | undefined>();
   const navigate = useNavigate();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
 
+  useEffect(() => {
+    medplum
+      .readResource(resourceType, id)
+      .then((resource) => setValue(deepClone(resource)))
+      .catch((err) => {
+        setOutcome(normalizeOperationOutcome(err));
+        showNotification({ color: 'red', message: normalizeErrorString(err) });
+      });
+  }, [medplum, resourceType, id]);
+
   const handleSubmit = useCallback(
     (newResource: Resource): void => {
+      setOutcome(undefined);
       medplum
         .updateResource(cleanResource(newResource))
         .then(() => {
-          setOutcome(undefined);
           navigate(`/${resourceType}/${id}/details`);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
+          setOutcome(normalizeOperationOutcome(err));
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         });
     },
@@ -31,13 +42,13 @@ export function EditPage(): JSX.Element | null {
 
   const handleDelete = useCallback(() => navigate(`/${resourceType}/${id}/delete`), [navigate, resourceType, id]);
 
-  if (!resource) {
+  if (!value) {
     return null;
   }
 
   return (
     <Document>
-      <ResourceForm defaultValue={resource} onSubmit={handleSubmit} onDelete={handleDelete} outcome={outcome} />
+      <ResourceForm defaultValue={value} onSubmit={handleSubmit} onDelete={handleDelete} outcome={outcome} />
     </Document>
   );
 }

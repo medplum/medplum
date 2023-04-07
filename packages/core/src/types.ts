@@ -2,7 +2,9 @@ import {
   Bundle,
   BundleEntry,
   ElementDefinition,
+  Reference,
   Resource,
+  ResourceType,
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
@@ -328,12 +330,18 @@ export function buildTypeName(components: string[]): string {
 }
 
 /**
- * Returns true if the type schema is a DomainResource.
+ * Returns true if the type schema is a non-abstract FHIR resource.
  * @param typeSchema The type schema to check.
- * @returns True if the type schema is a DomainResource.
+ * @returns True if the type schema is a non-abstract FHIR resource.
  */
-export function isResourceType(typeSchema: TypeSchema): boolean {
-  return typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource';
+export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
+  const structureDefinition = typeSchema.structureDefinition;
+  return (
+    structureDefinition &&
+    structureDefinition.name === typeSchema.elementDefinition?.path &&
+    structureDefinition.kind === 'resource' &&
+    !structureDefinition.abstract
+  );
 }
 
 /**
@@ -341,11 +349,11 @@ export function isResourceType(typeSchema: TypeSchema): boolean {
  * Note that this is based on globalSchema, and will only return resource types that are currently in memory.
  * @returns An array of all resource types.
  */
-export function getResourceTypes(): string[] {
-  const result: string[] = [];
+export function getResourceTypes(): ResourceType[] {
+  const result: ResourceType[] = [];
   for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
-    if (isResourceType(typeSchema)) {
-      result.push(resourceType);
+    if (isResourceTypeSchema(typeSchema)) {
+      result.push(resourceType as ResourceType);
     }
   }
   return result;
@@ -394,7 +402,7 @@ export function getPropertyDisplayName(path: string): string {
     .replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'PKCE', 'JWKS', 'URI', 'URL']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
@@ -432,6 +440,28 @@ export function getElementDefinition(typeName: string, propertyName: string): El
   }
 
   return property;
+}
+
+/**
+ * Typeguard to validate that an object is a FHIR resource
+ * @param value The object to check
+ * @returns True if the input is of type 'object' and contains property 'resourceType'
+ */
+export function isResource<T extends Resource = Resource>(
+  value: T | Reference<T> | string | undefined | null
+): value is T {
+  return !!(value && typeof value === 'object' && 'resourceType' in value);
+}
+
+/**
+ * Typeguard to validate that an object is a FHIR resource
+ * @param value The object to check
+ * @returns True if the input is of type 'object' and contains property 'reference'
+ */
+export function isReference<T extends Resource>(
+  value: T | Reference<T> | string | undefined | null
+): value is Reference<T> & { reference: string } {
+  return !!(value && typeof value === 'object' && 'reference' in value);
 }
 
 /**

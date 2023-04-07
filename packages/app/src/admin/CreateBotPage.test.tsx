@@ -87,7 +87,7 @@ describe('CreateBotPage', () => {
       });
     });
 
-    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Access Policy') as HTMLInputElement;
 
     // Enter "Example Access Policy"
     await act(async () => {

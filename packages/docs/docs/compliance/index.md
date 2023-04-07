@@ -18,7 +18,7 @@ This is a living document, and we continually update our resources. We welcome f
 - [HIPAA compliance](hipaa.md)
 - [CFR Part 11](cfr11.md)
 - [ISO 9001](iso9001.md)
-- FHIR (coming soon)
+- [CMS FHIR](cms-fhir.md)
 - HITRUST (coming soon)
 - ISO 27001 Certification (coming soon)
 

@@ -9,7 +9,7 @@ import { HeaderSearchInput } from './components/HeaderSearchInput';
 
 const useStyles = createStyles((theme) => ({
   logoButton: {
-    padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
     borderRadius: theme.radius.sm,
     transition: 'background-color 100ms ease',
 
@@ -22,7 +22,7 @@ const useStyles = createStyles((theme) => ({
   },
 
   user: {
-    padding: `${theme.spacing.xs}px ${theme.spacing.sm}px`,
+    padding: `${theme.spacing.xs} ${theme.spacing.sm}`,
     borderRadius: theme.radius.sm,
     transition: 'background-color 100ms ease',
 
@@ -79,7 +79,7 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
           width={260}
           shadow="xl"
           position="bottom-end"
-          transition="pop-top-right"
+          transitionProps={{ transition: 'pop-top-right' }}
           opened={userMenuOpened}
           onClose={() => setUserMenuOpened(false)}
         >

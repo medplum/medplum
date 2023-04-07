@@ -1,5 +1,6 @@
 import {
   createReference,
+  getExtension,
   getExtensionValue,
   isGone,
   matchesSearchRequest,
@@ -8,16 +9,7 @@ import {
   parseSearchUrl,
   stringify,
 } from '@medplum/core';
-import {
-  AuditEvent,
-  Bot,
-  BundleEntry,
-  Practitioner,
-  ProjectMembership,
-  Reference,
-  Resource,
-  Subscription,
-} from '@medplum/fhirtypes';
+import { Bot, ProjectMembership, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { createHmac } from 'crypto';
 import fetch, { HeadersInit } from 'node-fetch';
@@ -27,6 +19,8 @@ import { executeBot } from '../fhir/operations/execute';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
+import { BackgroundJobContext } from './context';
+import { createAuditEvent, findProjectMembership } from './utils';
 
 /*
  * The subscription worker inspects every resource change,
@@ -114,8 +108,9 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * not to re-evaluate the subscription.
  *
  * @param resource The resource that was created or updated.
+ * @param context The background job context.
  */
-export async function addSubscriptionJobs(resource: Resource): Promise<void> {
+export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
@@ -123,7 +118,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
   const subscriptions = await getSubscriptions(resource);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    if (matchesCriteria(resource, subscription)) {
+    if (matchesCriteria(resource, subscription, context)) {
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -140,7 +135,7 @@ export async function addSubscriptionJobs(resource: Resource): Promise<void> {
  * @param subscription The subscription.
  * @returns True if the resource matches the subscription criteria.
  */
-function matchesCriteria(resource: Resource, subscription: Subscription): boolean {
+function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): boolean {
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
@@ -161,6 +156,17 @@ function matchesCriteria(resource: Resource, subscription: Subscription): boolea
   if (resource.resourceType !== searchRequest.resourceType) {
     logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
+    );
+    return false;
+  }
+
+  const supportedInteractionExtension = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
+  );
+  if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
+    logger.debug(
+      `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
     );
     return false;
   }
@@ -208,14 +214,18 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  * @returns The list of all subscriptions in this repository.
  */
 async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
-  const bundle = await systemRepo.search<Subscription>({
+  const project = resource.meta?.project;
+  if (!project) {
+    return [];
+  }
+  return systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
     count: 1000,
     filters: [
       {
         code: '_project',
         operator: Operator.EQUALS,
-        value: resource.meta?.project as string,
+        value: project,
       },
       {
         code: 'status',
@@ -224,7 +234,6 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
       },
     ],
   });
-  return (bundle.entry as BundleEntry<Subscription>[]).map((e) => e.resource as Subscription);
 }
 
 /**
@@ -310,25 +319,26 @@ async function sendRestHook(
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
-    await createSubscriptionEvent(
-      subscription,
+    const success = response.status >= 200 && response.status < 400;
+    await createAuditEvent(
       resource,
       startTime,
-      response.status === 200 ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
-      `Attempt ${job.attemptsMade} received status ${response.status}`
+      success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received status ${response.status}`,
+      subscription
     );
 
-    if (response.status >= 400) {
+    if (!success) {
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
-    await createSubscriptionEvent(
-      subscription,
+    await createAuditEvent(
       resource,
       startTime,
       AuditEventOutcome.MinorFailure,
-      `Attempt ${job.attemptsMade} received error ${ex}`
+      `Attempt ${job.attemptsMade} received error ${ex}`,
+      subscription
     );
     error = ex as Error;
   }
@@ -356,7 +366,12 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
     }
   }
 
-  const secret = getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
+  // Look for signature secret in Medplum extension
+  // Note that the first version of the extension used a different URL
+  // We still support the old URL for backwards compatibility
+  const secret =
+    getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
+    getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
@@ -406,93 +421,5 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
     logResult = (error as Error).message;
   }
 
-  await createSubscriptionEvent(subscription, resource, startTime, outcome, logResult, bot);
-}
-
-async function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
-  const bundle = await systemRepo.search<ProjectMembership>({
-    resourceType: 'ProjectMembership',
-    count: 1,
-    filters: [
-      {
-        code: 'project',
-        operator: Operator.EQUALS,
-        value: `Project/${project}`,
-      },
-      {
-        code: 'profile',
-        operator: Operator.EQUALS,
-        value: profile.reference as string,
-      },
-    ],
-  });
-  return bundle.entry?.[0]?.resource;
-}
-
-/**
- * Creates an AuditEvent for a subscription attempt.
- * @param subscription The rest-hook subscription.
- * @param resource The resource that triggered the subscription.
- * @param startTime The time the subscription attempt started.
- * @param outcome The outcome code.
- * @param outcomeDesc The outcome description text.
- * @param bot Optional bot that was executed.
- */
-async function createSubscriptionEvent(
-  subscription: Subscription,
-  resource: Resource,
-  startTime: string,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  bot?: Bot
-): Promise<void> {
-  const entity = [
-    {
-      what: createReference(resource),
-      role: { code: '4', display: 'Domain' },
-    },
-    {
-      what: createReference(subscription),
-      role: { code: '9', display: 'Subscriber' },
-    },
-  ];
-
-  if (bot) {
-    entity.push({
-      what: createReference(bot),
-      role: { code: '9', display: 'Subscriber' },
-    });
-  }
-
-  await systemRepo.createResource<AuditEvent>({
-    resourceType: 'AuditEvent',
-    meta: {
-      project: subscription.meta?.project,
-      account: subscription.meta?.account,
-    },
-    period: {
-      start: startTime,
-      end: new Date().toISOString(),
-    },
-    recorded: new Date().toISOString(),
-    type: {
-      code: 'transmit',
-    },
-    agent: [
-      {
-        type: {
-          text: 'subscription',
-        },
-        requestor: false,
-      },
-    ],
-    source: {
-      // Observer cannot be a Subscription resource
-      // observer: createReference(subscription)
-      observer: createReference(subscription) as Reference as Reference<Practitioner>,
-    },
-    entity,
-    outcome,
-    outcomeDesc,
-  });
+  await createAuditEvent(resource, startTime, outcome, logResult, subscription, bot);
 }

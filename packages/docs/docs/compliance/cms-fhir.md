@@ -1,0 +1,31 @@
+# CMS FHIR Certification
+
+CMS FHIR Certification is for payors who want to fulfill CMS requirements, particularly the requirements of [CMS 9115](https://www.cms.gov/files/document/cms-9115-f.pdf). At a high level, the process entails implementing several [FHIR Implementation Guides](https://www.hl7.org/fhir/implementationguide.html) (IG). An Implementation Guide is a set of rules that defines how to use FHIR resources to solve a particular problem or implement a particular data flow.
+
+Once the IG is in place, you'll need to test against [Touchstone Aegis](https://touchstone.aegis.net/touchstone/userguide/html/index.html) test suite to confirm conformance. Depending on your program requirements, you may or may not choose to certify. CMS requires and recommends new IGs each year as regulations change and systems mature. Designing a system that can continually upgrade and adapt to new IG requirements will help streamline operations.
+
+In general, organizations can expect that new FHIR functionality, especially for organization to organization data flow will be a theme of the coming mandates. This includes payor-to-payor interfacing as well as payor-provider FHIR interfacing.
+
+Medplum can be used to implement the FHIR IGs in a quick and cost-effective manner. At a high level the workflow process is as follows:
+
+1. Configure your Medplum project to capture well-formed FHIR data
+2. Use existing tooling such as `Strict Mode`, [Bots](/docs/bots), [External Auth](/docs/auth/external-identity-providers) and more to ensure data correctness
+3. Test against the relevant Touchstone FHIR IG suite
+4. Certify and receive badges as needed
+
+The following are common IGs relevant for payors:
+
+| Service Name                                   | Implementation Guides                                                                                           | Notes                                                                                                                                                                                                     | Touchstone Conformance Suite                                                                                                                    |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Patient Access API – Claims and Encounter Data | [CARIN IG for Blue Button®](http://hl7.org/fhir/us/carin-bb/STU1/)                                              | An example of the API in the wild can be seen on the [CMS Blue Button](https://bluebutton.cms.gov/developers/) developer documentation                                                                    | [Claims and Encounter Data](https://touchstone.aegis.net/touchstone/conformance/current?suite=FHIR4-0-1-PAA-CLAIMS-ENCOUNTERS-2-Server)         |
+| Provider Directory API                         | [DaVinci PDEX Payer Network](http://hl7.org/fhir/us/davinci-pdex-plan-net/STU1/)                                | An example of this API in the wild can be seen on [Central California Alliance](https://thealliance.health/developer-resources/provider-directory/) website.                                              | [Provider Directory JSON Suite](https://touchstone.aegis.net/touchstone/conformance/current?suite=FHIR4-0-1-PAA-PROVIDER-DIR-1-0-0-json-Server) |
+| Patient Access API – Drug Formulary            | [DaVinci Payer Data Exchange (PDex) US Drug Formulary](http://hl7.org/fhir/us/davinci-drug-formulary/STU1.0.1/) | This API exposes the brand name and generic drugs a health insurer agrees to pay for as part of coverage.                                                                                                 | [Provider Drug Formulary API](https://touchstone.aegis.net/touchstone/conformance/current?suite=FHIR4-0-1-PAA-Formulary-1-0-1-json-Server)      |
+| Patient Access API – Clinical Data             | [ONC API Resource Guide](https://onc-healthit.github.io/api-resource-guide/)                                    | Testing of Clinical Data API aligns with the standards and requirements set forth by ONC in their 21ST Century Cures Final Rule for 170.315(g)(10) for Single Patient API. Medplum has certified (g)(10). |                                                                                                                                                 |
+| Bulk Data Export API                           | [Medplum Bulk FHIR Implementation](/docs/api/fhir/operations/bulk-fhir)                                         | Testing of Clinical Data API aligns with the standards and requirements set forth by ONC in their 21ST Century Cures Final Rule for 170.315(g)(10) for Single Patient API. Medplum has certified (g)(10). |                                                                                                                                                 |
+| Admission, Discharge, and Event Notifications  | [DaVinci IG for Notifications](http://hl7.org/fhir/us/davinci-alerts/)                                          | This is an event driven implementation guide that enables notifications for hospital admissions, clinic visits and more.                                                                                  | [Notification Sender Test Suite](https://touchstone.aegis.net/touchstone/conformance/current?suite=FHIR4-0-1-PAA-NOTIFICATIONS-SENDER-Client)   |
+
+## Future Implementation Guides
+
+At present more implementation guides are being discussed, developed and balloted, and the Federal regulations related to this field are under constant revision. The [DaVinci Project](https://confluence.hl7.org/display/DVP) confluence is a good resource for monitoring proposed IGs, and assessing their adoption and maturity.
+
+- [Medplum Team Guide - Internal](https://drive.google.com/file/d/1rg3DATV1ypUBnVURR6L_mh4qFplofCCV/view)

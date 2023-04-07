@@ -15,7 +15,7 @@ const useStyles = createStyles((theme) => ({
     },
 
     '& th, & td': {
-      padding: `${theme.spacing.sm}px ${theme.spacing.sm}px`,
+      padding: `${theme.spacing.sm} ${theme.spacing.sm}`,
       verticalAlign: 'top',
     },
   },

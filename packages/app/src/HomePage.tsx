@@ -18,7 +18,7 @@ import { Loading } from './components/Loading';
 const useStyles = createStyles((theme) => {
   return {
     paper: {
-      [`@media (max-width: ${theme.breakpoints.sm}px)`]: {
+      [`@media (max-width: ${theme.breakpoints.sm})`]: {
         margin: 2,
         padding: 4,
       },

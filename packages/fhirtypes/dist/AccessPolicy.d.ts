@@ -59,6 +59,37 @@ export interface AccessPolicy {
    * Access details for a resource type.
    */
   resource?: AccessPolicyResource[];
+
+  /**
+   * Use IP Access Rules to allowlist, block, and challenge traffic based
+   * on the visitor IP address.
+   */
+  ipAccessRule?: AccessPolicyIpAccessRule[];
+}
+
+/**
+ * Use IP Access Rules to allowlist, block, and challenge traffic based
+ * on the visitor IP address.
+ */
+export interface AccessPolicyIpAccessRule {
+
+  /**
+   * Friendly name that will make it easy for you to identify the IP Access
+   * Rule in the future.
+   */
+  name?: string;
+
+  /**
+   * An IP Access rule will apply a certain action to incoming traffic
+   * based on the visitor IP address or IP range.
+   */
+  value?: string;
+
+  /**
+   * Access rule can perform one of the following actions: &quot;allow&quot; |
+   * &quot;block&quot;.
+   */
+  action?: string;
 }
 
 /**

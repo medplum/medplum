@@ -1,0 +1,70 @@
+---
+sidebar_position: 10
+tags: [auth]
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/auth/custom-welcome-emails.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Custom Welcome Emails
+
+When a new project membership is created, either by "invite" or self "register", by default Medplum sends a "Welcome" email with account setup instructions for the configured "app" URL. For example, on Medplum's hosted environment, the email will include a link to "https://app.medplum.com/setpassword/...".
+
+Medplum fully supports creating a white-label experience where users do not see any Medplum branding. That includes overriding all email behavior.
+
+This document describes the steps to send custom Welcome email messages.
+
+In short, here are the key steps:
+
+1. Create a "Set Password" page in your application
+1. Create a Medplum Bot that processes new `ProjectMembership` resources
+1. Create a FHIR Subscription that connects `ProjectMembership` resources to the bot
+
+## Set Password Page
+
+In your custom application, you will need a "Set Password" page. This will be the page where users go to confirm their email address. For a full example of a "Set Password" page, check out the source to [`SetPasswordPage.tsx`](https://github.com/medplum/medplum/blob/main/packages/app/src/SetPasswordPage.tsx) for the Medplum App.
+
+Key functions of the page:
+
+- Receives `id` and `secret` from URL parameters
+- Prompts the user for `password` and `confirmPassword`
+- Verifies that `password` and `confirmPassword` match
+- Sends the `id`, `secret`, and `password` to the `/auth/setpassword` API endpoint
+
+## New Membership Bot
+
+Create a Medplum Bot to handle new `ProjectMembership` resources. The bot will send a custom email message to the user.
+
+:::tip
+
+If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) documentation first.
+
+:::
+
+This Bot will use `ProjectMembership` and `PasswordChangeRequest` resources, so the Bot must be a "Project Admin" to access these resources.
+
+Here is a full example of a Bot that sends a custom email message:
+
+<MedplumCodeBlock language="ts" selectBlocks="customWelcomeEmails" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Create, save, and deploy your bot. Make note of the Bot ID.
+
+## FHIR Subscription
+
+Create a FHIR Subscription that connects `ProjectMembership` resources to the bot. The subscription will trigger the bot when a new `ProjectMembership` resource is created.
+
+Go to [Subscriptions](https://app.medplum.com/Subscription) and click "New...".
+
+Enter the following values:
+
+- Status = `active`
+- Reason = `New membership`
+- Criteria = `ProjectMembership`
+- Channel Type = `rest-hook`
+- Channel Endpoint = `Bot/YOUR_BOT_ID`
+
+## Testing
+
+To test your custom welcome email, create a new user account. The user will receive a custom email message.

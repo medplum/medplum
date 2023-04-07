@@ -1,4 +1,4 @@
-import { createStyles, Navbar, Space, Text } from '@mantine/core';
+import { createStyles, getStylesRef, Navbar, Space, Text } from '@mantine/core';
 import { useMedplumContext } from '@medplum/react';
 import {
   Icon,
@@ -18,8 +18,8 @@ import {
 import React from 'react';
 import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
-const useStyles = createStyles((theme, _params, getRef) => {
-  const icon = getRef('icon');
+const useStyles = createStyles((theme) => {
+  const icon = getStylesRef('icon');
   return {
     menuTitle: {
       margin: '20px 0 4px 6px',
@@ -121,7 +121,7 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
 
 interface NavbarLinkProps {
   to: string;
-  onClick: (e: React.SyntheticEvent, to: string) => void;
+  onClick: React.MouseEventHandler;
   children: React.ReactNode;
 }
 
@@ -133,7 +133,7 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
 
   return (
-    <Link to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+    <Link onClick={props.onClick} to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
       {props.children}
     </Link>
   );

@@ -10,6 +10,11 @@ export interface ResourceNameProps extends TextProps {
   link?: boolean;
 }
 
+/**
+ * Renders the name of a resource, given either the resource itself or a reference to the resource.
+ * @param props
+ * @returns
+ */
 export function ResourceName(props: ResourceNameProps): JSX.Element | null {
   const { value, link, ...rest } = props;
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();

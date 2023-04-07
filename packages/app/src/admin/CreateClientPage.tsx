@@ -1,6 +1,7 @@
-import { Button, Group, Stack, TextInput, Title } from '@mantine/core';
-import { normalizeOperationOutcome } from '@medplum/core';
-import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
+import { Button, Group, List, Stack, Text, TextInput, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { AccessPolicy, ClientApplication, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { getProjectId } from '../utils';
@@ -14,7 +15,7 @@ export function CreateClientPage(): JSX.Element {
   const [redirectUri, setRedirectUri] = useState<string>('');
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
-  const [success, setSuccess] = useState(false);
+  const [client, setClient] = useState<ClientApplication | undefined>(undefined);
 
   return (
     <>
@@ -29,12 +30,19 @@ export function CreateClientPage(): JSX.Element {
           };
           medplum
             .post('admin/projects/' + projectId + '/client', body)
-            .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'reload' }))
-            .then(() => setSuccess(true))
-            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
+            .then((result: ClientApplication) => {
+              medplum.invalidateSearches('ClientApplication');
+              medplum.invalidateSearches('ProjectMembership');
+              setClient(result);
+              showNotification({ color: 'green', message: 'Client created' });
+            })
+            .catch((err) => {
+              showNotification({ color: 'red', message: normalizeErrorString(err) });
+              setOutcome(normalizeOperationOutcome(err));
+            });
         }}
       >
-        {!success && (
+        {!client && (
           <Stack>
             <FormSection title="Name" htmlFor="name" outcome={outcome}>
               <TextInput
@@ -70,12 +78,17 @@ export function CreateClientPage(): JSX.Element {
             </Group>
           </Stack>
         )}
-        {success && (
+        {client && (
           <div data-testid="success">
-            <p>Client created</p>
-            <p>
-              Click <MedplumLink to="/admin/project">here</MedplumLink> to return to the project admin page.
-            </p>
+            <Text>Client created</Text>
+            <List>
+              <List.Item>
+                <MedplumLink to={client}>Go to new client</MedplumLink>
+              </List.Item>
+              <List.Item>
+                <MedplumLink to="/admin/clients">Back to clients list</MedplumLink>
+              </List.Item>
+            </List>
           </div>
         )}
       </Form>

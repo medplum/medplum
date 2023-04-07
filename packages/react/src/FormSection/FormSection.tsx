@@ -7,6 +7,7 @@ export interface FormSectionProps {
   title?: string;
   htmlFor?: string;
   description?: string;
+  withAsterisk?: boolean;
   outcome?: OperationOutcome;
   children?: React.ReactNode;
 }
@@ -17,6 +18,7 @@ export function FormSection(props: FormSectionProps): JSX.Element {
       id={props.htmlFor}
       label={props.title}
       description={props.description}
+      withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.htmlFor)}
     >
       {props.children}

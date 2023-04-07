@@ -7,6 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchDefinition,
   parseSearchRequest,
   parseSearchUrl,
   SearchRequest,
@@ -33,11 +34,13 @@ import {
   SearchParameter,
   ServiceRequest,
   StructureDefinition,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config';
+import { getClient } from '../database';
 import { bundleContains } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
@@ -1001,6 +1004,36 @@ describe('FHIR Repo', () => {
     expect(searchResult2?.entry?.length).toEqual(0);
   });
 
+  test('Non UUID _id', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_id',
+          operator: Operator.EQUALS,
+          value: 'x',
+        },
+      ],
+    });
+
+    expect(searchResult1?.entry?.length).toEqual(0);
+  });
+
+  test('Non UUID _compartment', async () => {
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_compartment',
+          operator: Operator.EQUALS,
+          value: 'x',
+        },
+      ],
+    });
+
+    expect(searchResult1?.entry?.length).toEqual(0);
+  });
+
   test('Filter by _project', async () => {
     const project1 = randomUUID();
     const project2 = randomUUID();
@@ -1482,6 +1515,26 @@ describe('FHIR Repo', () => {
 
   test('Reindex success', async () => {
     await systemRepo.reindexResourceType('Practitioner');
+  });
+
+  test('Rebuild compartments as non-admin', async () => {
+    const repo = new Repository({
+      project: randomUUID(),
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
+
+    try {
+      await repo.rebuildCompartmentsForResourceType('Practitioner');
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
+  });
+
+  test('Rebuild compartments success', async () => {
+    await systemRepo.rebuildCompartmentsForResourceType('Practitioner');
   });
 
   test('Remove property', async () => {
@@ -2099,6 +2152,37 @@ describe('FHIR Repo', () => {
     expect(searchResult.entry?.[0]?.resource?.id).toEqual(observation.id);
   });
 
+  test('Include references success', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const order = await systemRepo.createResource<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      status: 'active',
+      intent: 'order',
+      subject: createReference(patient),
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'ServiceRequest',
+      include: 'ServiceRequest:subject',
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, order)).toBeTruthy();
+    expect(bundleContains(bundle, patient)).toBeTruthy();
+  });
+
+  test('Include references invalid search param', async () => {
+    try {
+      await systemRepo.search({
+        resourceType: 'ServiceRequest',
+        include: 'ServiceRequest:xyz',
+      });
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid include parameter: ServiceRequest:xyz');
+    }
+  });
+
   test('Reverse include Provenance', async () => {
     const family = randomUUID();
 
@@ -2318,6 +2402,90 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle, c2)).not.toBeTruthy();
   });
 
+  test('Reference identifier search', async () => {
+    const code = randomUUID();
+
+    const c1 = await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      code: { coding: [{ code }] },
+      subject: { identifier: { system: 'mrn', value: '123456' } },
+    });
+
+    const c2 = await systemRepo.createResource<Condition>({
+      resourceType: 'Condition',
+      code: { coding: [{ code }] },
+      subject: { identifier: { system: 'xyz', value: '123456' } },
+    });
+
+    // Search with system
+    const bundle1 = await systemRepo.search(
+      parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456`)
+    );
+    expect(bundle1.entry?.length).toEqual(1);
+    expect(bundleContains(bundle1, c1)).toBeTruthy();
+    expect(bundleContains(bundle1, c2)).not.toBeTruthy();
+
+    // Search without system
+    const bundle2 = await systemRepo.search(parseSearchDefinition(`Condition?code=${code}&subject:identifier=123456`));
+    expect(bundle2.entry?.length).toEqual(2);
+    expect(bundleContains(bundle2, c1)).toBeTruthy();
+    expect(bundleContains(bundle2, c2)).toBeTruthy();
+
+    // Search with count
+    const bundle3 = await systemRepo.search(
+      parseSearchDefinition(`Condition?code=${code}&subject:identifier=mrn|123456&_total=accurate`)
+    );
+    expect(bundle3.entry?.length).toEqual(1);
+    expect(bundle3.total).toBe(1);
+    expect(bundleContains(bundle3, c1)).toBeTruthy();
+    expect(bundleContains(bundle3, c2)).not.toBeTruthy();
+  });
+
+  test('Task patient identifier search', async () => {
+    const identifier = randomUUID();
+
+    // Create a Task with a patient identifier reference _with_ Reference.type
+    const task1 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'accepted',
+      intent: 'order',
+      for: {
+        type: 'Patient',
+        identifier: { system: 'mrn', value: identifier },
+      },
+    });
+
+    // Create a Task with a patient identifier reference _without_ Reference.type
+    const task2 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'accepted',
+      intent: 'order',
+      for: {
+        identifier: { system: 'mrn', value: identifier },
+      },
+    });
+
+    // Search by "subject"
+    // This will include both Tasks, because the "subject" search parameter does not care about "type"
+    const bundle1 = await systemRepo.search(
+      parseSearchDefinition(`Task?subject:identifier=mrn|${identifier}&_total=accurate`)
+    );
+    expect(bundle1.total).toEqual(2);
+    expect(bundle1.entry?.length).toEqual(2);
+    expect(bundleContains(bundle1, task1)).toBeTruthy();
+    expect(bundleContains(bundle1, task2)).toBeTruthy();
+
+    // Search by "patient"
+    // This will only include the Task with the explicit "Patient" type, because the "patient" search parameter does care about "type"
+    const bundle2 = await systemRepo.search(
+      parseSearchDefinition(`Task?patient:identifier=mrn|${identifier}&_total=accurate`)
+    );
+    expect(bundle2.total).toEqual(1);
+    expect(bundle2.entry?.length).toEqual(1);
+    expect(bundleContains(bundle2, task1)).toBeTruthy();
+    expect(bundleContains(bundle2, task2)).not.toBeTruthy();
+  });
+
   test('Purge forbidden', async () => {
     const author = 'Practitioner/' + randomUUID();
 
@@ -2430,5 +2598,200 @@ describe('FHIR Repo', () => {
       ],
     });
     expect(bundleContains(bundle4, patient)).toBeTruthy();
+  });
+
+  test('Token :text search', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const obs1 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: randomUUID() },
+      subject: createReference(patient),
+    });
+
+    const obs2 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ display: randomUUID() }] },
+      subject: createReference(patient),
+    });
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.TEXT, value: obs1.code?.text as string }],
+    });
+    expect(result1.entry?.[0]?.resource?.id).toEqual(obs1.id);
+
+    const result2 = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [{ code: 'code', operator: Operator.TEXT, value: obs2.code?.coding?.[0]?.display as string }],
+    });
+    expect(result2.entry?.[0]?.resource?.id).toEqual(obs2.id);
+  });
+
+  test('Duplicate :text tokens', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const obs1 = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://example.com',
+            code: 'HDL',
+            display: 'HDL',
+          },
+        ],
+        text: 'HDL',
+      },
+      subject: createReference(patient),
+    });
+
+    const result = await getClient().query(
+      'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
+      [obs1.id]
+    );
+
+    expect(result.rows).toMatchObject([
+      {
+        code: 'code',
+        system: 'text',
+        value: 'HDL',
+      },
+      {
+        code: 'code',
+        system: 'https://example.com',
+        value: 'HDL',
+      },
+      {
+        code: 'combo-code',
+        system: 'text',
+        value: 'HDL',
+      },
+      {
+        code: 'combo-code',
+        system: 'https://example.com',
+        value: 'HDL',
+      },
+    ]);
+  });
+
+  test('_filter search', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+    const statuses: ('preliminary' | 'final')[] = ['preliminary', 'final'];
+    const codes = ['123', '456'];
+    const observations = [];
+
+    for (const status of statuses) {
+      for (const code of codes) {
+        observations.push(
+          await systemRepo.createResource<Observation>({
+            resourceType: 'Observation',
+            subject: createReference(patient),
+            status,
+            code: { coding: [{ code }] },
+          })
+        );
+      }
+    }
+
+    const result = await systemRepo.search({
+      resourceType: 'Observation',
+      filters: [
+        {
+          code: 'subject',
+          operator: Operator.EQUALS,
+          value: getReferenceString(patient),
+        },
+        {
+          code: '_filter',
+          operator: Operator.EQUALS,
+          value: '(status eq preliminary and code eq 123) or (not (status eq preliminary) and code eq 456)',
+        },
+      ],
+    });
+    expect(result.entry).toHaveLength(2);
+  });
+
+  test('Type confusion through parameter tampering', async () => {
+    // See: https://codeql.github.com/codeql-query-help/javascript/js-type-confusion-through-parameter-tampering/
+    try {
+      await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_id',
+            operator: Operator.EQUALS,
+            value: ['a', 'b', 'c'] as unknown as string,
+          },
+        ],
+      });
+      throw new Error('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toEqual('Search filter value must be a string');
+    }
+  });
+
+  test('Lookup table exact match with comma disjunction', async () => {
+    const family = randomUUID();
+    const p1 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['x'], family }] });
+    const p2 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['xx'], family }] });
+    const p3 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['y'], family }] });
+    const p4 = await systemRepo.createResource({ resourceType: 'Patient', name: [{ given: ['yy'], family }] });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'Patient',
+      total: 'accurate',
+      filters: [
+        {
+          code: 'given',
+          operator: Operator.EXACT,
+          value: 'x,y',
+        },
+        {
+          code: 'family',
+          operator: Operator.EXACT,
+          value: family,
+        },
+      ],
+    });
+    expect(bundle?.entry?.length).toEqual(2);
+    expect(bundle.total).toEqual(2);
+    expect(bundleContains(bundle, p1)).toBeTruthy();
+    expect(bundleContains(bundle, p2)).not.toBeTruthy();
+    expect(bundleContains(bundle, p3)).toBeTruthy();
+    expect(bundleContains(bundle, p4)).not.toBeTruthy();
+  });
+
+  test('Duplicate rows from token lookup', async () => {
+    const code = randomUUID();
+
+    const p = await systemRepo.createResource({ resourceType: 'Patient' });
+    const s = await systemRepo.createResource({
+      resourceType: 'ServiceRequest',
+      subject: createReference(p),
+      status: 'active',
+      intent: 'order',
+      category: [
+        {
+          text: code,
+          coding: [
+            {
+              system: 'https://example.com/category',
+              code,
+            },
+          ],
+        },
+      ],
+    });
+
+    const bundle = await systemRepo.search<ServiceRequest>({
+      resourceType: 'ServiceRequest',
+      filters: [{ code: 'category', operator: Operator.EQUALS, value: code }],
+    });
+    expect(bundle.entry?.length).toEqual(1);
+    expect(bundleContains(bundle, s)).toBeTruthy();
   });
 });

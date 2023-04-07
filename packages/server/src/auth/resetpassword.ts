@@ -1,5 +1,5 @@
-import { allOk, badRequest, createReference, Operator } from '@medplum/core';
-import { BundleEntry, PasswordChangeRequest, User } from '@medplum/fhirtypes';
+import { allOk, badRequest, createReference, Operator, resolveId } from '@medplum/core';
+import { PasswordChangeRequest, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { getConfig } from '../config';
@@ -9,10 +9,7 @@ import { systemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { verifyRecaptcha } from './utils';
 
-export const resetPasswordValidators = [
-  body('email').isEmail().withMessage('Valid email address is required'),
-  body('recaptchaToken').notEmpty().withMessage('Recaptcha token is required'),
-];
+export const resetPasswordValidators = [body('email').isEmail().withMessage('Valid email address is required')];
 
 export async function resetPasswordHandler(req: Request, res: Response): Promise<void> {
   const errors = validationResult(req);
@@ -21,12 +18,21 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     return;
   }
 
-  if (!(await verifyRecaptcha(getConfig().recaptchaSecretKey as string, req.body.recaptchaToken))) {
-    sendOutcome(res, badRequest('Recaptcha failed'));
-    return;
+  const recaptchaSecretKey = getConfig().recaptchaSecretKey;
+
+  if (recaptchaSecretKey) {
+    if (!req.body.recaptchaToken) {
+      sendOutcome(res, badRequest('Recaptcha token is required'));
+      return;
+    }
+
+    if (!(await verifyRecaptcha(recaptchaSecretKey, req.body.recaptchaToken))) {
+      sendOutcome(res, badRequest('Recaptcha failed'));
+      return;
+    }
   }
 
-  const existingBundle = await systemRepo.search<User>({
+  const user = await systemRepo.searchOne<User>({
     resourceType: 'User',
     filters: [
       {
@@ -37,12 +43,10 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
     ],
   });
 
-  if ((existingBundle.entry as BundleEntry[]).length === 0) {
+  if (!user) {
     sendOutcome(res, badRequest('User not found', 'email'));
     return;
   }
-
-  const user = existingBundle?.entry?.[0]?.resource as User;
 
   const url = await resetPassword(user);
 
@@ -77,6 +81,9 @@ export async function resetPassword(user: User): Promise<string> {
   // Create the password change request
   const pcr = await systemRepo.createResource<PasswordChangeRequest>({
     resourceType: 'PasswordChangeRequest',
+    meta: {
+      project: resolveId(user.project),
+    },
     user: createReference(user),
     secret: generateSecret(16),
   });

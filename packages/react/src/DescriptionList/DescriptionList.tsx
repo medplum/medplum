@@ -8,7 +8,7 @@ const useStyles = createStyles((theme) => ({
     margin: 0,
 
     '& > dt, & > dd': {
-      padding: `${theme.spacing.sm}px ${theme.spacing.sm}px`,
+      padding: `${theme.spacing.sm} ${theme.spacing.sm}`,
       borderTop: `0.1px solid ${theme.colors.gray[3]}`,
       margin: 0,
     },
@@ -18,7 +18,7 @@ const useStyles = createStyles((theme) => ({
     gridTemplateColumns: '20% 80%',
 
     '& > dt, & > dd': {
-      padding: `0 ${theme.spacing.xs}px ${theme.spacing.xs}px 0`,
+      padding: `0 ${theme.spacing.xs} ${theme.spacing.xs} 0`,
       border: 0,
     },
   },

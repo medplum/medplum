@@ -28,18 +28,27 @@ const STANDARD_UNITS = [
   'milliseconds',
 ];
 
+export interface TokenizerOptions {
+  dateTimeLiterals?: boolean;
+  symbolRegex?: RegExp;
+}
+
 export class Tokenizer {
   readonly #str: string;
   readonly #keywords: string[];
   readonly #operators: string[];
+  readonly #dateTimeLiterals: boolean;
+  readonly #symbolRegex: RegExp;
   readonly #result: Token[] = [];
   readonly #pos: Marker = { index: 0, line: 1, column: 0 };
   readonly #markStack: Marker[] = [];
 
-  constructor(str: string, keywords: string[], operators: string[]) {
+  constructor(str: string, keywords: string[], operators: string[], options?: TokenizerOptions) {
     this.#str = str;
     this.#keywords = keywords;
     this.#operators = operators;
+    this.#dateTimeLiterals = !!options?.dateTimeLiterals;
+    this.#symbolRegex = options?.symbolRegex ?? /[$\w]/;
   }
 
   tokenize(): Token[] {
@@ -186,6 +195,12 @@ export class Tokenizer {
       this.#consumeWhile(() => this.#curr().match(/\d/));
     }
 
+    if (this.#curr() === '-' && this.#dateTimeLiterals) {
+      // Rewind to one character before the start, and then treat as dateTime literal.
+      this.#pos.index = start - 1;
+      return this.#consumeDateTime();
+    }
+
     if (this.#curr() === ' ') {
       if (isUnitToken(this.#peekToken())) {
         id = 'Quantity';
@@ -197,7 +212,7 @@ export class Tokenizer {
   }
 
   #consumeSymbol(): Token {
-    const value = this.#consumeWhile(() => this.#curr().match(/[$\w]/));
+    const value = this.#consumeWhile(() => this.#curr().match(this.#symbolRegex));
     if (this.#prevToken()?.value !== '.' && this.#keywords.includes(value)) {
       return this.#buildToken(value, value);
     }

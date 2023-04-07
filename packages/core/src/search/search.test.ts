@@ -34,7 +34,7 @@ describe('Search Utils', () => {
   test('Parse Patient search sort', () => {
     const result = parseSearchDefinition('Patient?_sort=birthDate');
     expect(result.resourceType).toBe('Patient');
-    expect(result.sortRules).toEqual([{ code: 'birthDate' }]);
+    expect(result.sortRules).toEqual([{ code: 'birthDate', descending: false }]);
   });
 
   test('Parse Patient search sort descending', () => {

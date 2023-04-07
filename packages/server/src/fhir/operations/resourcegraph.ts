@@ -219,11 +219,10 @@ async function followCanonicalElements(
     if (url in resourceCache) {
       results.push(resourceCache[url]);
     } else {
-      const bundle = await repo.search({
+      const linkedResources = await repo.searchResources({
         resourceType: target.type,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
-      const linkedResources = bundle?.entry?.map((entry) => entry.resource).filter((e) => !!e) as Resource[];
       if (linkedResources?.length > 1) {
         logger.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
       }
@@ -268,11 +267,9 @@ async function followSearchLink(
     searchRequest.count = Math.max(parseCardinality(link.max), 5000);
 
     // Run the search and add the results to the `results` array
-    const bundle = await repo.search(searchRequest);
-    if (bundle && bundle.entry) {
-      const resources = bundle.entry.map((entry) => entry.resource).filter((e): e is Resource => !!e);
+    const resources = await repo.searchResources(searchRequest);
+    if (resources) {
       resources.forEach((res) => addToCache(res, resourceCache));
-
       results.push(...resources);
     }
   }

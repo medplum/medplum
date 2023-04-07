@@ -13,6 +13,7 @@ import {
   normalizeErrorString,
   notFound,
   notModified,
+  operationOutcomeToString,
   tooManyRequests,
   unauthorized,
 } from './outcomes';
@@ -75,5 +76,27 @@ describe('Outcomes', () => {
     expect(isOperationOutcome('foo')).toBe(false);
     expect(isOperationOutcome({ resourceType: 'Patient' })).toBe(false);
     expect(isOperationOutcome({ resourceType: 'OperationOutcome' })).toBe(true);
+  });
+
+  test('operationOutcomeToString', () => {
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' })).toEqual('Unknown error');
+    expect(
+      operationOutcomeToString({ resourceType: 'OperationOutcome', issue: [{ details: { text: 'foo' } }] })
+    ).toEqual('foo');
+    expect(
+      operationOutcomeToString({
+        resourceType: 'OperationOutcome',
+        issue: [{ details: { text: 'foo' }, expression: ['bar'] }],
+      })
+    ).toEqual('foo (bar)');
+    expect(
+      operationOutcomeToString({
+        resourceType: 'OperationOutcome',
+        issue: [
+          { details: { text: 'error1' }, expression: ['expr1'] },
+          { details: { text: 'error2' }, expression: ['expr2'] },
+        ],
+      })
+    ).toEqual('error1 (expr1); error2 (expr2)');
   });
 });

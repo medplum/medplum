@@ -1,0 +1,80 @@
+---
+sidebar_position: 6
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bot-execute.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# Bot Execute
+
+Invoke a Medplum Bot using the custom `$execute` operation.
+
+If you're not familiar with Medplum Bots, you may want to review [Bot Basics](/docs/bots/bot-basics) documentation first.
+
+## Invoke a bot by ID
+
+Invoke a bot by ID when you know the Bot's ID in advance.
+
+You can find the `id` of your Bot by clicking on the **Details** tab of the Bot resource. In this example, it is ` 43ac3060-ff20-49e8-9682-bf91ab3a5191`
+
+<img src="/img/app/bots/find_bot_id.png" width="50%" height="50%" alt="Find your Bot ID" title="Find your Bot ID" />
+
+```
+POST [base]/Bot/[id]/$execute
+```
+
+For example:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/MY_BOT_ID/$execute' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"foo":"bar"}'
+```
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) TypeScript class provides a `executeBot` convenience method:
+
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-id" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Invoke a bot by identifier
+
+Sometimes you may not know the Medplum Bot ID in advance. In that case, you can invoke a Bot by `Identifier`.
+
+This is also useful when the same conceptual bot exists in multiple Medplum projects. Each bot will have a different ID, but they can all have the same identifier.
+
+```
+POST [base]/Bot/$execute?identifier=[system]|[code]
+```
+
+For example:
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"foo":"bar"}'
+```
+
+The [MedplumClient](/docs/sdk/classes/MedplumClient) `executeBot` convenience method supports both `id: string` and `identifier: Identifier`:
+
+<MedplumCodeBlock language="ts" selectBlocks="execute-by-identifier" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Content Types
+
+Medplum Bots support a variety of input content types. Specify the input content type using the standard `Content-Type` HTTP header, or as an optional parameter to `MedplumClient.executeBot()`.
+
+| Content-Type                         | typeof `event.input`                         | Description                                                                                                                                                         |
+| ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text/plain`                         | `string`                                     | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
+| `application/json`                   | `Record<string, any>`                        | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
+| `application/x-www-form-urlencoded ` | `Record<string, string>`                     | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
+| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#resources) encoded as JSON                                                                          |
+| `x-application/hl7-v2+er7`           | [`HL7Message`](/docs/sdk/classes/Hl7Message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
+
+The input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.

@@ -1,5 +1,5 @@
 import { MantineProvider, MantineThemeOverride } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import React from 'react';
@@ -8,13 +8,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { App } from './App';
 
 if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-  // Clear ServiceWorker cache to clear old versions
-  console.log('Clear ServiceWorker cache...');
-  caches
-    .keys()
-    .then((names) => names.forEach((name) => caches.delete(name)))
-    .catch((regError) => console.error('SW cache clear failed: ', regError));
-
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
@@ -39,18 +32,18 @@ const theme: MantineThemeOverride = {
   headings: {
     sizes: {
       h1: {
-        fontSize: 18,
+        fontSize: '1.125rem',
         fontWeight: 500,
         lineHeight: 2.0,
       },
     },
   },
   fontSizes: {
-    xs: 11,
-    sm: 14,
-    md: 14,
-    lg: 16,
-    xl: 18,
+    xs: '0.6875rem',
+    sm: '0.875rem',
+    md: '0.875rem',
+    lg: '1.0rem',
+    xl: '1.125rem',
   },
 };
 
@@ -63,9 +56,8 @@ root.render(
   <React.StrictMode>
     <MedplumProvider medplum={medplum} navigate={navigate}>
       <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
-        <NotificationsProvider position="bottom-right">
-          <RouterProvider router={router} />
-        </NotificationsProvider>
+        <Notifications position="bottom-right" />
+        <RouterProvider router={router} />
       </MantineProvider>
     </MedplumProvider>
   </React.StrictMode>

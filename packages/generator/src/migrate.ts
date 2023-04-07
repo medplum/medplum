@@ -1,14 +1,14 @@
 import {
   getSearchParameterDetails,
   globalSchema,
-  indexStructureDefinition,
-  isLowerCase,
+  indexStructureDefinitionBundle,
+  isResourceTypeSchema,
   SearchParameterDetails,
   SearchParameterType,
   TypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { Bundle } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder } from './filebuilder';
@@ -17,28 +17,10 @@ const searchParams = readJson('fhir/r4/search-parameters.json');
 const builder = new FileBuilder();
 
 export function main(): void {
-  buildStructureDefinitions('profiles-types.json');
-  buildStructureDefinitions('profiles-resources.json');
-  buildStructureDefinitions('profiles-medplum.json');
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
   writeMigrations();
-}
-
-function buildStructureDefinitions(fileName: string): void {
-  const resourceDefinitions = readJson(`fhir/r4/${fileName}`) as Bundle;
-  for (const entry of resourceDefinitions.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
-    if (
-      resource.resourceType === 'StructureDefinition' &&
-      resource.name &&
-      resource.name !== 'Resource' &&
-      resource.name !== 'BackboneElement' &&
-      resource.name !== 'DomainResource' &&
-      resource.name !== 'MetadataResource' &&
-      !isLowerCase(resource.name[0])
-    ) {
-      indexStructureDefinition(resource);
-    }
-  }
 }
 
 function writeMigrations(): void {
@@ -75,25 +57,8 @@ function buildMigrationUp(b: FileBuilder): void {
   builder.append('}');
 }
 
-function isResourceType(typeSchema: TypeSchema): boolean {
-  if (typeSchema.parentType || !typeSchema.properties) {
-    return false;
-  }
-  for (const propertyName of ['id', 'meta', 'implicitRules', 'language']) {
-    if (!(propertyName in typeSchema.properties)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeSchema): void {
-  if (resourceType === 'Resource' || resourceType === 'DomainResource' || resourceType === 'MetadataResource') {
-    // Don't create tables for base types
-    return;
-  }
-
-  if (!isResourceType(fhirType)) {
+  if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;
   }

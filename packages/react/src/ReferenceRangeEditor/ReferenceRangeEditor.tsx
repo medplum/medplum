@@ -135,7 +135,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
       groups = [...groups];
       const currentGroupIndex = groups.findIndex((g) => g.id === groupId);
 
-      if (currentGroupIndex != -1) {
+      if (currentGroupIndex !== -1) {
         const currentGroup = { ...groups[currentGroupIndex] };
         addedInterval = { ...addedInterval, ...currentGroup.filters };
         currentGroup.intervals = [...currentGroup.intervals, addedInterval];

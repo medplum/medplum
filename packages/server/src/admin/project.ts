@@ -8,7 +8,7 @@ import { authenticateToken } from '../oauth/middleware';
 import { createBotHandler, createBotValidators } from './bot';
 import { createClientHandler, createClientValidators } from './client';
 import { inviteHandler, inviteValidators } from './invite';
-import { getProjectMemberships, verifyProjectAdmin } from './utils';
+import { verifyProjectAdmin } from './utils';
 
 export const projectAdminRouter = Router();
 projectAdminRouter.use(authenticateToken);
@@ -25,19 +25,6 @@ projectAdminRouter.get(
   '/:projectId',
   asyncWrap(async (req: Request, res: Response) => {
     const project = res.locals.project as Project;
-    const memberships = await getProjectMemberships(project.id as string);
-    const members = [];
-    for (const membership of memberships) {
-      members.push({
-        id: membership.id,
-        user: membership.user,
-        profile: membership.profile,
-        accessPolicy: membership.accessPolicy,
-        userConfiguration: membership.userConfiguration,
-        role: getRole(project, membership),
-      });
-    }
-
     return res.status(200).json({
       project: {
         id: project?.id,
@@ -45,7 +32,6 @@ projectAdminRouter.get(
         secret: project?.secret,
         site: project?.site,
       },
-      members,
     });
   })
 );
@@ -128,32 +114,3 @@ projectAdminRouter.delete(
     sendOutcome(res, allOk);
   })
 );
-
-/**
- * Returns the role of the membership in the project.
- * There are 3 possible roles:
- *  1) "owner" - for the one owner of the project
- *  2) "admin" - for the admin of the project
- *  3) "member" - for any other member of the project
- * @param project The project resource.
- * @param membership The project membership resource.
- * @returns A string representing the role of the user in the project.
- */
-function getRole(project: Project, membership: ProjectMembership): string {
-  if (membership.user?.reference?.startsWith('Bot/')) {
-    return 'bot';
-  }
-  if (membership.user?.reference?.startsWith('ClientApplication/')) {
-    return 'client';
-  }
-  if (membership.profile?.reference?.startsWith('Patient/')) {
-    return 'patient';
-  }
-  if (membership.user?.reference === project.owner?.reference) {
-    return 'owner';
-  }
-  if (membership.admin) {
-    return 'admin';
-  }
-  return 'member';
-}

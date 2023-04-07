@@ -16,7 +16,7 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 - How to set up a repository to host the source code for your Bots.
 - Write a new `Bot` in Typescript.
 - Create a new `Bot` resource and link it to your Typescript file.
-- Use the [Medplum Command Line Interface (CLI)](https://github.com/medplum/medplum/tree/main/packages/cli) to deploy your Bot to production.
+- Use the [Medplum Command Line Interface (CLI)](https://github.com/medplum/medplum/tree/main/packages/cli) to create and deploy your Bot to production.
 
 ## Setting up your Repository
 
@@ -94,15 +94,31 @@ ls dist
 
 ```
 
-## Linking your code to a Bot Resource
+## Creating your Bot 
 
-The next step will be to create a [`Bot` resource](/docs/api/fhir/medplum/bot) using the Medplum App and link your code to the resource.
+Next step is to create the bot. 
 
-First, we'll have to create the resource in the Medplum App. If you haven't already done so, follow the instructions on the [Bot Basics tutorial](./bot-basics/#creating-a-bot) to create a new Bot resource.
+Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`. 
 
-Next, we need to tell the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) which `.ts` and `.js` files are associated with the resource by editing the `medplum.config.json` field.
+Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `create-bot` command. In our example 
 
-Open the the file `medplum.config.json` and add the following entry to the `bots` array.
+```bash
+npx medplum create-bot <bot-name> <project-id> <source-file> <dist-file>
+```
+
+Running this command does the following:
+
+1. Creates the Bot resource 
+2. Creates a ProjectMembership resource that connects it to a project
+3. Saves the bot to the associated project in the Medplum database
+4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
+
+:::caution Note
+If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
+:::
+
+
+After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this: 
 
 ```js
 {
@@ -185,6 +201,13 @@ Where `<bot-name>` is the `name` property that you set for your bot in `medplum.
 
 ```bash
 npx medplum deploy-bot my-first-bot
+```
+
+Use a wild card \* in `<bot-name>` to deploy multiple bots matching the pattern.
+This would allow us to deploy bots as part of a CI/CD pipeline, without having to update the command every time a new bot is added.
+
+```bash
+npx medplum deploy-bot *staging*
 ```
 
 Running this command does two things:

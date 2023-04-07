@@ -538,6 +538,139 @@ describe('MockClient', () => {
     );
     expect(slots.length).toBeGreaterThan(0);
   });
+
+  test('Identifier search', async () => {
+    const medplum = new MockClient();
+    // Create an original Patient with several identifiers
+    const patient1: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'SS',
+                display: 'Social Security Number',
+              },
+            ],
+            text: 'Social Security Number',
+          },
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: '999-47-5984',
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'DL',
+                display: "Driver's License",
+              },
+            ],
+            text: "Driver's License",
+          },
+          system: 'urn:oid:2.16.840.1.113883.4.3.25',
+          value: 'S99985931',
+        },
+      ],
+      birthDate: '1948-07-01',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+    });
+
+    expect(patient1).toBeDefined();
+
+    const existingPatients = await medplum.search('Patient', 'identifier=999-47-5984');
+    expect(existingPatients.total).toEqual(1);
+  });
+
+  test('Search one', async () => {
+    const medplum = new MockClient();
+    // Create an original Patient with several identifiers
+    const patient1: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'SS',
+                display: 'Social Security Number',
+              },
+            ],
+            text: 'Social Security Number',
+          },
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: '999-47-5984',
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'DL',
+                display: "Driver's License",
+              },
+            ],
+            text: "Driver's License",
+          },
+          system: 'urn:oid:2.16.840.1.113883.4.3.25',
+          value: 'S99985931',
+        },
+      ],
+      birthDate: '1948-07-01',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+    });
+
+    expect(patient1).toBeDefined();
+
+    const existingPatient = await medplum.searchOne('Patient', 'identifier=999-47-5984');
+    expect(existingPatient).toBeDefined();
+  });
+
+  test('Project admin', async () => {
+    const medplum = new MockClient();
+
+    const project = await medplum.get('admin/project/123');
+    expect(project).toBeDefined();
+
+    const membership = await medplum.get('admin/project/123/membership/456');
+    expect(membership).toBeDefined();
+  });
+
+  test('GraphQL', async () => {
+    const medplum = new MockClient();
+
+    const result = await medplum.graphql(`
+      query {
+        PatientList {
+          resourceType
+          id
+          name {
+            given
+            family
+          }
+        }
+      }
+    `);
+    expect(result).toBeDefined();
+
+    const homer = result.data.PatientList.find((p: any) => p.id === HomerSimpson.id);
+    expect(homer).toBeDefined();
+    expect(homer.name[0].given[0]).toEqual('Homer');
+    expect(homer.name[0].family).toEqual('Simpson');
+  });
 });
 
 function fail(reason: string): never {

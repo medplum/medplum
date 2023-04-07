@@ -1,5 +1,5 @@
 import { MantineProvider } from '@mantine/core';
-import { NotificationsProvider } from '@mantine/notifications';
+import { Notifications } from '@mantine/notifications';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, MedplumProvider } from '@medplum/react';
@@ -18,13 +18,12 @@ describe('ReferenceRangesPage', () => {
         <MedplumProvider medplum={medplum}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <MantineProvider>
-              <NotificationsProvider>
-                <ErrorBoundary>
-                  <Suspense fallback={<Loading />}>
-                    <AppRoutes />
-                  </Suspense>
-                </ErrorBoundary>
-              </NotificationsProvider>
+              <Notifications />
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <AppRoutes />
+                </Suspense>
+              </ErrorBoundary>
             </MantineProvider>
           </MemoryRouter>
         </MedplumProvider>

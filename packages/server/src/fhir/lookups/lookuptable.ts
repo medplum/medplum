@@ -1,7 +1,17 @@
 import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { Column, Condition, Conjunction, DeleteQuery, Disjunction, InsertQuery, Operator, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  DeleteQuery,
+  Disjunction,
+  Expression,
+  InsertQuery,
+  Operator,
+  SelectQuery,
+} from '../sql';
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -28,6 +38,7 @@ export abstract class LookupTable<T> {
   /**
    * Determines if the search parameter is indexed by this index table.
    * @param searchParam The search parameter.
+   * @param resourceType The resource type.
    * @returns True if the search parameter is indexed.
    */
   abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
@@ -40,36 +51,36 @@ export abstract class LookupTable<T> {
   abstract indexResource(client: PoolClient, resource: Resource): Promise<void>;
 
   /**
-   * Adds "where" conditions to the select query builder.
+   * Builds a "where" condition for the select query builder.
    * @param selectQuery The select query builder.
    * @param resourceType The FHIR resource type.
-   * @param predicate The conjunction where conditions should be added.
    * @param filter The search filter details.
    */
-  addWhere(selectQuery: SelectQuery, resourceType: ResourceType, predicate: Conjunction, filter: Filter): void {
+  buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
     const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(filter.code);
-    const subQuery = new SelectQuery(tableName)
-      .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
-      .orderBy('resourceId');
+    const joinOnExpression = new Conjunction([
+      new Condition(new Column(resourceType, 'id'), Operator.EQUALS, new Column(joinName, 'resourceId')),
+    ]);
+
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
-        disjunction.expressions.push(new Condition(new Column(tableName, columnName), Operator.EQUALS, option?.trim()));
+        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.EQUALS, option?.trim()));
       } else {
         const conjunction = new Conjunction([]);
         for (const chunk of option.split(/\s+/)) {
           conjunction.expressions.push(
-            new Condition(new Column(tableName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
+            new Condition(new Column(joinName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
           );
         }
         disjunction.expressions.push(conjunction);
       }
     }
-    subQuery.whereExpr(disjunction);
-    selectQuery.join(joinName, 'id', 'resourceId', subQuery);
-    predicate.expressions.push(new Condition(new Column(joinName, columnName), Operator.NOT_EQUALS, null));
+    joinOnExpression.expressions.push(disjunction);
+    selectQuery.join(tableName, joinName, joinOnExpression);
+    return new Condition(new Column(joinName, 'resourceId'), Operator.NOT_EQUALS, null);
   }
 
   /**
@@ -82,10 +93,12 @@ export abstract class LookupTable<T> {
     const tableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
-    const subQuery = new SelectQuery(tableName)
-      .raw(`DISTINCT ON ("${tableName}"."resourceId") *`)
-      .orderBy('resourceId');
-    selectQuery.join(joinName, 'id', 'resourceId', subQuery);
+    const joinOnExpression = new Condition(
+      new Column(resourceType, 'id'),
+      Operator.EQUALS,
+      new Column(joinName, 'resourceId')
+    );
+    selectQuery.join(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 

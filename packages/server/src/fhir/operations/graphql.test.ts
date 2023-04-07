@@ -618,6 +618,13 @@ describe('GraphQL', () => {
                           resource {
                             ...on ServiceRequest {
                               id
+                              basedOn {
+                                resource {
+                                  ...on ServiceRequest {
+                                    id
+                                  }
+                                }
+                              }
                             }
                           }
                         }
@@ -632,7 +639,7 @@ describe('GraphQL', () => {
     `,
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Field "resource" exceeds max depth (depth=9, max=8)');
+    expect(res2.body.issue[0].details.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
   });
 
   test('Hidden fields in nested lookups', async () => {

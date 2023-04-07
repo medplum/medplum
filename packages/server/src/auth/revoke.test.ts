@@ -54,7 +54,6 @@ describe('Revoke', () => {
       password,
       scope: 'openid',
       nonce: 'nonce',
-      remember: false,
     });
     expect(login2).toBeDefined();
 
@@ -138,7 +137,6 @@ describe('Revoke', () => {
       password: bobPassword,
       scope: 'openid',
       nonce: 'nonce',
-      remember: false,
     });
     expect(bobLogin).toBeDefined();
 

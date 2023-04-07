@@ -4,6 +4,11 @@ import {
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
+  evalFhirPathTyped,
+  FhirFilterComparison,
+  FhirFilterConnective,
+  FhirFilterExpression,
+  FhirFilterNegation,
   Filter,
   forbidden,
   formatSearchQuery,
@@ -14,13 +19,16 @@ import {
   isGone,
   isNotFound,
   isOk,
+  isResource,
   matchesSearchRequest,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
   Operator as FhirOperator,
+  parseFilterParameter,
   parseSearchUrl,
+  PropertyType,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -28,7 +36,11 @@ import {
   SortRule,
   stringify,
   tooManyRequests,
+  toTypedValue,
+  validateResource,
+  validateResourceType,
 } from '@medplum/core';
+import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   AccessPolicyResource,
@@ -71,11 +83,11 @@ import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { TokenTable } from './lookups/token';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatient } from './patient';
 import { validateReferences } from './references';
 import { rewriteAttachments, RewriteMode } from './rewrite';
-import { validateResource, validateResourceType } from './schema';
 import {
   Column,
   Condition,
@@ -181,15 +193,13 @@ const publicResourceTypes = [
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-const protectedResourceTypes = [
-  'DomainConfiguration',
-  'JsonWebKey',
-  'Login',
-  'PasswordChangeRequest',
-  'Project',
-  'ProjectMembership',
-  'User',
-];
+const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
+
+/**
+ * Project admin resource types are special resources that are only
+ * accessible to project administrators.
+ */
+export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -211,10 +221,11 @@ const maxSearchResults = 1000;
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository {
+export class Repository extends BaseRepository implements FhirRepository {
   readonly #context: RepositoryContext;
 
   constructor(context: RepositoryContext) {
+    super();
     this.#context = context;
     if (!this.#context.author?.reference) {
       throw new Error('Invalid author reference');
@@ -527,10 +538,6 @@ export class Repository {
       },
     });
 
-    if (await this.#isNotModified(existing, updated)) {
-      return existing as T;
-    }
-
     const resultMeta = {
       ...updated?.meta,
       versionId: randomUUID(),
@@ -552,6 +559,10 @@ export class Repository {
 
     resultMeta.compartment = this.#getCompartments(result);
 
+    if (this.#isNotModified(existing, result)) {
+      return existing as T;
+    }
+
     if (!this.#canWriteResource(result)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
@@ -562,7 +573,7 @@ export class Repository {
     }
 
     await setCacheEntry(result);
-    await addBackgroundJobs(result);
+    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.#removeHiddenFields(result);
     return result;
   }
@@ -654,7 +665,7 @@ export class Repository {
    * @param updated The updated resource.
    * @returns True if the resource is not modified.
    */
-  async #isNotModified(existing: Resource | undefined, updated: Resource): Promise<boolean> {
+  #isNotModified(existing: Resource | undefined, updated: Resource): boolean {
     if (!existing) {
       return false;
     }
@@ -664,6 +675,31 @@ export class Repository {
     const cleanExisting = JSON.parse(stringify(existing));
     const cleanUpdated = JSON.parse(stringify(updated));
     return deepEquals(cleanExisting, cleanUpdated);
+  }
+
+  /**
+   * Rebuilds compartments for all resources of the specified type.
+   * This is only available to super admins.
+   * @param resourceType The resource type.
+   */
+  async rebuildCompartmentsForResourceType(resourceType: string): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
+    const client = getClient();
+    const builder = new SelectQuery(resourceType).column({ tableName: resourceType, columnName: 'content' });
+    this.#addDeletedFilter(builder);
+
+    await builder.executeCursor(client, async (row: any) => {
+      try {
+        const resource = JSON.parse(row.content) as Resource;
+        (resource.meta as Meta).compartment = this.#getCompartments(resource);
+        await this.#updateResourceImpl(JSON.parse(row.content) as Resource, false);
+      } catch (err) {
+        logger.error('Failed to rebuild compartments for resource', normalizeErrorString(err));
+      }
+    });
   }
 
   /**
@@ -741,12 +777,12 @@ export class Repository {
    * @param id The resource ID.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
-    if (!this.#isSuperAdmin() && !this.#context.projectAdmin) {
+    if (!this.#isSuperAdmin() && !this.#isProjectAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const resource = await this.#readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource);
+    return addSubscriptionJobs(resource, { interaction: 'update' });
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
@@ -809,6 +845,21 @@ export class Repository {
       this.#logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
     }
+  }
+
+  /**
+   * Permanently deletes the specified resource and all of its history.
+   * This is only available to the system and super admin accounts.
+   * @param resourceType The FHIR resource type.
+   * @param id The resource ID.
+   */
+  async expungeResource(resourceType: string, id: string): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    await new DeleteQuery(resourceType).where('id', Operator.EQUALS, id).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', Operator.EQUALS, id).execute(getClient());
+    await deleteCacheEntry(resourceType, id);
   }
 
   /**
@@ -881,11 +932,12 @@ export class Repository {
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
+      .column({ tableName: resourceType, columnName: 'content' })
+      .groupBy({ tableName: resourceType, columnName: 'id' });
 
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
     this.#addSortRules(builder, searchRequest);
 
     const count = searchRequest.count as number;
@@ -902,21 +954,12 @@ export class Repository {
         } as BundleEntry)
     );
 
-    if (searchRequest.revInclude) {
-      const [nestedResourceType, nested] = searchRequest.revInclude.split(':');
-      const nestedSearchRequest: SearchRequest = {
-        resourceType: nestedResourceType as ResourceType,
-        filters: [
-          {
-            code: nested,
-            operator: FhirOperator.EQUALS,
-            value: resources.map(getReferenceString).join(','),
-          },
-        ],
-      };
+    if (searchRequest.include) {
+      entries.push(...(await this.#getSearchIncludeEntries(searchRequest.include, resources)));
+    }
 
-      const nestedSearchEntries = await this.#getSearchEntries(nestedSearchRequest);
-      entries.push(...nestedSearchEntries.entry);
+    if (searchRequest.revInclude) {
+      entries.push(...(await this.#getSearchRevIncludeEntries(searchRequest.revInclude, resources)));
     }
 
     for (const entry of entries) {
@@ -927,6 +970,66 @@ export class Repository {
       entry: entries as BundleEntry<T>[],
       hasMore: rows.length > count,
     };
+  }
+
+  /**
+   * Returns bundle entries for the resources that are included in the search result.
+   *
+   * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
+   *
+   * @param include The include parameter.
+   * @param resources The base search result resources.
+   * @returns The bundle entries for the included resources.
+   */
+  async #getSearchIncludeEntries(include: string, resources: Resource[]): Promise<BundleEntry[]> {
+    const [nestedResourceType, nested] = include.split(':');
+    const searchParam = getSearchParameter(nestedResourceType, nested);
+    if (!searchParam) {
+      throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${include}`));
+    }
+
+    const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
+
+    const references = fhirPathResult
+      .filter((typedValue) => typedValue.type === PropertyType.Reference)
+      .map((typedValue) => typedValue.value as Reference);
+
+    const readResult = await this.readReferences(references);
+
+    const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
+
+    return includedResources.map(
+      (resource: Resource) =>
+        ({
+          fullUrl: this.#getFullUrl(resource.resourceType, resource.id as string),
+          resource,
+        } as BundleEntry)
+    ) as BundleEntry[];
+  }
+
+  /**
+   * Returns bundle entries for the resources that are reverse included in the search result.
+   *
+   * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
+   *
+   * @param revInclude The revInclude parameter.
+   * @param resources The base search result resources.
+   * @returns The bundle entries for the reverse included resources.
+   */
+  async #getSearchRevIncludeEntries(revInclude: string, resources: Resource[]): Promise<BundleEntry[]> {
+    const [nestedResourceType, nested] = revInclude.split(':');
+    const nestedSearchRequest: SearchRequest = {
+      resourceType: nestedResourceType as ResourceType,
+      filters: [
+        {
+          code: nested,
+          operator: FhirOperator.EQUALS,
+          value: resources.map(getReferenceString).join(','),
+        },
+      ],
+    };
+
+    return (await this.#getSearchEntries(nestedSearchRequest)).entry;
   }
 
   /**
@@ -994,7 +1097,7 @@ export class Repository {
 
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, searchRequest.resourceType);
-    this.#addSearchFilters(builder, builder.predicate, searchRequest);
+    this.#addSearchFilters(builder, searchRequest);
     const rows = await builder.execute(client);
     return rows[0].count as number;
   }
@@ -1059,9 +1162,10 @@ export class Repository {
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = this.#parseCriteriaAsSearchRequest(policy.criteria);
-          const accessPolicyConjunction = new Conjunction([]);
-          this.#addSearchFilters(builder, accessPolicyConjunction, searchRequest);
-          expressions.push(accessPolicyConjunction);
+          const accessPolicyExpression = this.#buildSearchExpression(builder, searchRequest);
+          if (accessPolicyExpression) {
+            expressions.push(accessPolicyExpression);
+          }
         } else {
           // Allow access to all resources in the compartment.
           return;
@@ -1080,55 +1184,102 @@ export class Repository {
    * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
-  #addSearchFilters(selectQuery: SelectQuery, predicate: Conjunction, searchRequest: SearchRequest): void {
-    searchRequest.filters?.forEach((filter) => this.#addSearchFilter(selectQuery, predicate, searchRequest, filter));
+  #addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
+    const expr = this.#buildSearchExpression(selectQuery, searchRequest);
+    if (expr) {
+      selectQuery.predicate.expressions.push(expr);
+    }
+  }
+
+  #buildSearchExpression(selectQuery: SelectQuery, searchRequest: SearchRequest): Expression | undefined {
+    const expressions: Expression[] = [];
+    if (searchRequest.filters) {
+      for (const filter of searchRequest.filters) {
+        const expr = this.#buildSearchFilterExpression(selectQuery, searchRequest, filter);
+        if (expr) {
+          expressions.push(expr);
+        }
+      }
+    }
+    if (expressions.length === 0) {
+      return undefined;
+    }
+    if (expressions.length === 1) {
+      return expressions[0];
+    }
+    return new Conjunction(expressions);
   }
 
   /**
-   * Adds a single search filter as "WHERE" clause to the query builder.
+   * Builds a single search filter as "WHERE" clause to the query builder.
    * @param selectQuery The select query builder.
-   * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    * @param filter The search filter.
    */
-  #addSearchFilter(
+  #buildSearchFilterExpression(
     selectQuery: SelectQuery,
-    predicate: Conjunction,
     searchRequest: SearchRequest,
     filter: Filter
-  ): void {
-    const resourceType = searchRequest.resourceType;
-
-    if (this.#trySpecialSearchParameter(predicate, resourceType, filter)) {
-      return;
+  ): Expression | undefined {
+    if (typeof filter.value !== 'string') {
+      throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
     }
 
-    const param = getSearchParameter(resourceType, filter.code);
+    const specialParamExpression = this.#trySpecialSearchParameter(selectQuery, searchRequest, filter);
+    if (specialParamExpression) {
+      return specialParamExpression;
+    }
+
+    const resourceType = searchRequest.resourceType;
+    let param = getSearchParameter(resourceType, filter.code);
     if (!param || !param.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
     }
 
-    const lookupTable = this.#getLookupTable(resourceType, param);
-    if (lookupTable) {
-      lookupTable.addWhere(selectQuery, resourceType, predicate, filter);
-      return;
+    if (filter.operator === FhirOperator.IDENTIFIER) {
+      param = deriveIdentifierSearchParameter(param);
+      filter = {
+        ...filter,
+        code: param.code as string,
+        operator: FhirOperator.EQUALS,
+      };
     }
 
+    const lookupTable = this.#getLookupTable(resourceType, param);
+    if (lookupTable) {
+      return lookupTable.buildWhere(selectQuery, resourceType, filter);
+    }
+
+    // Not any special cases, just a normal search parameter.
+    return this.#buildNormalSearchFilterExpression(resourceType, param, filter);
+  }
+
+  /**
+   * Builds a search filter expression for a normal search parameter.
+   *
+   * Not any special cases, just a normal search parameter.
+   *
+   * @param resourceType The FHIR resource type.
+   * @param param The FHIR search parameter.
+   * @param filter The search filter.
+   * @returns A SQL "WHERE" clause expression.
+   */
+  #buildNormalSearchFilterExpression(resourceType: string, param: SearchParameter, filter: Filter): Expression {
     const details = getSearchParameterDetails(resourceType, param);
     if (filter.operator === FhirOperator.MISSING) {
-      predicate.where(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
+      return new Condition(details.columnName, filter.value === 'true' ? Operator.EQUALS : Operator.NOT_EQUALS, null);
     } else if (param.type === 'string') {
-      this.#addStringSearchFilter(predicate, details, filter);
+      return this.#buildStringSearchFilter(details, filter);
     } else if (param.type === 'token' || param.type === 'uri') {
-      this.#addTokenSearchFilter(predicate, resourceType, details, filter);
+      return this.#buildTokenSearchFilter(resourceType, details, filter);
     } else if (param.type === 'reference') {
-      this.#addReferenceSearchFilter(predicate, details, filter);
+      return this.#buildReferenceSearchFilter(details, filter);
     } else if (param.type === 'date') {
-      this.#addDateSearchFilter(predicate, details, filter);
+      return this.#buildDateSearchFilter(details, filter);
     } else if (param.type === 'quantity') {
-      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
+      return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), parseFloat(filter.value));
     } else {
-      predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+      return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
     }
   }
 
@@ -1137,70 +1288,123 @@ export class Repository {
    *
    * See: https://www.hl7.org/fhir/search.html#all
    *
-   * @param predicate The predicate conjunction.
    * @param resourceType The resource type.
    * @param filter The search filter.
    * @returns True if the search parameter is a special code.
    */
-  #trySpecialSearchParameter(predicate: Conjunction, resourceType: string, filter: Filter): boolean {
+  #trySpecialSearchParameter(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filter: Filter
+  ): Expression | undefined {
+    const resourceType = searchRequest.resourceType;
     const code = filter.code;
 
     if (code === '_id') {
-      this.#addTokenSearchFilter(predicate, resourceType, { columnName: 'id', type: SearchParameterType.TEXT }, filter);
-      return true;
+      return this.#buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
     }
 
     if (code === '_lastUpdated') {
-      this.#addDateSearchFilter(predicate, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
-      return true;
+      return this.#buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
     }
 
     if (code === '_compartment' || code === '_project') {
-      predicate.where('compartments', Operator.ARRAY_CONTAINS, [filter.value], 'UUID[]');
-      return true;
+      return this.#buildTokenSearchFilter(
+        resourceType,
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        filter
+      );
     }
 
-    return false;
+    if (code === '_filter') {
+      return this.#buildFilterParameterExpression(selectQuery, searchRequest, parseFilterParameter(filter.value));
+    }
+
+    return undefined;
+  }
+
+  #buildFilterParameterExpression(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterExpression: FhirFilterExpression
+  ): Expression {
+    if (filterExpression instanceof FhirFilterNegation) {
+      return this.#buildFilterParameterNegation(selectQuery, searchRequest, filterExpression);
+    } else if (filterExpression instanceof FhirFilterConnective) {
+      return this.#buildFilterParameterConnective(selectQuery, searchRequest, filterExpression);
+    } else if (filterExpression instanceof FhirFilterComparison) {
+      return this.#buildFilterParameterComparison(selectQuery, searchRequest, filterExpression);
+    } else {
+      throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
+    }
+  }
+
+  #buildFilterParameterNegation(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterNegation: FhirFilterNegation
+  ): Expression {
+    return new Negation(this.#buildFilterParameterExpression(selectQuery, searchRequest, filterNegation.child));
+  }
+
+  #buildFilterParameterConnective(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterConnective: FhirFilterConnective
+  ): Expression {
+    const expressions = [
+      this.#buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.left),
+      this.#buildFilterParameterExpression(selectQuery, searchRequest, filterConnective.right),
+    ];
+    return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
+  }
+
+  #buildFilterParameterComparison(
+    selectQuery: SelectQuery,
+    searchRequest: SearchRequest,
+    filterComparison: FhirFilterComparison
+  ): Expression {
+    return this.#buildSearchFilterExpression(selectQuery, searchRequest, {
+      code: filterComparison.path,
+      operator: filterComparison.operator as FhirOperator,
+      value: filterComparison.value,
+    }) as Expression;
   }
 
   /**
    * Adds a string search filter as "WHERE" clause to the query builder.
-   * @param predicate The select query predicate conjunction.
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addStringSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     if (filter.operator === FhirOperator.EXACT) {
-      predicate.where(details.columnName, Operator.EQUALS, filter.value);
-    } else {
-      predicate.where(details.columnName, Operator.LIKE, '%' + filter.value + '%');
+      return new Condition(details.columnName, Operator.EQUALS, filter.value);
     }
+    return new Condition(details.columnName, Operator.LIKE, '%' + filter.value + '%');
   }
 
   /**
    * Adds a token search filter as "WHERE" clause to the query builder.
-   * @param predicate The select query predicate conjunction.
    * @param resourceType The resource type.
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addTokenSearchFilter(
-    predicate: Conjunction,
-    resourceType: string,
-    details: SearchParameterDetails,
-    filter: Filter
-  ): void {
+  #buildTokenSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
     const column = new Column(resourceType, details.columnName);
     const expressions = [];
     for (const valueStr of filter.value.split(',')) {
       let value: string | boolean = valueStr;
       if (details.type === SearchParameterType.BOOLEAN) {
         value = valueStr === 'true';
+      } else if (details.type === SearchParameterType.UUID) {
+        if (!validator.isUUID(valueStr)) {
+          value = '00000000-0000-0000-0000-000000000000';
+        }
       } else if (valueStr.includes('|')) {
         value = valueStr.split('|').pop() as string;
       }
       if (details.array) {
-        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value));
+        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
       } else if (filter.operator === FhirOperator.CONTAINS) {
         expressions.push(new Condition(column, Operator.LIKE, '%' + value + '%'));
       } else {
@@ -1209,10 +1413,9 @@ export class Repository {
     }
     const disjunction = new Disjunction(expressions);
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
-      predicate.whereExpr(new Negation(disjunction));
-    } else {
-      predicate.whereExpr(disjunction);
+      return new Negation(disjunction);
     }
+    return disjunction;
   }
 
   /**
@@ -1221,7 +1424,7 @@ export class Repository {
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addReferenceSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildReferenceSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const values = [];
     for (const value of filter.value.split(',')) {
       if (!value.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient')) {
@@ -1231,12 +1434,12 @@ export class Repository {
       }
     }
     if (details.array) {
-      predicate.where(details.columnName, Operator.ARRAY_CONTAINS, values);
-    } else if (values.length === 1) {
-      predicate.where(details.columnName, Operator.EQUALS, values[0]);
-    } else {
-      predicate.where(details.columnName, Operator.IN, values);
+      return new Condition(details.columnName, Operator.ARRAY_CONTAINS, values);
     }
+    if (values.length === 1) {
+      return new Condition(details.columnName, Operator.EQUALS, values[0]);
+    }
+    return new Condition(details.columnName, Operator.IN, values);
   }
 
   /**
@@ -1245,12 +1448,12 @@ export class Repository {
    * @param details The search parameter details.
    * @param filter The search filter.
    */
-  #addDateSearchFilter(predicate: Conjunction, details: SearchParameterDetails, filter: Filter): void {
+  #buildDateSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const dateValue = new Date(filter.value);
     if (isNaN(dateValue.getTime())) {
       throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
     }
-    predicate.where(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
+    return new Condition(details.columnName, fhirOperatorToSqlOperator(filter.operator), filter.value);
   }
 
   /**
@@ -1709,7 +1912,7 @@ export class Repository {
     create: boolean
   ): Promise<Reference | undefined> {
     const account = updated.meta?.account;
-    if (account && this.#canWriteMeta()) {
+    if (account && this.#canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
       return account;
     }
@@ -1756,6 +1959,10 @@ export class Repository {
     return this.#isSuperAdmin();
   }
 
+  #canWriteAccount(): boolean {
+    return this.#isSuperAdmin() || this.#isProjectAdmin();
+  }
+
   /**
    * Determines if the current user can read the specified resource type.
    * @param resourceType The resource type.
@@ -1776,7 +1983,7 @@ export class Repository {
     }
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
-        if (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') {
+        if (this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
           return true;
         }
       }
@@ -1807,7 +2014,7 @@ export class Repository {
     if (this.#context.accessPolicy.resource) {
       for (const resourcePolicy of this.#context.accessPolicy.resource) {
         if (
-          (resourcePolicy.resourceType === resourceType || resourcePolicy.resourceType === '*') &&
+          this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType) &&
           !resourcePolicy.readonly
         ) {
           return true;
@@ -1870,7 +2077,7 @@ export class Repository {
     readonly: boolean
   ): boolean {
     const resourceType = resource.resourceType;
-    if (resourcePolicy.resourceType !== resourceType && resourcePolicy.resourceType !== '*') {
+    if (!this.#matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
       return false;
     }
     if (!readonly && resourcePolicy.readonly) {
@@ -1890,6 +2097,24 @@ export class Repository {
       return false;
     }
     return true;
+  }
+
+  /**
+   * Returns true if the resource type matches the access policy resource type.
+   * @param accessPolicyResourceType The resource type from the access policy.
+   * @param resourceType The candidate resource resource type.
+   * @returns True if the resource type matches the access policy resource type.
+   */
+  #matchesAccessPolicyResourceType(accessPolicyResourceType: string | undefined, resourceType: string): boolean {
+    if (accessPolicyResourceType === resourceType) {
+      return true;
+    }
+    if (accessPolicyResourceType === '*' && !projectAdminResourceTypes.includes(resourceType)) {
+      // Project admin resource types are not allowed to be wildcarded
+      // Project admin resource types must be explicitly included
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -1976,16 +2201,11 @@ export class Repository {
   }
 
   #isSuperAdmin(): boolean {
-    return !!this.#context.superAdmin || this.#isAdminClient();
+    return !!this.#context.superAdmin;
   }
 
-  /**
-   * Deprecated, for removal.
-   * @deprecated
-   */
-  #isAdminClient(): boolean {
-    const { adminClientId } = getConfig();
-    return !!adminClientId && this.#context.author.reference === 'ClientApplication/' + adminClientId;
+  #isProjectAdmin(): boolean {
+    return !!this.#context.projectAdmin;
   }
 
   /**
@@ -2065,7 +2285,9 @@ async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Res
 async function setCacheEntry(resource: Resource): Promise<void> {
   await getRedis().set(
     getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId: resource.meta?.project })
+    JSON.stringify({ resource, projectId: resource.meta?.project }),
+    'EX',
+    24 * 60 * 60 // 24 hours in seconds
   );
 }
 

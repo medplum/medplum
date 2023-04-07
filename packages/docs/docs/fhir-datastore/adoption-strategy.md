@@ -16,7 +16,7 @@ While this is a common scenario, it is not an easy one. System migrations are ha
 
 :::info
 
-System migrations are challenging concepts. Please [contact us](/services) to learn how Medplum can help with your migration.
+System migrations are challenging concepts. Please contact us at hello@medplum.com to learn how Medplum can help with your migration.
 
 :::
 

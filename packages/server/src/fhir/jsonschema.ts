@@ -1,9 +1,8 @@
-import { OperationOutcomeError } from '@medplum/core';
+import { checkForNull, createStructureIssue, OperationOutcomeError, validationError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { OperationOutcomeIssue, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { JSONSchema4, JSONSchema6 } from 'json-schema';
-import { checkForNull, createStructureIssue, validationError } from './utils';
 
 /*
  * This file contains helper methods for using fhir.schema.json,

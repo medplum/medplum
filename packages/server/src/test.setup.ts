@@ -27,7 +27,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
       reference: 'User/' + randomUUID(),
     },
     strictMode: true,
-    features: ['bots', 'email', 'graphql-introspection'],
+    features: ['bots', 'email', 'graphql-introspection', 'cron'],
     secret: [
       {
         name: 'foo',
@@ -75,6 +75,7 @@ export async function initTestAuth(options?: Partial<Project>): Promise<string> 
     client: createReference(client),
     membership: createReference(membership),
     authTime: new Date().toISOString(),
+    superAdmin: options?.superAdmin,
     scope,
   });
 
@@ -105,7 +106,7 @@ export async function addTestUser(
     project,
     email,
     password,
-    resourceType: 'Patient',
+    resourceType: 'Practitioner',
     firstName: 'Bob',
     lastName: 'Jones',
     accessPolicy: accessPolicy && createReference(accessPolicy),
@@ -118,7 +119,6 @@ export async function addTestUser(
     password,
     scope: 'openid',
     nonce: 'nonce',
-    remember: false,
   });
 
   const accessToken = await generateAccessToken({
@@ -161,4 +161,23 @@ export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
  */
 export function bundleContains(bundle: Bundle, resource: Resource): boolean {
   return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
+}
+
+/**
+ * Waits for a function to evaluate successfully.
+ * Use this to wait for async behaviors without a handle.
+ * @param fn Function to call.
+ */
+export function waitFor(fn: () => void): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setInterval(() => {
+      try {
+        fn();
+        clearTimeout(timer);
+        resolve();
+      } catch (err) {
+        // ignore
+      }
+    }, 100);
+  });
 }

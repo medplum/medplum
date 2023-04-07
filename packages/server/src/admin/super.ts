@@ -1,11 +1,10 @@
-import { allOk, badRequest, forbidden } from '@medplum/core';
+import { allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
-import { validateResourceType } from '../fhir/schema';
 import { logger } from '../logger';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -84,6 +83,31 @@ superAdminRouter.post(
       .reindexResourceType(resourceType)
       .then(() => logger.info(`Reindexing ${resourceType} completed`))
       .catch((err) => logger.error(`Reindexing ${resourceType} failed: ${err}`));
+
+    sendOutcome(res, allOk);
+  })
+);
+
+// POST to /admin/super/compartments
+// to rebuild compartments for a resource type.
+// Run this after major changes to how compartments are constructed.
+superAdminRouter.post(
+  '/compartments',
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!res.locals.login.superAdmin) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const resourceType = req.body.resourceType;
+    validateResourceType(resourceType);
+
+    // Start reindex in the background
+    // This can take a long time, so we don't want to block the response
+    systemRepo
+      .rebuildCompartmentsForResourceType(resourceType)
+      .then(() => logger.info(`Rebuilding compartments for ${resourceType} completed`))
+      .catch((err) => logger.error(`Rebuilding compartments for ${resourceType} failed: ${err}`));
 
     sendOutcome(res, allOk);
   })

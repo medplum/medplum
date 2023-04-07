@@ -36,7 +36,7 @@ export function EditMembershipPage(): JSX.Element {
     <>
       <Title>Edit membership</Title>
       <h3>
-        <ResourceBadge value={membership.profile} />
+        <ResourceBadge value={membership.profile} link />
       </h3>
       <Form
         onSubmit={() => {

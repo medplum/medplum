@@ -31,6 +31,9 @@ function createValue(input: string): ValueSetExpansionContains {
   };
 }
 
+/**
+ * A low-level component to autocomplete based on a FHIR Valueset.
+ */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
   const { elementDefinition, ...rest } = props;

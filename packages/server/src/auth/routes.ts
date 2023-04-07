@@ -3,6 +3,7 @@ import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth/middleware';
 import { getRateLimiter } from '../ratelimit';
 import { changePasswordHandler, changePasswordValidators } from './changepassword';
+import { exchangeHandler, exchangeValidators } from './exchange';
 import { externalCallbackHandler } from './external';
 import { googleHandler, googleValidators } from './google';
 import { loginHandler, loginValidators } from './login';
@@ -35,5 +36,6 @@ authRouter.post('/changepassword', changePasswordValidators, asyncWrap(changePas
 authRouter.post('/resetpassword', resetPasswordValidators, asyncWrap(resetPasswordHandler));
 authRouter.post('/setpassword', setPasswordValidators, asyncWrap(setPasswordHandler));
 authRouter.post('/google', googleValidators, asyncWrap(googleHandler));
+authRouter.post('/exchange', exchangeValidators, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateToken, revokeValidators, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidators, asyncWrap(statusHandler));

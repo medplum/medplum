@@ -1,8 +1,18 @@
+import { isResource } from '@medplum/core';
 import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
-import { ComponentsObject, OpenAPIObject, ReferenceObject, SchemaObject, TagObject } from 'openapi3-ts';
+import type {
+  ComponentsObject,
+  OpenAPIObject,
+  PathsObject,
+  ReferenceObject,
+  SchemaObject,
+  TagObject,
+} from 'openapi3-ts/dist/mjs/oas31';
 import { getConfig } from './config';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
+
+type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };
 
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
@@ -31,10 +41,10 @@ function buildSpec(): any {
  * Builds the base structure of the OpenAPI specification.
  * See: https://swagger.io/specification/
  */
-function buildBaseSpec(): OpenAPIObject {
+function buildBaseSpec(): OpenAPIObjectWithPaths {
   const config = getConfig();
   return {
-    openapi: '3.0.2',
+    openapi: '3.1.0',
     info: {
       title: 'Medplum - OpenAPI 3.0',
       description:
@@ -165,7 +175,7 @@ function buildTags(result: OpenAPIObject, typeName: string, typeDefinition: JSON
  * Builds the paths for a FHIR resource type.
  * @param result The OpenAPI specification output.
  */
-function buildPaths(result: OpenAPIObject): void {
+function buildPaths(result: OpenAPIObjectWithPaths): void {
   result.paths[`/fhir/R4/{resourceType}`] = {
     get: buildSearchPath(),
     post: buildCreatePath(),
@@ -515,5 +525,5 @@ function buildPatchPath(): any {
 
 function isResourceType(definition: JSONSchema4): boolean {
   const props = definition?.properties;
-  return !!(props && 'resourceType' in props && 'id' in props && 'meta' in props);
+  return !!(isResource(props) && 'id' in props && 'meta' in props);
 }

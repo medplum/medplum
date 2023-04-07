@@ -1,4 +1,4 @@
-import { Condition, Negation, Operator, SelectQuery, SqlBuilder } from './sql';
+import { Column, Condition, Negation, Operator, SelectQuery, SqlBuilder } from './sql';
 
 describe('SqlBuilder', () => {
   test('Select', () => {
@@ -54,5 +54,33 @@ describe('SqlBuilder', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', Operator.NOT_EQUALS, null).buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" IS NOT NULL');
+  });
+
+  test('Select value in subquery with type', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .where('name', Operator.IN_SUBQUERY, new SelectQuery('MyLookup').column('values'), 'TEXT[]')
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name"=ANY((SELECT "MyLookup"."values" FROM "MyLookup")::TEXT[])'
+    );
+  });
+
+  test('Select value in subquery without type', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .where('name', Operator.IN_SUBQUERY, new SelectQuery('MyLookup').column('values'))
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name"=ANY(SELECT "MyLookup"."values" FROM "MyLookup")'
+    );
+  });
+
+  test('Select group by', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable').column('id').groupBy('name').groupBy(new Column('MyTable', 'email')).buildSql(sql);
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" GROUP BY "MyTable"."name", "MyTable"."email"');
   });
 });

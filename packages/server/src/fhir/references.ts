@@ -1,4 +1,5 @@
 import {
+  createStructureIssue,
   getTypedPropertyValue,
   normalizeErrorString,
   OperationOutcomeError,
@@ -9,7 +10,6 @@ import {
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Repository } from './repo';
-import { createStructureIssue } from './utils';
 
 export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
   return new FhirReferenceValidator(repo, resource).validate();

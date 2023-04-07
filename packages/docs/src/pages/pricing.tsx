@@ -9,8 +9,7 @@ export default function PricingPage(): JSX.Element {
         <div className={styles.aboutTitle}>
           <h1>Pricing</h1>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            When you have selected your offering fill out <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">this form</a> to
-            activate your account and receive your agreements. For questions about pricing please reach out to us at{' '}
+            For questions about pricing or to schedule a demo please reach out to us at{' '}
             <a href="mailto:hello@medplum.com">hello@medplum.com</a>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
@@ -73,16 +72,24 @@ export default function PricingPage(): JSX.Element {
               <tr>
                 <td>Pricing</td>
                 <td>Free</td>
-                <td>$300/mo</td>
-                <td>$2,000/mo</td>
-                <td>Contact us</td>
+                <td>
+                  <a href="https://buy.stripe.com/fZeeXv2Or0uM1MY3cd">$300/mo</a>
+                </td>
+                <td>
+                  <a href="https://buy.stripe.com/8wM3eN74HelC9fqeUU">$2,000/mo</a>
+                </td>
+                <td>
+                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                </td>
                 <td>Free</td>
-                <td>Contact us</td>
+                <td>
+                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact us</a>
+                </td>
               </tr>
               <tr>
                 <td>Standard BAA</td>
                 <td></td>
-                <td>✔️</td>
+                <td></td>
                 <td>✔️</td>
                 <td>✔️</td>
                 <td></td>
@@ -305,6 +312,34 @@ export default function PricingPage(): JSX.Element {
                 <td>Contact us</td>
                 <td>DIY</td>
                 <td>Contact us</td>
+              </tr>
+              <tr>
+                <td>ONC</td>
+                <td></td>
+                <td></td>
+                <td>✔️</td>
+                <td>Contact us</td>
+                <td>DIY</td>
+                <td>Contact us</td>
+              </tr>
+              <tr>
+                <td>
+                  <strong>Sign Up</strong>
+                </td>
+                <td></td>
+                <td>
+                  <a href="https://buy.stripe.com/fZeeXv2Or0uM1MY3cd">Start Now</a>
+                </td>
+                <td>
+                  <a href="https://buy.stripe.com/bIY16F88LgtKfDO146">Start Now</a>
+                </td>
+                <td>
+                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                </td>
+                <td></td>
+                <td>
+                  <a href="https://forms.gle/ZQZq1iWjjWMkUwc9A">Contact Us</a>
+                </td>
               </tr>
             </tbody>
           </table>

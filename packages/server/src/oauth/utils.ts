@@ -10,7 +10,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import {
-  BundleEntry,
+  AccessPolicy,
   ClientApplication,
   Login,
   Project,
@@ -24,6 +24,7 @@ import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
 import { authenticator } from 'otplib';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
@@ -31,11 +32,10 @@ import { generateAccessToken, generateIdToken, generateRefreshToken, generateSec
 export interface LoginRequest {
   readonly email?: string;
   readonly externalId?: string;
-  readonly authMethod: 'password' | 'google' | 'external';
+  readonly authMethod: 'password' | 'google' | 'external' | 'exchange';
   readonly password?: string;
   readonly scope: string;
   readonly nonce: string;
-  readonly remember: boolean;
   readonly resourceType?: ResourceType;
   readonly projectId?: string;
   readonly clientId?: string;
@@ -45,6 +45,8 @@ export interface LoginRequest {
   readonly googleCredentials?: GoogleCredentialClaims;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
+  /** @deprecated Use scope of "offline" or "offline_access" instead. */
+  readonly remember?: boolean;
 }
 
 export interface TokenResult {
@@ -85,12 +87,30 @@ export interface GoogleCredentialClaims extends JWTPayload {
   readonly picture: string;
 }
 
+/**
+ * Returns the client application by ID.
+ * Handles special cases for "built-in" clients.
+ * @param clientId The client ID.
+ * @returns The client application.
+ */
+export async function getClient(clientId: string): Promise<ClientApplication> {
+  if (clientId === 'medplum-cli') {
+    return {
+      resourceType: 'ClientApplication',
+      id: 'medplum-cli',
+      redirectUri: 'http://localhost:9615',
+      pkceOptional: true,
+    };
+  }
+  return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+}
+
 export async function tryLogin(request: LoginRequest): Promise<Login> {
   validateLoginRequest(request);
 
   let client: ClientApplication | undefined;
   if (request.clientId) {
-    client = await systemRepo.readResource<ClientApplication>('ClientApplication', request.clientId);
+    client = await getClient(request.clientId);
   }
 
   validatePkce(request, client);
@@ -113,7 +133,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 
   await authenticate(request, user);
 
-  const refreshSecret = request.remember ? generateSecret(32) : undefined;
+  const refreshSecret = includeRefreshToken(request) ? generateSecret(32) : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
@@ -147,7 +167,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
 }
 
 export function validateLoginRequest(request: LoginRequest): void {
-  if (request.authMethod === 'external') {
+  if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     if (!request.externalId && !request.email) {
       throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));
     }
@@ -213,7 +233,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
     return;
   }
 
-  if (request.authMethod === 'external') {
+  if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     // Verified by external auth provider
     return;
   }
@@ -292,13 +312,11 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
     });
   }
 
-  const bundle = await systemRepo.search<ProjectMembership>({
+  let memberships = await systemRepo.searchResources<ProjectMembership>({
     resourceType: 'ProjectMembership',
     count: 100,
     filters,
   });
-
-  let memberships = (bundle.entry as BundleEntry<ProjectMembership>[]).map((e) => e.resource as ProjectMembership);
 
   const profileType = login.profileType;
   if (profileType) {
@@ -372,8 +390,11 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // Get the access policy
+  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+
   // Check IP Access Rules
-  await checkIpAccessRules(login, project);
+  await checkIpAccessRules(login, accessPolicy);
 
   logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
 
@@ -391,13 +412,13 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
  * Returns successfully if the login does not match any rules.
  * Throws an error if the login matches a "block" rule.
  * @param login The candidate login.
- * @param project The project.
+ * @param accessPolicy The access policy for the login.
  */
-async function checkIpAccessRules(login: Login, project: Project): Promise<void> {
-  if (!login.remoteAddress || !project.ipAccessRule) {
+async function checkIpAccessRules(login: Login, accessPolicy: AccessPolicy | undefined): Promise<void> {
+  if (!login.remoteAddress || !accessPolicy?.ipAccessRule) {
     return;
   }
-  for (const rule of project.ipAccessRule) {
+  for (const rule of accessPolicy.ipAccessRule) {
     if (matchesIpAccessRule(login.remoteAddress, rule.value as string)) {
       if (rule.action === 'allow') {
         return;
@@ -625,4 +646,23 @@ export function timingSafeEqualStr(a: string, b: string): boolean {
   const buf1 = Buffer.from(a);
   const buf2 = Buffer.from(b);
   return buf1.length === buf2.length && timingSafeEqual(buf1, buf2);
+}
+
+/**
+ * Determines if the login request should include a refresh token.
+ * @param request The login request.
+ * @returns True if the login should include a refresh token.
+ */
+function includeRefreshToken(request: LoginRequest): boolean {
+  // Deprecated legacy "remember" flag
+  if (request.remember) {
+    return true;
+  }
+
+  // Check for offline scope
+  // Google calls it "offline": https://developers.google.com/identity/protocols/oauth2/web-server#offline
+  // Auth0 calls it "offline_access": https://auth0.com/docs/secure/tokens/refresh-tokens/get-refresh-tokens
+  // We support both
+  const scopeArray = request.scope.split(' ');
+  return scopeArray.includes('offline') || scopeArray.includes('offline_access');
 }
