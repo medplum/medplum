@@ -542,14 +542,7 @@ export async function revokeLogin(login: Login): Promise<void> {
  * @param projectId The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByExternalId(
-  externalId: string,
-  projectId: string | undefined
-): Promise<User | undefined> {
-  if (!projectId) {
-    throw new OperationOutcomeError(badRequest('Project ID is required to use external ID login.'));
-  }
-
+export async function getUserByExternalId(externalId: string, projectId: string): Promise<User | undefined> {
   const membership = await systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -565,12 +558,26 @@ export async function getUserByExternalId(
       },
     ],
   });
-
-  if (!membership) {
-    return undefined;
+  if (membership) {
+    return systemRepo.readReference(membership.user as Reference<User>);
   }
 
-  return systemRepo.readReference(membership.user as Reference<User>);
+  // Deprecated: Support legacy User.externalId
+  return systemRepo.searchOne<User>({
+    resourceType: 'User',
+    filters: [
+      {
+        code: 'external-id',
+        operator: Operator.EXACT,
+        value: externalId,
+      },
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
+    ],
+  });
 }
 
 /**

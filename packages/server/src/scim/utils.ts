@@ -117,6 +117,7 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
   let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
   user.firstName = scimUser.name?.givenName as string;
   user.lastName = scimUser.name?.familyName as string;
+  user.externalId = scimUser.externalId;
 
   if (scimUser.emails?.[0]?.value) {
     user.email = scimUser.emails?.[0]?.value;
@@ -187,7 +188,7 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
     },
     userType: resourceType,
     userName: id,
-    externalId: membership.externalId,
+    externalId: membership.externalId || user.externalId,
     name: {
       givenName: user.firstName,
       familyName: user.lastName,

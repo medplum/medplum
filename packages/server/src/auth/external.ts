@@ -103,8 +103,12 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   redirectUrl.searchParams.set('login', login.id as string);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
-  redirectUrl.searchParams.set('code_challenge', login.codeChallenge as string);
-  redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
+  if (login.codeChallenge) {
+    redirectUrl.searchParams.set('code_challenge', login.codeChallenge as string);
+  }
+  if (login.codeChallengeMethod) {
+    redirectUrl.searchParams.set('code_challenge_method', login.codeChallengeMethod as string);
+  }
   res.redirect(redirectUrl.toString());
 };
 
