@@ -470,6 +470,7 @@ export class MedplumClient extends EventTarget {
   readonly #authorizeUrl: string;
   readonly #tokenUrl: string;
   readonly #logoutUrl: string;
+  readonly #exchangeUrl: string;
   readonly #onUnauthenticated?: () => void;
   readonly #autoBatchTime: number;
   readonly #autoBatchQueue: AutoBatchEntry[];
@@ -503,6 +504,7 @@ export class MedplumClient extends EventTarget {
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
     this.#logoutUrl = options?.logoutUrl || this.#baseUrl + 'oauth2/logout';
+    this.#exchangeUrl = this.#baseUrl + 'auth/exchange';
     this.#onUnauthenticated = options?.onUnauthenticated;
     this.#autoBatchTime = options?.autoBatchTime ?? 0;
     this.#autoBatchQueue = [];
@@ -853,6 +855,37 @@ export class MedplumClient extends EventTarget {
   ): Promise<void> {
     const loginRequest = await this.ensureCodeChallenge(baseLogin);
     window.location.assign(this.getExternalAuthRedirectUri(authorizeUrl, clientId, redirectUri, loginRequest));
+  }
+
+  /**
+   *
+   * @param token
+   * @param clientId
+   * @param projectId
+   * @returns
+   */
+  async exchangeExternalAuthToken(token: string, clientId: string, projectId: string): Promise<ProfileResource> {
+    const formBody = new URLSearchParams();
+    // TODO: camelcase or snake case?
+    formBody.set('clientId', clientId);
+    formBody.set('projectId', projectId);
+    formBody.set('externalAccessToken', token);
+
+    const response = await this.#fetch(this.#exchangeUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      this.clearActiveLogin();
+      throw new Error('Failed to fetch tokens');
+    }
+
+    const tokens = await response.json();
+    await this.#verifyTokens(tokens);
+    return this.getProfile() as ProfileResource;
   }
 
   /**
