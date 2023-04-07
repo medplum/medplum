@@ -1,7 +1,6 @@
 import { createBundleFromEntry, getFHIRBundle } from './utils';
 
 let jsonFile: any;
-jest.mock('URL');
 describe('FHIR Bundle Download', () => {
   beforeEach(() => {
     jsonFile = {
