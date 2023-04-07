@@ -169,6 +169,39 @@ describe('OAuth utils', () => {
     }
   });
 
+  test('Login with externalId and missing projectId', async () => {
+    try {
+      await tryLogin({
+        authMethod: 'external',
+        externalId: 'external',
+        scope: 'openid',
+        nonce: 'nonce',
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('Project ID is required for external ID');
+    }
+  });
+
+  test('Login with externalId not found', async () => {
+    try {
+      await tryLogin({
+        authMethod: 'external',
+        projectId: randomUUID(),
+        externalId: randomUUID(),
+        scope: 'openid',
+        nonce: 'nonce',
+      });
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toBe('User not found');
+    }
+  });
+
   test('Login successfully', async () => {
     const login = await tryLogin({
       clientId: client.id as string,
