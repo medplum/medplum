@@ -655,6 +655,7 @@ describe('FHIR Repo', () => {
       ],
       count: 100,
     });
+    console.log(bundle);
 
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
@@ -2484,6 +2485,46 @@ describe('FHIR Repo', () => {
     expect(bundle2.entry?.length).toEqual(1);
     expect(bundleContains(bundle2, task1)).toBeTruthy();
     expect(bundleContains(bundle2, task2)).not.toBeTruthy();
+  });
+
+  test('expungeResource forbidden', async () => {
+    const author = 'Practitioner/' + randomUUID();
+
+    const repo = new Repository({
+      project: randomUUID(),
+      extendedMode: true,
+      author: {
+        reference: author,
+      },
+    });
+
+    // Try to expunge as a regular user
+    try {
+      await repo.expungeResource('Patient', new Date().toISOString());
+      fail('Purge should have failed');
+    } catch (err) {
+      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
+    }
+  });
+
+  test('expungeResources forbidden', async () => {
+    const author = 'Practitioner/' + randomUUID();
+
+    const repo = new Repository({
+      project: randomUUID(),
+      extendedMode: true,
+      author: {
+        reference: author,
+      },
+    });
+
+    // Try to expunge as a regular user
+    try {
+      await repo.expungeResources('Patient', [new Date().toISOString()]);
+      fail('Purge should have failed');
+    } catch (err) {
+      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
+    }
   });
 
   test('Purge forbidden', async () => {
