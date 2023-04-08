@@ -78,73 +78,23 @@ export function getProjectId(medplum: MedplumClient): string {
 }
 
 /**
- * This function reads the contents of the a JSON object, manipulates the object
- * to add UUIDs and other modifications, and then exports the
- * modified JSON object to a file.
- * @param blob The Blob object that we'll receive from the search query
- */
-export function getFHIRBundle(entry: any): void {
-  const uuidBundle = createBundleFromEntry(entry);
-  exportJSONFile(uuidBundle);
-}
-
-/**
- * Manipulates the object to add UUIDs and other modifications,
- * and returns a modified JSON object that represents a FHIR
- * bundle. The modified JSON object has fullUrl property with
- * a value starting with urn:uuid: followed by the resource ID.
- * @param input
- * @returns JSON object as a string
- */
-export function createBundleFromEntry(input: any): string {
-  for (const entry of input) {
-    delete entry.resource.meta;
-    entry.fullUrl = 'urn:uuid:' + entry.resource.id;
-    delete entry.resource.id;
-  }
-  return JSON.stringify(
-    {
-      resourceType: 'Bundle',
-      type: 'transaction',
-      entry: input.map((entry: any) => ({
-        fullUrl: entry.fullUrl,
-        request: { method: 'POST', url: entry.resource.resourceType },
-        resource: entry.resource,
-      })),
-    },
-    replacer,
-    2
-  );
-}
-
-/**
  * Creates a Blob object from the JSON object given and downloads the
  * object
  * @param json
  */
-function exportJSONFile(json: any): void {
-  const blobForExport = new Blob([json], { type: 'application/json' });
+export function exportJSONFile(jsonString: string, fileName?: string): void {
+  const blobForExport = new Blob([jsonString], { type: 'application/json' });
   const url = URL.createObjectURL(blobForExport);
 
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${new Date().toISOString().replace(/\D/g, '')}.json`;
+
+  const linkName = fileName ? fileName : new Date().toISOString().replace(/\D/g, '');
+  link.download = `${linkName}.json`;
+
   document.body.appendChild(link);
   link.click();
 
   // Clean up the URL object
   URL.revokeObjectURL(url);
-}
-
-/**
- * Helper function used to modify the JSON object
- * @param key
- * @param value
- * @returns string
- */
-function replacer(key: string, value: string): string {
-  if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
-    return 'urn:uuid:' + value.split('/')[1];
-  }
-  return value;
 }

@@ -1,7 +1,7 @@
-import { createBundleFromEntry, getFHIRBundle } from './utils';
+import { exportJSONFile } from './utils';
 
 let jsonFile: any;
-describe('FHIR Bundle Download', () => {
+describe('JSON File Download', () => {
   beforeEach(() => {
     jsonFile = {
       entry: [
@@ -27,17 +27,12 @@ describe('FHIR Bundle Download', () => {
     };
   });
 
-  test('create a FHIR bundle from JSON File', () => {
-    const fhirBundle = createBundleFromEntry(jsonFile.entry);
-    const jsonFhirBundle = JSON.parse(fhirBundle);
-    const firstEntry = jsonFhirBundle.entry[0];
-    expect(firstEntry.request.url).toEqual('Patient');
-  });
-
-  test('create a FHIR Bundle and download the file', () => {
+  test('download a JSON file', () => {
     URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     URL.revokeObjectURL = jest.fn();
 
-    getFHIRBundle(jsonFile.entry);
+    exportJSONFile(jsonFile.entry);
+
+    expect(URL.revokeObjectURL).toBeCalled();
   });
 });

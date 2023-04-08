@@ -152,7 +152,7 @@ describe('HomePage', () => {
     expect(window.open).toHaveBeenCalled();
   });
 
-  test('Export FHIR Bundle button', async () => {
+  test('Export Transaction Bundle button', async () => {
     URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     URL.revokeObjectURL = jest.fn();
     // Mock the export operation
@@ -167,9 +167,9 @@ describe('HomePage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Export as FHIR Bundle'));
+      fireEvent.click(screen.getByText('Export as Transaction Bundle'));
     });
-    expect(screen.getByText('Export as FHIR Bundle')).toBeInTheDocument();
+    expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
   });
 
   test('Default search fields', () => {

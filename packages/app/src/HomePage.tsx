@@ -9,13 +9,14 @@ import {
   parseSearchDefinition,
   SearchRequest,
   SortRule,
+  convertToTransactionBundle,
 } from '@medplum/core';
-import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { MemoizedSearchControl, useMedplum, SearchLoadEvent } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loading } from './components/Loading';
-import { getFHIRBundle } from './utils';
+import { exportJSONFile } from './utils';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -78,7 +79,7 @@ export function HomePage(): JSX.Element {
               }
             : undefined
         }
-        onExportCSV={() => {
+        onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
             .download(url)
@@ -87,10 +88,11 @@ export function HomePage(): JSX.Element {
             })
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
-        onExportFHIRBundle={() => {
+        onExportTransactionBundle={() => {
           if (loadResponse) {
-            const fhirEntries = deepClone(loadResponse.response.entry);
-            getFHIRBundle(fhirEntries);
+            const searchBundle = deepClone(loadResponse.response as Bundle);
+            const transactionBundle = convertToTransactionBundle(searchBundle);
+            exportJSONFile(JSON.stringify(transactionBundle, undefined, 2));
           }
         }}
         onDelete={(ids: string[]) => {

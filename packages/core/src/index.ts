@@ -1,3 +1,4 @@
+export * from './bundle';
 export * from './cache';
 export * from './client';
 export * from './fhirlexer';
