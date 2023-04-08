@@ -86,7 +86,7 @@ export async function createProject(
   });
 
   const profile = await createProfile(project, 'Practitioner', firstName, lastName, user.email as string);
-  const membership = await createProjectMembership(user, project, profile, undefined, true);
+  const membership = await createProjectMembership(user, project, profile, { admin: true });
 
   // Set the membership on the login
   await systemRepo.updateResource<Login>({

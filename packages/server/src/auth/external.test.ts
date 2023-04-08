@@ -1,4 +1,4 @@
-import { ClientApplication, DomainConfiguration } from '@medplum/fhirtypes';
+import { ClientApplication, DomainConfiguration, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import fetch from 'node-fetch';
@@ -355,6 +355,79 @@ describe('External', () => {
       code_verifier: 'xyz',
     });
     expect(tokenResponse.body.profile.display).toBe('External User');
+  });
+
+  test('Legacy User.externalId support', async () => {
+    // Create a new project
+    const { project, client } = await registerNew({
+      firstName: 'External',
+      lastName: 'Text',
+      projectName: 'External Test Project',
+      email,
+      password: 'password!@#',
+      remoteAddress: '5.5.5.5',
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+    });
+
+    // Update client application with external auth
+    const domain = `${randomUUID()}.example.com`;
+    const redirectUri = `https://${domain}/auth/callback`;
+    await systemRepo.updateResource<ClientApplication>({
+      ...client,
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+        useSubject: true,
+      },
+    });
+
+    // Invite user with external ID
+    const externalId = randomUUID();
+    const { user, membership } = await inviteUser({
+      project,
+      externalId,
+      resourceType: 'Patient',
+      firstName: 'External',
+      lastName: 'User',
+    });
+
+    // In current code, externalId will be stored in the membership
+    expect(user.externalId).toBeUndefined();
+    expect(membership.externalId).toBe(externalId);
+
+    // Simulate legacy behavior by moving externalId to the user
+    await systemRepo.updateResource<User>({ ...user, externalId });
+    await systemRepo.updateResource<ProjectMembership>({ ...membership, externalId: undefined });
+
+    // Now try to login with the external ID
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        clientId: client.id,
+        redirectUri,
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens('', externalId),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toEqual(domain);
+    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 });
 

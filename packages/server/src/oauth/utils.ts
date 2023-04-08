@@ -543,7 +543,27 @@ export async function revokeLogin(login: Login): Promise<void> {
  * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByExternalId(externalId: string, projectId: string): Promise<User | undefined> {
-  const bundle = await systemRepo.search({
+  const membership = await systemRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [
+      {
+        code: 'external-id',
+        operator: Operator.EXACT,
+        value: externalId,
+      },
+      {
+        code: 'project',
+        operator: Operator.EQUALS,
+        value: 'Project/' + projectId,
+      },
+    ],
+  });
+  if (membership) {
+    return systemRepo.readReference(membership.user as Reference<User>);
+  }
+
+  // Deprecated: Support legacy User.externalId
+  return systemRepo.searchOne<User>({
     resourceType: 'User',
     filters: [
       {
@@ -558,7 +578,6 @@ export async function getUserByExternalId(externalId: string, projectId: string)
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
 }
 
 /**

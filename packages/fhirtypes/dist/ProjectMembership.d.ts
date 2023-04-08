@@ -74,6 +74,22 @@ export interface ProjectMembership {
   profile?: Reference<Bot | ClientApplication | Patient | Practitioner | RelatedPerson>;
 
   /**
+   * A String that is an identifier for the resource as defined by the
+   * provisioning client.  The &quot;externalId&quot; may simplify identification of
+   * a resource between the provisioning client and the service provider by
+   * allowing the client to use a filter to locate the resource with an
+   * identifier from the provisioning domain, obviating the need to store a
+   * local mapping between the provisioning domain's identifier of the
+   * resource and the identifier used by the service provider.  Each
+   * resource MAY include a non-empty &quot;externalId&quot; value.  The value of the
+   * &quot;externalId&quot; attribute is always issued by the provisioning client and
+   * MUST NOT be specified by the service provider.  The service provider
+   * MUST always interpret the externalId as scoped to the provisioning
+   * domain.
+   */
+  externalId?: string;
+
+  /**
    * The access policy for the user within the project memebership.
    */
   accessPolicy?: Reference<AccessPolicy>;

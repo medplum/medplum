@@ -65636,6 +65636,25 @@
     }
   },
   {
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "ProjectMembership-external-id",
+      "url" : "https://medplum.com/fhir/SearchParameter/ProjectMembership-external-id",
+      "version" : "4.0.1",
+      "name" : "external-id",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "The externalID of the user",
+      "code" : "external-id",
+      "base" : ["ProjectMembership"],
+      "type" : "string",
+      "expression" : "ProjectMembership.externalId",
+      "xpath" : "f:ProjectMembership/f:externalId",
+      "xpathUsage" : "normal"
+    }
+  },
+  {
     "fullUrl" : "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
     "resource" : {
       "resourceType" : "SearchParameter",

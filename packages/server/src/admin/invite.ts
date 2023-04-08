@@ -4,6 +4,7 @@ import {
   Practitioner,
   Project,
   ProjectMembership,
+  ProjectMembershipAccess,
   Reference,
   ResourceType,
   User,
@@ -66,6 +67,7 @@ export interface InviteRequest {
   email?: string;
   externalId?: string;
   accessPolicy?: Reference<AccessPolicy>;
+  access?: ProjectMembershipAccess[];
   sendEmail?: boolean;
   password?: string;
   invitedBy?: Reference<User>;
@@ -106,7 +108,12 @@ export async function inviteUser(
     )) as Practitioner;
   }
 
-  const membership = await createProjectMembership(user, project, profile, request.accessPolicy, request.admin);
+  const membership = await createProjectMembership(user, project, profile, {
+    externalId: request.externalId,
+    accessPolicy: request.accessPolicy,
+    access: request.access,
+    admin: request.admin,
+  });
 
   if (request.email && request.sendEmail !== false) {
     try {
@@ -139,7 +146,6 @@ async function createUser(request: InviteRequest): Promise<User> {
     firstName,
     lastName,
     email,
-    externalId,
     passwordHash,
     project,
   });
