@@ -33,12 +33,6 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
   return JSON.parse(jsonString);
 }
 
-/**
- * Helper function used to modify the Bundle
- * @param key
- * @param value
- * @returns string
- */
 function replacer(key: string, value: string): string {
   if (key === 'reference' && typeof value === 'string' && value.includes('/')) {
     return 'urn:uuid:' + value.split('/')[1];

@@ -39,7 +39,7 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
-import { SearchExportDialog } from '../SearchExportDisplay/SearchExportDialog';
+import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -263,7 +263,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   function isExportPassed(): boolean {
-    return props.onExport || props.onExportCsv || props.onExportTransactionBundle ? true : false;
+    return !!(props.onExport || props.onExportCsv || props.onExportTransactionBundle);
   }
 
   useEffect(() => {
