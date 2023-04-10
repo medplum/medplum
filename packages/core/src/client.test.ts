@@ -281,7 +281,7 @@ describe('Client', () => {
     const client = new MedplumClient(defaultOptions);
 
     expect(client.getAccessToken()).toBeUndefined();
-    const result1 = await client.exchangeExternalAccessToken('we12e121', '456');
+    const result1 = await client.exchangeExternalAccessToken('we12e121');
     expect(result1).toBeDefined();
     expect(result1.resourceType).toBeDefined();
     expect(client.getAccessToken()).toBeDefined();

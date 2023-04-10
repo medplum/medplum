@@ -863,7 +863,7 @@ export class MedplumClient extends EventTarget {
    * @param projectId The ID of your Medplum project.
    * @category Authentication
    */
-  async exchangeExternalAccessToken(token: string, projectId?: string): Promise<ProfileResource> {
+  async exchangeExternalAccessToken(token: string): Promise<ProfileResource> {
     if (!this.#clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
@@ -873,7 +873,6 @@ export class MedplumClient extends EventTarget {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         clientId: this.#clientId,
-        projectId,
         externalAccessToken: token,
       }),
       credentials: 'include',
