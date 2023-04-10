@@ -8,6 +8,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { getAuthTokens, tryLogin } from '../oauth/utils';
+import { getProjectIdByClientId } from './utils';
 
 /*
  * Exchange an access token from an external auth provider for a Medplum access token.
@@ -16,7 +17,6 @@ import { getAuthTokens, tryLogin } from '../oauth/utils';
 
 export const exchangeValidators = [
   body('externalAccessToken').notEmpty().withMessage('Missing externalAccessToken'),
-  body('projectId').notEmpty().withMessage('Missing projectId'),
   body('clientId').notEmpty().withMessage('Missing clientId'),
 ];
 
@@ -28,14 +28,10 @@ export const exchangeHandler = async (req: Request, res: Response): Promise<void
   }
 
   const externalAccessToken = req.body.externalAccessToken as string;
-  const projectId = req.body.projectId as string;
-  const clientId = req.body.clientId as string;
 
+  const clientId = req.body.clientId as string;
+  const projectId = await getProjectIdByClientId(clientId, undefined);
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  if (projectId !== client.meta?.project) {
-    sendOutcome(res, badRequest('Invalid project'));
-    return;
-  }
 
   const idp = client.identityProvider;
   if (!idp) {
