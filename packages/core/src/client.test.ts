@@ -277,6 +277,27 @@ describe('Client', () => {
     expect(assign).toBeCalledWith(expect.stringMatching(/authorize\?.+scope=/));
   });
 
+  test('External auth token exchange', async () => {
+    const client = new MedplumClient(defaultOptions);
+
+    expect(client.getAccessToken()).toBeUndefined();
+    const result1 = await client.exchangeExternalAccessToken('we12e121', '456');
+    expect(result1).toBeDefined();
+    expect(result1.resourceType).toBeDefined();
+    expect(client.getAccessToken()).toBeDefined();
+  });
+
+  test('External auth token exchange', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    expect(client.getAccessToken()).toBeUndefined();
+    const result1 = await client.exchangeExternalAccessToken('we12e121', '456');
+    expect(result1).toBeDefined();
+    expect(result1.resourceType).toBeDefined();
+    expect(client.getAccessToken()).toBeDefined();
+  });
+
   test('Get external auth redirect URI', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
