@@ -863,6 +863,21 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
+   * Permanently deletes the specified resources and all of its history.
+   * This is only available to the system and super admin accounts.
+   * @param resourceType The FHIR resource type.
+   * @param ids The resource IDs.
+   */
+  async expungeResources(resourceType: string, ids: string[]): Promise<void> {
+    if (!this.#isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+    await new DeleteQuery(resourceType).where('id', Operator.IN, ids).execute(getClient());
+    await new DeleteQuery(resourceType + '_History').where('id', Operator.IN, ids).execute(getClient());
+    await deleteCacheEntries(resourceType, ids);
+  }
+
+  /**
    * Purges resources of the specified type that were last updated before the specified date.
    * This is only available to the system and super admin accounts.
    * @param resourceType The FHIR resource type.
@@ -2298,6 +2313,19 @@ async function setCacheEntry(resource: Resource): Promise<void> {
  */
 async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
   await getRedis().del(getCacheKey(resourceType, id));
+}
+
+/**
+ * Deletes cache entries from Redis.
+ * @param resourceType The resource type.
+ * @param ids The resource IDs.
+ */
+async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
+  const cacheKeys = ids.map((id) => {
+    return getCacheKey(resourceType, id);
+  });
+
+  await getRedis().del(cacheKeys);
 }
 
 /**

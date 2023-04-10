@@ -1,8 +1,9 @@
 import { allOk, forbidden, getResourceTypes, Operator } from '@medplum/core';
-import { Login } from '@medplum/fhirtypes';
+import { Login, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
+import { logger } from '../../logger';
 
 /**
  * Handles an expunge request.
@@ -22,33 +23,56 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
   const { everything } = req.query;
   const repo = res.locals.repo as Repository;
   if (everything === 'true') {
-    await new Expunger(repo, id).expunge();
+    logger.info(`expunge started for ${resourceType}/${id}`);
+    new Expunger(repo, id)
+      .expunge()
+      .then(() => logger.info(`expunge for ${resourceType}/${id} is completed`))
+      .catch((err) => logger.error(`expunge ${resourceType}/${id} failed: ${err}`));
   } else {
     await repo.expungeResource(resourceType, id);
   }
   sendOutcome(res, allOk);
 }
 
-class Expunger {
-  constructor(readonly repo: Repository, readonly compartment: string) {}
+export class Expunger {
+  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResourcesPerResourceType = 10000) {
+    this.maxResourcesPerResourceType = maxResourcesPerResourceType;
+  }
 
   async expunge(): Promise<void> {
-    const repo = this.repo;
     const resourceTypes = getResourceTypes();
-    const maxResourcesPerResourceType = 1000;
 
     for (const resourceType of resourceTypes) {
+      await this.expungeByResourceType(resourceType);
+    }
+  }
+
+  async expungeByResourceType(resourceType: ResourceType): Promise<void> {
+    const repo = this.repo;
+    let hasNext = true;
+    while (hasNext) {
       const bundle = await repo.search({
         resourceType,
-        count: maxResourcesPerResourceType,
+        count: this.maxResourcesPerResourceType,
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
-      if (bundle.entry) {
+
+      if (bundle.entry && bundle.entry.length > 0) {
+        const resourcesToExpunge: string[] = [];
         for (const entry of bundle.entry) {
-          if (entry.resource) {
-            await repo.expungeResource(resourceType, entry.resource.id as string);
+          if (entry.resource?.id) {
+            resourcesToExpunge.push(entry.resource.id);
           }
         }
+        await repo.expungeResources(resourceType, resourcesToExpunge);
+
+        const linkNext = bundle.link?.find((b) => b.relation === 'next');
+
+        if (!linkNext?.url) {
+          hasNext = false;
+        }
+      } else {
+        hasNext = false;
       }
     }
   }
