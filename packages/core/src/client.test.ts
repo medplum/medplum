@@ -5,7 +5,7 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
-import { ProfileResource, createReference } from './utils';
+import { ProfileResource, createReference, stringify } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -278,22 +278,26 @@ describe('Client', () => {
   });
 
   test('External auth token exchange', async () => {
-    const client = new MedplumClient(defaultOptions);
+    const clientId = 'medplum-client-123';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('/auth/exchange')) {
+        return {
+          access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
+          profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'Patient', id: '123' } };
+      }
+      return {};
+    });
+    const client = new MedplumClient({ fetch, clientId });
 
     expect(client.getAccessToken()).toBeUndefined();
     const result1 = await client.exchangeExternalAccessToken('we12e121');
     expect(result1).toBeDefined();
-    expect(result1.resourceType).toBeDefined();
-    expect(client.getAccessToken()).toBeDefined();
-  });
 
-  test('External auth token exchange', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-
-    expect(client.getAccessToken()).toBeUndefined();
-    const result1 = await client.exchangeExternalAccessToken('we12e121', '456');
-    expect(result1).toBeDefined();
     expect(result1.resourceType).toBeDefined();
     expect(client.getAccessToken()).toBeDefined();
   });
