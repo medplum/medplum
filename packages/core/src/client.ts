@@ -1066,7 +1066,6 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   *
    * Creates an
    * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
@@ -1095,14 +1094,8 @@ export class MedplumClient extends EventTarget {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
     while (url) {
-      const cacheKey = (url.toString() + '-searchResourcesPages') as string;
-      let bundle: Bundle | undefined = await this.#getCacheEntry(cacheKey, options)?.value;
-      console.log('Foo', bundle);
-      if (!bundle) {
-        const bundlePromise: ReadablePromise<Bundle> = this.get(url);
-        this.#setCacheEntry(cacheKey, bundlePromise);
-        bundle = await bundlePromise;
-      }
+      const searchParams: URLSearchParams = new URL(url).searchParams;
+      const bundle = await this.search(resourceType, searchParams, options);
       const nextLink: BundleLink | undefined = bundle?.link?.find((link) => link.relation === 'next');
       if (!bundle?.entry?.length && !nextLink) {
         break;
