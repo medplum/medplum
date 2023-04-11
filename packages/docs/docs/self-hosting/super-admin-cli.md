@@ -143,6 +143,12 @@ The result of the clone operation will be the new Project JSON:
 }
 ```
 
+:::caution Note
+
+The $clone operation to clone a project has a limit of cloning `1000` resources per resource type.
+
+:::
+
 You can now add users to the new project using the admin invite endpoint to invite a user. The invite endpoint will use an existing User if one already exists with the specified email address. Otherwise, a new User will be created.
 
 ```bash
