@@ -11,7 +11,7 @@ import {
   convertToTransactionBundle,
   MedplumClient,
 } from '@medplum/core';
-import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
 import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -87,26 +87,9 @@ export function HomePage(): JSX.Element {
             })
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
-        onExportTransactionBundle={() => {
-          const transactionBundleSearch: SearchRequest = {
-            resourceType: search.resourceType,
-            count: 1000,
-            offset: 0,
-          };
-          const transactionBundleSearchValues = addSearchValues(
-            transactionBundleSearch,
-            medplum.getUserConfiguration()
-          );
-
-          medplum
-            .search(
-              transactionBundleSearchValues.resourceType as ResourceType,
-              formatSearchQuery({ ...transactionBundleSearchValues, total: 'accurate', fields: undefined })
-            )
-            .then((response) => {
-              const transactionBundle = convertToTransactionBundle(response);
-              exportJSONFile(JSON.stringify(transactionBundle, undefined, 2));
-            })
+        onExportTransactionBundle={async () => {
+          getTransactionBundle(search, medplum)
+            .then((bundle) => exportJSONFile(JSON.stringify(bundle, undefined, 2)))
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
         onDelete={(ids: string[]) => {
@@ -244,15 +227,17 @@ function canCreate(resourceType: string): boolean {
   return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
 }
 
-async function getSearchBundle(search: SearchRequest, medplum: MedplumClient)  {
+async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
   const transactionBundleSearch: SearchRequest = {
     resourceType: search.resourceType,
     count: 1000,
     offset: 0,
+    filters: search.filters,
   };
-  const transactionBundleSearchValues = addSearchValues(
-    transactionBundleSearch,
-    medplum.getUserConfiguration()
+  const transactionBundleSearchValues = addSearchValues(transactionBundleSearch, medplum.getUserConfiguration());
+  const bundle = await medplum.search(
+    transactionBundleSearchValues.resourceType as ResourceType,
+    formatSearchQuery({ ...transactionBundleSearchValues, total: 'accurate', fields: undefined })
   );
-
+  return convertToTransactionBundle(bundle);
 }

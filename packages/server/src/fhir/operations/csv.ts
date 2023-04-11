@@ -49,7 +49,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
 
   const repo = res.locals.repo as Repository;
   const searchRequest = parseSearchRequest(resourceType, query);
-  searchRequest.count = 10000;
+  searchRequest.count = 1000;
   const resources = await repo.searchResources(searchRequest);
   const output: string[][] = [];
 

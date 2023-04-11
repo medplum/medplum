@@ -20,8 +20,8 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
             onCancel={props.onCancel}
           />
         )}
-        <Text>Limitted to 10000 records</Text>
       </Box>
+      <Text sx={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
     </Modal>
   );
 }
