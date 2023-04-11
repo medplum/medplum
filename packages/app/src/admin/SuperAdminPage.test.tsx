@@ -99,6 +99,20 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
+  test('Remove Bot ID Jobs from Queue', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Bot Id'), { target: { value: 'BotId' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Remove Jobs by Bot ID' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('Force set password', async () => {
     setup();
 

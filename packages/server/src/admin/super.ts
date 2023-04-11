@@ -11,6 +11,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
+import { removeBullMQJobByKey } from '../workers/cron';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -166,6 +167,29 @@ superAdminRouter.post(
 
     const repo = res.locals.repo as Repository;
     await repo.purgeResources(req.body.resourceType, req.body.before);
+    sendOutcome(res, allOk);
+  })
+);
+
+// POST to /admin/super/removebotidjobsfromqueue
+// to remove bot id jobs from queue.
+superAdminRouter.post(
+  '/removebotidjobsfromqueue',
+  [body('botId').notEmpty().withMessage('Bot ID is required')],
+  asyncWrap(async (req: Request, res: Response) => {
+    if (!res.locals.login.superAdmin) {
+      sendOutcome(res, forbidden);
+      return;
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    await removeBullMQJobByKey(req.body.botId);
+
     sendOutcome(res, allOk);
   })
 );

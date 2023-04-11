@@ -225,13 +225,11 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   await createAuditEvent(bot, startTime, outcome, logResult);
 }
 
-async function removeBullMQJobByKey(botId: string): Promise<void> {
-  const previousJobs = await queue?.getRepeatableJobs();
-  previousJobs?.map(async (p) => {
-    if (p.key.includes(botId)) {
-      const keyToRemove = p.key;
-      await queue?.removeRepeatableByKey(keyToRemove);
-      logger.debug(`Found a previous job for bot ${botId}, updating...`);
-    }
-  });
+export async function removeBullMQJobByKey(botId: string): Promise<void> {
+  const previousJobs = (await queue?.getRepeatableJobs())?.filter((p) => p.id === botId) ?? [];
+
+  for (const p of previousJobs) {
+    await queue?.removeRepeatableByKey(p.key);
+    logger.debug(`Found a previous job for bot ${botId}, updating...`);
+  }
 }

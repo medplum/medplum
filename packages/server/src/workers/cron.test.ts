@@ -135,6 +135,7 @@ describe('Cron Worker', () => {
     queue.getRepeatableJobs.mockImplementation(() => [
       {
         key: `CronJobData:${bot.id}:::* * * * *`,
+        id: bot.id,
       },
     ]);
     await botRepo.updateResource({
