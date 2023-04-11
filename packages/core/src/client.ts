@@ -1065,6 +1065,28 @@ export class MedplumClient extends EventTarget {
     return promise;
   }
 
+  /**
+   *
+   * Creates an
+   * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
+   * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
+   * the array of resources on each page.
+   *
+   *
+   * ```typescript
+   * for await (const page of medplum.searchResourcePages('Patient', { _count: 10 })) {
+   *  for (const patient of page) {
+   *    console.log(`Processing Patient resource with ID: ${patient.id}`);
+   *  }
+   * }
+   * ```
+   *
+   * @category Search
+   * @param resourceType The FHIR resource type.
+   * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
+   * @param options Optional fetch options.
+   * @returns An async generator, where each result is an array of resources for each page.
+   */
   async *searchResourcePages<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
