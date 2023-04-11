@@ -1219,7 +1219,7 @@ describe('Client', () => {
       const client = new MedplumClient({ fetch });
       let numPages = 0;
       // Populate the cache
-      for await (const _ of client.searchResourcePages('Patient', '_count=1'));
+      await client.search('Patient', '_count=1');
 
       // Iterate through pages
       for await (const page of client.searchResourcePages('Patient', '_count=1')) {
