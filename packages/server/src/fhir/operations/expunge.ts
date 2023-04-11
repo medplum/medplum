@@ -35,7 +35,7 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
 }
 
 export class Expunger {
-  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResourcesPerResourceType = 10000) {
+  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResourcesPerResourceType = 1000) {
     this.maxResourcesPerResourceType = maxResourcesPerResourceType;
   }
 
