@@ -1,7 +1,6 @@
 import { createStyles, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
-  deepClone,
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
@@ -10,9 +9,10 @@ import {
   SearchRequest,
   SortRule,
   convertToTransactionBundle,
+  MedplumClient,
 } from '@medplum/core';
-import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { MemoizedSearchControl, useMedplum, SearchLoadEvent } from '@medplum/react';
+import { ResourceType, UserConfiguration } from '@medplum/fhirtypes';
+import { MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loading } from './components/Loading';
@@ -35,14 +35,13 @@ export function HomePage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
-  const [loadResponse, setLoadResponse] = useState<SearchLoadEvent>();
 
   useEffect(() => {
     // Parse the search from the URL
     const parsedSearch = parseSearchDefinition(location.pathname + location.search);
 
     // Fill in the search with default values
-    const populatedSearch = addDefaultSearchValues(parsedSearch, medplum.getUserConfiguration());
+    const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
 
     if (
       location.pathname === `/${populatedSearch.resourceType}` &&
@@ -89,11 +88,26 @@ export function HomePage(): JSX.Element {
             .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
         onExportTransactionBundle={() => {
-          if (loadResponse) {
-            const searchBundle = deepClone(loadResponse.response as Bundle);
-            const transactionBundle = convertToTransactionBundle(searchBundle);
-            exportJSONFile(JSON.stringify(transactionBundle, undefined, 2));
-          }
+          const transactionBundleSearch: SearchRequest = {
+            resourceType: search.resourceType,
+            count: 1000,
+            offset: 0,
+          };
+          const transactionBundleSearchValues = addSearchValues(
+            transactionBundleSearch,
+            medplum.getUserConfiguration()
+          );
+
+          medplum
+            .search(
+              transactionBundleSearchValues.resourceType as ResourceType,
+              formatSearchQuery({ ...transactionBundleSearchValues, total: 'accurate', fields: undefined })
+            )
+            .then((response) => {
+              const transactionBundle = convertToTransactionBundle(response);
+              exportJSONFile(JSON.stringify(transactionBundle, undefined, 2));
+            })
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -116,13 +130,12 @@ export function HomePage(): JSX.Element {
         onBulk={(ids: string[]) => {
           navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
         }}
-        onLoad={setLoadResponse}
       />
     </Paper>
   );
 }
 
-function addDefaultSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
+function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
   const resourceType = search.resourceType || getDefaultResourceType(config);
   const fields = search.fields ?? getDefaultFields(resourceType);
   const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
@@ -229,4 +242,17 @@ function saveLastSearch(search: SearchRequest): void {
 
 function canCreate(resourceType: string): boolean {
   return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
+}
+
+async function getSearchBundle(search: SearchRequest, medplum: MedplumClient)  {
+  const transactionBundleSearch: SearchRequest = {
+    resourceType: search.resourceType,
+    count: 1000,
+    offset: 0,
+  };
+  const transactionBundleSearchValues = addSearchValues(
+    transactionBundleSearch,
+    medplum.getUserConfiguration()
+  );
+
 }

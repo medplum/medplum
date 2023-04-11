@@ -1,4 +1,4 @@
-import { Box, Button, Modal } from '@mantine/core';
+import { Box, Button, Modal, Text } from '@mantine/core';
 import React from 'react';
 
 interface SearchExportDialogProps {
@@ -20,6 +20,7 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
             onCancel={props.onCancel}
           />
         )}
+        <Text>Limitted to 10000 records</Text>
       </Box>
     </Modal>
   );
