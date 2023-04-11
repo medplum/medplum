@@ -21,9 +21,8 @@ await medplum.searchResources('Patient', { _count: '50', _offset: '30' });
 // end-block searchOffset
 
 // start-block paginatedSearch
-
-for await (const page of medplum.searchResourcePages('Patient', { _count: 10 })) {
-  for (const patient of page) {
+for await (const patientPage of medplum.searchResourcePages('Patient', { _count: 10 })) {
+  for (const patient of patientPage) {
     console.log(`Processing Patient resource with ID: ${patient.id}`);
   }
 }
