@@ -1,0 +1,101 @@
+import ExampleCode from '!!raw-loader!@site/../examples/src/search/paginated-search.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Paginated Search
+
+In this guide, we will explain how to perform paginated search queries using the FHIR specification. Specifically, we will discuss using the `_count` parameter to set the page size, the `_offset` parameter to set the page offset, and the `Bundle.link` field to retrieve subsequent pages.
+
+## Setting the page size with the `_count` parameter
+
+To set the number of items returned per page, use the `_count` query parameter. In the Medplum API, the default page size is 20, and the maximum allowed page size is 1000.
+
+Here's an example query that sets the page size to 50:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchCount">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchCountCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+In this example, the search will return up to 50 Patient resources per page.
+
+## Setting the page offset with the `_offset` parameter
+
+To set the page offset, or the starting point of the search results, use the `_offset` query parameter. This allows you to skip a certain number of items before starting to return results.
+
+Here's an example query that sets the page offset to 30:
+
+<Tabs groupId="language">
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchOffset">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchOffsetCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+In this example, the search will return up to 50 Patient resources per page, starting from the 31st item in the result set.
+
+## Navigating pages with the `Bundle.link` element
+
+When you perform a paginated search, the response will be a `Bundle` resource containing a list of resources matching the query. The `Bundle` resource will also have a link field containing navigation links to help you traverse through the search results.
+
+The `Bundle.link` field will include the following relations:
+
+- `self`: The URL of the current search results page.
+- `first`: The URL of the first page of search results.
+- `previous`: The URL of the previous page of search results (if applicable).
+- `next`: The URL of the next page of search results (if applicable).
+- `last`: The URL of the last page of search results.
+
+Here's an example of how the Bundle.link field may look :
+
+```typescript
+'link': [
+  {
+    relation: 'self',
+    url: 'https://example.com/Patient?_count=50&_offset=30',
+  },
+  {
+    relation: 'first',
+    url: 'https://example.com/Patient?_count=50&_offset=0',
+  },
+  {
+    relation: 'previous',
+    url: 'https://example.com/Patient?_count=50&_offset=20',
+  },
+  {
+    relation: 'next',
+    url: 'https://example.com/Patient?_count=50&_offset=80',
+  },
+  {
+    relation: 'last',
+    url: 'https://example.com/Patient?_count=50&_offset=980',
+  },
+];
+```
+
+To navigate between pages, simply follow the URLs provided in the `Bundle.link` field.
+
+The [`searchResourcePages()`](/docs/sdk/classes/MedplumClient#searchresourcepages) method of the MedplumClient provides an [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator) to simplify the iteration over resource pages.
+
+<MedplumCodeBlock language="ts" selectBlocks="paginatedSearch">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## Conclusion
+
+In this guide, we've discussed how to perform paginated search queries using the `_count` and `_offset` search parameters, as well as the the `Bundle.link` element.
