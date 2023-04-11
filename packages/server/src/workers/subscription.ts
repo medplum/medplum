@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findProjectMembership } from './utils';
+import { createAuditEvent, findMaxJobAttemps, findProjectMembership } from './utils';
 
 /*
  * The subscription worker inspects every resource change,
@@ -55,7 +55,7 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: 18, // 1 second * 2^18 = 73 hours
+      // attempts: 18, // 1 second * 2^18 = 73 hours
       backoff: {
         type: 'exponential',
         delay: 1000,
@@ -279,14 +279,24 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     return;
   }
 
-  const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
+  const maxJobAttempts = findMaxJobAttemps(subscription);
 
-  const channelType = subscription?.channel?.type;
-  if (channelType === 'rest-hook') {
-    if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(subscription, resourceVersion);
+  try {
+    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
+    
+    const channelType = subscription?.channel?.type;
+    if (channelType === 'rest-hook') {
+      if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
+        await execBot(subscription, resourceVersion);
+      } else {
+        await sendRestHook(job, subscription, resourceVersion);
+      }
+    }
+  } catch (err) {
+    if (job.attemptsMade < maxJobAttempts) {
+      job.retry();
     } else {
-      await sendRestHook(job, subscription, resourceVersion);
+      job.remove();
     }
   }
 }
