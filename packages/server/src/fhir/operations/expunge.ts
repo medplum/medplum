@@ -35,8 +35,8 @@ export async function expungeHandler(req: Request, res: Response): Promise<void>
 }
 
 export class Expunger {
-  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResourcesPerResourceType = 1000) {
-    this.maxResourcesPerResourceType = maxResourcesPerResourceType;
+  constructor(readonly repo: Repository, readonly compartment: string, readonly maxResultsPerPage = 10000) {
+    this.maxResultsPerPage = maxResultsPerPage;
   }
 
   async expunge(): Promise<void> {
@@ -53,7 +53,7 @@ export class Expunger {
     while (hasNext) {
       const bundle = await repo.search({
         resourceType,
-        count: this.maxResourcesPerResourceType,
+        count: this.maxResultsPerPage,
         filters: [{ code: '_compartment', operator: Operator.EQUALS, value: this.compartment }],
       });
 
