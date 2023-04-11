@@ -12,13 +12,14 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 
 ## Consume event data or webhooks from other platforms
 
-1. [Integrating Logistics (3PL) into your EHR](logistics.md)
+1. [Consuming Webhooks](consuming-webhooks.md)
 2. [Consuming HL7 Feeds and Converting to FHIR](hl7-into-fhir.md)
 3. Coming Soon: Consuming Lab Results from a lab instrument or LIS
+4. [Receive payment and accounts data](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots)
 
 ## Export data to other systems
 
-1. Coming Soon: Exporting data to a billing service
+1. [Exporting data to a billing service](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health)
 2. [Exporting a PDF Report for human consumption](creating-a-pdf.md)
 3. [File Uploads](file-uploads.md)
 
@@ -28,13 +29,13 @@ The following tutorials will walk through some of the use cases for Bots, to giv
 2. Coming Soon: Order Medication through an Online Pharmacy
 3. [Creating and FHIR Objects on Questionnaire submissions](./bot-for-questionnaire-response/bot-for-questionnaire-response.md)
 4. Coming Soon: Send email notifications when critical lab values are received
+5. Data automation driven by [FHIR Questionnaires](/docs/bots/bot-for-questionnaire-response)
 
 ## Ensure correctness
 
 1. Coming Soon: Verifying that all Lab Results are present on a DiagnosticReport before sending it for physician review
 
-If you need any of these guides immediately, please contact us at info@medplum.com.
-
 ## Reference
 
+- [Demo Bots Repository](https://github.com/medplum/medplum-demo-bots) on Github
 - [Bot Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Abots) on Github

@@ -1,3 +1,14 @@
+---
+slug: medplum-at-himss-2023
+title: Medplum at HIMSS 2023
+authors:
+  name: Reshma Khilnani
+  title: Medplum Core Team
+  url: https://github.com/reshmakh
+  image_url: https://github.com/reshmakh.png
+tags: [interop]
+---
+
 # Medplum at HIMSS 2023
 
 Medplum will be at HIMSS on April 17-19, 2023 participating in the **HIMSS23 Cancer Care: Treating the Whole Person Demonstration** hosted by the CDC in McCormick Place, North Building Hall B, Booth 7649.
