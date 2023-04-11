@@ -11,7 +11,7 @@ Please read these Terms of Service ("Terms") carefully before using the Medplum 
 
 These Terms include Medplum's Privacy Policy, which is incorporated by reference into these Terms. We have included several annotations in boxes to help explain the legal jargon and emphasize key sections. These annotations are for convenience only and have no legal or contractual effect. This agreement is a legally binding contract. It may change as our business changes, and you agree you will review it and any updates regularly.
 
-## Binding Agreement.
+## Binding Agreement
 
 These Terms constitute a binding agreement between you and Medplum and its affiliates and subsidiaries ("Medplum," "we," "us"). "You" and "users" shall mean all health service providers and their agents who use the Medplum Service. You accept these Terms by signing up for the Medplum Service, when you agree to them using our website at https://www.medplum.com/, and each time you access the Medplum Service thereafter. If you do not accept these Terms, you must not use the Medplum Service. Revisions to Terms. We may revise these Terms at any time by posting an updated version to this web page. You should visit this page periodically to review the most current Terms, because you are bound by them. Your continued use of the Medplum Service after a change to these Terms constitutes your binding acceptance of these Terms. The terms "post" and "posting" as used in these Terms shall mean the act of submitting, uploading, publishing, displaying, or similar action on the Medplum Service. "Health-related information" means all individually identifiable health information, including demographic information and information related to an individual's physical or mental health, the provision of health care to the individual, or the individual's payment for the provision of health care. "Health service provider" means an entity that provides health-related services.
 
@@ -21,23 +21,23 @@ The "Medplum Service" is defined as any computer or mobile application or softwa
 
 Medical Advice. Medplum does not give medical advice. The Medplum Service may include certain third-party software and services. Your use of such software or services may require that you enter into separate subscription or licensing agreements with third-party vendors and suppliers. You agree to comply with and, upon request, execute such agreements as may be required for the use of such software or services.
 
-## No Third-Party Access.
+## No Third-Party Access
 
 Except as required by law and described below, you will not permit any third party to have access to the Medplum Service using your account. You may allow your employees to use the Medplum Service on your behalf in compliance with these Terms. You may also allow patients to make payment for your services through the Medplum Service in compliance with these Terms. You are solely responsible for the use of the Medplum Service by your employees and patients. We have no liability for the consequences to you or your employees or patients from your or their use of the Medplum Service.
 
-## Responsibility for Misuse by Other Users.
+## Responsibility for Misuse by Other Users
 
 You acknowledge that by allowing employees and patients to access the Medplum Service with your account, you are responsible for ensuring such employees and patients use the Medplum Service for the purposes for which they are accessing it. While the Medplum Service has certain technical safeguards against misuse, you acknowledge it will rely to a substantial extent on your responsible use. You agree that we will not be responsible for any unlawful access to or use of the Medplum Service by any employee or patient to whom you gave access or log-in credentials. You agree that you are responsible for ensuring that health-related information is properly protected under applicable law. You represent and warrant that you received any necessary consents from individuals before posting their information in the Medplum Service.
 
-## Individuals' Consent for Data Collection and Use.
+## Individuals' Consent for Data Collection and Use
 
 You represent and warrant that you have obtained the proper consents, authorizations, and releases from individuals to the fullest extent required by applicable law before posting their health-related information to the Medplum Service.
 
-## Exporting Information from the Medplum Service.
+## Exporting Information from the Medplum Service
 
 You are solely responsible for any health-related information exported from the Medplum Service by you or the employees and patients that you allow access from your account. Training and Compliance. You agree to train all employees on the use of the Medplum Service, HIPAA or health privacy obligations, and the requirements of these Terms and ensure that they comply with such requirements.
 
-## Compulsory Information Disclosure.
+## Compulsory Information Disclosure
 
 You will promptly notify us of any order or demand for compulsory disclosure of health-related information if the disclosure requires access to or use of the Medplum Service. You will cooperate fully with us in connection with any such demand.
 
@@ -45,39 +45,39 @@ You will promptly notify us of any order or demand for compulsory disclosure of 
 
 Medplum voluntarily complies with the requirements of the "Privacy Rule" and "Security Rule" as defined by Health Insurance Portability and Accountability Act ("HIPAA") of 1996 and the Health Information Technology for Economic and Clinical Health Act ("HITECH Act"). We may use and disclose health-related information to provide our services. We may use de-identified health-related information as permitted by law.
 
-## Use and Disclosure.
+## Use and Disclosure
 
 We may use and process the health-related information posted to the Medplum Service for the proper management, provision, and administration of the Medplum Service and our business, and as required by law. We may also disclose health-related information if required by law or we obtain reasonable assurances from the recipient that such information will be held confidentially and used or further disclosed only as required by law or for the purpose for which we disclosed it. You agree that Medplum may use and share de-identified health-related information to the fullest extent permitted by law.
 
-## Data Transfers at Your Request.
+## Data Transfers at Your Request
 
 We do not transfer health-related information to third parties, other than our vendors, suppliers and as required to process patient billing. We may transfer health-related information to third parties, including health plans, health-care clearinghouse, and others. You authorize us to make such transfers upon the request of you and the users who are acting under your account. You acknowledge that when you consent to transferring the information to third parties, we have no control over how those third parties will use and disclose the information. We will use appropriate administrative, physical, and technical safeguards to prevent use or disclosure of health-related information other than as provided for by these Terms.
 
-## Appropriate Safeguards.
+## Appropriate Safeguards
 
 We will use appropriate safeguards to prevent the use or disclosure of health-related information other than as provided for by these Terms, including administrative, physical, and technical safeguards that reasonably and appropriately protect the confidentiality, integrity, and availability of the information.
 
-## Security Incident.
+## Security Incident
 
 We will report to you any discovered use or disclosure of health- related information not provided for by these Terms, or when we determine that unauthorized access to health-related information has occurred.
 
-## Our Agents.
+## Our Agents
 
 We will ensure that any of our agents, suppliers, and vendors to whom we provide health-related information for purposes of assisting us in providing the Medplum Service, agrees to the same restrictions and conditions that apply to us with respect to such information, including the obligation to implement reasonable and appropriate safeguards.
 
-## Access, Amendment, and Accountings.
+## Access, Amendment, and Accountings
 
 We will facilitate your requirements under the Privacy Rule to give patients access and the ability to amend health-related information you posted to the Medplum Service. We may also facilitate an accounting of disclosures as required by the Privacy Rule.
 
-## Department of Health and Human Services ("HHS") Audits.
+## Department of Health and Human Services ("HHS") Audits
 
 We will give HHS access to our internal practices, books, and records related to the use and disclosure of health- related information for the purposes of determining your compliance with the Privacy Rule. The Medplum Service retains the information you post to it for compliance and regulatory purposes and will cooperate with you regarding requests to delete information. We will provide you copies of health-related information in electronic form if you decide to terminate your use of the Medplum Service.
 
-## Termination of these Terms.
+## Termination of these Terms
 
 At the termination of these Terms we will provide you with a copy of health-related information in an electronic form that is accessible through commercially available hardware and software. If feasible, we will also return or destroy all health-related information you or your employees or patients post to the Medplum Service. If such return or destruction is not feasible, we will continue to abide by these Terms with respect to such information and limit further uses and disclosures to those purposes that make the return or destruction of the information infeasible. You acknowledge that segregating health-related information for removal from the Medplum Service may be infeasible.
 
-## Security Rule.
+## Security Rule
 
 We will comply with the provisions of the HIPAA Security Rule that are made applicable to business associates. We will notify you of the discovery of any breach of health-related information that we store and we will cooperate reasonably with you to investigate and mitigate any such breach. We will provide you with the necessary information to make any legally required notification to individuals.
 
@@ -100,7 +100,7 @@ Medplum may communicate with you by email or by posting notice on the Medplum Se
 
 You agree to receive email from us at the email address you provided to us for informational and customer service-related purposes.
 
-## Electronic Notices.
+## Electronic Notices
 
 By using the Medplum Service or providing Personal Information to us, you agree that we may communicate with you electronically regarding security, privacy, and administrative issues relating to your use of the Medplum Service. If we learn of a security system's breach, we may attempt to notify you electronically by posting a notice on the Medplum Service or sending an email to you. You may have a legal right to receive this notice in writing. To receive free written notice of a security breach (or to withdraw your consent from receiving electronic notice), please write to us at support@medplum.com.
 
@@ -108,11 +108,11 @@ By using the Medplum Service or providing Personal Information to us, you agree 
 
 Medplum owns all of the content we create, but you may use it while you use the Medplum Service. You cannot use our logo without our written permission. The contents of the Medplum Service include: designs, text, graphics, images, video, information, logos, button icons, software, audio files, computer code, and other Medplum content (collectively, "Medplum Content"). All Medplum Content and the compilation (meaning the collection, arrangement, and assembly) of all Medplum Content are the property of Medplum or its licensors and are protected under copyright, trademark, and other laws.
 
-## License to You.
+## License to You
 
 We authorize you, subject to these Terms, to access and use the Medplum Service and the Medplum Content solely for the use of Medplum's services, at our discretion. Any other use is expressly prohibited. This license is revocable at any time without notice and with or without cause. Unauthorized use of the Medplum Content may violate copyright, trademark, and applicable communications regulations and statutes and is strictly prohibited. You must preserve all copyright, trademarks, service marks, and other proprietary notices contained in the original Medplum Content on any copy you make of the Medplum Content.
 
-## Medplum Marks.
+## Medplum Marks
 
 Medplum, the Medplum logo, and other Medplum logos and product and service names are or may be trademarks of Medplum (the "Medplum Marks"). Without our prior written permission, and except as solely enabled by any link as provided by us, you agree not to display or use in any manner the Medplum Marks.
 
@@ -120,11 +120,11 @@ Medplum, the Medplum logo, and other Medplum logos and product and service names
 
 "Confidential Information" means all confidential information disclosed by a party ("Disclosing Party") to the other party ("Receiving Party"), whether orally or in writing, that is designated as confidential or that reasonably should be understood to be confidential given the nature of the information and the circumstances of disclosure. Your Confidential Information shall include the data you post to the Medplum Service, not including health-related information; Medplum Confidential Information shall include the Medplum Service, customer feedback, and information relating to the performance, reliability, or stability of the Medplum Service, operation of the Medplum Service, know-how, techniques, processes, ideas, algorithms, and software design and architecture; and Confidential Information of each party shall include business and marketing plans, technology and technical information, product plans and designs, and business processes disclosed by such party. However, Confidential Information shall not include any information that (i) is or becomes generally known to the public without breach of any obligation owed to the Disclosing Party, (ii) was known to the Receiving Party prior to its disclosure by the Disclosing Party without breach of any obligation owed to the Disclosing Party, (iii) is received from a third party without breach of any obligation owed to the Disclosing Party, or (iv) was independently developed by the Receiving Party.
 
-## Protection of Confidential Information.
+## Protection of Confidential Information
 
 The Receiving Party shall (i) use the same degree of care that it uses to protect the confidentiality of its own confidential information of like kind (but in no event less than reasonable care), (ii) not use any Confidential Information of the Disclosing Party for any purpose outside the scope of these Terms, and (iii) except as otherwise authorized by the Disclosing Party in writing, limit access to Confidential Information of the Disclosing Party to those of its and its affiliates' employees, contractors and agents who need such access for purposes consistent with this Agreement and who have signed confidentiality agreements with the Receiving Party containing protections no less stringent than those herein.
 
-## Compelled Disclosure.
+## Compelled Disclosure
 
 The Receiving Party may disclose Confidential Information of the Disclosing Party if it is compelled by law to do so, provided the Receiving Party gives the Disclosing Party prior notice of such compelled disclosure (to the extent legally permitted) and reasonable assistance, at the Disclosing Party's cost, if the Disclosing Party wishes to contest the disclosure. If the Receiving Party is compelled by law to disclose the Disclosing Party's Confidential Information as part of a civil proceeding to which the Disclosing Party is a party, and the Disclosing Party is not contesting the disclosure, the Disclosing Party will reimburse the Receiving Party for its reasonable cost of compiling and providing secure access to such Confidential Information.
 
@@ -132,19 +132,19 @@ The Receiving Party may disclose Confidential Information of the Disclosing Part
 
 You, or the people who allow you to use their content, own all of the content you create using the Medplum Service. However, we may use it for any purpose, including in our marketing materials. We may also modify your content to make it work better on the Medplum Service. It is very important that you have permission to use other people's content or they may be able to sue you for violating their legal rights.
 
-## Medplum Claims No Ownership.
+## Medplum Claims No Ownership
 
 The Medplum Service may provide you with the ability to create, post, or share content ("Your User Content"). Medplum claims no ownership over Your User Content. You or a third-party licensor, as appropriate, retain all copyright, patent, and trademark rights to any of the content you post on or through the Medplum Service. You are responsible for protecting those rights. You also acknowledge and agree that Your User Content is non-confidential and non-proprietary.
 
-## Medplum's Use of Posted Content on the Medplum Service.
+## Medplum's Use of Posted Content on the Medplum Service
 
 By creating, posting, or sharing Your User Content on or through the Medplum Service, and subject to Medplum's Privacy Policy, you grant Medplum a perpetual, world-wide, non-exclusive, non-transferable, royalty-free license to use, modify, remove, publish, transmit, or display Your User Content for any purpose, including for the purpose of promoting Medplum and its services. You waive any rights you may have regarding Your User Content being altered or manipulated in any way that may be objectionable to you. Medplum reserves the right to refuse to accept, post, display, or transmit any User Content in its sole discretion.
 
-## You Acquire No Ownership of Others' Content.
+## You Acquire No Ownership of Others' Content
 
 You understand and agree that you will not obtain, as a result of your use of the Medplum Service, any right, title, or interest in or to such content delivered via the Medplum Service or in any intellectual property rights (including, without limitation, any copyrights, patents, trademarks, trade secrets, or other rights) in the content.
 
-## You Must Have Rights to the Content You Post.
+## You Must Have Rights to the Content You Post
 
 You represent and warrant that: (i) you own the content posted by you on or through the Medplum Service or otherwise have the right to grant the license set forth in these Terms, (ii) the posting and use of Your User Content on or through the Medplum Service does not violate the privacy rights, publicity rights, copyrights, contract rights, intellectual property rights, or any other rights of any person, and (iii) the posting of Your User Content on the Medplum Service does not result in a breach of contract between you and a third party. You agree to pay for all royalties, fees, and any other monies owing any person by reason of content you post on or through the Medplum Service. The Medplum Service contains content from users and other Medplum licensors. Except as provided within these Terms, you may not copy, modify, translate, publish, broadcast, transmit, distribute, perform, display, or sell any content appearing on or through the Medplum Service.
 
@@ -213,15 +213,15 @@ If you do not act acceptably, we may refuse to provide the Medplum Service to yo
 
 We are not liable for anything our users do when using the Medplum Service. We may also change the Medplum Service at any time and are not liable for how this may affect you. We don't guarantee the quality or accuracy of any content you view using the Medplum Service or other websites.
 
-## Changes to the Medplum Service.
+## Changes to the Medplum Service
 
 We may change, suspend, or discontinue any aspect of the Medplum Service at any time, including hours of operation or availability of the Medplum Service or any feature, without notice or liability.
 
-## User Disputes.
+## User Disputes
 
 We are not responsible for any disputes or disagreements between you and any third party with whom you interact using the Medplum Service, including payment processors and speech-to-text providers. We are also not responsible for disputes or disagreements between you and any patient with or for whom you or the patient have used the Medplum Service. You assume all risk associated with dealing with third parties. You agree to resolve disputes directly with the other party. You release Medplum of all claims, demands, and damages in disputes among users of the Medplum Service. You also agree not to involve us in such disputes. Use caution and common sense when using the Medplum Service.
 
-## Content Accuracy.
+## Content Accuracy
 
 We make no representations about accuracy, reliability, completeness, or timeliness of any contents of the Medplum Service, including health-related information. Similarly, we make no representations about accuracy, reliability, completeness, or timeliness of any data from third-party vendors or suppliers, such as data resulting from the speech-to-text functionality, or the quality or nature of third-party products or services obtained through the Medplum Service. Use the Medplum Service at your own risk. We make no promises and disclaim all liability of specific results from the use of the Medplum Service.
 
@@ -297,4 +297,4 @@ Courtesy of the U.S. National Library of Medicine.
 
 Medplum includes SNOMED Clinical Terms® (SNOMED CT®) which is used by permission of the International Health Terminology Standards Development Organisation (IHTSDO). All rights reserved. SNOMED CT®, was originally created by The College of American Pathologists. "SNOMED" and "SNOMED CT" are registered trademarks of the IHTSDO. Medplum users in a territory that is not represented by a member of The International Health Terminology Standards Development Organization will be required to pay the SNOMED license fees set forth in the SNOMED CT® Affiliate License Agreement which may be found at: https://www.nlm.nih.gov/research/umls/knowledge_sources/metathesaurus/release/license_agreement_snomed.html.
 
-Last Updated: 2023-04-10
+Last Updated: 2023-04-11
