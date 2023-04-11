@@ -1,4 +1,12 @@
-import { Bot, Identifier, OperationOutcome, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  Identifier,
+  OperationOutcome,
+  Patient,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -1140,6 +1148,116 @@ describe('Client', () => {
     const result = await client.search('Patient');
     expect(result).toBeDefined();
     expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
+  });
+
+  describe('Paginated Search ', () => {
+    let fetch: FetchLike;
+
+    beforeEach(() => {
+      const resources = [
+        { resource: { resourceType: 'Patient', id: '123' } },
+        { resource: { resourceType: 'Patient', id: '456' } },
+        { resource: { resourceType: 'Patient', id: '789' } },
+      ];
+      fetch = mockFetch(200, (url) => {
+        const parsedUrl = new URL(url);
+        const offset = Number.parseInt(parsedUrl.searchParams.get('_offset') ?? '0');
+        const count = Number.parseInt(parsedUrl.searchParams.get('_count') ?? '1');
+
+        if (offset >= resources.length) {
+          return {
+            resourceType: 'Bundle',
+            entry: [],
+            link: [],
+          };
+        }
+        parsedUrl.searchParams.set('_offset', (offset + count).toString());
+        const nextLink = { relation: 'next', url: parsedUrl.toString() };
+        return {
+          resourceType: 'Bundle',
+          entry: resources.slice(offset, offset + count),
+          link: [nextLink],
+        } as Bundle;
+      });
+    });
+
+    test('Search resources pages', async () => {
+      const client = new MedplumClient({ fetch });
+      let numPages = 0;
+      for await (const page of client.searchResourcePages('Patient', '_count=1')) {
+        expect(page).toHaveLength(1);
+        expect(page[0].resourceType).toBe('Patient');
+        numPages += 1;
+      }
+      expect(numPages).toBe(3);
+    });
+
+    test('Search resources pages uneven', async () => {
+      const client = new MedplumClient({ fetch });
+      let numPages = 0;
+      for await (const page of client.searchResourcePages('Patient', '_count=2')) {
+        expect(page).toHaveLength(numPages === 0 ? 2 : 1);
+        expect(page[0].resourceType).toBe('Patient');
+        numPages += 1;
+      }
+      expect(numPages).toBe(2);
+    });
+
+    test('Search resources pages with offset', async () => {
+      const client = new MedplumClient({ fetch });
+      let numPages = 0;
+      for await (const page of client.searchResourcePages('Patient', { _count: '2', _offset: '1' })) {
+        expect(page).toHaveLength(2);
+        expect(page[0].resourceType).toBe('Patient');
+        numPages += 1;
+      }
+
+      expect(numPages).toBe(1);
+    });
+
+    test('Search resources pages with cache', async () => {
+      const client = new MedplumClient({ fetch });
+      let numPages = 0;
+      // Populate the cache
+      for await (const _ of client.searchResourcePages('Patient', '_count=1'));
+
+      // Iterate through pages
+      for await (const page of client.searchResourcePages('Patient', '_count=1')) {
+        expect(page).toHaveLength(1);
+        expect(page[0].resourceType).toBe('Patient');
+        numPages += 1;
+      }
+
+      expect(numPages).toBe(3);
+    });
+
+    // test('Search resources ReadablePromise', async () => {
+    //   const fetch = mockFetch(200, {
+    //     resourceType: 'Bundle',
+    //     entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
+    //   });
+    //   const client = new MedplumClient({ fetch });
+    //   const promise1 = client.searchResources('Patient', '_count=1&name:contains=alice');
+    //   expect(() => promise1.read()).toThrow();
+    //   const promise2 = client.searchResources('Patient', '_count=1&name:contains=alice');
+    //   expect(promise2).toBe(promise1);
+    //   await promise1;
+    //   const result = promise1.read();
+    //   expect(result).toBeDefined();
+    //   expect(result.length).toBe(1);
+    //   expect(result[0].resourceType).toBe('Patient');
+    // });
+
+    // test('Search and cache', async () => {
+    //   const fetch = mockFetch(200, {
+    //     resourceType: 'Bundle',
+    //     entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
+    //   });
+    //   const client = new MedplumClient({ fetch });
+    //   const result = await client.search('Patient');
+    //   expect(result).toBeDefined();
+    //   expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
+    // });
   });
 
   test('Search ValueSet', async () => {

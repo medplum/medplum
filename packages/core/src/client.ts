@@ -6,6 +6,7 @@ import {
   Binary,
   Bundle,
   BundleEntry,
+  BundleLink,
   Communication,
   Device,
   Encounter,
@@ -1062,6 +1063,32 @@ export class MedplumClient extends EventTarget {
     );
     this.#setCacheEntry(cacheKey, promise);
     return promise;
+  }
+
+  async *searchResourcePages<K extends ResourceType>(
+    resourceType: K,
+    query?: QueryTypes,
+    options: RequestInit = {}
+  ): AsyncGenerator<ExtractResource<K>[]> {
+    let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
+
+    while (url) {
+      const cacheKey = (url.toString() + '-searchResourcesPages') as string;
+      let bundle: Bundle | undefined = await this.#getCacheEntry(cacheKey, options)?.value;
+      console.log('Foo', bundle);
+      if (!bundle) {
+        const bundlePromise: ReadablePromise<Bundle> = this.get(url);
+        this.#setCacheEntry(cacheKey, bundlePromise);
+        bundle = await bundlePromise;
+      }
+      const nextLink: BundleLink | undefined = bundle?.link?.find((link) => link.relation === 'next');
+      if (!bundle?.entry?.length && !nextLink) {
+        break;
+      }
+
+      yield bundle?.entry?.map((e) => e.resource as ExtractResource<K>) ?? [];
+      url = nextLink?.url ? new URL(nextLink?.url) : undefined;
+    }
   }
 
   /**
