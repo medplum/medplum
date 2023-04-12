@@ -83,4 +83,32 @@ describe('SqlBuilder', () => {
     new SelectQuery('MyTable').column('id').groupBy('name').groupBy(new Column('MyTable', 'email')).buildSql(sql);
     expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" GROUP BY "MyTable"."name", "MyTable"."email"');
   });
+
+  test('Select distinct on', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .column('name')
+      .distinctOn('id')
+      .distinctOn(new Column('MyTable', 'name'))
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT DISTINCT ON ("MyTable"."id", "MyTable"."name") "MyTable"."id", "MyTable"."name" FROM "MyTable"'
+    );
+  });
+
+  test('Select distinct on sorting', () => {
+    const sql = new SqlBuilder();
+    new SelectQuery('MyTable')
+      .column('id')
+      .column('name')
+      .column('email')
+      .distinctOn('id')
+      .distinctOn(new Column('MyTable', 'name'))
+      .orderBy('email')
+      .buildSql(sql);
+    expect(sql.toString()).toBe(
+      'SELECT DISTINCT ON ("MyTable"."id", "MyTable"."name") "MyTable"."id", "MyTable"."name", "MyTable"."email" FROM "MyTable" ORDER BY "MyTable"."id", "MyTable"."name", "MyTable"."email"'
+    );
+  });
 });

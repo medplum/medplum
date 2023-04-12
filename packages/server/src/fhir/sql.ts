@@ -482,7 +482,9 @@ export class SelectQuery extends BaseQuery {
       if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
         sql.append(')');
       }
-      sql.append(orderBy.descending ? ' DESC' : ' ASC');
+      if (orderBy.descending) {
+        sql.append(' DESC');
+      }
       first = false;
     }
   }
