@@ -576,6 +576,12 @@ describe('Subscription Worker', () => {
         type: 'rest-hook',
         endpoint: url,
       },
+      extension: [
+        {
+          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          valueInteger: 3,
+        },
+      ],
     });
     expect(subscription).toBeDefined();
 
@@ -591,7 +597,7 @@ describe('Subscription Worker', () => {
 
     (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 429 }));
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execSubscriptionJob(job)).rejects.toThrow();
@@ -609,6 +615,12 @@ describe('Subscription Worker', () => {
         type: 'rest-hook',
         endpoint: url,
       },
+      extension: [
+        {
+          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          valueInteger: 3,
+        },
+      ],
     });
     expect(subscription).toBeDefined();
 
@@ -626,10 +638,49 @@ describe('Subscription Worker', () => {
       throw new Error();
     });
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
 
     // If the job throws, then the QueueScheduler will retry
     await expect(execSubscriptionJob(job)).rejects.toThrow();
+  });
+
+  test('Do not throw after max job attempts', async () => {
+    const url = 'https://example.com/subscription';
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+      extension: [
+        {
+          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          valueInteger: 1,
+        },
+      ],
+    });
+    expect(subscription).toBeDefined();
+
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+    expect(queue.add).toHaveBeenCalled();
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => {
+      throw new Error();
+    });
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 1 } as unknown as Job;
+    // Job shouldn't throw after max attempts, which will cause it to not retry
+    expect(execSubscriptionJob(job)).resolves;
   });
 
   test('Ignore bots if feature not enabled', async () => {
@@ -884,7 +935,7 @@ describe('Subscription Worker', () => {
     // But let's delete the resource
     await repo.deleteResource('Patient', patient.id as string);
 
-    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
     await execSubscriptionJob(job);
 
     // Fetch should not have been called

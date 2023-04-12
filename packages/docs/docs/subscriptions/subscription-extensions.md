@@ -83,3 +83,28 @@ def handle_webhook():
     log('Received: ' + flask.request.headers.get('x-signature'))
     return {"ok":True}
 ```
+
+## Retry Policy
+
+If your subscription failed or threw an error, you can configure it to attempt to execute the operation multiple times.
+
+To add an attempt number, use the `http://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "DiagnosticReport?status=completed",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "http://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "valueInteger": 3
+    }
+  ]
+}
+```

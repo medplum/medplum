@@ -106,14 +106,3 @@ export async function createAuditEvent(
     outcomeDesc,
   });
 }
-
-export function findMaxJobAttemps(subscription: Subscription): number {
-  for (const ext of subscription.extension || []) {
-    if (ext.url === 'maxAttempts') {
-      if (!!ext.valueInteger && ext.valueInteger > 0) {
-        return ext.valueInteger;
-      }
-    }
-  }
-  return 18;
-}

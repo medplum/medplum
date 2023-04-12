@@ -20,7 +20,9 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findMaxJobAttemps, findProjectMembership } from './utils';
+import { createAuditEvent, findProjectMembership } from './utils';
+
+const MAX_JOB_ATTEMPTS = 18;
 
 /*
  * The subscription worker inspects every resource change,
@@ -55,7 +57,7 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      // attempts: 18, // 1 second * 2^18 = 73 hours
+      attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
       backoff: {
         type: 'exponential',
         delay: 1000,
@@ -279,11 +281,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     return;
   }
 
-  const maxJobAttempts = findMaxJobAttemps(subscription);
-
   try {
     const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
-    
+
     const channelType = subscription?.channel?.type;
     if (channelType === 'rest-hook') {
       if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
@@ -293,10 +293,16 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       }
     }
   } catch (err) {
+    const maxJobAttempts =
+      getExtension(subscription, '"http://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
+        ?.valueInteger ?? MAX_JOB_ATTEMPTS;
+        
     if (job.attemptsMade < maxJobAttempts) {
-      job.retry();
+      logger.debug(`Retrying job due to error: ${err}`);
+      throw err;
     } else {
-      job.remove();
+      // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+      logger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
     }
   }
 }
