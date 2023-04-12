@@ -863,8 +863,14 @@ export class MedplumClient extends EventTarget {
    * @param projectId The ID of your Medplum project.
    * @category Authentication
    */
-  async exchangeExternalAccessToken(token: string): Promise<ProfileResource> {
-    if (!this.#clientId) {
+  async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
+    if (!!clientId && this.#clientId) {
+      throw new Error('clientId already set in MedplumClient constructor');
+    }
+
+    clientId = clientId || this.#clientId;
+
+    if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
 

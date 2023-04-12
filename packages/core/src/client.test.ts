@@ -302,6 +302,44 @@ describe('Client', () => {
     expect(client.getAccessToken()).toBeDefined();
   });
 
+  test('External auth token exchange with clientId param', async () => {
+    const clientId1 = 'medplum-client-123';
+    const clientId2 = 'medplum-client-456';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('/auth/exchange')) {
+        return {
+          access_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
+          refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
+          profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('/auth/me')) {
+        return { profile: { resourceType: 'Patient', id: '123' } };
+      }
+      return {};
+    });
+    let client = new MedplumClient({ fetch, clientId: clientId1 });
+
+    expect(client.getAccessToken()).toBeUndefined();
+    await expect(client.exchangeExternalAccessToken('we12e121', clientId2)).rejects.toBeDefined();
+
+    client = new MedplumClient({ fetch });
+    const result1 = await client.exchangeExternalAccessToken('we12e121', clientId2);
+    expect(result1).toBeDefined();
+
+    expect(result1.resourceType).toBeDefined();
+    expect(client.getAccessToken()).toBeDefined();
+  });
+
+  test('External auth token exchange w/o client ID', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    await expect(client.exchangeExternalAccessToken('we12e121')).rejects.toEqual(
+      new Error('MedplumClient is missing clientId')
+    );
+  });
+
   test('Get external auth redirect URI', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
