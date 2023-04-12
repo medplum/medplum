@@ -463,17 +463,14 @@ export class SelectQuery extends BaseQuery {
   }
 
   #buildOrderBy(sql: SqlBuilder): void {
-    let first = true;
-
-    if (this.orderBys.length > 0 && this.distinctOns.length > 0) {
-      for (const distinctOn of this.distinctOns) {
-        sql.append(first ? ' ORDER BY ' : ', ');
-        sql.appendColumn(distinctOn);
-        first = false;
-      }
+    if (this.orderBys.length === 0) {
+      return;
     }
 
-    for (const orderBy of this.orderBys) {
+    const combined = [...this.distinctOns.map((d) => new OrderBy(d)), ...this.orderBys];
+    let first = true;
+
+    for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
       if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
         sql.append('MIN(');
