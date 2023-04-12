@@ -129,7 +129,7 @@ describe('HomePage', () => {
     await waitFor(() => screen.queryByText(family) === null);
   });
 
-  test('Export button', async () => {
+  test('Export CSV button', async () => {
     window.URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
     window.open = jest.fn();
 
@@ -144,8 +144,32 @@ describe('HomePage', () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export as CSV'));
+    });
+
     expect(window.URL.createObjectURL).toHaveBeenCalled();
     expect(window.open).toHaveBeenCalled();
+  });
+
+  test('Export Transaction Bundle button', async () => {
+    URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
+    URL.revokeObjectURL = jest.fn();
+    // Mock the export operation
+    const medplum = new MockClient();
+    medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
+
+    await setup('/Patient', medplum);
+    await waitFor(() => screen.getByText('Export...'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export...'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export as Transaction Bundle'));
+    });
+    expect(screen.getByText('Export as Transaction Bundle')).toBeInTheDocument();
   });
 
   test('Default search fields', () => {

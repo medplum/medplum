@@ -337,13 +337,13 @@ describe('SearchControl', () => {
   });
 
   test('Export button', async () => {
-    const onExport = jest.fn();
+    const onExportCsv = jest.fn();
 
     await setup({
       search: {
         resourceType: 'Patient',
       },
-      onExport,
+      onExportCsv,
     });
 
     await waitFor(() => screen.getByText('Export...'));
@@ -352,7 +352,11 @@ describe('SearchControl', () => {
       fireEvent.click(screen.getByText('Export...'));
     });
 
-    expect(onExport).toBeCalled();
+    await waitFor(() => screen.getByText('Export as CSV'));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Export as CSV'));
+    });
   });
 
   test('Delete button', async () => {

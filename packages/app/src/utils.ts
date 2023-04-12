@@ -76,3 +76,25 @@ export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any
 export function getProjectId(medplum: MedplumClient): string {
   return resolveId(medplum.getActiveLogin()?.project) as string;
 }
+
+/**
+ * Creates a Blob object from the JSON object given and downloads the
+ * object
+ * @param json
+ */
+export function exportJSONFile(jsonString: string, fileName?: string): void {
+  const blobForExport = new Blob([jsonString], { type: 'application/json' });
+  const url = URL.createObjectURL(blobForExport);
+
+  const link = document.createElement('a');
+  link.href = url;
+
+  const linkName = fileName ? fileName : new Date().toISOString().replace(/\D/g, '');
+  link.download = `${linkName}.json`;
+
+  document.body.appendChild(link);
+  link.click();
+
+  // Clean up the URL object
+  URL.revokeObjectURL(url);
+}

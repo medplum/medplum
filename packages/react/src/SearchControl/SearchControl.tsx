@@ -39,6 +39,7 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
+import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -81,6 +82,8 @@ export interface SearchControlProps {
   onAuxClick?: (e: SearchClickEvent) => void;
   onNew?: () => void;
   onExport?: () => void;
+  onExportCsv?: () => void;
+  onExportTransactionBundle?: () => void;
   onDelete?: (ids: string[]) => void;
   onPatch?: (ids: string[]) => void;
   onBulk?: (ids: string[]) => void;
@@ -92,6 +95,7 @@ interface SearchControlState {
   fieldEditorVisible: boolean;
   filterEditorVisible: boolean;
   filterDialogVisible: boolean;
+  exportDialogVisible: boolean;
   filterDialogFilter?: Filter;
   filterDialogSearchParam?: SearchParameter;
 }
@@ -150,6 +154,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     selected: {},
     fieldEditorVisible: false,
     filterEditorVisible: false,
+    exportDialogVisible: false,
     filterDialogVisible: false,
   });
 
@@ -257,6 +262,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     }
   }
 
+  function isExportPassed(): boolean {
+    return !!(props.onExport || props.onExportCsv || props.onExportTransactionBundle);
+  }
+
   useEffect(() => {
     setSchemaLoaded(false);
     medplum
@@ -320,13 +329,15 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 New...
               </Button>
             )}
-            {!isMobile && props.onExport && (
+            {!isMobile && isExportPassed() && (
               <Button
                 compact
                 variant={buttonVariant}
                 color={buttonColor}
                 leftIcon={<IconTableExport size={iconSize} />}
-                onClick={props.onExport}
+                onClick={
+                  props.onExport ? props.onExport : () => setState({ ...stateRef.current, exportDialogVisible: true })
+                }
               >
                 Export...
               </Button>
@@ -523,6 +534,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setState({
             ...stateRef.current,
             filterEditorVisible: false,
+          });
+        }}
+      />
+      <SearchExportDialog
+        visible={stateRef.current.exportDialogVisible}
+        exportCsv={props.onExportCsv}
+        exportTransactionBundle={props.onExportTransactionBundle}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            exportDialogVisible: false,
           });
         }}
       />

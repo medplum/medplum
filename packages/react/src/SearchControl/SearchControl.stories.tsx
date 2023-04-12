@@ -59,7 +59,7 @@ export const AllButtons = (): JSX.Element => {
       onLoad={(e) => console.log('onLoad', e)}
       onClick={(e) => console.log('onClick', e)}
       onNew={() => console.log('onNew')}
-      onExport={() => console.log('onExport')}
+      onExportCsv={() => console.log('onExportCSV')}
       onDelete={() => console.log('onDelete')}
       onBulk={() => console.log('onBulk')}
       onChange={(e) => {
