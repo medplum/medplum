@@ -8,8 +8,9 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, Operator } from '@medplum/core';
+import { createReference, getExtension, Operator } from '@medplum/core';
 import { AuditEventOutcome } from '../util/auditevent';
+import { logger } from '../logger';
 
 export async function findProjectMembership(
   project: string,
@@ -105,4 +106,47 @@ export async function createAuditEvent(
     outcome,
     outcomeDesc,
   });
+}
+
+export function isJobSuccessful(subscription: Subscription, status: number): boolean {
+  const successCodes = getExtension(
+    subscription,
+    'http://medplum.com/fhir/StructureDefinition/subscription-success-codes'
+  );
+
+  if (!successCodes?.valueString) {
+    return status >= 200 && status < 400;
+  }
+  // Removing any white space
+  const codesTrimSpace = successCodes.valueString.replace(/ /g, '');
+  const listOfSuccessCodes = codesTrimSpace.split(',');
+
+  for (const code of listOfSuccessCodes) {
+    if (code.includes('-')) {
+      const codeRange = code.split('-');
+      const lowerBound = Number(codeRange[0]);
+      const upperBound = Number(codeRange[1]);
+      if (!!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
+        logger.debug(
+          `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
+        );
+        return status >= 200 && status < 400;
+      }
+      if (status >= lowerBound && status <= upperBound) {
+        return true;
+      }
+    } else {
+      const codeValue = Number(code);
+      if (!!Number.isInteger(codeValue)) {
+        logger.debug(
+          `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
+        );
+        return status >= 200 && status < 400;
+      }
+      if (status === Number(code)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findProjectMembership } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -296,7 +296,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const maxJobAttempts =
       getExtension(subscription, '"http://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
         ?.valueInteger ?? MAX_JOB_ATTEMPTS;
-        
+
     if (job.attemptsMade < maxJobAttempts) {
       logger.debug(`Retrying job due to error: ${err}`);
       throw err;
@@ -335,7 +335,7 @@ async function sendRestHook(
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
-    const success = response.status >= 200 && response.status < 400;
+    const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
       startTime,
