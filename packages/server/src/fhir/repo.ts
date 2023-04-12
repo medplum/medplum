@@ -949,14 +949,13 @@ export class Repository extends BaseRepository implements FhirRepository {
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
 
+    this.#addSortRules(builder, searchRequest);
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, resourceType);
     this.#addSearchFilters(builder, searchRequest);
-    this.#addSortRules(builder, searchRequest);
 
     if (builder.joins.length > 0) {
-      // builder.groupBy({ tableName: resourceType, columnName: 'id' });
-      builder.distinctOn({ tableName: resourceType, columnName: 'id' });
+      builder.groupBy({ tableName: resourceType, columnName: 'id' });
     }
 
     const count = searchRequest.count as number;
@@ -1118,7 +1117,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (builder.joins.length > 0) {
       builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
     } else {
-      builder.raw('COUNT(*)::int AS "count"');
+      builder.raw('COUNT("id")::int AS "count"');
     }
 
     const rows = await builder.execute(client);
