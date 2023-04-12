@@ -334,8 +334,6 @@ Yikes. Lots of timeouts, p95 and p99 close to 10 seconds.
 
 Confirmed - we maxed out the database.
 
-The next step would be to increase the size of the Postgres instance. As mentioned above, `rdsInstanceType` was configured at `t4g.medium`. Stay tuned for next time when we increase the Postgres instance size, and look for max
-
-As mentioned above, `rdsInstanceType` was configured at `t4g.medium` (the smallest available Postgres instance). While upgrading `desiredServerCount`, `serverMemory`, and `serverCpu` happens fast, upgrading `rdsInstanceType` can take ~30 minutes. Start the CDK upgrade and grab a cup of coffee ☕
+As mentioned above, `rdsInstanceType` was configured at `t4g.medium` (the smallest available Postgres instance). The next step would be to increase the size of the Postgres instance. While upgrading `desiredServerCount`, `serverMemory`, and `serverCpu` happens fast, upgrading `rdsInstanceType` can take ~30 minutes. Start the CDK upgrade and grab a cup of coffee ☕
 
 Stay tuned for next time with the increased database size.
