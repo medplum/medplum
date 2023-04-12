@@ -117,6 +117,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
   if (!successCodes?.valueString) {
     return status >= 200 && status < 400;
   }
+
   // Removing any white space
   const codesTrimSpace = successCodes.valueString.replace(/ /g, '');
   const listOfSuccessCodes = codesTrimSpace.split(',');
@@ -126,7 +127,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       const codeRange = code.split('-');
       const lowerBound = Number(codeRange[0]);
       const upperBound = Number(codeRange[1]);
-      if (!!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
+      if (!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
         logger.debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
@@ -137,7 +138,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       }
     } else {
       const codeValue = Number(code);
-      if (!!Number.isInteger(codeValue)) {
+      if (!Number.isInteger(codeValue)) {
         logger.debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );

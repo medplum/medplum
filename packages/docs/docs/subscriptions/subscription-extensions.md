@@ -108,3 +108,33 @@ To add an attempt number, use the `http://medplum.com/fhir/StructureDefinition/s
   ]
 }
 ```
+
+
+## Custom Status Codes
+
+HTTP status codes can be customized to determine the success of the subscription operation. 
+
+To add custom codes, use the `http://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
+
+:::caution Note
+If you use custom success codes, you will need to implement ALL of the HTTP status codes that are determined to be successful
+:::
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "DiagnosticReport?status=completed",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "http://medplum.com/fhir/StructureDefinition/subscription-success-codes",
+      "valueString": "200-399,404",
+    },
+  ]
+}
+```

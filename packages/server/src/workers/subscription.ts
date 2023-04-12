@@ -294,7 +294,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     }
   } catch (err) {
     const maxJobAttempts =
-      getExtension(subscription, '"http://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
+      getExtension(subscription, 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
         ?.valueInteger ?? MAX_JOB_ATTEMPTS;
 
     if (job.attemptsMade < maxJobAttempts) {
