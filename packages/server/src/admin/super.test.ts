@@ -340,4 +340,40 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toBe(200);
   });
+
+  test('Remove Bot Id from Jobs Queue access denied', async () => {
+    const res = await request(app)
+      .post('/admin/super/removebotidjobsfromqueue')
+      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+      .type('json')
+      .send({
+        botId: 'testBotId',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Remove Bot Id from Jobs Queue success', async () => {
+    const res = await request(app)
+      .post('/admin/super/removebotidjobsfromqueue')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        botId: 'TestBotId',
+      });
+
+    expect(res.status).toBe(200);
+  });
+
+  test('Remove Bot Id from Jobs Queue missing bot id', async () => {
+    const res = await request(app)
+      .post('/admin/super/removebotidjobsfromqueue')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        botId: '',
+      });
+
+    expect(res.status).toBe(400);
+  });
 });
