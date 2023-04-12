@@ -53,7 +53,7 @@ export class AddressTable extends LookupTable<Address> {
    *   address            | address
    *   address-city       | city
    *   address-country    | country
-   *   address-postalcode | postalcode
+   *   address-postalcode | postalCode
    *   address-state      | state
    *   addrses-use        | use
    *
@@ -61,7 +61,13 @@ export class AddressTable extends LookupTable<Address> {
    * @returns The column name.
    */
   getColumnName(code: string): string {
-    return code === 'address' ? 'address' : code.replace('address-', '');
+    if (code === 'address') {
+      return 'address';
+    }
+    if (code === 'address-postalcode') {
+      return 'postalCode';
+    }
+    return code.replace('address-', '');
   }
 
   /**

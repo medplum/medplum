@@ -1,4 +1,4 @@
-import { Filter, Operator as FhirOperator, SortRule } from '@medplum/core';
+import { Operator as FhirOperator, Filter, SortRule } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import {
@@ -67,17 +67,22 @@ export abstract class LookupTable<T> {
     const disjunction = new Disjunction([]);
     for (const option of filter.value.split(',')) {
       if (filter.operator === FhirOperator.EXACT) {
-        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.EQUALS, option?.trim()));
+        disjunction.expressions.push(new Condition(new Column(joinName, columnName), Operator.EQUALS, option.trim()));
       } else {
-        const conjunction = new Conjunction([]);
-        for (const chunk of option.split(/\s+/)) {
-          conjunction.expressions.push(
-            new Condition(new Column(joinName, columnName), Operator.LIKE, `%${chunk.trim()}%`)
-          );
-        }
-        disjunction.expressions.push(conjunction);
+        disjunction.expressions.push(
+          new Condition(
+            new Column(joinName, columnName + '_tsv'),
+            Operator.TSVECTOR_MATCH,
+            option
+              .trim()
+              .split(/\s+/)
+              .map((token) => token + ':*')
+              .join(' & ')
+          )
+        );
       }
     }
+
     joinOnExpression.expressions.push(disjunction);
     selectQuery.join(tableName, joinName, joinOnExpression);
     return new Condition(new Column(joinName, 'resourceId'), Operator.NOT_EQUALS, null);

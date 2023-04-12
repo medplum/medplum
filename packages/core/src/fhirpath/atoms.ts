@@ -1,5 +1,5 @@
 import { Atom, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
-import { isResource, PropertyType, TypedValue } from '../types';
+import { PropertyType, TypedValue, isResource } from '../types';
 import { functions } from './functions';
 import {
   booleanToTypedValue,
@@ -55,13 +55,10 @@ export class SymbolAtom implements Atom {
     if (this.name === '$this') {
       return context;
     }
-    return context
-      .map((e) => this.#evalValue(e))
-      .flat()
-      .filter((e) => e?.value !== undefined) as TypedValue[];
+    return context.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
   }
 
-  #evalValue(typedValue: TypedValue): TypedValue[] | TypedValue | undefined {
+  private evalValue(typedValue: TypedValue): TypedValue[] | TypedValue | undefined {
     const input = typedValue.value;
     if (!input || typeof input !== 'object') {
       return undefined;

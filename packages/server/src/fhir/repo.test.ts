@@ -655,7 +655,6 @@ describe('FHIR Repo', () => {
       ],
       count: 100,
     });
-    console.log(bundle);
 
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
     expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
