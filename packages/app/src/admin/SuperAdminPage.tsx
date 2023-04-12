@@ -42,6 +42,13 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
   }
 
+  function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
+    medplum
+      .post('admin/super/removebotidjobsfromqueue', formData)
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }
+
   function purgeResources(formData: Record<string, string>): void {
     medplum
       .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
@@ -128,6 +135,17 @@ export function SuperAdminPage(): JSX.Element {
             <DateTimeInput name="before" placeholder="Before Date" />
           </FormSection>
           <Button type="submit">Purge</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Remove Bot ID Jobs from Queue</Title>
+      <p>Remove all queued jobs for a Bot ID</p>
+      <Form onSubmit={removeBotIdJobsFromQueue}>
+        <Stack>
+          <FormSection title="Bot ID">
+            <TextInput name="botId" placeholder="Bot Id" />
+          </FormSection>
+          <Button type="submit">Remove Jobs by Bot ID</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
