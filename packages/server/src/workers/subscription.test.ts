@@ -579,7 +579,7 @@ describe('Subscription Worker', () => {
       },
       extension: [
         {
-          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
           valueInteger: 3,
         },
       ],
@@ -618,7 +618,7 @@ describe('Subscription Worker', () => {
       },
       extension: [
         {
-          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
           valueInteger: 3,
         },
       ],
@@ -658,7 +658,7 @@ describe('Subscription Worker', () => {
       },
       extension: [
         {
-          url: 'http://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts',
           valueInteger: 1,
         },
       ],
@@ -1036,7 +1036,7 @@ describe('Subscription Worker', () => {
       },
       extension: [
         {
-          url: 'http://medplum.com/fhir/StructureDefinition/subscription-success-codes',
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-success-codes',
           valueString: '200,201,410-600',
         },
       ],

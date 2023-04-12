@@ -111,7 +111,7 @@ export async function createAuditEvent(
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,
-    'http://medplum.com/fhir/StructureDefinition/subscription-success-codes'
+    'https://medplum.com/fhir/StructureDefinition/subscription-success-codes'
   );
 
   if (!successCodes?.valueString) {
