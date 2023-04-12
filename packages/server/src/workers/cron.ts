@@ -228,6 +228,7 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 export async function removeBullMQJobByKey(botId: string): Promise<void> {
   const previousJobs = (await queue?.getRepeatableJobs())?.filter((p) => p.id === botId) ?? [];
 
+  // There likely should not be more than one repeatable job per bot id.
   for (const p of previousJobs) {
     await queue?.removeRepeatableByKey(p.key);
     logger.debug(`Found a previous job for bot ${botId}, updating...`);
