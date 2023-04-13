@@ -128,13 +128,7 @@ describe('CLI', () => {
 
   test('Get command with convertToTransactionBundle flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, [
-      'node',
-      'index.js',
-      'get',
-      `Patient?_count=2`,
-      '--convertToTransactionBundle',
-    ]);
+    await main(medplum, ['node', 'index.js', 'get', `Patient?_count=2`, '--convertToTransactionBundle']);
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
