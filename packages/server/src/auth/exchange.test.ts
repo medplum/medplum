@@ -94,27 +94,15 @@ describe('Token Exchange', () => {
   test('Missing externalAccessToken', async () => {
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: '',
-      projectId: project.id,
       clientId: defaultClient.id,
     });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Missing externalAccessToken');
   });
 
-  test('Missing projectId', async () => {
-    const res = await request(app).post('/auth/exchange').type('json').send({
-      externalAccessToken: 'xyz',
-      projectId: '',
-      clientId: defaultClient.id,
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Missing projectId');
-  });
-
   test('Missing clientId', async () => {
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: '',
     });
     expect(res.status).toBe(400);
@@ -124,21 +112,10 @@ describe('Token Exchange', () => {
   test('Missing identity provider', async () => {
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: defaultClient.id,
     });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Identity provider not found');
-  });
-
-  test('Invalid projectId', async () => {
-    const res = await request(app).post('/auth/exchange').type('json').send({
-      externalAccessToken: 'xyz',
-      projectId: randomUUID(),
-      clientId: externalAuthClient.id,
-    });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Invalid project');
   });
 
   test('Unknown user', async () => {
@@ -149,7 +126,6 @@ describe('Token Exchange', () => {
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: externalAuthClient.id,
     });
     expect(res.status).toBe(400);
@@ -164,11 +140,24 @@ describe('Token Exchange', () => {
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: externalAuthClient.id,
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Missing projectId success', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => ({ email }),
+    }));
+
+    const res = await request(app).post('/auth/exchange').type('json').send({
+      externalAccessToken: 'xyz',
+      projectId: '',
+      clientId: externalAuthClient.id,
+    });
+    expect(res.status).toBe(200);
   });
 
   test('Invalid token request', async () => {
@@ -181,7 +170,6 @@ describe('Token Exchange', () => {
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: externalAuthClient.id,
     });
     expect(res.status).toBe(400);
@@ -196,7 +184,6 @@ describe('Token Exchange', () => {
 
     const res = await request(app).post('/auth/exchange').type('json').send({
       externalAccessToken: 'xyz',
-      projectId: project.id,
       clientId: subjectAuthClient.id,
     });
     expect(res.status).toBe(200);
