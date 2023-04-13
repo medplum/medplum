@@ -35,6 +35,7 @@ export interface MedplumServerConfig {
   logAuditEvents?: boolean;
   auditEventLogGroup?: string;
   auditEventLogStream?: string;
+  registerEnabled?: boolean;
 }
 
 /**

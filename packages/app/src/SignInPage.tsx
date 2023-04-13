@@ -11,7 +11,7 @@ export function SignInPage(): JSX.Element {
     <SignInForm
       onSuccess={() => navigate(searchParams.get('next') || '/')}
       onForgotPassword={() => navigate('/resetpassword')}
-      onRegister={() => navigate('/register')}
+      onRegister={process.env.REGISTER_ENABLED === 'false' ? undefined : () => navigate('/register')}
       googleClientId={process.env.GOOGLE_CLIENT_ID || undefined}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}

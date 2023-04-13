@@ -106,11 +106,13 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
         autoFocus={true}
       />
       <Group position="apart" mt="xl" spacing={0} noWrap>
-        {onRegister && (
-          <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
-            Register
-          </Anchor>
-        )}
+        <div>
+          {onRegister && (
+            <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
+              Register
+            </Anchor>
+          )}
+        </div>
         <Button type="submit">Next</Button>
       </Group>
     </Form>
