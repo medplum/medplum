@@ -180,7 +180,12 @@ export class Disjunction extends Connective {
 }
 
 export class Join {
-  constructor(readonly joinItem: string | SelectQuery, readonly joinAlias: string, readonly onExpression: Expression) {}
+  constructor(
+    readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
+    readonly joinItem: string | SelectQuery,
+    readonly joinAlias: string,
+    readonly onExpression: Expression
+  ) {}
 }
 
 export class GroupBy {
@@ -291,6 +296,7 @@ export abstract class BaseQuery {
 }
 
 export class SelectQuery extends BaseQuery {
+  readonly distinctOns: Column[];
   readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
@@ -300,12 +306,18 @@ export class SelectQuery extends BaseQuery {
 
   constructor(tableName: string) {
     super(tableName);
+    this.distinctOns = [];
     this.columns = [];
     this.joins = [];
     this.groupBys = [];
     this.orderBys = [];
     this.limit_ = 0;
     this.offset_ = 0;
+  }
+
+  distinctOn(column: Column | string): this {
+    this.distinctOns.push(getColumn(column, this.tableName));
+    return this;
   }
 
   raw(column: string): this {
@@ -322,8 +334,8 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joins.length + 1}`;
   }
 
-  join(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join(joinItem, joinAlias, onExpression));
+  innerJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+    this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -348,7 +360,9 @@ export class SelectQuery extends BaseQuery {
   }
 
   buildSql(sql: SqlBuilder): void {
-    this.#buildSelect(sql);
+    sql.append('SELECT ');
+    this.#buildDistinctOn(sql);
+    this.#buildColumns(sql);
     this.#buildFrom(sql);
     this.buildConditions(sql);
     this.#buildGroupBy(sql);
@@ -397,9 +411,22 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildSelect(sql: SqlBuilder): void {
-    sql.append('SELECT ');
+  #buildDistinctOn(sql: SqlBuilder): void {
+    if (this.distinctOns.length > 0) {
+      sql.append('DISTINCT ON (');
+      let first = true;
+      for (const column of this.distinctOns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
+      }
+      sql.append(') ');
+    }
+  }
 
+  #buildColumns(sql: SqlBuilder): void {
     let first = true;
     for (const column of this.columns) {
       if (!first) {
@@ -441,9 +468,14 @@ export class SelectQuery extends BaseQuery {
   }
 
   #buildOrderBy(sql: SqlBuilder): void {
+    if (this.orderBys.length === 0) {
+      return;
+    }
+
+    const combined = [...this.distinctOns.map((d) => new OrderBy(d)), ...this.orderBys];
     let first = true;
 
-    for (const orderBy of this.orderBys) {
+    for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
       if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
         sql.append('MIN(');
@@ -452,7 +484,9 @@ export class SelectQuery extends BaseQuery {
       if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
         sql.append(')');
       }
-      sql.append(orderBy.descending ? ' DESC' : ' ASC');
+      if (orderBy.descending) {
+        sql.append(' DESC');
+      }
       first = false;
     }
   }

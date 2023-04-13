@@ -947,13 +947,16 @@ export class Repository extends BaseRepository implements FhirRepository {
     const client = getClient();
     const builder = new SelectQuery(resourceType)
       .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' })
-      .groupBy({ tableName: resourceType, columnName: 'id' });
+      .column({ tableName: resourceType, columnName: 'content' });
 
+    this.#addSortRules(builder, searchRequest);
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, resourceType);
     this.#addSearchFilters(builder, searchRequest);
-    this.#addSortRules(builder, searchRequest);
+
+    if (builder.joins.length > 0) {
+      builder.groupBy({ tableName: resourceType, columnName: 'id' });
+    }
 
     const count = searchRequest.count as number;
     builder.limit(count + 1); // Request one extra to test if there are more results
@@ -1106,13 +1109,17 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   async #getTotalCount(searchRequest: SearchRequest): Promise<number> {
     const client = getClient();
-    const builder = new SelectQuery(searchRequest.resourceType).raw(
-      `COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`
-    );
-
+    const builder = new SelectQuery(searchRequest.resourceType);
     this.#addDeletedFilter(builder);
     this.#addSecurityFilters(builder, searchRequest.resourceType);
     this.#addSearchFilters(builder, searchRequest);
+
+    if (builder.joins.length > 0) {
+      builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
+    } else {
+      builder.raw('COUNT("id")::int AS "count"');
+    }
+
     const rows = await builder.execute(client);
     return rows[0].count as number;
   }

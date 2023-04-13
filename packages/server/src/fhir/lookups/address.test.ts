@@ -18,6 +18,7 @@ describe('Address Lookup Table', () => {
   test('Patient resource with address', async () => {
     const addressLine = randomUUID();
     const addressCity = randomUUID();
+    const postalCode = randomUUID();
 
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -28,7 +29,7 @@ describe('Address Lookup Table', () => {
           line: [addressLine],
           city: addressCity,
           state: 'CA',
-          postalCode: '94111',
+          postalCode,
           country: 'US',
         },
       ],
@@ -59,6 +60,19 @@ describe('Address Lookup Table', () => {
     });
     expect(searchResult2.entry?.length).toEqual(1);
     expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+
+    const searchResult3 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'address-postalcode',
+          operator: Operator.EQUALS,
+          value: postalCode,
+        },
+      ],
+    });
+    expect(searchResult3.entry?.length).toEqual(1);
+    expect(searchResult3.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
 
   test('Multiple addresses', async () => {
