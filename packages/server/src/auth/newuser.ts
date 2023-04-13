@@ -25,6 +25,13 @@ export const newUserValidators = [
  * @param res The HTTP response.
  */
 export async function newUserHandler(req: Request, res: Response): Promise<void> {
+  const config = getConfig();
+  if (config.registerEnabled === false) {
+    // Explicitly check for "false" because the config value may be undefined
+    sendOutcome(res, badRequest('Registration is disabled'));
+    return;
+  }
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));

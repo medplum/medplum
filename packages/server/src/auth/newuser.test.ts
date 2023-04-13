@@ -24,6 +24,10 @@ describe('New user', () => {
     prevRecaptchaSecretKey = getConfig().recaptchaSecretKey;
   });
 
+  beforeEach(() => {
+    getConfig().registerEnabled = undefined;
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });
@@ -51,6 +55,22 @@ describe('New user', () => {
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();
     expect(res.body.code).toBeUndefined();
+  });
+
+  test('Register disabled', async () => {
+    getConfig().registerEnabled = false;
+    const res = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Registration is disabled');
   });
 
   test('Missing recaptcha', async () => {
