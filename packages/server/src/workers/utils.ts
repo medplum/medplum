@@ -115,7 +115,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
   );
 
   if (!successCodes?.valueString) {
-    return status >= 200 && status < 400;
+    return defaultStatusCheck(status);
   }
 
   // Removing any white space
@@ -131,7 +131,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
         logger.debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
-        return status >= 200 && status < 400;
+        return defaultStatusCheck(status);
       }
       if (status >= lowerBound && status <= upperBound) {
         return true;
@@ -142,7 +142,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
         logger.debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );
-        return status >= 200 && status < 400;
+        return defaultStatusCheck(status);
       }
       if (status === Number(code)) {
         return true;
@@ -150,4 +150,8 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
     }
   }
   return false;
+}
+
+function defaultStatusCheck(status: number): boolean {
+  return status >= 200 && status < 400;
 }
