@@ -75,6 +75,15 @@ export interface MedplumClientOptions {
   authorizeUrl?: string;
 
   /**
+   * FHIR URL path.
+   *
+   * Default value is "fhir/R4/".
+   *
+   * Use this if you want to use a different path when connecting to a FHIR server.
+   */
+  fhirUrlPath?: string;
+
+  /**
    * OAuth2 token URL.
    *
    * Default value is baseUrl + "/oauth2/token".
@@ -499,7 +508,7 @@ export class MedplumClient extends EventTarget {
     this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
     this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
-    this.#fhirBaseUrl = this.#baseUrl + 'fhir/R4/';
+    this.#fhirBaseUrl = this.#baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
     this.#clientId = options?.clientId || '';
     this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
     this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
