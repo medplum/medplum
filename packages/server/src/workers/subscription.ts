@@ -20,7 +20,9 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findProjectMembership } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+
+const MAX_JOB_ATTEMPTS = 18;
 
 /*
  * The subscription worker inspects every resource change,
@@ -55,7 +57,7 @@ export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: 18, // 1 second * 2^18 = 73 hours
+      attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
       backoff: {
         type: 'exponential',
         delay: 1000,
@@ -279,14 +281,28 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     return;
   }
 
-  const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
+  try {
+    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
 
-  const channelType = subscription?.channel?.type;
-  if (channelType === 'rest-hook') {
-    if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-      await execBot(subscription, resourceVersion);
+    const channelType = subscription?.channel?.type;
+    if (channelType === 'rest-hook') {
+      if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
+        await execBot(subscription, resourceVersion);
+      } else {
+        await sendRestHook(job, subscription, resourceVersion);
+      }
+    }
+  } catch (err) {
+    const maxJobAttempts =
+      getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
+        ?.valueInteger ?? MAX_JOB_ATTEMPTS;
+
+    if (job.attemptsMade < maxJobAttempts) {
+      logger.debug(`Retrying job due to error: ${err}`);
+      throw err;
     } else {
-      await sendRestHook(job, subscription, resourceVersion);
+      // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+      logger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
     }
   }
 }
@@ -319,7 +335,7 @@ async function sendRestHook(
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
-    const success = response.status >= 200 && response.status < 400;
+    const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
       startTime,
