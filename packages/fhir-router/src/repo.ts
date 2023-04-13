@@ -205,13 +205,13 @@ export abstract class BaseRepository {
 }
 
 export class MemoryRepository extends BaseRepository implements FhirRepository {
-  readonly #resources: Record<string, Record<string, Resource>>;
-  readonly #history: Record<string, Record<string, Resource[]>>;
+  private readonly resources: Record<string, Record<string, Resource>>;
+  private readonly history: Record<string, Record<string, Resource[]>>;
 
   constructor() {
     super();
-    this.#resources = {};
-    this.#history = {};
+    this.resources = {};
+    this.history = {};
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -235,20 +235,20 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
     const { resourceType, id } = result as { resourceType: string; id: string };
 
-    if (!(resourceType in this.#resources)) {
-      this.#resources[resourceType] = {};
+    if (!(resourceType in this.resources)) {
+      this.resources[resourceType] = {};
     }
 
-    if (!(resourceType in this.#history)) {
-      this.#history[resourceType] = {};
+    if (!(resourceType in this.history)) {
+      this.history[resourceType] = {};
     }
 
-    if (!(id in this.#history[resourceType])) {
-      this.#history[resourceType][id] = [];
+    if (!(id in this.history[resourceType])) {
+      this.history[resourceType][id] = [];
     }
 
-    this.#resources[resourceType][id] = result;
-    this.#history[resourceType][id].push(result);
+    this.resources[resourceType][id] = result;
+    this.history[resourceType][id].push(result);
     return deepClone(result);
   }
 
@@ -281,7 +281,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    const resource = this.#resources?.[resourceType]?.[id] as T | undefined;
+    const resource = this.resources?.[resourceType]?.[id] as T | undefined;
     if (!resource) {
       throw new OperationOutcomeError(notFound);
     }
@@ -305,7 +305,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.#history?.[resourceType]?.[id] ?? []) as T[])
+      entry: ((this.history?.[resourceType]?.[id] ?? []) as T[])
         .reverse()
         .map((version) => ({ resource: deepClone(version) })),
     };
@@ -313,7 +313,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   async readVersion<T extends Resource>(resourceType: string, id: string, versionId: string): Promise<T> {
     await this.readResource(resourceType, id);
-    const version = this.#history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
+    const version = this.history?.[resourceType]?.[id]?.find((v) => v.meta?.versionId === versionId) as T | undefined;
     if (!version) {
       throw new OperationOutcomeError(notFound);
     }
@@ -322,7 +322,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 
   async search<T extends Resource>(searchRequest: SearchRequest): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
-    const resources = this.#resources[resourceType] ?? {};
+    const resources = this.resources[resourceType] ?? {};
     const result = Object.values(resources).filter((resource) => matchesSearchRequest(resource, searchRequest));
     let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
     if (searchRequest.sortRules) {
@@ -345,10 +345,10 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {
-    if (!this.#resources?.[resourceType]?.[id]) {
+    if (!this.resources?.[resourceType]?.[id]) {
       throw new OperationOutcomeError(notFound);
     }
-    delete this.#resources[resourceType][id];
+    delete this.resources[resourceType][id];
   }
 }
 

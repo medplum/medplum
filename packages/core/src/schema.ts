@@ -173,16 +173,16 @@ export function validateResource<T extends Resource>(resource: T): void {
 }
 
 export class FhirSchemaValidator<T extends Resource> {
-  readonly #issues: OperationOutcomeIssue[];
-  readonly #root: T;
+  private readonly issues: OperationOutcomeIssue[];
+  private readonly root: T;
 
   constructor(root: T) {
-    this.#issues = [];
-    this.#root = root;
+    this.issues = [];
+    this.root = root;
   }
 
   validate(): void {
-    const resource = this.#root;
+    const resource = this.root;
     if (!resource) {
       throw new OperationOutcomeError(validationError('Resource is null'));
     }
@@ -193,77 +193,81 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // Check for "null" once for the entire object hierarchy
-    checkForNull(resource, '', this.#issues);
+    checkForNull(resource, '', this.issues);
 
-    this.#validateObject(toTypedValue(resource), resourceType);
+    this.validateObject(toTypedValue(resource), resourceType);
 
-    if (this.#issues.length > 0) {
+    if (this.issues.length > 0) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
-        issue: this.#issues,
+        issue: this.issues,
       });
     }
   }
 
-  #validateObject(typedValue: TypedValue, path: string): void {
+  private validateObject(typedValue: TypedValue, path: string): void {
     const definition = globalSchema.types[typedValue.type];
     if (!definition) {
       throw new OperationOutcomeError(validationError('Unknown type: ' + typedValue.type));
     }
 
     const propertyDefinitions = definition.properties;
-    this.#checkProperties(path, propertyDefinitions, typedValue);
-    this.#checkAdditionalProperties(path, typedValue, propertyDefinitions);
+    this.checkProperties(path, propertyDefinitions, typedValue);
+    this.checkAdditionalProperties(path, typedValue, propertyDefinitions);
   }
 
-  #checkProperties(path: string, propertyDefinitions: Record<string, ElementDefinition>, typedValue: TypedValue): void {
+  private checkProperties(
+    path: string,
+    propertyDefinitions: Record<string, ElementDefinition>,
+    typedValue: TypedValue
+  ): void {
     for (const [key, elementDefinition] of Object.entries(propertyDefinitions)) {
-      this.#checkProperty(path + '.' + key, elementDefinition, typedValue);
+      this.checkProperty(path + '.' + key, elementDefinition, typedValue);
     }
   }
 
-  #checkProperty(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+  private checkProperty(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     const propertyName = path.split('.').pop() as string;
     const value = getTypedPropertyValue(typedValue, propertyName);
 
     if (isEmpty(value)) {
       if (elementDefinition.min !== undefined && elementDefinition.min > 0) {
-        this.#issues.push(createStructureIssue(path, 'Missing required property'));
+        this.issues.push(createStructureIssue(path, 'Missing required property'));
       }
       return;
     }
 
     if (elementDefinition.max === '*') {
       if (!Array.isArray(value)) {
-        this.#issues.push(createStructureIssue(path, 'Expected array for property'));
+        this.issues.push(createStructureIssue(path, 'Expected array for property'));
         return;
       }
       for (const item of value) {
-        this.#checkPropertyValue(path, elementDefinition, item);
+        this.checkPropertyValue(path, elementDefinition, item);
       }
     } else {
       if (Array.isArray(value)) {
-        this.#issues.push(createStructureIssue(path, 'Expected single value for property'));
+        this.issues.push(createStructureIssue(path, 'Expected single value for property'));
         return;
       }
-      this.#checkPropertyValue(path, elementDefinition, value as TypedValue);
+      this.checkPropertyValue(path, elementDefinition, value as TypedValue);
     }
   }
 
-  #checkPropertyValue(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+  private checkPropertyValue(path: string, elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     if (typedValue.value === null) {
       // Null handled separately
       return;
     }
 
     if (isLowerCase(typedValue.type.charAt(0))) {
-      this.#validatePrimitiveType(elementDefinition, typedValue);
+      this.validatePrimitiveType(elementDefinition, typedValue);
     } else {
-      this.#validateObject(typedValue, path);
+      this.validateObject(typedValue, path);
     }
   }
 
-  #validatePrimitiveType(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
+  private validatePrimitiveType(elementDefinition: ElementDefinition, typedValue: TypedValue): void {
     const { type, value } = typedValue;
 
     if (value === null) {
@@ -275,21 +279,21 @@ export class FhirSchemaValidator<T extends Resource> {
     // First, make sure the value is the correct JS type
     const expectedType = fhirTypeToJsType[typedValue.type];
     if (typeof value !== expectedType) {
-      this.#createIssue(elementDefinition, 'Invalid type for ' + type);
+      this.createIssue(elementDefinition, 'Invalid type for ' + type);
       return;
     }
 
     // Then, perform additional checks for specialty types
     if (expectedType === 'string') {
-      this.#validateString(elementDefinition, type as PropertyType, value as string);
+      this.validateString(elementDefinition, type as PropertyType, value as string);
     } else if (expectedType === 'number') {
-      this.#validateNumber(elementDefinition, type as PropertyType, value as number);
+      this.validateNumber(elementDefinition, type as PropertyType, value as number);
     }
   }
 
-  #validateString(elementDefinition: ElementDefinition, type: PropertyType, value: string): void {
+  private validateString(elementDefinition: ElementDefinition, type: PropertyType, value: string): void {
     if (!value.trim()) {
-      this.#createIssue(elementDefinition, 'Invalid empty string');
+      this.createIssue(elementDefinition, 'Invalid empty string');
       return;
     }
 
@@ -299,39 +303,39 @@ export class FhirSchemaValidator<T extends Resource> {
       const regex = getExtensionValue(valueDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
       if (regex) {
         if (!value.match(new RegExp(regex))) {
-          this.#createIssue(elementDefinition, 'Invalid ' + type + ' format');
+          this.createIssue(elementDefinition, 'Invalid ' + type + ' format');
         }
       }
     }
   }
 
-  #validateNumber(elementDefinition: ElementDefinition, type: PropertyType, value: number): void {
+  private validateNumber(elementDefinition: ElementDefinition, type: PropertyType, value: number): void {
     if (isNaN(value) || !isFinite(value)) {
-      this.#createIssue(elementDefinition, 'Invalid ' + type + ' value');
+      this.createIssue(elementDefinition, 'Invalid ' + type + ' value');
       return;
     }
 
     if (isIntegerType(type) && !Number.isInteger(value)) {
-      this.#createIssue(elementDefinition, 'Number is not an integer');
+      this.createIssue(elementDefinition, 'Number is not an integer');
     }
 
     if (type === PropertyType.positiveInt && value <= 0) {
-      this.#createIssue(elementDefinition, 'Number is less than or equal to zero');
+      this.createIssue(elementDefinition, 'Number is less than or equal to zero');
     }
 
     if (type === PropertyType.unsignedInt && value < 0) {
-      this.#createIssue(elementDefinition, 'Number is negative');
+      this.createIssue(elementDefinition, 'Number is negative');
     }
   }
 
-  #checkAdditionalProperties(
+  private checkAdditionalProperties(
     path: string,
     typedValue: TypedValue,
     propertyDefinitions: Record<string, ElementDefinition>
   ): void {
     const object = typedValue.value as Record<string, unknown>;
     for (const key of Object.keys(object)) {
-      this.#checkAdditionalProperty(path, key, typedValue, propertyDefinitions);
+      this.checkAdditionalProperty(path, key, typedValue, propertyDefinitions);
     }
   }
 
@@ -342,7 +346,7 @@ export class FhirSchemaValidator<T extends Resource> {
    * @param typedValue The current object.
    * @param propertyDefinitions The property definitions of the current object.
    */
-  #checkAdditionalProperty(
+  private checkAdditionalProperty(
     path: string,
     key: string,
     typedValue: TypedValue,
@@ -352,10 +356,10 @@ export class FhirSchemaValidator<T extends Resource> {
       !baseResourceProperties.has(key) &&
       !(key in propertyDefinitions) &&
       !isChoiceOfType(key, typedValue, propertyDefinitions) &&
-      !this.#checkPrimitiveElement(path, key, typedValue)
+      !this.checkPrimitiveElement(path, key, typedValue)
     ) {
       const expression = `${path}.${key}`;
-      this.#issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
+      this.issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
     }
   }
 
@@ -372,7 +376,7 @@ export class FhirSchemaValidator<T extends Resource> {
    * @param key
    * @param typedValue
    */
-  #checkPrimitiveElement(path: string, key: string, typedValue: TypedValue): boolean {
+  private checkPrimitiveElement(path: string, key: string, typedValue: TypedValue): boolean {
     // Primitive element starts with underscore
     if (!key.startsWith('_')) {
       return false;
@@ -385,12 +389,12 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // Then validate the element
-    this.#validateObject({ type: 'Element', value: typedValue.value[key] }, path);
+    this.validateObject({ type: 'Element', value: typedValue.value[key] }, path);
     return true;
   }
 
-  #createIssue(elementDefinition: ElementDefinition, message: string): void {
-    this.#issues.push(createStructureIssue(elementDefinition.path as string, message));
+  private createIssue(elementDefinition: ElementDefinition, message: string): void {
+    this.issues.push(createStructureIssue(elementDefinition.path as string, message));
   }
 }
 

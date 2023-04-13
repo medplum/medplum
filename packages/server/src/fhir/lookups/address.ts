@@ -10,7 +10,7 @@ import { compareArrays } from './util';
  * Each Address is represented as a separate row in the "Address" table.
  */
 export class AddressTable extends LookupTable<Address> {
-  static readonly #knownParams: Set<string> = new Set<string>([
+  private static readonly knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
     'individual-address-country',
@@ -76,7 +76,7 @@ export class AddressTable extends LookupTable<Address> {
    * @returns True if the search parameter is an Address parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    return AddressTable.#knownParams.has(searchParam.id as string);
+    return AddressTable.knownParams.has(searchParam.id as string);
   }
 
   /**
@@ -87,7 +87,7 @@ export class AddressTable extends LookupTable<Address> {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource): Promise<void> {
-    const addresses = this.#getIncomingAddresses(resource);
+    const addresses = this.getIncomingAddresses(resource);
     if (!addresses || !Array.isArray(addresses)) {
       return;
     }
@@ -123,7 +123,7 @@ export class AddressTable extends LookupTable<Address> {
     }
   }
 
-  #getIncomingAddresses(resource: Resource): Address[] | undefined {
+  private getIncomingAddresses(resource: Resource): Address[] | undefined {
     if (
       resource.resourceType === 'Patient' ||
       resource.resourceType === 'Person' ||

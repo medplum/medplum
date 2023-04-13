@@ -32,7 +32,7 @@ export async function processBatch(router: FhirRouter, repo: FhirRepository, bun
  * In particular, it tracks rewritten ID's as necessary.
  */
 class BatchProcessor {
-  readonly #ids: Record<string, Resource>;
+  private readonly ids: Record<string, Resource>;
 
   /**
    * Creates a batch processor.
@@ -45,7 +45,7 @@ class BatchProcessor {
     private readonly repo: FhirRepository,
     private readonly bundle: Bundle
   ) {
-    this.#ids = {};
+    this.ids = {};
   }
 
   /**
@@ -71,9 +71,9 @@ class BatchProcessor {
 
     const resultEntries: BundleEntry[] = [];
     for (const entry of entries) {
-      const rewritten = this.#rewriteIdsInObject(entry);
+      const rewritten = this.rewriteIdsInObject(entry);
       try {
-        resultEntries.push(await this.#processBatchEntry(rewritten));
+        resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
         resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
       }
@@ -91,8 +91,8 @@ class BatchProcessor {
    * @param entry The bundle entry.
    * @returns The bundle entry response.
    */
-  async #processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    this.#validateEntry(entry);
+  private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
+    this.validateEntry(entry);
 
     const request = entry.request as BundleEntryRequest;
 
@@ -107,7 +107,7 @@ class BatchProcessor {
       if (entries.length === 1) {
         const matchingResource = entries[0].resource as Resource;
         if (entry.fullUrl) {
-          this.#addReplacementId(entry.fullUrl, matchingResource);
+          this.addReplacementId(entry.fullUrl, matchingResource);
         }
         return buildBundleResponse(allOk, matchingResource);
       }
@@ -115,7 +115,7 @@ class BatchProcessor {
 
     let body = entry.resource;
     if (request.method === 'PATCH') {
-      body = this.#parsePatchBody(entry);
+      body = this.parsePatchBody(entry);
     }
 
     // Pass in dummy host for parsing purposes.
@@ -134,13 +134,13 @@ class BatchProcessor {
     );
 
     if (entry.fullUrl && result.length === 2) {
-      this.#addReplacementId(entry.fullUrl, result[1]);
+      this.addReplacementId(entry.fullUrl, result[1]);
     }
 
     return buildBundleResponse(result[0], result[1]);
   }
 
-  #validateEntry(entry: BundleEntry): void {
+  private validateEntry(entry: BundleEntry): void {
     if (!entry.request) {
       throw new OperationOutcomeError(badRequest('Missing entry.request'));
     }
@@ -154,7 +154,7 @@ class BatchProcessor {
     }
   }
 
-  #parsePatchBody(entry: BundleEntry): any {
+  private parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
     if (!patchResource) {
       throw new OperationOutcomeError(badRequest('Missing entry.resource'));
@@ -171,38 +171,38 @@ class BatchProcessor {
     return JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
   }
 
-  #addReplacementId(fullUrl: string, resource: Resource): void {
+  private addReplacementId(fullUrl: string, resource: Resource): void {
     if (fullUrl?.startsWith('urn:uuid:')) {
-      this.#ids[fullUrl] = resource;
+      this.ids[fullUrl] = resource;
     }
   }
 
-  #rewriteIds(input: any): any {
+  private rewriteIds(input: any): any {
     if (Array.isArray(input)) {
-      return this.#rewriteIdsInArray(input);
+      return this.rewriteIdsInArray(input);
     }
     if (typeof input === 'string') {
-      return this.#rewriteIdsInString(input);
+      return this.rewriteIdsInString(input);
     }
     if (typeof input === 'object') {
-      return this.#rewriteIdsInObject(input);
+      return this.rewriteIdsInObject(input);
     }
     return input;
   }
 
-  #rewriteIdsInArray(input: any[]): any[] {
-    return input.map((item) => this.#rewriteIds(item));
+  private rewriteIdsInArray(input: any[]): any[] {
+    return input.map((item) => this.rewriteIds(item));
   }
 
-  #rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.#rewriteIds(v)]));
+  private rewriteIdsInObject(input: any): any {
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
-  #rewriteIdsInString(input: string): string {
+  private rewriteIdsInString(input: string): string {
     const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
     if (matches) {
       const fullUrl = matches[0];
-      const resource = this.#ids[fullUrl];
+      const resource = this.ids[fullUrl];
       if (resource) {
         return input.replaceAll(fullUrl, getReferenceString(resource));
       }

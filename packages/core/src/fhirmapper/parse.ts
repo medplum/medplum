@@ -27,16 +27,16 @@ class StructureMapParser {
       const next = this.parser.peek()?.value;
       switch (next) {
         case 'uses':
-          this.#parseUses();
+          this.parseUses();
           break;
         case 'imports':
-          this.#parseImport();
+          this.parseImport();
           break;
         case 'group':
-          this.#parseGroup();
+          this.parseGroup();
           break;
         case 'conceptmap':
-          this.#parseConceptMap();
+          this.parseConceptMap();
           break;
         default:
           throw new Error(`Unexpected token: ${next}`);
@@ -45,7 +45,7 @@ class StructureMapParser {
     return this.structureMap;
   }
 
-  #parseUses(): void {
+  private parseUses(): void {
     // 'uses' url structureAlias? 'as' modelMode
     // uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
     this.parser.consume('Symbol', 'uses');
@@ -63,7 +63,7 @@ class StructureMapParser {
     this.structureMap.structure.push(result);
   }
 
-  #parseImport(): void {
+  private parseImport(): void {
     this.parser.consume('Symbol', 'imports');
     if (!this.structureMap.import) {
       this.structureMap.import = [];
@@ -71,13 +71,13 @@ class StructureMapParser {
     this.structureMap.import.push(this.parser.consume('String').value);
   }
 
-  #parseGroup(): void {
+  private parseGroup(): void {
     // 'group' identifier parameters extends? typeMode? rules
     // group tutorial(source src : TLeft, target tgt : TRight) {
     const result: StructureMapGroup = {};
     this.parser.consume('Symbol', 'group');
     result.name = this.parser.consume('Symbol').value;
-    result.input = this.#parseParameters();
+    result.input = this.parseParameters();
 
     if (this.parser.peek()?.value === 'extends') {
       this.parser.consume('Symbol', 'extends');
@@ -96,7 +96,7 @@ class StructureMapParser {
       result.typeMode = 'none';
     }
 
-    result.rule = this.#parseRules();
+    result.rule = this.parseRules();
 
     if (!this.structureMap.group) {
       this.structureMap.group = [];
@@ -104,11 +104,11 @@ class StructureMapParser {
     this.structureMap.group.push(result);
   }
 
-  #parseParameters(): StructureMapGroupInput[] {
+  private parseParameters(): StructureMapGroupInput[] {
     const parameters: StructureMapGroupInput[] = [];
     this.parser.consume('(');
     while (this.parser.hasMore() && this.parser.peek()?.value !== ')') {
-      parameters.push(this.#parseParameter());
+      parameters.push(this.parseParameter());
       if (this.parser.peek()?.value === ',') {
         this.parser.consume(',');
       }
@@ -117,7 +117,7 @@ class StructureMapParser {
     return parameters;
   }
 
-  #parseParameter(): StructureMapGroupInput {
+  private parseParameter(): StructureMapGroupInput {
     // inputMode identifier type?
     // ':' identifier
     // source src : TLeft
@@ -131,32 +131,32 @@ class StructureMapParser {
     return result;
   }
 
-  #parseRules(): StructureMapGroupRule[] {
+  private parseRules(): StructureMapGroupRule[] {
     const rules = [];
     this.parser.consume('{');
     while (this.parser.hasMore() && this.parser.peek()?.value !== '}') {
-      rules.push(this.#parseRule());
+      rules.push(this.parseRule());
     }
     this.parser.consume('}');
     return rules;
   }
 
-  #parseRule(): StructureMapGroupRule {
+  private parseRule(): StructureMapGroupRule {
     const result: StructureMapGroupRule = {
-      source: this.#parseRuleSources(),
+      source: this.parseRuleSources(),
     };
 
     if (this.parser.peek()?.value === '->') {
       this.parser.consume('->');
-      result.target = this.#parseRuleTargets();
+      result.target = this.parseRuleTargets();
     }
 
     if (this.parser.peek()?.value === 'then') {
       this.parser.consume('Symbol', 'then');
       if (this.parser.peek()?.id === '{') {
-        result.rule = this.#parseRules();
+        result.rule = this.parseRules();
       } else {
-        result.dependent = this.#parseRuleDependents();
+        result.dependent = this.parseRuleDependents();
       }
     }
 
@@ -170,19 +170,19 @@ class StructureMapParser {
     return result;
   }
 
-  #parseRuleSources(): StructureMapGroupRuleSource[] {
-    const sources = [this.#parseRuleSource()];
+  private parseRuleSources(): StructureMapGroupRuleSource[] {
+    const sources = [this.parseRuleSource()];
     while (this.parser.hasMore() && this.parser.peek()?.value === ',') {
       this.parser.consume(',');
-      sources.push(this.#parseRuleSource());
+      sources.push(this.parseRuleSource());
     }
     return sources;
   }
 
-  #parseRuleSource(): StructureMapGroupRuleSource {
+  private parseRuleSource(): StructureMapGroupRuleSource {
     const result: StructureMapGroupRuleSource = {};
 
-    const context = this.#parseRuleContext();
+    const context = this.parseRuleContext();
     if (context.includes('.')) {
       const parts = context.split('.');
       result.context = parts[0];
@@ -231,19 +231,19 @@ class StructureMapParser {
     return result;
   }
 
-  #parseRuleTargets(): StructureMapGroupRuleTarget[] {
-    const targets = [this.#parseRuleTarget()];
+  private parseRuleTargets(): StructureMapGroupRuleTarget[] {
+    const targets = [this.parseRuleTarget()];
     while (this.parser.hasMore() && this.parser.peek()?.value === ',') {
       this.parser.consume(',');
-      targets.push(this.#parseRuleTarget());
+      targets.push(this.parseRuleTarget());
     }
     return targets;
   }
 
-  #parseRuleTarget(): StructureMapGroupRuleTarget {
+  private parseRuleTarget(): StructureMapGroupRuleTarget {
     const result: StructureMapGroupRuleTarget = {};
 
-    const context = this.#parseRuleContext();
+    const context = this.parseRuleContext();
     if (context.includes('.')) {
       const parts = context.split('.');
       result.contextType = 'variable';
@@ -255,7 +255,7 @@ class StructureMapParser {
 
     if (this.parser.peek()?.value === '=') {
       this.parser.consume('=');
-      this.#parseRuleTargetTransform(result);
+      this.parseRuleTargetTransform(result);
     }
 
     if (this.parser.peek()?.value === 'as') {
@@ -275,26 +275,26 @@ class StructureMapParser {
     return result;
   }
 
-  #parseRuleTargetTransform(result: StructureMapGroupRuleTarget): void {
+  private parseRuleTargetTransform(result: StructureMapGroupRuleTarget): void {
     result.transform = 'copy';
 
     const transformFhirPath = this.parser.consumeAndParse(OperatorPrecedence.As);
     if (transformFhirPath instanceof SymbolAtom) {
-      this.#parseRuleTargetSymbol(result, transformFhirPath);
+      this.parseRuleTargetSymbol(result, transformFhirPath);
     } else if (transformFhirPath instanceof FunctionAtom) {
-      this.#parseRuleTargetFunction(result, transformFhirPath);
+      this.parseRuleTargetFunction(result, transformFhirPath);
     } else if (transformFhirPath instanceof LiteralAtom) {
-      this.#parseRuleTargetLiteral(result, transformFhirPath);
+      this.parseRuleTargetLiteral(result, transformFhirPath);
     } else {
       throw new Error(`Unexpected FHIRPath: ${transformFhirPath}`);
     }
   }
 
-  #parseRuleTargetSymbol(result: StructureMapGroupRuleTarget, literalAtom: SymbolAtom): void {
+  private parseRuleTargetSymbol(result: StructureMapGroupRuleTarget, literalAtom: SymbolAtom): void {
     result.parameter = [{ valueId: literalAtom.name }];
   }
 
-  #parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
+  private parseRuleTargetFunction(result: StructureMapGroupRuleTarget, functionAtom: FunctionAtom): void {
     const functionName = functionAtom.name;
     switch (functionName) {
       case 'create':
@@ -314,7 +314,7 @@ class StructureMapParser {
     }
   }
 
-  #parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
+  private parseRuleTargetLiteral(result: StructureMapGroupRuleTarget, literalAtom: LiteralAtom): void {
     switch (literalAtom.value.type) {
       case 'boolean':
         result.parameter = [{ valueBoolean: literalAtom.value.value as boolean }];
@@ -330,7 +330,7 @@ class StructureMapParser {
     }
   }
 
-  #parseRuleContext(): string {
+  private parseRuleContext(): string {
     let identifier = this.parser.consume().value;
     while (this.parser.peek()?.value === '.') {
       this.parser.consume('.');
@@ -339,7 +339,7 @@ class StructureMapParser {
     return identifier;
   }
 
-  #parseRuleDependents(): StructureMapGroupRuleDependent[] | undefined {
+  private parseRuleDependents(): StructureMapGroupRuleDependent[] | undefined {
     const atom = this.parser.consumeAndParse(OperatorPrecedence.Arrow) as FunctionAtom;
     return [
       {
@@ -349,7 +349,7 @@ class StructureMapParser {
     ];
   }
 
-  #parseConceptMap(): void {
+  private parseConceptMap(): void {
     while (this.parser.peek()?.value !== '}') {
       this.parser.consume();
     }
