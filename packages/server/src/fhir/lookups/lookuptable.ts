@@ -84,7 +84,7 @@ export abstract class LookupTable<T> {
     }
 
     joinOnExpression.expressions.push(disjunction);
-    selectQuery.join(tableName, joinName, joinOnExpression);
+    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName));
     return new Condition(new Column(joinName, 'resourceId'), Operator.NOT_EQUALS, null);
   }
@@ -104,7 +104,7 @@ export abstract class LookupTable<T> {
       Operator.EQUALS,
       new Column(joinName, 'resourceId')
     );
-    selectQuery.join(tableName, joinName, joinOnExpression);
+    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 

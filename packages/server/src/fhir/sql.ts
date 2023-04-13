@@ -180,7 +180,12 @@ export class Disjunction extends Connective {
 }
 
 export class Join {
-  constructor(readonly joinItem: string | SelectQuery, readonly joinAlias: string, readonly onExpression: Expression) {}
+  constructor(
+    readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
+    readonly joinItem: string | SelectQuery,
+    readonly joinAlias: string,
+    readonly onExpression: Expression
+  ) {}
 }
 
 export class GroupBy {
@@ -329,8 +334,8 @@ export class SelectQuery extends BaseQuery {
     return `T${this.joins.length + 1}`;
   }
 
-  join(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join(joinItem, joinAlias, onExpression));
+  innerJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
+    this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
     return this;
   }
 

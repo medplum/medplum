@@ -20,8 +20,10 @@ export async function run(client: PoolClient): Promise<void> {
 
   for (const [table, column] of columns) {
     await client.query(
-      `ALTER TABLE "${table}" ADD COLUMN "${column}_tsv" tsvector GENERATED ALWAYS AS (to_tsvector('english', "${column}")) STORED`
+      `ALTER TABLE "${table}" ADD COLUMN IF NOT EXISTS "${column}_tsv" tsvector GENERATED ALWAYS AS (to_tsvector('english', "${column}")) STORED`
     );
-    await client.query(`CREATE INDEX CONCURRENTLY ON "${table}" USING GIN ("${column}_tsv")`);
+    await client.query(
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${table}_${column}_tsv_idx" ON "${table}" USING GIN ("${column}_tsv")`
+    );
   }
 }

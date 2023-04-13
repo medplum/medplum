@@ -112,7 +112,7 @@ export class TokenTable extends LookupTable<Token> {
       new Condition(new Column(joinName, 'code'), Operator.EQUALS, filter.code),
     ]);
     joinOnExpression.expressions.push(buildWhereExpression(joinName, filter));
-    selectQuery.join(tableName, joinName, joinOnExpression);
+    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
 
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
@@ -137,7 +137,7 @@ export class TokenTable extends LookupTable<Token> {
       new Condition(new Column(joinName, 'code'), Operator.EQUALS, sortRule.code),
     ]);
     joinOnExpression.expressions.push(new Condition(new Column(joinName, 'code'), Operator.EQUALS, sortRule.code));
-    selectQuery.join(tableName, joinName, joinOnExpression);
+    selectQuery.innerJoin(tableName, joinName, joinOnExpression);
     selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
 }
