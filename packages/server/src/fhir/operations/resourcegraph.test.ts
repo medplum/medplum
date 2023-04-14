@@ -76,7 +76,7 @@ describe('Resource $graph', () => {
   });
 
   describe('Error cases', () => {
-    test('Missing Graph Definition', async () => {
+    test('Invalid graph parameter', async () => {
       // Abuse the graph parameter, express will parse it as string array rather than string
       const graphName = 'g&graph=g';
       const patient = await createResource({
