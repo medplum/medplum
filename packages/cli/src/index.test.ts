@@ -127,6 +127,18 @@ describe('CLI', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching(patient.id as string));
   });
 
+  test('Get command with as-transaction flag', async () => {
+    await medplum.createResource<Patient>({ resourceType: 'Patient' });
+    await main(medplum, ['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
+  });
+
+  test('Get command with invalid flag', async () => {
+    await medplum.createResource<Patient>({ resourceType: 'Patient' });
+    await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
+    expect(console.log).toBeCalledWith(expect.stringMatching('Unknown flag:'));
+  });
+
   test('Get not found', async () => {
     await main(medplum, ['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
     expect(console.error).toBeCalledWith(expect.stringMatching('Not found'));

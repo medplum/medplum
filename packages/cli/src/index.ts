@@ -8,6 +8,7 @@ import fetch from 'node-fetch';
 import { platform } from 'os';
 import { resolve } from 'path';
 import { FileSystemStorage } from './storage';
+import { get } from './get';
 
 interface MedplumConfig {
   readonly bots?: MedplumBotConfig[];
@@ -55,7 +56,7 @@ export async function main(medplum: MedplumClient, argv: string[]): Promise<void
         prettyPrint(await medplum.delete(cleanUrl(argv[3])));
         break;
       case 'get':
-        prettyPrint(await medplum.get(cleanUrl(argv[3])));
+        await get(medplum, argv);
         break;
       case 'patch':
         prettyPrint(await medplum.patch(cleanUrl(argv[3]), parseBody(argv[4])));
@@ -159,7 +160,7 @@ function printMe(medplum: MedplumClient): void {
   }
 }
 
-function cleanUrl(input: string): string {
+export function cleanUrl(input: string): string {
   const knownPrefixes = ['admin/', 'auth/', 'fhir/R4'];
   if (knownPrefixes.some((p) => input.startsWith(p))) {
     // If the URL starts with a known prefix, return it as-is
@@ -180,7 +181,7 @@ function parseBody(input: string | undefined): any {
   }
 }
 
-function prettyPrint(input: unknown): void {
+export function prettyPrint(input: unknown): void {
   console.log(JSON.stringify(input, null, 2));
 }
 
