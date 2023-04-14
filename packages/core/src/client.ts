@@ -38,6 +38,7 @@ import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
 import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
+import { encodeBase64 } from './base64';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
 
@@ -493,6 +494,7 @@ export class MedplumClient extends EventTarget {
   private profilePromise?: Promise<any>;
   private profile?: ProfileResource;
   private config?: UserConfiguration;
+  private basicAuth?: string;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -2264,19 +2266,24 @@ export class MedplumClient extends EventTarget {
    * @param options The options to add defaults to.
    */
   private addFetchOptionsDefaults(options: RequestInit): void {
-    if (!options.headers) {
-      options.headers = {};
+    let headers = options.headers as Record<string, string> | undefined;
+    if (!headers) {
+      headers = {};
+      options.headers = headers;
     }
 
-    const headers = options.headers as Record<string, string>;
     headers['X-Medplum'] = 'extended';
 
-    if (!headers['Content-Type']) {
+    if (options.body && !headers['Content-Type']) {
       headers['Content-Type'] = FHIR_CONTENT_TYPE;
     }
 
     if (this.accessToken) {
       headers['Authorization'] = 'Bearer ' + this.accessToken;
+    }
+
+    if (this.basicAuth) {
+      headers['Authorization'] = 'Basic ' + this.basicAuth;
     }
 
     if (!options.cache) {
@@ -2443,6 +2450,18 @@ export class MedplumClient extends EventTarget {
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
     return this.fetchTokens(formBody);
+  }
+
+  /**
+   * Sets the client ID and secret for basic auth.
+   * @category Authentication
+   * @param clientId The client ID.
+   * @param clientSecret The client secret.
+   */
+  setBasicAuth(clientId: string, clientSecret: string): void {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.basicAuth = encodeBase64(clientId + ':' + clientSecret);
   }
 
   /**
