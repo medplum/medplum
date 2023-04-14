@@ -153,6 +153,8 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
           config['redis'] = await loadAwsSecrets(region, value);
         } else if (key === 'port') {
           config.port = parseInt(value);
+        } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
+          config[key] = value === 'true';
         } else {
           config[key] = value;
         }
