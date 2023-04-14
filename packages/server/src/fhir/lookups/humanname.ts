@@ -10,7 +10,7 @@ import { compareArrays } from './util';
  * Each name is represented as a separate row in the "HumanName" table.
  */
 export class HumanNameTable extends LookupTable<HumanName> {
-  static readonly #knownParams: Set<string> = new Set<string>([
+  private static readonly knownParams: Set<string> = new Set<string>([
     'individual-given',
     'individual-family',
     'Patient-name',
@@ -41,7 +41,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
    * @returns True if the search parameter is an HumanName parameter.
    */
   isIndexed(searchParam: SearchParameter): boolean {
-    return HumanNameTable.#knownParams.has(searchParam.id as string);
+    return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
   /**

@@ -5,21 +5,21 @@
  */
 export class ReadablePromise<T> implements Promise<T> {
   readonly [Symbol.toStringTag]: string = 'ReadablePromise';
-  #suspender: Promise<T>;
-  #status: 'pending' | 'error' | 'success' = 'pending';
-  #response: T | undefined;
-  #error: Error | undefined;
+  private suspender: Promise<T>;
+  private status: 'pending' | 'error' | 'success' = 'pending';
+  private response: T | undefined;
+  private error: Error | undefined;
 
   constructor(requestPromise: Promise<T>) {
-    this.#suspender = requestPromise.then(
+    this.suspender = requestPromise.then(
       (res: T) => {
-        this.#status = 'success';
-        this.#response = res;
+        this.status = 'success';
+        this.response = res;
         return res;
       },
       (err: any) => {
-        this.#status = 'error';
-        this.#error = err;
+        this.status = 'error';
+        this.error = err;
         throw err;
       }
     );
@@ -30,7 +30,7 @@ export class ReadablePromise<T> implements Promise<T> {
    * @returns True if the Promise is pending.
    */
   isPending(): boolean {
-    return this.#status === 'pending';
+    return this.status === 'pending';
   }
 
   /**
@@ -38,7 +38,7 @@ export class ReadablePromise<T> implements Promise<T> {
    * @returns True if the Promise resolved successfully.
    */
   isOk(): boolean {
-    return this.#status === 'success';
+    return this.status === 'success';
   }
 
   /**
@@ -49,13 +49,13 @@ export class ReadablePromise<T> implements Promise<T> {
    * @returns The resolved value of the Promise.
    */
   read(): T {
-    switch (this.#status) {
+    switch (this.status) {
       case 'pending':
-        throw this.#suspender;
+        throw this.suspender;
       case 'error':
-        throw this.#error;
+        throw this.error;
       default:
-        return this.#response as T;
+        return this.response as T;
     }
   }
 
@@ -69,7 +69,7 @@ export class ReadablePromise<T> implements Promise<T> {
     onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
     onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ): Promise<TResult1 | TResult2> {
-    return this.#suspender.then(onfulfilled, onrejected);
+    return this.suspender.then(onfulfilled, onrejected);
   }
 
   /**
@@ -80,7 +80,7 @@ export class ReadablePromise<T> implements Promise<T> {
   catch<TResult = never>(
     onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null
   ): Promise<T | TResult> {
-    return this.#suspender.catch(onrejected);
+    return this.suspender.catch(onrejected);
   }
 
   /**
@@ -90,6 +90,6 @@ export class ReadablePromise<T> implements Promise<T> {
    * @returns A Promise for the completion of the callback.
    */
   finally(onfinally?: (() => void) | undefined | null): Promise<T> {
-    return this.#suspender.finally(onfinally);
+    return this.suspender.finally(onfinally);
   }
 }

@@ -284,7 +284,10 @@ async function followSearchLink(
  * @returns The operation parameters if available; otherwise, undefined.
  */
 async function validateQueryParameters(req: Request, res: Response): Promise<GraphDefinition> {
-  const { graph } = req.query as { graph: string };
+  const { graph } = req.query;
+  if (typeof graph !== 'string') {
+    throw new OperationOutcomeError(badRequest('Missing required parameter: graph'));
+  }
 
   const repo = res.locals.repo as Repository;
   const bundle = await repo.search({

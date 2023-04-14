@@ -1,13 +1,13 @@
 const DEFAULT_INDENT = ' '.repeat(2);
 
 export class FileBuilder {
-  readonly #indent: string;
-  readonly #b: string[];
+  private readonly indent: string;
+  private readonly b: string[];
   indentCount: number;
 
   constructor(indent = DEFAULT_INDENT, header = true) {
-    this.#indent = indent;
-    this.#b = [];
+    this.indent = indent;
+    this.b = [];
     this.indentCount = 0;
 
     if (header) {
@@ -20,37 +20,37 @@ export class FileBuilder {
   }
 
   newLine(): void {
-    this.#b.push('\n');
+    this.b.push('\n');
   }
 
   appendNoWrap(line: string): void {
-    this.#b.push(this.#indent.repeat(this.indentCount));
-    this.#b.push(line);
-    this.#b.push('\n');
+    this.b.push(this.indent.repeat(this.indentCount));
+    this.b.push(line);
+    this.b.push('\n');
   }
 
   append(line: string): void {
-    const nowrap = this.#indent.repeat(this.indentCount) + line;
+    const nowrap = this.indent.repeat(this.indentCount) + line;
     if (nowrap.length < 160) {
-      this.#b.push(nowrap);
-      this.#b.push('\n');
+      this.b.push(nowrap);
+      this.b.push('\n');
     } else {
       let first = true;
-      for (const wrappedLine of wordWrap(nowrap, 120 - this.#indent.length * this.indentCount)) {
+      for (const wrappedLine of wordWrap(nowrap, 120 - this.indent.length * this.indentCount)) {
         if (first) {
-          this.#b.push(this.#indent.repeat(this.indentCount));
+          this.b.push(this.indent.repeat(this.indentCount));
         } else {
-          this.#b.push(this.#indent.repeat(this.indentCount + 2));
+          this.b.push(this.indent.repeat(this.indentCount + 2));
         }
-        this.#b.push(wrappedLine.trim());
-        this.#b.push('\n');
+        this.b.push(wrappedLine.trim());
+        this.b.push('\n');
         first = false;
       }
     }
   }
 
   toString(): string {
-    return this.#b.join('').replaceAll('\n\n\n', '\n\n');
+    return this.b.join('').replaceAll('\n\n\n', '\n\n');
   }
 }
 

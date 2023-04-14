@@ -201,21 +201,21 @@ export interface Expression {
 }
 
 export class SqlBuilder {
-  readonly #sql: string[];
-  readonly #values: any[];
+  private readonly sql: string[];
+  private readonly values: any[];
 
   constructor() {
-    this.#sql = [];
-    this.#values = [];
+    this.sql = [];
+    this.values = [];
   }
 
   append(value: any): this {
-    this.#sql.push(value.toString());
+    this.sql.push(value.toString());
     return this;
   }
 
   appendIdentifier(str: string): this {
-    this.#sql.push('"', str, '"');
+    this.sql.push('"', str, '"');
     return this;
   }
 
@@ -236,18 +236,18 @@ export class SqlBuilder {
     if (value instanceof Column) {
       this.appendColumn(value);
     } else {
-      this.#values.push(value);
-      this.#sql.push('$' + this.#values.length);
+      this.values.push(value);
+      this.sql.push('$' + this.values.length);
     }
     return this;
   }
 
   toString(): string {
-    return this.#sql.join('');
+    return this.sql.join('');
   }
 
   getValues(): any[] {
-    return this.#values;
+    return this.values;
   }
 
   async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
@@ -255,10 +255,10 @@ export class SqlBuilder {
     let startTime = 0;
     if (DEBUG) {
       console.log('sql', sql);
-      console.log('values', this.#values);
+      console.log('values', this.values);
       startTime = Date.now();
     }
-    const result = await conn.query(sql, this.#values);
+    const result = await conn.query(sql, this.values);
     if (DEBUG) {
       const endTime = Date.now();
       const duration = endTime - startTime;
@@ -361,12 +361,12 @@ export class SelectQuery extends BaseQuery {
 
   buildSql(sql: SqlBuilder): void {
     sql.append('SELECT ');
-    this.#buildDistinctOn(sql);
-    this.#buildColumns(sql);
-    this.#buildFrom(sql);
+    this.buildDistinctOn(sql);
+    this.buildColumns(sql);
+    this.buildFrom(sql);
     this.buildConditions(sql);
-    this.#buildGroupBy(sql);
-    this.#buildOrderBy(sql);
+    this.buildGroupBy(sql);
+    this.buildOrderBy(sql);
 
     if (this.limit_ > 0) {
       sql.append(' LIMIT ');
@@ -411,7 +411,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildDistinctOn(sql: SqlBuilder): void {
+  private buildDistinctOn(sql: SqlBuilder): void {
     if (this.distinctOns.length > 0) {
       sql.append('DISTINCT ON (');
       let first = true;
@@ -426,7 +426,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildColumns(sql: SqlBuilder): void {
+  private buildColumns(sql: SqlBuilder): void {
     let first = true;
     for (const column of this.columns) {
       if (!first) {
@@ -437,7 +437,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildFrom(sql: SqlBuilder): void {
+  private buildFrom(sql: SqlBuilder): void {
     sql.append(' FROM ');
     sql.appendIdentifier(this.tableName);
 
@@ -457,7 +457,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildGroupBy(sql: SqlBuilder): void {
+  private buildGroupBy(sql: SqlBuilder): void {
     let first = true;
 
     for (const groupBy of this.groupBys) {
@@ -467,7 +467,7 @@ export class SelectQuery extends BaseQuery {
     }
   }
 
-  #buildOrderBy(sql: SqlBuilder): void {
+  private buildOrderBy(sql: SqlBuilder): void {
     if (this.orderBys.length === 0) {
       return;
     }
@@ -493,16 +493,16 @@ export class SelectQuery extends BaseQuery {
 }
 
 export class InsertQuery extends BaseQuery {
-  readonly #values: Record<string, any>[];
-  #merge?: boolean;
+  private readonly values: Record<string, any>[];
+  private merge?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[]) {
     super(tableName);
-    this.#values = values;
+    this.values = values;
   }
 
   mergeOnConflict(merge: boolean): this {
-    this.#merge = merge;
+    this.merge = merge;
     return this;
   }
 
@@ -510,7 +510,7 @@ export class InsertQuery extends BaseQuery {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
-    const columnNames = Object.keys(this.#values[0]);
+    const columnNames = Object.keys(this.values[0]);
     this.appendColumns(sql, columnNames);
     this.appendAllValues(sql, columnNames);
     this.appendMerge(sql);
@@ -531,13 +531,13 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendAllValues(sql: SqlBuilder, columnNames: string[]): void {
-    for (let i = 0; i < this.#values.length; i++) {
+    for (let i = 0; i < this.values.length; i++) {
       if (i === 0) {
         sql.append(' VALUES ');
       } else {
         sql.append(', ');
       }
-      this.appendValues(sql, columnNames, this.#values[i]);
+      this.appendValues(sql, columnNames, this.values[i]);
     }
   }
 
@@ -555,13 +555,13 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.#merge) {
+    if (!this.merge) {
       return;
     }
 
     sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
 
-    const entries = Object.entries(this.#values[0]);
+    const entries = Object.entries(this.values[0]);
     let first = true;
     for (const [columnName, value] of entries) {
       if (columnName === 'id') {

@@ -10,21 +10,21 @@ interface Event {
 type EventListener = (e: Event) => void;
 
 export class EventTarget {
-  readonly #listeners: Record<string, EventListener[]>;
+  private readonly listeners: Record<string, EventListener[]>;
 
   constructor() {
-    this.#listeners = {};
+    this.listeners = {};
   }
 
   addEventListener(type: string, callback: EventListener): void {
-    if (!this.#listeners[type]) {
-      this.#listeners[type] = [];
+    if (!this.listeners[type]) {
+      this.listeners[type] = [];
     }
-    this.#listeners[type].push(callback);
+    this.listeners[type].push(callback);
   }
 
   removeEventListeneer(type: string, callback: EventListener): void {
-    const array = this.#listeners[type];
+    const array = this.listeners[type];
     if (!array) {
       return;
     }
@@ -37,7 +37,7 @@ export class EventTarget {
   }
 
   dispatchEvent(event: Event): boolean {
-    const array = this.#listeners[event.type];
+    const array = this.listeners[event.type];
     if (array) {
       array.forEach((listener) => listener.call(this, event));
     }

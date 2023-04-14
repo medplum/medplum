@@ -470,29 +470,29 @@ interface AutoBatchEntry<T = any> {
 
  */
 export class MedplumClient extends EventTarget {
-  readonly #fetch: FetchLike;
-  readonly #createPdf?: CreatePdfFunction;
-  readonly #storage: ClientStorage;
-  readonly #requestCache: LRUCache<RequestCacheEntry>;
-  readonly #cacheTime: number;
-  readonly #baseUrl: string;
-  readonly #fhirBaseUrl: string;
-  readonly #authorizeUrl: string;
-  readonly #tokenUrl: string;
-  readonly #logoutUrl: string;
-  readonly #exchangeUrl: string;
-  readonly #onUnauthenticated?: () => void;
-  readonly #autoBatchTime: number;
-  readonly #autoBatchQueue: AutoBatchEntry[];
-  #clientId?: string;
-  #clientSecret?: string;
-  #autoBatchTimerId?: any;
-  #accessToken?: string;
-  #refreshToken?: string;
-  #refreshPromise?: Promise<any>;
-  #profilePromise?: Promise<any>;
-  #profile?: ProfileResource;
-  #config?: UserConfiguration;
+  private readonly fetch: FetchLike;
+  private readonly createPdfImpl?: CreatePdfFunction;
+  private readonly storage: ClientStorage;
+  private readonly requestCache: LRUCache<RequestCacheEntry>;
+  private readonly cacheTime: number;
+  private readonly baseUrl: string;
+  private readonly fhirBaseUrl: string;
+  private readonly authorizeUrl: string;
+  private readonly tokenUrl: string;
+  private readonly logoutUrl: string;
+  private readonly exchangeUrl: string;
+  private readonly onUnauthenticated?: () => void;
+  private readonly autoBatchTime: number;
+  private readonly autoBatchQueue: AutoBatchEntry[];
+  private clientId?: string;
+  private clientSecret?: string;
+  private autoBatchTimerId?: any;
+  private accessToken?: string;
+  private refreshToken?: string;
+  private refreshPromise?: Promise<any>;
+  private profilePromise?: Promise<any>;
+  private profile?: ProfileResource;
+  private config?: UserConfiguration;
 
   constructor(options?: MedplumClientOptions) {
     super();
@@ -503,30 +503,30 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    this.#fetch = options?.fetch || getDefaultFetch();
-    this.#storage = options?.storage || new ClientStorage();
-    this.#createPdf = options?.createPdf;
-    this.#requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
-    this.#cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
-    this.#baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
-    this.#fhirBaseUrl = this.#baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
-    this.#clientId = options?.clientId || '';
-    this.#authorizeUrl = options?.authorizeUrl || this.#baseUrl + 'oauth2/authorize';
-    this.#tokenUrl = options?.tokenUrl || this.#baseUrl + 'oauth2/token';
-    this.#logoutUrl = options?.logoutUrl || this.#baseUrl + 'oauth2/logout';
-    this.#exchangeUrl = this.#baseUrl + 'auth/exchange';
-    this.#onUnauthenticated = options?.onUnauthenticated;
-    this.#autoBatchTime = options?.autoBatchTime ?? 0;
-    this.#autoBatchQueue = [];
+    this.fetch = options?.fetch || getDefaultFetch();
+    this.storage = options?.storage || new ClientStorage();
+    this.createPdfImpl = options?.createPdf;
+    this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
+    this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
+    this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
+    this.clientId = options?.clientId || '';
+    this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
+    this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
+    this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
+    this.exchangeUrl = this.baseUrl + 'auth/exchange';
+    this.onUnauthenticated = options?.onUnauthenticated;
+    this.autoBatchTime = options?.autoBatchTime ?? 0;
+    this.autoBatchQueue = [];
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
-      this.#accessToken = activeLogin.accessToken;
-      this.#refreshToken = activeLogin.refreshToken;
-      this.#refreshProfile().catch(console.log);
+      this.accessToken = activeLogin.accessToken;
+      this.refreshToken = activeLogin.refreshToken;
+      this.refreshProfile().catch(console.log);
     }
 
-    this.#setupStorageListener();
+    this.setupStorageListener();
   }
 
   /**
@@ -537,7 +537,7 @@ export class MedplumClient extends EventTarget {
    * @returns The current base URL for all API requests.
    */
   getBaseUrl(): string {
-    return this.#baseUrl;
+    return this.baseUrl;
   }
 
   /**
@@ -545,7 +545,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clear(): void {
-    this.#storage.clear();
+    this.storage.clear();
     this.clearActiveLogin();
   }
 
@@ -555,12 +555,12 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
-    this.#storage.setString('activeLogin', undefined);
-    this.#requestCache.clear();
-    this.#accessToken = undefined;
-    this.#refreshToken = undefined;
-    this.#profile = undefined;
-    this.#config = undefined;
+    this.storage.setString('activeLogin', undefined);
+    this.requestCache.clear();
+    this.accessToken = undefined;
+    this.refreshToken = undefined;
+    this.profile = undefined;
+    this.config = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -571,7 +571,7 @@ export class MedplumClient extends EventTarget {
    */
   invalidateUrl(url: URL | string): void {
     url = url.toString();
-    this.#requestCache.delete(url);
+    this.requestCache.delete(url);
   }
 
   /**
@@ -581,9 +581,9 @@ export class MedplumClient extends EventTarget {
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
     const url = 'fhir/R4/' + resourceType;
-    for (const key of this.#requestCache.keys()) {
+    for (const key of this.requestCache.keys()) {
       if (key.endsWith(url) || key.includes(url + '?')) {
-        this.#requestCache.delete(key);
+        this.requestCache.delete(key);
       }
     }
   }
@@ -602,32 +602,32 @@ export class MedplumClient extends EventTarget {
    */
   get<T = any>(url: URL | string, options: RequestInit = {}): ReadablePromise<T> {
     url = url.toString();
-    const cached = this.#getCacheEntry(url, options);
+    const cached = this.getCacheEntry(url, options);
     if (cached) {
       return cached.value;
     }
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.#fhirBaseUrl) && this.#autoBatchTime > 0) {
+    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchTime > 0) {
       promise = new Promise<T>((resolve, reject) => {
-        this.#autoBatchQueue.push({
+        this.autoBatchQueue.push({
           method: 'GET',
-          url: (url as string).replace(this.#fhirBaseUrl, ''),
+          url: (url as string).replace(this.fhirBaseUrl, ''),
           options,
           resolve,
           reject,
         });
-        if (!this.#autoBatchTimerId) {
-          this.#autoBatchTimerId = setTimeout(() => this.#executeAutoBatch(), this.#autoBatchTime);
+        if (!this.autoBatchTimerId) {
+          this.autoBatchTimerId = setTimeout(() => this.executeAutoBatch(), this.autoBatchTime);
         }
       });
     } else {
-      promise = this.#request<T>('GET', url, options);
+      promise = this.request<T>('GET', url, options);
     }
 
     const readablePromise = new ReadablePromise(promise);
-    this.#setCacheEntry(url, readablePromise);
+    this.setCacheEntry(url, readablePromise);
     return readablePromise;
   }
 
@@ -648,13 +648,13 @@ export class MedplumClient extends EventTarget {
   post(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
     if (body) {
-      this.#setRequestBody(options, body);
+      this.setRequestBody(options, body);
     }
     if (contentType) {
-      this.#setRequestContentType(options, contentType);
+      this.setRequestContentType(options, contentType);
     }
     this.invalidateUrl(url);
-    return this.#request('POST', url, options);
+    return this.request('POST', url, options);
   }
 
   /**
@@ -674,13 +674,13 @@ export class MedplumClient extends EventTarget {
   put(url: URL | string, body: any, contentType?: string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
     if (body) {
-      this.#setRequestBody(options, body);
+      this.setRequestBody(options, body);
     }
     if (contentType) {
-      this.#setRequestContentType(options, contentType);
+      this.setRequestContentType(options, contentType);
     }
     this.invalidateUrl(url);
-    return this.#request('PUT', url, options);
+    return this.request('PUT', url, options);
   }
 
   /**
@@ -698,10 +698,10 @@ export class MedplumClient extends EventTarget {
    */
   patch(url: URL | string, operations: PatchOperation[], options: RequestInit = {}): Promise<any> {
     url = url.toString();
-    this.#setRequestBody(options, operations);
-    this.#setRequestContentType(options, PATCH_CONTENT_TYPE);
+    this.setRequestBody(options, operations);
+    this.setRequestContentType(options, PATCH_CONTENT_TYPE);
     this.invalidateUrl(url);
-    return this.#request('PATCH', url, options);
+    return this.request('PATCH', url, options);
   }
 
   /**
@@ -720,7 +720,7 @@ export class MedplumClient extends EventTarget {
   delete(url: URL | string, options: RequestInit = {}): Promise<any> {
     url = url.toString();
     this.invalidateUrl(url);
-    return this.#request('DELETE', url, options);
+    return this.request('DELETE', url, options);
   }
 
   /**
@@ -776,7 +776,7 @@ export class MedplumClient extends EventTarget {
   async startLogin(loginRequest: EmailPasswordLoginRequest): Promise<LoginAuthenticationResponse> {
     return this.post('auth/login', {
       ...(await this.ensureCodeChallenge(loginRequest)),
-      clientId: loginRequest.clientId ?? this.#clientId,
+      clientId: loginRequest.clientId ?? this.clientId,
       scope: loginRequest.scope,
     }) as Promise<LoginAuthenticationResponse>;
   }
@@ -792,7 +792,7 @@ export class MedplumClient extends EventTarget {
   async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
     return this.post('auth/google', {
       ...(await this.ensureCodeChallenge(loginRequest)),
-      clientId: loginRequest.clientId ?? this.#clientId,
+      clientId: loginRequest.clientId ?? this.clientId,
       scope: loginRequest.scope,
     }) as Promise<LoginAuthenticationResponse>;
   }
@@ -818,7 +818,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async signOut(): Promise<void> {
-    await this.post(this.#logoutUrl, {});
+    await this.post(this.logoutUrl, {});
     this.clear();
   }
 
@@ -833,7 +833,7 @@ export class MedplumClient extends EventTarget {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
-      await this.#requestAuthorization(loginParams);
+      await this.requestAuthorization(loginParams);
       return undefined;
     } else {
       return this.processCode(code);
@@ -846,7 +846,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   signOutWithRedirect(): void {
-    window.location.assign(this.#logoutUrl);
+    window.location.assign(this.logoutUrl);
   }
 
   /**
@@ -874,16 +874,16 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
-    clientId = clientId || this.#clientId;
+    clientId = clientId || this.clientId;
     if (!clientId) {
       throw new Error('MedplumClient is missing clientId');
     }
 
-    const response = await this.#fetch(this.#exchangeUrl, {
+    const response = await this.fetch(this.exchangeUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        clientId: this.#clientId,
+        clientId: this.clientId,
         externalAccessToken: token,
       }),
       credentials: 'include',
@@ -895,7 +895,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const tokens = await response.json();
-    await this.#verifyTokens(tokens);
+    await this.verifyTokens(tokens);
     return this.getProfile() as ProfileResource;
   }
 
@@ -931,7 +931,7 @@ export class MedplumClient extends EventTarget {
    * @returns The well-formed FHIR URL.
    */
   fhirUrl(...path: string[]): URL {
-    return new URL(this.#fhirBaseUrl + path.join('/'));
+    return new URL(this.fhirBaseUrl + path.join('/'));
   }
 
   /**
@@ -1005,7 +1005,7 @@ export class MedplumClient extends EventTarget {
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-search';
-    const cached = this.#getCacheEntry(cacheKey, options);
+    const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
@@ -1014,13 +1014,13 @@ export class MedplumClient extends EventTarget {
         const bundle = await this.get<Bundle<ExtractResource<K>>>(url, options);
         if (bundle.entry) {
           for (const entry of bundle.entry) {
-            this.#cacheResource(entry.resource);
+            this.cacheResource(entry.resource);
           }
         }
         return bundle;
       })()
     );
-    this.#setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -1055,14 +1055,14 @@ export class MedplumClient extends EventTarget {
     url.searchParams.set('_count', '1');
     url.searchParams.sort();
     const cacheKey = url.toString() + '-searchOne';
-    const cached = this.#getCacheEntry(cacheKey, options);
+    const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
     const promise = new ReadablePromise(
       this.search<K>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
-    this.#setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -1095,7 +1095,7 @@ export class MedplumClient extends EventTarget {
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-searchResources';
-    const cached = this.#getCacheEntry(cacheKey, options);
+    const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
@@ -1104,7 +1104,7 @@ export class MedplumClient extends EventTarget {
         (b) => b.entry?.map((e) => e.resource as ExtractResource<K>) ?? []
       )
     );
-    this.#setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -1174,7 +1174,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
-    const cached = this.#requestCache.get(this.fhirUrl(resourceType, id).toString())?.value;
+    const cached = this.requestCache.get(this.fhirUrl(resourceType, id).toString())?.value;
     return cached && cached.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
@@ -1286,7 +1286,7 @@ export class MedplumClient extends EventTarget {
     }
 
     const cacheKey = resourceType + '-requestSchema';
-    const cached = this.#getCacheEntry(cacheKey, undefined);
+    const cached = this.getCacheEntry(cacheKey, undefined);
     if (cached) {
       return cached.value;
     }
@@ -1336,7 +1336,7 @@ export class MedplumClient extends EventTarget {
         return globalSchema;
       })()
     );
-    this.#setCacheEntry(cacheKey, promise);
+    this.setCacheEntry(cacheKey, promise);
     return promise;
   }
 
@@ -1562,7 +1562,7 @@ export class MedplumClient extends EventTarget {
 
       xhr.open('POST', url);
       xhr.withCredentials = true;
-      xhr.setRequestHeader('Authorization', 'Bearer ' + this.#accessToken);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + this.accessToken);
       xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
       xhr.setRequestHeader('Content-Type', contentType);
       xhr.setRequestHeader('X-Medplum', 'extended');
@@ -1598,10 +1598,10 @@ export class MedplumClient extends EventTarget {
     tableLayouts?: { [name: string]: CustomTableLayout },
     fonts?: TFontDictionary
   ): Promise<Binary> {
-    if (!this.#createPdf) {
+    if (!this.createPdfImpl) {
       throw new Error('PDF creation not enabled');
     }
-    const blob = await this.#createPdf(docDefinition, tableLayouts, fonts);
+    const blob = await this.createPdfImpl(docDefinition, tableLayouts, fonts);
     return this.createBinary(blob, filename, 'application/pdf');
   }
 
@@ -1685,7 +1685,7 @@ export class MedplumClient extends EventTarget {
       // return result ?? resource;
       result = resource;
     }
-    this.#cacheResource(result);
+    this.cacheResource(result);
     return result;
   }
 
@@ -1739,7 +1739,7 @@ export class MedplumClient extends EventTarget {
    * @returns The result of the delete operation.
    */
   deleteResource(resourceType: ResourceType, id: string): Promise<any> {
-    this.#deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
+    this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
     return this.delete(this.fhirUrl(resourceType, id));
   }
@@ -1978,7 +1978,7 @@ export class MedplumClient extends EventTarget {
    * @returns The Login State
    */
   getActiveLogin(): LoginState | undefined {
-    return this.#storage.getObject('activeLogin');
+    return this.storage.getObject('activeLogin');
   }
 
   /**
@@ -1986,12 +1986,12 @@ export class MedplumClient extends EventTarget {
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
-    this.#accessToken = login.accessToken;
-    this.#refreshToken = login.refreshToken;
-    this.#storage.setObject('activeLogin', login);
-    this.#addLogin(login);
-    this.#refreshPromise = undefined;
-    await this.#refreshProfile();
+    this.accessToken = login.accessToken;
+    this.refreshToken = login.refreshToken;
+    this.storage.setObject('activeLogin', login);
+    this.addLogin(login);
+    this.refreshPromise = undefined;
+    await this.refreshProfile();
   }
 
   /**
@@ -1999,7 +1999,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   getAccessToken(): string | undefined {
-    return this.#accessToken;
+    return this.accessToken;
   }
 
   /**
@@ -2007,61 +2007,61 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   setAccessToken(accessToken: string): void {
-    this.#accessToken = accessToken;
-    this.#refreshToken = undefined;
-    this.#profile = undefined;
-    this.#config = undefined;
+    this.accessToken = accessToken;
+    this.refreshToken = undefined;
+    this.profile = undefined;
+    this.config = undefined;
   }
 
   /**
    * @category Authentication
    */
   getLogins(): LoginState[] {
-    return this.#storage.getObject<LoginState[]>('logins') ?? [];
+    return this.storage.getObject<LoginState[]>('logins') ?? [];
   }
 
-  #addLogin(newLogin: LoginState): void {
+  private addLogin(newLogin: LoginState): void {
     const logins = this.getLogins().filter((login) => login.profile?.reference !== newLogin.profile?.reference);
     logins.push(newLogin);
-    this.#storage.setObject('logins', logins);
+    this.storage.setObject('logins', logins);
   }
 
-  async #refreshProfile(): Promise<ProfileResource | undefined> {
-    this.#profilePromise = new Promise((resolve, reject) => {
+  private async refreshProfile(): Promise<ProfileResource | undefined> {
+    this.profilePromise = new Promise((resolve, reject) => {
       this.get('auth/me')
         .then((result) => {
-          this.#profilePromise = undefined;
-          this.#profile = result.profile;
-          this.#config = result.config;
+          this.profilePromise = undefined;
+          this.profile = result.profile;
+          this.config = result.config;
           this.dispatchEvent({ type: 'change' });
-          resolve(this.#profile);
+          resolve(this.profile);
         })
         .catch(reject);
     });
 
-    return this.#profilePromise;
+    return this.profilePromise;
   }
 
   /**
    * @category Authentication
    */
   isLoading(): boolean {
-    return !!this.#profilePromise;
+    return !!this.profilePromise;
   }
 
   /**
    * @category User Profile
    */
   getProfile(): ProfileResource | undefined {
-    return this.#profile;
+    return this.profile;
   }
 
   /**
    * @category User Profile
    */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
-    if (this.#profilePromise) {
-      await this.#profilePromise;
+    if (this.profilePromise) {
+      await this.profilePromise;
     }
     return this.getProfile();
   }
@@ -2070,7 +2070,7 @@ export class MedplumClient extends EventTarget {
    * @category User Profile
    */
   getUserConfiguration(): UserConfiguration | undefined {
-    return this.#config;
+    return this.config;
   }
 
   /**
@@ -2081,11 +2081,11 @@ export class MedplumClient extends EventTarget {
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: RequestInit = {}): Promise<Blob> {
-    if (this.#refreshPromise) {
-      await this.#refreshPromise;
+    if (this.refreshPromise) {
+      await this.refreshPromise;
     }
-    this.#addFetchOptionsDefaults(options);
-    const response = await this.#fetch(url.toString(), options);
+    this.addFetchOptionsDefaults(options);
+    const response = await this.fetch(url.toString(), options);
     return response.blob();
   }
 
@@ -2099,12 +2099,12 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options for cache settings.
    * @returns The cached entry if found.
    */
-  #getCacheEntry(key: string, options: RequestInit | undefined): RequestCacheEntry | undefined {
-    if (this.#cacheTime <= 0 || options?.cache === 'no-cache' || options?.cache === 'reload') {
+  private getCacheEntry(key: string, options: RequestInit | undefined): RequestCacheEntry | undefined {
+    if (this.cacheTime <= 0 || options?.cache === 'no-cache' || options?.cache === 'reload') {
       return undefined;
     }
-    const entry = this.#requestCache.get(key);
-    if (!entry || entry.requestTime + this.#cacheTime < Date.now()) {
+    const entry = this.requestCache.get(key);
+    if (!entry || entry.requestTime + this.cacheTime < Date.now()) {
       return undefined;
     }
     return entry;
@@ -2115,9 +2115,9 @@ export class MedplumClient extends EventTarget {
    * @param key The cache key to store.
    * @param value The readable promise to store.
    */
-  #setCacheEntry(key: string, value: ReadablePromise<any>): void {
-    if (this.#cacheTime > 0) {
-      this.#requestCache.set(key, { requestTime: Date.now(), value });
+  private setCacheEntry(key: string, value: ReadablePromise<any>): void {
+    if (this.cacheTime > 0) {
+      this.requestCache.set(key, { requestTime: Date.now(), value });
     }
   }
 
@@ -2127,9 +2127,9 @@ export class MedplumClient extends EventTarget {
    * For example, when a resource is loaded as part of a Bundle.
    * @param resource The resource to cache.
    */
-  #cacheResource(resource: Resource | undefined): void {
+  private cacheResource(resource: Resource | undefined): void {
     if (resource?.id) {
-      this.#setCacheEntry(
+      this.setCacheEntry(
         this.fhirUrl(resource.resourceType, resource.id).toString(),
         new ReadablePromise(Promise.resolve(resource))
       );
@@ -2140,9 +2140,9 @@ export class MedplumClient extends EventTarget {
    * Deletes a cache entry.
    * @param key The cache key to delete.
    */
-  #deleteCacheEntry(key: string): void {
-    if (this.#cacheTime > 0) {
-      this.#requestCache.delete(key);
+  private deleteCacheEntry(key: string): void {
+    if (this.cacheTime > 0) {
+      this.requestCache.delete(key);
     }
   }
 
@@ -2153,22 +2153,22 @@ export class MedplumClient extends EventTarget {
    * @param {string=} contentType
    * @param {Object=} body
    */
-  async #request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
-    if (this.#refreshPromise) {
-      await this.#refreshPromise;
+  private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
+    if (this.refreshPromise) {
+      await this.refreshPromise;
     }
 
     if (!url.startsWith('http')) {
-      url = this.#baseUrl + url;
+      url = this.baseUrl + url;
     }
 
     options.method = method;
-    this.#addFetchOptionsDefaults(options);
+    this.addFetchOptionsDefaults(options);
 
-    const response = await this.#fetchWithRetry(url, options);
+    const response = await this.fetchWithRetry(url, options);
     if (response.status === 401) {
       // Refresh and try again
-      return this.#handleUnauthenticated(method, url, options);
+      return this.handleUnauthenticated(method, url, options);
     }
 
     if (response.status === 204 || response.status === 304) {
@@ -2190,12 +2190,12 @@ export class MedplumClient extends EventTarget {
     return obj;
   }
 
-  async #fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
+  private async fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
     const maxRetries = 3;
     const retryDelay = 200;
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
-      response = (await this.#fetch(url, options)) as Response;
+      response = (await this.fetch(url, options)) as Response;
       if (response.status < 500) {
         return response;
       }
@@ -2207,21 +2207,21 @@ export class MedplumClient extends EventTarget {
   /**
    * Executes a batch of requests that were automatically batched together.
    */
-  async #executeAutoBatch(): Promise<void> {
+  private async executeAutoBatch(): Promise<void> {
     // Get the current queue
-    const entries = [...this.#autoBatchQueue];
+    const entries = [...this.autoBatchQueue];
 
     // Clear the queue
-    this.#autoBatchQueue.length = 0;
+    this.autoBatchQueue.length = 0;
 
     // Clear the timer
-    this.#autoBatchTimerId = undefined;
+    this.autoBatchTimerId = undefined;
 
     // If there is only one request in the batch, just execute it
     if (entries.length === 1) {
       const entry = entries[0];
       try {
-        entry.resolve(await this.#request(entry.method, this.#fhirBaseUrl + entry.url, entry.options));
+        entry.resolve(await this.request(entry.method, this.fhirBaseUrl + entry.url, entry.options));
       } catch (err) {
         entry.reject(new OperationOutcomeError(normalizeOperationOutcome(err)));
       }
@@ -2263,7 +2263,7 @@ export class MedplumClient extends EventTarget {
    * Adds default options to the fetch options.
    * @param options The options to add defaults to.
    */
-  #addFetchOptionsDefaults(options: RequestInit): void {
+  private addFetchOptionsDefaults(options: RequestInit): void {
     if (!options.headers) {
       options.headers = {};
     }
@@ -2275,8 +2275,8 @@ export class MedplumClient extends EventTarget {
       headers['Content-Type'] = FHIR_CONTENT_TYPE;
     }
 
-    if (this.#accessToken) {
-      headers['Authorization'] = 'Bearer ' + this.#accessToken;
+    if (this.accessToken) {
+      headers['Authorization'] = 'Bearer ' + this.accessToken;
     }
 
     if (!options.cache) {
@@ -2293,7 +2293,7 @@ export class MedplumClient extends EventTarget {
    * @param options The fetch options.
    * @param contentType The new content type to set.
    */
-  #setRequestContentType(options: RequestInit, contentType: string): void {
+  private setRequestContentType(options: RequestInit, contentType: string): void {
     if (!options.headers) {
       options.headers = {};
     }
@@ -2306,7 +2306,7 @@ export class MedplumClient extends EventTarget {
    * @param options The fetch options.
    * @param data The new content body.
    */
-  #setRequestBody(options: RequestInit, data: any): void {
+  private setRequestBody(options: RequestInit, data: any): void {
     if (
       typeof data === 'string' ||
       (typeof Blob !== 'undefined' && data instanceof Blob) ||
@@ -2328,13 +2328,13 @@ export class MedplumClient extends EventTarget {
    * @param contentType The content type of the original request.
    * @param body The body of the original request.
    */
-  #handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
-    if (this.#refresh()) {
-      return this.#request(method, url, options);
+  private handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
+    if (this.refresh()) {
+      return this.request(method, url, options);
     }
     this.clearActiveLogin();
-    if (this.#onUnauthenticated) {
-      this.#onUnauthenticated();
+    if (this.onUnauthenticated) {
+      this.onUnauthenticated();
     }
     return Promise.reject(new Error('Unauthenticated'));
   }
@@ -2363,12 +2363,12 @@ export class MedplumClient extends EventTarget {
    * Clears all auth state including local storage and session storage.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
-  async #requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
+  private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
     const loginRequest = await this.ensureCodeChallenge(loginParams || {});
-    const url = new URL(this.#authorizeUrl);
+    const url = new URL(this.authorizeUrl);
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('state', sessionStorage.getItem('pkceState') as string);
-    url.searchParams.set('client_id', loginRequest.clientId || (this.#clientId as string));
+    url.searchParams.set('client_id', loginRequest.clientId || (this.clientId as string));
     url.searchParams.set('redirect_uri', loginRequest.redirectUri || getWindowOrigin());
     url.searchParams.set('code_challenge_method', loginRequest.codeChallengeMethod as string);
     url.searchParams.set('code_challenge', loginRequest.codeChallenge as string);
@@ -2387,7 +2387,7 @@ export class MedplumClient extends EventTarget {
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'authorization_code');
     formBody.set('code', code);
-    formBody.set('client_id', loginParams?.clientId || (this.#clientId as string));
+    formBody.set('client_id', loginParams?.clientId || (this.clientId as string));
     formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
 
     if (typeof sessionStorage !== 'undefined') {
@@ -2397,30 +2397,30 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    return this.#fetchTokens(formBody);
+    return this.fetchTokens(formBody);
   }
 
   /**
    * Tries to refresh the auth tokens.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
-  #refresh(): Promise<void> | undefined {
-    if (this.#refreshPromise) {
-      return this.#refreshPromise;
+  private refresh(): Promise<void> | undefined {
+    if (this.refreshPromise) {
+      return this.refreshPromise;
     }
 
-    if (this.#refreshToken) {
+    if (this.refreshToken) {
       const formBody = new URLSearchParams();
       formBody.set('grant_type', 'refresh_token');
-      formBody.set('client_id', this.#clientId as string);
-      formBody.set('refresh_token', this.#refreshToken);
-      this.#refreshPromise = this.#fetchTokens(formBody);
-      return this.#refreshPromise;
+      formBody.set('client_id', this.clientId as string);
+      formBody.set('refresh_token', this.refreshToken);
+      this.refreshPromise = this.fetchTokens(formBody);
+      return this.refreshPromise;
     }
 
-    if (this.#clientId && this.#clientSecret) {
-      this.#refreshPromise = this.startClientLogin(this.#clientId, this.#clientSecret);
-      return this.#refreshPromise;
+    if (this.clientId && this.clientSecret) {
+      this.refreshPromise = this.startClientLogin(this.clientId, this.clientSecret);
+      return this.refreshPromise;
     }
 
     return undefined;
@@ -2435,14 +2435,14 @@ export class MedplumClient extends EventTarget {
    * @returns Promise that resolves to the client profile.
    */
   async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
-    this.#clientId = clientId;
-    this.#clientSecret = clientSecret;
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
 
     const formBody = new URLSearchParams();
     formBody.set('grant_type', 'client_credentials');
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
-    return this.#fetchTokens(formBody);
+    return this.fetchTokens(formBody);
   }
 
   /**
@@ -2460,8 +2460,8 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
    */
-  async #fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const response = await this.#fetch(this.#tokenUrl, {
+  private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
+    const response = await this.fetch(this.tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
@@ -2472,7 +2472,7 @@ export class MedplumClient extends EventTarget {
       throw new Error('Failed to fetch tokens');
     }
     const tokens = await response.json();
-    await this.#verifyTokens(tokens);
+    await this.verifyTokens(tokens);
     return this.getProfile() as ProfileResource;
   }
 
@@ -2482,7 +2482,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param tokens
    */
-  async #verifyTokens(tokens: TokenResponse): Promise<void> {
+  private async verifyTokens(tokens: TokenResponse): Promise<void> {
     const token = tokens.access_token;
 
     // Verify token has not expired
@@ -2493,7 +2493,7 @@ export class MedplumClient extends EventTarget {
     }
 
     // Verify app_client_id
-    if (this.#clientId && tokenPayload.client_id !== this.#clientId) {
+    if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
     }
@@ -2510,7 +2510,7 @@ export class MedplumClient extends EventTarget {
    * Sets up a listener for window storage events.
    * This synchronizes state across browser windows and browser tabs.
    */
-  #setupStorageListener(): void {
+  private setupStorageListener(): void {
     try {
       window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === null || e.key === 'activeLogin') {
