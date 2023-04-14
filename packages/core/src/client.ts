@@ -473,7 +473,7 @@ export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
   private readonly createPdfImpl?: CreatePdfFunction;
   private readonly storage: ClientStorage;
-  private readonly requestCache: LRUCache<RequestCacheEntry>;
+  private readonly requestCache: LRUCache<RequestCacheEntry> | undefined;
   private readonly cacheTime: number;
   private readonly baseUrl: string;
   private readonly fhirBaseUrl: string;
@@ -483,7 +483,7 @@ export class MedplumClient extends EventTarget {
   private readonly exchangeUrl: string;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
-  private readonly autoBatchQueue: AutoBatchEntry[];
+  private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
   private clientId?: string;
   private clientSecret?: string;
   private autoBatchTimerId?: any;
@@ -506,8 +506,6 @@ export class MedplumClient extends EventTarget {
     this.fetch = options?.fetch || getDefaultFetch();
     this.storage = options?.storage || new ClientStorage();
     this.createPdfImpl = options?.createPdf;
-    this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
-    this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
     this.fhirBaseUrl = this.baseUrl + (ensureTrailingSlash(options?.fhirUrlPath) || 'fhir/R4/');
     this.clientId = options?.clientId || '';
@@ -516,8 +514,21 @@ export class MedplumClient extends EventTarget {
     this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.exchangeUrl = this.baseUrl + 'auth/exchange';
     this.onUnauthenticated = options?.onUnauthenticated;
-    this.autoBatchTime = options?.autoBatchTime ?? 0;
-    this.autoBatchQueue = [];
+
+    this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
+    if (this.cacheTime > 0) {
+      this.requestCache = new LRUCache(options?.resourceCacheSize ?? DEFAULT_RESOURCE_CACHE_SIZE);
+    } else {
+      this.requestCache = undefined;
+    }
+
+    if (options?.autoBatchTime) {
+      this.autoBatchTime = options?.autoBatchTime ?? 0;
+      this.autoBatchQueue = [];
+    } else {
+      this.autoBatchTime = 0;
+      this.autoBatchQueue = undefined;
+    }
 
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
@@ -556,7 +567,7 @@ export class MedplumClient extends EventTarget {
    */
   clearActiveLogin(): void {
     this.storage.setString('activeLogin', undefined);
-    this.requestCache.clear();
+    this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
     this.profile = undefined;
@@ -571,7 +582,7 @@ export class MedplumClient extends EventTarget {
    */
   invalidateUrl(url: URL | string): void {
     url = url.toString();
-    this.requestCache.delete(url);
+    this.requestCache?.delete(url);
   }
 
   /**
@@ -581,9 +592,11 @@ export class MedplumClient extends EventTarget {
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
     const url = 'fhir/R4/' + resourceType;
-    for (const key of this.requestCache.keys()) {
-      if (key.endsWith(url) || key.includes(url + '?')) {
-        this.requestCache.delete(key);
+    if (this.requestCache) {
+      for (const key of this.requestCache.keys()) {
+        if (key.endsWith(url) || key.includes(url + '?')) {
+          this.requestCache.delete(key);
+        }
       }
     }
   }
@@ -609,9 +622,9 @@ export class MedplumClient extends EventTarget {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchTime > 0) {
+    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue) {
       promise = new Promise<T>((resolve, reject) => {
-        this.autoBatchQueue.push({
+        (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
           url: (url as string).replace(this.fhirBaseUrl, ''),
           options,
@@ -1174,7 +1187,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
-    const cached = this.requestCache.get(this.fhirUrl(resourceType, id).toString())?.value;
+    const cached = this.requestCache?.get(this.fhirUrl(resourceType, id).toString())?.value;
     return cached && cached.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
@@ -2100,7 +2113,7 @@ export class MedplumClient extends EventTarget {
    * @returns The cached entry if found.
    */
   private getCacheEntry(key: string, options: RequestInit | undefined): RequestCacheEntry | undefined {
-    if (this.cacheTime <= 0 || options?.cache === 'no-cache' || options?.cache === 'reload') {
+    if (!this.requestCache || options?.cache === 'no-cache' || options?.cache === 'reload') {
       return undefined;
     }
     const entry = this.requestCache.get(key);
@@ -2116,7 +2129,7 @@ export class MedplumClient extends EventTarget {
    * @param value The readable promise to store.
    */
   private setCacheEntry(key: string, value: ReadablePromise<any>): void {
-    if (this.cacheTime > 0) {
+    if (this.requestCache) {
       this.requestCache.set(key, { requestTime: Date.now(), value });
     }
   }
@@ -2141,7 +2154,7 @@ export class MedplumClient extends EventTarget {
    * @param key The cache key to delete.
    */
   private deleteCacheEntry(key: string): void {
-    if (this.cacheTime > 0) {
+    if (this.requestCache) {
       this.requestCache.delete(key);
     }
   }
@@ -2209,10 +2222,10 @@ export class MedplumClient extends EventTarget {
    */
   private async executeAutoBatch(): Promise<void> {
     // Get the current queue
-    const entries = [...this.autoBatchQueue];
+    const entries = [...(this.autoBatchQueue as AutoBatchEntry[])];
 
     // Clear the queue
-    this.autoBatchQueue.length = 0;
+    (this.autoBatchQueue as AutoBatchEntry[]).length = 0;
 
     // Clear the timer
     this.autoBatchTimerId = undefined;
