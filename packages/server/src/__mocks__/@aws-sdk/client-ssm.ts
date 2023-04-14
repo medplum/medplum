@@ -12,6 +12,9 @@ export class SSMClient {
             { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
             { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
             { Name: 'port', Value: '8080' },
+            { Name: 'botCustomFunctionsEnabled', Value: 'true' },
+            { Name: 'logAuditEvents', Value: 'true' },
+            { Name: 'registerEnabled', Value: 'false' },
           ],
         };
       }

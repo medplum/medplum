@@ -20,6 +20,9 @@ describe('Config', () => {
     expect(config).toBeDefined();
     expect(config.baseUrl).toBeDefined();
     expect(config.port).toEqual(8080);
+    expect(config.botCustomFunctionsEnabled).toEqual(true);
+    expect(config.logAuditEvents).toEqual(true);
+    expect(config.registerEnabled).toEqual(false);
     expect(getConfig()).toBe(config);
   });
 
