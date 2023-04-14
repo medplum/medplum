@@ -673,6 +673,8 @@ describe('Client', () => {
   test('Disabled cache read cached resource', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch, cacheTime: 0 });
+    expect((client as any).requestCache).toBeUndefined();
+    expect((client as any).autoBatchQueue).toBeUndefined();
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Nothing in the cache
     const readPromise = client.readResource('Patient', '123');
     expect(client.getCached('Patient', '123')).toBeUndefined(); // Cache is disabled
