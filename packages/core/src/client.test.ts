@@ -68,6 +68,9 @@ function mockFetch(
   });
 }
 
+let originalWindow: (Window & typeof globalThis) | undefined = undefined;
+let originalBuffer: BufferConstructor | undefined = undefined;
+
 describe('Client', () => {
   beforeAll(() => {
     Object.defineProperty(global, 'TextEncoder', {
@@ -81,6 +84,13 @@ describe('Client', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    originalWindow = globalThis.window;
+    originalBuffer = globalThis.Buffer;
+  });
+
+  afterEach(() => {
+    globalThis.window = originalWindow as Window & typeof globalThis;
+    globalThis.Buffer = originalBuffer as BufferConstructor;
   });
 
   test('Constructor', () => {
@@ -490,6 +500,56 @@ describe('Client', () => {
     const result2 = await client.readResource('Patient', '123');
     expect(result2).toBeDefined();
     expect(fetch).toHaveBeenCalledTimes(4);
+  });
+
+  test('Basic auth in browser', async () => {
+    delete (global as any).Buffer;
+
+    const fetch = mockFetch(200, () => {
+      return { resourceType: 'Patient', id: '123' };
+    });
+
+    const client = new MedplumClient({ fetch });
+    client.setBasicAuth('test-client-id', 'test-client-secret');
+
+    const result2 = await client.readResource('Patient', '123');
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
+  test('Basic auth in Node.js', async () => {
+    delete (global as any).window;
+
+    const fetch = mockFetch(200, () => {
+      return { resourceType: 'Patient', id: '123' };
+    });
+
+    const client = new MedplumClient({ fetch });
+    client.setBasicAuth('test-client-id', 'test-client-secret');
+
+    const result2 = await client.readResource('Patient', '123');
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toBeCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
+          'X-Medplum': 'extended',
+        },
+      })
+    );
   });
 
   test('Invite user', async () => {

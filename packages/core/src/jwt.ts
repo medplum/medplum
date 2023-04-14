@@ -1,3 +1,5 @@
+import { decodeBase64 } from './base64';
+
 /**
  * Decodes a section of a JWT.
  * See: https://tools.ietf.org/html/rfc7519
@@ -12,16 +14,6 @@ function decodePayload(payload: string): Record<string, number | string> {
   }, '');
   const jsonPayload = decodeURIComponent(uriEncodedPayload);
   return JSON.parse(jsonPayload);
-}
-
-function decodeBase64(data: string): string {
-  if (typeof window !== 'undefined') {
-    return window.atob(data);
-  }
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(data, 'base64').toString('binary');
-  }
-  throw new Error('Unable to decode base64');
 }
 
 /**
