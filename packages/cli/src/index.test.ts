@@ -126,15 +126,15 @@ describe('CLI', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching(patient.id as string));
   });
 
-  test('Get command with convertToTransactionBundle flag', async () => {
+  test('Get command with as-transaction flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, ['node', 'index.js', 'get', `Patient?_count=2`, '--convertToTransactionBundle']);
+    await main(medplum, ['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, ['node', 'index.js', 'get', `Patient?_count=2`, '--bad-flag']);
+    await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('Unknown flag:'));
   });
 

@@ -96,7 +96,7 @@ medplum get Patient/$id
 
 #### flags
 
-- `--convertToTransactionBundle`
+- `--as-transaction`
     - Convert the output response to a transaction bundle
 
 #### `post`

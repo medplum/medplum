@@ -2,19 +2,20 @@ import { MedplumClient, convertToTransactionBundle } from '@medplum/core';
 import { prettyPrint, cleanUrl } from '.';
 
 export async function get(medplum: MedplumClient, argv: string[]): Promise<void> {
-  const response = await medplum.get(cleanUrl(argv[3]));
-
   if (argv.length === 4) {
-    prettyPrint(response);
+    prettyPrint(await medplum.get(cleanUrl(argv[3])));
     return;
   }
 
-  flags(argv[4], response);
+  const flag = argv[3];
+  const response = await medplum.get(cleanUrl(argv[4]));
+
+  flags(flag, response);
 }
 
 export function flags(flag: string, response: any): any {
   switch (flag) {
-    case '--convertToTransactionBundle':
+    case '--as-transaction':
       return prettyPrint(convertToTransactionBundle(response));
     default:
       console.log(`Unknown flag: ${flag}`);
