@@ -103,6 +103,7 @@ describe('CLI', () => {
     await main(medplum, ['node', 'index.js', 'whoami']);
 
     expect((console.log as unknown as jest.Mock).mock.calls).toEqual([
+      ['Server:  https://example.com/'],
       ['Profile: Alice Smith (Practitioner/123)'],
       ['Project: My Project (Project/456)'],
     ]);
