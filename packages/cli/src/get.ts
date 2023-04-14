@@ -9,13 +9,13 @@ export async function get(medplum: MedplumClient, argv: string[]): Promise<void>
     return;
   }
 
-  prettyPrint(flags(argv[4], response));
+  flags(argv[4], response);
 }
 
 export function flags(flag: string, response: any): any {
   switch (flag) {
     case '--convertToTransactionBundle':
-      return convertToTransactionBundle(response);
+      return prettyPrint(convertToTransactionBundle(response));
     default:
       console.log(`Unknown flag: ${flag}`);
       return;
