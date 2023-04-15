@@ -1,0 +1,131 @@
+---
+---
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/search/graphql.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Using GraphQL for Linked Resources
+
+## Overview
+
+This guide will walk you through using the FHIR GraphQL API with Medplum. GraphQL is a powerful and flexible query language that allows you to request the exact data you need. Medplum's implementation of the FHIR GraphQL API makes it easy to interact with healthcare resources.
+
+To experiment with the API, you can use Medplum's interactive GraphQL environment at [graphiql.medplum.com](https://graphiql.medplum.com/).
+
+## How to perform basic GraphQL queries
+
+GraphQL queries allow you to request specific fields on objects. In FHIR, resources are represented as objects with various fields that can be requested. To perform a basic GraphQL query on a FHIR resource, you will need to specify the resource type, the ID of the resource, and the fields you want to retrieve.
+
+In a FHIR GraphQL query, you will use the resource type as the root field, followed by the ID in parentheses. The requested fields are enclosed in curly braces. For example, to request a Patient by ID, you would write the query like this:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="GetPatientByIdCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="GetPatientByIdResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+This query retrieves the `resourceType`, `id`, `name`, and `address` of the specified `Patient`.
+
+## How to FHIR perform searches with GraphQL
+
+FHIR GraphQL supports searching for multiple resources using the `<ResourceType>List` syntax. This syntax allows you to search for a list of resources based on specific criteria. To perform a search, you need to specify the resource type and the search parameters, very similarly to [basic REST search](/docs/search/basic-search).
+
+In GraphQL, the **search parameter names use snake_case** instead of the kebab-case commonly used in the FHIR REST API. GraphQL also allows you to [alias the names of fields](https://devinschulz.com/rename-fields-by-using-aliases-in-graphql/) to make the data returned more readable.
+
+For example, to search for a list of `Patient` resources with a specific name and city, you would write the query like this:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="SearchPatientsByNameAndCityCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="SearchPatientsByNameAndCityResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="SearchEncountersByPatientCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="GetDiagnosticReportAndObservationsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
