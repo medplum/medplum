@@ -7,6 +7,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   parseSearchUrl,
+  resolveId,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
@@ -177,12 +178,12 @@ class BatchProcessor {
     }
   }
 
-  private rewriteIds(input: any): any {
+  private rewriteIds(input: any, key?: string | number): any {
     if (Array.isArray(input)) {
       return this.rewriteIdsInArray(input);
     }
     if (typeof input === 'string') {
-      return this.rewriteIdsInString(input);
+      return this.rewriteIdsInString(input, key);
     }
     if (typeof input === 'object') {
       return this.rewriteIdsInObject(input);
@@ -191,20 +192,27 @@ class BatchProcessor {
   }
 
   private rewriteIdsInArray(input: any[]): any[] {
-    return input.map((item) => this.rewriteIds(item));
+    return input.map((item, index) => this.rewriteIds(item, index));
   }
 
   private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v, k)]));
   }
 
-  private rewriteIdsInString(input: string): string {
+  private rewriteIdsInString(input: string, key?: string | number): string {
     const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
     if (matches) {
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
       if (resource) {
-        return input.replaceAll(fullUrl, getReferenceString(resource));
+        let referenceString: string | undefined = getReferenceString(resource);
+        // If this is the top-level 'id' field of the resource, we want to remove the `resourceType` prefix from the
+        // reference string
+        if (key === 'id') {
+          referenceString = resolveId({ reference: referenceString });
+        }
+
+        return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
       }
     }
     return input;
