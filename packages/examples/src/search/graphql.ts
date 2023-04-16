@@ -22,24 +22,11 @@ query {
 */
 /*
 // start-block GetPatientByIdCurl
-curl -X POST 'https://api.medplum.com/$graphql' \
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
 -H 'Content-Type: application/json' \
--H 'Authorization: Bearer your-access-token' \
+-H "Authorization: Bearer $your_access_token" \
 -d '{
-  "query": "
-    query {
-      Patient(id: \"example-id\") {
-        resourceType
-        id
-        name {
-          text
-        }
-        address {
-          text
-        }
-      }
-    }
-  "
+  "query": "\n    query {\n      Patient(id: \"example-id\") {\n        resourceType\n        id\n        name {\n          text\n        }\n        address {\n          text\n        }\n      }\n    }\n  "
 }'
 // end-block GetPatientByIdCurl
 */
@@ -97,7 +84,7 @@ query {
       line
       city
       state
-      postal_code
+      postalCode
     }
   }
 }
@@ -106,32 +93,14 @@ query {
 
 /*
 // start-block SearchPatientsByNameAndCityCurl
-curl -X POST "https://api.medplum.com/$graphql" \
+curl 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "
-      query {
-        patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {
-          resourceType
-          id
-          name {
-            family
-            given
-          }
-          address {
-            line
-            city
-            state
-            postal_code
-          }
-        }
-      }"
-  }'
+  -H "Authorization: Bearer $your_access_token" \
+  --data-raw '{"query":"query {\n  patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {\n    resourceType\n    id\n    name {\n      family\n      given\n    }\n    address {\n      line\n      city\n      state\n      postalCode\n    }\n  }\n}"}'
 // end-block SearchPatientsByNameAndCityCurl
 */
 
 // start-block SearchPatientsByNameAndCityTS
-
 await medplum.graphql(`
 {
   patients: PatientList(name: "Eve", address_city: "Philadelphia") {
@@ -198,8 +167,6 @@ response = {
 
 console.log(response);
 
-/* -- GetDiagnosticReportAndObservations -- */
-
 /* --- DiagnosticReportWithObservations -- */
 /*
 // start-block DiagnosticReportWithObservationsGraphQL
@@ -226,29 +193,10 @@ query {
 
 /*
 // start-block DiagnosticReportWithObservationsCurl
-curl -X POST "https://api.medplum.com/$graphql" \
+curl 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "
-      query {
-        DiagnosticReport(id: \"example-id-1\") {
-          resourceType
-          id
-          result {
-            resource {
-              ... on Observation {
-                resourceType
-                id
-                valueQuantity {
-                  value
-                  unit
-                }
-              }
-            }
-          }
-        }
-      }"
-  }'
+  -H "Authorization: Bearer $your_access_token" \
+  --data-raw '{"query":"query {\n  DiagnosticReport(id: \"example-id-1\") {\n    resourceType\n    id\n    result {\n      resource {\n        ... on Observation {\n          resourceType\n          id\n          valueQuantity {\n            value\n            unit\n          }\n        }\n      }\n    }\n  }\n}"}'
 // end-block DiagnosticReportWithObservationsCurl
 */
 
@@ -314,14 +262,12 @@ console.log(response);
 /*
 // start-block PatientWithRelatedEncountersGraphQL
 query {
-  {
-    Patient(id: "example-patient-id") {
+  Patient(id: "example-patient-id") {
+    resourceType
+    id
+    encounters: EncounterList(_reference: patient) {
       resourceType
       id
-      encounters: EncounterList(_reference: patient) {
-        resourceType
-        id
-      }
     }
   }
 }
@@ -330,23 +276,10 @@ query {
 
 /*
 // start-block PatientWithRelatedEncountersCurl
-curl -X POST "https://api.medplum.com/$graphql" \
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "
-      query {
-        {
-          Patient(id: "example-patient-id") {
-            resourceType
-            id
-            encounters: EncounterList(_reference: patient) {
-              resourceType
-              id
-            }
-          }
-        }
-      "
-  }'
+  -H "Authorization: Bearer $your_access_token" \
+  --data-raw '{"query":"query {\n  Patient(id: \"example-patient-id\") {\n    resourceType\n    id\n    encounters: EncounterList(_reference: patient) {\n      resourceType\n      id\n    }\n  }\n}"}'
 // end-block PatientWithRelatedEncountersCurl
 */
 
@@ -392,7 +325,7 @@ console.log(response);
 /*
 // start-block PatientsWithReportsGraphQL
 query {
-  // Search for a list of Patients named "Eve", living in "Philadelphia"
+  # Search for a list of Patients named "Eve", living in "Philadelphia"
   patients: PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
@@ -406,11 +339,11 @@ query {
       state
       postalCode
     }
-    // Search for DiagnosticReports linked to each Patient
+    # Search for DiagnosticReports linked to each Patient
     reports: DiagnosticReportList(_reference: subject) {
       resourceType
       id
-      // Resolve the Observations referenced by DiagnosticReport.result
+      # Resolve the Observations referenced by DiagnosticReport.result
       result {
         resource {
           ... on Observation {
@@ -431,44 +364,10 @@ query {
 
 /*
 // start-block PatientsWithReportsCurl
-curl -X POST "https://api.medplum.com/graphql" \
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
-  -d '{
-    "query": "
-      query {
-        patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {
-          resourceType
-          id
-          name {
-            family
-            given
-          }
-          address {
-            line
-            city
-            state
-            postalCode
-          }
-          reports: DiagnosticReportList(_reference: subject) {
-            resourceType
-            id
-
-            result {
-              resource {
-                ... on Observation {
-                  resourceType
-                  id
-                  valueQuantity {
-                    value
-                    unit
-                  }
-                }
-              }
-            }
-          }
-        }
-      }"
-  }'
+  -H "Authorization: Bearer $your_access_token" \
+  --data-raw '{"query":"query {\n  # Search for a list of Patients named \"Eve\", living in \"Philadelphia\"\n  patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {\n    resourceType\n    id\n    name {\n      family\n      given\n    }\n    address {\n      line\n      city\n      state\n      postalCode\n    }\n    # Search for DiagnosticReports linked to each Patient\n    reports: DiagnosticReportList(_reference: subject) {\n      resourceType\n      id\n      # Resolve the Observations referenced by DiagnosticReport.result\n      result {\n        resource {\n          ... on Observation {\n            resourceType\n            id\n            valueQuantity {\n              value\n              unit\n            }\n          }\n        }\n      }\n    }\n  }\n}"}'
 // end-block PatientsWithReportsCurl
 */
 
