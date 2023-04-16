@@ -49,9 +49,9 @@ This query retrieves the `resourceType`, `id`, `name`, and `address` of the spec
 
 ## How to FHIR perform searches with GraphQL
 
-FHIR GraphQL supports searching for multiple resources using the `<ResourceType>List` syntax. This syntax allows you to search for a list of resources based on specific criteria. To perform a search, you need to specify the resource type and the search parameters, very similarly to [basic REST search](/docs/search/basic-search).
+FHIR GraphQL supports searching for multiple resources using the `<ResourceType>List` syntax to search for a list of resources based on specific criteria.
 
-In GraphQL, the **search parameter names use snake_case** instead of the kebab-case commonly used in the FHIR REST API. GraphQL also allows you to [alias the names of fields](https://devinschulz.com/rename-fields-by-using-aliases-in-graphql/) to make the data returned more readable.
+To perform a search, you need to specify the resource type and the search parameters, very similarly to [basic REST search](/docs/search/basic-search). However, in GraphQL, the **search parameter names use snake_case** instead of the kebab-case commonly used in the FHIR REST API. GraphQL also allows you to [alias the names of fields](https://devinschulz.com/rename-fields-by-using-aliases-in-graphql/) to make the data returned more readable.
 
 For example, to search for a list of `Patient` resources with a specific name and city, you would write the query like this:
 
@@ -80,37 +80,29 @@ For example, to search for a list of `Patient` resources with a specific name an
   </MedplumCodeBlock>
 </details>
 
-<Tabs groupId="language">
-  <TabItem value="graphql" label="GraphQL">
-    <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientGraphQL">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientTS">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-  <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="SearchEncountersByPatientCurl">
-      {ExampleCode}
-    </MedplumCodeBlock>
-  </TabItem>
-</Tabs>
+This query searches for Patient resources with the name "Eve" and a city of "Philadelphia", and aliases the list of patients as `patients` in the response.
+
+## Resolving nested resources with the `resource` element
+
+FHIR resources often reference other resources through their elements. The FHIR GraphQL query constains a special `resource` element to resolve these references and retrieve the nested resources.
+
+To resolve a reference, you need to use the GraphQL inline fragment syntax `(... on ResourceType)`. Inline fragments allow you to request fields on a specific type within a more general parent type. This is important for FHIR GraphQL queries because the resource field can return different types of resources depending on the reference.
+
+For example, to retrieve a `DiagnosticReport` and all the `Observation` resources referenced by `DiagnosticReport.result`, you would write the query like this:
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
-    <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsGraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsGraphQL">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="ts" label="Typescript">
-    <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsTS">
+    <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsTS">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
   <TabItem value="curl" label="cURL">
-    <MedplumCodeBlock language="bash" selectBlocks="GetDiagnosticReportAndObservationsCurl">
+    <MedplumCodeBlock language="bash" selectBlocks="DiagnosticReportWithObservationsCurl">
       {ExampleCode}
     </MedplumCodeBlock>
   </TabItem>
@@ -118,14 +110,77 @@ For example, to search for a list of `Patient` resources with a specific name an
 
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="GetDiagnosticReportAndObservationsResponse">
+  <MedplumCodeBlock language="ts" selectBlocks="DiagnosticReportWithObservationsResponse">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
 
+This query retrieves the DiagnosticReport and the Observation resources associated with it.
+
+## Searching reverse references using the `_reference` keyword
+
+FHIR GraphQL also supports reverse-reference searches, which allow you to find resources that _point to_ the current resource. This is useful for retrieving related resources without having to perform multiple queries.
+
+In a reverse-include search, you use the `<ResourceType>List` syntax to search for the resources that reference the current resource. The special `_reference` search parameter indicates which search parameter from the target resource references the current resource.
+
+In the example below, we first search for a `Patient` by id, and then find all the `Encounter` resources whose `Encounter.patient` search parameter points to the current Patient.
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="PatientWithRelatedEncountersCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
 <details>
   <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="SearchEncountersByPatientResponse">
+  <MedplumCodeBlock language="ts" selectBlocks="PatientWithRelatedEncountersResponse">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+## Putting it all together
+
+The FHIR GraphQL syntax is a powerful way to query for multiple related resources in a single HTTP call.The following example combines the concepts above to demonstrate this power.
+
+This query searches for a list of `Patients` named `"Eve"`, living in `"Philadelphia"`, and then searches for all `DiagnosticReports` linked to each Patient along with their corresponding `Observations`.
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="PatientsWithReportsCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="PatientsWithReportsResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## Conclusion
+
+With a deeper understanding of the FHIR GraphQL syntax, you can now leverage the power of GraphQL to build efficient and flexible healthcare applications. Remember to experiment with the API at graphiql.medplum.com as you develop your application.
