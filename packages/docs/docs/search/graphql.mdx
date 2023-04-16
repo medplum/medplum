@@ -10,15 +10,17 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-This guide will walk you through using the FHIR GraphQL API with Medplum. GraphQL is a powerful and flexible query language that allows you to request the exact data you need. Medplum's implementation of the FHIR GraphQL API makes it easy to interact with healthcare resources.
+This guide will walk you through how to use the FHIR GraphQL API with Medplum. Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
+
+The GraphQL API also allows you to request specific elements, rather than full resources, which can be more efficient in bandwidth constrained settings.
 
 To experiment with the API, you can use Medplum's interactive GraphQL environment at [graphiql.medplum.com](https://graphiql.medplum.com/).
 
 ## How to perform basic GraphQL queries
 
-GraphQL queries allow you to request specific fields on objects. In FHIR, resources are represented as objects with various fields that can be requested. To perform a basic GraphQL query on a FHIR resource, you will need to specify the resource type, the ID of the resource, and the fields you want to retrieve.
+GraphQL queries allow you to request specific fields on resources. In a FHIR GraphQL query, you will use the resource type as the root, followed by the ID in parentheses. The requested fields are enclosed in curly braces.
 
-In a FHIR GraphQL query, you will use the resource type as the root field, followed by the ID in parentheses. The requested fields are enclosed in curly braces. For example, to request a Patient by ID, you would write the query like this:
+For example, to request a `Patient` by ID:
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -49,11 +51,11 @@ This query retrieves the `resourceType`, `id`, `name`, and `address` of the spec
 
 ## How to FHIR perform searches with GraphQL
 
-FHIR GraphQL supports searching for multiple resources using the `<ResourceType>List` syntax to search for a list of resources based on specific criteria.
+FHIR GraphQL supports searching for multiple resources using the `<ResourceType>List`. To perform a search, you need to specify the resource type and the search parameters, similarly to [basic REST search](/docs/search/basic-search).
 
-To perform a search, you need to specify the resource type and the search parameters, very similarly to [basic REST search](/docs/search/basic-search). However, in GraphQL, the **search parameter names use snake_case** instead of the kebab-case commonly used in the FHIR REST API. GraphQL also allows you to [alias the names of fields](https://devinschulz.com/rename-fields-by-using-aliases-in-graphql/) to make the data returned more readable.
+However, in GraphQL, the **search parameter names use snake_case** instead of the kebab-case commonly used in the FHIR REST API. GraphQL also allows you to [alias returned fields](https://devinschulz.com/rename-fields-by-using-aliases-in-graphql/) to make the results more readable.
 
-For example, to search for a list of `Patient` resources with a specific name and city, you would write the query like this:
+For example, to search for a list of `Patient` resources with a specific name and city:
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -80,11 +82,11 @@ For example, to search for a list of `Patient` resources with a specific name an
   </MedplumCodeBlock>
 </details>
 
-This query searches for Patient resources with the name "Eve" and a city of "Philadelphia", and aliases the list of patients as `patients` in the response.
+This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
 
 ## Resolving nested resources with the `resource` element
 
-FHIR resources often reference other resources through their elements. The FHIR GraphQL query constains a special `resource` element to resolve these references and retrieve the nested resources.
+FHIR resources often reference other resources. The FHIR GraphQL API contains a special `resource` element to resolve these references and retrieve the nested resources.
 
 To resolve a reference, you need to use the GraphQL inline fragment syntax `(... on ResourceType)`. Inline fragments allow you to request fields on a specific type within a more general parent type. This is important for FHIR GraphQL queries because the resource field can return different types of resources depending on the reference.
 
@@ -115,13 +117,13 @@ For example, to retrieve a `DiagnosticReport` and all the `Observation` resource
   </MedplumCodeBlock>
 </details>
 
-This query retrieves the DiagnosticReport and the Observation resources associated with it.
+This query retrieves a `DiagnosticReport` and the `Observation` resources associated with it.
 
 ## Searching reverse references using the `_reference` keyword
 
-FHIR GraphQL also supports reverse-reference searches, which allow you to find resources that _point to_ the current resource. This is useful for retrieving related resources without having to perform multiple queries.
+FHIR GraphQL also supports reverse-reference searches, which allow you to find resources that _point to_ the current resource.
 
-In a reverse-include search, you use the `<ResourceType>List` syntax to search for the resources that reference the current resource. The special `_reference` search parameter indicates which search parameter from the target resource references the current resource.
+In a reverse-include search, you use a nested `<ResourceType>List` block to search for the resources that reference the current resource. The special `_reference` search parameter indicates which search parameter from the target resource references the current resource.
 
 In the example below, we first search for a `Patient` by id, and then find all the `Encounter` resources whose `Encounter.patient` search parameter points to the current Patient.
 
@@ -152,9 +154,9 @@ In the example below, we first search for a `Patient` by id, and then find all t
 
 ## Putting it all together
 
-The FHIR GraphQL syntax is a powerful way to query for multiple related resources in a single HTTP call.The following example combines the concepts above to demonstrate this power.
+The FHIR GraphQL syntax is a powerful way to query for multiple related resources in a single HTTP call, and the following example combines all the concepts we've covered so far.
 
-This query searches for a list of `Patients` named `"Eve"`, living in `"Philadelphia"`, and then searches for all `DiagnosticReports` linked to each Patient along with their corresponding `Observations`.
+The query below searches for a list of `Patients` named `"Eve"`, living in `"Philadelphia"`, and then searches for all `DiagnosticReports` linked to each `Patient` along with their corresponding `Observations`.
 
 <Tabs groupId="language">
   <TabItem value="graphql" label="GraphQL">
@@ -183,4 +185,4 @@ This query searches for a list of `Patients` named `"Eve"`, living in `"Philadel
 
 ## Conclusion
 
-With a deeper understanding of the FHIR GraphQL syntax, you can now leverage the power of GraphQL to build efficient and flexible healthcare applications. Remember to experiment with the API at [graphiql.medplum.com](https://graphiql.medplum.com/) as you develop your application.
+With a deeper understanding of the FHIR GraphQL syntax, you can now leverage the power of the GraphQL API to build efficient and flexible FHIR queries. Remember to experiment with the API at [graphiql.medplum.com](https://graphiql.medplum.com/) as you develop your application.

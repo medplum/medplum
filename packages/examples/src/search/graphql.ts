@@ -325,7 +325,7 @@ console.log(response);
 /*
 // start-block PatientsWithReportsGraphQL
 query {
-  # Search for a list of Patients named "Eve", living in "Philadelphia"
+  // Search for a list of Patients named "Eve", living in "Philadelphia"
   patients: PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
@@ -339,11 +339,11 @@ query {
       state
       postalCode
     }
-    # Search for DiagnosticReports linked to each Patient
+    // Search for DiagnosticReports linked to each Patient
     reports: DiagnosticReportList(_reference: subject) {
       resourceType
       id
-      # Resolve the Observations referenced by DiagnosticReport.result
+      // Resolve the Observations referenced by DiagnosticReport.result
       result {
         resource {
           ... on Observation {
