@@ -18,6 +18,7 @@ export function SignInPage(): JSX.Element {
     >
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>
+      {searchParams.get('project') == 'new' && <div>Sign in again to create a new project</div>}
     </SignInForm>
   );
 }
