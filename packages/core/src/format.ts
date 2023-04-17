@@ -292,7 +292,7 @@ export function formatTiming(timing: Timing | undefined): string {
 }
 
 /**
- * Returns a human-readable string for a FHIR Range datatype, taking into account comparators and one-sided ranges
+ * Returns a human-readable string for a FHIR Range datatype, taking into account one-sided ranges
  * @param range A FHIR Range element
  * @param exclusive If true, one-sided ranges will be rendered with the '>' or '<' bounds rather than '>=' or '<='
  * @returns A human-readable string representation of the Range
