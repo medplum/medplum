@@ -20,7 +20,7 @@ Every pull request is analyzed by [Sonarcloud](https://sonarcloud.io/project/ove
 To run all tests for all packages, use the build script:
 
 ```bash
-./scripts/build.sh
+npm t
 ```
 
 To run all tests for a single package, use `npm t` inside the package folder:
