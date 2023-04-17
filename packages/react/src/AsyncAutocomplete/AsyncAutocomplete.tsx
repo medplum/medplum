@@ -14,10 +14,11 @@ export interface AsyncAutocompleteProps<T>
   loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   onChange: (item: T[]) => void;
   onCreate?: (input: string) => T;
+  creatable?: boolean;
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
-  const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, ...rest } = props;
+  const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, creatable, ...rest } = props;
   const defaultItems = toDefaultItems(defaultValue);
   const inputRef = useRef<HTMLInputElement>(null);
   const [lastValue, setLastValue] = useState<string | undefined>(undefined);
@@ -90,14 +91,15 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       const result: T[] = [];
       for (const value of values) {
         let item = optionsRef.current?.find((option) => option.value === value)?.resource;
-        if (!item) {
+        if (!item && creatable !== false) {
           item = (onCreate as (input: string) => T)(value);
         }
-        result.push(item);
+
+        if (item) result.push(item);
       }
       onChange(result);
     },
-    [onChange, onCreate]
+    [creatable, onChange, onCreate]
   );
 
   const handleKeyDown = useCallback(
@@ -105,7 +107,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       if (e.key === 'Enter') {
         if (!timerRef.current && !abortControllerRef.current) {
           killEvent(e);
-          if (optionsRef.current && optionsRef.current.length > 0) {
+          if (optionsRef.current && optionsRef.current.length > 0 && creatable !== false) {
             setOptions(optionsRef.current.slice(0, 1));
             handleChange([optionsRef.current[0].value]);
           }
@@ -116,7 +118,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
     },
-    [handleChange]
+    [creatable, handleChange]
   );
 
   const handleCreate = useCallback(
@@ -153,6 +155,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       rightSectionWidth={40}
       rightSection={abortController ? <Loader size={16} /> : null}
       filter={handleFilter}
+      creatable
     />
   );
 }

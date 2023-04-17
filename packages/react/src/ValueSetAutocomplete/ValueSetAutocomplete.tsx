@@ -10,6 +10,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
   elementDefinition: ElementDefinition;
+  creatable?: boolean;
 }
 
 function toKey(element: ValueSetExpansionContains): string {
@@ -36,7 +37,7 @@ function createValue(input: string): ValueSetExpansionContains {
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { elementDefinition, ...rest } = props;
+  const { elementDefinition, creatable, ...rest } = props;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
@@ -44,7 +45,6 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       const valueSet = await medplum.searchValueSet(system, input, { signal });
       const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
       const newData: ValueSetExpansionContains[] = [];
-
       for (const valueSetElement of valueSetElements) {
         if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
           newData.push(valueSetElement);
@@ -59,13 +59,13 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
   return (
     <AsyncAutocomplete
       {...rest}
-      creatable
+      creatable={creatable ?? true}
       clearable
       toKey={toKey}
       toOption={toOption}
       loadOptions={loadValues}
-      getCreateLabel={(query) => `+ Create ${query}`}
       onCreate={createValue}
+      getCreateLabel={creatable === false ? undefined : (query: any) => `+ Create ${query}`}
     />
   );
 }
