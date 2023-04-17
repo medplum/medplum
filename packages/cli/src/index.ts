@@ -230,7 +230,7 @@ async function runBotConfig(
   }
 }
 
-async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
+export async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
   if (argv.length < 7) {
     console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file> <dist-file>`);
     return;
@@ -263,7 +263,7 @@ async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> 
   }
 }
 
-async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
   const code = readFileContents(botConfig.source);
   if (!code) {
     return;
@@ -285,7 +285,7 @@ async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot:
   }
 }
 
-async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
   const code = readFileContents(botConfig.dist ?? botConfig.source);
   if (!code) {
     return;
@@ -306,7 +306,7 @@ function escapeRegex(str: string): string {
   return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
 
-function readBotConfigs(botName: string): MedplumBotConfig[] {
+export function readBotConfigs(botName: string): MedplumBotConfig[] {
   const regExBotName = new RegExp('^' + escapeRegex(botName).replace(/\\\*/g, '.*') + '$');
   const botConfigs = readConfig()?.bots?.filter((b) => regExBotName.test(b.name));
   if (!botConfigs) {
