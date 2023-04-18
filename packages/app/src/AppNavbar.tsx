@@ -101,8 +101,9 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
     <Navbar width={{ sm: 250 }} p="xs">
       <Navbar.Section>
         <CodeInput
+          key={window.location.pathname}
           name="resourceType"
-          placeholder="Navigate by Resource Type"
+          placeholder="Resource Type"
           property={{
             binding: {
               valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
@@ -110,8 +111,9 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
           }}
           onChange={(newValue) => navigateResourceType(newValue)}
           creatable={false}
-          maxSelectedValues={1}
-          clearSearchOnChange={false}
+          maxSelectedValues={0}
+          clearSearchOnChange={true}
+          clearable={false}
         />
       </Navbar.Section>
       <Navbar.Section grow>

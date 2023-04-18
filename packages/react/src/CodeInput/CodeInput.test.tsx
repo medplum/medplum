@@ -79,7 +79,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results with creatable set to false', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" creatable={false} />);
+    await setup(<CodeInput property={statusProperty} name="test" creatable={false} clearable={false} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 

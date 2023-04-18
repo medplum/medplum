@@ -107,7 +107,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       if (e.key === 'Enter') {
         if (!timerRef.current && !abortControllerRef.current) {
           killEvent(e);
-          if (optionsRef.current && optionsRef.current.length > 0 && creatable !== false) {
+          if (optionsRef.current && optionsRef.current.length > 0) {
             setOptions(optionsRef.current.slice(0, 1));
             handleChange([optionsRef.current[0].value]);
           }
@@ -118,7 +118,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
     },
-    [creatable, handleChange]
+    [handleChange]
   );
 
   const handleCreate = useCallback(

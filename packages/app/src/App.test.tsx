@@ -98,7 +98,7 @@ describe('App', () => {
     const comboboxes = screen.getAllByRole('combobox');
 
     let resultInput: HTMLInputElement | undefined = undefined;
-    const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
 
     for (const combobox of comboboxes) {
       const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
@@ -133,53 +133,5 @@ describe('App', () => {
 
     expect(screen.getByText('Test Display')).toBeDefined();
     expect(resultInput?.value).toBe('test-code');
-  });
-
-  test('Resource Type Search clear result', async () => {
-    await setup();
-
-    const comboboxes = screen.getAllByRole('combobox');
-
-    let resultInput: HTMLInputElement | undefined = undefined;
-    const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
-
-    for (const combobox of comboboxes) {
-      const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
-      if (element) {
-        resultInput = element;
-        break;
-      }
-    }
-
-    await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
-    });
-
-    // Wait for the drop down
-    await act(async () => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    // Press the down arrow
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-    });
-
-    // Press "Enter"
-    await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
-    });
-
-    expect(screen.getByText('Test Display')).toBeDefined();
-    expect(resultInput?.value).toBe('test-code');
-
-    //click on search clear button
-    const button = screen
-      .getAllByRole('button')
-      .find((el) => el.getAttribute('class')?.includes('mantine-CloseButton-root')) as HTMLElement;
-    await act(async () => {
-      fireEvent.click(button);
-    });
-    expect(resultInput?.value).toBe('');
   });
 });
