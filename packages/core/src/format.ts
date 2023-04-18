@@ -294,6 +294,7 @@ export function formatTiming(timing: Timing | undefined): string {
 /**
  * Returns a human-readable string for a FHIR Range datatype, taking into account one-sided ranges
  * @param range A FHIR Range element
+ * @param precision Number of decimal places to display in the rendered quantity values
  * @param exclusive If true, one-sided ranges will be rendered with the '>' or '<' bounds rather than '>=' or '<='
  * @returns A human-readable string representation of the Range
  */
@@ -302,37 +303,41 @@ export function formatRange(range: Range | undefined, precision?: number, exclus
     throw new Error('Precision must be specified for exclusive ranges');
   }
 
-  const low = range?.low && { ...range.low };
-  const high = range?.high && { ...range.high };
-  if (!range || (low?.value === undefined && high?.value === undefined)) {
+  // Extract high and low range endpoints, explicitly ignoring any comparator
+  // since Range uses SimpleQuantity variants (see http://www.hl7.org/fhir/datatypes.html#Range)
+  const low = range?.low && { ...range.low, comparator: undefined };
+  const high = range?.high && { ...range.high, comparator: undefined };
+  if (low?.value === undefined && high?.value === undefined) {
     return '';
   }
 
-  if (range.low?.value !== undefined && range.high?.value === undefined) {
+  if (low?.value !== undefined && high?.value === undefined) {
+    // Lower bound only
     if (exclusive && precision !== undefined) {
-      range.low.value = preciseDecrement(range.low.value, precision);
-      return `> ${formatQuantity(range.low, precision)}`;
+      low.value = preciseDecrement(low.value, precision);
+      return `> ${formatQuantity(low, precision)}`;
     }
-    return `>= ${formatQuantity(range.low, precision)}`;
-  }
-
-  if (range.low?.value === undefined && range.high?.value !== undefined) {
+    return `>= ${formatQuantity(low, precision)}`;
+  } else if (low?.value === undefined && high?.value !== undefined) {
+    // Upper bound only
     if (exclusive && precision !== undefined) {
-      range.high.value = preciseIncrement(range.high.value, precision);
-      return `< ${formatQuantity(range.high, precision)}`;
+      high.value = preciseIncrement(high.value, precision);
+      return `< ${formatQuantity(high, precision)}`;
     }
-    return `<= ${formatQuantity(range.high, precision)}`;
+    return `<= ${formatQuantity(high, precision)}`;
+  } else {
+    // Double-sided range
+    if (low?.unit === high?.unit) {
+      delete low?.unit; // Format like "X - Y units" instead of "X units - Y units"
+    }
+    return `${formatQuantity(low, precision)} - ${formatQuantity(high, precision)}`;
   }
-
-  if (low?.unit === high?.unit) {
-    delete low?.unit;
-  }
-  return `${formatQuantity(low, precision)} - ${formatQuantity(high, precision)}`;
 }
 
 /**
  * Returns a human-readable string for a FHIR Quantity datatype, taking into account units and comparators
  * @param quantity A FHIR Quantity element
+ * @param precision Number of decimal places to display in the rendered quantity values
  * @returns A human-readable string representation of the Quantity
  */
 export function formatQuantity(quantity: Quantity | undefined, precision?: number): string {

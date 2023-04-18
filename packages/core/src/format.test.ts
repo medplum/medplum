@@ -309,6 +309,7 @@ test('Format timing', () => {
 });
 
 test('Format Range', () => {
+  expect(formatRange(undefined)).toBe('');
   expect(formatRange({})).toBe('');
   expect(formatRange({ low: {}, high: {} })).toBe('');
 
@@ -337,6 +338,9 @@ test('Format Range', () => {
   expect(formatRange({ low: { value: 20, unit: 'mg/dL' }, high: { value: 30, unit: 'mg/dL' } })).toBe('20 - 30 mg/dL');
   expect(formatRange({ low: { value: 20, unit: '%' }, high: { value: 30, unit: '%' } })).toBe('20 - 30%');
   expect(formatRange({ low: { value: 0, unit: '%' }, high: { value: 100, unit: '%' } })).toBe('0 - 100%');
+
+  // Edge case where quantity contains invalid comparator
+  expect(formatRange({ high: { value: 20, unit: 'mg/dL', comparator: '<=' } })).toBe('<= 20 mg/dL');
 });
 
 test('Format Quantity', () => {
