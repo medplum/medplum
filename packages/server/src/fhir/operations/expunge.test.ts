@@ -5,7 +5,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getClient } from '../../database';
-import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { Operator as SqlOperator, SelectQuery } from '../sql';
 import { Expunger } from './expunge';
