@@ -481,7 +481,6 @@ export class MedplumClient extends EventTarget {
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
-  private readonly exchangeUrl: string;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
@@ -514,7 +513,6 @@ export class MedplumClient extends EventTarget {
     this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
     this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
-    this.exchangeUrl = this.baseUrl + 'auth/exchange';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -894,24 +892,12 @@ export class MedplumClient extends EventTarget {
       throw new Error('MedplumClient is missing clientId');
     }
 
-    const response = await this.fetch(this.exchangeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: this.clientId,
-        externalAccessToken: token,
-      }),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      this.clearActiveLogin();
-      throw new Error('Failed to fetch tokens');
-    }
-
-    const tokens = await response.json();
-    await this.verifyTokens(tokens);
-    return this.getProfile() as ProfileResource;
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', 'urn:ietf:params:oauth:grant-type:token-exchange');
+    formBody.set('subject_token_type', 'urn:ietf:params:oauth:token-type:access_token');
+    formBody.set('client_id', clientId);
+    formBody.set('subject_token', token);
+    return this.fetchTokens(formBody);
   }
 
   /**
