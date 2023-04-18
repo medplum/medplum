@@ -5,7 +5,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getClient } from '../../database';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { Operator as SqlOperator, SelectQuery } from '../sql';
 import { Expunger } from './expunge';
@@ -91,6 +91,7 @@ describe('Expunge', () => {
       .set('X-Medplum', 'extended')
       .send({});
     expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 200));
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
