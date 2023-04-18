@@ -58,14 +58,14 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
 }
 
 export async function createBot(medplum: MedplumClient, argv: string[]): Promise<void> {
-  if (argv.length < 7) {
+  if (argv.length < 4) {
     console.log(`Error: command needs to be npx medplum <new-bot-name> <project-id> <source-file> <dist-file>`);
     return;
   }
-  const botName = argv[3];
-  const projectId = argv[4];
-  const sourceFile = argv[5];
-  const distFile = argv[6];
+  const botName = argv[0];
+  const projectId = argv[1];
+  const sourceFile = argv[2];
+  const distFile = argv[3];
 
   try {
     const body = {

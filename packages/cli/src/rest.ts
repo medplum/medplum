@@ -1,7 +1,7 @@
-import { Command } from 'commander';
-import { prettyPrint } from './utils';
-import { medplum } from '.';
 import { convertToTransactionBundle } from '@medplum/core';
+import { Command } from 'commander';
+import { medplum } from '.';
+import { prettyPrint } from './utils';
 
 export const deleteObject = new Command('delete');
 export const get = new Command('get');
@@ -17,11 +17,18 @@ get
   .argument('<url>', 'Resource/$id')
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
-    const response = await medplum.get(cleanUrl(url));
-    if (options.asTransaction) {
-      prettyPrint(convertToTransactionBundle(response));
-    } else {
-      prettyPrint(response);
+    try {
+      const response = await medplum.get(cleanUrl(url));
+      (console as any).james('test');
+      console.log(response);
+      console.log('hhja ');
+      if (options.asTransaction) {
+        prettyPrint(convertToTransactionBundle(response));
+      } else {
+        prettyPrint(response);
+      }
+    } catch (err) {
+      console.log(err);
     }
   });
 

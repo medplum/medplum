@@ -16,16 +16,15 @@ saveBotDeprecate
   });
 
 deployBotDeprecate
-  .description('Deploy the app to AWS')
+  .description('Deploy the bot to AWS')
   .argument('<botName>')
   .action(async (botName) => {
     await botWrapper(medplum, botName, true);
   });
 
 createBotDeprecate
-  .command('create')
   .arguments('<botName> <projectId> <sourceFile> <distFile>')
-  .description('Creating a bot')
+  .description('Creates and saves the bot')
   .action(async (botName, projectId, sourceFile, distFile) => {
     await createBot(medplum, [botName, projectId, sourceFile, distFile]);
   });
