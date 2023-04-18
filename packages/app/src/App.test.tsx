@@ -26,10 +26,21 @@ async function setup(url = '/'): Promise<void> {
 }
 
 describe('App', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  // beforeAll(() => {
+  //   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  //   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  //   indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  // });
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
   });
 
   test('Click logo', async () => {
@@ -93,13 +104,45 @@ describe('App', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
-    expect(input.value).toBe('');
+    const comboboxes = screen
+      .getAllByRole('combobox');
 
+    let resultInput:HTMLInputElement|undefined = undefined;
+    const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
+
+    for (const combobox of comboboxes) {
+      const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
+      if (element) {
+        resultInput = element;
+        break;
+      }
+    }
+   
+    // Enter random text
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Account' } });
+      fireEvent.change(input, { target: { value: 'Different' } });
     });
 
-    expect(input.value).toBe('Account');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(resultInput?.value).toBe('test-code');
   });
 });
