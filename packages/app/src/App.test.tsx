@@ -1,7 +1,4 @@
 import { MantineProvider } from '@mantine/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
@@ -26,10 +23,15 @@ async function setup(url = '/'): Promise<void> {
 }
 
 describe('App', () => {
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
   });
 
   test('Click logo', async () => {
@@ -88,5 +90,48 @@ describe('App', () => {
     const activeLink = screen.getByText('Active Orders');
     const completedLink = screen.getByText('Completed Orders');
     expect(activeLink.parentElement?.className).not.toEqual(completedLink.parentElement?.className);
+  });
+
+  test('Resource Type Search', async () => {
+    await setup();
+
+    const comboboxes = screen.getAllByRole('combobox');
+
+    let resultInput: HTMLInputElement | undefined = undefined;
+    const input = screen.getByPlaceholderText('Resource Type') as HTMLInputElement;
+
+    for (const combobox of comboboxes) {
+      const element = combobox.querySelector(`input[name="resourceType"]`) as HTMLInputElement;
+      if (element) {
+        resultInput = element;
+        break;
+      }
+    }
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Different' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test Display')).toBeDefined();
+    expect(resultInput?.value).toBe('test-code');
   });
 });
