@@ -1,3 +1,4 @@
+import { OAuthTokenType } from '@medplum/core';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -27,6 +28,6 @@ export const exchangeHandler = async (req: Request, res: Response): Promise<void
     res,
     req.body.clientId as string,
     req.body.externalAccessToken as string,
-    'urn:ietf:params:oauth:token-type:access_token'
+    OAuthTokenType.AccessToken
   );
 };

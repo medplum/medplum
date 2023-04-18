@@ -1,9 +1,18 @@
-import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
+import {
+  createReference,
+  OAuthGrantType,
+  OAuthTokenType,
+  Operator,
+  parseJWTPayload,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
+import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
@@ -16,7 +25,6 @@ import {
   timingSafeEqualStr,
   tryLogin,
 } from './utils';
-import { getProjectIdByClientId } from '../auth/utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -36,23 +44,23 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
     return;
   }
 
-  const grantType = req.body.grant_type;
+  const grantType = req.body.grant_type as OAuthGrantType;
   if (!grantType) {
     sendTokenError(res, 'invalid_request', 'Missing grant_type');
     return;
   }
 
   switch (grantType) {
-    case 'client_credentials':
+    case OAuthGrantType.ClientCredentials:
       await handleClientCredentials(req, res);
       break;
-    case 'authorization_code':
+    case OAuthGrantType.AuthorizationCode:
       await handleAuthorizationCode(req, res);
       break;
-    case 'refresh_token':
+    case OAuthGrantType.RefreshToken:
       await handleRefreshToken(req, res);
       break;
-    case 'urn:ietf:params:oauth:grant-type:token-exchange':
+    case OAuthGrantType.TokenExchange:
       await handleTokenExchange(req, res);
       break;
     default:
@@ -313,7 +321,7 @@ export async function exchangeExternalAuthToken(
   res: Response,
   clientId: string,
   subjectToken: string,
-  subjectTokenType: string
+  subjectTokenType: OAuthTokenType
 ): Promise<void> {
   if (!clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -325,7 +333,7 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  if (subjectTokenType !== 'urn:ietf:params:oauth:token-type:access_token') {
+  if (subjectTokenType !== OAuthTokenType.AccessToken) {
     sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
     return;
   }

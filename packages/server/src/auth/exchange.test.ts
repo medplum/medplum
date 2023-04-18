@@ -53,11 +53,6 @@ describe('Token Exchange', () => {
       project,
       name: 'External Auth Client',
       redirectUri,
-    });
-
-    // Update client application with external auth
-    await systemRepo.updateResource<ClientApplication>({
-      ...externalAuthClient,
       identityProvider,
     });
 
