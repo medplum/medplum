@@ -95,10 +95,9 @@ describe('App', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    const comboboxes = screen
-      .getAllByRole('combobox');
+    const comboboxes = screen.getAllByRole('combobox');
 
-    let resultInput:HTMLInputElement|undefined = undefined;
+    let resultInput: HTMLInputElement | undefined = undefined;
     const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
 
     for (const combobox of comboboxes) {
@@ -108,7 +107,6 @@ describe('App', () => {
         break;
       }
     }
-   
     // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Different' } });
