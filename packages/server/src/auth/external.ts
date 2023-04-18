@@ -1,4 +1,4 @@
-import { badRequest, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
+import { badRequest, OAuthGrantType, OperationOutcomeError, parseJWTPayload } from '@medplum/core';
 import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
@@ -147,7 +147,7 @@ async function verifyCode(idp: IdentityProvider, code: string): Promise<Record<s
   const auth = Buffer.from(idp.clientId + ':' + idp.clientSecret).toString('base64');
 
   const params = new URLSearchParams();
-  params.append('grant_type', 'authorization_code');
+  params.append('grant_type', OAuthGrantType.AuthorizationCode);
   params.append('redirect_uri', getConfig().baseUrl + 'auth/external');
   params.append('code', code);
 

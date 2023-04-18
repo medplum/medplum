@@ -419,6 +419,35 @@ interface AutoBatchEntry<T = any> {
 }
 
 /**
+ * OAuth 2.0 Grant Type Identifiers
+ * Standard identifiers defined here: https://datatracker.ietf.org/doc/html/draft-ietf-oauth-v2-1-07#name-grant-types
+ * Token exchange extension defined here: https://datatracker.ietf.org/doc/html/rfc8693
+ */
+export enum OAuthGrantType {
+  ClientCredentials = 'client_credentials',
+  AuthorizationCode = 'authorization_code',
+  RefreshToken = 'refresh_token',
+  TokenExchange = 'urn:ietf:params:oauth:grant-type:token-exchange',
+}
+
+/**
+ * OAuth 2.0 Token Type Identifiers
+ * See: https://datatracker.ietf.org/doc/html/rfc8693#name-token-type-identifiers
+ */
+export enum OAuthTokenType {
+  /** Indicates that the token is an OAuth 2.0 access token issued by the given authorization server. */
+  AccessToken = 'urn:ietf:params:oauth:token-type:access_token',
+  /** Indicates that the token is an OAuth 2.0 refresh token issued by the given authorization server. */
+  RefreshToken = 'urn:ietf:params:oauth:token-type:refresh_token',
+  /** Indicates that the token is an ID Token as defined in Section 2 of [OpenID.Core]. */
+  IdToken = 'urn:ietf:params:oauth:token-type:id_token',
+  /** Indicates that the token is a base64url-encoded SAML 1.1 [OASIS.saml-core-1.1] assertion. */
+  Saml1Token = 'urn:ietf:params:oauth:token-type:saml1',
+  /** Indicates that the token is a base64url-encoded SAML 2.0 [OASIS.saml-core-2.0-os] assertion. */
+  Saml2Token = 'urn:ietf:params:oauth:token-type:saml2',
+}
+
+/**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
  * The client can be used in the browser, in a Node.js application, or in a Medplum Bot.
@@ -481,7 +510,6 @@ export class MedplumClient extends EventTarget {
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
-  private readonly exchangeUrl: string;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
@@ -514,7 +542,6 @@ export class MedplumClient extends EventTarget {
     this.authorizeUrl = options?.authorizeUrl || this.baseUrl + 'oauth2/authorize';
     this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
-    this.exchangeUrl = this.baseUrl + 'auth/exchange';
     this.onUnauthenticated = options?.onUnauthenticated;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
@@ -894,24 +921,12 @@ export class MedplumClient extends EventTarget {
       throw new Error('MedplumClient is missing clientId');
     }
 
-    const response = await this.fetch(this.exchangeUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        clientId: this.clientId,
-        externalAccessToken: token,
-      }),
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      this.clearActiveLogin();
-      throw new Error('Failed to fetch tokens');
-    }
-
-    const tokens = await response.json();
-    await this.verifyTokens(tokens);
-    return this.getProfile() as ProfileResource;
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', OAuthGrantType.TokenExchange);
+    formBody.set('subject_token_type', OAuthTokenType.AccessToken);
+    formBody.set('client_id', clientId);
+    formBody.set('subject_token', token);
+    return this.fetchTokens(formBody);
   }
 
   /**
@@ -2405,7 +2420,7 @@ export class MedplumClient extends EventTarget {
    */
   processCode(code: string, loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource> {
     const formBody = new URLSearchParams();
-    formBody.set('grant_type', 'authorization_code');
+    formBody.set('grant_type', OAuthGrantType.AuthorizationCode);
     formBody.set('code', code);
     formBody.set('client_id', loginParams?.clientId || (this.clientId as string));
     formBody.set('redirect_uri', loginParams?.redirectUri || getWindowOrigin());
@@ -2431,7 +2446,7 @@ export class MedplumClient extends EventTarget {
 
     if (this.refreshToken) {
       const formBody = new URLSearchParams();
-      formBody.set('grant_type', 'refresh_token');
+      formBody.set('grant_type', OAuthGrantType.RefreshToken);
       formBody.set('client_id', this.clientId as string);
       formBody.set('refresh_token', this.refreshToken);
       this.refreshPromise = this.fetchTokens(formBody);
@@ -2459,7 +2474,7 @@ export class MedplumClient extends EventTarget {
     this.clientSecret = clientSecret;
 
     const formBody = new URLSearchParams();
-    formBody.set('grant_type', 'client_credentials');
+    formBody.set('grant_type', OAuthGrantType.ClientCredentials);
     formBody.set('client_id', clientId);
     formBody.set('client_secret', clientSecret);
     return this.fetchTokens(formBody);

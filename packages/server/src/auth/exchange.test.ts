@@ -53,11 +53,6 @@ describe('Token Exchange', () => {
       project,
       name: 'External Auth Client',
       redirectUri,
-    });
-
-    // Update client application with external auth
-    await systemRepo.updateResource<ClientApplication>({
-      ...externalAuthClient,
       identityProvider,
     });
 
@@ -115,7 +110,7 @@ describe('Token Exchange', () => {
       clientId: defaultClient.id,
     });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+    expect(res.body.error_description).toBe('Invalid client');
   });
 
   test('Unknown user', async () => {

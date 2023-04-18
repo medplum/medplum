@@ -3,7 +3,7 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { deepClone } from '@medplum/core';
+import { OAuthGrantType, deepClone } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -30,7 +30,12 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
       issuer: config.issuer,
       jwks_uri: config.jwksUrl,
       authorization_endpoint: config.authorizeUrl,
-      grant_types_supported: ['authorization_code', 'client_credentials'],
+      grant_types_supported: [
+        OAuthGrantType.ClientCredentials,
+        OAuthGrantType.AuthorizationCode,
+        OAuthGrantType.RefreshToken,
+        OAuthGrantType.TokenExchange,
+      ],
       token_endpoint: config.tokenUrl,
       token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post', 'private_key_jwt'],
       token_endpoint_auth_signing_alg_values_supported: ['RS256', 'RS384', 'ES384'],

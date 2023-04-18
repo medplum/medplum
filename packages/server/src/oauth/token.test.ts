@@ -1,14 +1,15 @@
-import { createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
+import { OAuthGrantType, OAuthTokenType, createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { generateKeyPair, SignJWT } from 'jose';
+import { SignJWT, generateKeyPair } from 'jose';
+import fetch from 'node-fetch';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { MedplumServerConfig, loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
@@ -29,13 +30,18 @@ jest.mock('jose', () => {
   };
 });
 
+jest.mock('node-fetch');
+
 const app = express();
-const email = randomUUID() + '@example.com';
+const domain = randomUUID() + '.example.com';
+const email = `text@${domain}`;
 const password = randomUUID();
+const redirectUri = `https://${domain}/auth/callback`;
 let config: MedplumServerConfig;
 let project: Project;
 let client: ClientApplication;
 let pkceOptionalClient: ClientApplication;
+let externalAuthClient: ClientApplication;
 
 describe('OAuth2 Token', () => {
   beforeAll(async () => {
@@ -78,6 +84,20 @@ describe('OAuth2 Token', () => {
 
     // Set the test user password
     await setPassword(user, password);
+
+    // Create a new client application with external auth
+    externalAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'External Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'https://example.com/oauth2/authorize',
+        tokenUrl: 'https://example.com/oauth2/token',
+        userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
   });
 
   afterAll(async () => {
@@ -1343,5 +1363,69 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('IP address not allowed');
+  });
+
+  test('Token exchange success', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => ({ email }),
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange missing client ID', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: '',
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Token exchange missing client identity provider', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: client.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
+
+  test('Token exchange missing subject token', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: '',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid subject_token');
+  });
+
+  test('Token exchange unknown subject token type', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.Saml1Token,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid subject_token_type');
   });
 });

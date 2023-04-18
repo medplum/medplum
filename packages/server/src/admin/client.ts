@@ -1,5 +1,12 @@
 import { createReference } from '@medplum/core';
-import { AccessPolicy, ClientApplication, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import {
+  AccessPolicy,
+  ClientApplication,
+  IdentityProvider,
+  Project,
+  ProjectMembership,
+  Reference,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -29,6 +36,7 @@ export interface CreateClientRequest {
   readonly description?: string;
   readonly redirectUri?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
+  readonly identityProvider?: IdentityProvider;
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
@@ -41,6 +49,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     secret: generateSecret(32),
     description: request.description,
     redirectUri: request.redirectUri,
+    identityProvider: request.identityProvider,
   });
 
   await systemRepo.createResource<ProjectMembership>({
