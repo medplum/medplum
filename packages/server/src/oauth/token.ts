@@ -1,13 +1,22 @@
 import { createReference, Operator, parseJWTPayload, ProfileResource, resolveId } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { createHash } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
-import { getAuthTokens, getClient, getClientApplicationMembership, revokeLogin, timingSafeEqualStr } from './utils';
+import {
+  getAuthTokens,
+  getClient,
+  getClientApplicationMembership,
+  getExternalUserInfo,
+  revokeLogin,
+  timingSafeEqualStr,
+  tryLogin,
+} from './utils';
+import { getProjectIdByClientId } from '../auth/utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
 
@@ -42,6 +51,9 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
       break;
     case 'refresh_token':
       await handleRefreshToken(req, res);
+      break;
+    case 'urn:ietf:params:oauth:grant-type:token-exchange':
+      await handleTokenExchange(req, res);
       break;
     default:
       sendTokenError(res, 'invalid_request', 'Unsupported grant_type');
@@ -171,7 +183,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
       client = await getClient(clientId);
     } catch (err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
-      return undefined;
+      return;
     }
   }
 
@@ -275,6 +287,84 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   );
 
   await sendTokenResponse(res, updatedLogin, membership);
+}
+
+/**
+ * Handles the "Exchange" flow.
+ * See: https://datatracker.ietf.org/doc/html/rfc8693
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ */
+async function handleTokenExchange(req: Request, res: Response): Promise<void> {
+  return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);
+}
+
+/**
+ * Exchanges an existing token for a new set of tokens.
+ * See: https://datatracker.ietf.org/doc/html/rfc8693
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @param clientId The client application ID.
+ * @param subjectToken The subject token. Only access tokens are currently supported.
+ * @param subjectTokenType The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ */
+export async function exchangeExternalAuthToken(
+  req: Request,
+  res: Response,
+  clientId: string,
+  subjectToken: string,
+  subjectTokenType: string
+): Promise<void> {
+  if (!clientId) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  if (!subjectToken) {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token');
+    return;
+  }
+
+  if (subjectTokenType !== 'urn:ietf:params:oauth:token-type:access_token') {
+    sendTokenError(res, 'invalid_request', 'Invalid subject_token_type');
+    return;
+  }
+
+  const projectId = await getProjectIdByClientId(clientId, undefined);
+  const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+  const idp = client.identityProvider;
+  if (!idp) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  const userInfo = await getExternalUserInfo(idp, subjectToken);
+
+  let email: string | undefined = undefined;
+  let externalId: string | undefined = undefined;
+  if (idp.useSubject) {
+    externalId = userInfo.sub as string;
+  } else {
+    email = userInfo.email as string;
+  }
+
+  const login = await tryLogin({
+    authMethod: 'exchange',
+    email,
+    externalId,
+    projectId,
+    clientId,
+    scope: req.body.scope || 'openid offline',
+    nonce: req.body.nonce || randomUUID(),
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
+  });
+
+  const membership = await systemRepo.readReference<ProjectMembership>(
+    login.membership as Reference<ProjectMembership>
+  );
+
+  await sendTokenResponse(res, login, membership);
 }
 
 /**

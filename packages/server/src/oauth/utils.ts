@@ -12,6 +12,7 @@ import {
 import {
   AccessPolicy,
   ClientApplication,
+  IdentityProvider,
   Login,
   Project,
   ProjectMembership,
@@ -23,9 +24,11 @@ import {
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
 import { JWTPayload } from 'jose';
+import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
+import { logger } from '../logger';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
 import { generateAccessToken, generateIdToken, generateRefreshToken, generateSecret } from './keys';
 
@@ -684,4 +687,31 @@ function includeRefreshToken(request: LoginRequest): boolean {
   // We support both
   const scopeArray = request.scope.split(' ');
   return scopeArray.includes('offline') || scopeArray.includes('offline_access');
+}
+
+/**
+ * Returns the external identity provider user info for an access token.
+ * This can be used to verify the access token and get the user's email address.
+ * @param idp The identity provider configuration.
+ * @param externalAccessToken The external identity provider access token.
+ * @returns The user info claims.
+ */
+export async function getExternalUserInfo(
+  idp: IdentityProvider,
+  externalAccessToken: string
+): Promise<Record<string, unknown>> {
+  try {
+    const response = await fetch(idp.userInfoUrl as string, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${externalAccessToken}`,
+      },
+    });
+
+    return await response.json();
+  } catch (err) {
+    logger.warn('Failed to verify code', err);
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
 }

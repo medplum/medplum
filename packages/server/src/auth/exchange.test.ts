@@ -115,7 +115,7 @@ describe('Token Exchange', () => {
       clientId: defaultClient.id,
     });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Identity provider not found');
+    expect(res.body.error_description).toBe('Invalid client');
   });
 
   test('Unknown user', async () => {
