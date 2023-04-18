@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { cleanUrl, prettyPrint } from '..';
+import { prettyPrint } from './utils';
 import { medplum } from '.';
 import { convertToTransactionBundle } from '@medplum/core';
 
@@ -46,4 +46,14 @@ function parseBody(input: string | undefined): any {
   } catch (err) {
     return input;
   }
+}
+
+export function cleanUrl(input: string): string {
+  const knownPrefixes = ['admin/', 'auth/', 'fhir/R4'];
+  if (knownPrefixes.some((p) => input.startsWith(p))) {
+    // If the URL starts with a known prefix, return it as-is
+    return input;
+  }
+  // Otherwise, default to FHIR
+  return 'fhir/R4/' + input;
 }
