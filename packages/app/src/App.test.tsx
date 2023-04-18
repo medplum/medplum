@@ -93,11 +93,6 @@ describe('App', () => {
   test('Resource Type Search', async () => {
     await setup();
 
-    // open app navbar
-    await act(async () => {
-      fireEvent.click(screen.getByTitle('Medplum Logo'));
-    });
-
     const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
     expect(input.value).toBe('');
 
