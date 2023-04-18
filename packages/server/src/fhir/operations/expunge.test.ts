@@ -91,6 +91,7 @@ describe('Expunge', () => {
       .set('X-Medplum', 'extended')
       .send({});
     expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 200));
   });
 
   test('Expunger.expunge() expunges all resource types', async () => {
