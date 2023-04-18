@@ -89,4 +89,22 @@ describe('App', () => {
     const completedLink = screen.getByText('Completed Orders');
     expect(activeLink.parentElement?.className).not.toEqual(completedLink.parentElement?.className);
   });
+
+  test('Resource Type Search', async () => {
+    await setup();
+
+    // open app navbar
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
+
+    const input = screen.getByPlaceholderText('Navigate by Resource Type') as HTMLInputElement;
+    expect(input.value).toBe('');
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Account' } });
+    });
+
+    expect(input.value).toBe('Account');
+  });
 });

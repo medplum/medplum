@@ -102,7 +102,7 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
       <Navbar.Section>
         <CodeInput
           name="resourceType"
-          placeholder="Resource Type..."
+          placeholder="Navigate by Resource Type"
           property={{
             binding: {
               valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
