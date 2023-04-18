@@ -174,7 +174,9 @@ describe('App', () => {
     expect(resultInput?.value).toBe('test-code');
 
     //click on search clear button
-    const button = screen.getAllByRole('button').find((el) => el.getAttribute('class')?.includes('mantine-CloseButton-root')) as HTMLElement;
+    const button = screen
+      .getAllByRole('button')
+      .find((el) => el.getAttribute('class')?.includes('mantine-CloseButton-root')) as HTMLElement;
     await act(async () => {
       fireEvent.click(button);
     });

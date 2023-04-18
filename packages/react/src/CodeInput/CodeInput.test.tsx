@@ -77,4 +77,32 @@ describe('CodeInput', () => {
 
     expect(screen.getByText('Test Display')).toBeDefined();
   });
+
+  test('Searches for results with creatable set to false', async () => {
+    await setup(<CodeInput property={statusProperty} name="test" creatable={false} />);
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test Display')).toBeDefined();
+  });
 });
