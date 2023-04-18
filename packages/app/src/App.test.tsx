@@ -1,7 +1,4 @@
 import { MantineProvider } from '@mantine/core';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
