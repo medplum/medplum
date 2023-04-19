@@ -7,7 +7,7 @@ set -e
 set -x
 
 rm -rf node_modules
-rm package-lock.json
+rm -rf package-lock.json
 
 for dir in `ls packages`; do
   if test -f "packages/$dir/node_modules"; then
