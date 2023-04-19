@@ -13,7 +13,7 @@ export let medplum: MedplumClient;
 //     log: undefined as any
 // };
 
-export async function main(medplumClient: MedplumClient, argv: string[]) {
+export async function main(medplumClient: MedplumClient, argv: string[]): Promise<void> {
   medplum = medplumClient;
 
   // Legacy support for MEDPLUM_CLIENT_ID and MEDPLUM_CLIENT_SECRET environment variables

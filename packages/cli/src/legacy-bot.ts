@@ -28,5 +28,3 @@ createBotDeprecate
   .action(async (botName, projectId, sourceFile, distFile) => {
     await createBot(medplum, [botName, projectId, sourceFile, distFile]);
   });
-
-  

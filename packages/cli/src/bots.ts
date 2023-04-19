@@ -29,7 +29,7 @@ bot
     await createBot(medplum, [botName, projectId, sourceFile, distFile]);
   });
 
-export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false) {
+export async function botWrapper(medplum: MedplumClient, botName: string, deploy = false): Promise<void> {
   const botConfigs = readBotConfigs(botName);
   for (const botConfig of botConfigs) {
     const bot = await medplum.readResource('Bot', botConfig.id);
