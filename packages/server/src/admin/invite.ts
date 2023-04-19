@@ -31,7 +31,7 @@ export const inviteValidators = [
       body('email').isEmail().withMessage('Valid email address is required'),
       body('externalId').notEmpty().withMessage('External ID cannot be empty'),
     ],
-    'Either email or externalId is required'
+    { message: 'Either email or externalId is required' }
   ),
 ];
 

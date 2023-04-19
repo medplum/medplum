@@ -11,10 +11,18 @@ export function invalidRequest(errors: Result<ValidationError>): OperationOutcom
     issue: errors.array().map((error) => ({
       severity: 'error',
       code: 'invalid',
-      expression: [error.param],
+      expression: getValidationErrorExpression(error),
       details: { text: error.msg },
     })),
   };
+}
+
+function getValidationErrorExpression(error: ValidationError): string[] | undefined {
+  // ValidationError can be AlternativeValidationError | GroupedAlternativeValidationError | UnknownFieldsError | FieldValidationError
+  if (error.type === 'field') {
+    return [error.path];
+  }
+  return undefined;
 }
 
 export function sendOutcome(res: Response, outcome: OperationOutcome): Response<any, Record<string, any>> {
