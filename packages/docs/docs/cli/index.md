@@ -188,46 +188,46 @@ The `source` property is the file path to the original source. When you "save" t
 
 The `dist` property is the optional file path to the compiled source. If omitted, the command falls back to using the `source` property. When you "deploy" the Bot, the contents of this file will be deployed to the Bot runtime. This file must be JavaScript.
 
-#### save-bot
+#### bot save
 
 Updates the `code` value on a `Bot` resource
 
 Syntax:
 
 ```bash
-npx medplum save-bot <bot name>
+npx medplum bot save <bot name>
 ```
 
 Example:
 
 ```bash
-npx medplum save-bot hello-world
+npx medplum bot save hello-world
 ```
 
-#### deploy-bot
+#### bot deploy
 
 Deploys the Bot code
 
 Syntax:
 
 ```bash
-npx medplum deploy-bot <bot name>
+npx medplum bot deploy <bot name>
 ```
 
 Example:
 
 ```bash
-npx medplum-deploy-bot hello-world
+npx medplum bot deploy hello-world
 ```
 
-#### create-bot
+#### bot create
 
 Creates a bot and saves it
 
 Syntax:
 
 ```bash
-npx medplum create-bot <bot name> <project id> <source file> <dist file>
+npx medplum bot create <bot name> <project id> <source file> <dist file>
 ```
 
 ## Bots Example
@@ -263,7 +263,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 You can use the Medplum CLI to save it:
 
 ```bash
-npx medplum save-bot hello-world
+npx medplum bot save hello-world
 ```
 
 Compile with vanilla `tsc` (no bundler required)
@@ -283,5 +283,5 @@ export async function handler(medplum, input) {
 You can then use the Medplum CLI to deploy it.
 
 ```bash
-npx medplum deploy-bot hello-world
+npx medplum bot deploy hello-world
 ```

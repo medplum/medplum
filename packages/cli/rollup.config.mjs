@@ -6,6 +6,7 @@ const extensions = ['.ts'];
 
 const globals = {
   '@medplum/core': 'medplum.core',
+  commander: 'commander',
   dotenv: 'dotenv',
   fs: 'fs',
   'node-fetch': 'fetch',

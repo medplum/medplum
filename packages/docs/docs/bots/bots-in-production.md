@@ -146,10 +146,10 @@ Next step is to create the bot.
 
 Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`.
 
-Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `create-bot` command. In our example
+Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `bot create` command. In our example 
 
 ```bash
-npx medplum create-bot <bot-name> <project-id> <source-file> <dist-file>
+npx medplum bot create <bot-name> <project-id> <source-file> <dist-file>
 ```
 
 Running this command does the following:
@@ -190,23 +190,23 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 
 Now that your Bot is written and compiled, the [resource](/docs/api/fhir/medplum/bot) is created, and your credentials are set, we can finally deploy our Bot to production using the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
 
-To deploy our bot, we will use the `deploy-bot` command.
+To deploy our bot, we will use the `bot deploy` command.
 
 ```bash
-npx medplum deploy-bot <bot-name>
+npx medplum bot deploy <bot-name>
 ```
 
 Where `<bot-name>` is the `name` property that you set for your bot in `medplum.config.json`. In our example, this would be:
 
 ```bash
-npx medplum deploy-bot my-first-bot
+npx medplum bot deploy my-first-bot
 ```
 
 Use a wild card \* in `<bot-name>` to deploy multiple bots matching the pattern.
 This would allow us to deploy bots as part of a CI/CD pipeline, without having to update the command every time a new bot is added.
 
 ```bash
-npx medplum deploy-bot *staging*
+npx medplum bot deploy *staging*
 ```
 
 Running this command does two things:
@@ -215,7 +215,7 @@ Running this command does two things:
 2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
 
 :::caution Note
-There is a known timing issue with the `deploy-bot` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
+There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
 
 ```
 Deploy error: {
@@ -259,7 +259,7 @@ To deploy the latest Bot to staging:
 export MEDPLUM_CLIENT_ID=<STAGING_CLIENT_ID>
 export MEDPLUM_CLIENT_SECRET=<STAGING_CLIENT_SECRET>
 npm run build
-npx medplum deploy-bot my-first-bot-staging
+npx medplum bot deploy my-first-bot-staging
 ```
 
 To deploy the latest Bot to production:
@@ -268,7 +268,7 @@ To deploy the latest Bot to production:
 export MEDPLUM_CLIENT_ID=<PRODUCTION_CLIENT_ID>
 export MEDPLUM_CLIENT_SECRET=<PRODUCTION_CLIENT_SECRET>
 npm run build
-npx medplum deploy-bot my-first-bot-production
+npx medplum bot deploy my-first-bot-production
 ```
 
 This pattern is especially powerful when deploying Bots **as part of a CI pipeline**.
