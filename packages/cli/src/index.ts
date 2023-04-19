@@ -2,8 +2,7 @@ import { Command } from 'commander';
 import { FileSystemStorage } from './storage';
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import dotenv from 'dotenv';
-import { bot } from './bots';
-import { createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './legacy-bot';
+import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { login, whoami } from './auth';
 import { deleteObject, get, patch, post, put } from './rest';
 
