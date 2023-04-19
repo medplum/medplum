@@ -68,29 +68,19 @@ function mockFetch(
   });
 }
 
-let originalWindow: (Window & typeof globalThis) | undefined = undefined;
-let originalBuffer: BufferConstructor | undefined = undefined;
+const originalWindow = globalThis.window;
+const originalBuffer = globalThis.Buffer;
 
 describe('Client', () => {
   beforeAll(() => {
-    Object.defineProperty(global, 'TextEncoder', {
-      value: TextEncoder,
-    });
-
-    Object.defineProperty(global, 'crypto', {
-      value: webcrypto,
-    });
+    Object.defineProperty(globalThis, 'TextEncoder', { value: TextEncoder });
+    Object.defineProperty(globalThis, 'crypto', { value: webcrypto });
   });
 
   beforeEach(() => {
     localStorage.clear();
-    originalWindow = globalThis.window;
-    originalBuffer = globalThis.Buffer;
-  });
-
-  afterEach(() => {
-    globalThis.window = originalWindow as Window & typeof globalThis;
-    globalThis.Buffer = originalBuffer as BufferConstructor;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
+    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
   });
 
   test('Constructor', () => {
@@ -215,7 +205,6 @@ describe('Client', () => {
 
   test('SignInWithRedirect', async () => {
     // Mock window.location.assign
-    global.window = Object.create(window);
     const assign = jest.fn();
     Object.defineProperty(window, 'location', {
       value: { assign },
@@ -259,7 +248,7 @@ describe('Client', () => {
 
   test('SignOutWithRedirect', async () => {
     // Mock window.location.assign
-    global.window = Object.create(window);
+
     Object.defineProperty(window, 'location', {
       value: {
         assign: jest.fn(),
@@ -274,7 +263,6 @@ describe('Client', () => {
   });
 
   test('Sign in with external auth', async () => {
-    global.window = Object.create(window);
     const assign = jest.fn();
     Object.defineProperty(window, 'location', {
       value: { assign },
@@ -503,7 +491,8 @@ describe('Client', () => {
   });
 
   test('Basic auth in browser', async () => {
-    delete (global as any).Buffer;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
+    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
@@ -528,7 +517,8 @@ describe('Client', () => {
   });
 
   test('Basic auth in Node.js', async () => {
-    delete (global as any).window;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
+    Object.defineProperty(globalThis, 'window', { get: () => undefined });
 
     const fetch = mockFetch(200, () => {
       return { resourceType: 'Patient', id: '123' };
