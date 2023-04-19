@@ -34,6 +34,9 @@ storybook-static/
 # Jest code coverage
 coverage/
 
+# Temporary files
+tmp/
+
 # TypeScript incremental build
 tsconfig.tsbuildinfo
 
