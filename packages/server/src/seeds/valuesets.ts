@@ -21,11 +21,12 @@ export async function createValueSets(): Promise<void> {
 async function deleteExisting(resource: CodeSystem | ValueSet): Promise<void> {
   const bundle = await systemRepo.search({
     resourceType: resource.resourceType,
-    count: 1,
     filters: [{ code: 'url', operator: Operator.EQUALS, value: resource.url as string }],
   });
   if (bundle.entry && bundle.entry.length > 0) {
-    const existing = bundle.entry[0].resource as CodeSystem | ValueSet;
-    await systemRepo.deleteResource(existing.resourceType, existing.id as string);
+    for (const entry of bundle.entry) {
+      const existing = entry.resource as CodeSystem | ValueSet;
+      await systemRepo.deleteResource(existing.resourceType, existing.id as string);
+    }
   }
 }
