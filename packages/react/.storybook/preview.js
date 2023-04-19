@@ -17,7 +17,7 @@ export const parameters = {
 };
 
 const medplum = new MockClient();
-medplum.requestSchema('Patient');
+medplum.get('/');
 
 const theme = {
   headings: {
