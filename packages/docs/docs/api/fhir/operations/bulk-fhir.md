@@ -8,18 +8,18 @@ Medplum supports the [Bulk FHIR API 2.0.0](https://hl7.org/fhir/uv/bulkdata/STU2
 
 The premise of the Bulk FHIR API is that it allows you to create a **bulk export of data for multiple patients**. To specify which patients need to be included in the export, construct a [Group](/docs/api/fhir/resources/group) resource and add specific patients as `Group.member.entity.`
 
-To start the process of exporting the resources `GET` the following `https://api.medplum.com/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson`, which will kick off a Bulk Data Export transaction and return links to download URLs for requested resources.
+To start the process of exporting the resources, make an HTTP `GET` request for `/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson`. This initiates a Bulk Data Export transaction and return links to download URLs for requested resources.
 
 ```bash
-curl -x GET 'https://api.medplum.com/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson' \
-  --header 'Authorization: Bearer <ACCESS_TOKEN>' \
+curl 'https://api.medplum.com/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndjson' \
+  -H 'Authorization: Bearer <ACCESS_TOKEN>'
 ```
 
 Once the Bulk Data Export is complete, a [BulkDataExport resource](/docs/api/fhir/medplum/bulkdataexport) will become available with links to all of the exports for download.
 
-| Resource in Medplum App                                                                                          | Usage in Bulk FHIR                                                       |
-| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [Group](https://app.medplum.com/Group?_count=20&_fields=id,code,name,_lastUpdated&_offset=0&_sort=-_lastUpdated) | All patients you want to include must be included as Group.member.entity |
+| Resource in Medplum App                | Usage in Bulk FHIR                                                       |
+| -------------------------------------- | ------------------------------------------------------------------------ |
+| [Group](https://app.medplum.com/Group) | All patients you want to include must be included as Group.member.entity |
 
 ## Related Reading
 
