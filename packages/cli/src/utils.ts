@@ -86,7 +86,7 @@ export async function createBot(medplum: MedplumClient, argv: string[]): Promise
 
     addBotToConfig(botConfig);
   } catch (err) {
-    console.log('Error while creating new bot ', err);
+    console.log('Error while creating new bot: ' + err);
   }
 }
 

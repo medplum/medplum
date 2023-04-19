@@ -38,4 +38,5 @@ export async function botWrapper(medplum: MedplumClient, botName: string, deploy
       await deployBot(medplum, botConfig, bot);
     }
   }
+  console.log(`Number of bots deployed: ${botConfigs.length}`);
 }

@@ -19,9 +19,6 @@ get
   .action(async (url, options) => {
     try {
       const response = await medplum.get(cleanUrl(url));
-      (console as any).james('test');
-      console.log(response);
-      console.log('hhja ');
       if (options.asTransaction) {
         prettyPrint(convertToTransactionBundle(response));
       } else {

@@ -45,7 +45,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]) {
     index.addCommand(deployBotDeprecate);
     index.addCommand(createBotDeprecate);
 
-    index.parse(argv).configureOutput();
+    await index.parseAsync(argv);
   } catch (err) {
     console.error('Error: ' + normalizeErrorString(err));
   }

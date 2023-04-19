@@ -157,7 +157,7 @@ describe('HomePage', () => {
     URL.revokeObjectURL = jest.fn();
     // Mock the export operation
     const medplum = new MockClient();
-    medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
+    medplum.router.router.add('GET', '/', async () => [allOk]);
 
     await setup('/Patient', medplum);
     await waitFor(() => screen.getByText('Export...'));
