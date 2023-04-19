@@ -1,21 +1,12 @@
 import { decodeBase64, encodeBase64 } from './base64';
 
-let originalWindow: (Window & typeof globalThis) | undefined = undefined;
-let originalBuffer: BufferConstructor | undefined = undefined;
+const originalWindow = globalThis.window;
+const originalBuffer = globalThis.Buffer;
 
 describe('Base64', () => {
-  beforeEach(() => {
-    originalWindow = globalThis.window;
-    originalBuffer = globalThis.Buffer;
-  });
-
-  afterEach(() => {
-    globalThis.window = originalWindow as Window & typeof globalThis;
-    globalThis.Buffer = originalBuffer as BufferConstructor;
-  });
-
   test('Browser', () => {
-    delete (global as any).Buffer;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
+    Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -25,7 +16,8 @@ describe('Base64', () => {
   });
 
   test('Node.js', () => {
-    delete (global as any).window;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
+    Object.defineProperty(globalThis, 'window', { get: () => undefined });
 
     const encoded = encodeBase64('Hello world');
     expect(encoded).toBe('SGVsbG8gd29ybGQ=');
@@ -35,19 +27,19 @@ describe('Base64', () => {
   });
 
   test('Error', () => {
-    delete (global as any).window;
-    delete (global as any).Buffer;
+    Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
+    Object.defineProperty(globalThis, 'window', { get: () => undefined });
 
     try {
       encodeBase64('Hello world');
-      fail('Expected error');
+      throw new Error('Expected error');
     } catch (e) {
       expect((e as Error).message).toBe('Unable to encode base64');
     }
 
     try {
       decodeBase64('SGVsbG8gd29ybGQ=');
-      fail('Expected error');
+      throw new Error('Expected error');
     } catch (e) {
       expect((e as Error).message).toBe('Unable to decode base64');
     }
