@@ -298,7 +298,7 @@ describe('Client', () => {
   test('External auth token exchange', async () => {
     const clientId = 'medplum-client-123';
     const fetch = mockFetch(200, (url) => {
-      if (url.includes('/auth/exchange')) {
+      if (url.includes('/oauth2/token')) {
         return {
           access_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
           refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId })) + '.signature',
@@ -324,7 +324,7 @@ describe('Client', () => {
     const clientId1 = 'medplum-client-123';
     const clientId2 = 'medplum-client-456';
     const fetch = mockFetch(200, (url) => {
-      if (url.includes('/auth/exchange')) {
+      if (url.includes('/oauth2/token')) {
         return {
           access_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',
           refresh_token: 'header.' + window.btoa(stringify({ client_id: clientId2 })) + '.signature',

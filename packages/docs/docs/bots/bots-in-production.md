@@ -30,6 +30,52 @@ cd my-bots
 npm install
 ```
 
+## Setting up your Permissions
+
+Because Bots contain important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Medplum uses the [client credentials workflow](../auth/client-credentials) authenticate the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
+
+First, you should create a Client Application on the Medplum Server by following [these directions](/docs/auth/client-credentials).
+
+The [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) looks for two environment variables when authenticating: `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.
+
+You can set these on the command line using the `export` command in bash.
+
+```bash
+export MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
+export MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+Alternatively, you can create a `.env` file to avoid having to re-export the environment variables in every new terminal. The example repository has a `.env.example` file you can copy to get started.
+
+```bash
+cp .env.example .env
+```
+
+```bash
+# .env
+MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
+MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
+```
+
+:::danger Warning
+
+**Your `.env` file should _never_ be checked into source control.**
+
+`MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET` should be considered sensitive security credentials and should never be shared in a publicly accessible store. The `medplum-demo-bots` repository adds `.env` to `.gitignore` by default.
+
+:::
+
+If you are self-hosting Medplum, set `MEDPLUM_BASE_URL` to the base URL of your Medplum server as an environment variable or in your .env file.
+
+```bash
+export MEDPLUM_BASE_URL=https://api.example.com/
+```
+
+```bash
+# .env
+MEDPLUM_BASE_URL=https://api.example.com/
+```
+
 ## Create a source file
 
 After we've installed dependencies, we can write your Bot in any typescript file under the `src/` directory.
@@ -94,11 +140,11 @@ ls dist
 
 ```
 
-## Creating your Bot 
+## Creating your Bot
 
-Next step is to create the bot. 
+Next step is to create the bot.
 
-Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`. 
+Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`.
 
 Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `bot create` command. In our example 
 
@@ -108,7 +154,7 @@ npx medplum bot create <bot-name> <project-id> <source-file> <dist-file>
 
 Running this command does the following:
 
-1. Creates the Bot resource 
+1. Creates the Bot resource
 2. Creates a ProjectMembership resource that connects it to a project
 3. Saves the bot to the associated project in the Medplum database
 4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
@@ -117,8 +163,7 @@ Running this command does the following:
 If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
 :::
 
-
-After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this: 
+After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this:
 
 ```js
 {
@@ -140,52 +185,6 @@ After creating the bot, you should go to `medplum.config.json` and you should se
 | `id`      | The Bot Resource `id`. Can be found by navigating to [app.medplum.com/Bot](https://app.medplum.com/Bot) and clicking on the entry for the corresponding Bot. See the [Bot Basics tutorial](./bot-basics#bot_id) for more information                 |
 | `source`  | This is the location of the typescript source file for your bot. **Note**: Currently, Medplum only supports single-file Bots.                                                                                                                        |
 | `dist`    | This is the location of the transpiled javascript file for your bot. For most setups, this will be in your `dist` directory of your package.                                                                                                         |
-
-## Setting up your Permissions
-
-Because Bots contain important or sensitive code, it's important to prevent unauthorized users from modifying your Bots. Medplum uses the [client credentials workflow](../auth/client-credentials) authenticate the [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli).
-
-First, you should create a Client Application on the Medplum Server by following [these directions](/docs/auth/client-credentials).
-
-The [Medplum CLI](https://github.com/medplum/medplum/tree/main/packages/cli) looks for two environment variables when authenticating: `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`.
-
-You can set these on the command line using the `export` command in bash.
-
-```bash
-export MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
-export MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
-```
-
-Alternatively, you can create a `.env` file to avoid having to re-export the environment variables in every new terminal. The example repository has a `.env.example` file you can copy to get started.
-
-```bash
-cp .env.example .env
-```
-
-```bash
-# .env
-MEDPLUM_CLIENT_ID=<YOUR_CLIENT_ID>
-MEDPLUM_CLIENT_SECRET=<YOUR_CLIENT_SECRET>
-```
-
-:::danger Warning
-
-**Your `.env` file should _never_ be checked into source control.**
-
-`MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET` should be considered sensitive security credentials and should never be shared in a publicly accessible store. The `medplum-demo-bots` repository adds `.env` to `.gitignore` by default.
-
-:::
-
-If you are self-hosting Medplum, set `MEDPLUM_BASE_URL` to the base URL of your Medplum server as an environment variable or in your .env file.
-
-```bash
-export MEDPLUM_BASE_URL=https://api.example.com/
-```
-
-```bash
-# .env
-MEDPLUM_BASE_URL=https://api.example.com/
-```
 
 ## Deploying your Bot
 

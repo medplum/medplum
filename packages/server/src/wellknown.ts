@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { getConfig } from './config';
 import { getJwks } from './oauth/keys';
+import { OAuthGrantType } from '@medplum/core';
 
 export const wellKnownRouter = Router();
 
@@ -17,7 +18,12 @@ wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
     userinfo_endpoint: config.userInfoUrl,
     jwks_uri: config.jwksUrl,
     id_token_signing_alg_values_supported: ['RS256'],
-    grant_types_supported: ['client_credentials', 'authorization_code', 'refresh_token'],
+    grant_types_supported: [
+      OAuthGrantType.ClientCredentials,
+      OAuthGrantType.AuthorizationCode,
+      OAuthGrantType.RefreshToken,
+      OAuthGrantType.TokenExchange,
+    ],
     response_types_supported: ['code', 'id_token', 'token id_token'],
     subject_types_supported: ['pairwise', 'public'],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],

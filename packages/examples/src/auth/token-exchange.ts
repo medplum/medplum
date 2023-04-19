@@ -2,12 +2,12 @@ import { MedplumClient } from '@medplum/core';
 
 /*
 // start-block tokenExchangeCurl
-curl -X POST 'https://api.medplum.com/auth/exchange' \
---header 'Content-Type: application/json' \
---data-raw '{
-"clientId": "<Your ClientApplication ID>",
-"externalAccessToken": "<External Access Token>"
-}'
+curl -X POST 'https://api.medplum.com/oauth2/token' \
+--header 'Content-Type: application/x-www-form-urlencoded' \
+--data-urlencode "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" \
+--data-urlencode "subject_token_type=urn:ietf:params:oauth:token-type:access_token" \
+--data-urlencode "client_id=<Your ClientApplication ID>" \
+--data-urlencode "subject_token=<External Access Token>"
 // end-block tokenExchangeCurl
 */
 

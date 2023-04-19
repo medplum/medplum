@@ -57,19 +57,3 @@ export const LowOnly = (): JSX.Element => (
     />
   </Document>
 );
-
-export const WithComparator = (): JSX.Element => (
-  <Document>
-    <RangeDisplay
-      value={
-        {
-          low: {
-            comparator: '>',
-            value: 10,
-            unit: 'mg',
-          },
-        } as Range
-      }
-    />
-  </Document>
-);
