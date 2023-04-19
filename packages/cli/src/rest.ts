@@ -38,7 +38,7 @@ post.arguments('<url> <body>').action(async (url, body) => {
 });
 
 put.arguments('<url> <body>').action(async (url, body) => {
-  prettyPrint(await medplum.post(cleanUrl(url), parseBody(body)));
+  prettyPrint(await medplum.put(cleanUrl(url), parseBody(body)));
 });
 
 function parseBody(input: string | undefined): any {
