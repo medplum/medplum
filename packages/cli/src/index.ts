@@ -8,10 +8,6 @@ import { deleteObject, get, patch, post, put } from './rest';
 
 export let medplum: MedplumClient;
 
-// export const jamesStuff = {
-//     log: undefined as any
-// };
-
 export async function main(medplumClient: MedplumClient, argv: string[]): Promise<void> {
   medplum = medplumClient;
 
