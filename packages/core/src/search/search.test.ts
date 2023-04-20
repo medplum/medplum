@@ -99,7 +99,6 @@ describe('Search Utils', () => {
   });
 
   test('Parse multiple filters same code', () => {
-    //?_count=20&_fields=name,birthDate,gender,address-state,_lastUpdated,id&_lastUpdated=ge2023-04-01T07%3A00%3A00.000Z&_lastUpdated=le2023-05-01T06%3A59%3A59.999Z&_offset=0&_sort=-_lastUpdated
     const result = parseSearchDefinition(
       'Patient?_lastUpdated=ge2023-04-01T07%3A00%3A00.000Z&_lastUpdated=le2023-05-01T06%3A59%3A59.999Z'
     );
