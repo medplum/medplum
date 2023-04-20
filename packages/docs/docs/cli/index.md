@@ -165,12 +165,29 @@ medplum delete Patient/$id
 
 `project` will have administration commands for visibilty and management
 
+#### `current`
+
+Sees your current project
+
+```bash 
+medplum project current
+```
+
 #### `list`
 
 Sees your list of project ids and names 
 
 ```bash 
 medplum project list
+```
+
+
+#### `switch`
+
+Switching to another project from the current one
+
+```bash 
+medplum project switch <projectId>
 ```
 
 ### Bots

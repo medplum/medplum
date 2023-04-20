@@ -44,7 +44,7 @@ function switchProject(medplum: MedplumClient, projectId: string): void {
   const logins = medplum.getLogins();
   const login = logins.find((login: LoginState) =>  login.project?.reference?.includes(projectId));
   if (!login) {
-    console.log(`Error: project: ${projectId} not found. Make sure you are added as a user to this project`);
+    console.log(`Error: project ${projectId} not found. Make sure you are added as a user to this project`);
   } else {
     medplum.setActiveLogin(login);
     console.log(`Switched to project ${projectId}\n`);
