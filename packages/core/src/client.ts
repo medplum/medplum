@@ -620,7 +620,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The resource type to invalidate.
    */
   invalidateSearches<K extends ResourceType>(resourceType: K): void {
-    const url = 'fhir/R4/' + resourceType;
+    const url = this.fhirBaseUrl + resourceType;
     if (this.requestCache) {
       for (const key of this.requestCache.keys()) {
         if (key.endsWith(url) || key.includes(url + '?')) {
@@ -1888,7 +1888,7 @@ export class MedplumClient extends EventTarget {
    * @returns The FHIR batch/transaction response bundle.
    */
   executeBatch(bundle: Bundle): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl, bundle);
+    return this.post(this.fhirBaseUrl.slice(0, -1), bundle);
   }
 
   /**
@@ -2275,7 +2275,7 @@ export class MedplumClient extends EventTarget {
     };
 
     // Execute the batch request
-    const response = (await this.post('fhir/R4', batch)) as Bundle;
+    const response = (await this.post(this.fhirBaseUrl.slice(0, -1), batch)) as Bundle;
 
     // Process the response
     for (let i = 0; i < entries.length; i++) {
