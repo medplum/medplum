@@ -18,6 +18,12 @@ bulkDataRouter.get(
     const { id } = req.params;
     const repo = res.locals.repo as Repository;
     const bulkDataExport = await repo.readResource<BulkDataExport>('BulkDataExport', id);
+
+    if (bulkDataExport.status != 'completed') {
+      res.status(202).end();
+      return;
+    }
+
     const json = await rewriteAttachments(RewriteMode.PRESIGNED_URL, repo, {
       transactionTime: bulkDataExport.transactionTime,
       request: bulkDataExport.request,

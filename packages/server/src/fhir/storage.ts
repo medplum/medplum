@@ -3,7 +3,7 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
-import { Readable } from 'stream';
+import { Readable, finished, pipeline } from 'stream';
 import { getConfig } from '../config';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -57,7 +57,7 @@ class FileSystemStorage implements BinaryStorage {
     binary: Binary,
     filename: string | undefined,
     contentType: string | undefined,
-    stream: Readable | NodeJS.ReadableStream
+    input: Readable | NodeJS.ReadableStream
   ): Promise<void> {
     checkFileMetadata(filename, contentType);
     const dir = this.getDir(binary);
@@ -65,10 +65,14 @@ class FileSystemStorage implements BinaryStorage {
       mkdirSync(dir);
     }
     const writeStream = createWriteStream(this.getPath(binary), { flags: 'w' });
-    stream.pipe(writeStream);
     return new Promise((resolve, reject) => {
-      writeStream.on('close', resolve);
-      writeStream.on('error', reject);
+      pipeline(input, writeStream, (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      })
     });
   }
 
