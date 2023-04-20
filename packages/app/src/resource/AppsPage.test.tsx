@@ -54,7 +54,6 @@ describe('AppsPage', () => {
   });
 
   test('Patient Smart App Launch', async () => {
-    global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
         pathname: '/Patient/123/apps',
@@ -77,7 +76,6 @@ describe('AppsPage', () => {
   });
 
   test('Encounter Smart App Launch', async () => {
-    global.window = Object.create(window);
     Object.defineProperty(window, 'location', {
       value: {
         pathname: '/Encounter/123/apps',
