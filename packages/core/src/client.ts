@@ -1888,7 +1888,7 @@ export class MedplumClient extends EventTarget {
    * @returns The FHIR batch/transaction response bundle.
    */
   executeBatch(bundle: Bundle): Promise<Bundle> {
-    return this.post('fhir/R4', bundle);
+    return this.post(this.fhirBaseUrl, bundle);
   }
 
   /**
