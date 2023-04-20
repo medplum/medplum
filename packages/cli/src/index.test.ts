@@ -223,20 +223,18 @@ describe('CLI', () => {
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
       JSON.stringify({
-        activeLogin: JSON.stringify(
-          {
-            accessToken: 'abc',
-            refreshToken: 'xyz',
-            profile: {
-              reference: 'Practitioner/123',
-              display: 'Alice Smith',
-            },
-            project: {
-              reference: 'Project/456',
-              display: 'My Project',
-            },
+        activeLogin: JSON.stringify({
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+          profile: {
+            reference: 'Practitioner/123',
+            display: 'Alice Smith',
           },
-        ),
+          project: {
+            reference: 'Project/456',
+            display: 'My Project',
+          },
+        }),
       })
     );
     await main(medplum, ['node', 'index.js', 'project', 'current']);
