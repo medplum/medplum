@@ -214,7 +214,7 @@ describe('CLI', () => {
       })
     );
     await main(medplum, ['node', 'index.js', 'project', 'list']);
-    expect(console.log).toBeCalledWith(expect.stringMatching(`display: My Project`));
+    expect(console.log).toBeCalledWith(expect.stringMatching(`(Project/456)`));
   });
 
   //Bots
