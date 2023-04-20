@@ -1,6 +1,6 @@
 import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
+import { bcryptHashPassword } from './auth/utils';
 import { systemRepo } from './fhir/repo';
 import { logger } from './logger';
 import { createSearchParameters } from './seeds/searchparameters';
@@ -19,7 +19,7 @@ export async function seedDatabase(): Promise<void> {
   const email = 'admin@example.com';
   const password = 'medplum_admin';
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcryptHashPassword(password);
   const user = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,

@@ -7,6 +7,7 @@ import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { authenticateTokenImpl } from '../oauth/middleware';
+import { bcryptHashPassword } from './utils';
 
 export const changePasswordValidators = [
   body('oldPassword').notEmpty().withMessage('Missing oldPassword'),
@@ -51,7 +52,7 @@ export async function changePassword(request: ChangePasswordRequest): Promise<vo
     throw new OperationOutcomeError(badRequest('Password found in breach database', 'newPassword'));
   }
 
-  const newPasswordHash = await bcrypt.hash(request.newPassword, 10);
+  const newPasswordHash = await bcryptHashPassword(request.newPassword);
   await systemRepo.updateResource<User>({
     ...request.user,
     passwordHash: newPasswordHash,

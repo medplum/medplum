@@ -9,11 +9,10 @@ import {
   ResourceType,
   User,
 } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import { resetPassword } from '../auth/resetpassword';
-import { createProfile, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config';
 import { sendEmail } from '../email/email';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
@@ -130,7 +129,7 @@ async function createUser(request: InviteRequest): Promise<User> {
   const { firstName, lastName, email, externalId } = request;
   const password = request.password || generateSecret(16);
   logger.info('Create user ' + email);
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
   if (request.resourceType === 'Patient' || externalId) {

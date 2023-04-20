@@ -1,6 +1,5 @@
 import { badRequest, NewUserRequest, Operator } from '@medplum/core';
 import { OperationOutcome, Project, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
@@ -10,7 +9,7 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { getUserByEmailInProject, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
-import { verifyRecaptcha } from './utils';
+import { bcryptHashPassword, verifyRecaptcha } from './utils';
 
 export const newUserValidators = [
   body('firstName').notEmpty().withMessage('First name is required'),
@@ -118,7 +117,7 @@ export async function createUser(request: NewUserRequest): Promise<User> {
   }
 
   logger.info('Create user ' + email);
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcryptHashPassword(password);
   const result = await systemRepo.createResource<User>({
     resourceType: 'User',
     firstName,
