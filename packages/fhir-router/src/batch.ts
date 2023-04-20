@@ -73,6 +73,12 @@ class BatchProcessor {
     const resultEntries: BundleEntry[] = [];
     for (const entry of entries) {
       const rewritten = this.rewriteIdsInObject(entry);
+      // If the resource 'id' element is specified, we want to replace teh `urn:uuid:*` string and
+      // remove the `resourceType` prefix
+      if (entry?.resource?.id) {
+        rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
+      }
+
       try {
         resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
@@ -178,12 +184,12 @@ class BatchProcessor {
     }
   }
 
-  private rewriteIds(input: any, key?: string | number): any {
+  private rewriteIds(input: any): any {
     if (Array.isArray(input)) {
       return this.rewriteIdsInArray(input);
     }
     if (typeof input === 'string') {
-      return this.rewriteIdsInString(input, key);
+      return this.rewriteIdsInString(input);
     }
     if (typeof input === 'object') {
       return this.rewriteIdsInObject(input);
@@ -192,26 +198,23 @@ class BatchProcessor {
   }
 
   private rewriteIdsInArray(input: any[]): any[] {
-    return input.map((item, index) => this.rewriteIds(item, index));
+    return input.map((item) => this.rewriteIds(item));
   }
 
   private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v, k)]));
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
-  private rewriteIdsInString(input: string, key?: string | number): string {
+  private rewriteIdsInString(input: string, removeResourceType = false): string {
     const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
     if (matches) {
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
       if (resource) {
         let referenceString: string | undefined = getReferenceString(resource);
-        // If this is the top-level 'id' field of the resource, we want to remove the `resourceType` prefix from the
-        // reference string
-        if (key === 'id') {
+        if (removeResourceType) {
           referenceString = resolveId({ reference: referenceString });
         }
-
         return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
       }
     }
