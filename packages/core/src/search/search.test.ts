@@ -98,6 +98,27 @@ describe('Search Utils', () => {
     });
   });
 
+  test('Parse multiple filters same code', () => {
+    const result = parseSearchDefinition(
+      'Patient?_lastUpdated=ge2023-04-01T07%3A00%3A00.000Z&_lastUpdated=le2023-05-01T06%3A59%3A59.999Z'
+    );
+    expect(result).toMatchObject({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_lastUpdated',
+          operator: Operator.GREATER_THAN_OR_EQUALS,
+          value: '2023-04-01T07:00:00.000Z',
+        },
+        {
+          code: '_lastUpdated',
+          operator: Operator.LESS_THAN_OR_EQUALS,
+          value: '2023-05-01T06:59:59.999Z',
+        },
+      ],
+    });
+  });
+
   test('Format Patient search', () => {
     const result = formatSearchQuery({
       resourceType: 'Patient',
