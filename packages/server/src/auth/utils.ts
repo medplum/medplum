@@ -1,7 +1,9 @@
 import { badRequest, createReference, OperationOutcomeError, ProfileResource, resolveId } from '@medplum/core';
 import { ContactPoint, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import bcrypt from 'bcryptjs';
 import { Response } from 'express';
 import fetch from 'node-fetch';
+import { getConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { logger } from '../logger';
@@ -160,4 +162,13 @@ export async function getProjectIdByClientId(
   }
 
   return projectId;
+}
+
+/**
+ * Returns the bcrypt hash of the password.
+ * @param password The input password.
+ * @returns The bcrypt hash of the password.
+ */
+export function bcryptHashPassword(password: string): Promise<string> {
+  return bcrypt.hash(password, getConfig().bcryptHashSalt);
 }

@@ -1,12 +1,12 @@
 import { allOk, badRequest } from '@medplum/core';
 import { PasswordChangeRequest, Reference, User } from '@medplum/fhirtypes';
-import bcrypt from 'bcryptjs';
 import { Request, Response } from 'express';
 import { body, validationResult } from 'express-validator';
 import { pwnedPassword } from 'hibp';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { systemRepo } from '../fhir/repo';
 import { timingSafeEqualStr } from '../oauth/utils';
+import { bcryptHashPassword } from './utils';
 
 export const setPasswordValidators = [
   body('id').isUUID().withMessage('Invalid request ID'),
@@ -47,6 +47,6 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
 }
 
 export async function setPassword(user: User, password: string): Promise<void> {
-  const passwordHash = await bcrypt.hash(password, 10);
+  const passwordHash = await bcryptHashPassword(password);
   await systemRepo.updateResource<User>({ ...user, passwordHash });
 }

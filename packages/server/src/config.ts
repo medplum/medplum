@@ -36,6 +36,7 @@ export interface MedplumServerConfig {
   auditEventLogGroup?: string;
   auditEventLogStream?: string;
   registerEnabled?: boolean;
+  bcryptHashSalt: number;
 }
 
 /**
@@ -199,6 +200,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.maxJsonSize = config.maxJsonSize || '1mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
+  config.bcryptHashSalt = config.bcryptHashSalt || 10;
   return config;
 }
 
