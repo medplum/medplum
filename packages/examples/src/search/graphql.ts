@@ -26,7 +26,7 @@ curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
 -H 'Content-Type: application/json' \
 -H "Authorization: Bearer $your_access_token" \
 -d '{
-  "query": "\n    query {\n      Patient(id: \"example-id\") {\n        resourceType\n        id\n        name {\n          text\n        }\n        address {\n          text\n        }\n      }\n    }\n  "
+  "query": "\n query {\n Patient(id: \"example-id\") {\n resourceType\n id\n name {\n text\n }\n address {\n text\n }\n }\n }\n "
 }'
 // end-block GetPatientByIdCurl
 */
@@ -123,7 +123,7 @@ await medplum.graphql(`
 response = {
   // start-block SearchPatientsByNameAndCityResponse
   data: {
-    PatientList: [
+    patients: [
       {
         resourceType: 'Patient',
         id: 'example-id-1',
@@ -325,7 +325,7 @@ console.log(response);
 /*
 // start-block PatientsWithReportsGraphQL
 query {
-  // Search for a list of Patients named "Eve", living in "Philadelphia"
+  # Search for a list of Patients named "Eve", living in "Philadelphia"
   patients: PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
@@ -339,11 +339,11 @@ query {
       state
       postalCode
     }
-    // Search for DiagnosticReports linked to each Patient
+    # Search for DiagnosticReports linked to each Patient
     reports: DiagnosticReportList(_reference: subject) {
       resourceType
       id
-      // Resolve the Observations referenced by DiagnosticReport.result
+      # Resolve the Observations referenced by DiagnosticReport.result
       result {
         resource {
           ... on Observation {
