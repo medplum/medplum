@@ -189,6 +189,36 @@ describe('CLI', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('active'));
   });
 
+  // Projects
+
+  test('Project List', async () => {
+    medplum = new MockClient({ storage: new FileSystemStorage() });
+
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        logins: JSON.stringify([
+          {
+            accessToken: 'abc',
+            refreshToken: 'xyz',
+            profile: {
+              reference: 'Practitioner/123',
+              display: 'Alice Smith',
+            },
+            project: {
+              reference: 'Project/456',
+              display: 'My Project',
+            },
+          },
+        ]),
+      })
+    );
+    await main(medplum, ['node', 'index.js', 'project', 'list']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(`display: My Project`));
+  });
+
+  //Bots
+
   test('Deploy bot missing name', async () => {
     try {
       await main(medplum, ['node', 'index.js', 'bot', 'deploy']);

@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { login, whoami } from './auth';
 import { deleteObject, get, patch, post, put } from './rest';
+import { project } from './projects';
 
 export let medplum: MedplumClient;
 
@@ -31,6 +32,9 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
     index.addCommand(patch);
     index.addCommand(put);
     index.addCommand(deleteObject);
+
+    // Project
+    index.addCommand(project);
 
     // Bot Commands
     index.addCommand(bot);
