@@ -161,6 +161,18 @@ Example: Delete patient by ID:
 medplum delete Patient/$id
 ```
 
+### Project
+
+`project` will have administration commands for visibilty and management
+
+#### `list`
+
+Sees your list of project ids and names 
+
+```bash 
+medplum project list
+```
+
 ### Bots
 
 #### Bots Config file
