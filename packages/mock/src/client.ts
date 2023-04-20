@@ -142,6 +142,13 @@ export class MockClient extends MedplumClient {
     return super.getActiveLogin();
   }
 
+  getLogins(): LoginState[] {
+    if (this.activeLoginOverride !== undefined) {
+      return [this.activeLoginOverride];
+    }
+    return super.getLogins();
+  }
+
   async createBinary(
     data: string | File | Blob | Uint8Array,
     filename: string | undefined,
