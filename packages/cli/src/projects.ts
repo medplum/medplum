@@ -15,12 +15,7 @@ function projectList(medplum: MedplumClient): void {
   const logins = medplum.getLogins();
 
   const projects = logins
-    .map((login: LoginState) => {
-      login.project;
-      const keyValue = Object.entries(login.project);
-      const values = keyValue.map(([key, value]) => `${key}: ${value}`);
-      return values.join('\n');
-    })
+    .map((login: LoginState) => `${login.project.display} (${login.project.reference})`)
     .join('\n\n');
 
   console.log(projects);
