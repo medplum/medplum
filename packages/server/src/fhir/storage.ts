@@ -3,7 +3,7 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { Binary } from '@medplum/fhirtypes';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
-import { Readable, finished, pipeline } from 'stream';
+import { Readable, pipeline } from 'stream';
 import { getConfig } from '../config';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
