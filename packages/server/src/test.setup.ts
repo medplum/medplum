@@ -171,12 +171,14 @@ export function bundleContains(bundle: Bundle, resource: Resource): boolean {
 export function waitFor(fn: () => Promise<void>): Promise<void> {
   return new Promise((resolve) => {
     const timer = setInterval(() => {
-      fn().then(() => {
-        clearTimeout(timer);
-        resolve();
-      }).catch(() => {
-        // ignore
-      })
+      fn()
+        .then(() => {
+          clearTimeout(timer);
+          resolve();
+        })
+        .catch(() => {
+          // ignore
+        });
     }, 100);
   });
 }

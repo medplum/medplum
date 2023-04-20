@@ -72,7 +72,7 @@ class FileSystemStorage implements BinaryStorage {
         } else {
           resolve();
         }
-      })
+      });
     });
   }
 

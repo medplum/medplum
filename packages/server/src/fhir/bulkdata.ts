@@ -19,7 +19,7 @@ bulkDataRouter.get(
     const repo = res.locals.repo as Repository;
     const bulkDataExport = await repo.readResource<BulkDataExport>('BulkDataExport', id);
 
-    if (bulkDataExport.status != 'completed') {
+    if (bulkDataExport.status !== 'completed') {
       res.status(202).end();
       return;
     }

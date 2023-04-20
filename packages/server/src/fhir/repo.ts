@@ -418,18 +418,18 @@ export class Repository extends BaseRepository implements FhirRepository {
         const outcome: OperationOutcome = row.content
           ? allOk
           : {
-            resourceType: 'OperationOutcome',
-            id: 'gone',
-            issue: [
-              {
-                severity: 'error',
-                code: 'deleted',
-                details: {
-                  text: 'Deleted on ' + row.lastUpdated,
+              resourceType: 'OperationOutcome',
+              id: 'gone',
+              issue: [
+                {
+                  severity: 'error',
+                  code: 'deleted',
+                  details: {
+                    text: 'Deleted on ' + row.lastUpdated,
+                  },
                 },
-              },
-            ],
-          };
+              ],
+            };
         entries.push({
           fullUrl: this.getFullUrl(resourceType, row.id),
           request: {
@@ -966,10 +966,10 @@ export class Repository extends BaseRepository implements FhirRepository {
     const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
     const entries = resources.map(
       (resource) =>
-      ({
-        fullUrl: this.getFullUrl(resourceType, resource.id as string),
-        resource,
-      } as BundleEntry)
+        ({
+          fullUrl: this.getFullUrl(resourceType, resource.id as string),
+          resource,
+        } as BundleEntry)
     );
 
     if (searchRequest.include) {
@@ -1018,10 +1018,10 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     return includedResources.map(
       (resource: Resource) =>
-      ({
-        fullUrl: this.getFullUrl(resource.resourceType, resource.id as string),
-        resource,
-      } as BundleEntry)
+        ({
+          fullUrl: this.getFullUrl(resource.resourceType, resource.id as string),
+          resource,
+        } as BundleEntry)
     ) as BundleEntry[];
   }
 

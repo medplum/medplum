@@ -79,7 +79,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
 
 async function exportResourceType(exporter: BulkExporter, project: Project, resourceType: ResourceType): Promise<void> {
   const repo = exporter.repo;
-  while (true) {
+  const hasMore = true;
+  while (hasMore) {
     const bundle = await repo.search({
       resourceType,
       count: 1000,
@@ -88,7 +89,7 @@ async function exportResourceType(exporter: BulkExporter, project: Project, reso
       break;
     }
 
-    let writes = [];
+    const writes = [];
     for (const entry of bundle.entry) {
       if (entry.resource?.id) {
         writes.push(exporter.writeResource(entry.resource));
@@ -98,13 +99,13 @@ async function exportResourceType(exporter: BulkExporter, project: Project, reso
 
     const linkNext = bundle.link?.find((b) => b.relation === 'next');
     if (!linkNext?.url) {
-      break
+      break;
     }
   }
 }
 
-function canBeExported(resourceType: string) {
-  if (resourceType == 'BulkDataExport') {
+function canBeExported(resourceType: string): boolean {
+  if (resourceType === 'BulkDataExport') {
     return false;
   } else if (publicResourceTypes.includes(resourceType) || protectedResourceTypes.includes(resourceType)) {
     return false;

@@ -1,11 +1,9 @@
-import { BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
+import { BulkDataExportOutput } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
-import { Repository } from '../repo';
-import { createReference } from '@medplum/core';
 
 const app = express();
 
@@ -74,16 +72,14 @@ describe('System export', () => {
         .set('Authorization', 'Bearer ' + accessToken);
       expect(statusRes.status).toBe(200);
       resBody = statusRes.body;
-    })
+    });
 
     const output = resBody?.output as BulkDataExportOutput[];
-    expect(Object.values(output).map(ex => ex.type).sort()).toEqual([
-      'ClientApplication',
-      'Observation',
-      'Patient',
-      'Project',
-      'ProjectMembership',
-    ]);
+    expect(
+      Object.values(output)
+        .map((ex) => ex.type)
+        .sort()
+    ).toEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
@@ -94,9 +90,8 @@ describe('System export', () => {
 
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
-    let resourceJSON = res7.text.trim().split('\n');
+    const resourceJSON = res7.text.trim().split('\n');
     expect(resourceJSON).toHaveLength(1);
     expect(JSON.parse(resourceJSON[0])?.subject?.reference).toEqual(`Patient/${res1.body.id}`);
-
   });
 });
