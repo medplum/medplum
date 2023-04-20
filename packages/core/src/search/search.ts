@@ -116,7 +116,17 @@ export function parseSearchRequest<T extends Resource = Resource>(
   resourceType: T['resourceType'],
   query: Record<string, string[] | string | undefined>
 ): SearchRequest<T> {
-  return parseSearchImpl(resourceType, query);
+  const queryArray: [string, string][] = [];
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        queryArray.push([key, value[i]]);
+      }
+    } else {
+      queryArray.push([key, value || '']);
+    }
+  }
+  return parseSearchImpl(resourceType, queryArray);
 }
 
 /**
@@ -126,7 +136,7 @@ export function parseSearchRequest<T extends Resource = Resource>(
  */
 export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
   const resourceType = url.pathname.split('/').filter(Boolean).pop() as ResourceType;
-  return parseSearchImpl<T>(resourceType, Object.fromEntries(url.searchParams.entries()));
+  return parseSearchImpl<T>(resourceType, url.searchParams.entries());
 }
 
 /**
@@ -140,18 +150,14 @@ export function parseSearchDefinition<T extends Resource = Resource>(url: string
 
 function parseSearchImpl<T extends Resource = Resource>(
   resourceType: T['resourceType'],
-  query: Record<string, string[] | string | undefined>
+  query: [string, string][] | IterableIterator<[string, string]>
 ): SearchRequest<T> {
   const searchRequest: SearchRequest<T> = {
     resourceType,
   };
 
-  for (const [key, value] of Object.entries(query)) {
-    if (Array.isArray(value)) {
-      value.forEach((element) => parseKeyValue(searchRequest, key, element));
-    } else {
-      parseKeyValue(searchRequest, key, value ?? '');
-    }
+  for (const [key, value] of query) {
+    parseKeyValue(searchRequest, key, value);
   }
 
   return searchRequest;
