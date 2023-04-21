@@ -19,16 +19,19 @@ import { getConfig } from '../../config';
  */
 export async function bulkExportHandler(req: Request, res: Response): Promise<void> {
   const { baseUrl } = getConfig();
+  const query = req.query as Record<string, string | undefined>;
+  const since = query._since;
+  const types = query._type?.split(',');
   const repo = res.locals.repo as Repository;
   const project = res.locals.project as Project;
 
-  const exporter = new BulkExporter(repo, undefined);
+  const exporter = new BulkExporter(repo, since);
   await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   const resourceTypes = getResourceTypes();
 
   for (const resourceType of resourceTypes) {
-    if (!canBeExported(resourceType)) {
+    if (!canBeExported(resourceType) || (types && !types.includes(resourceType))) {
       continue;
     }
     await exportResourceType(exporter, project, resourceType as ResourceType);
