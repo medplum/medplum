@@ -123,6 +123,12 @@ Use the $clone operation to clone a project:
 medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone'
 ```
 
+Clone a project with a new name using `name` param in the POST body
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"name": "New Project Name"}'
+```
+
 :::tip
 
 Note that "$" is a special character in Bash for variable interpolation. Wrap the full string in single quotes to avoid interpolation, or escape the $ with a backslash.
