@@ -1,5 +1,5 @@
 import { getReferenceString, isUUID, Operator } from '@medplum/core';
-import { Observation, Patient, Project } from '@medplum/fhirtypes';
+import { BundleEntry, Observation, Patient, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -85,5 +85,56 @@ describe('Project clone', () => {
     expect((obsBundle.entry?.[0]?.resource as Observation).subject?.reference).toEqual(
       getReferenceString(patientBundle.entry?.[0]?.resource as Patient)
     );
+  });
+
+  test('Success with project name in body', async () => {
+    const { project } = await createTestProject();
+    const newProjectName = 'Some New Project Test Name';
+    expect(project).toBeDefined();
+
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      meta: { project: project.id },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    const obs = await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      meta: { project: project.id },
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+      subject: { reference: 'Patient/' + patient.id },
+    });
+    expect(obs).toBeDefined();
+
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    expect(superAdminAccessToken).toBeDefined();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/${project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({ name: newProjectName });
+    expect(res.status).toBe(201);
+
+    const newProjectId = res.body.id;
+    const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
+    expect(newProject).toBeDefined();
+    expect(newProject.name).toBe(newProjectName);
+
+    const ProjectMembershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ProjectMembershipBundle).toBeDefined();
+    expect(ProjectMembershipBundle.entry).toHaveLength(1);
+
+    for (const entry of ProjectMembershipBundle.entry as BundleEntry[]) {
+      const resource = entry.resource as ProjectMembership;
+
+      expect(resource?.project?.display).toBe(newProjectName);
+    }
   });
 });
