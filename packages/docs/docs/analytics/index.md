@@ -19,18 +19,18 @@ On the predictive side, Clinical Decision Support (CDS) systems encode evidence-
 
 When designing your analytics program, it can be useful to consider the following categorization.
 
-| Program Type                                          | Application Area | Implementation Tools                                                                    |
-| ----------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------- |
-| Ad-hoc clinical reports                               | Retrospective    | FHIR Datastore, including [Bulk](/docs/api/fhir/operations/bulk-fhir.md) and Batch APIs |
-| Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Bots for data quality, dashboard apps to monitor                                        |
-| Clinical decision support                             | Prospective      | Bots to produce event driven scores, notifications                                      |
-| Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, Typescript SDK for dashboarding                    |
+| Program Type                                          | Application Area | Implementation Tools                                                                     |
+| ----------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| Ad-hoc clinical reports                               | Retrospective    | FHIR Datastore, including [Bulk](/docs/api/fhir/operations/bulk-fhir.mdx) and Batch APIs |
+| Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Bots for data quality, dashboard apps to monitor                                         |
+| Clinical decision support                             | Prospective      | Bots to produce event driven scores, notifications                                       |
+| Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, Typescript SDK for dashboarding                     |
 
 ## Ad-Hoc Clinical Reports
 
 A common pattern for ad-hoc reports is to first ingest FHIR resources into the data warehouse as raw JSON, and then flatten the relevant fields in a second ETL stage.
 
-Analytics pipelines should use the [FHIR Bulk Data Export API](/docs/api/fhir/operations/bulk-fhir.md) to extract FHIR resources into a data lake. The [FHIR Datastore](/docs/fhir-datastore) supports bulk export.
+Analytics pipelines should use the [FHIR Bulk Data Export API](/docs/api/fhir/operations/bulk-fhir.mdx) to extract FHIR resources into a data lake. The [FHIR Datastore](/docs/fhir-datastore) supports bulk export.
 
 Analytics workflows often require de-identified or redacted data for compliance reasons. [Access Policies](/docs/auth/access-control.md) are common for this purpose.
 
