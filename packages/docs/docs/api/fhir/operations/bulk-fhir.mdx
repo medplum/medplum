@@ -3,6 +3,7 @@ sidebar_position: 6
 ---
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/bulk-fhir.py';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 # Bulk FHIR API
 
@@ -36,7 +37,7 @@ curl 'https://api.medplum.com/fhir/R4/Group/<GROUP_ID>/$export?_outputFormat=ndj
 
 An export can also be performed for all resources in a Project by making a `GET` request for `/fhir/R4/$export`.
 
-<MedplumCodeBlock language="py" selectBlocks="expand" showLineNumbers>
+<MedplumCodeBlock language="py" showLineNumbers>
   {ExampleCode}
 </MedplumCodeBlock>
 
