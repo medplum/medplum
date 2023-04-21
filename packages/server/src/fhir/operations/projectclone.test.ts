@@ -89,24 +89,8 @@ describe('Project clone', () => {
 
   test('Success with project name in body', async () => {
     const { project } = await createTestProject();
-    const newProjectName = 'Some New Project Test Name';
+    const newProjectName = 'Test Project New Name';
     expect(project).toBeDefined();
-
-    const patient = await systemRepo.createResource<Patient>({
-      resourceType: 'Patient',
-      meta: { project: project.id },
-      name: [{ given: ['Alice'], family: 'Smith' }],
-    });
-    expect(patient).toBeDefined();
-
-    const obs = await systemRepo.createResource<Observation>({
-      resourceType: 'Observation',
-      meta: { project: project.id },
-      status: 'final',
-      code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
-      subject: { reference: 'Patient/' + patient.id },
-    });
-    expect(obs).toBeDefined();
 
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
     expect(superAdminAccessToken).toBeDefined();
