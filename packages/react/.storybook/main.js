@@ -4,7 +4,11 @@ module.exports = {
     '../src/**/*.stories.mdx',
     '../src/**/*.stories.@(js|jsx|ts|tsx)',
   ],
-  addons: ['@storybook/addon-links', '@storybook/addon-essentials'],
+  addons: [
+    '@storybook/addon-links',
+    '@storybook/addon-essentials',
+    '@storybook/addon-storysource',
+  ],
   staticDirs: ['../public'],
   framework: {
     name: '@storybook/react-webpack5',
