@@ -9,7 +9,7 @@ export interface MedplumLinkProps extends TextProps {
   to?: Resource | Reference | string;
   suffix?: string;
   label?: string;
-  onClick?: () => void;
+  onClick?: React.MouseEventHandler;
   children: React.ReactNode;
 }
 
@@ -26,10 +26,10 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
     <Anchor
       href={href}
       aria-label={label}
-      onClick={(e: React.SyntheticEvent) => {
+      onClick={(e: React.MouseEvent) => {
         killEvent(e);
         if (onClick) {
-          onClick();
+          onClick(e);
         } else if (to) {
           navigate(href);
         }

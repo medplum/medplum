@@ -1,9 +1,9 @@
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { HeaderSearchInput } from './HeaderSearchInput';
 
 const medplum = new MockClient();
@@ -77,10 +77,12 @@ medplum.graphql = jest.fn((query: string) => {
   return Promise.resolve({ data });
 });
 
+const navigateMock = jest.fn();
+
 function setup(): void {
   render(
     <MemoryRouter>
-      <MedplumProvider medplum={medplum}>
+      <MedplumProvider medplum={medplum} navigate={navigateMock}>
         <HeaderSearchInput />
       </MedplumProvider>
     </MemoryRouter>
@@ -90,6 +92,7 @@ function setup(): void {
 describe('HeaderSearchInput', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    navigateMock.mockClear();
   });
 
   afterEach(async () => {
@@ -131,7 +134,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
+    expect(navigateMock).toBeCalledWith('/Patient/' + HomerSimpson.id);
   });
 
   test('Search by UUID', async () => {
@@ -161,7 +164,7 @@ describe('HeaderSearchInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.queryByText('Homer Simpson')).not.toBeInTheDocument();
+    expect(navigateMock).toBeCalledWith('/Patient/' + HomerSimpson.id);
   });
 
   test.each(['Simpson', 'hom sim', 'abc', '9001'])('onChange with %s', async (query) => {

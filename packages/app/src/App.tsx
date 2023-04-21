@@ -1,48 +1,36 @@
-import { AppShell, useMantineTheme } from '@mantine/core';
-import { ErrorBoundary, useMedplum, useMedplumProfile } from '@medplum/react';
-import React, { Suspense, useState } from 'react';
-import { AppHeader } from './AppHeader';
-import { AppNavbar } from './AppNavbar';
+import { Space } from '@mantine/core';
+import { MEDPLUM_VERSION } from '@medplum/core';
+import { UserConfiguration } from '@medplum/fhirtypes';
+import { AppShell, ErrorBoundary, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
+import {
+  Icon,
+  IconBrandAsana,
+  IconBuilding,
+  IconForms,
+  IconId,
+  IconLockAccess,
+  IconMicroscope,
+  IconPackages,
+  IconReceipt,
+  IconReportMedical,
+  IconStar,
+  IconWebhook,
+} from '@tabler/icons-react';
+import React, { Suspense } from 'react';
 import { AppRoutes } from './AppRoutes';
-import { Loading } from './components/Loading';
 
 import './App.css';
 
 export function App(): JSX.Element {
-  const theme = useMantineTheme();
-  const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
-  const profile = useMedplumProfile();
-
-  function setNavbarOpenWrapper(open: boolean): void {
-    localStorage['navbarOpen'] = open.toString();
-    setNavbarOpen(open);
-  }
-
-  function closeNavbar(): void {
-    setNavbarOpenWrapper(false);
-  }
-
-  function toggleNavbar(): void {
-    setNavbarOpenWrapper(!navbarOpen);
-  }
+  const config = medplum.getUserConfiguration();
 
   if (medplum.isLoading()) {
     return <Loading />;
   }
 
   return (
-    <AppShell
-      styles={{
-        main: {
-          background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
-        },
-      }}
-      padding={0}
-      fixed={true}
-      navbar={(profile && navbarOpen && <AppNavbar closeNavbar={closeNavbar} />) as React.ReactElement | undefined}
-      header={profile && <AppHeader navbarToggle={toggleNavbar} />}
-    >
+    <AppShell logo={<Logo size={24} />} version={MEDPLUM_VERSION} menus={userConfigToMenu(config)}>
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <AppRoutes />
@@ -50,4 +38,43 @@ export function App(): JSX.Element {
       </ErrorBoundary>
     </AppShell>
   );
+}
+
+function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] | undefined {
+  return config?.menu?.map((menu) => ({
+    title: menu.title,
+    links:
+      menu.link?.map((link) => ({
+        label: link.name,
+        href: link.target as string,
+        icon: getIcon(link.target as string),
+      })) || [],
+  }));
+}
+
+const resourceTypeToIcon: Record<string, Icon> = {
+  Patient: IconStar,
+  Practitioner: IconId,
+  Organization: IconBuilding,
+  ServiceRequest: IconReceipt,
+  DiagnosticReport: IconReportMedical,
+  Questionnaire: IconForms,
+  admin: IconBrandAsana,
+  AccessPolicy: IconLockAccess,
+  Subscription: IconWebhook,
+  batch: IconPackages,
+  Observation: IconMicroscope,
+};
+
+function getIcon(to: string): JSX.Element | undefined {
+  try {
+    const resourceType = new URL(to, 'https://app.medplum.com').pathname.split('/')[1];
+    if (resourceType in resourceTypeToIcon) {
+      const Icon = resourceTypeToIcon[resourceType];
+      return <Icon />;
+    }
+  } catch (e) {
+    // Ignore
+  }
+  return <Space w={30} />;
 }

@@ -1,21 +1,20 @@
 import { createStyles, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import {
+  convertToTransactionBundle,
   DEFAULT_SEARCH_COUNT,
   Filter,
   formatSearchQuery,
+  MedplumClient,
   normalizeErrorString,
   parseSearchDefinition,
   SearchRequest,
   SortRule,
-  convertToTransactionBundle,
-  MedplumClient,
 } from '@medplum/core';
 import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Loading } from './components/Loading';
 import { exportJSONFile } from './utils';
 
 const useStyles = createStyles((theme) => {

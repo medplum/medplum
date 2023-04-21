@@ -1,9 +1,8 @@
 import { Title } from '@mantine/core';
 import { Questionnaire } from '@medplum/fhirtypes';
-import { Document, MedplumLink, useMedplum } from '@medplum/react';
+import { Document, Loading, MedplumLink, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Loading } from './components/Loading';
 
 export function BulkAppPage(): JSX.Element {
   const { resourceType } = useParams() as {
