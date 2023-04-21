@@ -153,11 +153,9 @@ describe('HomePage', () => {
   });
 
   test('Export Transaction Bundle button', async () => {
-    URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
-    URL.revokeObjectURL = jest.fn();
-    // Mock the export operation
     const medplum = new MockClient();
-    medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
+    medplum.router.router.add('GET', ':resourceType/', async () => [allOk]);
+    HTMLAnchorElement.prototype.click = jest.fn();
 
     await setup('/Patient', medplum);
     await waitFor(() => screen.getByText('Export...'));
