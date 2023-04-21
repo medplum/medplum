@@ -27,7 +27,7 @@ describe('CloudWatch Logs', () => {
     const cwl = new CloudWatchLogger('us-east-1', 'test-group', 'test-stream');
     cwl.write('x');
     cwl.write('y');
-    await waitFor(() => expect(PutLogEventsCommand).toHaveBeenCalled());
+    await waitFor(async () => expect(PutLogEventsCommand).toHaveBeenCalled());
     expect(CloudWatchLogsClient).toHaveBeenCalledTimes(1);
     expect(CreateLogGroupCommand).toHaveBeenCalledTimes(1);
     expect(CreateLogStreamCommand).toHaveBeenCalledTimes(1);
@@ -39,7 +39,7 @@ describe('CloudWatch Logs', () => {
     for (let i = 0; i < 10001; i++) {
       cwl.write(i.toString());
     }
-    await waitFor(() => expect(PutLogEventsCommand).toHaveBeenCalled());
+    await waitFor(async () => expect(PutLogEventsCommand).toHaveBeenCalled());
     expect(CloudWatchLogsClient).toHaveBeenCalledTimes(1);
     expect(CreateLogGroupCommand).toHaveBeenCalledTimes(1);
     expect(CreateLogStreamCommand).toHaveBeenCalledTimes(1);
@@ -50,7 +50,7 @@ describe('CloudWatch Logs', () => {
     const cwl = new CloudWatchLogger('us-east-1', 'test-group', 'test-stream');
     cwl.write('x'.repeat(512 * 1024));
     cwl.write('y'.repeat(512 * 1024));
-    await waitFor(() => expect(PutLogEventsCommand).toHaveBeenCalled());
+    await waitFor(async () => expect(PutLogEventsCommand).toHaveBeenCalled());
     expect(CloudWatchLogsClient).toHaveBeenCalledTimes(1);
     expect(CreateLogGroupCommand).toHaveBeenCalledTimes(1);
     expect(CreateLogStreamCommand).toHaveBeenCalledTimes(1);

@@ -168,16 +168,17 @@ export function bundleContains(bundle: Bundle, resource: Resource): boolean {
  * Use this to wait for async behaviors without a handle.
  * @param fn Function to call.
  */
-export function waitFor(fn: () => void): Promise<void> {
+export function waitFor(fn: () => Promise<void>): Promise<void> {
   return new Promise((resolve) => {
     const timer = setInterval(() => {
-      try {
-        fn();
-        clearTimeout(timer);
-        resolve();
-      } catch (err) {
-        // ignore
-      }
+      fn()
+        .then(() => {
+          clearTimeout(timer);
+          resolve();
+        })
+        .catch(() => {
+          // ignore
+        });
     }, 100);
   });
 }

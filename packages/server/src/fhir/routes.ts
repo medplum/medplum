@@ -20,6 +20,7 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { bulkExportHandler } from './operations/export';
 
 export const fhirRouter = Router();
 
@@ -69,6 +70,9 @@ publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 const protectedRoutes = Router();
 protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
+
+// Project $export
+protectedRoutes.post('/([$]|%24)export', bulkExportHandler);
 
 // Project $clone
 protectedRoutes.post('/Project/:id/([$]|%24)clone', asyncWrap(projectCloneHandler));

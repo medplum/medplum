@@ -2581,8 +2581,10 @@ describe('FHIR Repo', () => {
   });
 
   test('Resource search params', async () => {
+    const patientIdentifier = randomUUID();
     const patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
+      identifier: [{ system: 'http://example.com', value: patientIdentifier }],
       meta: {
         profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
         security: [{ system: 'http://hl7.org/fhir/v3/Confidentiality', code: 'N' }],
@@ -2590,10 +2592,16 @@ describe('FHIR Repo', () => {
         tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
       },
     });
+    const identifierFilter = {
+      code: 'identifier',
+      operator: Operator.EQUALS,
+      value: patientIdentifier,
+    };
 
     const bundle1 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        identifierFilter,
         {
           code: '_profile',
           operator: Operator.EQUALS,
@@ -2606,6 +2614,7 @@ describe('FHIR Repo', () => {
     const bundle2 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        identifierFilter,
         {
           code: '_security',
           operator: Operator.EQUALS,
@@ -2618,6 +2627,7 @@ describe('FHIR Repo', () => {
     const bundle3 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        identifierFilter,
         {
           code: '_source',
           operator: Operator.EQUALS,
@@ -2630,6 +2640,7 @@ describe('FHIR Repo', () => {
     const bundle4 = await systemRepo.search({
       resourceType: 'Patient',
       filters: [
+        identifierFilter,
         {
           code: '_tag',
           operator: Operator.EQUALS,
