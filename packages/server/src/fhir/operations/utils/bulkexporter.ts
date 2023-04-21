@@ -1,6 +1,6 @@
-import { Binary, Bundle, Resource } from '@medplum/fhirtypes';
+import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { Repository } from '../../repo';
+import { Repository, systemRepo } from '../../repo';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../storage';
 
@@ -32,12 +32,22 @@ class BulkFileWriter {
 export class BulkExporter {
   readonly repo: Repository;
   readonly since: string | undefined;
+  private resource: BulkDataExport | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet: Set<string> = new Set();
 
   constructor(repo: Repository, since: string | undefined) {
     this.repo = repo;
     this.since = since;
+  }
+
+  async start(url: string): Promise<void> {
+    this.resource = await this.repo.createResource<BulkDataExport>({
+      resourceType: 'BulkDataExport',
+      status: 'active',
+      request: url,
+      requestTime: new Date().toISOString(),
+    });
   }
 
   async getWriter(resourceType: string): Promise<BulkFileWriter> {
@@ -78,9 +88,27 @@ export class BulkExporter {
     }
   }
 
-  async close(): Promise<void> {
+  async close(project: Project): Promise<BulkDataExport> {
+    if (!this.resource) {
+      throw new Error('Export muse be started before calling close()');
+    }
+
     for (const writer of Object.values(this.writers)) {
       await writer.close();
     }
+
+    // Update the BulkDataExport
+    return systemRepo.updateResource<BulkDataExport>({
+      ...this.resource,
+      meta: {
+        project: project.id,
+      },
+      status: 'completed',
+      transactionTime: new Date().toISOString(),
+      output: Object.entries(this.writers).map(([resourceType, writer]) => ({
+        type: resourceType as ResourceType,
+        url: getReferenceString(writer.binary),
+      })),
+    });
   }
 }

@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
-import { Repository, protectedResourceTypes, publicResourceTypes, systemRepo } from '../repo';
-import { BulkDataExport, Project, ResourceType } from '@medplum/fhirtypes';
+import { Repository, protectedResourceTypes, publicResourceTypes } from '../repo';
+import { Project, ResourceType } from '@medplum/fhirtypes';
 import { BulkExporter } from './utils/bulkexporter';
-import { getReferenceString, getResourceTypes, accepted } from '@medplum/core';
+import { getResourceTypes, accepted } from '@medplum/core';
 import { getConfig } from '../../config';
 
 /**
@@ -22,14 +22,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   const repo = res.locals.repo as Repository;
   const project = res.locals.project as Project;
 
-  // Create the BulkDataExport
-  const bulkDataExport = await repo.createResource<BulkDataExport>({
-    resourceType: 'BulkDataExport',
-    status: 'active',
-    request: req.protocol + '://' + req.get('host') + req.originalUrl,
-    requestTime: new Date().toISOString(),
-  });
   const exporter = new BulkExporter(repo, undefined);
+  await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   const resourceTypes = getResourceTypes();
 
@@ -41,21 +35,7 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   }
 
   // Close the exporter
-  await exporter.close();
-
-  // Update the BulkDataExport
-  await systemRepo.updateResource<BulkDataExport>({
-    ...bulkDataExport,
-    meta: {
-      project: (res.locals.project as Project).id,
-    },
-    status: 'completed',
-    transactionTime: new Date().toISOString(),
-    output: Object.entries(exporter.writers).map(([resourceType, writer]) => ({
-      type: resourceType as ResourceType,
-      url: getReferenceString(writer.binary),
-    })),
-  });
+  const bulkDataExport = await exporter.close(project);
 
   // Send the response
   res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
