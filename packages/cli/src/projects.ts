@@ -20,3 +20,33 @@ function projectList(medplum: MedplumClient): void {
 
   console.log(projects);
 }
+
+project
+  .command('current')
+  .description('Project you are currently on')
+  .action(() => {
+    const login = medplum.getActiveLogin();
+    if (!login) {
+      throw new Error('Unauthenticated: run `npx medplum login` to login');
+    }
+    console.log(`${login.project.display} (${login.project.reference})`);
+  });
+
+project
+  .command('switch')
+  .description('Switching to another project from the current one')
+  .argument('<projectId>')
+  .action(async (projectId) => {
+    await switchProject(medplum, projectId);
+  });
+
+async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
+  const logins = medplum.getLogins();
+  const login = logins.find((login: LoginState) => login.project?.reference?.includes(projectId));
+  if (!login) {
+    console.log(`Error: project ${projectId} not found. Make sure you are added as a user to this project`);
+  } else {
+    await medplum.setActiveLogin(login);
+    console.log(`Switched to project ${projectId}\n`);
+  }
+}
