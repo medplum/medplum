@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { badRequest, createReference, getIdentifier, Hl7Message, Operator, resolveId } from '@medplum/core';
+import { Hl7Message, Operator, badRequest, createReference, getIdentifier, resolveId } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
@@ -240,31 +240,18 @@ export function getLambdaFunctionName(bot: Bot): string {
 function parseLambdaLog(logResult: string): string {
   const logBuffer = Buffer.from(logResult, 'base64');
   const log = logBuffer.toString('ascii');
-  if (!log.startsWith('START RequestId: ')) {
-    return log;
-  }
   const lines = log.split('\n');
-  const requestId = lines[0].split(' ')[2];
-  const requestRegex = new RegExp(`${requestId}\\s+\\w+`);
   const result = [];
   for (const line of lines) {
-    if (
-      line.startsWith(`START RequestId: ${requestId}`) ||
-      line.startsWith(`END RequestId: ${requestId}`) ||
-      line.startsWith(`REPORT RequestId: ${requestId}`)
-    ) {
-      // Ignore the metadata lines
+    if (line.startsWith('START RequestId: ')) {
+      // Ignore start line
       continue;
     }
-    const match = requestRegex.exec(line);
-    if (match) {
-      const trimmed = line.substring(match.index + match[0].length).trimStart();
-      if (!trimmed.startsWith('Invoke Error')) {
-        result.push(trimmed);
-      }
-    } else {
-      result.push(line);
+    if (line.startsWith('END RequestId: ') || line.startsWith('REPORT RequestId: ')) {
+      // Stop at end lines
+      break;
     }
+    result.push(line);
   }
   return result.join('\n');
 }
