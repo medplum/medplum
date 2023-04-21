@@ -1,6 +1,5 @@
-import { getReferenceString } from '@medplum/core';
+import { accepted, getReferenceString } from '@medplum/core';
 import { BulkDataExport, Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
@@ -81,20 +80,5 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   });
 
   // Send the response
-  res
-    .set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)
-    .status(202)
-    .json({
-      resourceType: 'OperationOutcome',
-      id: randomUUID(),
-      issue: [
-        {
-          severity: 'information',
-          code: 'informational',
-          details: {
-            text: 'Accepted',
-          },
-        },
-      ],
-    });
+  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
 }

@@ -8,6 +8,7 @@ const NOT_FOUND_ID = 'not-found';
 const UNAUTHORIZED_ID = 'unauthorized';
 const FORBIDDEN_ID = 'forbidden';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
+const ACCEPTED_ID = 'accepted';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -116,6 +117,20 @@ export const tooManyRequests: OperationOutcome = {
       code: 'throttled',
       details: {
         text: 'Too Many Requests',
+      },
+    },
+  ],
+};
+
+export const accepted: OperationOutcome = {
+  resourceType: 'OperationOutcome',
+  id: ACCEPTED_ID,
+  issue: [
+    {
+      severity: 'information',
+      code: 'informational',
+      details: {
+        text: 'Accepted',
       },
     },
   ],

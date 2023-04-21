@@ -2,9 +2,8 @@ import { Request, Response } from 'express';
 import { Repository, protectedResourceTypes, publicResourceTypes, systemRepo } from '../repo';
 import { BulkDataExport, Project, ResourceType } from '@medplum/fhirtypes';
 import { BulkExporter } from './utils/bulkexporter';
-import { getReferenceString, getResourceTypes } from '@medplum/core';
+import { getReferenceString, getResourceTypes, accepted } from '@medplum/core';
 import { getConfig } from '../../config';
-import { randomUUID } from 'crypto';
 
 /**
  * Handles a bulk export request.
@@ -59,22 +58,7 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   });
 
   // Send the response
-  res
-    .set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`)
-    .status(202)
-    .json({
-      resourceType: 'OperationOutcome',
-      id: randomUUID(),
-      issue: [
-        {
-          severity: 'information',
-          code: 'informational',
-          details: {
-            text: 'Accepted',
-          },
-        },
-      ],
-    });
+  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
 }
 
 async function exportResourceType(exporter: BulkExporter, project: Project, resourceType: ResourceType): Promise<void> {
