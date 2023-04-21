@@ -1,4 +1,4 @@
-# Intro 
+# Intro
 
 The Medplum CLI (Command Line Interface) is a set of command line tools to quickly deploy Medplum web applications and Medplum bots.
 
@@ -97,7 +97,7 @@ medplum get Patient/$id
 #### flags
 
 - `--as-transaction`
-    - Convert the output response to a transaction bundle
+  - Convert the output response to a transaction bundle
 
 #### `post`
 
@@ -165,12 +165,28 @@ medplum delete Patient/$id
 
 `project` will have administration commands for visibilty and management
 
+#### `current`
+
+Sees your current project
+
+```bash
+medplum project current
+```
+
 #### `list`
 
-Sees your list of project ids and names 
+Sees your list of project ids and names
 
-```bash 
+```bash
 medplum project list
+```
+
+#### `switch`
+
+Switching to another project from the current one
+
+```bash
+medplum project switch <projectId>
 ```
 
 ### Bots
