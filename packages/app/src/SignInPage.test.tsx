@@ -6,6 +6,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
+import { getConfig } from './config';
 
 const medplum = new MockClient();
 
@@ -76,12 +77,19 @@ describe('SignInPage', () => {
     });
   });
 
-  test('Register', async () => {
+  test('Register enabled', async () => {
+    getConfig().registerEnabled = true;
     setup();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Register'));
     });
+  });
+
+  test('Register disabled', async () => {
+    getConfig().registerEnabled = false;
+    setup();
+    expect(screen.queryByText('Register')).not.toBeInTheDocument();
   });
 
   test('Redirect to next', async () => {

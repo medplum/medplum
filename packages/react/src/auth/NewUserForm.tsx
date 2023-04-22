@@ -12,7 +12,7 @@ import { getRecaptcha, initRecaptcha } from '../utils/recaptcha';
 export interface NewUserFormProps {
   readonly projectId: string;
   readonly googleClientId?: string;
-  readonly recaptchaSiteKey: string;
+  readonly recaptchaSiteKey?: string;
   readonly children?: React.ReactNode;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }

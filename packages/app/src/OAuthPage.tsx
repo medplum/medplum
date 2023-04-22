@@ -2,6 +2,7 @@ import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getConfig } from './config';
 
 export function OAuthPage(): JSX.Element | null {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ export function OAuthPage(): JSX.Element | null {
       onCode={onCode}
       onForgotPassword={() => navigate('/resetpassword')}
       onRegister={() => navigate('/register')}
-      googleClientId={process.env.GOOGLE_CLIENT_ID}
+      googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
       scope={scope}
       nonce={params.get('nonce') || undefined}
