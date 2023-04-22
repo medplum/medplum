@@ -1,9 +1,9 @@
-import { accepted, getReferenceString } from '@medplum/core';
-import { BulkDataExport, Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
+import { accepted } from '@medplum/core';
+import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
-import { Repository, systemRepo } from '../repo';
+import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
 
@@ -29,16 +29,9 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   // First read the group as the user to verify access
   const group = await repo.readResource<Group>('Group', id);
 
-  // Create the BulkDataExport
-  const bulkDataExport = await repo.createResource<BulkDataExport>({
-    resourceType: 'BulkDataExport',
-    status: 'active',
-    request: req.protocol + '://' + req.get('host') + req.originalUrl,
-    requestTime: new Date().toISOString(),
-  });
-
   // Start the exporter
   const exporter = new BulkExporter(repo, since);
+  await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   // Read all patients in the group
   if (group.member) {
@@ -63,21 +56,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   }
 
   // Close the exporter
-  await exporter.close();
-
-  // Update the BulkDataExport
-  await systemRepo.updateResource<BulkDataExport>({
-    ...bulkDataExport,
-    meta: {
-      project: (res.locals.project as Project).id,
-    },
-    status: 'completed',
-    transactionTime: new Date().toISOString(),
-    output: Object.entries(exporter.writers).map(([resourceType, writer]) => ({
-      type: resourceType as ResourceType,
-      url: getReferenceString(writer.binary),
-    })),
-  });
+  const bulkDataExport = await exporter.close(res.locals.project as Project);
 
   // Send the response
   res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
