@@ -34,7 +34,6 @@ if status_url == None:
 conn.request(
   'GET', status_url, None, {
     'Authorization': 'Bearer ' + access_token,
-    'Content-Type': 'application/fhir+json',
   })
 status = conn.getresponse()
 
@@ -47,7 +46,6 @@ while status.status == 202:
   conn.request(
     'GET', status_url, None, {
       'Authorization': 'Bearer ' + access_token,
-      'Content-Type': 'application/fhir+json',
     })
   status = conn.getresponse()
 
@@ -73,8 +71,20 @@ export = json.loads(body)
 #   }],
 #   "error" : []
 # }
+def download_export_to_file(export_record, access_token):
+  # Request the NDJSON export data
+  conn.request(
+    'GET', export_record.url, None, {
+      'Authorization': 'Bearer ' + access_token,
+    })
+  export_data = conn.getresponse()
+
+  # Append NDJSON data to file on disk
+  with open(export_record.type + '.ndjson', 'a') as f:
+    f.write(export_data.read())
+
 # Iterate over the output items to download the exported data
 for record in export.output:
   # record.type: the resource type contained in the export file
   # record.url: a URL pointing to an NDJSON file containing the exported data
-  pass
+  download_export_to_file(record, access_token)
