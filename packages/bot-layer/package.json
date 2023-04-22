@@ -22,6 +22,14 @@
   "devDependencies": {
     "@types/node-fetch": "2.6.3"
   },
+  "peerDependencies": {
+    "@medplum/core": "*",
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.6.9",
+    "pdfmake": "^0.2.7",
+    "ssh2": "^1.11.0",
+    "ssh2-sftp-client": "^9.0.4"
+  },
   "keywords": [
     "medplum",
     "aws",
