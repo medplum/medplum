@@ -1,4 +1,4 @@
-import { App, Stack } from 'aws-cdk-lib';
+import { App, Stack, Tags } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { BackEnd } from './backend';
@@ -19,6 +19,7 @@ class MedplumStack {
         account: config.accountNumber,
       },
     });
+    Tags.of(this.primaryStack).add('medplum:environment', config.name);
 
     this.backEnd = new BackEnd(this.primaryStack, config);
     this.frontEnd = new FrontEnd(this.primaryStack, config, config.region);
@@ -34,6 +35,7 @@ class MedplumStack {
           account: config.accountNumber,
         },
       });
+      Tags.of(usEast1Stack).add('medplum:environment', config.name);
 
       this.frontEnd = new FrontEnd(usEast1Stack, config, 'us-east-1');
       this.storage = new Storage(usEast1Stack, config, 'us-east-1');
