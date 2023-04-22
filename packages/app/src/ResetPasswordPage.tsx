@@ -1,16 +1,17 @@
 import { Anchor, Button, Group, Stack, TextInput, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, getErrorsForInput, getRecaptcha, initRecaptcha, Logo, useMedplum } from '@medplum/react';
+import { Document, Form, Logo, getErrorsForInput, getRecaptcha, initRecaptcha, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getConfig } from './config';
 
 export function ResetPasswordPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
-  const recaptchaSiteKey = process.env.RECAPTCHA_SITE_KEY as string;
+  const recaptchaSiteKey = getConfig().recaptchaSiteKey;
 
   useEffect(() => {
     if (recaptchaSiteKey) {

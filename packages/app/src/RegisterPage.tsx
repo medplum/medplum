@@ -3,10 +3,12 @@ import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getConfig } from './config';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const config = getConfig();
 
   useEffect(() => {
     if (medplum.getProfile()) {
@@ -14,11 +16,11 @@ export function RegisterPage(): JSX.Element | null {
     }
   }, [medplum, navigate]);
 
-  if (process.env.REGISTER_DISABLED) {
+  if (!config.registerEnabled) {
     return (
       <Document width={450}>
         <Alert icon={<IconAlertCircle size={16} />} title="New projects disabled" color="red">
-          {process.env.REGISTER_DISABLED_MESSAGE}
+          New projects are disabled on this server.
         </Alert>
       </Document>
     );
@@ -28,8 +30,8 @@ export function RegisterPage(): JSX.Element | null {
     <RegisterForm
       type="project"
       onSuccess={() => navigate('/')}
-      googleClientId={process.env.GOOGLE_CLIENT_ID}
-      recaptchaSiteKey={process.env.RECAPTCHA_SITE_KEY as string}
+      googleClientId={config.googleClientId}
+      recaptchaSiteKey={config.recaptchaSiteKey}
     >
       <Logo size={32} />
       <Title>Create a new account</Title>
