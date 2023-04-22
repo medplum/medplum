@@ -12,6 +12,7 @@ import {
   Binary,
   Bundle,
   Encounter,
+  HumanName,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -685,5 +686,164 @@ describe('GraphQL', () => {
     expect(outcome).toMatchObject(allOk);
     expect(result.data.StructureDefinitionList).toBeDefined();
     expect(result.data.SearchParameterList).toBeDefined();
+  });
+
+  test('_offset list field argument', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        { given: ['given1'], family: 'family1' },
+        { given: ['given2'], family: 'family2' },
+        { given: ['given3'], family: 'family3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          name(_offset: 1) {
+            given
+            family
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.name).toHaveLength(2);
+    expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
+    expect(data.Patient.name[1]).toMatchObject(patient.name?.[2] as HumanName);
+  });
+
+  test('_count list field argument', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        { given: ['given1'], family: 'family1' },
+        { given: ['given2'], family: 'family2' },
+        { given: ['given3'], family: 'family3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          name(_count: 1) {
+            given
+            family
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.name).toHaveLength(1);
+    expect(data.Patient.name[0]).toMatchObject(patient.name?.[0] as HumanName);
+  });
+
+  test('fhirpath list field argument', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        { given: ['given1'], suffix: ['suffix1'] },
+        { given: ['given2'], family: 'family2' },
+        { given: ['given3'], family: 'family3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          name(fhirpath: "family.exists()") {
+            given
+            family
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.name).toHaveLength(2);
+    expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
+    expect(data.Patient.name[1]).toMatchObject(patient.name?.[2] as HumanName);
+  });
+
+  test('List field argument by name', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        { use: 'official', given: ['given1'], family: 'family1' },
+        { use: 'maiden', given: ['given2'], family: 'family2' },
+        { use: 'nickname', given: ['given3'], family: 'family3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          name(use: "maiden") {
+            use
+            given
+            family
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.name).toHaveLength(1);
+    expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
   });
 });

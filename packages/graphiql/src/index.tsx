@@ -1,7 +1,7 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
+import { MedplumClient, ProfileResource, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
@@ -45,24 +45,24 @@ const theme: MantineThemeOverride = {
   headings: {
     sizes: {
       h1: {
-        fontSize: 18,
+        fontSize: '1.125rem',
         fontWeight: 500,
         lineHeight: 2.0,
       },
     },
   },
   fontSizes: {
-    xs: 11,
-    sm: 14,
-    md: 14,
-    lg: 16,
-    xl: 18,
+    xs: '0.6875rem',
+    sm: '0.875rem',
+    md: '0.875rem',
+    lg: '1.0rem',
+    xl: '1.125rem',
   },
 };
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
-    return fetch('/schema/schema-v1.json').then((res) => res.json());
+    return fetch('/schema/schema-v2.json').then((res) => res.json());
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
 }
