@@ -1,12 +1,28 @@
 import { getReferenceString, isUUID, Operator } from '@medplum/core';
-import { BundleEntry, Observation, Patient, Project, ProjectMembership } from '@medplum/fhirtypes';
+import {
+  BundleEntry,
+  ClientApplication,
+  Login,
+  Observation,
+  Patient,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+} from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
+import { pwnedPassword } from 'hibp';
+import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
+import { createProject } from '../../auth/newproject';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth } from '../../test.setup';
+import { createTestProject, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock } from '../../test.setup';
 import { systemRepo } from '../repo';
+
+jest.mock('node-fetch');
+jest.mock('hibp');
 
 const app = express();
 
@@ -14,6 +30,10 @@ describe('Project clone', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    (fetch as unknown as jest.Mock).mockClear();
+    (pwnedPassword as unknown as jest.Mock).mockClear();
+    setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
+    setupRecaptchaMock(fetch as unknown as jest.Mock, true);
   });
 
   afterAll(async () => {
@@ -88,7 +108,24 @@ describe('Project clone', () => {
   });
 
   test('Success with project name in body', async () => {
-    const { project } = await createTestProject();
+    const res1 = await request(app)
+      .post('/auth/newuser')
+      .type('json')
+      .send({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        recaptchaToken: 'xyz',
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      });
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+    const { firstName, lastName } = user;
+
+    expect(res1.status).toBe(200);
+    const { project } = await createProject(login, 'Test Project Name', firstName as string, lastName as string);
     const newProjectName = 'Test Project New Name';
     expect(project).toBeDefined();
 
@@ -113,12 +150,25 @@ describe('Project clone', () => {
       filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
     });
     expect(ProjectMembershipBundle).toBeDefined();
-    expect(ProjectMembershipBundle.entry).toHaveLength(1);
+    expect(ProjectMembershipBundle.entry?.length).toBeGreaterThanOrEqual(1);
 
     for (const entry of ProjectMembershipBundle.entry as BundleEntry[]) {
       const resource = entry.resource as ProjectMembership;
 
       expect(resource?.project?.display).toBe(newProjectName);
+    }
+
+    const ClientApplicationBundle = await systemRepo.search({
+      resourceType: 'ClientApplication',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ClientApplicationBundle).toBeDefined();
+    expect(ClientApplicationBundle.entry).toHaveLength(1);
+    for (const entry of ClientApplicationBundle.entry as BundleEntry[]) {
+      const resource = entry.resource as ClientApplication;
+
+      expect(resource?.name).toContain(newProjectName);
+      expect(resource?.description).toContain(newProjectName);
     }
   });
 });

@@ -76,10 +76,19 @@ class ProjectCloner {
     const resourceObj = JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
 
     if (this.projectName) {
-      if (resource.resourceType === 'Project') {
-        resourceObj.name = this.projectName;
-      } else if (resource.resourceType === 'ProjectMembership') {
-        resourceObj.project.display = this.projectName;
+      switch (resource.resourceType) {
+        case 'Project':
+          resourceObj.name = this.projectName;
+          break;
+        case 'ProjectMembership':
+          resourceObj.project.display = this.projectName;
+          break;
+        case 'ClientApplication':
+          if (resource.name?.endsWith(' Default Client')) {
+            resourceObj.name = `${this.projectName} Default Client`;
+            resourceObj.description = `Default client for ${this.projectName}`;
+          }
+          break;
       }
     }
 
