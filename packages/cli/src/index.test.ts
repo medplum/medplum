@@ -2,15 +2,23 @@ import { createReference, MedplumClient } from '@medplum/core';
 import { Bot, Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import cp from 'child_process';
+import { randomUUID } from 'crypto';
 import fs from 'fs';
 import http from 'http';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
-import { randomUUID } from 'crypto';
 
 jest.mock('child_process');
-jest.mock('fs');
 jest.mock('http');
+
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  promises: {
+    readFile: jest.fn(async () => '{}'),
+  },
+}));
 
 let medplum: MedplumClient;
 
