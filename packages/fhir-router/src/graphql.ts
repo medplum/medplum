@@ -346,19 +346,46 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
       for (const fieldKey of Object.keys(fieldTypeSchema.properties)) {
         const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
         for (const type of fieldElementDefinition.type as ElementDefinitionType[]) {
-          if (type.code === 'code' || type.code === 'string') {
-            const fieldName = fieldKey.replace('[x]', capitalize(type.code as string));
-            fieldArgs[fieldName] = {
-              type: GraphQLString,
-              description: fieldElementDefinition.short,
-            };
-          }
+          buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);
         }
       }
     }
   }
 
   return fieldArgs;
+}
+
+/**
+ * Builds a field argument for a list property.
+ * @param fieldArgs The output argument map.
+ * @param fieldKey The key of the field.
+ * @param elementDefinition The FHIR element definition of the field.
+ * @param elementDefinitionType The FHIR element definition type of the field.
+ */
+function buildListPropertyFieldArg(
+  fieldArgs: GraphQLFieldConfigArgumentMap,
+  fieldKey: string,
+  elementDefinition: ElementDefinition,
+  elementDefinitionType: ElementDefinitionType
+): void {
+  const baseType = elementDefinitionType.code as string;
+  const fieldName = fieldKey.replace('[x]', capitalize(baseType));
+  switch (baseType) {
+    case 'canonical':
+    case 'code':
+    case 'id':
+    case 'oid':
+    case 'string':
+    case 'uri':
+    case 'url':
+    case 'uuid':
+    case 'http://hl7.org/fhirpath/System.String':
+      fieldArgs[fieldName] = {
+        type: GraphQLString,
+        description: elementDefinition.short,
+      };
+      break;
+  }
 }
 
 /**
@@ -561,8 +588,8 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
  * @implements {GraphQLFieldResolver}
  */
 async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: GraphQLResolveInfo): Promise<any> {
-  const fieldValue = source[info.fieldName];
-  if (!args) {
+  const fieldValue = source?.[info.fieldName];
+  if (!args || !fieldValue) {
     return fieldValue;
   }
 
