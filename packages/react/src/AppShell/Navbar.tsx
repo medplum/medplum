@@ -3,7 +3,7 @@ import React from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumContext } from '../MedplumProvider/MedplumProvider';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -75,9 +75,7 @@ export interface NavbarProps {
 
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
-  const context = useMedplumContext();
-  const navigate = context.navigate;
-  const config = context.medplum.getUserConfiguration();
+  const navigate = useMedplumNavigate();
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
     e.stopPropagation();
@@ -115,11 +113,11 @@ export function Navbar(props: NavbarProps): JSX.Element {
       </MantineNavbar.Section>
       {props.menus && (
         <MantineNavbar.Section grow>
-          {props.menus.map((menu, index) => (
-            <React.Fragment key={`menu-${index}-${config?.menu?.length}`}>
+          {props.menus.map((menu) => (
+            <React.Fragment key={`menu-${menu.title}`}>
               <Text className={classes.menuTitle}>{menu.title}</Text>
               {menu.links?.map((link) => (
-                <NavbarLink key={link.href} to={link.href as string} onClick={(e) => onLinkClick(e, link.href)}>
+                <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
                   <NavLinkIcon to={link.href} icon={link.icon} />
                   <span>{link.label}</span>
                 </NavbarLink>

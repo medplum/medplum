@@ -46,11 +46,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
       padding={0}
       fixed={true}
       header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
-      navbar={
-        (profile && navbarOpen && <Navbar menus={props.menus} closeNavbar={closeNavbar} />) as
-          | React.ReactElement
-          | undefined
-      }
+      navbar={profile && navbarOpen ? <Navbar menus={props.menus} closeNavbar={closeNavbar} /> : undefined}
     >
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>{props.children}</Suspense>
