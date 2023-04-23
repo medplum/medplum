@@ -44,6 +44,7 @@ export async function createTestProject(options?: Partial<Project>): Promise<{
     meta: {
       project: project.id as string,
     },
+    name: 'Test Client Application',
   });
 
   const membership = await systemRepo.createResource<ProjectMembership>({
