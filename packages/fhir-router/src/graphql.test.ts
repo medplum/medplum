@@ -886,4 +886,60 @@ describe('GraphQL', () => {
     expect(data.Patient.extension).toHaveLength(1);
     expect(data.Patient.extension[0]).toMatchObject(patient.extension?.[1] as Extension);
   });
+
+  test('List field argument null values', async () => {
+    const family = randomUUID();
+
+    const p1 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+    const p2 = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+    const p3 = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family }],
+      extension: [
+        { url: 'https://example.com/1', valueString: 'value1' },
+        { url: 'https://example.com/2', valueString: 'value2' },
+        { url: 'https://example.com/3', valueString: 'value3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientList(name: "${family}") {
+          id
+          extension(url: "https://example.com/2") {
+            url
+            valueString
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.PatientList).toBeDefined();
+    expect(data.PatientList).toHaveLength(3);
+
+    const check1 = data.PatientList.find((p: any) => p.id === p1.id);
+    expect(check1).toBeDefined();
+    expect(check1.extension).toBeNull();
+
+    const check2 = data.PatientList.find((p: any) => p.id === p2.id);
+    expect(check2).toBeDefined();
+    expect(check2.extension).toBeNull();
+
+    const check3 = data.PatientList.find((p: any) => p.id === p3.id);
+    expect(check3).toBeDefined();
+    expect(check3.extension).toHaveLength(1);
+    expect(check3.extension[0]).toMatchObject(patient.extension?.[1] as Extension);
+  });
 });

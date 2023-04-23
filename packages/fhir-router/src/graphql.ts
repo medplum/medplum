@@ -588,8 +588,8 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
  * @implements {GraphQLFieldResolver}
  */
 async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: GraphQLResolveInfo): Promise<any> {
-  const fieldValue = source[info.fieldName];
-  if (!args) {
+  const fieldValue = source?.[info.fieldName];
+  if (!args || !fieldValue) {
     return fieldValue;
   }
 
