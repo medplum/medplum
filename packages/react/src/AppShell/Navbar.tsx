@@ -1,6 +1,7 @@
 import { createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
 import React from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { useMedplumContext } from '../MedplumProvider/MedplumProvider';
 
@@ -68,7 +69,6 @@ export interface NavbarMenu {
 }
 
 export interface NavbarProps {
-  children?: React.ReactNode;
   menus?: NavbarMenu[];
   closeNavbar: () => void;
 }
@@ -88,9 +88,31 @@ export function Navbar(props: NavbarProps): JSX.Element {
     }
   }
 
+  function navigateResourceType(resourceType: string | undefined): void {
+    if (resourceType) {
+      navigate(`/${resourceType}`);
+    }
+  }
+
   return (
     <MantineNavbar width={{ sm: 250 }} p="xs">
-      {props.children}
+      <MantineNavbar.Section>
+        <CodeInput
+          key={window.location.pathname}
+          name="resourceType"
+          placeholder="Resource Type"
+          property={{
+            binding: {
+              valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
+            },
+          }}
+          onChange={(newValue) => navigateResourceType(newValue)}
+          creatable={false}
+          maxSelectedValues={0}
+          clearSearchOnChange={true}
+          clearable={false}
+        />
+      </MantineNavbar.Section>
       {props.menus && (
         <MantineNavbar.Section grow>
           {props.menus.map((menu, index) => (

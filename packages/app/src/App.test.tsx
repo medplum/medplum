@@ -12,7 +12,7 @@ async function setup(url = '/'): Promise<void> {
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
           <MantineProvider withGlobalStyles withNormalizeCSS>
             <App />
           </MantineProvider>
