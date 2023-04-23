@@ -12,6 +12,7 @@ import {
   Binary,
   Bundle,
   Encounter,
+  Extension,
   HumanName,
   OperationOutcome,
   Patient,
@@ -845,5 +846,44 @@ describe('GraphQL', () => {
     expect(data.Patient).toBeDefined();
     expect(data.Patient.name).toHaveLength(1);
     expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
+  });
+
+  test('Extension list field argument', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      extension: [
+        { url: 'https://example.com/1', valueString: 'value1' },
+        { url: 'https://example.com/2', valueString: 'value2' },
+        { url: 'https://example.com/3', valueString: 'value3' },
+      ],
+    });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        Patient(id: "${patient.id}") {
+          id
+          extension(url: "https://example.com/2") {
+            url
+            valueString
+          }
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.Patient).toBeDefined();
+    expect(data.Patient.extension).toHaveLength(1);
+    expect(data.Patient.extension[0]).toMatchObject(patient.extension?.[1] as Extension);
   });
 });
