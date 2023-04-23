@@ -32,6 +32,12 @@ if [[ "$FILES_CHANGED" =~ package-lock.json ]]; then
   DEPLOY_SERVER=true
 fi
 
+if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
+  DEPLOY_APP=true
+  DEPLOY_GRAPHIQL=true
+  DEPLOY_SERVER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
@@ -47,6 +53,10 @@ fi
 
 if [[ "$FILES_CHANGED" =~ packages/definitions ]]; then
   DEPLOY_APP=true
+  DEPLOY_SERVER=true
+fi
+
+if [[ "$FILES_CHANGED" =~ packages/fhir-router ]]; then
   DEPLOY_SERVER=true
 fi
 
