@@ -940,6 +940,6 @@ describe('GraphQL', () => {
     const check3 = data.PatientList.find((p: any) => p.id === p3.id);
     expect(check3).toBeDefined();
     expect(check3.extension).toHaveLength(1);
-    expect(check3.extension[0]).toMatchObject(patient.extension?.[1] as Extension);
+    expect(check3.extension[0]).toMatchObject(p3.extension?.[1] as Extension);
   });
 });
