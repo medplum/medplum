@@ -1,11 +1,12 @@
-import { Command } from 'commander';
-import { FileSystemStorage } from './storage';
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Command } from 'commander';
 import dotenv from 'dotenv';
-import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { login, whoami } from './auth';
-import { deleteObject, get, patch, post, put } from './rest';
+import { aws } from './aws';
+import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { project } from './projects';
+import { deleteObject, get, patch, post, put } from './rest';
+import { FileSystemStorage } from './storage';
 
 export let medplum: MedplumClient;
 
@@ -43,6 +44,9 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
     index.addCommand(saveBotDeprecate);
     index.addCommand(deployBotDeprecate);
     index.addCommand(createBotDeprecate);
+
+    // AWS commands
+    index.addCommand(aws);
 
     await index.parseAsync(argv);
   } catch (err) {

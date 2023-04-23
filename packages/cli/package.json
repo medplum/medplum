@@ -17,6 +17,9 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudformation": "3.316.0",
+    "@aws-sdk/client-ecs": "3.316.0",
+    "@aws-sdk/client-s3": "3.316.0",
     "@medplum/core": "*",
     "commander": "10.0.1",
     "dotenv": "16.0.3",
