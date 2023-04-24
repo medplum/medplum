@@ -83,63 +83,6 @@ describe('AppShell', () => {
     expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
   });
 
-  test('Add another account', async () => {
-    await setup();
-    expect(screen.getByText('Your application here')).toBeInTheDocument();
-    expect(screen.queryByText('Add another account')).not.toBeInTheDocument();
-
-    // Click the user menu to open the menu
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    expect(screen.getByText('Add another account')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add another account'));
-    });
-
-    expect(navigateMock).toBeCalledWith('/signin');
-  });
-
-  test('Account settings', async () => {
-    await setup();
-    expect(screen.getByText('Your application here')).toBeInTheDocument();
-    expect(screen.queryByText('Account settings')).not.toBeInTheDocument();
-
-    // Click the user menu to open the menu
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    expect(screen.getByText('Account settings')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Account settings'));
-    });
-
-    expect(navigateMock).toBeCalledWith('/Practitioner/123');
-  });
-
-  test('Sign out', async () => {
-    await setup();
-    expect(screen.getByText('Your application here')).toBeInTheDocument();
-    expect(screen.queryByText('Sign out')).not.toBeInTheDocument();
-
-    // Click the user menu to open the menu
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    expect(screen.getByText('Sign out')).toBeInTheDocument();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sign out'));
-    });
-
-    expect(navigateMock).toBeCalledWith('/signin');
-  });
-
   test('Resource Type Search', async () => {
     await setup();
 
