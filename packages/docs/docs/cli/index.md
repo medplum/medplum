@@ -189,6 +189,42 @@ Switching to another project from the current one
 medplum project switch <projectId>
 ```
 
+### AWS
+
+`aws` includes commands for creating and managing AWS resources.
+
+The AWS commands require [AWS authentication and access credentials](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-authentication.html). Please make sure your credentials are configured before using the `aws` commands.
+
+:::caution
+
+The `aws` commands are in beta, and likely to change.
+
+:::
+
+#### list
+
+List your Medplum deployments. This command lists AWS CloudFormation stacks with the `medplum:environment` tag.
+
+```bash
+medplum aws list
+```
+
+#### describe
+
+Describe a Medplum deployment. Displays select AWS resources such as ECS Cluster, ECS Service, and S3 buckets from the AWS CloudFormation stack with the corresponding `medplum:environment` tag.
+
+```bash
+medplum aws describe <name>
+```
+
+#### update-server
+
+Updates the ECS Service in a Medplum deployment to the latest version.
+
+```bash
+medplum aws describe <name>
+```
+
 ### Bots
 
 #### Bots Config file
