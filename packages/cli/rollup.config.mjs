@@ -4,15 +4,6 @@ import { mkdirSync, writeFileSync } from 'fs';
 
 const extensions = ['.ts'];
 
-const globals = {
-  '@medplum/core': 'medplum.core',
-  commander: 'commander',
-  dotenv: 'dotenv',
-  fs: 'fs',
-  'node-fetch': 'fetch',
-  path: 'path',
-};
-
 export default [
   {
     input: 'src/index.ts',
@@ -20,9 +11,7 @@ export default [
       {
         file: 'dist/cjs/index.cjs',
         format: 'cjs',
-        name: 'medplum.cli',
         sourcemap: true,
-        globals,
         banner: '#!/usr/bin/env node',
       },
     ],
@@ -36,6 +25,16 @@ export default [
         },
       },
     ],
-    external: Object.keys(globals),
+    external: [
+      '@aws-sdk/client-cloudformation',
+      '@aws-sdk/client-ecs',
+      '@aws-sdk/client-s3',
+      '@medplum/core',
+      'commander',
+      'dotenv',
+      'fs',
+      'node-fetch',
+      'path',
+    ],
   },
 ];
