@@ -238,8 +238,8 @@ describe('Project clone', () => {
   });
 
   test('Success with includeIds in body', async () => {
-    const { project, membership, client } = await createTestProject();
-    const includeIds = [membership.id, client.id];
+    const { project, membership } = await createTestProject();
+    const includeIds = [membership.id];
     expect(project).toBeDefined();
 
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
@@ -270,12 +270,12 @@ describe('Project clone', () => {
       filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
     });
     expect(ClientApplicationBundle).toBeDefined();
-    expect(ClientApplicationBundle.entry).toHaveLength(1);
+    expect(ClientApplicationBundle.entry).toHaveLength(0);
   });
 
   test('Success with excludeIds in body', async () => {
-    const { project, membership, client } = await createTestProject();
-    const excludeIds = [membership.id, client.id];
+    const { project, membership } = await createTestProject();
+    const excludeIds = [membership.id];
     expect(project).toBeDefined();
 
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
@@ -306,6 +306,6 @@ describe('Project clone', () => {
       filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
     });
     expect(ClientApplicationBundle).toBeDefined();
-    expect(ClientApplicationBundle.entry).toHaveLength(0);
+    expect(ClientApplicationBundle.entry).toHaveLength(1);
   });
 });
