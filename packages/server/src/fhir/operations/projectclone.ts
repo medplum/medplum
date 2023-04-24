@@ -96,7 +96,7 @@ class ProjectCloner {
     if (this.includeIds.length > 0 && !this.includeIds.includes(resourceId)) {
       return false;
     }
-    if (this.excludeIds.length > 0 && this.includeIds.includes(resourceId)) {
+    if (this.excludeIds.length > 0 && this.excludeIds.includes(resourceId)) {
       return false;
     }
     return true;

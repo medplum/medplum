@@ -272,4 +272,40 @@ describe('Project clone', () => {
     expect(ClientApplicationBundle).toBeDefined();
     expect(ClientApplicationBundle.entry).toHaveLength(1);
   });
+
+  test('Success with excludeIds in body', async () => {
+    const { project, membership, client } = await createTestProject();
+    const excludeIds = [membership.id, client.id];
+    expect(project).toBeDefined();
+
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    expect(superAdminAccessToken).toBeDefined();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/${project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({ excludeIds });
+    expect(res.status).toBe(201);
+
+    const newProjectId = res.body.id;
+    const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
+    expect(newProject).toBeDefined();
+    expect(newProject.name).toBeDefined();
+
+    const ProjectMembershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ProjectMembershipBundle).toBeDefined();
+    expect(ProjectMembershipBundle.entry?.length).toBe(0);
+
+    const ClientApplicationBundle = await systemRepo.search({
+      resourceType: 'ClientApplication',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ClientApplicationBundle).toBeDefined();
+    expect(ClientApplicationBundle.entry).toHaveLength(0);
+  });
 });
