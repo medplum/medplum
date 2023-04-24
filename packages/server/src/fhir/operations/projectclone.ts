@@ -21,14 +21,20 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
   }
 
   const { id } = req.params;
+  const { name } = req.body;
   const repo = res.locals.repo as Repository;
-  const cloner = new ProjectCloner(repo, id);
+  const cloner = new ProjectCloner(repo, id, name);
   const result = await cloner.cloneProject();
   await sendResponse(res, created, result);
 }
 
 class ProjectCloner {
-  constructor(readonly repo: Repository, readonly projectId: string, readonly idMap: Map<string, string> = new Map()) {}
+  constructor(
+    readonly repo: Repository,
+    readonly projectId: string,
+    readonly projectName: string,
+    readonly idMap: Map<string, string> = new Map()
+  ) {}
 
   async cloneProject(): Promise<Project> {
     const repo = this.repo;
@@ -67,7 +73,26 @@ class ProjectCloner {
   }
 
   rewriteIds(resource: Resource): Resource {
-    return JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
+    const resourceObj = JSON.parse(JSON.stringify(resource, (k, v) => this.rewriteKeyReplacer(k, v)));
+
+    if (this.projectName) {
+      switch (resource.resourceType) {
+        case 'Project':
+          resourceObj.name = this.projectName;
+          break;
+        case 'ProjectMembership':
+          resourceObj.project.display = this.projectName;
+          break;
+        case 'ClientApplication':
+          if (resource.name?.endsWith(' Default Client')) {
+            resourceObj.name = `${this.projectName} Default Client`;
+            resourceObj.description = `Default client for ${this.projectName}`;
+          }
+          break;
+      }
+    }
+
+    return resourceObj;
   }
 
   rewriteKeyReplacer(key: string, value: unknown): unknown {
