@@ -201,7 +201,7 @@ describe('Project clone', () => {
     }
   });
 
-  test('Success with allowed resource type in body', async () => {
+  test('Success with resource type in body', async () => {
     const { project } = await createTestProject();
     const resourceTypes = ['ProjectMembership'];
     expect(project).toBeDefined();
@@ -235,5 +235,41 @@ describe('Project clone', () => {
     });
     expect(ClientApplicationBundle).toBeDefined();
     expect(ClientApplicationBundle.entry).toHaveLength(0);
+  });
+
+  test('Success with includeIds in body', async () => {
+    const { project, membership, client } = await createTestProject();
+    const includeIds = [membership.id, client.id];
+    expect(project).toBeDefined();
+
+    const superAdminAccessToken = await initTestAuth({ superAdmin: true });
+    expect(superAdminAccessToken).toBeDefined();
+
+    const res = await request(app)
+      .post(`/fhir/R4/Project/${project.id}/$clone`)
+      .set('Authorization', 'Bearer ' + superAdminAccessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({ includeIds });
+    expect(res.status).toBe(201);
+
+    const newProjectId = res.body.id;
+    const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
+    expect(newProject).toBeDefined();
+    expect(newProject.name).toBeDefined();
+
+    const ProjectMembershipBundle = await systemRepo.search({
+      resourceType: 'ProjectMembership',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ProjectMembershipBundle).toBeDefined();
+    expect(ProjectMembershipBundle.entry?.length).toBeGreaterThanOrEqual(1);
+
+    const ClientApplicationBundle = await systemRepo.search({
+      resourceType: 'ClientApplication',
+      filters: [{ code: '_project', operator: Operator.EQUALS, value: newProjectId }],
+    });
+    expect(ClientApplicationBundle).toBeDefined();
+    expect(ClientApplicationBundle.entry).toHaveLength(1);
   });
 });

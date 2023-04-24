@@ -21,9 +21,9 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
   }
 
   const { id } = req.params;
-  const { name, resourceTypes } = req.body;
+  const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const repo = res.locals.repo as Repository;
-  const cloner = new ProjectCloner(repo, id, name, resourceTypes);
+  const cloner = new ProjectCloner(repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
   await sendResponse(res, created, result);
 }
@@ -34,6 +34,8 @@ class ProjectCloner {
     readonly projectId: string,
     readonly projectName: string = '',
     readonly allowedResourceTypes: Array<string> = [],
+    readonly includeIds: Array<string> = [],
+    readonly excludeIds: Array<string> = [],
     readonly idMap: Map<string, string> = new Map()
   ) {}
 
@@ -54,7 +56,7 @@ class ProjectCloner {
       if (bundle.entry) {
         for (const entry of bundle.entry) {
           if (entry.resource) {
-            if (this.isAllowedResourceType(entry.resource.resourceType as ResourceType)) {
+            if (this.isResourceAllowed(entry.resource)) {
               this.idMap.set(entry.resource.id as string, randomUUID());
               allResources.push(entry.resource);
             }
@@ -75,10 +77,32 @@ class ProjectCloner {
     return newProject as Project;
   }
 
-  isAllowedResourceType(resourceType: ResourceType): boolean {
-    if (resourceType === 'Project') {
+  isResourceAllowed(resource: Resource): boolean {
+    if (resource.resourceType === 'Project') {
       return true;
     }
+    if (!this.isAllowedResourceType(resource.resourceType)) {
+      return false;
+    }
+
+    if (!this.isAllowedResourceId(resource.id as string)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  isAllowedResourceId(resourceId: string): boolean {
+    if (this.includeIds.length > 0 && !this.includeIds.includes(resourceId)) {
+      return false;
+    }
+    if (this.excludeIds.length > 0 && this.includeIds.includes(resourceId)) {
+      return false;
+    }
+    return true;
+  }
+
+  isAllowedResourceType(resourceType: ResourceType): boolean {
     if (this.allowedResourceTypes.length > 0 && !this.allowedResourceTypes.includes(resourceType)) {
       return false;
     }
