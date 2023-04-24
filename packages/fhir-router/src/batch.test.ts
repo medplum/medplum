@@ -5,6 +5,7 @@ import {
   indexStructureDefinitionBundle,
   isOk,
   OperationOutcomeError,
+  resolveId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -14,6 +15,7 @@ import {
   OperationOutcome,
   Patient,
   Practitioner,
+  Reference,
   SearchParameter,
   ServiceRequest,
   Subscription,
@@ -964,65 +966,113 @@ describe('Batch', () => {
     expect(bundle?.entry).toBeDefined();
   });
 
-  test('Embedded urn:uuid', async () => {
-    const bundle = await processBatch(router, repo, {
-      resourceType: 'Bundle',
-      type: 'transaction',
-      entry: [
-        {
-          fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
-          request: {
-            method: 'POST',
-            url: 'Questionnaire',
-          },
-          resource: {
-            resourceType: 'Questionnaire',
-            status: 'active',
-            name: 'Example Questionnaire',
-            title: 'Example Questionnaire',
-            item: [
-              {
-                linkId: 'q1',
-                type: 'string',
-                text: 'Question',
-              },
-            ],
-          },
-        },
-        {
-          fullUrl: 'urn:uuid:14b4f91f-1119-40b8-b10e-3db77cf1c191',
-          request: {
-            method: 'POST',
-            url: 'Subscription',
-          },
-          resource: {
-            resourceType: 'Subscription',
-            status: 'active',
-            reason: 'Test',
-            criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
-            channel: {
-              type: 'rest-hook',
-              endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
-              payload: 'application/fhir+json',
+  describe('Process Transactions', () => {
+    test('Embedded urn:uuid', async () => {
+      const bundle = await processBatch(router, repo, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            request: {
+              method: 'POST',
+              url: 'Questionnaire',
+            },
+            resource: {
+              resourceType: 'Questionnaire',
+              status: 'active',
+              name: 'Example Questionnaire',
+              title: 'Example Questionnaire',
+              item: [
+                {
+                  linkId: 'q1',
+                  type: 'string',
+                  text: 'Question',
+                },
+              ],
             },
           },
-        },
-      ],
-    });
-    expect(bundle).toBeDefined();
-    expect(bundle?.type).toEqual('transaction-response');
-    expect(bundle?.entry).toBeDefined();
+          {
+            fullUrl: 'urn:uuid:14b4f91f-1119-40b8-b10e-3db77cf1c191',
+            request: {
+              method: 'POST',
+              url: 'Subscription',
+            },
+            resource: {
+              resourceType: 'Subscription',
+              status: 'active',
+              reason: 'Test',
+              criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              channel: {
+                type: 'rest-hook',
+                endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
+                payload: 'application/fhir+json',
+              },
+            },
+          },
+        ],
+      });
+      expect(bundle).toBeDefined();
+      expect(bundle?.type).toEqual('transaction-response');
+      expect(bundle?.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
-    expect(results.length).toEqual(2);
-    expect(results[0].response?.status).toEqual('201');
-    expect(results[1].response?.status).toEqual('201');
+      const results = bundle?.entry as BundleEntry[];
+      expect(results.length).toEqual(2);
+      expect(results[0].response?.status).toEqual('201');
+      expect(results[1].response?.status).toEqual('201');
 
-    const subscription = await repo.readReference<Subscription>({
-      reference: results[1].response?.location as string,
+      const subscription = await repo.readReference<Subscription>({
+        reference: results[1].response?.location as string,
+      });
+      expect(subscription.criteria).toMatch(
+        /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
+      );
     });
-    expect(subscription.criteria).toMatch(
-      /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
-    );
+
+    test('Transaction update after create', async () => {
+      const bundle = await processBatch(router, repo, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            request: {
+              method: 'POST',
+              url: 'Patient',
+            },
+            resource: {
+              resourceType: 'Patient',
+              status: 'active',
+            } as Patient,
+          },
+          {
+            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            request: {
+              method: 'PUT',
+              url: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            },
+            resource: {
+              id: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              resourceType: 'Patient',
+              status: 'active',
+              name: [{ given: ['Jane'], family: 'Doe' }],
+            } as Patient,
+          },
+        ],
+      });
+      expect(bundle).toBeDefined();
+      expect(bundle?.type).toEqual('transaction-response');
+      expect(bundle?.entry).toBeDefined();
+
+      const results = bundle?.entry as BundleEntry[];
+      expect(results.length).toEqual(2);
+      expect(results[0].response?.status).toEqual('201');
+      expect(results[1].response?.status).toEqual('200');
+      expect(results[0].response?.location).toBeDefined;
+
+      const ref = { reference: results?.[0]?.response?.location } as Reference<Patient>;
+      const checkPatient: Patient = await repo.readResource('Patient', resolveId(ref) as string);
+      expect(checkPatient.name).toMatchObject([{ given: ['Jane'], family: 'Doe' }]);
+    });
   });
 });

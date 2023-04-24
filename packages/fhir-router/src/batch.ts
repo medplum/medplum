@@ -7,6 +7,7 @@ import {
   normalizeOperationOutcome,
   OperationOutcomeError,
   parseSearchUrl,
+  resolveId,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
@@ -72,6 +73,12 @@ class BatchProcessor {
     const resultEntries: BundleEntry[] = [];
     for (const entry of entries) {
       const rewritten = this.rewriteIdsInObject(entry);
+      // If the resource 'id' element is specified, we want to replace teh `urn:uuid:*` string and
+      // remove the `resourceType` prefix
+      if (entry?.resource?.id) {
+        rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
+      }
+
       try {
         resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
@@ -198,13 +205,17 @@ class BatchProcessor {
     return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
   }
 
-  private rewriteIdsInString(input: string): string {
+  private rewriteIdsInString(input: string, removeResourceType = false): string {
     const matches = input.match(/urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/);
     if (matches) {
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
       if (resource) {
-        return input.replaceAll(fullUrl, getReferenceString(resource));
+        let referenceString: string | undefined = getReferenceString(resource);
+        if (removeResourceType) {
+          referenceString = resolveId({ reference: referenceString });
+        }
+        return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
       }
     }
     return input;
