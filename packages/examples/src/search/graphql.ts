@@ -6,7 +6,7 @@ const medplum = new MedplumClient();
 
 /*
 // start-block GetPatientByIdGraphQL
-query {
+{
   Patient(id: "example-id") {
     resourceType
     id
@@ -25,9 +25,7 @@ query {
 curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
 -H 'Content-Type: application/json' \
 -H "Authorization: Bearer $your_access_token" \
--d '{
-  "query": "\n query {\n Patient(id: \"example-id\") {\n resourceType\n id\n name {\n text\n }\n address {\n text\n }\n }\n }\n "
-}'
+-d '{"query": "{ Patient(id: \"example-id\") { resourceType id name { text } address { text } } }"}'
 // end-block GetPatientByIdCurl
 */
 // start-block GetPatientByIdTS
@@ -72,8 +70,8 @@ let response: any =
 /* --- SearchPatientsByNameAndCity -- */
 /*
 // start-block SearchPatientsByNameAndCityGraphQL
-query {
-  patients: PatientList(name: "Eve", address_city: "Philadelphia") {
+{
+  PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
     name {
@@ -96,7 +94,7 @@ query {
 curl 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $your_access_token" \
-  --data-raw '{"query":"query {\n  patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {\n    resourceType\n    id\n    name {\n      family\n      given\n    }\n    address {\n      line\n      city\n      state\n      postalCode\n    }\n  }\n}"}'
+  -d '{"query":"{ PatientList(name: \"Eve\", address_city: \"Philadelphia\") { resourceType id name { family given } address { line city state postalCode } } }"}'
 // end-block SearchPatientsByNameAndCityCurl
 */
 
@@ -170,7 +168,7 @@ console.log(response);
 /* --- DiagnosticReportWithObservations -- */
 /*
 // start-block DiagnosticReportWithObservationsGraphQL
-query {
+{
   DiagnosticReport(id: "example-id-1") {
     resourceType
     id
@@ -196,7 +194,7 @@ query {
 curl 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $your_access_token" \
-  --data-raw '{"query":"query {\n  DiagnosticReport(id: \"example-id-1\") {\n    resourceType\n    id\n    result {\n      resource {\n        ... on Observation {\n          resourceType\n          id\n          valueQuantity {\n            value\n            unit\n          }\n        }\n      }\n    }\n  }\n}"}'
+  -d '{"query":"{ DiagnosticReport(id: \"example-id-1\") { resourceType id result { resource { ... on Observation { resourceType id valueQuantity { value unit } } } } } }"}'
 // end-block DiagnosticReportWithObservationsCurl
 */
 
@@ -261,7 +259,7 @@ console.log(response);
 
 /*
 // start-block PatientWithRelatedEncountersGraphQL
-query {
+{
   Patient(id: "example-patient-id") {
     resourceType
     id
@@ -279,7 +277,7 @@ query {
 curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $your_access_token" \
-  --data-raw '{"query":"query {\n  Patient(id: \"example-patient-id\") {\n    resourceType\n    id\n    encounters: EncounterList(_reference: patient) {\n      resourceType\n      id\n    }\n  }\n}"}'
+  -d '{"query":"{ Patient(id: \"example-patient-id\") { resourceType id encounters: EncounterList(_reference: patient) { resourceType id } } }"}'
 // end-block PatientWithRelatedEncountersCurl
 */
 
@@ -324,9 +322,9 @@ console.log(response);
 /* --- PatientsWithReports -- */
 /*
 // start-block PatientsWithReportsGraphQL
-query {
+{
   # Search for a list of Patients named "Eve", living in "Philadelphia"
-  patients: PatientList(name: "Eve", address_city: "Philadelphia") {
+  PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
     name {
@@ -367,14 +365,14 @@ query {
 curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $your_access_token" \
-  --data-raw '{"query":"query {\n  # Search for a list of Patients named \"Eve\", living in \"Philadelphia\"\n  patients: PatientList(name: \"Eve\", address_city: \"Philadelphia\") {\n    resourceType\n    id\n    name {\n      family\n      given\n    }\n    address {\n      line\n      city\n      state\n      postalCode\n    }\n    # Search for DiagnosticReports linked to each Patient\n    reports: DiagnosticReportList(_reference: subject) {\n      resourceType\n      id\n      # Resolve the Observations referenced by DiagnosticReport.result\n      result {\n        resource {\n          ... on Observation {\n            resourceType\n            id\n            valueQuantity {\n              value\n              unit\n            }\n          }\n        }\n      }\n    }\n  }\n}"}'
+  --data-raw '{"query":"query { PatientList(name: \"Eve\", address_city: \"Philadelphia\") { resourceType id name { family given } address { line city state postalCode } DiagnosticReportList(_reference: subject) { resourceType id result { resource { ... on Observation { resourceType id valueQuantity { value unit } } } } } } }"}'
 // end-block PatientsWithReportsCurl
 */
 
 // start-block PatientsWithReportsTS
 await medplum.graphql(`
 {
-  patients: PatientList(name: "Eve", address_city: "Philadelphia") {
+  PatientList(name: "Eve", address_city: "Philadelphia") {
     resourceType
     id
     name {
@@ -411,7 +409,7 @@ await medplum.graphql(`
 response = {
   // start-block PatientsWithReportsResponse
   data: {
-    patients: [
+    PatientList: [
       {
         resourceType: 'Patient',
         id: 'patient-id-1',
@@ -487,6 +485,131 @@ response = {
     ],
   },
   // end-block PatientsWithReportsResponse
+};
+
+console.log(response);
+
+/*
+ * Filter Patient.name by HumanName.use
+ */
+
+/*
+// start-block FilterPatientNameByUseGraphQL
+{
+  PatientList {
+    resourceType
+    id
+    name(use: "official") {
+      given
+      family
+    }
+  }
+}
+// end-block FilterPatientNameByUseGraphQL
+*/
+
+/*
+// start-block FilterPatientNameByUseCurl
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $your_access_token" \
+  -d '{"query":"{ PatientList(family: \"doe\") { resourceType id name(use: \"official\") { use given family } extension(url: \"https://example.com/extension-url-2\") { value : valueString } } }"}'
+// end-block FilterPatientNameByUseCurl
+*/
+
+// start-block FilterPatientNameByUseTS
+await medplum.graphql(`
+{
+  PatientList {
+    resourceType
+    id
+    name(use: "official") {
+      given
+      family
+    }
+  }
+}
+`);
+// end-block FilterPatientNameByUseTS
+
+response = {
+  // start-block FilterPatientNameByUseResponse
+  data: {
+    PatientList: [
+      {
+        resourceType: 'Patient',
+        id: 'patient-id-1',
+        name: [
+          {
+            given: ['John'],
+            family: 'Doe',
+          },
+        ],
+      },
+    ],
+  },
+  // end-block FilterPatientNameByUseResponse
+};
+
+console.log(response);
+
+/*
+ * Filter Patient.extension by Extension.url
+ */
+
+/*
+// start-block FilterExtensionByUrlGraphQL
+{
+  PatientList {
+    resourceType
+    id
+    extension(url: "https://example.com/123") {
+      valueString
+    }
+  }
+}
+// end-block FilterExtensionByUrlGraphQL
+*/
+
+/*
+// start-block FilterExtensionByUrlCurl
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $your_access_token" \
+  -d '{"query":"{ PatientList { resourceType id extension(url: \"https://example.com/123\") { valueString } } }"}'
+// end-block FilterExtensionByUrlCurl
+*/
+
+// start-block FilterExtensionByUrlTS
+await medplum.graphql(`
+{
+  PatientList {
+    resourceType
+    id
+    extension(url: "https://example.com/123") {
+      valueString
+    }
+  }
+}
+`);
+// end-block FilterExtensionByUrlTS
+
+response = {
+  // start-block FilterExtensionByUrlResponse
+  data: {
+    PatientList: [
+      {
+        resourceType: 'Patient',
+        id: 'patient-id-1',
+        extension: [
+          {
+            valueString: 'Sample extension value',
+          },
+        ],
+      },
+    ],
+  },
+  // end-block FilterExtensionByUrlResponse
 };
 
 console.log(response);
