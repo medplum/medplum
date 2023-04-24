@@ -1,5 +1,5 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
-import { Login, Project, Resource } from '@medplum/fhirtypes';
+import { Login, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
@@ -21,9 +21,9 @@ export async function projectCloneHandler(req: Request, res: Response): Promise<
   }
 
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, resourceTypes, includeIds, excludeIds } = req.body;
   const repo = res.locals.repo as Repository;
-  const cloner = new ProjectCloner(repo, id, name);
+  const cloner = new ProjectCloner(repo, id, name, resourceTypes, includeIds, excludeIds);
   const result = await cloner.cloneProject();
   await sendResponse(res, created, result);
 }
@@ -32,7 +32,10 @@ class ProjectCloner {
   constructor(
     readonly repo: Repository,
     readonly projectId: string,
-    readonly projectName: string,
+    readonly projectName: string = '',
+    readonly allowedResourceTypes: string[] = [],
+    readonly includeIds: string[] = [],
+    readonly excludeIds: string[] = [],
     readonly idMap: Map<string, string> = new Map()
   ) {}
 
@@ -52,7 +55,7 @@ class ProjectCloner {
       });
       if (bundle.entry) {
         for (const entry of bundle.entry) {
-          if (entry.resource) {
+          if (entry.resource && this.isResourceAllowed(entry.resource)) {
             this.idMap.set(entry.resource.id as string, randomUUID());
             allResources.push(entry.resource);
           }
@@ -70,6 +73,35 @@ class ProjectCloner {
     }
 
     return newProject as Project;
+  }
+
+  isResourceAllowed(resource: Resource): boolean {
+    if (resource.resourceType === 'Project') {
+      return true;
+    }
+    if (!this.isAllowedResourceType(resource.resourceType)) {
+      return false;
+    }
+
+    if (!this.isAllowedResourceId(resource.id as string)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  isAllowedResourceId(resourceId: string): boolean {
+    if (this.includeIds.length > 0 && !this.includeIds.includes(resourceId)) {
+      return false;
+    }
+    return !this.excludeIds.includes(resourceId);
+  }
+
+  isAllowedResourceType(resourceType: ResourceType): boolean {
+    if (this.allowedResourceTypes.length > 0) {
+      return this.allowedResourceTypes.includes(resourceType);
+    }
+    return true;
   }
 
   rewriteIds(resource: Resource): Resource {
