@@ -42,6 +42,8 @@ describe('App', () => {
     });
 
     expect(screen.getByText('Patients')).toBeInTheDocument();
+    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Security')).toBeInTheDocument();
   });
 
   test('Click profile', async () => {

@@ -8,6 +8,7 @@ import {
   IconBuilding,
   IconForms,
   IconId,
+  IconLock,
   IconLockAccess,
   IconMicroscope,
   IconPackages,
@@ -40,16 +41,30 @@ export function App(): JSX.Element {
   );
 }
 
-function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] | undefined {
-  return config?.menu?.map((menu) => ({
-    title: menu.title,
-    links:
-      menu.link?.map((link) => ({
-        label: link.name,
-        href: link.target as string,
-        icon: getIcon(link.target as string),
-      })) || [],
-  }));
+function userConfigToMenu(config: UserConfiguration | undefined): NavbarMenu[] {
+  const result =
+    config?.menu?.map((menu) => ({
+      title: menu.title,
+      links:
+        menu.link?.map((link) => ({
+          label: link.name,
+          href: link.target as string,
+          icon: getIcon(link.target as string),
+        })) || [],
+    })) || [];
+
+  result.push({
+    title: 'Settings',
+    links: [
+      {
+        label: 'Security',
+        href: '/security',
+        icon: <IconLock />,
+      },
+    ],
+  });
+
+  return result;
 }
 
 const resourceTypeToIcon: Record<string, Icon> = {
