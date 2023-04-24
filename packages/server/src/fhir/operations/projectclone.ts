@@ -33,9 +33,9 @@ class ProjectCloner {
     readonly repo: Repository,
     readonly projectId: string,
     readonly projectName: string = '',
-    readonly allowedResourceTypes: Array<string> = [],
-    readonly includeIds: Array<string> = [],
-    readonly excludeIds: Array<string> = [],
+    readonly allowedResourceTypes: string[] = [],
+    readonly includeIds: string[] = [],
+    readonly excludeIds: string[] = [],
     readonly idMap: Map<string, string> = new Map()
   ) {}
 
@@ -55,11 +55,9 @@ class ProjectCloner {
       });
       if (bundle.entry) {
         for (const entry of bundle.entry) {
-          if (entry.resource) {
-            if (this.isResourceAllowed(entry.resource)) {
-              this.idMap.set(entry.resource.id as string, randomUUID());
-              allResources.push(entry.resource);
-            }
+          if (entry.resource && this.isResourceAllowed(entry.resource)) {
+            this.idMap.set(entry.resource.id as string, randomUUID());
+            allResources.push(entry.resource);
           }
         }
       }
@@ -96,15 +94,12 @@ class ProjectCloner {
     if (this.includeIds.length > 0 && !this.includeIds.includes(resourceId)) {
       return false;
     }
-    if (this.excludeIds.length > 0 && this.excludeIds.includes(resourceId)) {
-      return false;
-    }
-    return true;
+    return !this.excludeIds.includes(resourceId);
   }
 
   isAllowedResourceType(resourceType: ResourceType): boolean {
-    if (this.allowedResourceTypes.length > 0 && !this.allowedResourceTypes.includes(resourceType)) {
-      return false;
+    if (this.allowedResourceTypes.length > 0) {
+      return this.allowedResourceTypes.includes(resourceType);
     }
     return true;
   }
