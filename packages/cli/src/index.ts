@@ -53,6 +53,15 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
 if (require.main === module) {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const medplumClient = new MedplumClient({ fetch, baseUrl, storage: new FileSystemStorage() });
+  const medplumClient = new MedplumClient({
+    fetch,
+    baseUrl,
+    storage: new FileSystemStorage(),
+    onUnauthenticated: onUnauthenticated,
+  });
   main(medplumClient, process.argv).catch((err) => console.error('Unhandled error:', err));
+}
+
+function onUnauthenticated(): void {
+  console.log('Unauthenticated: run `npx medplum login` to sign in');
 }

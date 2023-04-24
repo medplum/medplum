@@ -17,15 +17,11 @@ get
   .argument('<url>', 'Resource/$id')
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
-    try {
-      const response = await medplum.get(cleanUrl(url));
-      if (options.asTransaction) {
-        prettyPrint(convertToTransactionBundle(response));
-      } else {
-        prettyPrint(response);
-      }
-    } catch (err) {
-      console.log(err);
+    const response = await medplum.get(cleanUrl(url));
+    if (options.asTransaction) {
+      prettyPrint(convertToTransactionBundle(response));
+    } else {
+      prettyPrint(response);
     }
   });
 
