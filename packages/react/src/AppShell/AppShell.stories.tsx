@@ -1,6 +1,6 @@
+import { createStyles } from '@mantine/core';
 import { Meta } from '@storybook/react';
 import React from 'react';
-import { Document } from '../Document/Document';
 import { Logo } from '../Logo/Logo';
 import { AppShell } from './AppShell';
 
@@ -9,23 +9,48 @@ export default {
   component: AppShell,
 } as Meta;
 
-export const Basic = (): JSX.Element => (
-  <Document>
-    <AppShell
-      logo={<Logo size={24} />}
-      version="your.version"
-      menus={[
-        {
-          title: 'My Menu',
-          links: [
-            { label: 'Link 1', href: '/link1' },
-            { label: 'Link 2', href: '/link2' },
-            { label: 'Link 3', href: '/link3' },
-          ],
-        },
-      ]}
-    >
-      Your application here
-    </AppShell>
-  </Document>
-);
+// Extra styles to contain the AppShell inside of a Storybook story
+// By default, the Mantine AppShell component is position: fixed
+// But that breaks out of the Storybook story container
+// By using position: absolute, we can keep the AppShell inside the story
+const useStyles = createStyles(() => {
+  return {
+    root: {
+      position: 'relative',
+      margin: 0,
+      padding: 0,
+
+      '& header': {
+        position: 'absolute',
+      },
+
+      '& nav': {
+        position: 'absolute',
+      },
+    },
+  };
+});
+
+export function Basic(): JSX.Element {
+  const { classes } = useStyles();
+  return (
+    <div className={classes.root}>
+      <AppShell
+        logo={<Logo size={24} />}
+        version="your.version"
+        menus={[
+          {
+            title: 'My Menu',
+            links: [
+              { label: 'Link 1', href: '/link1' },
+              { label: 'Link 2', href: '/link2' },
+              { label: 'Link 3', href: '/link3' },
+            ],
+          },
+        ]}
+      >
+        Your application here
+      </AppShell>
+    </div>
+  );
+}
