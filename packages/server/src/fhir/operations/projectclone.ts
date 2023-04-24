@@ -32,8 +32,8 @@ class ProjectCloner {
   constructor(
     readonly repo: Repository,
     readonly projectId: string,
-    readonly projectName: string,
-    readonly allowedResourceTypes: Array<string>,
+    readonly projectName: string = '',
+    readonly allowedResourceTypes: Array<string> = [],
     readonly idMap: Map<string, string> = new Map()
   ) {}
 
@@ -79,10 +79,8 @@ class ProjectCloner {
     if (resourceType === 'Project') {
       return true;
     }
-    if (this.allowedResourceTypes && this.allowedResourceTypes.length > 0) {
-      if (!this.allowedResourceTypes.includes(resourceType)) {
-        return false;
-      }
+    if (this.allowedResourceTypes.length > 0 && !this.allowedResourceTypes.includes(resourceType)) {
+      return false;
     }
     return true;
   }
