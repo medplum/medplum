@@ -1,25 +1,11 @@
-import { createStyles, getStylesRef, Navbar, Space, Text } from '@mantine/core';
-import { CodeInput, useMedplumContext } from '@medplum/react';
-import {
-  Icon,
-  IconBrandAsana,
-  IconBuilding,
-  IconForms,
-  IconId,
-  IconLock,
-  IconLockAccess,
-  IconMicroscope,
-  IconPackages,
-  IconReceipt,
-  IconReportMedical,
-  IconStar,
-  IconWebhook,
-} from '@tabler/icons-react';
+import { createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
 import React from 'react';
-import { Link, NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
+import { CodeInput } from '../CodeInput/CodeInput';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 
 const useStyles = createStyles((theme) => {
-  const icon = getStylesRef('icon');
   return {
     menuTitle: {
       margin: '20px 0 4px 6px',
@@ -45,26 +31,25 @@ const useStyles = createStyles((theme) => {
         color: theme.colorScheme === 'dark' ? theme.white : theme.black,
         textDecoration: 'none',
 
-        [`& .${icon}`]: {
+        [`& svg`]: {
           color: theme.colorScheme === 'dark' ? theme.white : theme.black,
         },
       },
-    },
 
-    linkIcon: {
-      ref: icon,
-      color: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6],
-      marginRight: theme.spacing.sm,
-      strokeWidth: 1.5,
-      width: 18,
-      height: 18,
+      '& svg': {
+        color: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6],
+        marginRight: theme.spacing.sm,
+        strokeWidth: 1.5,
+        width: 18,
+        height: 18,
+      },
     },
 
     linkActive: {
       '&, &:hover': {
         backgroundColor: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).background,
         color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
-        [`& .${icon}`]: {
+        [`& svg`]: {
           color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
         },
       },
@@ -72,22 +57,32 @@ const useStyles = createStyles((theme) => {
   };
 });
 
-export interface AppNavbarProps {
+export interface NavbarLink {
+  icon?: JSX.Element;
+  label?: string;
+  href: string;
+}
+
+export interface NavbarMenu {
+  title?: string;
+  links?: NavbarLink[];
+}
+
+export interface NavbarProps {
+  menus?: NavbarMenu[];
   closeNavbar: () => void;
 }
 
-export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
-  const { classes, cx } = useStyles();
-  const navigate = useNavigate();
-  const context = useMedplumContext();
-  const config = context.medplum.getUserConfiguration();
+export function Navbar(props: NavbarProps): JSX.Element {
+  const { classes } = useStyles();
+  const navigate = useMedplumNavigate();
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
     e.stopPropagation();
     e.preventDefault();
     navigate(to);
     if (window.innerWidth < 768) {
-      closeNavbar();
+      props.closeNavbar();
     }
   }
 
@@ -98,8 +93,8 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
   }
 
   return (
-    <Navbar width={{ sm: 250 }} p="xs">
-      <Navbar.Section>
+    <MantineNavbar width={{ sm: 250 }} p="xs">
+      <MantineNavbar.Section>
         <CodeInput
           key={window.location.pathname}
           name="resourceType"
@@ -115,30 +110,23 @@ export function AppNavbar({ closeNavbar }: AppNavbarProps): JSX.Element {
           clearSearchOnChange={true}
           clearable={false}
         />
-      </Navbar.Section>
-      <Navbar.Section grow>
-        {config?.menu?.map((menu, index) => (
-          <React.Fragment key={`menu-${index}-${config?.menu?.length}`}>
-            <Text className={classes.menuTitle}>{menu.title}</Text>
-            {menu.link?.map((link) => (
-              <NavbarLink
-                key={link.name}
-                to={link.target as string}
-                onClick={(e) => onLinkClick(e, link.target as string)}
-              >
-                <NavLinkIcon to={link.target as string} className={classes.linkIcon} />
-                <span>{link.name}</span>
-              </NavbarLink>
-            ))}
-          </React.Fragment>
-        ))}
-        <Text className={classes.menuTitle}>Settings</Text>
-        <NavLink to="/security" className={({ isActive }) => cx(classes.link, { [classes.linkActive]: isActive })}>
-          <IconLock className={classes.linkIcon} />
-          <span>Security</span>
-        </NavLink>
-      </Navbar.Section>
-    </Navbar>
+      </MantineNavbar.Section>
+      {props.menus && (
+        <MantineNavbar.Section grow>
+          {props.menus.map((menu) => (
+            <React.Fragment key={`menu-${menu.title}`}>
+              <Text className={classes.menuTitle}>{menu.title}</Text>
+              {menu.links?.map((link) => (
+                <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
+                  <NavLinkIcon to={link.href} icon={link.icon} />
+                  <span>{link.label}</span>
+                </NavbarLink>
+              ))}
+            </React.Fragment>
+          ))}
+        </MantineNavbar.Section>
+      )}
+    </MantineNavbar>
   );
 }
 
@@ -156,9 +144,9 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
 
   return (
-    <Link onClick={props.onClick} to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+    <MedplumLink onClick={props.onClick} to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
       {props.children}
-    </Link>
+    </MedplumLink>
   );
 }
 
@@ -179,32 +167,12 @@ function matchesParams(searchParams: URLSearchParams, toUrl: URL): boolean {
 
 interface NavLinkIconProps {
   to: string;
-  className: string;
+  icon?: JSX.Element;
 }
 
-const resourceTypeToIcon: Record<string, Icon> = {
-  Patient: IconStar,
-  Practitioner: IconId,
-  Organization: IconBuilding,
-  ServiceRequest: IconReceipt,
-  DiagnosticReport: IconReportMedical,
-  Questionnaire: IconForms,
-  admin: IconBrandAsana,
-  AccessPolicy: IconLockAccess,
-  Subscription: IconWebhook,
-  batch: IconPackages,
-  Observation: IconMicroscope,
-};
-
-function NavLinkIcon({ to, className }: NavLinkIconProps): JSX.Element {
-  try {
-    const resourceType = new URL(to, 'https://app.medplum.com').pathname.split('/')[1];
-    if (resourceType in resourceTypeToIcon) {
-      const Icon = resourceTypeToIcon[resourceType];
-      return <Icon className={className} />;
-    }
-  } catch (e) {
-    // Ignore
+function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
+  if (props.icon) {
+    return props.icon;
   }
   return <Space w={30} />;
 }

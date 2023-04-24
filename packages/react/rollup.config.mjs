@@ -22,6 +22,7 @@ const globals = {
   'prop-types': 'PropTypes',
   react: 'React',
   'react-dom': 'ReactDOM',
+  'react-router-dom': 'ReactRouterDOM',
 };
 
 const sourcemapPathTransform = (path) => path.replaceAll('\\', '/').replaceAll('../../../src', '../../src');

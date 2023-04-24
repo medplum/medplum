@@ -8,10 +8,9 @@ import {
   QuestionnaireResponse,
   Resource,
 } from '@medplum/fhirtypes';
-import { Document, MedplumLink, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { Document, Loading, MedplumLink, QuestionnaireForm, useMedplum } from '@medplum/react';
 import React, { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
-import { Loading } from './components/Loading';
 import { PatientHeader } from './components/PatientHeader';
 import { ResourceHeader } from './components/ResourceHeader';
 import { getPatient } from './utils';
