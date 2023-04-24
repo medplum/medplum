@@ -1,5 +1,14 @@
 import { createStyles } from '@mantine/core';
 import { Meta } from '@storybook/react';
+import {
+  Icon2fa,
+  IconBellRinging,
+  IconDatabaseImport,
+  IconFingerprint,
+  IconKey,
+  IconReceipt2,
+  IconSettings,
+} from '@tabler/icons-react';
 import React from 'react';
 import { Logo } from '../Logo/Logo';
 import { AppShell } from './AppShell';
@@ -42,9 +51,13 @@ export function Basic(): JSX.Element {
           {
             title: 'My Menu',
             links: [
-              { label: 'Link 1', href: '/link1' },
-              { label: 'Link 2', href: '/link2' },
-              { label: 'Link 3', href: '/link3' },
+              { href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> },
+              { href: '/billing', label: 'Billing', icon: <IconReceipt2 /> },
+              { href: '/security', label: 'Security', icon: <IconFingerprint /> },
+              { href: '/sshkeys', label: 'SSH Keys', icon: <IconKey /> },
+              { href: '/databases', label: 'Databases', icon: <IconDatabaseImport /> },
+              { href: '/auth', label: 'Authentication', icon: <Icon2fa /> },
+              { href: '/settings', label: 'Other Settings', icon: <IconSettings /> },
             ],
           },
         ]}
