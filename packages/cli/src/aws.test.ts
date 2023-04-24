@@ -32,6 +32,24 @@ describe('AWS commands', () => {
           StackStatus: 'CREATE_COMPLETE',
           CreationTime: new Date(),
         },
+        {
+          StackId: '144',
+          StackName: 'medplum-in-progress',
+          StackStatus: 'UPDATE_IN_PROGRESS',
+          CreationTime: new Date(),
+        },
+        {
+          StackId: '456',
+          StackName: 'deleted-stack',
+          StackStatus: 'DELETE_COMPLETE',
+          CreationTime: new Date(),
+        },
+        {
+          StackId: '789',
+          StackName: 'no-details-stack',
+          StackStatus: 'CREATE_COMPLETE',
+          CreationTime: new Date(),
+        },
       ],
     });
 
@@ -66,6 +84,27 @@ describe('AWS commands', () => {
           ResourceStatus: 'CREATE_COMPLETE',
           LogicalResourceId: 'MedplumEcsService',
           PhysicalResourceId: 'medplum-dev-MedplumEcsService-123',
+          Timestamp: new Date(),
+        },
+        {
+          ResourceType: 'AWS::S3::Bucket',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'FrontEndAppBucket',
+          PhysicalResourceId: 'app.test.medplum.com',
+          Timestamp: new Date(),
+        },
+        {
+          ResourceType: 'AWS::S3::Bucket',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'StorageStorageBucket',
+          PhysicalResourceId: 'storage.test.medplum.com',
+          Timestamp: new Date(),
+        },
+        {
+          ResourceType: 'AWS::EC2::SecurityGroup',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'SecurityGroup',
+          PhysicalResourceId: 'sg-123',
           Timestamp: new Date(),
         },
       ],
