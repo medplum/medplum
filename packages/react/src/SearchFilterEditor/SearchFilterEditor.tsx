@@ -40,7 +40,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
   }
 
   const resourceType = props.search.resourceType;
-  const searchParams = globalSchema.types[resourceType].searchParams as Record<string, SearchParameter>;
+  const searchParams = (globalSchema.types[resourceType].searchParams as Record<string, SearchParameter>) ?? {};
   const filters = search.filters || [];
 
   return (
