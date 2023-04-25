@@ -40,7 +40,7 @@ import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexSt
 import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
 import { encodeBase64 } from './base64';
 
-export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION;
+export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
 const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;

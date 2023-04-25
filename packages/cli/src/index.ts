@@ -1,4 +1,4 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, normalizeErrorString, MEDPLUM_VERSION } from '@medplum/core';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 import { login, whoami } from './auth';
@@ -21,7 +21,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
-    index.version('0.1.0');
+    index.version(MEDPLUM_VERSION);
 
     // Auth commands
     index.addCommand(login);
