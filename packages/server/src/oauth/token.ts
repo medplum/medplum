@@ -10,7 +10,7 @@ import {
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, errors, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
@@ -462,7 +462,23 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
 
   try {
     await jwtVerify(clientAssertion, JWKS, verifyOptions);
-  } catch (err) {
+  } catch (error: any) {
+    console.log('hi 😀')
+    console.log(error)
+    if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
+      for await (const publicKey of error) {
+        console.log('hi 😛')
+        try {
+          await jwtVerify(clientAssertion, publicKey, verifyOptions);
+        } catch (innerError: any) {
+          if (innerError?.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+            continue;
+          }
+          throw innerError;
+        }
+      }
+      throw new errors.JWSSignatureVerificationFailed();
+    }
     return { error: 'Invalid client assertion signature' };
   }
 
