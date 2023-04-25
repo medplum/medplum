@@ -1,11 +1,10 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, normalizeErrorString, MEDPLUM_VERSION } from '@medplum/core';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 import { login, whoami } from './auth';
 import { aws } from './aws';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { project } from './projects';
-import { MEDPLUM_VERSION } from '@medplum/core';
 import { deleteObject, get, patch, post, put } from './rest';
 import { FileSystemStorage } from './storage';
 
