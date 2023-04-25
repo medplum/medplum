@@ -22,7 +22,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
-    index.version(MEDPLUM_VERSION ?? '');
+    index.version(MEDPLUM_VERSION);
 
     // Auth commands
     index.addCommand(login);
