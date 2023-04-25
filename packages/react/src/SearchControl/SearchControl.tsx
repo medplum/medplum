@@ -304,7 +304,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               compact
               variant={buttonVariant}
               color={buttonColor}
-              leftIcon={<IconFilter size={iconSize} />}
+              leftIcon={<IconColumns size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
             >
               Fields
@@ -313,7 +313,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               compact
               variant={buttonVariant}
               color={buttonColor}
-              leftIcon={<IconColumns size={iconSize} />}
+              leftIcon={<IconFilter size={iconSize} />}
               onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
             >
               Filters
