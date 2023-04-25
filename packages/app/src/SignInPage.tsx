@@ -2,17 +2,19 @@ import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { getConfig } from './config';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const config = getConfig();
 
   return (
     <SignInForm
       onSuccess={() => navigate(searchParams.get('next') || '/')}
       onForgotPassword={() => navigate('/resetpassword')}
-      onRegister={process.env.REGISTER_ENABLED === 'false' ? undefined : () => navigate('/register')}
-      googleClientId={process.env.GOOGLE_CLIENT_ID || undefined}
+      onRegister={config.registerEnabled ? () => navigate('/register') : undefined}
+      googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}
     >

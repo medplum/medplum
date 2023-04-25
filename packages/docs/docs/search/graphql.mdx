@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 ## Overview
 
-This guide will walk you through how to use the FHIR GraphQL API with Medplum. Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
+This guide will walk you through how to use the [FHIR GraphQL API](https://hl7.org/fhir/r4/graphql.html) with Medplum. Clinical data is often comprised of multiple FHIR resources, and the FHIR GraphQL API makes it easy to query multiple linked resources in a single request.
 
 The GraphQL API also allows you to request specific elements, rather than full resources, which can be more efficient in bandwidth constrained settings.
 
@@ -90,6 +90,8 @@ To search for a list of `Patient` resources with a specific name and city:
 
 This query searches for Patient resources with the name `"Eve"` and a city of `"Philadelphia"`, and aliases the list of patients as `patients` in the response.
 
+See the "[Searching Resources](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
 ## Resolving nested resources with the `resource` element
 
 Clinical data is often spread across multiple FHIR resources that reference each other. The FHIR GraphQL API contains a special `resource` element to resolve these references and retrieve the nested resources.
@@ -125,6 +127,8 @@ For example, to retrieve a `DiagnosticReport` and all the `Observation` resource
 
 This query retrieves a `DiagnosticReport` and the `Observation` resources associated with it.
 
+See the "[Resource References](https://hl7.org/fhir/r4/graphql.html#references)" section of the FHIR GraphQL specification for more information.
+
 ## Searching reverse references using the `_reference` keyword
 
 FHIR GraphQL also supports reverse-reference searches, which allow you to find resources that _point to_ the current resource.
@@ -157,6 +161,66 @@ In the example below, we first search for a `Patient` by id, and then find all t
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+See the "[Reverse References](https://hl7.org/fhir/r4/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
+## Filtering lists with field arguments
+
+FHIR GraphQL supports filtering array properties using field arguments. For example, you can filter the `Patient.name` array by the `use` field:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="FilterPatientNameByUseGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByUseTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="FilterPatientNameByUseCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="FilterPatientNameByUseResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+Another common use is to filter an `extension` array by `url`:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="FilterExtensionByUrlGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="FilterExtensionByUrlTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="FilterExtensionByUrlCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="FilterExtensionByUrlResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+See the "[List Navigation](https://hl7.org/fhir/r4/graphql.html#list)" section of the FHIR GraphQL specification for more information.
 
 ## Putting it all together
 

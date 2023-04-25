@@ -7,6 +7,7 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
+import { getConfig } from './config';
 
 async function setup(medplum: MedplumClient): Promise<void> {
   await act(async () => {
@@ -29,6 +30,10 @@ describe('RegisterPage', () => {
     Object.defineProperty(global, 'crypto', {
       value: crypto.webcrypto,
     });
+  });
+
+  beforeEach(() => {
+    getConfig().registerEnabled = true;
   });
 
   test('Renders', async () => {
@@ -87,5 +92,16 @@ describe('RegisterPage', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button'));
     });
+  });
+
+  test('Register disabled', async () => {
+    getConfig().registerEnabled = false;
+
+    const medplum = new MockClient();
+    medplum.getProfile = jest.fn(() => undefined) as any;
+    medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
+    await setup(medplum);
+
+    expect(screen.getByText('New projects are disabled on this server.')).toBeInTheDocument();
   });
 });

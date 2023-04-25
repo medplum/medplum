@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.0.16",
+  "version": "2.0.17",
   "description": "Medplum Command Line Interface",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,7 +17,11 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudformation": "3.319.0",
+    "@aws-sdk/client-ecs": "3.319.0",
+    "@aws-sdk/client-s3": "3.319.0",
     "@medplum/core": "*",
+    "aws-sdk-client-mock": "2.1.1",
     "commander": "10.0.1",
     "dotenv": "16.0.3",
     "node-fetch": "2.6.9"

@@ -2,12 +2,11 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { ErrorBoundary, MedplumProvider } from '@medplum/react';
+import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { Loading } from '../components/Loading';
 
 const medplum = new MockClient();
 

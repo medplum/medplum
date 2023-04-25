@@ -1,10 +1,12 @@
 import { createStyles, Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
-import { AsyncAutocomplete, AsyncAutocompleteOption, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconSearch } from '@tabler/icons-react';
 import React, { forwardRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
 
@@ -52,7 +54,7 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
 
 export function HeaderSearchInput(): JSX.Element {
   const { classes } = useStyles();
-  const navigate = useNavigate();
+  const navigate = useMedplumNavigate();
   const medplum = useMedplum();
   const location = useLocation();
 

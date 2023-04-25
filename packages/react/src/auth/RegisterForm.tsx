@@ -10,7 +10,7 @@ export interface RegisterFormProps {
   readonly type: 'patient' | 'project';
   readonly projectId?: string;
   readonly googleClientId?: string;
-  readonly recaptchaSiteKey: string;
+  readonly recaptchaSiteKey?: string;
   readonly children?: React.ReactNode;
   readonly onSuccess: () => void;
 }

@@ -123,6 +123,38 @@ Use the $clone operation to clone a project:
 medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone'
 ```
 
+Cloning a project with a new name
+
+To clone a project with a new name, you can use the name parameter in the POST body. The name parameter is a string value that specifies the name of the new project. Here's an example:
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"name": "New Project Name"}'
+```
+
+Cloning a project for allowed resource types
+
+To clone a project and only include certain resource types, you can use the resourceTypes parameter in the POST body. The resourceTypes parameter is an array of strings that specifies the allowed resource types in the new project.
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"resourceTypes": ["Patient"]}'
+```
+
+Cloning a project to include resource ids
+
+To clone a project and include specific resource ids, you can use the includeIds parameter in the POST body. The includeIds parameter is an array of strings that specifies the resource ids to include in the new project.
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"includeIds": ["bca80725-ea6a-4fb4-8eac-41b8ee51f09e"]}'
+```
+
+Cloning a project to exclude resource ids
+
+To clone a project and exclude specific resource ids, you can use the excludeIds parameter in the POST body. The excludeIds parameter is an array of strings that specifies the resource ids to exclude from the new project.
+
+```bash
+medplum post 'Project/bca80725-ea6a-4fb4-8eac-41b8ee51f09e/$clone' '{"excludeIds": ["bca80725-ea6a-4fb4-8eac-41b8ee51f09e"]}'
+```
+
 :::tip
 
 Note that "$" is a special character in Bash for variable interpolation. Wrap the full string in single quotes to avoid interpolation, or escape the $ with a backslash.

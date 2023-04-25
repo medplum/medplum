@@ -1,30 +1,53 @@
-import { MantineProvider } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { App } from './App';
+import { Logo } from '../Logo/Logo';
+import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { AppShell } from './AppShell';
 
 const medplum = new MockClient();
+const navigateMock = jest.fn();
 
-async function setup(url = '/'): Promise<void> {
+async function setup(): Promise<void> {
   await act(async () => {
     render(
-      <MemoryRouter initialEntries={[url]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
-          <MantineProvider withGlobalStyles withNormalizeCSS>
-            <App />
-          </MantineProvider>
+      <MemoryRouter>
+        <MedplumProvider medplum={medplum} navigate={navigateMock}>
+          <AppShell
+            logo={<Logo size={24} />}
+            version="test.version"
+            menus={[
+              {
+                title: 'Menu 1',
+                links: [
+                  { label: 'Link 1', href: '/link1' },
+                  { label: 'Link 2', href: '/link2' },
+                  { label: 'Link 3', href: '/link3' },
+                ],
+              },
+              {
+                title: 'Menu 2',
+                links: [
+                  { label: 'Link 4', href: '/link4' },
+                  { label: 'Link 5', href: '/link5' },
+                  { label: 'Link 6', href: '/link6' },
+                ],
+              },
+            ]}
+          >
+            Your application here
+          </AppShell>
         </MedplumProvider>
       </MemoryRouter>
     );
   });
 }
 
-describe('App', () => {
+describe('AppShell', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    navigateMock.mockClear();
   });
 
   afterEach(async () => {
@@ -34,68 +57,39 @@ describe('App', () => {
     jest.useRealTimers();
   });
 
-  test('Click logo', async () => {
+  test('Renders', async () => {
     await setup();
 
+    expect(screen.getByText('Your application here')).toBeInTheDocument();
+  });
+
+  test('Toggle sidebar', async () => {
+    await setup();
+    expect(screen.getByText('Your application here')).toBeInTheDocument();
+    expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
+
+    // Click on the logo to open the menu
     await act(async () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    expect(screen.getByText('Patients')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
-    expect(screen.getByText('Security')).toBeInTheDocument();
-  });
+    expect(screen.getByText('Menu 1')).toBeInTheDocument();
 
-  test('Click profile', async () => {
-    await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Account settings'));
-    });
-  });
-
-  test('Change profile', async () => {
-    await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Add another account'));
-    });
-  });
-
-  test('Click sign out', async () => {
-    await setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Sign out'));
-    });
-  });
-
-  test('Active link', async () => {
-    await setup('/ServiceRequest?status=active');
-
+    // Click on the logo to close the menu
     await act(async () => {
       fireEvent.click(screen.getByTitle('Medplum Logo'));
     });
 
-    const activeLink = screen.getByText('Active Orders');
-    const completedLink = screen.getByText('Completed Orders');
-    expect(activeLink.parentElement?.className).not.toEqual(completedLink.parentElement?.className);
+    expect(screen.queryByText('Menu 1')).not.toBeInTheDocument();
   });
 
   test('Resource Type Search', async () => {
     await setup();
+
+    // Click on the logo to open the menu
+    await act(async () => {
+      fireEvent.click(screen.getByTitle('Medplum Logo'));
+    });
 
     const comboboxes = screen.getAllByRole('combobox');
 

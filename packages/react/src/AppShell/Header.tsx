@@ -1,11 +1,12 @@
-import { Avatar, createStyles, Group, Header, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
-import { formatHumanName, getReferenceString, MEDPLUM_VERSION, ProfileResource } from '@medplum/core';
+import { Avatar, createStyles, Group, Header as MantineHeader, Menu, Stack, Text, UnstyledButton } from '@mantine/core';
+import { formatHumanName, getReferenceString, ProfileResource } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
-import { HumanNameDisplay, Logo, ResourceAvatar, useMedplumContext } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconSwitchHorizontal } from '@tabler/icons-react';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { HeaderSearchInput } from './components/HeaderSearchInput';
+import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
+import { useMedplumContext } from '../MedplumProvider/MedplumProvider';
+import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import { HeaderSearchInput } from './HeaderSearchInput';
 
 const useStyles = createStyles((theme) => ({
   logoButton: {
@@ -52,25 +53,25 @@ const useStyles = createStyles((theme) => ({
   },
 }));
 
-interface AppHeaderProps {
+interface HeaderProps {
+  logo: React.ReactNode;
+  version?: string;
   navbarToggle: () => void;
 }
 
-export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
+export function Header(props: HeaderProps): JSX.Element {
   const context = useMedplumContext();
-  const medplum = context.medplum;
-  const profile = context.profile as ProfileResource;
+  const { medplum, profile, navigate } = context;
   const logins = medplum.getLogins();
   const { classes, cx } = useStyles();
   const [userMenuOpened, setUserMenuOpened] = useState(false);
-  const navigate = useNavigate();
 
   return (
-    <Header height={60} p={8} style={{ zIndex: 101 }}>
+    <MantineHeader height={60} p={8} style={{ zIndex: 101 }}>
       <Group position="apart">
         <Group spacing="xs">
-          <UnstyledButton className={classes.logoButton} onClick={navbarToggle}>
-            <Logo size={24} />
+          <UnstyledButton className={classes.logoButton} onClick={props.navbarToggle}>
+            {props.logo}
           </UnstyledButton>
           <HeaderSearchInput />
         </Group>
@@ -91,7 +92,7 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
               <Group spacing={7}>
                 <ResourceAvatar value={profile} radius="xl" size={24} />
                 <Text size="sm" className={classes.userName}>
-                  {formatHumanName(profile.name?.[0] as HumanName)}
+                  {formatHumanName(profile?.name?.[0] as HumanName)}
                 </Text>
                 <IconChevronDown size={12} stroke={1.5} />
               </Group>
@@ -138,7 +139,7 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
             </Menu.Item>
             <Menu.Item
               icon={<IconSettings size={14} stroke={1.5} />}
-              onClick={() => navigate(`/${getReferenceString(profile)}`)}
+              onClick={() => navigate(`/${getReferenceString(profile as ProfileResource)}`)}
             >
               Account settings
             </Menu.Item>
@@ -152,11 +153,11 @@ export function AppHeader({ navbarToggle }: AppHeaderProps): JSX.Element {
               Sign out
             </Menu.Item>
             <Text size="xs" color="dimmed" align="center">
-              {MEDPLUM_VERSION}
+              {props.version}
             </Text>
           </Menu.Dropdown>
         </Menu>
       </Group>
-    </Header>
+    </MantineHeader>
   );
 }

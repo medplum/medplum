@@ -1,12 +1,13 @@
-import { Command } from 'commander';
-import { FileSystemStorage } from './storage';
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Command } from 'commander';
 import dotenv from 'dotenv';
-import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { login, whoami } from './auth';
-import { deleteObject, get, patch, post, put } from './rest';
+import { aws } from './aws';
+import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
 import { project } from './projects';
 import { MEDPLUM_VERSION } from '@medplum/core';
+import { deleteObject, get, patch, post, put } from './rest';
+import { FileSystemStorage } from './storage';
 
 export let medplum: MedplumClient;
 
@@ -45,6 +46,9 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
     index.addCommand(deployBotDeprecate);
     index.addCommand(createBotDeprecate);
 
+    // AWS commands
+    index.addCommand(aws);
+
     await index.parseAsync(argv);
   } catch (err) {
     console.error('Error: ' + normalizeErrorString(err));
@@ -54,6 +58,15 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
 if (require.main === module) {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const medplumClient = new MedplumClient({ fetch, baseUrl, storage: new FileSystemStorage() });
+  const medplumClient = new MedplumClient({
+    fetch,
+    baseUrl,
+    storage: new FileSystemStorage(),
+    onUnauthenticated: onUnauthenticated,
+  });
   main(medplumClient, process.argv).catch((err) => console.error('Unhandled error:', err));
+}
+
+function onUnauthenticated(): void {
+  console.log('Unauthenticated: run `npx medplum login` to sign in');
 }

@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResetPasswordPage } from './ResetPasswordPage';
+import { getConfig } from './config';
 
 const medplum = new MockClient();
 
@@ -18,11 +19,10 @@ function setup(): void {
 }
 
 describe('ResetPasswordPage', () => {
-  const origEnv = process.env;
   const grecaptchaResolved = jest.fn();
 
   beforeAll(() => {
-    Object.defineProperty(global, 'grecaptcha', {
+    Object.defineProperty(globalThis, 'grecaptcha', {
       value: {
         ready(callback: () => void): void {
           callback();
@@ -37,11 +37,9 @@ describe('ResetPasswordPage', () => {
 
   beforeEach(() => {
     jest.resetModules();
-    process.env = { ...origEnv };
   });
 
   afterEach(() => {
-    process.env = origEnv;
     jest.clearAllMocks();
   });
 
@@ -51,7 +49,7 @@ describe('ResetPasswordPage', () => {
   });
 
   test('Submit success with recaptcha site key', async () => {
-    process.env.RECAPTCHA_SITE_KEY = 'recaptchasitekey';
+    getConfig().recaptchaSiteKey = 'recaptchasitekey';
     setup();
 
     await act(async () => {
@@ -68,7 +66,7 @@ describe('ResetPasswordPage', () => {
   });
 
   test('Submit success without recaptcha site key', async () => {
-    process.env.RECAPTCHA_SITE_KEY = '';
+    getConfig().recaptchaSiteKey = '';
     setup();
 
     await act(async () => {

@@ -1,13 +1,12 @@
 import { allOk } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
+import { Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { Loading } from './components/Loading';
 import { getDefaultFields } from './HomePage';
 
 async function setup(url = '/Patient', medplum = new MockClient()): Promise<void> {
@@ -153,11 +152,9 @@ describe('HomePage', () => {
   });
 
   test('Export Transaction Bundle button', async () => {
-    URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
-    URL.revokeObjectURL = jest.fn();
-    // Mock the export operation
     const medplum = new MockClient();
-    medplum.router.router.add('GET', ':resourceType/$csv', async () => [allOk]);
+    medplum.router.router.add('GET', ':resourceType/', async () => [allOk]);
+    HTMLAnchorElement.prototype.click = jest.fn();
 
     await setup('/Patient', medplum);
     await waitFor(() => screen.getByText('Export...'));

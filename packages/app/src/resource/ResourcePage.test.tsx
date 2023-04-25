@@ -4,12 +4,11 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOu
 import { readJson } from '@medplum/definitions';
 import { Bot, Bundle, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { ErrorBoundary, MedplumProvider } from '@medplum/react';
+import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React, { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { Loading } from '../components/Loading';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
