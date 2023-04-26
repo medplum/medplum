@@ -10,7 +10,7 @@ import {
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, errors, jwtVerify, JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, errors, JWTPayload, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
@@ -467,6 +467,8 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
       for await (const publicKey of error) {
         try {
           await jwtVerify(clientAssertion, publicKey, verifyOptions);
+          // If we validate successfully inside the catch we can validate the client assertion
+          return { clientId, clientSecret: client.secret };
         } catch (innerError: any) {
           if (innerError?.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
             continue;

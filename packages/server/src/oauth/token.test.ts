@@ -14,23 +14,12 @@ import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
-
-class MockCustomError extends Error {
-  code: string;
-  [Symbol.asyncIterator]!: () => AsyncIterableIterator<any>;
-  constructor(message: string, code: string) {
-    super(message);
-    this.name = 'CustomError';
-    this.code = code;
-    this[Symbol.asyncIterator] = async function* () {
-      yield '123', yield '456';
-    };
-  }
-}
+import { MockJoseMultipleMatchingError } from './utils';
 
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
   const original = jest.requireActual('jose');
+  let count = 0;
   return {
     ...original,
     jwtVerify: jest.fn((credential: string) => {
@@ -38,11 +27,18 @@ jest.mock('jose', () => {
       if (payload.invalid) {
         throw new Error('Verification failed');
       } else if (payload.multipleMatching) {
-        // const jwks = original.createRemoteJWKSet(new URL('https://example.com/jwks.json'));
-        const error = new MockCustomError(
-          'multiple matching keys found in the JSON Web Key Set',
-          'ERR_JWKS_MULTIPLE_MATCHING_KEYS'
-        );
+        count += 1;
+        let error: MockJoseMultipleMatchingError;
+        if (count <= 1) {
+          error = new MockJoseMultipleMatchingError(
+            'multiple matching keys found in the JSON Web Key Set',
+            'ERR_JWKS_MULTIPLE_MATCHING_KEYS'
+          );
+        } else if (count == 2) {
+          error = new MockJoseMultipleMatchingError('Verification fail', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED');
+        } else {
+          return { payload };
+        }
         throw error;
       }
       return { payload };
@@ -1326,6 +1322,34 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(500);
     expect(jwtVerify).toBeCalledTimes(2);
+  });
+
+  test('Client assertion multiple matching 3rd check success', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ multipleMatching: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(200);
   });
 
   test('Client assertion invalid assertion type', async () => {
