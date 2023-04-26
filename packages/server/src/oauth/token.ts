@@ -10,7 +10,7 @@ import {
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, errors, jwtVerify, JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
