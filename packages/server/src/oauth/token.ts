@@ -10,7 +10,7 @@ import {
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, errors, JWTPayload, jwtVerify, JWTVerifyOptions } from 'jose';
+import { createRemoteJWKSet, errors, jwtVerify, JWTVerifyOptions } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
@@ -463,6 +463,9 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
   try {
     await jwtVerify(clientAssertion, JWKS, verifyOptions);
   } catch (error: any) {
+    // There are some edge cases where there are multiple matching JWKS
+    // and we need to iterate throught the JWKSMultipleMatchingKeys error
+    // and return the first verified match
     if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
       for await (const publicKey of error) {
         try {

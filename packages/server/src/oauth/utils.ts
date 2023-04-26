@@ -715,16 +715,3 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }
-
-export class MockJoseMultipleMatchingError extends Error {
-  code: string;
-  [Symbol.asyncIterator]!: () => AsyncIterableIterator<any>;
-  constructor(message: string, code: string) {
-    super(message);
-    this.name = 'CustomError';
-    this.code = code;
-    this[Symbol.asyncIterator] = async function* () {
-      yield '123', yield '456';
-    };
-  }
-}
