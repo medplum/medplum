@@ -27,6 +27,7 @@ async function startLogin(medplum: MedplumClient): Promise<void> {
   loginUrl.searchParams.set('redirect_uri', redirectUri);
   loginUrl.searchParams.set('scope', 'openid');
   loginUrl.searchParams.set('response_type', 'code');
+  loginUrl.searchParams.set('prompt', 'login');
   await openBrowser(loginUrl.toString());
 }
 
