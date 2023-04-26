@@ -139,7 +139,6 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     // Add to the JWKS (JSON Web Key Set)
     // This will be publicly available at /.well-known/jwks.json
     jwks.keys.push(publicKey);
-
     // Convert from JWK to PKCS and add to the collection of public keys
     publicKeys[jwk.id as string] = (await importJWK(publicKey)) as KeyLike;
   }

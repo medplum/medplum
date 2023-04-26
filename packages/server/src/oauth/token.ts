@@ -463,11 +463,8 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
   try {
     await jwtVerify(clientAssertion, JWKS, verifyOptions);
   } catch (error: any) {
-    console.log('hi 😀')
-    console.log(error)
     if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
       for await (const publicKey of error) {
-        console.log('hi 😛')
         try {
           await jwtVerify(clientAssertion, publicKey, verifyOptions);
         } catch (innerError: any) {

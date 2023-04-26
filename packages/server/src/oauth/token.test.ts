@@ -1,5 +1,5 @@
 import { OAuthGrantType, OAuthTokenType, createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
-import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
+import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch, JsonWebKey } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { SignJWT, generateKeyPair, jwtVerify } from 'jose';
@@ -15,6 +15,19 @@ import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
 import { hashCode } from './token';
 
+class MockCustomError extends Error {
+  code: string;
+  [Symbol.asyncIterator]!: () => AsyncIterableIterator<any>;
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'CustomError';
+    this.code = code;
+    this[Symbol.asyncIterator] = async function* () {
+      yield '123', yield '456';
+    };
+  }
+}
+
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
   const original = jest.requireActual('jose');
@@ -23,17 +36,14 @@ jest.mock('jose', () => {
     jwtVerify: jest.fn((credential: string) => {
       const payload = core.parseJWTPayload(credential);
       if (payload.invalid) {
-        // if (payload.multipleMatching) {
-        //   throw {
-        //     code: 'ERR_JWKS_MULTIPLE_MATCHING_KEYS',
-        //     async *[Symbol.asyncIterator]() {
-        //       yield '123';
-        //       yield '456';
-        //       yield '789';
-        //     },
-        //   };
-        // }
         throw new Error('Verification failed');
+      } else if (payload.multipleMatching) {
+        // const jwks = original.createRemoteJWKSet(new URL('https://example.com/jwks.json'));
+        const error = new MockCustomError(
+          'multiple matching keys found in the JSON Web Key Set',
+          'ERR_JWKS_MULTIPLE_MATCHING_KEYS'
+        );
+        throw error;
       }
       return { payload };
     }),
@@ -1289,7 +1299,7 @@ describe('OAuth2 Token', () => {
     });
   });
 
-  test('Client assertion multiple matching keys', async () => {
+  test('Client assertion multiple matching matching keys inner Error', async () => {
     // Create a new client
     const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
 
@@ -1298,7 +1308,7 @@ describe('OAuth2 Token', () => {
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
-    const jwt = await new SignJWT({ invalid: true, multipleMatching: true })
+    const jwt = await new SignJWT({ multipleMatching: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
       .setIssuer(client2.id as string)
@@ -1314,7 +1324,7 @@ describe('OAuth2 Token', () => {
       client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       client_assertion: jwt,
     });
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(500);
     expect(jwtVerify).toBeCalledTimes(2);
   });
 
