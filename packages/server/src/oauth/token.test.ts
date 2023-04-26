@@ -26,7 +26,7 @@ jest.mock('jose', () => {
       if (payload.invalid) {
         throw new Error('Verification failed');
       } else if (payload.multipleMatching) {
-        count += 1;
+        count = payload.successVerified ? count + 1 : 0;
         let error: MockJoseMultipleMatchingError;
         if (count <= 1) {
           error = new MockJoseMultipleMatchingError(
@@ -1307,7 +1307,7 @@ describe('OAuth2 Token', () => {
 
     // Create the JWT
     const keyPair = await generateKeyPair('ES384');
-    const jwt = await new SignJWT({ multipleMatching: true })
+    const jwt = await new SignJWT({ multipleMatching: true, successVerified: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
       .setIssuer(client2.id as string)
@@ -1325,6 +1325,35 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(jwtVerify).toBeCalledTimes(3);
+  });
+
+  test('Client assertion multiple inner error', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ multipleMatching: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(jwtVerify).toBeCalledTimes(2);
   });
 
   test('Client assertion invalid assertion type', async () => {

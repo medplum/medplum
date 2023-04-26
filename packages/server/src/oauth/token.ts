@@ -476,10 +476,10 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
           if (innerError?.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
             continue;
           }
-          throw innerError;
+          return { error: innerError.code };
         }
       }
-      throw new errors.JWSSignatureVerificationFailed();
+      return { error: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' };
     }
     return { error: 'Invalid client assertion signature' };
   }
