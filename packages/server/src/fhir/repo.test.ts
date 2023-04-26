@@ -25,6 +25,7 @@ import {
   Login,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   Provenance,
@@ -2162,7 +2163,12 @@ describe('FHIR Repo', () => {
     });
     const bundle = await systemRepo.search({
       resourceType: 'ServiceRequest',
-      include: 'ServiceRequest:subject',
+      include: [
+        {
+          resourceType: 'ServiceRequest',
+          searchParam: 'subject',
+        },
+      ],
       total: 'accurate',
       filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
     });
@@ -2175,7 +2181,12 @@ describe('FHIR Repo', () => {
     try {
       await systemRepo.search({
         resourceType: 'ServiceRequest',
-        include: 'ServiceRequest:xyz',
+        include: [
+          {
+            resourceType: 'ServiceRequest',
+            searchParam: 'xyz',
+          },
+        ],
       });
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -2199,7 +2210,12 @@ describe('FHIR Repo', () => {
     const searchRequest: SearchRequest = {
       resourceType: 'Practitioner',
       filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
-      revInclude: 'Provenance:target',
+      revInclude: [
+        {
+          resourceType: 'Provenance',
+          searchParam: 'target',
+        },
+      ],
     };
 
     const searchResult1 = await systemRepo.search(searchRequest);
@@ -2227,6 +2243,264 @@ describe('FHIR Repo', () => {
     expect(bundleContains(searchResult2, practitioner2)).toBeTruthy();
     expect(bundleContains(searchResult2, provenance1)).toBeTruthy();
     expect(bundleContains(searchResult2, provenance2)).toBeTruthy();
+  });
+
+  test('_include:iterate', async () => {
+    /*
+    Construct resources for the search to operate on.  The test search query and resource graph it will act on are shown below.
+    
+    Query: /Patient?identifier=patient
+      &_include=Patient:organization
+      &_include:iterate=Patient:link
+      &_include:iterate=Patient:general-practitioner
+
+    ┌──────────────────────────────────┐            
+    │patient                           │            
+    └┬────────┬────────┬────────┬─────┬┘            
+    ┌▽──────┐┌▽──────┐┌▽──────┐┌▽───┐┌▽────────────┐
+    │linked2││linked1││related││org1││practitioner1│
+    └┬──────┘└┬──────┘└───────┘└────┘└─────────────┘
+     │┌───────▽───────┐
+     ││linked3        │
+     │└┬────────────┬─┘                
+    ┌▽─▽──────────┐┌▽─────┐                         
+    │practitioner2││org2 *│                         
+    └─────────────┘└──────┘                         
+      * omitted from search results
+
+    This verifies the following behaviors of the :iterate modifier:
+    1. _include w/ :iterate recursively applies the same parameter (Patient:link)
+    2. _include w/ :iterate applies to resources from other _include parameters (Patient:general-practitioner)
+    3. _include w/o :iterate does not apply recursively (Patient:organization)
+    4. Resources which are included multiple times are deduplicated in the search results
+    */
+    const rootPatientIdentifier = randomUUID();
+    const organization1 = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+    const organization2 = await systemRepo.createResource<Organization>({ resourceType: 'Organization' });
+    const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+    const practitioner2 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+    const linked3 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      managingOrganization: { reference: `Organization/${organization2.id}` },
+      generalPractitioner: [
+        {
+          reference: `Practitioner/${practitioner2.id}`,
+        },
+      ],
+    });
+    const linked1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked3.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    const linked2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      generalPractitioner: [
+        {
+          reference: `Practitioner/${practitioner2.id}`,
+        },
+      ],
+    });
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          value: rootPatientIdentifier,
+        },
+      ],
+      link: [
+        {
+          other: { reference: `Patient/${linked1.id}` },
+          type: 'replaces',
+        },
+        {
+          other: { reference: `Patient/${linked2.id}` },
+          type: 'replaces',
+        },
+      ],
+      managingOrganization: {
+        reference: `Organization/${organization1.id}`,
+      },
+      generalPractitioner: [
+        {
+          reference: `Practitioner/${practitioner1.id}`,
+        },
+      ],
+    });
+
+    // Run the test search query
+    const bundle = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: rootPatientIdentifier,
+        },
+      ],
+      include: [
+        { resourceType: 'Patient', searchParam: 'organization' },
+        { resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE },
+        { resourceType: 'Patient', searchParam: 'general-practitioner', modifier: Operator.ITERATE },
+      ],
+    });
+
+    const expected = [
+      `Patient/${patient.id}`,
+      `Patient/${linked1.id}`,
+      `Patient/${linked2.id}`,
+      `Patient/${linked3.id}`,
+      `Organization/${organization1.id}`,
+      `Practitioner/${practitioner1.id}`,
+      `Practitioner/${practitioner2.id}`,
+    ].sort();
+
+    expect(bundle.entry?.map((e) => `${e.resource?.resourceType}/${e.resource?.id}`).sort()).toEqual(expected);
+  });
+
+  test('_revinclude:iterate', async () => {
+    /*
+    Construct resources for the search to operate on.  The test search query and resource graph it will act on are shown below.
+    
+    Query: /Patient?identifier=patient
+      &_revinclude=Patient:link
+      &_revinclude:iterate=Observation:subject
+      &_revinclude:iterate=Observation:has-member
+
+    ┌─────────┐┌────────────┐┌────────────┐
+    │linked3 *││observation3││observation4│
+    └┬────────┘└┬───────────┘└┬───────────┘
+    ┌▽──────┐┌──▽────┐┌───────▽────┐       
+    │linked1││linked2││observation2│       
+    └┬──────┘└┬──────┘└┬───────────┘       
+     │        │┌───────▽─────────┐         
+     │        ││observation1     │         
+     │        │└┬────────────────┘         
+    ┌▽────────▽─▽┐                         
+    │patient     │                         
+    └────────────┘                         
+      * omitted from search results
+
+    This verifies the following behaviors of the :iterate modifier:
+    1. _revinclude w/ :iterate recursively applies the same parameter (Observation:has-member)
+    2. _revinclude w/ :iterate applies to resources from other _revinclude parameters (Observation:subject)
+    3. _revinclude w/o :iterate does not apply recursively (Patient:link)
+    */
+    const rootPatientIdentifier = randomUUID();
+    const patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          value: rootPatientIdentifier,
+        },
+      ],
+    });
+    const linked1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${patient.id}` },
+          type: 'replaced-by',
+        },
+      ],
+    });
+    const linked2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${patient.id}` },
+          type: 'replaced-by',
+        },
+      ],
+    });
+    await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked1.id}` },
+          type: 'replaced-by',
+        },
+      ],
+    });
+    const baseObservation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'http://loinc.org',
+            code: 'fake',
+          },
+        ],
+      },
+    };
+    const observation1 = await systemRepo.createResource<Observation>({
+      ...baseObservation,
+      subject: {
+        reference: `Patient/${patient.id}`,
+      },
+    });
+    const observation2 = await systemRepo.createResource<Observation>({
+      ...baseObservation,
+      subject: {
+        display: 'Alex J. Chalmers',
+      },
+      hasMember: [
+        {
+          reference: `Observation/${observation1.id}`,
+        },
+      ],
+    });
+    const observation3 = await systemRepo.createResource<Observation>({
+      ...baseObservation,
+      subject: {
+        reference: `Patient/${linked2.id}`,
+      },
+    });
+    const observation4 = await systemRepo.createResource<Observation>({
+      ...baseObservation,
+      subject: {
+        display: 'Alex J. Chalmers',
+      },
+      hasMember: [
+        {
+          reference: `Observation/${observation2.id}`,
+        },
+      ],
+    });
+
+    // Run the test search query
+    const bundle = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: rootPatientIdentifier,
+        },
+      ],
+      revInclude: [
+        { resourceType: 'Patient', searchParam: 'link' },
+        { resourceType: 'Observation', searchParam: 'subject', modifier: Operator.ITERATE },
+        { resourceType: 'Observation', searchParam: 'has-member', modifier: Operator.ITERATE },
+      ],
+    });
+
+    const expected = [
+      `Patient/${patient.id}`,
+      `Patient/${linked1.id}`,
+      `Patient/${linked2.id}`,
+      `Observation/${observation1.id}`,
+      `Observation/${observation2.id}`,
+      `Observation/${observation3.id}`,
+      `Observation/${observation4.id}`,
+    ].sort();
+
+    expect(bundle.entry?.map((e) => `${e.resource?.resourceType}/${e.resource?.id}`).sort()).toEqual(expected);
   });
 
   test('DiagnosticReport category with system', async () => {

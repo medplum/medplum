@@ -12,8 +12,8 @@ export interface SearchRequest<T extends Resource = Resource> {
   fields?: string[];
   name?: string;
   total?: 'none' | 'estimate' | 'accurate';
-  include?: string;
-  revInclude?: string;
+  include?: IncludeTarget[];
+  revInclude?: IncludeTarget[];
 }
 
 export interface Filter {
@@ -27,6 +27,13 @@ export interface Filter {
 export interface SortRule {
   code: string;
   descending?: boolean;
+}
+
+export interface IncludeTarget {
+  resourceType: string;
+  searchParam: string;
+  targetType?: string;
+  modifier?: string;
 }
 
 /**
@@ -67,6 +74,9 @@ export enum Operator {
 
   // Reference
   IDENTIFIER = 'identifier',
+
+  // _include and _revinclude
+  ITERATE = 'iterate',
 }
 
 /**
@@ -86,6 +96,7 @@ const MODIFIER_OPERATORS: Record<string, Operator> = {
   'of-type': Operator.OF_TYPE,
   missing: Operator.MISSING,
   identifier: Operator.IDENTIFIER,
+  iterate: Operator.ITERATE,
 };
 
 /**
@@ -199,11 +210,27 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_include':
-      searchRequest.include = value;
+      const includeTarget = parseIncludeTarget(value); //eslint-disable-line no-case-declarations
+      if (modifier === 'iterate') {
+        includeTarget.modifier = Operator.ITERATE;
+      }
+      if (searchRequest.include) {
+        searchRequest.include.push(includeTarget);
+      } else {
+        searchRequest.include = [includeTarget];
+      }
       break;
 
     case '_revinclude':
-      searchRequest.revInclude = value;
+      const revincludeTarget = parseIncludeTarget(value); //eslint-disable-line no-case-declarations
+      if (modifier === 'iterate') {
+        revincludeTarget.modifier = Operator.ITERATE;
+      }
+      if (searchRequest.revInclude) {
+        searchRequest.revInclude.push(revincludeTarget);
+      } else {
+        searchRequest.revInclude = [revincludeTarget];
+      }
       break;
 
     case '_fields':
@@ -335,6 +362,34 @@ function parsePrefix(input: string): { operator: Operator; value: string } {
 
 function parseModifier(modifier: string): Operator {
   return MODIFIER_OPERATORS[modifier] || Operator.EQUALS;
+}
+
+function parseIncludeTarget(input: string): IncludeTarget {
+  const parts = input.split(':');
+
+  parts.forEach((p) => {
+    if (p === '*') {
+      throw new Error(`'*' is not supported as a value for search inclusion parameters`);
+    }
+  });
+
+  if (parts.length === 1) {
+    // Full wildcard, not currently supported
+    throw new Error(`Invalid include value '${input}': must be of the form ResourceType:search-parameter`);
+  } else if (parts.length === 2) {
+    return {
+      resourceType: parts[0],
+      searchParam: parts[1],
+    };
+  } else if (parts.length === 3) {
+    return {
+      resourceType: parts[0],
+      searchParam: parts[1],
+      targetType: parts[2],
+    };
+  } else {
+    throw new Error(`Invalid include value '${input}'`);
+  }
 }
 
 function addFilter(searchRequest: SearchRequest, filter: Filter): void {
