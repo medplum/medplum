@@ -1,12 +1,11 @@
-import { Box, Button, createStyles, Input, Navbar as MantineNavbar, Modal, Space, Text } from '@mantine/core';
+import { Button, createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
-import { Form } from '../Form/Form';
-import { error } from 'console';
+import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -77,15 +76,14 @@ export interface NavbarProps {
 }
 
 interface NavBarState {
-  addBookmarkVisible: boolean;
+  bookmarkVisible: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
-  const medplum = useMedplum();
   const [state, setState] = useState<NavBarState>({
-    addBookmarkVisible: false,
+    bookmarkVisible: false,
   });
   const stateRef = useRef<NavBarState>(state);
   stateRef.current = state;
@@ -103,27 +101,6 @@ export function Navbar(props: NavbarProps): JSX.Element {
     if (resourceType) {
       navigate(`/${resourceType}`);
     }
-  }
-
-  function addBookmark(value: string): void {
-    console.log('adding bookmark', value);
-    medplum
-      .updateResource({
-        resourceType: 'Patient',
-        id: '123',
-        name: [
-          {
-            family: value,
-            given: ['John'],
-          },
-        ],
-      })
-      .then((response) => {
-        console.log(response);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
   }
 
   return (
@@ -150,9 +127,9 @@ export function Navbar(props: NavbarProps): JSX.Element {
           <Button
             leftIcon={<IconPlus />}
             variant="white"
-            onClick={() => setState({ ...stateRef.current, addBookmarkVisible: true })}
+            onClick={() => setState({ ...stateRef.current, bookmarkVisible: true })}
           >
-            Add Page to Bookmark
+            Add Bookmark
           </Button>
         </MantineNavbar.Section>
         {props.menus && (
@@ -171,55 +148,24 @@ export function Navbar(props: NavbarProps): JSX.Element {
           </MantineNavbar.Section>
         )}
       </MantineNavbar>
-      <AddBookmarkModal
-        visible={stateRef.current.addBookmarkVisible}
-        onOk={async (value: string) => {
-          await addBookmark(value);
+      <BookmarkDialog
+        visible={stateRef.current.bookmarkVisible}
+        onOk={() => {
           return setState({
             ...stateRef.current,
-            addBookmarkVisible: false,
+            bookmarkVisible: false,
           });
         }}
         onCancel={() => {
           setState({
             ...stateRef.current,
-            addBookmarkVisible: false,
+            bookmarkVisible: false,
           });
         }}
       />
     </>
   );
 }
-interface AddBookmarkModalProps {
-  visible: boolean;
-  onOk: (value: string) => void;
-  onCancel: () => void;
-  defaultValue?: string;
-}
-export function AddBookmarkModal(props: AddBookmarkModalProps): JSX.Element | null {
-  function submitHandler(formData: Record<string, string>): void {
-    console.log(formData);
-    props.onOk(formData['bookmarkname'] as string);
-    props.onCancel();
-  }
-
-  return (
-    <Modal
-      title="Add Bookmark"
-      closeButtonProps={{ 'aria-label': 'Close' }}
-      opened={props.visible}
-      onClose={props.onCancel}
-    >
-      <Box display="flex" sx={{ justifyContent: 'space-between' }}>
-        <Form onSubmit={submitHandler}>
-          <Input name="bookmarkname" placeholder="bookmark name" />
-          <Button type="submit">Save</Button>
-        </Form>
-      </Box>
-    </Modal>
-  );
-}
-
 interface NavbarLinkProps {
   to: string;
   onClick: React.MouseEventHandler;
