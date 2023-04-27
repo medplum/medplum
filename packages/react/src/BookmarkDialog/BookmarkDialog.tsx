@@ -4,6 +4,8 @@ import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { useLocation } from 'react-router-dom';
+import { normalizeErrorString } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
 
 interface bookmarkDialog {
   visible: boolean;
@@ -27,17 +29,13 @@ export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
     if (config?.id) {
       medplum
         .updateResource(config)
-        .then((response) => {
-          console.log(response);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+        .then(() => showNotification({ color: 'green', message: 'Success' }))
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     } else {
       medplum
         .createResource(config)
-        .then((response) => console.log('success!!!', response))
-        .catch((error) => console.log(error));
+        .then(() => showNotification({ color: 'green', message: 'Success' }))
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
     props.onOk();
     props.onCancel();
