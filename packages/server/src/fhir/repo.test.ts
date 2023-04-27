@@ -46,7 +46,6 @@ import { getClient } from '../database';
 import { bundleContains } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
-import { SearchResults } from 'hibp';
 
 jest.mock('hibp');
 jest.mock('ioredis');
