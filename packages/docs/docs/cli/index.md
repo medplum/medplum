@@ -189,6 +189,26 @@ Switching to another project from the current one
 medplum project switch <projectId>
 ```
 
+#### `invite`
+
+Invite a user to a project
+
+```bash
+medplum project invite <firstName> <lastName> <email>
+```
+#### optional flags for `invite`
+
+- `--send-email`
+  - If you want to send the email when inviting the user
+
+- `--admin`
+  - If the user you are inviting is an admin
+
+- `--role` `-r` `<role>`
+  - The type of role the new user will have 
+  - Choices are Patient, Practitioner, and RelatedPerson
+    - Default will be Practitioner
+
 ### AWS
 
 `aws` includes commands for creating and managing AWS resources.
