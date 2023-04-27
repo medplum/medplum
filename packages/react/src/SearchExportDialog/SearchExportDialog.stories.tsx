@@ -3,7 +3,7 @@ import React from 'react';
 import { SearchExportDialog } from './SearchExportDialog';
 
 export default {
-  title: 'Mepdlum/SearchExportDialog',
+  title: 'Medplum/SearchExportDialog',
   component: SearchExportDialog,
 } as Meta;
 
