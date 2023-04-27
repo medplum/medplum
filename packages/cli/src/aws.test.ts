@@ -13,6 +13,9 @@ jest.mock('fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
+  constants: {
+    O_CREAT: 0,
+  },
   promises: {
     readFile: jest.fn(async () => '{}'),
   },
