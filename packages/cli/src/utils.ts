@@ -6,6 +6,11 @@ import internal from 'stream';
 import tar from 'tar';
 
 interface MedplumConfig {
+  readonly baseUrl?: string;
+  readonly clientId?: string;
+  readonly googleClientId?: string;
+  readonly recaptchaSiteKey?: string;
+  readonly registerEnabled?: boolean;
   readonly bots?: MedplumBotConfig[];
 }
 
@@ -101,8 +106,9 @@ export function readBotConfigs(botName: string): MedplumBotConfig[] {
   return botConfigs;
 }
 
-function readConfig(): MedplumConfig | undefined {
-  const content = readFileContents('medplum.config.json');
+export function readConfig(tagName?: string): MedplumConfig | undefined {
+  const fileName = tagName ? `medplum.${tagName}.config.json` : 'medplum.config.json';
+  const content = readFileContents(fileName);
   if (!content) {
     return undefined;
   }

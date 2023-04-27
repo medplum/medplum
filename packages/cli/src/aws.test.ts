@@ -9,11 +9,12 @@ import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import fastGlob from 'fast-glob';
+import fs from 'fs';
 import fetch from 'node-fetch';
 import { Readable, Writable } from 'stream';
 import tar from 'tar';
 import { main } from '.';
-import fastGlob from 'fast-glob';
 
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
@@ -189,6 +190,18 @@ describe('AWS commands', () => {
   test('Update app command', async () => {
     console.log = jest.fn();
 
+    // Mock the config file
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+      JSON.stringify({
+        baseUrl: 'https://api.staging.medplum.com/',
+        clientId: '',
+        googleClientId: '659647315343-c0p9rkl3pq38q18r13bkrchs4iqjogv1.apps.googleusercontent.com',
+        recaptchaSiteKey: '6LfXscQdAAAAAKlNFAoXqjliz0xbR8hvQw_pZfb2',
+        registerEnabled: true,
+      })
+    );
+
     // Mock the 2 fetch requests
     (fetch as jest.MockedFunction<typeof fetch>)
       // First request is for the package metadata
@@ -216,6 +229,17 @@ describe('AWS commands', () => {
       })
     );
 
+    // Mock the readdirSync to list files to replace variables
+    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+      if (folderName.endsWith('dist')) {
+        return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
+      }
+      return [{ name: 'main.js', isDirectory: () => false, isFile: () => true }];
+    });
+
+    // Mock the readFileSync to read the file to replace variables
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+
     // Mock the glob search for files to upload
     (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
 
@@ -226,7 +250,19 @@ describe('AWS commands', () => {
     expect(console.log).toBeCalledWith('Done');
   });
 
-  test('Update app not found', async () => {
+  test('Update app config not found', async () => {
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
+
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
+    expect(console.log).toBeCalledWith('Config not found');
+  });
+
+  test('Update app stack not found', async () => {
+    // Mock the config file
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+
     console.log = jest.fn();
     await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
     expect(console.log).toBeCalledWith('Stack not found');

@@ -17,7 +17,7 @@ import fetch from 'node-fetch';
 import { tmpdir } from 'os';
 import { join, sep } from 'path';
 import { pipeline } from 'stream/promises';
-import { safeTarExtractor } from './utils';
+import { readConfig, safeTarExtractor } from './utils';
 
 interface MedplumStackDetails {
   stack: Stack;
@@ -100,6 +100,11 @@ aws
   .description('Update the app site')
   .argument('<tag>')
   .action(async (tag) => {
+    const config = readConfig(tag);
+    if (!config) {
+      console.log('Config not found');
+      return;
+    }
     const details = await getStackByTag(tag);
     if (!details) {
       console.log('Stack not found');
@@ -113,13 +118,13 @@ aws
 
     const tmpDir = await downloadNpmPackage('@medplum/app', 'latest');
 
-    // TODO: Load these values from a local config file
+    // Replace variables in the app
     replaceVariables(tmpDir, {
-      MEDPLUM_BASE_URL: 'https://api.staging.medplum.com/',
-      MEDPLUM_CLIENT_ID: '',
-      GOOGLE_CLIENT_ID: '659647315343-c0p9rkl3pq38q18r13bkrchs4iqjogv1.apps.googleusercontent.com',
-      RECAPTCHA_SITE_KEY: '6LfXscQdAAAAAKlNFAoXqjliz0xbR8hvQw_pZfb2',
-      MEDPLUM_REGISTER_ENABLED: 'true',
+      MEDPLUM_BASE_URL: config.baseUrl as string,
+      MEDPLUM_CLIENT_ID: config.clientId || '',
+      GOOGLE_CLIENT_ID: config.googleClientId || '',
+      RECAPTCHA_SITE_KEY: config.recaptchaSiteKey || '',
+      MEDPLUM_REGISTER_ENABLED: config.registerEnabled ? 'true' : 'false',
     });
 
     // Upload the app to S3 with correct content-type and cache-control
