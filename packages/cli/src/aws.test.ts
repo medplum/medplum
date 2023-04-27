@@ -4,14 +4,26 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
+import fetch from 'node-fetch';
+import { Readable, Writable } from 'stream';
+import tar from 'tar';
 import { main } from '.';
+
+jest.mock('fast-glob', () => ({
+  sync: jest.fn(() => []),
+}));
 
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
+  mkdtempSync: jest.fn(() => '/tmp/'),
+  readdirSync: jest.fn(() => []),
   readFileSync: jest.fn(),
+  rmSync: jest.fn(),
   writeFileSync: jest.fn(),
   constants: {
     O_CREAT: 0,
@@ -20,6 +32,14 @@ jest.mock('fs', () => ({
     readFile: jest.fn(async () => '{}'),
   },
 }));
+
+jest.mock('node-fetch', () => jest.fn());
+
+jest.mock('tar', () => ({
+  x: jest.fn(),
+}));
+
+const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
 
 const medplum = new MockClient();
 
@@ -115,6 +135,16 @@ describe('AWS commands', () => {
 
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
+
+    const s3Mock = mockClient(S3Client);
+    s3Mock.on(PutObjectCommand).resolves({});
+
+    const cloudFrontMock = mockClient(CloudFrontClient);
+    cloudFrontMock.on(CreateInvalidationCommand).resolves({});
+  });
+
+  afterEach(() => {
+    (fetch as jest.MockedFunction<typeof fetch>).mockReset();
   });
 
   test('List command', async () => {
@@ -129,9 +159,50 @@ describe('AWS commands', () => {
     expect(console.log).toBeCalledWith('Stack ID:        123');
   });
 
+  test('Describe not found', async () => {
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'describe', 'not-found']);
+    expect(console.log).toBeCalledWith('Stack not found');
+  });
+
   test('Update server command', async () => {
     console.log = jest.fn();
     await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'dev']);
     expect(console.log).toBeCalledWith('Service "medplum-dev-MedplumEcsService-123" updated successfully.');
+  });
+
+  test('Update server not found', async () => {
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'not-found']);
+    expect(console.log).toBeCalledWith('Stack not found');
+  });
+
+  test('Update app command', async () => {
+    console.log = jest.fn();
+
+    const mockJson = { dist: { tarball: 'https://example.com/tarball.tar.gz' } };
+
+    const emptyReadableStream = new Readable({
+      read() {
+        this.push(null); // Signal the end of the stream
+      },
+    });
+
+    const sinkWritableStream = new Writable({
+      write(chunk, encoding, callback) {
+        callback();
+      },
+    });
+
+    (fetch as jest.MockedFunction<typeof fetch>)
+      .mockResolvedValueOnce(new NodeFetchResponse(JSON.stringify(mockJson), { status: 200 }))
+      .mockResolvedValueOnce(new NodeFetchResponse(emptyReadableStream, { status: 200 }));
+
+    (tar.x as jest.Mock).mockReturnValueOnce(sinkWritableStream);
+
+    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
+    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
+    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(console.log).toBeCalledWith('Done');
   });
 });

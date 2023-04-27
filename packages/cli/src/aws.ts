@@ -16,11 +16,9 @@ import { createReadStream, mkdtempSync, readFileSync, readdirSync, rmSync, write
 import fetch from 'node-fetch';
 import { tmpdir } from 'os';
 import { join, sep } from 'path';
-import internal, { pipeline } from 'stream';
+import internal from 'stream';
+import { pipeline } from 'stream/promises';
 import tar from 'tar';
-import { promisify } from 'util';
-
-const pipelineAsync = promisify(pipeline);
 
 interface MedplumStackDetails {
   stack: Stack;
@@ -114,7 +112,7 @@ aws
       return;
     }
 
-    const tmpDir = await downloadNpmPackage('@medplum/app/', 'latest');
+    const tmpDir = await downloadNpmPackage('@medplum/app', 'latest');
 
     // TODO: Load these values from a local config file
     replaceVariables(tmpDir, {
@@ -125,40 +123,8 @@ aws
       MEDPLUM_REGISTER_ENABLED: 'true',
     });
 
-    // Manually iterate and upload files
-    // Automatic content-type detection is not reliable on Microsoft Windows
-    // So we explicitly set content-type
-    const uploadPatterns: [string, string, boolean][] = [
-      // Cached
-      // These files generally have a hash, so they can be cached forever
-      // It is important to upload them first to avoid broken references from index.html
-      ['css/**/*.css', 'text/css', true],
-      ['css/**/*.css.map', 'application/json', true],
-      ['img/**/*.png', 'image/png', true],
-      ['img/**/*.svg', 'image/svg+xml', true],
-      ['js/**/*.js', 'application/javascript', true],
-      ['js/**/*.js.map', 'application/json', true],
-      ['js/**/*.txt', 'text/plain', true],
-      ['favicon.ico', 'image/vnd.microsoft.icon', true],
-      ['robots.txt', 'text/plain', true],
-      ['workbox-*.js', 'application/javascript', true],
-      ['workbox-*.js.map', 'application/json', true],
-
-      // Not cached
-      ['manifest.webmanifest', 'application/manifest+json', false],
-      ['service-worker.js', 'application/javascript', false],
-      ['service-worker.js.map', 'application/json', false],
-      ['index.html', 'text/html', false],
-    ];
-    for (const uploadPattern of uploadPatterns) {
-      await uploadFolderToS3({
-        rootDir: tmpDir,
-        bucketName: appBucket.PhysicalResourceId as string,
-        fileNamePattern: uploadPattern[0],
-        contentType: uploadPattern[1],
-        cached: uploadPattern[2],
-      });
-    }
+    // Upload the app to S3 with correct content-type and cache-control
+    await uploadAppToS3(tmpDir, appBucket.PhysicalResourceId as string);
 
     // Create a CloudFront invalidation to clear any cached resources
     if (details.appDistribution?.PhysicalResourceId) {
@@ -273,7 +239,7 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
   try {
     const response = await fetch(tarballUrl);
     const extractor = safeTarExtractor(tmpDir);
-    await pipelineAsync(response.body, extractor);
+    await pipeline(response.body, extractor);
     return join(tmpDir, 'package', 'dist');
   } catch (error) {
     rmSync(tmpDir, { recursive: true, force: true });
@@ -303,12 +269,12 @@ function safeTarExtractor(cwd: string): internal.Writable {
     filter: (_path, entry) => {
       fileCount++;
       if (fileCount > MAX_FILES) {
-        throw 'Reached max. number of files';
+        throw new Error('Tar extractor reached max number of files');
       }
 
       totalSize += entry.size;
       if (totalSize > MAX_SIZE) {
-        throw 'Reached max. size';
+        throw new Error('Tar extractor reached max size');
       }
 
       return true;
@@ -343,6 +309,49 @@ function replaceVariablesInFile(fileName: string, replacements: Record<string, s
     contents = contents.replaceAll(`process.env.${placeholder}`, `'${replacement}'`);
   }
   writeFileSync(fileName, contents);
+}
+
+/**
+ * Uploads the app to S3.
+ * Ensures correct content-type and cache-control for each file.
+ * @param tmpDir The temporary directory where the app is located.
+ * @param bucketName The destination S3 bucket name.
+ */
+async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> {
+  // Manually iterate and upload files
+  // Automatic content-type detection is not reliable on Microsoft Windows
+  // So we explicitly set content-type
+  const uploadPatterns: [string, string, boolean][] = [
+    // Cached
+    // These files generally have a hash, so they can be cached forever
+    // It is important to upload them first to avoid broken references from index.html
+    ['css/**/*.css', 'text/css', true],
+    ['css/**/*.css.map', 'application/json', true],
+    ['img/**/*.png', 'image/png', true],
+    ['img/**/*.svg', 'image/svg+xml', true],
+    ['js/**/*.js', 'application/javascript', true],
+    ['js/**/*.js.map', 'application/json', true],
+    ['js/**/*.txt', 'text/plain', true],
+    ['favicon.ico', 'image/vnd.microsoft.icon', true],
+    ['robots.txt', 'text/plain', true],
+    ['workbox-*.js', 'application/javascript', true],
+    ['workbox-*.js.map', 'application/json', true],
+
+    // Not cached
+    ['manifest.webmanifest', 'application/manifest+json', false],
+    ['service-worker.js', 'application/javascript', false],
+    ['service-worker.js.map', 'application/json', false],
+    ['index.html', 'text/html', false],
+  ];
+  for (const uploadPattern of uploadPatterns) {
+    await uploadFolderToS3({
+      rootDir: tmpDir,
+      bucketName,
+      fileNamePattern: uploadPattern[0],
+      contentType: uploadPattern[1],
+      cached: uploadPattern[2],
+    });
+  }
 }
 
 /**
