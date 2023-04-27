@@ -3,6 +3,7 @@ import React from 'react';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { UserConfiguration } from '@medplum/fhirtypes';
+import { useLocation } from 'react-router-dom';
 
 interface bookmarkDialog {
   visible: boolean;
@@ -13,14 +14,10 @@ interface bookmarkDialog {
 export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
   const medplum = useMedplum();
   const config = medplum.getUserConfiguration() as UserConfiguration;
-  console.log(config);
+  const location = useLocation();
   function submitHandler(formData: Record<string, string>): void {
-    console.log(formData);
-
-    console.log('adding bookmark', formData);
-
     const { menuname, bookmarkname: name } = formData;
-    const target = '/Patient';
+    const target = location.pathname + location.search;
     const menu = config?.menu?.find(({ title }) => title === menuname);
 
     if (menu) {
@@ -37,7 +34,6 @@ export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
           console.log(error);
         });
     } else {
-      console.log(config);
       medplum
         .createResource(config)
         .then((response) => console.log('success!!!', response))
