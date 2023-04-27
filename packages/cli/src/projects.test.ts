@@ -24,6 +24,7 @@ describe('CLI Project', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    jest.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient({ storage: new FileSystemStorage() });
     console.log = jest.fn();
@@ -153,6 +154,66 @@ describe('CLI Project', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching(`Error: project bad-projectId not found.`));
   });
 
+  test('Project invite with no login', async () => {
+    try {
+      await main(medplum, ['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
+    } catch (err) {
+      expect(console.error).toBeCalledWith('Unauthenticated: run `npx medplum login` to login');
+    }
+  });
+
+  test('Project invite with no project', async () => {
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        activeLogin: JSON.stringify({
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+        }),
+      })
+    );
+    try {
+      await main(medplum, ['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
+    } catch (err) {
+      expect(console.error).toBeCalledWith('No current project to invite user to');
+    }
+  });
+
+  test('Project invite with no send-email flag', async () => {
+    const project = await medplum.createResource<Project>({ resourceType: 'Project', name: 'test' });
+    (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
+    (fs.readFileSync as unknown as jest.Mock).mockReturnValue(
+      JSON.stringify({
+        activeLogin: JSON.stringify({
+          accessToken: 'abc',
+          refreshToken: 'xyz',
+          profile: {
+            reference: 'Practitioner/123',
+            display: 'Alice Smith',
+          },
+          project: {
+            reference: `Project/${project.id}`,
+            display: 'test',
+          },
+        }),
+      })
+    );
+    await main(medplum, [
+      'node',
+      'index.js',
+      'project',
+      'invite',
+      '--admin',
+      '-r',
+      'Patient',
+      'homer',
+      'simpon',
+      'homer@simpson.com',
+    ]);
+    expect(console.log).not.toBeCalledWith(expect.stringMatching(`Email sent`));
+    expect(console.log).toBeCalledWith(expect.stringMatching(`See your users at https://app.medplum.com/admin/users`));
+  });
+
   test('Project invite with all default role and all flags', async () => {
     const project = await medplum.createResource<Project>({ resourceType: 'Project', name: 'test' });
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
@@ -185,7 +246,7 @@ describe('CLI Project', () => {
       'simpon',
       'homer@simpson.com',
     ]);
-
+    expect(console.log).toBeCalledWith(expect.stringMatching(`Email sent`));
     expect(console.log).toBeCalledWith(expect.stringMatching(`See your users at https://app.medplum.com/admin/users`));
   });
 });

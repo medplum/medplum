@@ -56,11 +56,11 @@ project
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    if (!login.project.reference) {
+    if (!login.project?.reference) {
       throw new Error('No current project to invite user to');
     }
     const projectId = login.project.reference.split('/')[1];
-    await inviteUser(projectId, firstName, lastName, email, options.role, options.sendEmail, options.admin);
+    await inviteUser(projectId, firstName, lastName, email, options.role, !!options.sendEmail, !!options.admin);
   });
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
@@ -80,8 +80,8 @@ async function inviteUser(
   lastName: string,
   email: string,
   resourceType: string,
-  sendEmail?: boolean,
-  admin?: boolean
+  sendEmail: boolean,
+  admin: boolean
 ): Promise<void> {
   const body = {
     firstName,
@@ -91,10 +91,8 @@ async function inviteUser(
     sendEmail,
     admin,
   };
-
   try {
     await medplum.post('admin/projects/' + projectId + '/invite', body);
-    console.log('User created');
     if (sendEmail) {
       console.log('Email sent');
     }
