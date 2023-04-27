@@ -44,17 +44,23 @@ project
   .command('invite')
   .description('Invite a member to your current project (run npx medplum project current to confirm)')
   .arguments('<firstName> <lastName> <email>')
-  .option('-e', '--send-email')
-  .option('-a', '--admin')
-  .addOption(new Option('-r, --role <role>', 'Role of user').choices(['practitioner', 'patient', 'related-person']))
+  .option('--send-email', 'If you want to send the email when inviting the user')
+  .option('--admin', 'If the user you are inviting is an admin')
+  .addOption(
+    new Option('-r, --role <role>', 'Role of user')
+      .choices(['Practitioner', 'Patient', 'RelatedPerson'])
+      .default('Practitioner')
+  )
   .action(async (firstName, lastName, email, options) => {
     const login = medplum.getActiveLogin();
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    const projectId = login.project.id;
-    const resourceType = options.role ? options.role : 'practioner';
-    await inviteUser(projectId, firstName, lastName, email, resourceType, options.sendEmail, options.admin);
+    const project = await medplum.readReference({ reference: login.project.reference });
+    if (!project.id) {
+      throw new Error(' No current project to invite user to');
+    }
+    await inviteUser(project.id, firstName, lastName, email, options.role, options.sendEmail, options.admin);
   });
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
@@ -80,18 +86,19 @@ async function inviteUser(
   const body = {
     firstName,
     lastName,
+    resourceType,
     email,
-    resourceType: resourceType.charAt(0).toUpperCase() + resourceType.slice(1),
     sendEmail,
     admin,
   };
+
   try {
     await medplum.post('admin/projects/' + projectId + '/invite', body);
     console.log('User created');
     if (sendEmail) {
       console.log('Email sent');
     }
-    console.log(`See your users at ${medplum.baseUrl}/admin/users`);
+    console.log('See your users at https://app.medplum.com/admin/users');
   } catch (err) {
     console.log('Error while sending invite ' + err);
   }
