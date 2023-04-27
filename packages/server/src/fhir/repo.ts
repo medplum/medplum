@@ -980,7 +980,15 @@ export class Repository extends BaseRepository implements FhirRepository {
       resources.forEach((r) => {
         seen[`${r.resourceType}/${r.id}`] = true;
       });
+      let depth = 0;
       while (base.length > 0) {
+        // Circuit breaker / load limit
+        if (depth >= 5 || entries.length > 1000) {
+          throw new Error(
+            `Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`
+          );
+        }
+
         const includes =
           searchRequest.include
             ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
@@ -1000,6 +1008,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         });
         base = includedResources.map((entry) => entry.resource) as T[];
         iterateOnly = true; // Only consider :iterate params on iterations after the first
+        depth++;
       }
     }
 

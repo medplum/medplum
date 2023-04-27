@@ -2503,6 +2503,86 @@ describe('FHIR Repo', () => {
     expect(bundle.entry?.map((e) => `${e.resource?.resourceType}/${e.resource?.id}`).sort()).toEqual(expected);
   });
 
+  test('_include depth limit', async () => {
+    const rootPatientIdentifier = randomUUID();
+    const linked6 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+    const linked5 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked6.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    const linked4 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked5.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    const linked3 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked4.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    const linked2 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked3.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    const linked1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      link: [
+        {
+          other: { reference: `Patient/${linked2.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+    await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [
+        {
+          value: rootPatientIdentifier,
+        },
+      ],
+      link: [
+        {
+          other: { reference: `Patient/${linked1.id}` },
+          type: 'replaces',
+        },
+      ],
+    });
+
+    return expect(
+      systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: rootPatientIdentifier,
+          },
+        ],
+        include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
+      })
+    ).rejects.toBeDefined();
+  });
+
   test('DiagnosticReport category with system', async () => {
     const code = randomUUID();
     const dr = await systemRepo.createResource<DiagnosticReport>({
