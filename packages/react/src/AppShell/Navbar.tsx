@@ -1,9 +1,12 @@
-import { createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
-import React from 'react';
+import { Box, Button, createStyles, Input, Navbar as MantineNavbar, Modal, Space, Text } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
+import React, { useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
+import { Form } from '../Form/Form';
+import { error } from 'console';
 
 const useStyles = createStyles((theme) => {
   return {
@@ -73,9 +76,19 @@ export interface NavbarProps {
   closeNavbar: () => void;
 }
 
+interface NavBarState {
+  addBookmarkVisible: boolean;
+}
+
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
+  const medplum = useMedplum();
+  const [state, setState] = useState<NavBarState>({
+    addBookmarkVisible: false,
+  });
+  const stateRef = useRef<NavBarState>(state);
+  stateRef.current = state;
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
     e.stopPropagation();
@@ -92,41 +105,118 @@ export function Navbar(props: NavbarProps): JSX.Element {
     }
   }
 
+  function addBookmark(value: string): void {
+    console.log('adding bookmark', value);
+    medplum
+      .updateResource({
+        resourceType: 'Patient',
+        id: '123',
+        name: [
+          {
+            family: value,
+            given: ['John'],
+          },
+        ],
+      })
+      .then((response) => {
+        console.log(response);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
   return (
-    <MantineNavbar width={{ sm: 250 }} p="xs">
-      <MantineNavbar.Section>
-        <CodeInput
-          key={window.location.pathname}
-          name="resourceType"
-          placeholder="Resource Type"
-          property={{
-            binding: {
-              valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
-            },
-          }}
-          onChange={(newValue) => navigateResourceType(newValue)}
-          creatable={false}
-          maxSelectedValues={0}
-          clearSearchOnChange={true}
-          clearable={false}
-        />
-      </MantineNavbar.Section>
-      {props.menus && (
-        <MantineNavbar.Section grow>
-          {props.menus.map((menu) => (
-            <React.Fragment key={`menu-${menu.title}`}>
-              <Text className={classes.menuTitle}>{menu.title}</Text>
-              {menu.links?.map((link) => (
-                <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
-                  <NavLinkIcon to={link.href} icon={link.icon} />
-                  <span>{link.label}</span>
-                </NavbarLink>
-              ))}
-            </React.Fragment>
-          ))}
+    <>
+      <MantineNavbar width={{ sm: 250 }} p="xs">
+        <MantineNavbar.Section mb="sm">
+          <CodeInput
+            key={window.location.pathname}
+            name="resourceType"
+            placeholder="Resource Type"
+            property={{
+              binding: {
+                valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
+              },
+            }}
+            onChange={(newValue) => navigateResourceType(newValue)}
+            creatable={false}
+            maxSelectedValues={0}
+            clearSearchOnChange={true}
+            clearable={false}
+          />
         </MantineNavbar.Section>
-      )}
-    </MantineNavbar>
+        <MantineNavbar.Section mb="sm">
+          <Button
+            leftIcon={<IconPlus />}
+            variant="white"
+            onClick={() => setState({ ...stateRef.current, addBookmarkVisible: true })}
+          >
+            Add Page to Bookmark
+          </Button>
+        </MantineNavbar.Section>
+        {props.menus && (
+          <MantineNavbar.Section grow>
+            {props.menus.map((menu) => (
+              <React.Fragment key={`menu-${menu.title}`}>
+                <Text className={classes.menuTitle}>{menu.title}</Text>
+                {menu.links?.map((link) => (
+                  <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
+                    <NavLinkIcon to={link.href} icon={link.icon} />
+                    <span>{link.label}</span>
+                  </NavbarLink>
+                ))}
+              </React.Fragment>
+            ))}
+          </MantineNavbar.Section>
+        )}
+      </MantineNavbar>
+      <AddBookmarkModal
+        visible={stateRef.current.addBookmarkVisible}
+        onOk={async (value: string) => {
+          await addBookmark(value);
+          return setState({
+            ...stateRef.current,
+            addBookmarkVisible: false,
+          });
+        }}
+        onCancel={() => {
+          setState({
+            ...stateRef.current,
+            addBookmarkVisible: false,
+          });
+        }}
+      />
+    </>
+  );
+}
+interface AddBookmarkModalProps {
+  visible: boolean;
+  onOk: (value: string) => void;
+  onCancel: () => void;
+  defaultValue?: string;
+}
+export function AddBookmarkModal(props: AddBookmarkModalProps): JSX.Element | null {
+  function submitHandler(formData: Record<string, string>): void {
+    console.log(formData);
+    props.onOk(formData['bookmarkname'] as string);
+    props.onCancel();
+  }
+
+  return (
+    <Modal
+      title="Add Bookmark"
+      closeButtonProps={{ 'aria-label': 'Close' }}
+      opened={props.visible}
+      onClose={props.onCancel}
+    >
+      <Box display="flex" sx={{ justifyContent: 'space-between' }}>
+        <Form onSubmit={submitHandler}>
+          <Input name="bookmarkname" placeholder="bookmark name" />
+          <Button type="submit">Save</Button>
+        </Form>
+      </Box>
+    </Modal>
   );
 }
 
