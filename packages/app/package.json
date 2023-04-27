@@ -11,6 +11,9 @@
     "url": "https://github.com/medplum/medplum.git",
     "directory": "packages/app"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "clean": "rimraf dist",
     "dev": "webpack serve --mode development",
