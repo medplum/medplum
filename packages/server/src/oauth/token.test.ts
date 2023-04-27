@@ -2,7 +2,7 @@ import { OAuthGrantType, OAuthTokenType, createReference, parseJWTPayload, parse
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { SignJWT, generateKeyPair } from 'jose';
+import { SignJWT, generateKeyPair, jwtVerify } from 'jose';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { createClient } from '../admin/client';
@@ -18,12 +18,27 @@ import { hashCode } from './token';
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
   const original = jest.requireActual('jose');
+  let count = 0;
   return {
     ...original,
     jwtVerify: jest.fn((credential: string) => {
       const payload = core.parseJWTPayload(credential);
       if (payload.invalid) {
         throw new Error('Verification failed');
+      } else if (payload.multipleMatching) {
+        count = payload.successVerified ? count + 1 : 0;
+        let error: MockJoseMultipleMatchingError;
+        if (count <= 1) {
+          error = new MockJoseMultipleMatchingError(
+            'multiple matching keys found in the JSON Web Key Set',
+            'ERR_JWKS_MULTIPLE_MATCHING_KEYS'
+          );
+        } else if (count === 2) {
+          error = new MockJoseMultipleMatchingError('Verification fail', 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED');
+        } else {
+          return { payload };
+        }
+        throw error;
       }
       return { payload };
     }),
@@ -98,6 +113,10 @@ describe('OAuth2 Token', () => {
         clientSecret: '456',
       },
     });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -1279,6 +1298,64 @@ describe('OAuth2 Token', () => {
     });
   });
 
+  test('Client assertion multiple matching 3rd check success', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ multipleMatching: true, successVerified: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(200);
+    expect(jwtVerify).toBeCalledTimes(3);
+  });
+
+  test('Client assertion multiple inner error', async () => {
+    // Create a new client
+    const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
+
+    // Set the client jwksUri
+    await systemRepo.updateResource<ClientApplication>({ ...client2, jwksUri: 'https://example.com/jwks.json' });
+
+    // Create the JWT
+    const keyPair = await generateKeyPair('ES384');
+    const jwt = await new SignJWT({ multipleMatching: true })
+      .setProtectedHeader({ alg: 'ES384' })
+      .setIssuedAt()
+      .setIssuer(client2.id as string)
+      .setSubject(client2.id as string)
+      .setAudience('http://localhost:8103/oauth2/token')
+      .setExpirationTime('2h')
+      .sign(keyPair.privateKey);
+    expect(jwt).toBeDefined();
+
+    // Then use the JWT for a client credentials grant
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_assertion_type: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      client_assertion: jwt,
+    });
+    expect(res.status).toBe(400);
+    expect(jwtVerify).toBeCalledTimes(2);
+  });
+
   test('Client assertion invalid assertion type', async () => {
     // Create a new client
     const client2 = await createClient(systemRepo, { project, name: 'Test Client 2' });
@@ -1429,3 +1506,16 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid subject_token_type');
   });
 });
+
+class MockJoseMultipleMatchingError extends Error {
+  code: string;
+  [Symbol.asyncIterator]!: () => AsyncIterableIterator<any>;
+  constructor(message: string, code: string) {
+    super(message);
+    this.name = 'CustomError';
+    this.code = code;
+    this[Symbol.asyncIterator] = async function* () {
+      yield 'key1', yield 'key2';
+    };
+  }
+}

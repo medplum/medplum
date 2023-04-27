@@ -24,6 +24,7 @@ import {
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
+  verifyMultipleMatchingException,
 } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
@@ -462,7 +463,13 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
 
   try {
     await jwtVerify(clientAssertion, JWKS, verifyOptions);
-  } catch (err) {
+  } catch (error: any) {
+    // There are some edge cases where there are multiple matching JWKS
+    // and we need to iterate throught the JWKSMultipleMatchingKeys error
+    // and return the first verified match
+    if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
+      return await verifyMultipleMatchingException(error, clientId, clientAssertion, verifyOptions, client);
+    }
     return { error: 'Invalid client assertion signature' };
   }
 
