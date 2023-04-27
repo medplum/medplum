@@ -7,16 +7,16 @@ import {
   StackResource,
   StackSummary,
 } from '@aws-sdk/client-cloudformation';
+import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { Command } from 'commander';
 import fastGlob from 'fast-glob';
 import { createReadStream, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
 import { tmpdir } from 'os';
 import { join, sep } from 'path';
-import { pipeline } from 'stream';
+import internal, { pipeline } from 'stream';
 import tar from 'tar';
 import { promisify } from 'util';
 
@@ -272,13 +272,48 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
   const tmpDir = mkdtempSync(join(tmpdir(), 'tarball-'));
   try {
     const response = await fetch(tarballUrl);
-    const extractor = tar.x({ cwd: tmpDir });
+    const extractor = safeTarExtractor(tmpDir);
     await pipelineAsync(response.body, extractor);
     return join(tmpDir, 'package', 'dist');
   } catch (error) {
     rmSync(tmpDir, { recursive: true, force: true });
     throw error;
   }
+}
+
+/**
+ * Creates a safe tar extractor that limits the number of files and total size.
+ *
+ * Expanding archive files without controlling resource consumption is security-sensitive
+ *
+ * See: https://sonarcloud.io/organizations/medplum/rules?open=typescript%3AS5042&rule_key=typescript%3AS5042
+ *
+ * @param cwd The current working directory.
+ * @returns A tar file extractor.
+ */
+function safeTarExtractor(cwd: string): internal.Writable {
+  const MAX_FILES = 100;
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
+  let fileCount = 0;
+  let totalSize = 0;
+
+  return tar.x({
+    cwd,
+    filter: (_path, entry) => {
+      fileCount++;
+      if (fileCount > MAX_FILES) {
+        throw 'Reached max. number of files';
+      }
+
+      totalSize += entry.size;
+      if (totalSize > MAX_SIZE) {
+        throw 'Reached max. size';
+      }
+
+      return true;
+    },
+  });
 }
 
 /**
