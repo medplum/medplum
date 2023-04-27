@@ -27,14 +27,17 @@ export default [
     ],
     external: [
       '@aws-sdk/client-cloudformation',
+      '@aws-sdk/client-cloudfront',
       '@aws-sdk/client-ecs',
       '@aws-sdk/client-s3',
       '@medplum/core',
       'commander',
       'dotenv',
+      'fast-glob',
       'fs',
       'node-fetch',
       'path',
+      'tar',
     ],
   },
 ];
