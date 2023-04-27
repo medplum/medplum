@@ -1,5 +1,6 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema } from '../types';
+import { OperationOutcomeError, badRequest } from '../outcomes';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 
@@ -209,29 +210,31 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       searchRequest.count = 0;
       break;
 
-    case '_include':
-      const includeTarget = parseIncludeTarget(value); //eslint-disable-line no-case-declarations
+    case '_include': {
+      const target = parseIncludeTarget(value);
       if (modifier === 'iterate') {
-        includeTarget.modifier = Operator.ITERATE;
+        target.modifier = Operator.ITERATE;
       }
       if (searchRequest.include) {
-        searchRequest.include.push(includeTarget);
+        searchRequest.include.push(target);
       } else {
-        searchRequest.include = [includeTarget];
+        searchRequest.include = [target];
       }
       break;
+    }
 
-    case '_revinclude':
-      const revincludeTarget = parseIncludeTarget(value); //eslint-disable-line no-case-declarations
+    case '_revinclude': {
+      const target = parseIncludeTarget(value);
       if (modifier === 'iterate') {
-        revincludeTarget.modifier = Operator.ITERATE;
+        target.modifier = Operator.ITERATE;
       }
       if (searchRequest.revInclude) {
-        searchRequest.revInclude.push(revincludeTarget);
+        searchRequest.revInclude.push(target);
       } else {
-        searchRequest.revInclude = [revincludeTarget];
+        searchRequest.revInclude = [target];
       }
       break;
+    }
 
     case '_fields':
       searchRequest.fields = value.split(',');
@@ -369,13 +372,15 @@ function parseIncludeTarget(input: string): IncludeTarget {
 
   parts.forEach((p) => {
     if (p === '*') {
-      throw new Error(`'*' is not supported as a value for search inclusion parameters`);
+      throw new OperationOutcomeError(badRequest(`'*' is not supported as a value for search inclusion parameters`));
     }
   });
 
   if (parts.length === 1) {
     // Full wildcard, not currently supported
-    throw new Error(`Invalid include value '${input}': must be of the form ResourceType:search-parameter`);
+    throw new OperationOutcomeError(
+      badRequest(`Invalid include value '${input}': must be of the form ResourceType:search-parameter`)
+    );
   } else if (parts.length === 2) {
     return {
       resourceType: parts[0],
@@ -388,7 +393,7 @@ function parseIncludeTarget(input: string): IncludeTarget {
       targetType: parts[2],
     };
   } else {
-    throw new Error(`Invalid include value '${input}'`);
+    throw new OperationOutcomeError(badRequest(`Invalid include value '${input}'`));
   }
 }
 
