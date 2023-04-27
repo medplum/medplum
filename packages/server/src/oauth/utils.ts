@@ -23,7 +23,7 @@ import {
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { timingSafeEqual } from 'crypto';
-import { JWTPayload } from 'jose';
+import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
 import { authenticator } from 'otplib';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
@@ -714,4 +714,31 @@ export async function getExternalUserInfo(
     logger.warn('Failed to verify code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+}
+
+interface ValidationAssertion {
+  clientId?: string;
+  clientSecret?: string;
+  error?: string;
+}
+export async function verifyMultipleMatchingException(
+  publicKeys: AsyncIterableIterator<any>,
+  clientId: string,
+  clientAssertion: string,
+  verifyOptions: VerifyOptions,
+  client: ClientApplication
+): Promise<ValidationAssertion> {
+  for await (const publicKey of publicKeys) {
+    try {
+      await jwtVerify(clientAssertion, publicKey, verifyOptions);
+      // If we validate successfully inside the catch we can validate the client assertion
+      return { clientId, clientSecret: client.secret };
+    } catch (innerError: any) {
+      if (innerError?.code === 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED') {
+        continue;
+      }
+      return { error: innerError.code };
+    }
+  }
+  return { error: 'ERR_JWS_SIGNATURE_VERIFICATION_FAILED' };
 }
