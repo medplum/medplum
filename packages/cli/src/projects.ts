@@ -56,11 +56,11 @@ project
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    const project = await medplum.readReference({ reference: login.project.reference });
-    if (!project.id) {
-      throw new Error(' No current project to invite user to');
+    if (!login.project.reference) {
+      throw new Error('No current project to invite user to');
     }
-    await inviteUser(project.id, firstName, lastName, email, options.role, options.sendEmail, options.admin);
+    const projectId = login.project.reference.split('/')[1];
+    await inviteUser(projectId, firstName, lastName, email, options.role, options.sendEmail, options.admin);
   });
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
