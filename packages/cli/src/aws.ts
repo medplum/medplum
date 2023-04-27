@@ -16,9 +16,8 @@ import { createReadStream, mkdtempSync, readFileSync, readdirSync, rmSync, write
 import fetch from 'node-fetch';
 import { tmpdir } from 'os';
 import { join, sep } from 'path';
-import internal from 'stream';
 import { pipeline } from 'stream/promises';
-import tar from 'tar';
+import { safeTarExtractor } from './utils';
 
 interface MedplumStackDetails {
   stack: Stack;
@@ -245,41 +244,6 @@ async function downloadNpmPackage(packageName: string, version: string): Promise
     rmSync(tmpDir, { recursive: true, force: true });
     throw error;
   }
-}
-
-/**
- * Creates a safe tar extractor that limits the number of files and total size.
- *
- * Expanding archive files without controlling resource consumption is security-sensitive
- *
- * See: https://sonarcloud.io/organizations/medplum/rules?open=typescript%3AS5042&rule_key=typescript%3AS5042
- *
- * @param cwd The current working directory.
- * @returns A tar file extractor.
- */
-function safeTarExtractor(cwd: string): internal.Writable {
-  const MAX_FILES = 100;
-  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
-
-  let fileCount = 0;
-  let totalSize = 0;
-
-  return tar.x({
-    cwd,
-    filter: (_path, entry) => {
-      fileCount++;
-      if (fileCount > MAX_FILES) {
-        throw new Error('Tar extractor reached max number of files');
-      }
-
-      totalSize += entry.size;
-      if (totalSize > MAX_SIZE) {
-        throw new Error('Tar extractor reached max size');
-      }
-
-      return true;
-    },
-  });
 }
 
 /**

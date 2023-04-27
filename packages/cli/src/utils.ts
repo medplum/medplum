@@ -1,7 +1,9 @@
 import { MedplumClient } from '@medplum/core';
-import { resolve } from 'path';
-import { existsSync, readFileSync, writeFile } from 'fs';
 import { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import { existsSync, readFileSync, writeFile } from 'fs';
+import { resolve } from 'path';
+import internal from 'stream';
+import tar from 'tar';
 
 interface MedplumConfig {
   readonly bots?: MedplumBotConfig[];
@@ -126,4 +128,39 @@ function addBotToConfig(botConfig: MedplumBotConfig): void {
 
 function escapeRegex(str: string): string {
   return str.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
+}
+
+/**
+ * Creates a safe tar extractor that limits the number of files and total size.
+ *
+ * Expanding archive files without controlling resource consumption is security-sensitive
+ *
+ * See: https://sonarcloud.io/organizations/medplum/rules?open=typescript%3AS5042&rule_key=typescript%3AS5042
+ *
+ * @param destinationDir The destination directory where all files will be extracted.
+ * @returns A tar file extractor.
+ */
+export function safeTarExtractor(destinationDir: string): internal.Writable {
+  const MAX_FILES = 100;
+  const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+
+  let fileCount = 0;
+  let totalSize = 0;
+
+  return tar.x({
+    cwd: destinationDir,
+    filter: (_path, entry) => {
+      fileCount++;
+      if (fileCount > MAX_FILES) {
+        throw new Error('Tar extractor reached max number of files');
+      }
+
+      totalSize += entry.size;
+      if (totalSize > MAX_SIZE) {
+        throw new Error('Tar extractor reached max size');
+      }
+
+      return true;
+    },
+  });
 }
