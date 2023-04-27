@@ -31,6 +31,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  Resource,
   ResourceType,
   SearchParameter,
   ServiceRequest,
@@ -45,6 +46,7 @@ import { getClient } from '../database';
 import { bundleContains } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { Repository, systemRepo } from './repo';
+import { SearchResults } from 'hibp';
 
 jest.mock('hibp');
 jest.mock('ioredis');
@@ -2581,6 +2583,27 @@ describe('FHIR Repo', () => {
         include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
       })
     ).rejects.toBeDefined();
+  });
+
+  test('_include on empty search results', async () => {
+    return expect(
+      systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: randomUUID(),
+          },
+        ],
+        include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
+      })
+    ).resolves.toMatchObject<Bundle<Resource>>({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+      total: undefined,
+    });
   });
 
   test('DiagnosticReport category with system', async () => {
