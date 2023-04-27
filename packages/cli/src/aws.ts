@@ -403,18 +403,26 @@ async function uploadFileToS3(
   await s3Client.send(new PutObjectCommand(putObjectParams));
 }
 
+/**
+ * Creates a CloudFront invalidation to clear the cache for all files.
+ * This is not strictly necessary, but it helps to ensure that the latest version of the app is served.
+ * In a perfect world, every deploy is clean, and hashed resources should be cached forever.
+ * However, we do not recalculate hashes after variable replacements.
+ * So if variables change, we need to invalidate the cache.
+ * @param distributionId The CloudFront distribution ID.
+ */
 async function createInvalidation(distributionId: string): Promise<void> {
-  const params = {
-    DistributionId: distributionId,
-    InvalidationBatch: {
-      CallerReference: `invalidate-all-${Date.now()}`,
-      Paths: {
-        Quantity: 1,
-        Items: ['/*'],
+  const response = await cloudFrontClient.send(
+    new CreateInvalidationCommand({
+      DistributionId: distributionId,
+      InvalidationBatch: {
+        CallerReference: `invalidate-all-${Date.now()}`,
+        Paths: {
+          Quantity: 1,
+          Items: ['/*'],
+        },
       },
-    },
-  };
-
-  const response = await cloudFrontClient.send(new CreateInvalidationCommand(params));
+    })
+  );
   console.log(`Created invalidation with ID: ${response.Invalidation?.Id}`);
 }

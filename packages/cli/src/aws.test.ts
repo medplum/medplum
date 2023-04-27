@@ -13,12 +13,14 @@ import fetch from 'node-fetch';
 import { Readable, Writable } from 'stream';
 import tar from 'tar';
 import { main } from '.';
+import fastGlob from 'fast-glob';
 
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 
 jest.mock('fs', () => ({
+  createReadStream: jest.fn(),
   existsSync: jest.fn(),
   mkdtempSync: jest.fn(() => '/tmp/'),
   readdirSync: jest.fn(() => []),
@@ -130,6 +132,13 @@ describe('AWS commands', () => {
           PhysicalResourceId: 'sg-123',
           Timestamp: new Date(),
         },
+        {
+          ResourceType: 'AWS::CloudFront::Distribution',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'FrontEndAppDistribution',
+          PhysicalResourceId: '123',
+          Timestamp: new Date(),
+        },
       ],
     });
 
@@ -180,29 +189,46 @@ describe('AWS commands', () => {
   test('Update app command', async () => {
     console.log = jest.fn();
 
-    const mockJson = { dist: { tarball: 'https://example.com/tarball.tar.gz' } };
-
-    const emptyReadableStream = new Readable({
-      read() {
-        this.push(null); // Signal the end of the stream
-      },
-    });
-
-    const sinkWritableStream = new Writable({
-      write(chunk, encoding, callback) {
-        callback();
-      },
-    });
-
+    // Mock the 2 fetch requests
     (fetch as jest.MockedFunction<typeof fetch>)
-      .mockResolvedValueOnce(new NodeFetchResponse(JSON.stringify(mockJson), { status: 200 }))
-      .mockResolvedValueOnce(new NodeFetchResponse(emptyReadableStream, { status: 200 }));
+      // First request is for the package metadata
+      .mockResolvedValueOnce(
+        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
+      )
+      // Second request is for the tarball
+      .mockResolvedValueOnce(
+        new NodeFetchResponse(
+          new Readable({
+            read() {
+              this.push(null); // Signal the end of the stream
+            },
+          }),
+          { status: 200 }
+        )
+      );
 
-    (tar.x as jest.Mock).mockReturnValueOnce(sinkWritableStream);
+    // Mock the tar extract
+    (tar.x as jest.Mock).mockReturnValueOnce(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      })
+    );
+
+    // Mock the glob search for files to upload
+    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
 
     await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
+
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toBeCalledWith('Done');
+  });
+
+  test('Update app not found', async () => {
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
+    expect(console.log).toBeCalledWith('Stack not found');
   });
 });
