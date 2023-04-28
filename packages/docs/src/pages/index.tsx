@@ -59,7 +59,7 @@ export default function IndexPage(): JSX.Element {
               <div className={styles.cardItem}>
                 <h3>Build with Modern Tools</h3>
                 <p>
-                  Use modern <strong>Typescript</strong>, <strong>React</strong>, and <strong>Node</strong> to build
+                  Use modern <strong>TypeScript</strong>, <strong>React</strong>, and <strong>Node</strong> to build
                   secure, data driven healthcare applications.
                 </p>
                 <a href="https://github.com/medplum/medplum" target="_blank" className={styles.cardButton}>

@@ -8,7 +8,7 @@ Health insurance eligibility checks are a way to fetch information about a given
 
 Insurance billing is complex, and the fact that there are approximately 300 medical billing companies in the US speaks to that. This example will walk through a very simple eligibility check to demonstrate the concepts and data structures.
 
-_This guide includes an example of a bot written in Typescript, deployed using the [Medplum CLI](https://github.com/medplum/medplum-demo-bots)._
+_This guide includes an example of a bot written in TypeScript, deployed using the [Medplum CLI](https://github.com/medplum/medplum-demo-bots)._
 
 ## This guide will show you
 

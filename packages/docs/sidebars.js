@@ -179,7 +179,7 @@ const sidebars = {
     'api/index',
     {
       type: 'category',
-      label: 'Typescript SDK',
+      label: 'TypeScript SDK',
       link: { type: 'doc', id: 'sdk/index' },
       items: [
         { type: 'doc', id: 'sdk/classes/MedplumClient', label: 'MedplumClient' },

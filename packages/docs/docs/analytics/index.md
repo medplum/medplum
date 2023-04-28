@@ -24,7 +24,7 @@ When designing your analytics program, it can be useful to consider the followin
 | Ad-hoc clinical reports                               | Retrospective    | FHIR Datastore, including [Bulk](/docs/api/fhir/operations/bulk-fhir.mdx) and Batch APIs |
 | Healthcare standard reports (e.g. HEDIS, CMS Queries) | Retrospective    | Bots for data quality, dashboard apps to monitor                                         |
 | Clinical decision support                             | Prospective      | Bots to produce event driven scores, notifications                                       |
-| Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, Typescript SDK for dashboarding                     |
+| Machine Learning, predictive modeling                 | Prospective      | Bots to integrate with ML pipelines, TypeScript SDK for dashboarding                     |
 
 ## Ad-Hoc Clinical Reports
 

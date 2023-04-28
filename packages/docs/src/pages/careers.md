@@ -70,7 +70,7 @@ Engineers at Medplum are comfortable working on new products under fluid conditi
 
 - Design, develop, and maintain infrastructure, features and enhancements product for an open source project
 - Collaborate with other engineers to deliver new features and improvements to the product in a highly regulated environment
-- Write clean, maintainable, and efficient code and tests using modern Typescript and React best practices
+- Write clean, maintainable, and efficient code and tests using modern TypeScript and React best practices
 - Contribute to and maintain infrastructure as code for major cloud platforms like AWS, GCP and Microsoft Azure
 - Identify and troubleshoot issues effectively for technical infrastructure
 - Stay up-to-date with the latest advancements in technical infrastructure, performance, security and data management

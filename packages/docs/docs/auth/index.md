@@ -32,8 +32,8 @@ The following diagram shows an overview of the process. Endpoints are provided t
 
 ## Resources and Reference
 
-- See [authentication functions](./sdk/classes/MedplumClient#authentication) in the Typescript SDK
-- [User profile](./sdk/classes/MedplumClient#user-profile) in the Typescript SDK
+- See [authentication functions](./sdk/classes/MedplumClient#authentication) in the TypeScript SDK
+- [User profile](./sdk/classes/MedplumClient#user-profile) in the TypeScript SDK
 - [OAuth endpoints](./api/oauth) reference
 - [Medplum resources](./api/fhir/medplum) related to authentication and authorization
 - [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component

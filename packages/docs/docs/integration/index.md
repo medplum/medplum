@@ -1,6 +1,6 @@
 # Integration
 
-Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions/index.md), [authentication and authorization](/docs/auth/index.md) and the [Typescript SDK](/docs/sdk/).
+Complex integrations are built by composing [bots](/docs/bots/), [subscriptions](/docs/subscriptions/index.md), [authentication and authorization](/docs/auth/index.md) and the [TypeScript SDK](/docs/sdk/).
 
 - [Integration Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aintegration) on Github show the code that powers many of the integrations.
 - [Audit and Logging Features](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aaudit-logging) show several security and observability integrations.

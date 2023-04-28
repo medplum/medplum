@@ -106,7 +106,7 @@ import { Patient } from '@medplum/fhirtypes';
 const patient = event.input as Patient;
 ```
 
-This first line casts the contents of event.input of type `Patient`. This allows the rest of the bot code to take advantage of Typescript's strong type system, along with IDE autocomplete and ESLint verification. Medplum provides type definitions for all FHIR resources in the `@medplum/fhirtypes` package.
+This first line casts the contents of event.input of type `Patient`. This allows the rest of the bot code to take advantage of TypeScript's strong type system, along with IDE autocomplete and ESLint verification. Medplum provides type definitions for all FHIR resources in the `@medplum/fhirtypes` package.
 
 ```ts
 const firstName = patient.name?.[0]?.given?.[0];
