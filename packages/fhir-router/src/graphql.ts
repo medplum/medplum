@@ -3,6 +3,7 @@ import {
   badRequest,
   buildTypeName,
   capitalize,
+  DEFAULT_SEARCH_COUNT,
   evalFhirPathTyped,
   Filter,
   forbidden,
@@ -111,6 +112,19 @@ interface GraphQLContext {
   dataLoader: DataLoader<Reference, Resource>;
 }
 
+interface ConnectionResponse {
+  count?: number;
+  offset?: number;
+  pageSize?: number;
+  edges?: ConnectionEdge[];
+}
+
+interface ConnectionEdge {
+  mode?: string;
+  score?: number;
+  resource?: Resource;
+}
+
 /**
  * Handles FHIR GraphQL requests.
  *
@@ -207,6 +221,14 @@ function buildRootSchema(): GraphQLSchema {
       type: new GraphQLList(graphQLType),
       args: buildSearchArgs(resourceType),
       resolve: resolveBySearch,
+    };
+
+    // FHIR GraphQL Connection API
+    fields[resourceType + 'Connection'] = {
+      // type: new GraphQLList(graphQLType),
+      type: buildConnectionType(resourceType, graphQLType),
+      args: buildSearchArgs(resourceType),
+      resolve: resolveByConnectionApi,
     };
   }
 
@@ -495,6 +517,33 @@ function getPropertyType(elementDefinition: ElementDefinition, typeName: string)
   return graphqlType;
 }
 
+function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: GraphQLOutputType): GraphQLOutputType {
+  return new GraphQLObjectType({
+    name: resourceType + 'Connection',
+    fields: {
+      count: { type: GraphQLInt },
+      offset: { type: GraphQLInt },
+      pageSize: { type: GraphQLInt },
+      first: { type: GraphQLString },
+      previous: { type: GraphQLString },
+      next: { type: GraphQLString },
+      last: { type: GraphQLString },
+      edges: {
+        type: new GraphQLList(
+          new GraphQLObjectType({
+            name: resourceType + 'ConnectionEdge',
+            fields: {
+              mode: { type: GraphQLString },
+              score: { type: GraphQLFloat },
+              resource: { type: resourceGraphQLType },
+            },
+          })
+        ),
+      },
+    },
+  });
+}
+
 /**
  * GraphQL data loader for search requests.
  * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
@@ -513,10 +562,46 @@ async function resolveBySearch(
   info: GraphQLResolveInfo
 ): Promise<Resource[] | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 4) as ResourceType; // Remove "List"
+  const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
   const searchRequest = parseSearchArgs(resourceType, source, args);
   const bundle = await ctx.repo.search(searchRequest);
   return bundle.entry?.map((e) => e.resource as Resource);
+}
+
+/**
+ * GraphQL data loader for search requests.
+ * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
+ * The search args should be FHIR search parameters.
+ * @param source The source/root.  This should always be null for our top level readers.
+ * @param args The GraphQL search arguments.
+ * @param ctx The GraphQL context.
+ * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
+ * @returns Promise to read the resoures for the query.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveByConnectionApi(
+  source: any,
+  args: Record<string, string>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<ConnectionResponse | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Connection'.length) as ResourceType;
+  const searchRequest = parseSearchArgs(resourceType, source, args);
+  if (isFieldRequested(info, 'count')) {
+    searchRequest.total = 'accurate';
+  }
+  const bundle = await ctx.repo.search(searchRequest);
+  return {
+    count: bundle.total,
+    offset: searchRequest.offset || 0,
+    pageSize: searchRequest.count || DEFAULT_SEARCH_COUNT,
+    edges: bundle.entry?.map((e) => ({
+      mode: e.search?.mode,
+      score: e.search?.score,
+      resource: e.resource as Resource,
+    })),
+  };
 }
 
 /**
@@ -691,6 +776,20 @@ const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
  */
 function getDepth(path: ReadonlyArray<string | number>): number {
   return path.filter((p) => p === 'selections').length;
+}
+
+/**
+ * Returns true if the field is requested in the GraphQL query.
+ * @param info The GraphQL resolve info.  This includes the field name.
+ * @param fieldName The field name to check.
+ * @returns True if the field is requested in the GraphQL query.
+ */
+function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): boolean {
+  return info.fieldNodes.some((fieldNode) =>
+    fieldNode.selectionSet?.selections.some((selection) => {
+      return selection.kind === 'Field' && selection.name.value === fieldName;
+    })
+  );
 }
 
 /**
