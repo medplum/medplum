@@ -29,7 +29,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       medplum
         .updateResource(config)
         .then(async () => {
-          await medplum.refreshProfile();
+          medplum.dispatchEvent({ type: 'change' });
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
