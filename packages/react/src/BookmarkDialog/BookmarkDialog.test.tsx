@@ -121,11 +121,26 @@ describe('BookmarkDialog', () => {
         </MedplumProvider>
       </MemoryRouter>
     );
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
+    const bookmarkInput = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.focus(menuInput);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(menuInput, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(menuInput, { key: 'Enter', code: 'Enter' });
+    });
 
     // Enter random text
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
+      fireEvent.change(bookmarkInput, { target: { value: 'Test' } });
     });
 
     await act(async () => {
