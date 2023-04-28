@@ -7,13 +7,13 @@ import { useLocation } from 'react-router-dom';
 import { normalizeErrorString } from '@medplum/core';
 import { showNotification } from '@mantine/notifications';
 
-interface bookmarkDialog {
+interface BookmarkDialogProps {
   visible: boolean;
   onOk: () => void;
   onCancel: () => void;
   defaultValue?: string;
 }
-export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
+export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
   const config = medplum.getUserConfiguration() as UserConfiguration;
   const location = useLocation();
@@ -29,13 +29,16 @@ export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
     if (config?.id) {
       medplum
         .updateResource(config)
-        .then(() => showNotification({ color: 'green', message: 'Success' }))
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .then(async () => {
+          await medplum.refreshProfile();
+          showNotification({ color: 'green', message: 'Success' });
+        })
+        .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     } else {
       medplum
         .createResource(config)
         .then(() => showNotification({ color: 'green', message: 'Success' }))
-        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+        .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
     props.onOk();
     props.onCancel();
@@ -59,10 +62,10 @@ export function BookmarkDialog(props: bookmarkDialog): JSX.Element | null {
   );
 }
 
-interface selectMenuProps {
+interface SelectMenuProps {
   config: UserConfiguration | undefined;
 }
-function SelectMenu(props: selectMenuProps): JSX.Element {
+function SelectMenu(props: SelectMenuProps): JSX.Element {
   function userConfigToMenu(config: UserConfiguration | undefined): [] {
     return config?.menu?.map((menu) => menu.title) as [];
   }

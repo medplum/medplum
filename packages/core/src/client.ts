@@ -2056,7 +2056,7 @@ export class MedplumClient extends EventTarget {
     this.storage.setObject('logins', logins);
   }
 
-  private async refreshProfile(): Promise<ProfileResource | undefined> {
+  async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
       this.get('auth/me')
         .then((result) => {
