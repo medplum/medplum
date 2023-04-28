@@ -35,6 +35,7 @@ Review and refer to the following items in preparation for your inspection.
 - GEN.43450 Calculated Patient Data Verification Phase II
   - [ ] Implementation typically done through [Bots](https://app.medplum.com/Bot)
   - [ ] All calculations that include reportable results must have [unit tests](/docs/bots/unit-testing-bots)
+  - [ ] QC Samples and quality control runs are typically represented as ServiceRequests or Observations
 - GEN.43750 Specimen Quality Comment Phase II
   - [ ] Specimen related queries and reports
     - [ ] All [Specimens](https://app.medplum.com/Specimen)
@@ -47,7 +48,7 @@ Review and refer to the following items in preparation for your inspection.
     - [ ] [Corrected reports](https://app.medplum.com/DiagnosticReport?_count=20&_fields=id,_lastUpdated,subject,code,status&_offset=0&_sort=-_lastUpdated&status=corrected)
   - Automatic validation on Medplum is often implemented via Bot
   - [ ] In most implementations [Bots](https://app.medplum.com/Bot) perform validation or pre-validation calculations
-  - [ ] Panel Management is done via [PlanDefinition](https://app.medplum.com/PlanDefinition) resources
-  - [ ] Call logs for patient contact are often implemented as [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse)
+  - [ ] Panel Management is stored as [PlanDefinition](https://app.medplum.com/PlanDefinition) resources, including reference ranges
+  - [ ] Call logs (also known as Panic Logs) for patient contact are often implemented as [CommunicationRequest](https://app.medplum.com/CommunicationRequest?_count=20&_fields=id,_lastUpdated,category,patient&_offset=0&_sort=-_lastUpdated)
 - GEN.43837 Downtime Result Reporting Phase II
   - Refer to documentation on [availability](/security#availability)
