@@ -1,6 +1,6 @@
 import { Command, Option } from 'commander';
 import { medplum } from '.';
-import { MedplumClient, LoginState } from '@medplum/core';
+import { MedplumClient, LoginState, InviteBody } from '@medplum/core';
 
 export const project = new Command('project');
 
@@ -59,8 +59,17 @@ project
     if (!login.project?.reference) {
       throw new Error('No current project to invite user to');
     }
+
     const projectId = login.project.reference.split('/')[1];
-    await inviteUser(projectId, firstName, lastName, email, options.role, !!options.sendEmail, !!options.admin);
+    const inviteBody: InviteBody = {
+      resourceType: options.role,
+      firstName,
+      lastName,
+      email,
+      sendEmail: !!options.sendEmail,
+      admin: !!options.admin,
+    };
+    await inviteUser(projectId, inviteBody);
   });
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
@@ -74,26 +83,10 @@ async function switchProject(medplum: MedplumClient, projectId: string): Promise
   }
 }
 
-async function inviteUser(
-  projectId: string,
-  firstName: string,
-  lastName: string,
-  email: string,
-  resourceType: string,
-  sendEmail: boolean,
-  admin: boolean
-): Promise<void> {
-  const body = {
-    firstName,
-    lastName,
-    resourceType,
-    email,
-    sendEmail,
-    admin,
-  };
+async function inviteUser(projectId: string, inviteBody: InviteBody): Promise<void> {
   try {
-    await medplum.post('admin/projects/' + projectId + '/invite', body);
-    if (sendEmail) {
+    await medplum.invite(projectId, inviteBody);
+    if (inviteBody.sendEmail) {
       console.log('Email sent');
     }
     console.log('See your users at https://app.medplum.com/admin/users');

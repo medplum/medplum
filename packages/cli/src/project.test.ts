@@ -20,20 +20,13 @@ jest.mock('fs', () => ({
 let medplum: MedplumClient;
 
 describe('CLI Project', () => {
-  const env = process.env;
-
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    process.env = { ...env };
     medplum = new MockClient({ storage: new FileSystemStorage() });
     console.log = jest.fn();
     console.error = jest.fn();
     process.exit = jest.fn() as never;
-  });
-
-  afterEach(() => {
-    process.env = env;
   });
 
   test('Project List', async () => {
