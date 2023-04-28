@@ -942,4 +942,38 @@ describe('GraphQL', () => {
     expect(check3.extension).toHaveLength(1);
     expect(check3.extension[0]).toMatchObject(p3.extension?.[1] as Extension);
   });
+
+  test('Connection API', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          count offset pageSize
+          edges {
+            mode, score, resource { id name { given } }
+          }
+          first previous next last
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection).toMatchObject({
+      count: 1,
+      offset: 0,
+      pageSize: 20,
+      edges: [{ resource: { name: [{ given: ['Alice'] }] } }],
+    });
+  });
 });

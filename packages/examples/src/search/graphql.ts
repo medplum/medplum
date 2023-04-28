@@ -613,3 +613,88 @@ response = {
 };
 
 console.log(response);
+
+/*
+ * Connection API
+ */
+
+/*
+// start-block ConnectionApiGraphQL
+{
+  PatientConnection {
+    count
+    edges {
+      resource {
+        resourceType
+        id
+        name { given family }
+      }
+    }
+  }
+}
+// end-block ConnectionApiGraphQL
+*/
+
+/*
+// start-block ConnectionApiCurl
+curl -X POST 'https://api.medplum.com/fhir/R4/$graphql' \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $your_access_token" \
+  -d '{"query":"{ PatientConnection count { edges { resource { resourceType id name { given family } } } } }"}'
+// end-block ConnectionApiCurl
+*/
+
+// start-block ConnectionApiTS
+await medplum.graphql(`
+{
+  PatientConnection {
+    count
+    edges {
+      resource {
+        resourceType
+        id
+        name { given family }
+      }
+    }
+  }
+}
+`);
+// end-block ConnectionApiTS
+
+response = {
+  // start-block ConnectionApiResponse
+  data: {
+    PatientConnection: {
+      count: 2,
+      edges: [
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'example-patient-id-1',
+            name: [
+              {
+                given: ['Bart'],
+                family: 'Simpson',
+              },
+            ],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: 'example-patient-id-2',
+            name: [
+              {
+                given: ['Homer'],
+                family: 'Simpson',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  },
+  // end-block ConnectionApiResponse
+};
+
+console.log(response);
