@@ -34,17 +34,11 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
         })
         .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     } else {
-      // config.name = 'default'; // is optional
-      // medplum
-      //   .createResource(config)
-      //   .then(async () => {
-      //     // const userConfigReference = createReference(response);
-      //     // ProjectMembership.UserConfiguration = userConfigReference;
-      //     // medplum.updateResource(ProjectMembership)
-      //     // await medplum.refreshProfile();
-      //     showNotification({ color: 'green', message: 'Success' });
-      //   })
-      //   .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      // get Membership Profile for current user/login (todo: where to get Project Membership ID)
+      //  should we search for it?, it can be passed through user login
+      // create user config resource
+      // create user config reference and append to Membership profile
+      // update membership profile for user
       showNotification({ color: 'red', message: 'missing UserConfiguration' });
     }
     props.onOk();

@@ -4,10 +4,16 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { BookmarkDialog } from './BookmarkDialog';
+import { showNotification } from '@mantine/notifications';
+
+jest.mock('@mantine/notifications');
 
 const medplum = new MockClient();
 
 describe('BookmarkDialog', () => {
+  beforeEach(() => {
+    (showNotification as unknown as jest.Mock).mockClear();
+  });
   test('Render not visible', () => {
     render(
       <MemoryRouter initialEntries={['/']} initialIndex={0}>
@@ -50,7 +56,84 @@ describe('BookmarkDialog', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     });
+    expect(onOk).toHaveBeenCalled();
 
     expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
+  });
+
+  test('Render and Cancel', async () => {
+    const onOk = jest.fn();
+    const onCancel = jest.fn();
+    render(
+      <MemoryRouter initialEntries={['/']} initialIndex={0}>
+        <MedplumProvider medplum={medplum}>
+          <BookmarkDialog visible={true} onCancel={onCancel} onOk={onOk} />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    });
+    expect(onOk).not.toHaveBeenCalled();
+    expect(onCancel).toHaveBeenCalled();
+
+    expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
+  });
+
+  test('Render and update existing config', async () => {
+    const onOk = jest.fn();
+    const onCancel = jest.fn();
+    medplum.getUserConfiguration = jest.fn(() => {
+      return {
+        resourceType: 'UserConfiguration',
+        id: 'test-234341',
+        menu: [
+          {
+            title: 'Favorites',
+            link: [
+              { name: 'Patients', target: '/Patient' },
+              { name: 'Active Orders', target: '/ServiceRequest?status=active' },
+              { name: 'Completed Orders', target: '/ServiceRequest?status=completed' },
+            ],
+          },
+          {
+            title: 'Admin',
+            link: [
+              { name: 'Project', target: '/admin/project' },
+              { name: 'Batch', target: '/batch' },
+            ],
+          },
+        ],
+      };
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']} initialIndex={0}>
+        <MedplumProvider medplum={medplum}>
+          <BookmarkDialog visible={true} onCancel={onCancel} onOk={onOk} />
+        </MedplumProvider>
+      </MemoryRouter>
+    );
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+    expect(onOk).toHaveBeenCalled();
+
+    expect(screen.getByPlaceholderText('bookmark name')).toBeDefined();
+    expect(showNotification).toHaveBeenCalled();
   });
 });
