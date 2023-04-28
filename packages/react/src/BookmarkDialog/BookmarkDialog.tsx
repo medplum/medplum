@@ -1,4 +1,4 @@
-import { Button, Group, Modal, Select, TextInput } from '@mantine/core';
+import { Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
@@ -46,13 +46,15 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       onClose={props.onCancel}
     >
       <Form onSubmit={submitHandler}>
-        <SelectMenu config={config}></SelectMenu>
-        <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="bookmark name" withAsterisk />
-        <Group position="right" mt="xl">
-          <Button mt="sm" type="submit">
-            OK
-          </Button>
-        </Group>
+        <Stack>
+          <SelectMenu config={config}></SelectMenu>
+          <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="bookmark name" withAsterisk />
+          <Group position="right">
+            <Button mt="sm" type="submit">
+              OK
+            </Button>
+          </Group>
+        </Stack>
       </Form>
     </Modal>
   );
