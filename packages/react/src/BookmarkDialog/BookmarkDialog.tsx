@@ -1,6 +1,6 @@
 import { Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { deepClone, normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import React from 'react';
 import { useLocation } from 'react-router-dom';
@@ -20,14 +20,15 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   function submitHandler(formData: Record<string, string>): void {
     const { menuname, bookmarkname: name } = formData;
     const target = location.pathname + location.search;
-    const menu = config?.menu?.find(({ title }) => title === menuname);
+    const newConfig = deepClone(config) as UserConfiguration;
+    const menu = newConfig?.menu?.find(({ title }) => title === menuname);
 
     if (menu) {
       menu?.link?.push({ name, target });
     }
 
     medplum
-      .updateResource(config)
+      .updateResource(newConfig)
       .then(async () => {
         medplum.dispatchEvent({ type: 'change' });
         showNotification({ color: 'green', message: 'Success' });
