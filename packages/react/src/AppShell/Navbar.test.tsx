@@ -158,4 +158,49 @@ describe('Navbar', () => {
 
     expect(navigateMock).toBeCalledWith('/test-code');
   });
+
+  test('Add Bookmark render and submit', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(input).not.toBeVisible();
+  });
+
+  test('Add Bookmark close', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    });
+
+    expect(input).not.toBeVisible();
+  });
 });

@@ -48,7 +48,6 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
       showNotification({ color: 'red', message: 'missing UserConfiguration' });
     }
     props.onOk();
-    props.onCancel();
   }
 
   return (
