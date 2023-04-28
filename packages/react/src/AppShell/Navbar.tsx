@@ -2,10 +2,10 @@ import { Button, createStyles, Navbar as MantineNavbar, Space, Text } from '@man
 import { IconPlus } from '@tabler/icons-react';
 import React, { useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
+import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
-import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 
 const useStyles = createStyles((theme) => {
   return {

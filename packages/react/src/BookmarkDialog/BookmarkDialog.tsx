@@ -1,11 +1,11 @@
 import { Box, Button, Modal, Select, TextInput } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
+import { UserConfiguration } from '@medplum/fhirtypes';
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
-import { UserConfiguration } from '@medplum/fhirtypes';
-import { useLocation } from 'react-router-dom';
-import { normalizeErrorString } from '@medplum/core';
-import { showNotification } from '@mantine/notifications';
 
 interface BookmarkDialogProps {
   visible: boolean;
