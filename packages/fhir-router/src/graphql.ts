@@ -225,7 +225,6 @@ function buildRootSchema(): GraphQLSchema {
 
     // FHIR GraphQL Connection API
     fields[resourceType + 'Connection'] = {
-      // type: new GraphQLList(graphQLType),
       type: buildConnectionType(resourceType, graphQLType),
       args: buildSearchArgs(resourceType),
       resolve: resolveByConnectionApi,
