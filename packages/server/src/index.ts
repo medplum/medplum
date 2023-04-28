@@ -27,6 +27,7 @@ export async function main(configName: string): Promise<void> {
 
   const app = await initApp(express(), config);
   app.listen(config.port);
+  logger.info('Server started on port', config.port);
 }
 
 if (require.main === module) {

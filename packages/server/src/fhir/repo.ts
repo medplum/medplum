@@ -39,6 +39,7 @@ import {
   toTypedValue,
   validateResource,
   validateResourceType,
+  IncludeTarget,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -972,12 +973,43 @@ export class Repository extends BaseRepository implements FhirRepository {
         } as BundleEntry)
     );
 
-    if (searchRequest.include) {
-      entries.push(...(await this.getSearchIncludeEntries(searchRequest.include, resources)));
-    }
+    if (searchRequest.include || searchRequest.revInclude) {
+      let base = resources;
+      let iterateOnly = false;
+      const seen: Record<string, boolean> = {};
+      resources.forEach((r) => {
+        seen[`${r.resourceType}/${r.id}`] = true;
+      });
+      let depth = 0;
+      while (base.length > 0) {
+        // Circuit breaker / load limit
+        if (depth >= 5 || entries.length > 1000) {
+          throw new Error(
+            `Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`
+          );
+        }
 
-    if (searchRequest.revInclude) {
-      entries.push(...(await this.getSearchRevIncludeEntries(searchRequest.revInclude, resources)));
+        const includes =
+          searchRequest.include
+            ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+            ?.map((param) => this.getSearchIncludeEntries(param, base)) || [];
+        const revincludes =
+          searchRequest.revInclude
+            ?.filter((param) => !iterateOnly || param.modifier === FhirOperator.ITERATE)
+            ?.map((param) => this.getSearchRevIncludeEntries(param, base)) || [];
+
+        const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
+        includedResources.forEach((r) => {
+          const ref = `${r.resource?.resourceType}/${r.resource?.id}`;
+          if (!seen[ref]) {
+            entries.push(r);
+          }
+          seen[ref] = true;
+        });
+        base = includedResources.map((entry) => entry.resource) as T[];
+        iterateOnly = true; // Only consider :iterate params on iterations after the first
+        depth++;
+      }
     }
 
     for (const entry of entries) {
@@ -999,11 +1031,12 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resources The base search result resources.
    * @returns The bundle entries for the included resources.
    */
-  private async getSearchIncludeEntries(include: string, resources: Resource[]): Promise<BundleEntry[]> {
-    const [nestedResourceType, nested] = include.split(':');
-    const searchParam = getSearchParameter(nestedResourceType, nested);
+  private async getSearchIncludeEntries(include: IncludeTarget, resources: Resource[]): Promise<BundleEntry[]> {
+    const searchParam = getSearchParameter(include.resourceType, include.searchParam);
     if (!searchParam) {
-      throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${include}`));
+      throw new OperationOutcomeError(
+        badRequest(`Invalid include parameter: ${include.resourceType}:${include.searchParam}`)
+      );
     }
 
     const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
@@ -1034,13 +1067,12 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resources The base search result resources.
    * @returns The bundle entries for the reverse included resources.
    */
-  private async getSearchRevIncludeEntries(revInclude: string, resources: Resource[]): Promise<BundleEntry[]> {
-    const [nestedResourceType, nested] = revInclude.split(':');
+  private async getSearchRevIncludeEntries(revInclude: IncludeTarget, resources: Resource[]): Promise<BundleEntry[]> {
     const nestedSearchRequest: SearchRequest = {
-      resourceType: nestedResourceType as ResourceType,
+      resourceType: revInclude.resourceType as ResourceType,
       filters: [
         {
-          code: nested,
+          code: revInclude.searchParam,
           operator: FhirOperator.EQUALS,
           value: resources.map(getReferenceString).join(','),
         },
