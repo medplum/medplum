@@ -11,6 +11,29 @@ const navigateMock = jest.fn();
 const closeMock = jest.fn();
 
 async function setup(initialUrl = '/'): Promise<void> {
+  medplum.getUserConfiguration = jest.fn(() => {
+    return {
+      resourceType: 'UserConfiguration',
+      id: 'test-user-config-id',
+      menu: [
+        {
+          title: 'Favorites',
+          link: [
+            { name: 'Patients', target: '/Patient' },
+            { name: 'Active Orders', target: '/ServiceRequest?status=active' },
+            { name: 'Completed Orders', target: '/ServiceRequest?status=completed' },
+          ],
+        },
+        {
+          title: 'Admin',
+          link: [
+            { name: 'Project', target: '/admin/project' },
+            { name: 'Batch', target: '/batch' },
+          ],
+        },
+      ],
+    };
+  });
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>

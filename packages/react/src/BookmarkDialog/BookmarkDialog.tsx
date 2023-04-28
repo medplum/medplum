@@ -64,15 +64,18 @@ interface SelectMenuProps {
   config: UserConfiguration | undefined;
 }
 function SelectMenu(props: SelectMenuProps): JSX.Element {
-  function userConfigToMenu(config: UserConfiguration | undefined): [] {
+  function userConfigToMenu(config: UserConfiguration | undefined): string[] {
     return config?.menu?.map((menu) => menu.title) as [];
   }
+  const menus = userConfigToMenu(props.config);
+
   return (
     <Select
       name="menuname"
+      defaultValue={menus?.[0]}
       label="Select Menu Option"
       placeholder="Menu"
-      data={userConfigToMenu(props.config)}
+      data={menus}
       withAsterisk
     />
   );
