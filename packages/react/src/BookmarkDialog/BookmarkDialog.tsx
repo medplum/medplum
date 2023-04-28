@@ -25,7 +25,6 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
     if (menu) {
       menu?.link?.push({ name, target });
     }
-
     if (config?.id) {
       medplum
         .updateResource(config)
@@ -35,10 +34,18 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
         })
         .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     } else {
-      medplum
-        .createResource(config)
-        .then(() => showNotification({ color: 'green', message: 'Success' }))
-        .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      // config.name = 'default'; // is optional
+      // medplum
+      //   .createResource(config)
+      //   .then(async () => {
+      //     // const userConfigReference = createReference(response);
+      //     // ProjectMembership.UserConfiguration = userConfigReference;
+      //     // medplum.updateResource(ProjectMembership)
+      //     // await medplum.refreshProfile();
+      //     showNotification({ color: 'green', message: 'Success' });
+      //   })
+      //   .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      showNotification({ color: 'red', message: 'missing UserConfiguration' });
     }
     props.onOk();
     props.onCancel();
