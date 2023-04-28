@@ -34,11 +34,6 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
         })
         .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     } else {
-      // get Membership Profile for current user/login (todo: where to get Project Membership ID)
-      //  should we search for it?, it can be passed through user login
-      // create user config resource
-      // create user config reference and append to Membership profile
-      // update membership profile for user
       showNotification({ color: 'red', message: 'missing UserConfiguration' });
     }
     props.onOk();
@@ -55,7 +50,9 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
         <Form onSubmit={submitHandler}>
           <SelectMenu config={config}></SelectMenu>
           <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="bookmark name" withAsterisk />
-          <Button type="submit">Save</Button>
+          <Button mt="sm" type="submit">
+            Save
+          </Button>
         </Form>
       </Box>
     </Modal>
