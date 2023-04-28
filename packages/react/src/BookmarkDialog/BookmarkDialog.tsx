@@ -25,18 +25,17 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
     if (menu) {
       menu?.link?.push({ name, target });
     }
-    if (config?.id) {
-      medplum
-        .updateResource(config)
-        .then(async () => {
-          medplum.dispatchEvent({ type: 'change' });
-          showNotification({ color: 'green', message: 'Success' });
-        })
-        .catch((err: any) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-    } else {
-      showNotification({ color: 'red', message: 'missing UserConfiguration' });
-    }
-    props.onOk();
+
+    medplum
+      .updateResource(config)
+      .then(async () => {
+        medplum.dispatchEvent({ type: 'change' });
+        showNotification({ color: 'green', message: 'Success' });
+        props.onOk();
+      })
+      .catch((err: any) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err) });
+      });
   }
 
   return (
