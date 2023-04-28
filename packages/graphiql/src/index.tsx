@@ -62,7 +62,7 @@ const theme: MantineThemeOverride = {
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
-    return fetch('/schema/schema-v3.json').then((res) => res.json());
+    return fetch('/schema/schema-v4.json').then((res) => res.json());
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
 }

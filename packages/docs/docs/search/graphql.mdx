@@ -222,9 +222,46 @@ Another common use is to filter an `extension` array by `url`:
 
 See the "[List Navigation](https://hl7.org/fhir/r4/graphql.html#list)" section of the FHIR GraphQL specification for more information.
 
+## Connection API
+
+Using the normal "List" search (i.e., "PatientList") is the most common way to search for resources. However, the FHIR GraphQL specification also supports the [Connection API](https://hl7.org/fhir/graphql.html#searching), which is a more complex way to search for resources.
+
+The most immediate advantage to the Connection API is better support for pagination and retrieving total counts. The Conenction API also includes more features from FHIR Bundle such as `mode` and `score`.
+
+To use the Connection API, append "Connection" to the resource type rather than "List". For example, use "PatientConnection" instead of "PatientList".
+
+Here is an example of searching for a list of `Patient` resources using the Connection API:
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql" selectBlocks="ConnectionApiGraphQL">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiTS">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="ConnectionApiCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="ConnectionApiResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+See the "[Connection API](https://hl7.org/fhir/graphql.html#searching)" section of the FHIR GraphQL specification for more information.
+
 ## Putting it all together
 
-The FHIR GraphQL syntax is a powerful way to query for multiple related resources in a single HTTP call. The following example combines all the concepts we've covered so far.
+The FHIR GraphQL syntax is a powerful way to query for multiple related resources in a single HTTP call. The following example combines previous concepts.
 
 This query searches for a list of `Patients` named `"Eve"`, living in `"Philadelphia"`, and then searches for all `DiagnosticReports` linked to each `Patient` along with their corresponding `Observations`.
 
