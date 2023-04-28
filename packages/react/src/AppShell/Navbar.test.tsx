@@ -203,4 +203,24 @@ describe('Navbar', () => {
 
     expect(input).not.toBeVisible();
   });
+
+  test('Add Bookmark save', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    });
+
+    expect(input).not.toBeVisible();
+  });
 });
