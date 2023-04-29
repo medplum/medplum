@@ -8,7 +8,7 @@ import TabItem from '@theme/TabItem';
 For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
 
 <BrowserOnlyTabs groupId="language">
-  <TabItem value="typescript" label="Typescript">
+  <TabItem value="typescript" label="TypeScript">
 
 ```ts
 import { Media } from '@medplum/fhirtypes';

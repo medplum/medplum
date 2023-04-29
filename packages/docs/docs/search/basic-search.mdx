@@ -52,7 +52,7 @@ To search for resources, you can simply add search parameters and values as quer
 The [Medplum Client SDK](/docs/sdk/classes/MedplumClient) also provides the `search` helper method, which accepts a `string` or `object`.
 
 <Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchSingle">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -81,7 +81,7 @@ Because iterating over the `Bundle.entry` array is such a common pattern, the Me
 You can perform and AND search by specifying multiple query parameters
 
 <Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchAnd">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -96,7 +96,7 @@ You can perform and AND search by specifying multiple query parameters
 Specifying comma separated values performs an OR operation for that search parameter
 
 <Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchOr">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -117,7 +117,7 @@ The syntax for this kind of search is `[parameter]=[resourceType]/[id]`. You can
 For example, to search for all `Observation` resources that reference a `Patient` with the ID `"1234"`:
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchReference">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -181,7 +181,7 @@ The FHIR spec includes a set of **modifiers** to change the way a specific searc
 For example, search for all `Tasks` where status _is not_ `completed`:
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchNot">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -200,7 +200,7 @@ For example, search for all `Tasks` where status _is not_ `completed`:
 For example, searching for all `Patients` with missing `birthDates`.
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchMissing">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -219,7 +219,7 @@ For example, searching for all `Patients` with missing `birthDates`.
 For example, searching for `Patients` whose name includes the substring `"stein"`
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchContains">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -250,7 +250,7 @@ FHIR provides a mechanism to search for resources that have a value greater or l
 This example shows how to find all `RiskAssessments` with a `probability` greater than 0.8.
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchGreaterThan">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -266,7 +266,7 @@ This example shows how to find all `RiskAssessments` with a `probability` greate
 You can search an inclusive range using an AND search
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchInclusiveRange">
       {ExampleCode}
     </MedplumCodeBlock>
@@ -288,7 +288,7 @@ Because we are specifying the `value-quantity` parameter twice in this query, we
 You can search an exclusive range using an OR search
 
 <Tabs>
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="searchExclusiveRange">
       {ExampleCode}
     </MedplumCodeBlock>

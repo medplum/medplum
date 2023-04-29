@@ -20,11 +20,11 @@ Once you understand the shape of the data you will consume, write a bot to parse
 
 We recommend writing some [unit tests](/docs/bots/unit-testing-bots) as well, and have several samples provided in `medplum-demo-bots` repo that use our `@medplum/mock` library for testing.
 
-### Using Typescript SDKs in your bot
+### Using TypeScript SDKs in your bot
 
-If the SaaS application that sends webhooks publishes a Typescript SDK, it's straightforward to add it to your bot, to streamline development. Add the package to the `devDependencies` in the `package.json` of your bot repository and install the dependency, and [example from demo bots repo](https://github.com/medplum/medplum-demo-bots/blob/main/package.json) is available. You can then use the Typescript SDK when developing your bot.
+If the SaaS application that sends webhooks publishes a TypeScript SDK, it's straightforward to add it to your bot, to streamline development. Add the package to the `devDependencies` in the `package.json` of your bot repository and install the dependency, and [example from demo bots repo](https://github.com/medplum/medplum-demo-bots/blob/main/package.json) is available. You can then use the TypeScript SDK when developing your bot.
 
-The [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots) uses the Stripe Typescript SDK.
+The [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots) uses the Stripe TypeScript SDK.
 
 ## Creating Access Policies
 

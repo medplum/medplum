@@ -20,5 +20,5 @@ The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) wi
 
 ## Related Documentation
 
-- Refer to [readPatientEverything](/docs/sdk/classes/MedplumClient#readpatienteverything) in the Typescript SDK
-- [Bundle definition](/docs/sdk/classes/MedplumClient#returns-40) in Typescript SDK
+- Refer to [readPatientEverything](/docs/sdk/classes/MedplumClient#readpatienteverything) in the TypeScript SDK
+- [Bundle definition](/docs/sdk/classes/MedplumClient#returns-40) in TypeScript SDK

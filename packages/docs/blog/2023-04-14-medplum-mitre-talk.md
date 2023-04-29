@@ -89,7 +89,7 @@ Here's an overview of the system: the core Medplum application, then this is an 
 
 ![Medplum system overview](/img/medplum-overview.svg)
 
-We've invested heavily in the [Typescript SDK](/docs/sdk). And most of our customers and people who are developing on the platform, they're really here. They're writing a white label application on a custom domain, so it's like my `healthcareapp.com`, and they're embedding our SDK. Now, what's notable about this developer paradigm is that.
+We've invested heavily in the [TypeScript SDK](/docs/sdk). And most of our customers and people who are developing on the platform, they're really here. They're writing a white label application on a custom domain, so it's like my `healthcareapp.com`, and they're embedding our SDK. Now, what's notable about this developer paradigm is that.
 
 Right here, this gray box that's running their website is a static JavaScript file. This has no backend and it's meant to be very easy for back to our, the discussion on the labor and labor shortage for somebody who is you know, has a light education in healthcare or they're from a different domain, but they know how to develop apps to help them get productive very quickly.
 

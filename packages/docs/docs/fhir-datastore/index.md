@@ -10,5 +10,5 @@ The following reference material can be useful in using the FHIR datastore effec
 
 - [FHIR Resources](/docs/api/fhir/resources/)
 - [FHIR Operations](/docs/api/fhir/operations/)
-- [Typescript SDK Reference](/docs/sdk/)
+- [TypeScript SDK Reference](/docs/sdk/)
 - [FHIR Datastore Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Afhir-datastore) on Github

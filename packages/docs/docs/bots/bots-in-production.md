@@ -14,8 +14,8 @@ Editing bots in the web editor is good for getting started quickly, but as Bots 
 ## This Guide will show you
 
 - How to set up a repository to host the source code for your Bots.
-- Write a new `Bot` in Typescript.
-- Create a new `Bot` resource and link it to your Typescript file.
+- Write a new `Bot` in TypeScript.
+- Create a new `Bot` resource and link it to your TypeScript file.
 - Use the [Medplum Command Line Interface (CLI)](https://github.com/medplum/medplum/tree/main/packages/cli) to create and deploy your Bot to production.
 
 ## Setting up your Repository
@@ -80,7 +80,7 @@ MEDPLUM_BASE_URL=https://api.example.com/
 
 After we've installed dependencies, we can write your Bot in any typescript file under the `src/` directory.
 
-As mentioned in [Bot Basics](./bot-basics), a bot is any Typescript file that contains a `handler` function with the following signature:
+As mentioned in [Bot Basics](./bot-basics), a bot is any TypeScript file that contains a `handler` function with the following signature:
 
 ```ts
 import { MedplumClient, BotEvent } from '@medplum/core';
@@ -124,7 +124,7 @@ First, compile your code:
 npm run build
 ```
 
-This runs the `tsc` compiler to translate your Typescript code to Javascript.
+This runs the `tsc` compiler to translate your TypeScript code to Javascript.
 
 Next, take a look at your `dist/` directory and notice how there is now a file called `my-first-bot.js` with the compiled version of your code.
 
@@ -146,7 +146,7 @@ Next step is to create the bot.
 
 Navigate to the [Project Admin panel](https://app.medplum.com/admin/project) and copy the ID of your project. That will be your `project-id`.
 
-Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `bot create` command. In our example 
+Taking the `source-file` we just created at `src/my-first-bot.ts`, we will use the `bot create` command. In our example
 
 ```bash
 npx medplum bot create <bot-name> <project-id> <source-file> <dist-file>
@@ -211,7 +211,7 @@ npx medplum bot deploy *staging*
 
 Running this command does two things:
 
-1. Save the Typescript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
+1. Save the TypeScript source to the `code` property of your [`Bot` resource](/docs/api/fhir/medplum/bot)
 2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
 
 :::caution Note

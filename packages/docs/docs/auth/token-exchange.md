@@ -45,7 +45,7 @@ The client makes a token exchange request to the token endpoint with an extensio
 :::tip Example
 
 <Tabs groupId="language">
-  <TabItem value="ts" label="Typescript">
+  <TabItem value="ts" label="TypeScript">
     <MedplumCodeBlock language="ts" selectBlocks="tokenExchange">
       {ExampleCode}
     </MedplumCodeBlock>
