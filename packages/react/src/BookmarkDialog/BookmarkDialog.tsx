@@ -1,4 +1,4 @@
-import { Button, Group, Modal, Select, Stack, TextInput } from '@mantine/core';
+import { Button, Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
@@ -63,6 +63,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
 interface SelectMenuProps {
   config: UserConfiguration | undefined;
 }
+
 function SelectMenu(props: SelectMenuProps): JSX.Element {
   function userConfigToMenu(config: UserConfiguration | undefined): string[] {
     return config?.menu?.map((menu) => menu.title) as [];
@@ -70,7 +71,7 @@ function SelectMenu(props: SelectMenuProps): JSX.Element {
   const menus = userConfigToMenu(props.config);
 
   return (
-    <Select
+    <NativeSelect
       name="menuname"
       defaultValue={menus?.[0]}
       label="Select Menu Option"

@@ -1,6 +1,6 @@
 import { Button, createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { CodeInput } from '../CodeInput/CodeInput';
@@ -76,18 +76,10 @@ export interface NavbarProps {
   displayAddBookMark?: boolean;
 }
 
-interface NavBarState {
-  bookmarkDialogVisible: boolean;
-}
-
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
-  const [state, setState] = useState<NavBarState>({
-    bookmarkDialogVisible: false,
-  });
-  const stateRef = useRef<NavBarState>(state);
-  stateRef.current = state;
+  const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
     e.stopPropagation();
@@ -124,47 +116,35 @@ export function Navbar(props: NavbarProps): JSX.Element {
             clearable={false}
           />
         </MantineNavbar.Section>
-        {props.displayAddBookMark && (
-          <MantineNavbar.Section mb="sm">
+        <MantineNavbar.Section grow>
+          {props.menus?.map((menu) => (
+            <React.Fragment key={`menu-${menu.title}`}>
+              <Text className={classes.menuTitle}>{menu.title}</Text>
+              {menu.links?.map((link) => (
+                <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
+                  <NavLinkIcon to={link.href} icon={link.icon} />
+                  <span>{link.label}</span>
+                </NavbarLink>
+              ))}
+            </React.Fragment>
+          ))}
+          {props.displayAddBookMark && (
             <Button
-              leftIcon={<IconPlus />}
-              variant="white"
-              onClick={() => setState({ ...stateRef.current, bookmarkDialogVisible: true })}
+              variant="subtle"
+              size="xs"
+              mt="xl"
+              leftIcon={<IconPlus size="0.75rem" />}
+              onClick={() => setBookmarkDialogVisible(true)}
             >
               Add Bookmark
             </Button>
-          </MantineNavbar.Section>
-        )}
-        {props.menus && (
-          <MantineNavbar.Section grow>
-            {props.menus.map((menu) => (
-              <React.Fragment key={`menu-${menu.title}`}>
-                <Text className={classes.menuTitle}>{menu.title}</Text>
-                {menu.links?.map((link) => (
-                  <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
-                    <NavLinkIcon to={link.href} icon={link.icon} />
-                    <span>{link.label}</span>
-                  </NavbarLink>
-                ))}
-              </React.Fragment>
-            ))}
-          </MantineNavbar.Section>
-        )}
+          )}
+        </MantineNavbar.Section>
       </MantineNavbar>
       <BookmarkDialog
-        visible={stateRef.current.bookmarkDialogVisible}
-        onOk={() => {
-          return setState({
-            ...stateRef.current,
-            bookmarkDialogVisible: false,
-          });
-        }}
-        onCancel={() => {
-          setState({
-            ...stateRef.current,
-            bookmarkDialogVisible: false,
-          });
-        }}
+        visible={bookmarkDialogVisible}
+        onOk={() => setBookmarkDialogVisible(false)}
+        onCancel={() => setBookmarkDialogVisible(false)}
       />
     </>
   );
