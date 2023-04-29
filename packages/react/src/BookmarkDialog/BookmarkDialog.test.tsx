@@ -1,11 +1,11 @@
+import { showNotification } from '@mantine/notifications';
+import { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { BookmarkDialog } from './BookmarkDialog';
-import { showNotification } from '@mantine/notifications';
-import { UserConfiguration } from '@medplum/fhirtypes';
 
 jest.mock('@mantine/notifications');
 

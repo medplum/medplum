@@ -73,17 +73,18 @@ export interface NavbarMenu {
 export interface NavbarProps {
   menus?: NavbarMenu[];
   closeNavbar: () => void;
+  displayAddBookMark?: boolean;
 }
 
 interface NavBarState {
-  bookmarkVisible: boolean;
+  bookmarkDialogVisible: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
   const [state, setState] = useState<NavBarState>({
-    bookmarkVisible: false,
+    bookmarkDialogVisible: false,
   });
   const stateRef = useRef<NavBarState>(state);
   stateRef.current = state;
@@ -123,15 +124,17 @@ export function Navbar(props: NavbarProps): JSX.Element {
             clearable={false}
           />
         </MantineNavbar.Section>
-        <MantineNavbar.Section mb="sm">
-          <Button
-            leftIcon={<IconPlus />}
-            variant="white"
-            onClick={() => setState({ ...stateRef.current, bookmarkVisible: true })}
-          >
-            Add Bookmark
-          </Button>
-        </MantineNavbar.Section>
+        {props.displayAddBookMark && (
+          <MantineNavbar.Section mb="sm">
+            <Button
+              leftIcon={<IconPlus />}
+              variant="white"
+              onClick={() => setState({ ...stateRef.current, bookmarkDialogVisible: true })}
+            >
+              Add Bookmark
+            </Button>
+          </MantineNavbar.Section>
+        )}
         {props.menus && (
           <MantineNavbar.Section grow>
             {props.menus.map((menu) => (
@@ -149,17 +152,17 @@ export function Navbar(props: NavbarProps): JSX.Element {
         )}
       </MantineNavbar>
       <BookmarkDialog
-        visible={stateRef.current.bookmarkVisible}
+        visible={stateRef.current.bookmarkDialogVisible}
         onOk={() => {
           return setState({
             ...stateRef.current,
-            bookmarkVisible: false,
+            bookmarkDialogVisible: false,
           });
         }}
         onCancel={() => {
           setState({
             ...stateRef.current,
-            bookmarkVisible: false,
+            bookmarkDialogVisible: false,
           });
         }}
       />

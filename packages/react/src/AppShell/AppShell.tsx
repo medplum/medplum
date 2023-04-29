@@ -11,6 +11,7 @@ export interface AppShellProps {
   version?: string;
   menus?: NavbarMenu[];
   children: React.ReactNode;
+  displayAddBookmark?: boolean;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -46,7 +47,11 @@ export function AppShell(props: AppShellProps): JSX.Element {
       padding={0}
       fixed={true}
       header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
-      navbar={profile && navbarOpen ? <Navbar menus={props.menus} closeNavbar={closeNavbar} /> : undefined}
+      navbar={
+        profile && navbarOpen ? (
+          <Navbar menus={props.menus} closeNavbar={closeNavbar} displayAddBookMark={props.displayAddBookmark} />
+        ) : undefined
+      }
     >
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>{props.children}</Suspense>

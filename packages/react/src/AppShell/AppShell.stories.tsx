@@ -61,6 +61,7 @@ export function Basic(): JSX.Element {
             ],
           },
         ]}
+        displayAddBookmark={true}
       >
         Your application here
       </AppShell>
