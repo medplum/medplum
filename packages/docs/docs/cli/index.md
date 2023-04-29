@@ -217,12 +217,20 @@ Describe a Medplum deployment. Displays select AWS resources such as ECS Cluster
 medplum aws describe <name>
 ```
 
+#### update-app
+
+Updates the app S3 buckeet in a Medplum deployment to the latest version.
+
+```bash
+medplum aws update-app <name>
+```
+
 #### update-server
 
 Updates the ECS Service in a Medplum deployment to the latest version.
 
 ```bash
-medplum aws describe <name>
+medplum aws update-server <name>
 ```
 
 ### Bots

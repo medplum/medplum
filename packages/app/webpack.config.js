@@ -6,7 +6,6 @@ import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 import path, { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { WebpackManifestPlugin } from 'webpack-manifest-plugin';
-import { SubresourceIntegrityPlugin } from 'webpack-subresource-integrity';
 import WorkboxPlugin from 'workbox-webpack-plugin';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -27,10 +26,11 @@ export default (env, argv) => ({
     extensions: ['.ts', '.tsx', '.js'],
   },
   plugins: [
-    new DotenvPlugin({
-      defaults: true,
-      systemvars: true,
-    }),
+    process.env.KEEP_ENV_VARS !== 'true' &&
+      new DotenvPlugin({
+        defaults: true,
+        systemvars: true,
+      }),
     new WebpackManifestPlugin({
       fileName: 'manifest.webmanifest',
       seed: {
@@ -42,23 +42,23 @@ export default (env, argv) => ({
         theme_color: '#ffffff',
         icons: [
           {
-            'src': '/img/medplum-logo.svg',
-            'type': 'image/svg+xml',
-            'sizes': '512x512'
+            src: '/img/medplum-logo.svg',
+            type: 'image/svg+xml',
+            sizes: '512x512',
           },
           {
-            'src': '/img/medplum-logo-512x512.png',
-            'type': 'image/png',
-            'sizes': '512x512',
+            src: '/img/medplum-logo-512x512.png',
+            type: 'image/png',
+            sizes: '512x512',
           },
           {
-            'src': '/img/medplum-logo-maskable.png',
-            'type': 'image/png',
-            'sizes': '512x512',
-            'purpose': 'maskable'
-          }
+            src: '/img/medplum-logo-maskable.png',
+            type: 'image/png',
+            sizes: '512x512',
+            purpose: 'maskable',
+          },
         ],
-      }
+      },
     }),
     new HtmlWebpackPlugin({
       template: 'index.html.ejs',
@@ -67,19 +67,19 @@ export default (env, argv) => ({
     new MiniCssExtractPlugin({
       filename: 'css/[name].[contenthash].css',
     }),
-    new SubresourceIntegrityPlugin(),
     new CopyWebpackPlugin({
       patterns: [
         {
           from: 'static',
         },
-      ]
+      ],
     }),
-    argv.mode === 'production' && new WorkboxPlugin.GenerateSW({
-      clientsClaim: true,
-      skipWaiting: true,
-      maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
-    }),
+    argv.mode === 'production' &&
+      new WorkboxPlugin.GenerateSW({
+        clientsClaim: true,
+        skipWaiting: true,
+        maximumFileSizeToCacheInBytes: 10 * 1024 * 1024,
+      }),
   ].filter((p) => !!p),
   module: {
     rules: [
