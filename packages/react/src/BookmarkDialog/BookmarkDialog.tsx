@@ -23,13 +23,12 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
     const newConfig = deepClone(config) as UserConfiguration;
     const menu = newConfig?.menu?.find(({ title }) => title === menuname);
 
-    if (menu) {
-      menu?.link?.push({ name, target });
-    }
-
+    menu?.link?.push({ name, target });
     medplum
       .updateResource(newConfig)
-      .then(async () => {
+      .then((res) => {
+        // refresh current config menu
+        config.menu = res.menu;
         medplum.dispatchEvent({ type: 'change' });
         showNotification({ color: 'green', message: 'Success' });
         props.onOk();
