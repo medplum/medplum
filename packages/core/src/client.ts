@@ -2463,6 +2463,14 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Starts a new OAuth2 client credentials flow.
+   *
+   * ```typescript
+   * await medplum.startClientLogin(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
+   * // Example Search
+   * await medplum.searchResources('Patient')
+   * ```
+   *
+   *
    * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
    * @category Authentication
    * @param clientId The client ID.
@@ -2482,6 +2490,13 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the client ID and secret for basic auth.
+   *
+   *  ```typescript
+   * medplum.setBasicAuth(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
+   * // Example Search
+   * await medplum.searchResources('Patient')
+   * ```
+   *
    * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.
