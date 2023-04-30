@@ -976,4 +976,37 @@ describe('GraphQL', () => {
       edges: [{ resource: { name: [{ given: ['Alice'] }] } }],
     });
   });
+
+  test('Connection API without count field', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          offset pageSize
+          edges {
+            mode, score, resource { id name { given } }
+          }
+          first previous next last
+        }
+      }
+    `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res?.[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection).toMatchObject({
+      offset: 0,
+      pageSize: 20,
+      edges: [{ resource: { name: [{ given: ['Alice'] }] } }],
+    });
+  });
 });

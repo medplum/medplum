@@ -157,16 +157,13 @@ export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Pr
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
 
-  let result: any = introspection && introspectionResults.get(query);
-  if (!result) {
-    result = await execute({
-      schema,
-      document,
-      contextValue: { repo, dataLoader },
-      operationName,
-      variableValues: variables,
-    });
-  }
+  const result = (await execute({
+    schema,
+    document,
+    contextValue: { repo, dataLoader },
+    operationName,
+    variableValues: variables,
+  })) as any;
 
   return [allOk, result];
 }
