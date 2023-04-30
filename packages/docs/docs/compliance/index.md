@@ -19,6 +19,7 @@ This is a living document, and we continually update our resources. We welcome f
 - [CFR Part 11](cfr11.md)
 - [ISO 9001](iso9001.md)
 - [CMS FHIR](cms-fhir.md)
+- [Good Manufacturing Practices (GMP)](gmp.md)
 - HITRUST (coming soon)
 - ISO 27001 Certification (coming soon)
 
