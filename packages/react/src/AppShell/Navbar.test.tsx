@@ -58,7 +58,7 @@ async function setup(initialUrl = '/'): Promise<void> {
                 ],
               },
             ]}
-            displayAddBookMark={true}
+            displayAddBookmark={true}
           />
         </MedplumProvider>
       </MemoryRouter>

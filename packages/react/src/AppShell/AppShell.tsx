@@ -49,7 +49,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
       header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
       navbar={
         profile && navbarOpen ? (
-          <Navbar menus={props.menus} closeNavbar={closeNavbar} displayAddBookMark={props.displayAddBookmark} />
+          <Navbar menus={props.menus} closeNavbar={closeNavbar} displayAddBookmark={props.displayAddBookmark} />
         ) : undefined
       }
     >

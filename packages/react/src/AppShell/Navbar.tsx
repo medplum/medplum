@@ -73,7 +73,7 @@ export interface NavbarMenu {
 export interface NavbarProps {
   menus?: NavbarMenu[];
   closeNavbar: () => void;
-  displayAddBookMark?: boolean;
+  displayAddBookmark?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -128,7 +128,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
               ))}
             </React.Fragment>
           ))}
-          {props.displayAddBookMark && (
+          {props.displayAddBookmark && (
             <Button
               variant="subtle"
               size="xs"
