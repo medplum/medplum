@@ -11,6 +11,29 @@ const navigateMock = jest.fn();
 const closeMock = jest.fn();
 
 async function setup(initialUrl = '/'): Promise<void> {
+  medplum.getUserConfiguration = jest.fn(() => {
+    return {
+      resourceType: 'UserConfiguration',
+      id: 'test-user-config-id',
+      menu: [
+        {
+          title: 'Favorites',
+          link: [
+            { name: 'Patients', target: '/Patient' },
+            { name: 'Active Orders', target: '/ServiceRequest?status=active' },
+            { name: 'Completed Orders', target: '/ServiceRequest?status=completed' },
+          ],
+        },
+        {
+          title: 'Admin',
+          link: [
+            { name: 'Project', target: '/admin/project' },
+            { name: 'Batch', target: '/batch' },
+          ],
+        },
+      ],
+    };
+  });
   await act(async () => {
     render(
       <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
@@ -35,6 +58,7 @@ async function setup(initialUrl = '/'): Promise<void> {
                 ],
               },
             ]}
+            displayAddBookmark={true}
           />
         </MedplumProvider>
       </MemoryRouter>
@@ -157,5 +181,70 @@ describe('Navbar', () => {
     });
 
     expect(navigateMock).toBeCalledWith('/test-code');
+  });
+
+  test('Add Bookmark render and submit', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(input).not.toBeVisible();
+  });
+
+  test('Add Bookmark close', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    });
+
+    expect(input).not.toBeVisible();
+  });
+
+  test('Add Bookmark save', async () => {
+    await setup();
+
+    const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+
+    expect(input).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+    });
+
+    expect(input).not.toBeVisible();
   });
 });

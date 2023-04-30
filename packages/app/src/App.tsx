@@ -31,7 +31,12 @@ export function App(): JSX.Element {
   }
 
   return (
-    <AppShell logo={<Logo size={24} />} version={MEDPLUM_VERSION} menus={userConfigToMenu(config)}>
+    <AppShell
+      logo={<Logo size={24} />}
+      version={MEDPLUM_VERSION}
+      menus={userConfigToMenu(config)}
+      displayAddBookmark={!!config?.id}
+    >
       <ErrorBoundary>
         <Suspense fallback={<Loading />}>
           <AppRoutes />
