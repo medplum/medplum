@@ -15,7 +15,6 @@ import {
   globalSchema,
   isLowerCase,
   isResourceTypeSchema,
-  LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -38,7 +37,6 @@ import {
   ASTVisitor,
   DocumentNode,
   execute,
-  ExecutionResult,
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -93,13 +91,6 @@ const typeCache: Record<string, GraphQLOutputType | undefined> = {
   'http://hl7.org/fhirpath/System.String': GraphQLString,
   'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
-
-/**
- * Cache of "introspection" query results.
- * Common case is the standard schema query from GraphiQL and Insomnia.
- * The result is big and somewhat computationally expensive.
- */
-const introspectionResults = new LRUCache<ExecutionResult>();
 
 /**
  * Cached GraphQL schema.
