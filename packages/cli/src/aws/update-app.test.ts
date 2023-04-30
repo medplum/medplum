@@ -5,7 +5,6 @@ import {
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
-import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
@@ -14,7 +13,7 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import { Readable, Writable } from 'stream';
 import tar from 'tar';
-import { main } from '.';
+import { main } from '../index';
 
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
@@ -46,7 +45,7 @@ const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
 
 const medplum = new MockClient();
 
-describe('AWS commands', () => {
+describe('update-app command', () => {
   beforeAll(() => {
     const cfMock = mockClient(CloudFormationClient);
 
@@ -59,27 +58,15 @@ describe('AWS commands', () => {
           CreationTime: new Date(),
         },
         {
-          StackId: '144',
-          StackName: 'medplum-in-progress',
+          StackId: '124',
+          StackName: 'medplum-incomplete',
           StackStatus: 'UPDATE_IN_PROGRESS',
-          CreationTime: new Date(),
-        },
-        {
-          StackId: '456',
-          StackName: 'deleted-stack',
-          StackStatus: 'DELETE_COMPLETE',
-          CreationTime: new Date(),
-        },
-        {
-          StackId: '789',
-          StackName: 'no-details-stack',
-          StackStatus: 'CREATE_COMPLETE',
           CreationTime: new Date(),
         },
       ],
     });
 
-    cfMock.on(DescribeStacksCommand).resolves({
+    cfMock.on(DescribeStacksCommand, { StackName: 'medplum-dev' }).resolves({
       Stacks: [
         {
           StackId: '123',
@@ -96,41 +83,13 @@ describe('AWS commands', () => {
       ],
     });
 
-    cfMock.on(DescribeStackResourcesCommand).resolves({
+    cfMock.on(DescribeStackResourcesCommand, { StackName: 'medplum-dev' }).resolves({
       StackResources: [
-        {
-          ResourceType: 'AWS::ECS::Cluster',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'MedplumEcsCluster',
-          PhysicalResourceId: 'medplum-dev-MedplumEcsCluster-123',
-          Timestamp: new Date(),
-        },
-        {
-          ResourceType: 'AWS::ECS::Service',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'MedplumEcsService',
-          PhysicalResourceId: 'medplum-dev-MedplumEcsService-123',
-          Timestamp: new Date(),
-        },
         {
           ResourceType: 'AWS::S3::Bucket',
           ResourceStatus: 'CREATE_COMPLETE',
           LogicalResourceId: 'FrontEndAppBucket',
           PhysicalResourceId: 'app.test.medplum.com',
-          Timestamp: new Date(),
-        },
-        {
-          ResourceType: 'AWS::S3::Bucket',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'StorageStorageBucket',
-          PhysicalResourceId: 'storage.test.medplum.com',
-          Timestamp: new Date(),
-        },
-        {
-          ResourceType: 'AWS::EC2::SecurityGroup',
-          ResourceStatus: 'CREATE_COMPLETE',
-          LogicalResourceId: 'SecurityGroup',
-          PhysicalResourceId: 'sg-123',
           Timestamp: new Date(),
         },
         {
@@ -143,8 +102,26 @@ describe('AWS commands', () => {
       ],
     });
 
-    const ecsMock = mockClient(ECSClient);
-    ecsMock.on(UpdateServiceCommand).resolves({});
+    cfMock.on(DescribeStacksCommand, { StackName: 'medplum-incomplete' }).resolves({
+      Stacks: [
+        {
+          StackId: '123',
+          StackName: 'medplum-incomplete',
+          StackStatus: 'UPDATE_IN_PROGRESS',
+          CreationTime: new Date(),
+          Tags: [
+            {
+              Key: 'medplum:environment',
+              Value: 'incomplete',
+            },
+          ],
+        },
+      ],
+    });
+
+    cfMock.on(DescribeStackResourcesCommand, { StackName: 'medplum-incomplete' }).resolves({
+      StackResources: [],
+    });
 
     const s3Mock = mockClient(S3Client);
     s3Mock.on(PutObjectCommand).resolves({});
@@ -155,36 +132,6 @@ describe('AWS commands', () => {
 
   afterEach(() => {
     (fetch as jest.MockedFunction<typeof fetch>).mockReset();
-  });
-
-  test('List command', async () => {
-    console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'list']);
-    expect(console.log).toBeCalledWith('Stack ID:        123');
-  });
-
-  test('Describe command', async () => {
-    console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'describe', 'dev']);
-    expect(console.log).toBeCalledWith('Stack ID:        123');
-  });
-
-  test('Describe not found', async () => {
-    console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'describe', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
-  });
-
-  test('Update server command', async () => {
-    console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'dev']);
-    expect(console.log).toBeCalledWith('Service "medplum-dev-MedplumEcsService-123" updated successfully.');
-  });
-
-  test('Update server not found', async () => {
-    console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'not-found']);
-    expect(console.log).toBeCalledWith('Stack not found');
   });
 
   test('Update app command', async () => {
@@ -266,5 +213,15 @@ describe('AWS commands', () => {
     console.log = jest.fn();
     await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
     expect(console.log).toBeCalledWith('Stack not found');
+  });
+
+  test('Update app stack incomplete', async () => {
+    // Mock the config file
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
+
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'incomplete']);
+    expect(console.log).toBeCalledWith('App bucket not found');
   });
 });
