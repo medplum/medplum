@@ -181,7 +181,10 @@ describe('update-app command', () => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
-      return [{ name: 'main.js', isDirectory: () => false, isFile: () => true }];
+      return [
+        { name: 'main.js', isDirectory: () => false, isFile: () => true },
+        { name: 'nonejsfile', isDirectory: () => false, isFile: () => true },
+      ];
     });
 
     // Mock the readFileSync to read the file to replace variables
@@ -194,6 +197,63 @@ describe('update-app command', () => {
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
+    expect(console.log).toBeCalledWith('Done');
+  });
+
+  test('Update app command without optional configs', async () => {
+    console.log = jest.fn();
+
+    // Mock the config file
+    (fs.existsSync as jest.Mock).mockReturnValueOnce(true);
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce(
+      JSON.stringify({
+        baseUrl: 'https://api.staging.medplum.com/',
+      })
+    );
+
+    // Mock the 2 fetch requests
+    (fetch as jest.MockedFunction<typeof fetch>)
+      // First request is for the package metadata
+      .mockResolvedValueOnce(
+        new NodeFetchResponse('{"dist":{"tarball":"https://example.com/tarball.tar.gz"}}', { status: 200 })
+      )
+      // Second request is for the tarball
+      .mockResolvedValueOnce(
+        new NodeFetchResponse(
+          new Readable({
+            read() {
+              this.push(null); // Signal the end of the stream
+            },
+          }),
+          { status: 200 }
+        )
+      );
+
+    // Mock the tar extract
+    (tar.x as jest.Mock).mockReturnValueOnce(
+      new Writable({
+        write(_chunk, _encoding, callback) {
+          callback();
+        },
+      })
+    );
+
+    // Mock the readdirSync to list files to replace variables
+    (fs.readdirSync as jest.Mock).mockImplementation((folderName) => {
+      if (folderName.endsWith('dist')) {
+        return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
+      }
+      return [{ name: 'main.js', isDirectory: () => false, isFile: () => true }];
+    });
+
+    // Mock the readFileSync to read the file to replace variables
+    (fs.readFileSync as jest.Mock).mockReturnValueOnce('console.log("Hello, world!");');
+
+    // Mock the glob search for files to upload
+    (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
+
+    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
+
     expect(console.log).toBeCalledWith('Done');
   });
 
