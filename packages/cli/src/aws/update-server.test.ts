@@ -29,6 +29,12 @@ describe('update-server command', () => {
           StackStatus: 'UPDATE_IN_PROGRESS',
           CreationTime: new Date(),
         },
+        {
+          StackId: '125',
+          StackName: 'medplum-missing-service',
+          StackStatus: 'UPDATE_IN_PROGRESS',
+          CreationTime: new Date(),
+        },
       ],
     });
 
@@ -89,6 +95,41 @@ describe('update-server command', () => {
       StackResources: [],
     });
 
+    cfMock.on(DescribeStacksCommand, { StackName: 'medplum-missing-service' }).resolves({
+      Stacks: [
+        {
+          StackId: '123',
+          StackName: 'medplum-dev',
+          StackStatus: 'CREATE_COMPLETE',
+          CreationTime: new Date(),
+          Tags: [
+            {
+              Key: 'medplum:environment',
+              Value: 'missing-service',
+            },
+          ],
+        },
+      ],
+    });
+
+    cfMock.on(DescribeStackResourcesCommand, { StackName: 'medplum-missing-service' }).resolves({
+      StackResources: [
+        {
+          ResourceType: 'AWS::ECS::Cluster',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'MedplumEcsCluster',
+          PhysicalResourceId: 'medplum-dev-MedplumEcsCluster-125',
+          Timestamp: new Date(),
+        },
+        {
+          ResourceType: 'AWS::ECS::Service',
+          ResourceStatus: 'CREATE_COMPLETE',
+          LogicalResourceId: 'MedplumEcsService',
+          Timestamp: new Date(),
+        },
+      ],
+    });
+
     const ecsMock = mockClient(ECSClient);
     ecsMock.on(UpdateServiceCommand).resolves({});
   });
@@ -109,5 +150,11 @@ describe('update-server command', () => {
     console.log = jest.fn();
     await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'incomplete']);
     expect(console.log).toBeCalledWith('ECS Cluster not found');
+  });
+
+  test('Update server stack missing service', async () => {
+    console.log = jest.fn();
+    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'missing-service']);
+    expect(console.log).toBeCalledWith('ECS Service not found');
   });
 });
