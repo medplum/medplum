@@ -5,7 +5,7 @@ import { stringify } from './utils';
  *
  * When using MedplumClient in the browser, it will be backed by browser localStorage.
  *
- * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.
+ * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
 export class ClientStorage {
   private readonly storage: Storage;
