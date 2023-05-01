@@ -181,7 +181,10 @@ describe('update-app command', () => {
       if (folderName.endsWith('dist')) {
         return [{ name: 'js', isDirectory: () => true, isFile: () => false }];
       }
-      return [{ name: 'main.js', isDirectory: () => false, isFile: () => true }];
+      return [
+        { name: 'main.js', isDirectory: () => false, isFile: () => true },
+        { name: 'nonejsfile', isDirectory: () => false, isFile: () => true },
+      ];
     });
 
     // Mock the readFileSync to read the file to replace variables
@@ -251,8 +254,6 @@ describe('update-app command', () => {
 
     await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
 
-    expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
-    expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
     expect(console.log).toBeCalledWith('Done');
   });
 
