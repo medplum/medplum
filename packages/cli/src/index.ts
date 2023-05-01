@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { login, whoami } from './auth';
 import { aws } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
-import { project } from './projects';
+import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
 import { FileSystemStorage } from './storage';
 
