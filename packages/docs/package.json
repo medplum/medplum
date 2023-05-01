@@ -27,6 +27,7 @@
     "@docusaurus/core": "2.4.0",
     "@docusaurus/module-type-aliases": "2.4.0",
     "@docusaurus/preset-classic": "2.4.0",
+    "@docusaurus/theme-mermaid": "2.4.0",
     "@medplum/core": "*",
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
@@ -45,6 +46,10 @@
     "typescript": "5.0.4",
     "url-loader": "4.1.1"
   },
+  "overrides": {
+    "trim": "0.0.3",
+    "got": "11.8.5"
+  },
   "browserslist": {
     "production": [
       ">0.5%",
@@ -56,8 +61,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "dependencies": {
-    "@docusaurus/theme-mermaid": "^2.4.0"
   }
 }
