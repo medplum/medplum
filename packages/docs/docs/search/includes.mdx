@@ -7,20 +7,27 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 # Including Linked Resources
 
 In many cases, your application may need to search for not just one resource type, but also some of the related
-resources that those resources reference. For example, one might need to search for Observations with a certain code,
-but also the Patients on whom the observations were made, and the Provenance of the Observations as well. Using basic
-search requests, this would require many different search API calls. However, Medplum offers powerful tools to
-include related resources in the same search request. The [FHIR GraphQL API](./graphql) is suitable for retrieving
-linked resources when you only need to traverse a few hops in the resource graph and know the exact fields on
-each resource that you need. For more general search queries that return full resources, you can use the
-[`_include` and `_revinclude`][include-params] search parameters.
+resources that those resources reference. For example, one might need to search for `Observation` resources with a
+certain code, but also the `Patient` resources on whom the observations were made, and the `Provenance` for the
+`Observation` resources as well. Using basic search requests, this would require many different API calls. The FHIR
+specification contains special `_include` and `_revinclude` search parameters, which return resources linked to the
+results of your search alongside in the same Bundle.
+
+## Comparison with GraphQL
+
+In addition to these search parameters, Medplum also offers a [FHIR GraphQL API](./graphql) that is suitable for
+retrieving linked resources when you only need to traverse a few hops in the resource graph and know the exact fields on
+each resource that you need. The major differences between the `_(rev)include` parameters and GraphQL are summarized below:
+
+| `_(rev)include`                                           | GraphQL                                                         |
+| --------------------------------------------------------- | --------------------------------------------------------------- |
+| Returns full resource JSON                                | Returns only specified resource fields                          |
+| Traverses resource references via search parameters       | Traverses references through special `Reference.resource` field |
+| Can traverse up from a resource to one that references it | Can only traverse down from a resource to one it references     |
 
 ## \_include and \_revinclude
 
-The `_include` and `_revinclude` search parameters allow you to include resources linked to the results of your
-search to be returned alongside the results, in the same Bundle.
-
-For example, the search query described above for Observations, Patients, and Provenance would look like this:
+For example, the search query described above for `Observation`, `Patient`, and `Provenance` resources would look like this:
 
 ```http
 GET /fhir/R4/Observation?code=http://loinc.org|78012-2&_include=Observation:patient&_revinclude=Provenance:target
@@ -32,10 +39,10 @@ The values of the `_include` and `_revinclude` parameters are not paths into the
 
 :::
 
-The `_include=Observation:patient` parameter adds to the search results all Patient resources referenced by the
+The `_include=Observation:patient` parameter adds to the search results all `Patient` resources referenced by the
 `Observation.subject` field of any of the original search results. Similarly, the `_revinclude` parameter
-adds any Provenance resources whose `target` field references one of the original search results. The full
-graph of resources returned in the search result [Bundle](/docs/api/fhir/resources/bundle) could look something like this:
+adds any `Provenance` resources whose `target` field references one of the original search results. The full
+graph of resources returned in the search result [`Bundle`](/docs/api/fhir/resources/bundle) could look something like this:
 
 ```mermaid
 flowchart TD
@@ -70,8 +77,8 @@ flowchart TD
 By default, the `_include` and `_revinclude` only include resources one hop away from resources in the search results.
 In order to traverse subsequent reference links, add the `:iterate` modifier to the `_include` or `_revinclude`
 parameter. This will cause the inclusion to apply recursively, until no more resources are found. For example,
-to search for Observations, plus the Patient resources they refer to, plus those patients' associated general
-practitioner, you might use a search API call like this:
+to search for `Observation` resources, plus the `Patient` resources they refer to, plus those patients' associated
+`Practitioner`, you might use a search API call like this:
 
 ```http
 GET /fhir/R4/Observation?code=http://loinc.org|78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner
@@ -142,6 +149,13 @@ flowchart TD
 
 You can specify inclusion parameters with search requests using the TypeScript SDK:
 
-<MedplumCodeBlock language="ts" selectBlocks="search">
+<MedplumCodeBlock language="ts" selectBlocks="searchInclude">
   {ExampleCode}
 </MedplumCodeBlock>
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="includeResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
