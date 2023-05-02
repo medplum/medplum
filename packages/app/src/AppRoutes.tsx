@@ -101,7 +101,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="history" element={<HistoryPage />} />
           <Route path="json" element={<JsonPage />} />
           <Route path="preview" element={<PreviewPage />} />
-          <Route path="questionnaireresponse" element={<QuestionnaireResponsePage />} />
+          <Route path="responses" element={<QuestionnaireResponsePage />} />
           <Route path="report" element={<ReportPage />} />
           <Route path="ranges" element={<ReferenceRangesPage />} />
           <Route path="timeline" element={<TimelinePage />} />

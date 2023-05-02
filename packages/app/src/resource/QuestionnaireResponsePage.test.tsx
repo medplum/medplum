@@ -37,7 +37,7 @@ describe('QuestionnaireResponsePage', () => {
       setup(`/Questionnaire/${questionnaire.id}`);
     });
 
-    const questionnaireResponseTab = screen.getByRole('tab', { name: 'QuestionnaireResponse' });
+    const questionnaireResponseTab = screen.getByRole('tab', { name: 'Responses' });
 
     // click on questionnaire response tab
     await act(async () => {
@@ -68,7 +68,7 @@ describe('QuestionnaireResponsePage', () => {
 
     // load questionnaire response page
     await act(async () => {
-      setup(`/Questionnaire/${questionnaire.id}/questionnaireresponse`);
+      setup(`/Questionnaire/${questionnaire.id}/responses`);
     });
 
     // click on a questionnaire response

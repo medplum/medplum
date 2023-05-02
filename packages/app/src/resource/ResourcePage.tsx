@@ -25,7 +25,7 @@ function getTabs(resourceType: string): string[] {
   }
 
   if (resourceType === 'Questionnaire') {
-    result.push('Preview', 'Builder', 'Bots', 'QuestionnaireResponse');
+    result.push('Preview', 'Builder', 'Bots', 'Responses');
   }
 
   if (resourceType === 'DiagnosticReport') {
