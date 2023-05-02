@@ -88,7 +88,7 @@ def handle_webhook():
 
 If your subscription failed or threw an error, you can configure it to attempt to execute the operation multiple times.
 
-To add an attempt number, use the `http://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
+To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/subscription-max-attempts` extension with the valueInteger set to a number between 1-18.
 
 ```json
 {
@@ -102,7 +102,7 @@ To add an attempt number, use the `http://medplum.com/fhir/StructureDefinition/s
   },
   "extension": [
     {
-      "url": "http://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
       "valueInteger": 3
     }
   ]
@@ -114,7 +114,7 @@ To add an attempt number, use the `http://medplum.com/fhir/StructureDefinition/s
 
 HTTP status codes can be customized to determine the success of the subscription operation. 
 
-To add custom codes, use the `http://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
+To add custom codes, use the `https://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
 
 :::caution Note
 If you use custom success codes, you will need to implement ALL of the HTTP status codes that are determined to be successful
@@ -132,7 +132,7 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
   },
   "extension": [
     {
-      "url": "http://medplum.com/fhir/StructureDefinition/subscription-success-codes",
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-success-codes",
       "valueString": "200-399,404",
     },
   ]
