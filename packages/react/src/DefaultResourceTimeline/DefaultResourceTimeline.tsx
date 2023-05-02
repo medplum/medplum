@@ -12,7 +12,12 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
     <ResourceTimeline
       value={props.resource}
       loadTimelineResources={async (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
-        return Promise.allSettled([medplum.readHistory(resourceType, id)]);
+        const ref = `${resourceType}/${id}`;
+        const _count = 100;
+        return Promise.allSettled([
+          medplum.readHistory(resourceType, id),
+          medplum.search('Task', { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count }),
+        ]);
       }}
     />
   );

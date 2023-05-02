@@ -11,12 +11,15 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
   return (
     <ResourceTimeline
       value={props.serviceRequest}
-      loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
+      loadTimelineResources={async (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
+        const ref = `${resourceType}/${id}`;
+        const _count = 100;
         return Promise.allSettled([
           medplum.readHistory('ServiceRequest', id),
-          medplum.search('Communication', 'based-on=ServiceRequest/' + id),
-          medplum.search('Media', '_count=100&based-on=ServiceRequest/' + id),
-          medplum.search('DiagnosticReport', 'based-on=ServiceRequest/' + id),
+          medplum.search('Communication', { 'based-on': ref, _count }),
+          medplum.search('DiagnosticReport', { 'based-on': ref, _count }),
+          medplum.search('Media', { 'based-on': ref, _count }),
+          medplum.search('Task', { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count }),
         ]);
       }}
       createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({
