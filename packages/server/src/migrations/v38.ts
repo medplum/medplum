@@ -6,5 +6,7 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
+  await client.query('CREATE INDEX CONCURRENTLY ON "Task" USING GIN("basedOn")');
+  await client.query('CREATE INDEX CONCURRENTLY ON "Task" ("focus")');
   await client.query('CREATE INDEX CONCURRENTLY ON "Task" ("subject")');
 }

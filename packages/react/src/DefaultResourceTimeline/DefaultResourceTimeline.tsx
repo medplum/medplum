@@ -16,7 +16,7 @@ export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JS
         const _count = 100;
         return Promise.allSettled([
           medplum.readHistory(resourceType, id),
-          medplum.search('Task', { subject: ref, _count }),
+          medplum.search('Task', { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count }),
         ]);
       }}
     />
