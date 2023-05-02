@@ -25,6 +25,8 @@ import inviteNewUser from './invite-new-user.png'
    3. **RelatedPerson:** This profile represents users who are related to a patient and need access to some of their clinical data, but who don't benefit directly from care. This is typically used for parents/guardians for pediatric patients, or spouses of patients who aren't being treated themselves.
 6. Fill in the user details such as first name, last name, and email address.
 7. For advanced security features, you can configure an [AccessPolicy](../auth/access-control). An AccessPolicy allows you to specify which resource types users can read and write.
-8. Click "Invite" when the user details are ready.
+8. By default, Medplum will send a welcome email to the new user. You can toggle the "Send email" checkbox if you do not want to send an email. (You may also be interested in [Custom Welcome Emails](/docs/auth/custom-welcome-emails)).
+9. You can optionally add the new user as a Project Administrator by checking the "Admin" checkbox.
+10. Click "Invite" when the user details are ready.
 
 When you click "Invite", the system will send an email to the user with instructions how to activate their new account.
