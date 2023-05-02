@@ -614,7 +614,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email,
+        value: email.toLowerCase(),
       },
       {
         code: 'project',
@@ -639,7 +639,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
       {
         code: 'email',
         operator: Operator.EXACT,
-        value: email,
+        value: email.toLowerCase(),
       },
       {
         code: 'project',

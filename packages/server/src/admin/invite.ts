@@ -77,18 +77,19 @@ export async function inviteUser(
   request: InviteRequest
 ): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
   const project = request.project;
+  const email = request.email?.toLowerCase();
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
   let profile = undefined;
 
-  if (request.email) {
+  if (email) {
     if (request.resourceType === 'Patient') {
-      user = await getUserByEmailInProject(request.email, project.id as string);
+      user = await getUserByEmailInProject(email, project.id as string);
     } else {
-      user = await getUserByEmailWithoutProject(request.email);
+      user = await getUserByEmailWithoutProject(email);
     }
-    profile = await searchForExistingProfile(project, request.resourceType, request.email);
+    profile = await searchForExistingProfile(project, request.resourceType, email);
   }
 
   if (!user) {
@@ -103,7 +104,7 @@ export async function inviteUser(
       request.resourceType,
       request.firstName,
       request.lastName,
-      request.email
+      email
     )) as Practitioner;
   }
 
@@ -114,7 +115,7 @@ export async function inviteUser(
     admin: request.admin,
   });
 
-  if (request.email && request.sendEmail !== false) {
+  if (email && request.sendEmail !== false) {
     try {
       await sendInviteEmail(request, user, existingUser, passwordResetUrl);
     } catch (err) {

@@ -38,7 +38,8 @@ export interface RegisterResponse {
  * @returns The registration response.
  */
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {
-  const { email, password, projectName, firstName, lastName } = request;
+  const { password, projectName, firstName, lastName } = request;
+  const email = request.email.toLowerCase();
   const passwordHash = await bcryptHashPassword(password);
   const user = await systemRepo.createResource<User>({
     resourceType: 'User',
@@ -52,8 +53,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     authMethod: 'password',
     scope: 'openid offline',
     nonce: randomUUID(),
-    email: request.email,
-    password: request.password,
+    email: email,
+    password: password,
     remoteAddress: request.remoteAddress,
     userAgent: request.userAgent,
   });

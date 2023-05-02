@@ -425,4 +425,43 @@ describe('Login', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.code).toBeDefined();
   });
+
+  test('Case insensitive email', async () => {
+    // Invite user with mixed case email
+    const email = `Mixed-Case-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Register and create a project
+    await registerNew({
+      firstName: 'Mixed',
+      lastName: 'Case',
+      projectName: 'Mixed Case Project',
+      email,
+      password,
+    });
+
+    // Try to login with mixed case email
+    // This should work
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeDefined();
+
+    // Try to login with mixed case email
+    // This should work
+    const res2 = await request(app).post('/auth/login').type('json').send({
+      email: email.toLowerCase(),
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+  });
 });
