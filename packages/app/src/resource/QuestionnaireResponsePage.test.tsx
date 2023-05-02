@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
@@ -31,8 +31,53 @@ describe('QuestionnaireResponsePage', () => {
       status: 'completed',
       questionnaire: getReferenceString(questionnaire),
     });
+
+    // load questionnaire page
+    await act(async () => {
+      setup(`/Questionnaire/${questionnaire.id}`);
+    });
+
+    const questionnaireResponseTab = screen.getByRole('tab', { name: 'QuestionnaireResponse' });
+
+    // click on questionnaire response tab
+    await act(async () => {
+      fireEvent.click(questionnaireResponseTab);
+    });
+
+    expect(screen.getByText(`${response1.id}`)).toBeInTheDocument();
+
+    // click on a question response
+    await act(async () => {
+      fireEvent.click(screen.getByText(`${response1.id}`));
+    });
+
+    expect(screen.getByLabelText(`Actions for QuestionnaireResponse/${response1.id}`));
+  });
+
+  test('Renders test changes', async () => {
+    const questionnaire = await medplum.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+    });
+
+    const response1 = await medplum.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      questionnaire: getReferenceString(questionnaire),
+    });
+
+    // load questionnaire response page
     await act(async () => {
       setup(`/Questionnaire/${questionnaire.id}/questionnaireresponse`);
+    });
+
+    // click on a question response
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Last Updated' }));
     });
 
     expect(screen.getByText(`${response1.id}`)).toBeInTheDocument();
