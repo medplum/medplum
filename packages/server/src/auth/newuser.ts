@@ -75,11 +75,12 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
 
   // If the user is a practitioner, then projectId should be undefined
   // If the user is a patient, then projectId must be set
+  const email = req.body.email.toLowerCase();
   let existingUser = undefined;
   if (req.body.projectId && req.body.projectId !== 'new') {
-    existingUser = await getUserByEmailInProject(req.body.email, req.body.projectId);
+    existingUser = await getUserByEmailInProject(email, req.body.projectId);
   } else {
-    existingUser = await getUserByEmailWithoutProject(req.body.email);
+    existingUser = await getUserByEmailWithoutProject(email);
   }
   if (existingUser) {
     sendOutcome(res, badRequest('Email already registered', 'email'));
@@ -87,7 +88,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
   }
 
   try {
-    await createUser(req.body as NewUserRequest);
+    await createUser({ ...req.body, email } as NewUserRequest);
 
     const login = await tryLogin({
       authMethod: 'password',
@@ -96,7 +97,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       nonce: req.body.nonce || randomUUID(),
       codeChallenge: req.body.codeChallenge,
       codeChallengeMethod: req.body.codeChallengeMethod,
-      email: req.body.email,
+      email,
       password: req.body.password,
       remember: req.body.remember,
       remoteAddress: req.ip,
