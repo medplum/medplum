@@ -1,11 +1,10 @@
 import { Operator, SearchRequest } from '@medplum/core';
-import { ResourceType } from '@medplum/fhirtypes';
 import { Document, MemoizedSearchControl } from '@medplum/react';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function QuestionnaireResponsePage(): JSX.Element | null {
-  const { id } = useParams() as { resourceType: ResourceType; id: string };
+  const { id } = useParams() as { id: string };
   const navigate = useNavigate();
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'QuestionnaireResponse',
