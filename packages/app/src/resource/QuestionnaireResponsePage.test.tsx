@@ -71,7 +71,7 @@ describe('QuestionnaireResponsePage', () => {
       setup(`/Questionnaire/${questionnaire.id}/questionnaireresponse`);
     });
 
-    // click on a question response
+    // click on a questionnaire response
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });
