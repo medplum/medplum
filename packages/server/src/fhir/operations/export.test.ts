@@ -130,35 +130,42 @@ describe('System export', () => {
       });
     expect(res2.status).toBe(201);
 
-    // Create later observation
-    const res3 = await request(app)
-      .post(`/fhir/R4/Observation`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .send({
-        resourceType: 'Observation',
-        status: 'final',
-        code: { text: 'test2' },
-        subject: { reference: `Patient/${res1.body.id}` },
-      });
-    expect(res3.status).toBe(201);
+    await waitFor(async () => {
+      // Create later observation
+      const res3 = await request(app)
+        .post(`/fhir/R4/Observation`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', 'application/fhir+json')
+        .send({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'test2' },
+          subject: { reference: `Patient/${res1.body.id}` },
+        });
+      expect(res3.status).toBe(201);
+    });
+    const updatedDate = new Date(res2.body.meta.lastUpdated);
+    updatedDate.setMilliseconds(updatedDate.getMilliseconds() + 1);
 
     // Start the export
-    const initRes = await request(app)
-      .post('/fhir/R4/$export')
-      .query({
-        _type: 'Observation',
-        _since: res2.body.meta.lastUpdated,
-      })
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .set('X-Medplum', 'extended')
-      .send({});
-    expect(initRes.status).toBe(202);
-    expect(initRes.headers['content-location']).toBeDefined();
+    let initRes: any;
+    await waitFor(async () => {
+      initRes = await request(app)
+        .post('/fhir/R4/$export')
+        .query({
+          _type: 'Observation',
+          _since: updatedDate.toISOString(),
+        })
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', 'application/fhir+json')
+        .set('X-Medplum', 'extended')
+        .send({});
+      expect(initRes.status).toBe(202);
+      expect(initRes.headers['content-location']).toBeDefined();
+    });
 
     // Check the export status
-    const contentLocation = new URL(initRes.headers['content-location']);
+    const contentLocation = new URL(initRes?.headers?.['content-location']);
 
     let resBody: any;
     await waitFor(async () => {
