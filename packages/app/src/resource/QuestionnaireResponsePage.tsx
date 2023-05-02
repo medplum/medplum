@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Document, MemoizedSearchControl, useResource } from '@medplum/react';
+import { Document, MemoizedSearchControl } from '@medplum/react';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
