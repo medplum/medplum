@@ -185,6 +185,7 @@ describe('System export', () => {
       .get(outputLocation.pathname + outputLocation.search)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(dataRes.status).toBe(200);
+
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
     const resourceJSON = dataRes.text.trim().split('\n');
