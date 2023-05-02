@@ -61267,6 +61267,10 @@
           "description": "Reference to the resource that represents the user profile within the project.",
           "$ref": "#/definitions/Reference"
         },
+        "externalId": {
+          "description": "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain\u0027s identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
+          "$ref": "#/definitions/string"
+        },
         "accessPolicy": {
           "description": "The access policy for the user within the project memebership.",
           "$ref": "#/definitions/Reference"
@@ -61388,7 +61392,7 @@
           "$ref": "#/definitions/string"
         },
         "externalId": {
-          "description": "A String that is an identifier for the resource as defined by the provisioning client.  The \"externalId\" may simplify identification of a resource between the provisioning client and the service provider by allowing the client to use a filter to locate the resource with an identifier from the provisioning domain, obviating the need to store a local mapping between the provisioning domain\u0027s identifier of the resource and the identifier used by the service provider.  Each resource MAY include a non-empty \"externalId\" value.  The value of the \"externalId\" attribute is always issued by the provisioning client and MUST NOT be specified by the service provider.  The service provider MUST always interpret the externalId as scoped to the provisioning domain.",
+          "description": "DEPRECATED Replaced by ProjectMembership.externalId.",
           "$ref": "#/definitions/string"
         },
         "email": {
@@ -61750,6 +61754,13 @@
         "code": {
           "description": "Bot logic script.",
           "$ref": "#/definitions/string"
+        },
+        "category": {
+          "description": "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
+          "items": {
+            "$ref": "#/definitions/CodeableConcept"
+          },
+          "type": "array"
         },
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",

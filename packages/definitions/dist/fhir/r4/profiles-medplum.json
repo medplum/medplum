@@ -1040,6 +1040,18 @@
             }]
           },
           {
+            "id" : "Bot.category",
+            "path" : "Bot.category",
+            "short" : "Classification of service",
+            "definition" : "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
+            "comment" : "There may be multiple axis of categorization depending on the context or use case for retrieving or displaying the resource.  The level of granularity is defined by the category concepts in the value set.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "CodeableConcept"
+            }]
+          },
+          {
             "id" : "Bot.runAsUser",
             "path" : "Bot.runAsUser",
             "definition" : "Optional flag to indicate that the bot should be run as the user.",
@@ -1047,23 +1059,6 @@
             "max" : "1",
             "type" : [{
               "code" : "boolean"
-            }]
-          },
-          {
-            "id" : "Bot.type",
-            "path" : "Bot.type",
-            "short" : "Classification of service",
-            "definition" : "A code that classifies the service for searching, sorting and display purposes (e.g. \"Surgical Procedure\").",
-            "comment" : "There may be multiple axis of categorization depending on the context or use case for retrieving or displaying the resource.  The level of granularity is defined by the type concepts in the value set.",
-            "min" : 0,
-            "max" : "*",
-            "base" : {
-              "path" : "Bot.type",
-              "min" : 0,
-              "max" : "*"
-            },
-            "type" : [{
-              "code" : "CodeableConcept"
             }]
           }
         ]

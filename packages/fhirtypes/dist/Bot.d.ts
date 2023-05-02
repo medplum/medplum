@@ -87,13 +87,13 @@ export interface Bot {
   code?: string;
 
   /**
-   * Optional flag to indicate that the bot should be run as the user.
-   */
-  runAsUser?: boolean;
-
-  /**
    * A code that classifies the service for searching, sorting and display
    * purposes (e.g. &quot;Surgical Procedure&quot;).
    */
-  type?: CodeableConcept[];
+  category?: CodeableConcept[];
+
+  /**
+   * Optional flag to indicate that the bot should be run as the user.
+   */
+  runAsUser?: boolean;
 }

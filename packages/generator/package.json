@@ -13,7 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc",
-    "generate": "ts-node src/index.ts",
+    "generate": "ts-node src/index.ts && npx ts-node src/jsonschema.ts",
     "migrate": "ts-node src/migrate.ts",
     "docs": "ts-node src/docs.ts",
     "test": "jest"

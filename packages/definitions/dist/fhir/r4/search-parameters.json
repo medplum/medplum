@@ -65847,21 +65847,21 @@
     }
   },
   {
-    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-type",
+    "fullUrl" : "https://medplum.com/fhir/SearchParameter/Bot-category",
     "resource" : {
       "resourceType" : "SearchParameter",
-      "id" : "Bot-type",
-      "url" : "https://medplum.com/fhir/SearchParameter/Bot-type",
+      "id" : "Bot-category",
+      "url" : "https://medplum.com/fhir/SearchParameter/Bot-category",
       "version" : "4.0.1",
-      "name" : "type",
+      "name" : "category",
       "status" : "draft",
       "publisher" : "Medplum",
-      "description" : "The type of the bot for the classification for service",
-      "code" : "type",
+      "description" : "The category of the bot for the classification for service",
+      "code" : "category",
       "base" : ["Bot"],
-      "type" : "string",
-      "expression" : "Bot.type",
-      "xpath" : "f:Bot/f:type",
+      "type" : "token",
+      "expression" : "Bot.category",
+      "xpath" : "f:Bot/f:category",
       "xpathUsage" : "normal"
     }
   },
