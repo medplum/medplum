@@ -1,87 +1,90 @@
 name: 'Sync Repos'
 
 on: 
-  pull_request:
-    types: [synchronize]
+  push:
+    branches: [main]
 
 jobs:
-  check_changes_and_update_repo:
+  check_changes_and_update_repos:
+    name: Code Changes
     runs-on: ubuntu-latest
     permissions:
       actions: read 
       contents: write 
       pull-requests: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
+        with:
+          fetch-depth: 0
       - name: Check if examples folder has changes
-      id: check_example_projects_changes
-      run: |
-        CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- 'packages/examples/*')
-        if [ -n "$CHANGED_FILES" ]; then
-          echo "::set-output name=has_changes::true"
-        else
-          echo "::set-output name=has_changes::false"
-        fi
-
+        id: check_example_projects_changes
+        run: |
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- 'examples/**/*')
+          if [ -n "$CHANGED_FILES" ]; then
+            echo "::set-output name=has_changes::true"
+          else
+            echo "::set-output name=has_changes::false"
+          fi
       - name: Check for changes in specified path
         if: steps.check_example_projects_changes.outputs.has_changes == 'true'
         id: check_changes
         run: |
           changed_paths=""
-          for path in packages/examples/*/; do
+          for path in examples/*/; do
             CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- "${path}*")
             if [ -n "$CHANGED_FILES" ]; then
-              changed_paths="$path"
+              changed_paths+="$path;"
             fi
           done
           echo "::set-output name=changed_paths::$changed_paths"
-
-      - name: Update listening repo
+      - name: Update listening repos, create PR, and clean up
         if: steps.check_changes.outputs.changed_paths != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN }}
         run: |
-          # Configure Git with the bot's name and email
-          git config --global user.name "jamestouri"
-          git config --global user.email "j_touri@yahoo.com"
+          IFS=';' read -ra changed_paths_array <<< "${{ steps.check_changes.outputs.changed_paths }}"
+          echo "Changed paths array: ${changed_paths_array[@]}"
 
-          for path in ${{ steps.check_changes.outputs.changed_paths }}; do
+          # Configure Git
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          for path in "${changed_paths_array[@]}"; do
+            # Store the current working directory
+            initial_working_directory=$(pwd)
 
-            folder_name=$path
+            # Extract the folder name from the path
+            folder_name=$(basename $path)
 
             # Check if the listening repo exists
-            REPO_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/medplum/${folder_name}")
+            repo="https://$GITHUB_TOKEN:@github.com/medplum/${folder_name}.git"
+            REPO_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.TOKEN }}" "https://api.github.com/repos/medplum/${folder_name}")
 
             # If the repo does not exist, create a new repo
             if [ $REPO_STATUS -eq 404 ]; then
-              CREATE_REPO_PAYLOAD=$(echo -n "{\"name\": \"${folder_name}\"}" | base64)
-              CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data-binary "{\"data\": \"$CREATE_REPO_PAYLOAD\"}" "https://api.github.com/orgs/medplum/repos")
+              CREATE_REPO_PAYLOAD="{\"name\": \"${folder_name}\", \"default_branch\": \"main\"}"
+              CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data "$CREATE_REPO_PAYLOAD" "https://api.github.com/orgs/medplum/repos")
               echo "Created new repo: $(echo $CREATE_REPO_RESPONSE | jq -r '.html_url')"
             fi
 
             # Clone the corresponding listening repo
-            git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/medplum/${folder_name}.git
-
-            # Create a new branch for the changes
-            cd ${folder_name}
-            new_branch_name="update-from-source-medplum"
-            git checkout -b $new_branch_name
+            git clone "$repo"
 
             # Copy changed files to the listening repo
-            cp -R packages/examples/${folder_name}/* ${folder_name}/*
+            cp -RT "${initial_working_directory}/${path%}"/ ${folder_name}/
 
             # Commit and push changes to the listening repo
             cd ${folder_name}
             git add .
             git commit -m "Update from main medplum repo"
-            git push origin $new_branch_name
+            git push origin main
 
             # Create a pull request using the GitHub API
-            PR_PAYLOAD=$(echo -n "{\"title\": \"Update from source repo: medplum\", \"head\": \"$new_branch_name\", \"base\": \"main\"}" | base64)
-            PR_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data-binary "{\"data\": \"$PR_PAYLOAD\"}" "https://api.github.com/repos/your-organization/${folder_name}/pulls")
+            PR_PAYLOAD=$(echo -n "{\"title\": \"Update from source repo: medplum\", \"head\": \"main\", \"base\": \"main\"}" | base64)
+            PR_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data-binary "{\"data\": \"$PR_PAYLOAD\"}" "https://api.github.com/repos/your-organization/${folder_name}/pulls")
             echo "Created PR: $(echo $PR_RESPONSE | jq -r '.html_url')"
-
+            
             # Cleanup: Remove the cloned repo folder and delete the local branch
             cd ..
             rm -rf ${folder_name}
