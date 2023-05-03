@@ -41,7 +41,7 @@ jobs:
       - name: Update listening repos, create PR, and clean up
         if: steps.check_changes.outputs.changed_paths != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # This separates the strings with ; to turn it into an array
           IFS=';' read -ra changed_paths_array <<< "${{ steps.check_changes.outputs.changed_paths }}"
@@ -60,12 +60,12 @@ jobs:
 
             # Check if the listening repo exists
             repo="https://$GITHUB_TOKEN:@github.com/medplum/${folder_name}.git"
-            REPO_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.TOKEN }}" "https://api.github.com/repos/medplum/${folder_name}")
+            REPO_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/medplum/${folder_name}")
 
             # If the repo does not exist, create a new repo
             if [ $REPO_STATUS -eq 404 ]; then
               CREATE_REPO_PAYLOAD="{\"name\": \"${folder_name}\", \"default_branch\": \"main\"}"
-              CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data "$CREATE_REPO_PAYLOAD" "https://api.github.com/orgs/medplum/repos")
+              CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data "$CREATE_REPO_PAYLOAD" "https://api.github.com/orgs/medplum/repos")
               echo "Created new repo: $(echo $CREATE_REPO_RESPONSE | jq -r '.html_url')"
             fi
 
