@@ -43,6 +43,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
         run: |
+          # This separates the strings with ; to turn it into an array
           IFS=';' read -ra changed_paths_array <<< "${{ steps.check_changes.outputs.changed_paths }}"
           echo "Changed paths array: ${changed_paths_array[@]}"
 
@@ -80,11 +81,6 @@ jobs:
             git commit -m "Update from main medplum repo"
             git push origin main
 
-            # Create a pull request using the GitHub API
-            PR_PAYLOAD=$(echo -n "{\"title\": \"Update from source repo: medplum\", \"head\": \"main\", \"base\": \"main\"}" | base64)
-            PR_RESPONSE=$(curl -s -X POST -H "Authorization: token ${{ secrets.TOKEN }}" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data-binary "{\"data\": \"$PR_PAYLOAD\"}" "https://api.github.com/repos/your-organization/${folder_name}/pulls")
-            echo "Created PR: $(echo $PR_RESPONSE | jq -r '.html_url')"
-            
             # Cleanup: Remove the cloned repo folder and delete the local branch
             cd ..
             rm -rf ${folder_name}
