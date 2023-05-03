@@ -60,6 +60,9 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   const client = getClient();
   const query = new SelectQuery('ValueSetElement')
+    .distinctOn('system')
+    .distinctOn('code')
+    .distinctOn('display')
     .column('system')
     .column('code')
     .column('display')
