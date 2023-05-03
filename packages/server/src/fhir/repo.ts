@@ -101,7 +101,7 @@ import {
   Operator,
   SelectQuery,
 } from './sql';
-import { getSearchParameter, getSearchParameters } from './structure';
+import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -1065,7 +1065,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       )
     );
     (await Promise.all(canonicalSearches)).forEach((resources) => {
-      console.log(resources);
       if (resources) {
         includedResources.push(...resources);
       }
@@ -1090,16 +1089,45 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The bundle entries for the reverse included resources.
    */
   private async getSearchRevIncludeEntries(revInclude: IncludeTarget, resources: Resource[]): Promise<BundleEntry[]> {
-    const nestedSearchRequest: SearchRequest = {
-      resourceType: revInclude.resourceType as ResourceType,
-      filters: [
-        {
-          code: revInclude.searchParam,
-          operator: FhirOperator.EQUALS,
-          value: resources.map(getReferenceString).join(','),
-        },
-      ],
-    };
+    const searchParam = getSearchParameter(revInclude.resourceType, revInclude.searchParam);
+    if (!searchParam) {
+      throw new OperationOutcomeError(
+        badRequest(`Invalid include parameter: ${revInclude.resourceType}:${revInclude.searchParam}`)
+      );
+    }
+
+    let nestedSearchRequest: SearchRequest;
+    const structDef = getStructureDefinitions().types[revInclude.resourceType];
+
+    // NOTE(2023-05-03): This assumes that reference search parameters have an `expression` essentially like "ResourceType.referenceField"
+    const [_, ...pathParts] = searchParam.expression?.split('.') || [];
+    const referenceField = structDef.properties[pathParts[0]];
+    if (referenceField.type?.some((t) => t.code === PropertyType.canonical)) {
+      nestedSearchRequest = {
+        resourceType: revInclude.resourceType as ResourceType,
+        filters: [
+          {
+            code: revInclude.searchParam,
+            operator: FhirOperator.EQUALS,
+            value: resources
+              .map((r) => (r as any).url)
+              .filter((u) => u !== undefined)
+              .join(','),
+          },
+        ],
+      };
+    } else {
+      nestedSearchRequest = {
+        resourceType: revInclude.resourceType as ResourceType,
+        filters: [
+          {
+            code: revInclude.searchParam,
+            operator: FhirOperator.EQUALS,
+            value: resources.map(getReferenceString).join(','),
+          },
+        ],
+      };
+    }
 
     return (await this.getSearchEntries(nestedSearchRequest)).entry;
   }
