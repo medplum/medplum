@@ -2178,6 +2178,34 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle, patient)).toBeTruthy();
   });
 
+  test('Include canonical success', async () => {
+    const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
+    const questionnaire = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: canonicalURL,
+    });
+    const response = await systemRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      questionnaire: canonicalURL,
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'QuestionnaireResponse',
+      include: [
+        {
+          resourceType: 'QuestionnaireResponse',
+          searchParam: 'questionnaire',
+        },
+      ],
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: response.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, response)).toBeTruthy();
+    expect(bundleContains(bundle, questionnaire)).toBeTruthy();
+  });
+
   test('Include references invalid search param', async () => {
     try {
       await systemRepo.search({

@@ -1044,10 +1044,32 @@ export class Repository extends BaseRepository implements FhirRepository {
     const references = fhirPathResult
       .filter((typedValue) => typedValue.type === PropertyType.Reference)
       .map((typedValue) => typedValue.value as Reference);
-
     const readResult = await this.readReferences(references);
-
     const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
+
+    const canonicalReferences = fhirPathResult
+      .filter((typedValue) => typedValue.type === PropertyType.canonical)
+      .map((typedValue) => typedValue.value as string);
+    const canonicalSearches = canonicalReferences?.flatMap((canonicalRef) =>
+      searchParam.target?.map((resourceType) =>
+        this.searchResources({
+          resourceType: resourceType,
+          filters: [
+            {
+              code: 'url',
+              operator: FhirOperator.EQUALS,
+              value: canonicalRef,
+            },
+          ],
+        })
+      )
+    );
+    (await Promise.all(canonicalSearches)).forEach((resources) => {
+      console.log(resources);
+      if (resources) {
+        includedResources.push(...resources);
+      }
+    });
 
     return includedResources.map(
       (resource: Resource) =>
