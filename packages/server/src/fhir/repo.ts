@@ -2327,7 +2327,12 @@ async function getCacheEntry<T extends Resource>(resourceType: string, id: strin
  * @returns Array of cache entries or undefined.
  */
 async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Resource> | undefined)[]> {
-  return (await getRedis().mget(...references.map((r) => r.reference as string))).map((cachedValue) =>
+  const referenceKeys = references.map((r) => r.reference as string);
+  if (referenceKeys.length === 0) {
+    // Return early to avoid calling mget() with no args, which is an error
+    return [];
+  }
+  return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
     cachedValue ? (JSON.parse(cachedValue) as CacheEntry<Resource>) : undefined
   );
 }
