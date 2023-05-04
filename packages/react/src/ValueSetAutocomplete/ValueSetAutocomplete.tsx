@@ -42,6 +42,9 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
+      if (!elementDefinition.binding) {
+        return [];
+      }
       const system = elementDefinition.binding?.valueSet as string;
       const valueSet = await medplum.searchValueSet(system, input, { signal });
       const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
