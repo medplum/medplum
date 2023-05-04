@@ -73,7 +73,7 @@ jobs:
             git clone "$repo"
 
             # Copy changed files to the listening repo
-            cp -RT "${initial_working_directory}/${path%}"/ ${folder_name}/
+            rsync -a --delete --exclude .git/ "${initial_working_directory}/${path%}"/ ${folder_name}/
 
             # Commit and push changes to the listening repo
             cd ${folder_name}
