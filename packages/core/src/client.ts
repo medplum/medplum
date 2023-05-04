@@ -2206,6 +2206,11 @@ export class MedplumClient extends EventTarget {
       return undefined as unknown as T;
     }
 
+    if (response.status === 404) {
+      console.error(`404, couldn't retrieve response from ${url}`);
+      return undefined as unknown as T;
+    }
+
     let obj: any = undefined;
     try {
       obj = await response.json();

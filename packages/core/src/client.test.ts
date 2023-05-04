@@ -79,6 +79,7 @@ describe('Client', () => {
 
   beforeEach(() => {
     localStorage.clear();
+    console.error = jest.fn();
     Object.defineProperty(globalThis, 'Buffer', { get: () => originalBuffer });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
   });
@@ -1263,6 +1264,19 @@ describe('Client', () => {
     const result = await client.search('Patient');
     expect(result).toBeDefined();
     expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
+  });
+
+  test('Search and return 404', async () => {
+    const fetch = mockFetch(404, {
+      resourceType: 'Bundle',
+      entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
+    });
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.search('Patient');
+    } catch (err) {
+      expect(console.error).toBeCalledWith(`404, couldn't retrieve response from https://api.medplum.com/fhir/R4/Patient`);
+    }
   });
 
   describe('Paginated Search ', () => {
