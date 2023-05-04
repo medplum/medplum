@@ -37,12 +37,6 @@ describe('CodingInput', () => {
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
-  test('Renders with empty status property', async () => {
-    await setup(<CodingInput property={{}} name="test" />);
-
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
-  });
-
   test('Renders Coding default value', async () => {
     await setup(<CodingInput property={statusProperty} name="test" defaultValue={{ code: 'abc' }} />);
 
@@ -76,5 +70,37 @@ describe('CodingInput', () => {
     });
 
     expect(screen.getByText('Test Display')).toBeDefined();
+  });
+
+  test('Renders with empty binding property', async () => {
+    const statusPropertyEmptyBinding: ElementDefinition = {
+      binding: undefined,
+    };
+
+    await setup(<CodingInput property={statusPropertyEmptyBinding} name="test" />);
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    expect(screen.getByText('Test')).toBeDefined();
   });
 });
