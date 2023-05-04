@@ -37,6 +37,12 @@ describe('CodingInput', () => {
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
+  test('Renders with empty status property', async () => {
+    await setup(<CodingInput property={{}} name="test" />);
+
+    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  });
+
   test('Renders Coding default value', async () => {
     await setup(<CodingInput property={statusProperty} name="test" defaultValue={{ code: 'abc' }} />);
 
