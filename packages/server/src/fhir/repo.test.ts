@@ -1,4 +1,5 @@
 import {
+  badRequest,
   createReference,
   forbidden,
   getReferenceString,
@@ -170,6 +171,27 @@ describe('FHIR Repo', () => {
     expect(result3.entry).toHaveLength(2);
     expect(result3.link).toBeDefined();
     expect(result3.link?.find((e) => e.relation === 'next')).toBeUndefined();
+  });
+
+  test('Search previous link', async () => {
+    const family = randomUUID();
+
+    for (let i = 0; i < 2; i++) {
+      await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+    }
+
+    const result1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: family }],
+      count: 1,
+      offset: 1,
+    });
+    expect(result1.entry).toHaveLength(1);
+    expect(result1.link).toBeDefined();
+    expect(result1.link?.find((e) => e.relation === 'previous')).toBeDefined();
   });
 
   test('Repo read malformed reference', async () => {
@@ -459,6 +481,24 @@ describe('FHIR Repo', () => {
       },
     });
     expect(patient2?.meta?.lastUpdated).not.toEqual(lastUpdated);
+  });
+
+  test('Update Resource with Missing id', async () => {
+    const patient1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ family: 'Test' }],
+    });
+
+    const { id, ...rest } = patient1;
+    expect(id).toBeDefined();
+    expect((rest as Patient).id).toBeUndefined();
+
+    try {
+      await systemRepo.updateResource<Patient>(rest);
+      fail('Should have thrown');
+    } catch (err) {
+      expect((err as OperationOutcomeError).outcome).toMatchObject(badRequest('Missing id'));
+    }
   });
 
   test('Search for Communications by Encounter', async () => {
