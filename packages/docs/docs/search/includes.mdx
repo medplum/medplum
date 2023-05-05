@@ -3,6 +3,8 @@
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/search/includes.ts';
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # Including Linked Resources
 
@@ -29,9 +31,30 @@ each resource that you need. The major differences between the `_(rev)include` p
 
 For example, the search query described above for `Observation`, `Patient`, and `Provenance` resources would look like this:
 
-```http
-GET /fhir/R4/Observation?code=http://loinc.org|78012-2&_include=Observation:patient&_revinclude=Provenance:target
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchIncludes">
+      {ExampleCode}
+    </MedplumCodeBlock>
+
+  </TabItem>
+
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchIncludesCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>
+    Example response
+  </summary>
+
+  <MedplumCodeBlock language="ts" selectBlocks="includesResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
 
 :::caution Note
 
@@ -80,9 +103,30 @@ parameter. This will cause the inclusion to apply recursively, until no more res
 to search for `Observation` resources, plus the `Patient` resources they refer to, plus those patients' associated
 `Practitioner`, you might use a search API call like this:
 
-```http
-GET /fhir/R4/Observation?code=http://loinc.org|78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner
-```
+<Tabs groupId="language">
+  <TabItem value="ts" label="TypeScript">
+    <MedplumCodeBlock language="ts" selectBlocks="searchIncludeIterate">
+      {ExampleCode}
+    </MedplumCodeBlock>
+
+  </TabItem>
+
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="searchIncludeIterateCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+<details>
+  <summary>
+    Example response
+  </summary>
+
+  <MedplumCodeBlock language="ts" selectBlocks="iterateResponse">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
 
 This query would return a Bundle containing all the resources from a linked graph like the following:
 
@@ -144,29 +188,3 @@ flowchart TD
 ```
 
 :::
-
-## Usage
-
-You can specify inclusion parameters with search requests using the TypeScript SDK:
-
-<MedplumCodeBlock language="ts" selectBlocks="searchInclude">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-<details>
-  <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="includeResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
-
-<MedplumCodeBlock language="ts" selectBlocks="searchRevinclude">
-  {ExampleCode}
-</MedplumCodeBlock>
-
-<details>
-  <summary>Example Response</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="revincludeResponse">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>

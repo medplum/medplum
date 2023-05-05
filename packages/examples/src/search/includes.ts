@@ -3,161 +3,195 @@ import { Resource } from '@medplum/fhirtypes';
 
 const medplum = new MedplumClient();
 
-// start-block searchInclude
+/*
+  // start-block searchIncludesCurl
+  curl https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_revinclude=Provenance:target
+  // end-block searchIncludesCurl
+*/
+
+// start-block searchIncludes
 await medplum.searchResources('Observation', {
-  code: 'http://loinc.org|78012-2',
+  code: '78012-2',
   _include: 'Observation:patient',
-  '_include:iterate': 'Patient:link',
+  _revinclude: 'Provenance:target',
 });
-// end-block searchInclude
+// end-block searchIncludes
 
 let response: Resource[] =
-  // start-block includeResponse
+  // start-block includesResponse
   [
     {
       resourceType: 'Observation',
+      id: '1',
+      meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
       status: 'final',
       code: {
         coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [
-          {
-            system: 'http://snomed.info/sct',
-            code: '260385009',
-            display: 'Negative',
-          },
-        ],
+        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
       },
-      subject: { reference: 'Patient/e8585ae6-921f-415f-984e-dc5695de0e36', display: 'Homer Simpson III' },
-      performer: [
-        { reference: 'Practitioner/65f1ef35-4dd5-4dd5-823f-bb5d94e4768e', display: 'Dr. Jaunita130 Armstrong51' },
-      ],
+      subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
       effectiveDateTime: '2022-11-01T19:33:00.000Z',
-      id: '1dae1867-a7ba-4bb8-b0b3-5709274f0381',
-      meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
     },
     {
       resourceType: 'Patient',
-      name: [{ given: ['Homer'], family: 'Simpson', suffix: ['III'] }],
-      gender: 'male',
-      id: 'e8585ae6-921f-415f-984e-dc5695de0e36',
+      id: '1',
       meta: {
-        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
         versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',
         lastUpdated: '2023-03-22T03:05:21.361Z',
       },
+      name: [{ given: ['Homer'], family: 'Simpson', suffix: ['III'] }],
+      gender: 'male',
       birthDate: '1956-05-12',
-      link: [
-        {
-          other: {
-            reference: 'RelatedPerson/1616af2d-a81c-4a07-8939-11607a91732a',
-            display: 'Marge Jacqueline Simpson',
-          },
-          type: 'seealso',
-        },
-        {
-          other: { reference: 'RelatedPerson/32703da8-c9e3-462f-b346-cfabbcecc4ad', display: 'Lisa Simpson' },
-          type: 'seealso',
-        },
-      ],
     },
     {
-      resourceType: 'RelatedPerson',
-      patient: { reference: 'Patient/e8585ae6-921f-415f-984e-dc5695de0e36', display: 'Homer Simpson III' },
-      relationship: [
-        {
-          text: 'wife',
-          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'WIFE', display: 'WIFE' }],
-        },
-      ],
-      name: [
-        {
-          given: ['Marge', 'Jacqueline'],
-          family: 'Simpson',
-          period: { start: '1980-01-01T00:00:00Z' },
-          use: 'official',
-        },
-        {
-          given: ['Marge', 'Jacqueline'],
-          family: 'née Bouvier',
-          period: { end: '1980-01-01T00:00:00Z' },
-          use: 'old',
-        },
-      ],
-      gender: 'female',
-      id: '1616af2d-a81c-4a07-8939-11607a91732a',
-      active: true,
-      meta: { versionId: '8872379e-b991-49cf-a2ce-fe5512ad7b54', lastUpdated: '2022-12-16T22:10:44.450Z' },
+      resourceType: 'Provenance',
+      id: '1',
+      target: [{ reference: 'Observation/1' }],
+      agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
     },
-    {
-      resourceType: 'RelatedPerson',
-      patient: { reference: 'Patient/e8585ae6-921f-415f-984e-dc5695de0e36', display: 'Homer Simpson III' },
-      relationship: [
-        {
-          coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'DAUC', display: 'daughter' }],
-        },
-      ],
-      id: '32703da8-c9e3-462f-b346-cfabbcecc4ad',
-      meta: { versionId: 'fc707ca4-777e-436b-a69c-d36425909553', lastUpdated: '2023-03-22T03:04:51.510Z' },
-      name: [{ given: ['Lisa'], family: 'Simpson' }],
-    },
-  ];
-// end-block includeResponse
-
-// start-block searchRevinclude
-await medplum.searchResources('Observation', {
-  code: 'http://loinc.org|78012-2',
-  _revinclude: 'Provenance:target',
-});
-// end-block searchRevinclude
-
-response =
-  // start-block revincludeResponse
-  [
     {
       resourceType: 'Observation',
+      id: '2',
+      meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },
       status: 'final',
       code: {
         coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
       },
       valueCodeableConcept: {
-        coding: [
-          {
-            system: 'http://snomed.info/sct',
-            code: '260385009',
-            display: 'Negative',
-          },
-        ],
+        coding: [{ code: '10828004', display: 'Positive', system: 'http://snomed.info/sct' }],
       },
-      subject: { reference: 'Patient/e8585ae6-921f-415f-984e-dc5695de0e36', display: 'Homer Simpson III' },
-      performer: [
-        { reference: 'Practitioner/65f1ef35-4dd5-4dd5-823f-bb5d94e4768e', display: 'Dr. Jaunita130 Armstrong51' },
-      ],
-      effectiveDateTime: '2022-11-01T19:33:00.000Z',
-      id: '1dae1867-a7ba-4bb8-b0b3-5709274f0381',
-      meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
+      subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
+      effectiveDateTime: '2023-02-04T11:45:00.000Z',
     },
     {
       resourceType: 'Provenance',
-      target: [{ reference: 'Observation/1dae1867-a7ba-4bb8-b0b3-5709274f0381' }],
-      recorded: '2022-12-17T20:36:01.656Z',
-      agent: [
-        {
-          who: { reference: 'Practitioner/a1b522be-02f8-4f0f-928f-39702234824c', display: 'Reshma Khilnani' },
-          type: {
-            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/provenance-participant-type', code: 'author' }],
-          },
-          onBehalfOf: {
-            reference: 'Organization/4657f8f1-91df-486f-ab62-9d766393f8a0',
-            display: 'Brockton Hospital',
-          },
-        },
-      ],
-      id: '817460a3-20cb-425c-8d05-0747f1b5ec3a',
-      meta: { versionId: '297c919e-1369-43e1-9d43-64ec95383690', lastUpdated: '2022-12-21T02:08:07.696Z' },
+      id: '2',
+      target: [{ reference: 'Observation/2' }],
+      agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
+    },
+    {
+      resourceType: 'Observation',
+      id: '3',
+      status: 'final',
+      code: {
+        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+      },
+      valueCodeableConcept: {
+        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+      },
+      subject: { reference: 'Patient/2', display: 'Lisa Simpson' },
+      effectiveDateTime: '2022-06-12T16:03:00.000Z',
+      meta: { versionId: 'd4c4e4c7-a867-4b90-afd6-1c2bb84158de', lastUpdated: '2022-12-21T01:55:34.799Z' },
+    },
+    {
+      resourceType: 'Patient',
+      id: '2',
+      meta: {
+        versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',
+        lastUpdated: '2023-03-22T03:05:21.361Z',
+      },
+      name: [{ given: ['Lisa'], family: 'Simpson' }],
+      gender: 'female',
+      birthDate: '2015-08-13',
+    },
+    {
+      resourceType: 'Provenance',
+      id: '3',
+      target: [{ reference: 'Observation/3' }],
+      agent: [{ who: { reference: 'Practitioner/49d111f2-ae37-47bb-b8ee-2281d024501f' } }],
     },
   ];
-// end-block revincludeResponse
+// end-block includesResponse
+
+/*
+  // start-block searchIncludeIterateCurl
+  curl https://api.medplum.com/fhir/R4/Observation?code=78012-2&_include=Observation:patient&_include:iterate=Patient:general-practitioner
+  // end-block searchIncludeIterateCurl
+*/
+
+// start-block searchIncludeIterate
+await medplum.searchResources('Observation', {
+  code: '78012-2',
+  _include: 'Observation:patient',
+  '_include:iterate': 'Patient:general-practitioner',
+});
+// end-block searchIncludeIterate
+
+response =
+  // start-block iterateResponse
+  [
+    {
+      resourceType: 'Observation',
+      id: '1',
+      meta: { versionId: 'b267aa05-e134-4f01-817a-5d255a691880', lastUpdated: '2022-12-21T01:55:34.799Z' },
+      status: 'final',
+      code: {
+        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+      },
+      valueCodeableConcept: {
+        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+      },
+      subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
+      effectiveDateTime: '2022-11-01T19:33:00.000Z',
+    },
+    {
+      resourceType: 'Patient',
+      id: '1',
+      meta: { versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135', lastUpdated: '2023-03-22T03:05:21.361Z' },
+      name: [{ given: ['Homer'], family: 'Simpson', suffix: ['III'] }],
+      gender: 'male',
+      birthDate: '1956-05-12',
+      generalPractitioner: [{ reference: 'Practitioner/1' }],
+    },
+    {
+      resourceType: 'Practitioner',
+      id: '1',
+      name: [{ prefix: ['Dr.'], given: ['Julius', 'Michael'], family: 'Hibbert', suffix: ['M.D.'] }],
+      identifier: [{ system: 'http://hl7.org/fhir/sid/us-npi', value: '3141592654' }],
+    },
+    {
+      resourceType: 'Observation',
+      id: '2',
+      meta: { versionId: '7777208f-426f-41b1-ab4b-0eb6d3833f09', lastUpdated: '2023-05-01T00:00:00.000Z' },
+      status: 'final',
+      code: {
+        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+      },
+      valueCodeableConcept: {
+        coding: [{ code: '10828004', display: 'Positive', system: 'http://snomed.info/sct' }],
+      },
+      subject: { reference: 'Patient/1', display: 'Homer Simpson III' },
+      effectiveDateTime: '2023-02-04T11:45:00.000Z',
+    },
+    {
+      resourceType: 'Observation',
+      id: '3',
+      status: 'final',
+      code: {
+        coding: [{ system: 'http://loinc.org', code: '78012-2', display: 'Streptococcus pyogenes antigen, Throat' }],
+      },
+      valueCodeableConcept: {
+        coding: [{ code: '260385009', display: 'Negative', system: 'http://snomed.info/sct' }],
+      },
+      subject: { reference: 'Patient/2', display: 'Lisa Simpson' },
+      effectiveDateTime: '2022-06-12T16:03:00.000Z',
+      meta: { versionId: 'd4c4e4c7-a867-4b90-afd6-1c2bb84158de', lastUpdated: '2022-12-21T01:55:34.799Z' },
+    },
+    {
+      resourceType: 'Patient',
+      id: '2',
+      meta: {
+        versionId: '98a92482-bc3b-4f09-b7ce-08fea48fa135',
+        lastUpdated: '2023-03-22T03:05:21.361Z',
+      },
+      name: [{ given: ['Lisa'], family: 'Simpson' }],
+      gender: 'female',
+      birthDate: '2015-08-13',
+      generalPractitioner: [{ reference: 'Practitioner/1' }],
+    },
+  ];
+// end-block iterateResponse
 
 console.log(response); // Needed to make the example compile, so `response` isn't unused
