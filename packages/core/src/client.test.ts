@@ -1265,6 +1265,16 @@ describe('Client', () => {
     expect(client.getCachedReference(createReference(result.entry?.[0]?.resource as Patient))).toBeDefined();
   });
 
+  test('Search and return 404', async () => {
+    const fetch = mockFetch(404, () => 'string_representation');
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.search('Patient');
+    } catch (err) {
+      expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
+    }
+  });
+
   describe('Paginated Search ', () => {
     let fetch: FetchLike;
 

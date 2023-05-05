@@ -33,7 +33,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcomes';
+import { OperationOutcomeError, isOk, normalizeOperationOutcome, notFound } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
@@ -2204,6 +2204,10 @@ export class MedplumClient extends EventTarget {
     if (response.status === 204 || response.status === 304) {
       // No content or change
       return undefined as unknown as T;
+    }
+
+    if (response.status === 404) {
+      throw new OperationOutcomeError(normalizeOperationOutcome(notFound));
     }
 
     let obj: any = undefined;
