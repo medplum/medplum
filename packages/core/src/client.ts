@@ -2207,7 +2207,6 @@ export class MedplumClient extends EventTarget {
     }
 
     if (response.status === 404) {
-      console.error(`404, couldn't retrieve response from ${url}`);
       throw new OperationOutcomeError(normalizeOperationOutcome(notFound));
     }
 

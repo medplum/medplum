@@ -1266,18 +1266,12 @@ describe('Client', () => {
   });
 
   test('Search and return 404', async () => {
-    console.error = jest.fn();
-    const fetch = mockFetch(404, {
-      resourceType: 'Bundle',
-      entry: [{ resource: { resourceType: 'Patient', id: '123' } }],
-    });
+    const fetch = mockFetch(404, () => 'string_representation');
     const client = new MedplumClient({ fetch });
     try {
       await client.search('Patient');
     } catch (err) {
-      expect(console.error).toBeCalledWith(
-        `404, couldn't retrieve response from https://api.medplum.com/fhir/R4/Patient`
-      );
+      expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
     }
   });
 
