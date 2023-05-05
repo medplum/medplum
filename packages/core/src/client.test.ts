@@ -1,6 +1,7 @@
 import {
   Bot,
   Bundle,
+  CodeableConcept,
   Identifier,
   OperationOutcome,
   Patient,
@@ -1646,6 +1647,25 @@ describe('Client', () => {
       expect(err).toBeDefined();
     }
     expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  test('Update Observation', async () => {
+    const client = new MedplumClient();
+    const code = await client.createResource({
+      resourceType: 'CodeableConcept',
+    })
+
+    const observation = await client.createResource({
+      resourceType: 'Observation',
+      name: 'Test observation',
+    });
+
+    const observation2 = await client.createResource({
+      resourceType: 'Observation',
+      name: 'Test observation 2',
+    });
+
+    client.createOrUpdateObservation(observation, [observation, observation2], '');
   });
 });
 

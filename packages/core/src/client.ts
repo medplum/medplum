@@ -3,15 +3,20 @@
 
 import {
   AccessPolicy,
+  Attachment,
   Binary,
   Bundle,
   BundleEntry,
   BundleLink,
+  CodeableConcept,
   Communication,
   Device,
+  DiagnosticReport,
   Encounter,
   ExtractResource,
   Identifier,
+  Media,
+  Observation,
   OperationOutcome,
   Patient,
   Project,
@@ -21,6 +26,7 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  ServiceRequest,
   StructureDefinition,
   UserConfiguration,
   ValueSet,
@@ -31,13 +37,13 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Hl7Message } from './hl7';
+import { Hl7Message, Hl7Segment } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
-import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
+import { InviteResult, ProfileResource, arrayBufferToBase64, createReference, findByCode } from './utils';
 import { encodeBase64 } from './base64';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
@@ -2118,6 +2124,69 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(url.toString(), options);
     return response.blob();
   }
+
+  createOrUpdateObservation(
+    observation: Observation,
+    existingObservations: Observation[],
+    system: string,
+  ): Promise<Observation> {
+    const existingObservation = findByCode(existingObservations, observation.code as CodeableConcept, system);
+    if (existingObservation) {
+      return this.updateResource({
+        ...existingObservation,
+        ...observation,
+        category: existingObservation.category || observation.category,
+      });
+    }
+    return this.createResource(observation);
+  }
+  
+  async uploadEmbeddedPdfs(
+    report: DiagnosticReport,
+    bid: string,
+    message: Hl7Message
+  ): Promise<Media[]> {
+    // Upload PDF reports
+    const pdfLines = message.segments.filter((seg) => seg.get(3)?.get(1) === 'PDFBASE64');
+    const media = await Promise.all(
+      pdfLines.map(async (segment: Hl7Segment) => {
+        const encodedData = segment.get(5).get(4);
+        const decodedData = Buffer.from(encodedData, 'base64');
+        return this.uploadMedia(decodedData, 'application/pdf', `ADL_report_${bid}.pdf`, {
+          subject: report.subject,
+          basedOn: report.basedOn as Reference<ServiceRequest>[],
+        });
+      })
+    );
+  
+    if (media.length > 0) {
+      if (!report.presentedForm) {
+        report.presentedForm = [];
+      }
+      report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content as Attachment));
+    }
+  
+    return media;
+  }
+  
+
+  async uploadMedia(
+    contents: string | Uint8Array | File | Blob,
+    contentType: string,
+    filename: string | undefined,
+    fields?: Partial<Media>
+  ): Promise<Media> {
+    const binary = await this.createBinary(contents, filename, contentType);
+    return this.createResource({
+      ...fields,
+      resourceType: 'Media',
+      content: {
+        contentType: contentType,
+        url: 'Binary/' + binary.id,
+        title: filename,
+      },
+    });
+  }  
 
   //
   // Private helpers
