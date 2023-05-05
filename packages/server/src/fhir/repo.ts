@@ -1096,40 +1096,33 @@ export class Repository extends BaseRepository implements FhirRepository {
       );
     }
 
-    let nestedSearchRequest: SearchRequest;
     const structDef = getStructureDefinitions().types[revInclude.resourceType];
 
     // NOTE(2023-05-03): This assumes that reference search parameters have an `expression` essentially like "ResourceType.referenceField"
     const [_, ...pathParts] = searchParam.expression?.split('.') || [];
     const referenceField = structDef.properties[pathParts[0]];
+    let value: string;
     if (referenceField.type?.some((t) => t.code === PropertyType.canonical)) {
-      nestedSearchRequest = {
-        resourceType: revInclude.resourceType as ResourceType,
-        filters: [
-          {
-            code: revInclude.searchParam,
-            operator: FhirOperator.EQUALS,
-            value: resources
-              .map((r) => (r as any).url)
-              .filter((u) => u !== undefined)
-              .join(','),
-          },
-        ],
-      };
+      value = resources
+        .map((r) => (r as any).url)
+        .filter((u) => u !== undefined)
+        .join(',');
     } else {
-      nestedSearchRequest = {
-        resourceType: revInclude.resourceType as ResourceType,
-        filters: [
-          {
-            code: revInclude.searchParam,
-            operator: FhirOperator.EQUALS,
-            value: resources.map(getReferenceString).join(','),
-          },
-        ],
-      };
+      value = resources.map(getReferenceString).join(',');
     }
 
-    return (await this.getSearchEntries(nestedSearchRequest)).entry;
+    return (
+      await this.getSearchEntries({
+        resourceType: revInclude.resourceType as ResourceType,
+        filters: [
+          {
+            code: revInclude.searchParam,
+            operator: FhirOperator.EQUALS,
+            value: value,
+          },
+        ],
+      })
+    ).entry;
   }
 
   /**
