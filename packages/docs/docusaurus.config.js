@@ -238,6 +238,10 @@ const config = {
         //... other Algolia params
       },
     }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
 };
 
 module.exports = config;
