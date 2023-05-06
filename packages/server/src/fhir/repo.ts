@@ -101,7 +101,7 @@ import {
   Operator,
   SelectQuery,
 } from './sql';
-import { getSearchParameter, getSearchParameters } from './structure';
+import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -1044,10 +1044,31 @@ export class Repository extends BaseRepository implements FhirRepository {
     const references = fhirPathResult
       .filter((typedValue) => typedValue.type === PropertyType.Reference)
       .map((typedValue) => typedValue.value as Reference);
-
     const readResult = await this.readReferences(references);
-
     const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
+
+    const canonicalReferences = fhirPathResult
+      .filter((typedValue) => typedValue.type === PropertyType.canonical || typedValue.type === PropertyType.uri)
+      .map((typedValue) => typedValue.value as string);
+    const canonicalSearches = canonicalReferences?.flatMap((canonicalRef) =>
+      searchParam.target?.map((resourceType) =>
+        this.searchResources({
+          resourceType: resourceType,
+          filters: [
+            {
+              code: 'url',
+              operator: FhirOperator.EQUALS,
+              value: canonicalRef,
+            },
+          ],
+        })
+      )
+    );
+    (await Promise.all(canonicalSearches)).forEach((resources) => {
+      if (resources) {
+        includedResources.push(...resources);
+      }
+    });
 
     return includedResources.map(
       (resource: Resource) =>
@@ -1068,18 +1089,40 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The bundle entries for the reverse included resources.
    */
   private async getSearchRevIncludeEntries(revInclude: IncludeTarget, resources: Resource[]): Promise<BundleEntry[]> {
-    const nestedSearchRequest: SearchRequest = {
-      resourceType: revInclude.resourceType as ResourceType,
-      filters: [
-        {
-          code: revInclude.searchParam,
-          operator: FhirOperator.EQUALS,
-          value: resources.map(getReferenceString).join(','),
-        },
-      ],
-    };
+    const searchParam = getSearchParameter(revInclude.resourceType, revInclude.searchParam);
+    if (!searchParam) {
+      throw new OperationOutcomeError(
+        badRequest(`Invalid include parameter: ${revInclude.resourceType}:${revInclude.searchParam}`)
+      );
+    }
 
-    return (await this.getSearchEntries(nestedSearchRequest)).entry;
+    const structDef = getStructureDefinitions().types[revInclude.resourceType];
+
+    // NOTE(2023-05-03): This assumes that reference search parameters have an `expression` essentially like "ResourceType.referenceField"
+    const [_, ...pathParts] = searchParam.expression?.split('.') || [];
+    const referenceField = structDef.properties[pathParts[0]];
+    let value: string;
+    if (referenceField.type?.some((t) => t.code === PropertyType.canonical)) {
+      value = resources
+        .map((r) => (r as any).url)
+        .filter((u) => u !== undefined)
+        .join(',');
+    } else {
+      value = resources.map(getReferenceString).join(',');
+    }
+
+    return (
+      await this.getSearchEntries({
+        resourceType: revInclude.resourceType as ResourceType,
+        filters: [
+          {
+            code: revInclude.searchParam,
+            operator: FhirOperator.EQUALS,
+            value: value,
+          },
+        ],
+      })
+    ).entry;
   }
 
   /**

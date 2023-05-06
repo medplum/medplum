@@ -14,6 +14,7 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import {
+  ActivityDefinition,
   AllergyIntolerance,
   Appointment,
   AuditEvent,
@@ -28,6 +29,7 @@ import {
   OperationOutcome,
   Organization,
   Patient,
+  PlanDefinition,
   Practitioner,
   Provenance,
   Questionnaire,
@@ -2218,6 +2220,69 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle, patient)).toBeTruthy();
   });
 
+  test('Include canonical success', async () => {
+    const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
+    const questionnaire = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: canonicalURL,
+    });
+    const response = await systemRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      questionnaire: canonicalURL,
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'QuestionnaireResponse',
+      include: [
+        {
+          resourceType: 'QuestionnaireResponse',
+          searchParam: 'questionnaire',
+        },
+      ],
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: response.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, response)).toBeTruthy();
+    expect(bundleContains(bundle, questionnaire)).toBeTruthy();
+  });
+
+  test('Include PlanDefinition mixed types', async () => {
+    const canonical = 'http://example.com/fhir/R4/ActivityDefinition/1';
+    const uri = 'http://example.com/fhir/R4/ActivityDefinition/2';
+    const plan = await systemRepo.createResource<PlanDefinition>({
+      resourceType: 'PlanDefinition',
+      status: 'active',
+      action: [{ definitionCanonical: canonical }, { definitionUri: uri }],
+    });
+    const activity1 = await systemRepo.createResource<ActivityDefinition>({
+      resourceType: 'ActivityDefinition',
+      status: 'active',
+      url: canonical,
+    });
+    const activity2 = await systemRepo.createResource<ActivityDefinition>({
+      resourceType: 'ActivityDefinition',
+      status: 'active',
+      url: uri,
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'PlanDefinition',
+      include: [
+        {
+          resourceType: 'PlanDefinition',
+          searchParam: 'definition',
+        },
+      ],
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: plan.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, plan)).toBeTruthy();
+    expect(bundleContains(bundle, activity1)).toBeTruthy();
+    expect(bundleContains(bundle, activity2)).toBeTruthy();
+  });
+
   test('Include references invalid search param', async () => {
     try {
       await systemRepo.search({
@@ -2284,6 +2349,34 @@ describe('FHIR Repo', () => {
     expect(bundleContains(searchResult2, practitioner2)).toBeTruthy();
     expect(bundleContains(searchResult2, provenance1)).toBeTruthy();
     expect(bundleContains(searchResult2, provenance2)).toBeTruthy();
+  });
+
+  test('Reverse include canonical', async () => {
+    const canonicalURL = 'http://example.com/fhir/Questionnaire/PHQ-9/' + randomUUID();
+    const questionnaire = await systemRepo.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+      url: canonicalURL,
+    });
+    const response = await systemRepo.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      status: 'in-progress',
+      questionnaire: canonicalURL,
+    });
+    const bundle = await systemRepo.search({
+      resourceType: 'Questionnaire',
+      revInclude: [
+        {
+          resourceType: 'QuestionnaireResponse',
+          searchParam: 'questionnaire',
+        },
+      ],
+      total: 'accurate',
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: questionnaire.id as string }],
+    });
+    expect(bundle.total).toEqual(1);
+    expect(bundleContains(bundle, response)).toBeTruthy();
+    expect(bundleContains(bundle, questionnaire)).toBeTruthy();
   });
 
   test('_include:iterate', async () => {
