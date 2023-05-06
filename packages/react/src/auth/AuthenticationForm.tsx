@@ -156,6 +156,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           label="Password"
           autoComplete="off"
           required={true}
+          autoFocus={true}
           error={getErrorsForInput(outcome, 'password')}
         />
       </Stack>
