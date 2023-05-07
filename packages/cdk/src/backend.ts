@@ -1,4 +1,6 @@
 import {
+  Duration,
+  RemovalPolicy,
   aws_ec2 as ec2,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
@@ -7,13 +9,11 @@ import {
   aws_logs as logs,
   aws_rds as rds,
   aws_route53 as route53,
-  aws_route53_targets as targets,
   aws_s3 as s3,
   aws_secretsmanager as secretsmanager,
   aws_ssm as ssm,
+  aws_route53_targets as targets,
   aws_wafv2 as wafv2,
-  Duration,
-  RemovalPolicy,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Construct } from 'constructs';
@@ -250,28 +250,8 @@ export class BackEnd extends Construct {
     });
 
     // Task Containers
-    let serverImage: ecs.ContainerImage | undefined = undefined;
-    // Pull out the image name and tag from the image URI if it's an ECR image
-    const ecrImageUriRegex = new RegExp(
-      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
-    );
-    const nameTagMatches = config.serverImage.match(ecrImageUriRegex);
-    const serverImageName = nameTagMatches?.[1];
-    const serverImageTag = nameTagMatches?.[2];
-    if (serverImageName && serverImageTag) {
-      // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
-      const ecrRepo = Repository.fromRepositoryArn(
-        this,
-        'ServerImageRepo',
-        `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
-      );
-      serverImage = ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
-    } else {
-      // Otherwise, use the standard container image
-      serverImage = ecs.ContainerImage.fromRegistry(config.serverImage);
-    }
     const serviceContainer = taskDefinition.addContainer('MedplumTaskDefinition', {
-      image: serverImage,
+      image: this.getContainerImage(config, config.serverImage),
       command: [config.region === 'us-east-1' ? `aws:/medplum/${name}/` : `aws:${config.region}:/medplum/${name}/`],
       logging: logDriver,
     });
@@ -280,6 +260,18 @@ export class BackEnd extends Construct {
       containerPort: config.apiPort,
       hostPort: config.apiPort,
     });
+
+    if (config.additionalContainers) {
+      for (const container of config.additionalContainers) {
+        taskDefinition.addContainer('AdditionalContainer-' + container.name, {
+          containerName: container.name,
+          image: this.getContainerImage(config, container.image),
+          command: container.command,
+          environment: container.environment,
+          logging: logDriver,
+        });
+      }
+    }
 
     // Security Groups
     const fargateSecurityGroup = new ec2.SecurityGroup(this, 'ServiceSecurityGroup', {
@@ -422,5 +414,35 @@ export class BackEnd extends Construct {
     console.log('BotLambdaRole', botLambdaRoleParameter.stringValue);
     console.log('WAF', waf.attrArn);
     console.log('WAF Association', wafAssociation.node.id);
+  }
+
+  /**
+   * Returns a container image for the given image name.
+   * If the image name is an ECR image, then the image will be pulled from ECR.
+   * Otherwise, the image name is assumed to be a Docker Hub image.
+   * @param config The config settings (account number and region).
+   * @param imageName The image name.
+   * @returns The container image.
+   */
+  private getContainerImage(config: MedplumInfraConfig, imageName: string): ecs.ContainerImage {
+    // Pull out the image name and tag from the image URI if it's an ECR image
+    const ecrImageUriRegex = new RegExp(
+      `^${config.accountNumber}\\.dkr\\.ecr\\.${config.region}\\.amazonaws\\.com/(.*)[:@](.*)$`
+    );
+    const nameTagMatches = imageName.match(ecrImageUriRegex);
+    const serverImageName = nameTagMatches?.[1];
+    const serverImageTag = nameTagMatches?.[2];
+    if (serverImageName && serverImageTag) {
+      // Creating an ecr repository image will automatically grant fine-grained permissions to ecs to access the image
+      const ecrRepo = Repository.fromRepositoryArn(
+        this,
+        'ServerImageRepo',
+        `arn:aws:ecr:${config.region}:${config.accountNumber}:repository/${serverImageName}`
+      );
+      return ecs.ContainerImage.fromEcrRepository(ecrRepo, serverImageTag);
+    }
+
+    // Otherwise, use the standard container image
+    return ecs.ContainerImage.fromRegistry(imageName);
   }
 }

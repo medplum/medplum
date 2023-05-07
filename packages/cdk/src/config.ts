@@ -29,4 +29,15 @@ export interface MedplumInfraConfig {
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
+  additionalContainers?: {
+    name: string;
+    image: string;
+    cpu?: number;
+    memory?: number;
+    essential?: boolean;
+    command?: string[];
+    environment?: {
+      [key: string]: string;
+    };
+  }[];
 }
