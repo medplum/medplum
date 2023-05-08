@@ -76,7 +76,7 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
 
-    if (elementDefinition.max === '*') {
+    if (elementDefinition.max !== '0' && elementDefinition.max !== '1') {
       array = true;
     }
 
