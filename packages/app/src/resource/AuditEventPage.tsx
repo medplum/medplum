@@ -10,7 +10,7 @@ export function AuditEventPage(): JSX.Element | null {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'AuditEvent',
     filters: [{ code: 'entity', operator: Operator.EQUALS, value: `${resourceType}/${id}` }],
-    fields: ['id', '_lastUpdated'],
+    fields: ['id', 'outcome', 'outcomeDesc', '_lastUpdated'],
     sortRules: [{ code: '-_lastUpdated' }],
     count: 20,
   });
@@ -22,7 +22,6 @@ export function AuditEventPage(): JSX.Element | null {
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
-        hideToolbar
       />
     </Document>
   );
