@@ -118,10 +118,10 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType?: Pro
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
-      if (propertyType === PropertyType.dateTime || propertyType === PropertyType.instant) {
-        type = SearchParameterType.DATETIME;
-      } else {
+      if (propertyType === PropertyType.date) {
         type = SearchParameterType.DATE;
+      } else {
+        type = SearchParameterType.DATETIME;
       }
       break;
     case 'number':
