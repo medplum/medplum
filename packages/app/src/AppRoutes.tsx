@@ -1,5 +1,20 @@
 import React from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { BatchPage } from './BatchPage';
+import { BulkAppPage } from './BulkAppPage';
+import { ChangePasswordPage } from './ChangePasswordPage';
+import { CreateResourcePage } from './CreateResourcePage';
+import { ErrorPage } from './ErrorPage';
+import { FormPage } from './FormPage';
+import { HomePage } from './HomePage';
+import { MfaPage } from './MfaPage';
+import { OAuthPage } from './OAuthPage';
+import { RegisterPage } from './RegisterPage';
+import { ResetPasswordPage } from './ResetPasswordPage';
+import { SecurityPage } from './SecurityPage';
+import { SetPasswordPage } from './SetPasswordPage';
+import { SignInPage } from './SignInPage';
+import { SmartSearchPage } from './SmartSearchPage';
 import { BotsPage } from './admin/BotsPage';
 import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
@@ -13,21 +28,11 @@ import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { UsersPage } from './admin/UsersPage';
-import { BatchPage } from './BatchPage';
-import { BulkAppPage } from './BulkAppPage';
-import { ChangePasswordPage } from './ChangePasswordPage';
-import { CreateResourcePage } from './CreateResourcePage';
-import { ErrorPage } from './ErrorPage';
-import { FormPage } from './FormPage';
-import { HomePage } from './HomePage';
 import { AssaysPage } from './lab/AssaysPage';
 import { PanelsPage } from './lab/PanelsPage';
-import { MfaPage } from './MfaPage';
-import { OAuthPage } from './OAuthPage';
-import { RegisterPage } from './RegisterPage';
-import { ResetPasswordPage } from './ResetPasswordPage';
 import { ApplyPage } from './resource/ApplyPage';
 import { AppsPage } from './resource/AppsPage';
+import { AuditEventPage } from './resource/AuditEventPage';
 import { BlamePage } from './resource/BlamePage';
 import { BotEditor } from './resource/BotEditor';
 import { BuilderPage } from './resource/BuilderPage';
@@ -39,16 +44,12 @@ import { HistoryPage } from './resource/HistoryPage';
 import { JsonPage } from './resource/JsonPage';
 import { PreviewPage } from './resource/PreviewPage';
 import { QuestionnaireBotsPage } from './resource/QuestionnaireBotsPage';
+import { QuestionnaireResponsePage } from './resource/QuestionnaireResponsePage';
 import { ReferenceRangesPage } from './resource/ReferenceRangesPage';
 import { ReportPage } from './resource/ReportPage';
 import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
 import { TimelinePage } from './resource/TimelinePage';
-import { SecurityPage } from './SecurityPage';
-import { SetPasswordPage } from './SetPasswordPage';
-import { SignInPage } from './SignInPage';
-import { SmartSearchPage } from './SmartSearchPage';
-import { QuestionnaireResponsePage } from './resource/QuestionnaireResponsePage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -90,6 +91,7 @@ export function AppRoutes(): JSX.Element {
           <Route index element={<TimelinePage />} />
           <Route path="apply" element={<ApplyPage />} />
           <Route path="apps" element={<AppsPage />} />
+          <Route path="event" element={<AuditEventPage />} />
           <Route path="blame" element={<BlamePage />} />
           <Route path="bots" element={<QuestionnaireBotsPage />} />
           <Route path="builder" element={<BuilderPage />} />
