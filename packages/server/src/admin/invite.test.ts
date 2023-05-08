@@ -271,6 +271,54 @@ describe('Admin Invite', () => {
     expect(SendEmailCommand).toHaveBeenCalledTimes(0);
   });
 
+  test('Reuse deleted externalId', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Alice invites Bob to the project
+    const bobSub = randomUUID();
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: bobSub,
+      });
+    expect(res2.status).toBe(200);
+    expect(res2.body.profile.reference).toContain('Patient/');
+
+    // Delete the ProjectMembership
+    // ProjectMembership.externalId has a unique constraint
+    // That column must be cleared
+    const res3 = await request(app)
+      .delete('/fhir/R4/ProjectMembership/' + res2.body.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({});
+    expect(res3.status).toBe(200);
+
+    // Alice invites Bob to the project again
+    // Make sure that we can reuse the same externalId
+    const res4 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Patient',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        externalId: bobSub,
+      });
+    expect(res4.status).toBe(200);
+    expect(res4.body.profile.reference).toContain('Patient/');
+  });
+
   test('Invite as client', async () => {
     // First, Alice creates a project
     const { project, accessToken, client } = await registerNew({

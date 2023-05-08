@@ -807,6 +807,13 @@ export class Repository extends BaseRepository implements FhirRepository {
         content,
       };
 
+      const searchParams = getSearchParameters(resourceType);
+      if (searchParams) {
+        for (const searchParam of Object.values(searchParams)) {
+          this.buildColumn({ resourceType } as Resource, columns, searchParam);
+        }
+      }
+
       await new InsertQuery(resourceType, [columns]).mergeOnConflict(true).execute(client);
 
       await new InsertQuery(resourceType + '_History', [
