@@ -1267,6 +1267,18 @@ describe('Client', () => {
 
   test('Search and return 404', async () => {
     const fetch = mockFetch(404, () => 'string_representation');
+
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 404,
+      headers: {
+        get(name: string): string | undefined {
+          return {
+            'content-type': 'string_representation',
+          }[name];
+        },
+      },
+    }));
+
     const client = new MedplumClient({ fetch });
     try {
       await client.search('Patient');
@@ -1555,7 +1567,20 @@ describe('Client', () => {
   });
 
   test('Auto batch single request error', async () => {
-    const medplum = new MedplumClient({ fetch: mockFetch(404, notFound), autoBatchTime: 100 });
+    const fetch = mockFetch(404, notFound);
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 404,
+      json: () => notFound,
+      headers: {
+        get(name: string): string | undefined {
+          return {
+            'content-type': 'application/fhir+json',
+          }[name];
+        },
+      },
+    }));
+    const medplum = new MedplumClient({ fetch: fetch, autoBatchTime: 100 });
+
     try {
       await medplum.readResource('Patient', 'xyz-not-found');
       fail('Expected error');
