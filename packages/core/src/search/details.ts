@@ -8,6 +8,7 @@ export enum SearchParameterType {
   QUANTITY = 'QUANTITY',
   TEXT = 'TEXT',
   REFERENCE = 'REFERENCE',
+  CANONICAL = 'CANONICAL',
   DATE = 'DATE',
   DATETIME = 'DATETIME',
   PERIOD = 'PERIOD',
@@ -131,7 +132,11 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType?: Pro
       type = SearchParameterType.QUANTITY;
       break;
     case 'reference':
-      type = SearchParameterType.REFERENCE;
+      if (propertyType === PropertyType.canonical) {
+        type = SearchParameterType.CANONICAL;
+      } else {
+        type = SearchParameterType.REFERENCE;
+      }
       break;
     case 'token':
       if (propertyType === 'boolean') {
