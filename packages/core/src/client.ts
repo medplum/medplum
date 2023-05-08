@@ -2207,7 +2207,10 @@ export class MedplumClient extends EventTarget {
     }
 
     if (response.status === 404) {
-      throw new OperationOutcomeError(normalizeOperationOutcome(notFound));
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/fhir+json')) {
+        throw new OperationOutcomeError(notFound);
+      }
     }
 
     let obj: any = undefined;
