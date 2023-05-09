@@ -17,7 +17,7 @@ function getTabs(resourceType: string): string[] {
   const result = ['Timeline'];
 
   if (resourceType === 'Bot') {
-    result.push('Editor');
+    result.push('Editor', 'Subscription');
   }
 
   if (resourceType === 'PlanDefinition') {
