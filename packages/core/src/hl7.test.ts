@@ -1,4 +1,4 @@
-import { Hl7Field, Hl7Message, Hl7Segment } from './hl7';
+import { Hl7Field, Hl7Message, Hl7Segment, parseHl7Date } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
@@ -201,5 +201,41 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
     expect(obx.get(18).get(1, 0, 0)).toEqual('ROCHE');
     expect(obx.get(18).get(0, 0, 1)).toEqual('2037-06');
     expect(obx.get(18).get(1, 0, 1)).toEqual('ROCHE');
+  });
+
+  test('Undefined for empty input', () => {
+    expect(parseHl7Date(undefined)).toBeUndefined();
+  });
+
+  test('Correct ISO-8601 format with default options', () => {
+    const hl7Date = '20230508103000';
+    const expectedResult = '2023-05-08T10:30:00.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Correct ISO-8601 format without seconds', () => {
+    const hl7Date = '202305081030';
+    const options = { seconds: false };
+    const expectedResult = '2023-05-08T10:30:00.000Z';
+    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+  });
+
+  test('Correct ISO-8601 format with custom timezone offset', () => {
+    const hl7Date = '20230508103000';
+    const options = { tzOffset: '+02:00' };
+    const expectedResult = '2023-05-08T10:30:00.000+02:00';
+    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+  });
+
+  test('Correct date strings with seconds', () => {
+    const hl7Date = '20230508103045';
+    const expectedResult = '2023-05-08T10:30:45.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Correct date strings with partial seconds', () => {
+    const hl7Date = '2023050810304';
+    const expectedResult = '2023-05-08T10:30:04.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
   });
 });

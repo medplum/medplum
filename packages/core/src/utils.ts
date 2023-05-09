@@ -4,7 +4,6 @@ import {
   Device,
   Extension,
   Identifier,
-  Observation,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
   Patient,
@@ -19,7 +18,6 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
-import { Readable } from 'stream';
 
 /**
  * @internal
@@ -33,6 +31,14 @@ export interface InviteResult {
   profile: ProfileResource;
   membership: ProjectMembership;
 }
+
+interface Code {
+  code?: CodeableConcept;
+}
+/**
+ * @internal
+ */
+export type ResourceWithCode = Resource & Code;
 
 /**
  * Creates a reference resource.
@@ -744,75 +750,17 @@ function toPreciseInteger(a: number, precision?: number): number {
   return Math.round(a * Math.pow(10, precision));
 }
 
-interface Hl7DateParseOptions {
-  seconds?: boolean;
-  tzOffset?: string;
-}
-
 /**
- * Returns a formatted string representing the date in ISO-8601 format.
- * @param hl7Date Date string.
- * @param options Optional configuration Object
- * @returns
- */
-export function parseHl7Date(hl7Date: string | undefined, options?: Hl7DateParseOptions): string | undefined {
-  if (!hl7Date) {
-    return undefined;
-  }
-
-  options = { ...{ seconds: true, tzOffset: 'Z' }, ...options };
-
-  const year = Number.parseInt(hl7Date.substring(0, 4));
-  const month = Number.parseInt(hl7Date.substring(4, 6));
-  const date = Number.parseInt(hl7Date.substring(6, 8));
-  const hours = Number.parseInt(hl7Date.substring(8, 10));
-  const minutes = Number.parseInt(hl7Date.substring(10, 12));
-
-  const seconds = options.seconds ? Number.parseInt(hl7Date.substring(12, 14)) : 0;
-
-  return `${pad2(year)}-${pad2(month)}-${pad2(date)}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.000${
-    options.tzOffset
-  }`;
-}
-
-function pad2(n: number): string {
-  return n.toString().padStart(2, '0');
-}
-
-/**
- * Finds the first observation in the input array that matches the specified code and system.
- * @param observations - The array of observations to search.
+ * Finds the first resource in the input array that matches the specified code and system.
+ * @param resources - The array of resources to search.
  * @param code - The code to search for.
  * @param system - The system to search for.
- * @returns The first observation in the input array that matches the specified code and system, or undefined if no such observation is found.
+ * @returns The first resource in the input array that matches the specified code and system, or undefined if no such resource is found.
  */
 export function findByCode(
-  observations: Observation[],
+  resources: ResourceWithCode[],
   code: CodeableConcept,
   system: string
-): Observation | undefined {
-  return observations.find((o) => getCodeBySystem(o.code || {}, system) === getCodeBySystem(code, system));
-}
-
-/**
- * Reads data from a Readable stream and returns a Promise that resolves with a Buffer containing all the data.
- * @param stream - The Readable stream to read from.
- * @returns A Promise that resolves with a Buffer containing all the data from the Readable stream.
- */
-export function streamToBuffer(stream: Readable): Promise<Buffer> {
-  const chunks: Uint8Array[] = [];
-  return new Promise<Buffer>((resolve, reject) => {
-    stream.on('data', (chunk: Uint8Array) => chunks.push(Buffer.from(chunk)));
-    stream.on('error', (err: Error) => {
-      console.error(err.message);
-      stream.destroy();
-      reject(err);
-    });
-    stream.on('end', () => {
-      resolve(Buffer.concat(chunks));
-    });
-    stream.on('close', () => {
-      stream.destroy();
-    });
-  });
+): ResourceWithCode | undefined {
+  return resources.find((r) => getCodeBySystem(r.code || {}, system) === getCodeBySystem(code, system));
 }

@@ -14,6 +14,7 @@ export * from './schema';
 export * from './search/details';
 export * from './search/match';
 export * from './search/search';
+export * from './sftp';
 export * from './storage';
 export * from './types';
 export * from './utils';

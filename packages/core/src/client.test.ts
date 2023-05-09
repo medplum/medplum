@@ -2,7 +2,6 @@ import {
   Bot,
   Bundle,
   Identifier,
-  Observation,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -1647,92 +1646,6 @@ describe('Client', () => {
       expect(err).toBeDefined();
     }
     expect(console.error).toHaveBeenCalledTimes(1);
-  });
-
-  describe('Observations', () => {
-    test('Create and Update Observation', async () => {
-      const fetch = jest.fn(async () => {
-        return {
-          status: 200,
-          json: () => ({}),
-        };
-      });
-      const client = new MedplumClient({ fetch });
-
-      // Create the mock Observation resources
-      const observation = await client.createResource({
-        resourceType: 'Observation',
-        name: 'Test observation',
-        code: {
-          coding: [
-            {
-              system: 'http://medplum.com',
-              code: '1234-5',
-            },
-          ],
-        },
-        category: [{ text: 'category1' }],
-      });
-      const observation2 = await client.createResource({
-        resourceType: 'Observation',
-        name: 'Test observation 2',
-        code: {
-          coding: [
-            {
-              system: 'http://medplum.com',
-              code: '5678-9',
-            },
-          ],
-        },
-        category: [{ text: 'category2' }],
-      });
-
-      // Create a new Observation resource for testing the createOrUpdateObservation method
-      const newObservation: Observation = {
-        resourceType: 'Observation',
-        code: {
-          coding: [
-            {
-              system: 'http://medplum.com',
-              code: '9999-0',
-            },
-          ],
-        },
-        category: [{ text: 'category30' }],
-      };
-
-      const updatedObservation: Observation = {
-        resourceType: 'Observation',
-        code: observation.code,
-        category: [{ text: 'category4' }],
-      };
-
-      // Mock the updateResource and createResource methods
-      const updateResource = jest.fn().mockResolvedValue(updatedObservation);
-      const createResource = jest.fn().mockResolvedValue(newObservation);
-
-      // Test the createOrUpdateObservation method with the updated Observation
-      await client.createOrUpdateObservation.call(
-        { updateResource, createResource },
-        updatedObservation,
-        [observation, observation2],
-        'http://medplum.com'
-      );
-
-      // Check if the updateResource method was called, and the createResource method was not called
-      expect(updateResource).toHaveBeenCalled();
-      expect(createResource).not.toHaveBeenCalled();
-
-      await client.createOrUpdateObservation.call(
-        { updateResource, createResource },
-        newObservation,
-        [observation, observation2],
-        'http://medplum.com'
-      );
-
-      // Test the createOrUpdateObservation method with the new Observation
-      expect(createResource).toHaveBeenCalled();
-    });
   });
 
   describe('Media', () => {

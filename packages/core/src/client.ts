@@ -7,14 +7,12 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
-  CodeableConcept,
   Communication,
   Device,
   Encounter,
   ExtractResource,
   Identifier,
   Media,
-  Observation,
   OperationOutcome,
   Patient,
   Project,
@@ -40,7 +38,7 @@ import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcom
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
-import { InviteResult, ProfileResource, arrayBufferToBase64, createReference, findByCode } from './utils';
+import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
 import { encodeBase64 } from './base64';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
@@ -2123,46 +2121,22 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Create or update an Observation instance based on the provided code and system.
-   *
-   * @param observation provided Observation
-   * @param existingObservations current Observations
-   * @param system URL to request
-   * @returns Promise of the Observation updated or created
-   */
-  createOrUpdateObservation(
-    observation: Observation,
-    existingObservations: Observation[],
-    system: string
-  ): Promise<Observation> {
-    const existingObservation = findByCode(existingObservations, observation.code as CodeableConcept, system);
-    if (existingObservation) {
-      return this.updateResource({
-        ...existingObservation,
-        ...observation,
-        category: existingObservation.category || observation.category,
-      });
-    }
-    return this.createResource(observation);
-  }
-
-  /**
    * Upload media to the server and create a Media instance for the uploaded content.
    * @param contents The contents of the media file, as a string, Uint8Array, File, or Blob.
    * @param contentType The media type of the content
    * @param filename The name of the file to be uploaded, or undefined if not applicable
-   * @param fields  Additional fields for Media
+   * @param additionalFields  Additional fields for Media
    * @returns Promise that resolves to the created Media
    */
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
     contentType: string,
     filename: string | undefined,
-    fields?: Partial<Media>
+    additionalFields?: Partial<Media>
   ): Promise<Media> {
     const binary = await this.createBinary(contents, filename, contentType);
     return this.createResource({
-      ...fields,
+      ...additionalFields,
       resourceType: 'Media',
       content: {
         contentType: contentType,
