@@ -49,6 +49,7 @@ import { ReferenceRangesPage } from './resource/ReferenceRangesPage';
 import { ReportPage } from './resource/ReportPage';
 import { ResourcePage } from './resource/ResourcePage';
 import { ResourceVersionPage } from './resource/ResourceVersionPage';
+import { SubscriptionsPage } from './resource/SubscriptionsPage';
 import { TimelinePage } from './resource/TimelinePage';
 
 export function AppRoutes(): JSX.Element {
@@ -106,6 +107,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="responses" element={<QuestionnaireResponsePage />} />
           <Route path="report" element={<ReportPage />} />
           <Route path="ranges" element={<ReferenceRangesPage />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
