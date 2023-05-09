@@ -33,7 +33,7 @@ export class BulkExporter {
   readonly repo: Repository;
   readonly since: string | undefined;
   private resource: BulkDataExport | undefined;
-  private writers: Record<string, BulkFileWriter>;
+  readonly writers: Record<string, BulkFileWriter>;
   readonly resourceSet: Set<string> = new Set();
 
   constructor(repo: Repository, since: string | undefined) {
