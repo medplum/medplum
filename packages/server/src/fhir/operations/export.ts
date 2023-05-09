@@ -1,9 +1,9 @@
-import { Request, Response } from 'express';
-import { Repository, protectedResourceTypes, publicResourceTypes } from '../repo';
+import { accepted, getResourceTypes } from '@medplum/core';
 import { Project, ResourceType } from '@medplum/fhirtypes';
-import { BulkExporter } from './utils/bulkexporter';
-import { getResourceTypes, accepted } from '@medplum/core';
+import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { Repository, protectedResourceTypes, publicResourceTypes } from '../repo';
+import { BulkExporter } from './utils/bulkexporter';
 
 /**
  * Handles a bulk export request.
@@ -34,7 +34,7 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
     if (!canBeExported(resourceType) || (types && !types.includes(resourceType))) {
       continue;
     }
-    await exportResourceType(exporter, project, resourceType as ResourceType);
+    await exportResourceType(exporter, resourceType as ResourceType);
   }
 
   // Close the exporter
@@ -44,14 +44,18 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
 }
 
-async function exportResourceType(exporter: BulkExporter, project: Project, resourceType: ResourceType): Promise<void> {
+export async function exportResourceType(
+  exporter: BulkExporter,
+  resourceType: ResourceType,
+  maxResources = 1000
+): Promise<void> {
   const repo = exporter.repo;
   const hasMore = true;
   let offset = 0;
   while (hasMore) {
     const bundle = await repo.search({
       resourceType,
-      count: 1000,
+      count: maxResources,
       offset,
     });
     if (!bundle.entry || bundle.entry.length === 0) {

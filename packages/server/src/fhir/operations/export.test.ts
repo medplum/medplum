@@ -1,9 +1,13 @@
-import { BulkDataExportOutput } from '@medplum/fhirtypes';
+import { BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { systemRepo } from '../repo';
+import { exportResourceType } from './export';
+import { BulkExporter } from './utils/bulkexporter';
+import { createReference } from '@medplum/core';
 
 const app = express();
 
@@ -298,5 +302,43 @@ describe('System export', () => {
     const resourceJSON = dataRes.text.trim().split('\n');
     expect(resourceJSON).toHaveLength(3);
     expect(JSON.parse(resourceJSON[0])?.code?.text).toEqual('test');
+  });
+
+  test('exportResourceType iterating through paginated search results', async () => {
+    const { project } = await createTestProject();
+    expect(project).toBeDefined();
+    const exporter = new BulkExporter(systemRepo, undefined);
+    const patient: Patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+    });
+
+    await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'preliminary',
+      subject: createReference(patient),
+      code: {
+        text: 'patient observation 1',
+      },
+    });
+
+    await systemRepo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'preliminary',
+      subject: createReference(patient),
+      code: {
+        text: 'patient observation 2',
+      },
+    });
+    await exporter.start('http://example.com');
+
+    await exportResourceType(exporter, 'Observation', 1);
+    const bulkDataExport = await exporter.close(project);
+    expect(bulkDataExport.status).toBe('completed');
   });
 });
