@@ -886,7 +886,7 @@ describe('Core Utils', () => {
         },
       ],
     };
-  
+
     const system = 'http://medplum.com';
     const expectedResult = observations[0];
 

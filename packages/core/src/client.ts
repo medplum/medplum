@@ -3,7 +3,6 @@
 
 import {
   AccessPolicy,
-  Attachment,
   Binary,
   Bundle,
   BundleEntry,
@@ -11,7 +10,6 @@ import {
   CodeableConcept,
   Communication,
   Device,
-  DiagnosticReport,
   Encounter,
   ExtractResource,
   Identifier,
@@ -26,7 +24,6 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
-  ServiceRequest,
   StructureDefinition,
   UserConfiguration,
   ValueSet,
@@ -37,7 +34,7 @@ import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'p
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
-import { Hl7Message, Hl7Segment } from './hl7';
+import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
 import { OperationOutcomeError, isOk, normalizeOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -2125,10 +2122,18 @@ export class MedplumClient extends EventTarget {
     return response.blob();
   }
 
+  /**
+   * Create or update an Observation instance based on the provided code and system.
+   *
+   * @param observation provided Observation
+   * @param existingObservations current Observations
+   * @param system URL to request
+   * @returns Promise of the Observation updated or created
+   */
   createOrUpdateObservation(
     observation: Observation,
     existingObservations: Observation[],
-    system: string,
+    system: string
   ): Promise<Observation> {
     const existingObservation = findByCode(existingObservations, observation.code as CodeableConcept, system);
     if (existingObservation) {
@@ -2141,6 +2146,14 @@ export class MedplumClient extends EventTarget {
     return this.createResource(observation);
   }
 
+  /**
+   * Upload media to the server and create a Media instance for the uploaded content.
+   * @param contents The contents of the media file, as a string, Uint8Array, File, or Blob.
+   * @param contentType The media type of the content
+   * @param filename The name of the file to be uploaded, or undefined if not applicable
+   * @param fields  Additional fields for Media
+   * @returns Promise that resolves to the created Media
+   */
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
     contentType: string,
@@ -2157,7 +2170,7 @@ export class MedplumClient extends EventTarget {
         title: filename,
       },
     });
-  }  
+  }
 
   //
   // Private helpers

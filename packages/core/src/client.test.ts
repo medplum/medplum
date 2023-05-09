@@ -2,7 +2,6 @@ import {
   Bot,
   Bundle,
   Identifier,
-  DiagnosticReport,
   Observation,
   OperationOutcome,
   Patient,
@@ -16,7 +15,6 @@ import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
 import { ProfileResource, createReference, stringify } from './utils';
-import { Hl7Message, Hl7Segment } from './hl7';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
