@@ -2803,5 +2803,139 @@
         ]
       }
     }
+  },
+  {
+    "fullUrl" : "https://medplum.com/fhir/StructureDefinition/AsyncJob",
+    "resource" : {
+      "resourceType" : "StructureDefinition",
+      "id" : "AsyncJob",
+      "name" : "AsyncJob",
+      "url" : "https://medplum.com/fhir/StructureDefinition/AsyncJob",
+      "status" : "active",
+      "kind" : "resource",
+      "abstract" : false,
+      "type" : "AsyncJob",
+      "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
+      "description" : "Contains details of long running asynchronous/background jobs.",
+      "snapshot" : {
+        "element" : [
+          {
+            "id" : "AsyncJob",
+            "path" : "AsyncJob",
+            "short" : "Contains details of long running asynchronous/background jobs.",
+            "definition" : "Contains details of long running asynchronous/background jobs.",
+            "min" : 0,
+            "max" : "*"
+          },
+          {
+            "id" : "AsyncJob.id",
+            "path" : "AsyncJob.id",
+            "short" : "Logical id of this artifact",
+            "definition" : "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.id",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
+          },
+          {
+            "id" : "AsyncJob.meta",
+            "path" : "AsyncJob.meta",
+            "definition" : "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.meta",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "Meta"
+            }]
+          },
+          {
+            "id" : "AsyncJob.implicitRules",
+            "path" : "AsyncJob.implicitRules",
+            "definition" : "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.implicitRules",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "uri"
+            }]
+          },
+          {
+            "id" : "AsyncJob.language",
+            "path" : "AsyncJob.language",
+            "definition" : "The base language in which the resource is written.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "Resource.language",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "AsyncJob.status",
+            "path" : "AsyncJob.status",
+            "short" : "active | error | completed",
+            "definition" : "The status of the request.",
+            "min" : 1,
+            "max" : "1",
+            "base" : {
+              "path" : "ServiceRequest.status",
+              "min" : 1,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }]
+          },
+          {
+            "id" : "AsyncJob.requestTime",
+            "path" : "AsyncJob.requestTime",
+            "definition" : "Indicates the server's time when the query is requested.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }]
+          },
+          {
+            "id" : "AsyncJob.transactionTime",
+            "path" : "AsyncJob.transactionTime",
+            "definition" : "Indicates the server's time when the query is run. The response SHOULD NOT include any resources modified after this instant, and SHALL include any matching resources modified up to and including this instant.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "instant"
+            }]
+          },
+          {
+            "id" : "AsyncJob.request",
+            "path" : "AsyncJob.request",
+            "definition" : "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
+            "min" : 1,
+            "max" : "1",
+            "type" : [{
+              "code" : "uri"
+            }]
+          }
+        ]
+      }
+    }
   }]
 }
