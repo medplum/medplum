@@ -10,7 +10,7 @@ export function SubscriptionPage(): JSX.Element | null {
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Subscription',
     filters: [{ code: 'url', operator: Operator.EQUALS, value: `${resourceType}/${id}` }],
-    fields: ['id', '_lastUpdated'],
+    fields: ['id', 'criteria', 'status', '_lastUpdated'],
   });
 
   return (
