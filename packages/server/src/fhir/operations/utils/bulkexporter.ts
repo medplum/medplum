@@ -33,13 +33,12 @@ export class BulkExporter {
   readonly repo: Repository;
   readonly since: string | undefined;
   private resource: BulkDataExport | undefined;
-  readonly writers: Record<string, BulkFileWriter>;
+  readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet: Set<string> = new Set();
 
   constructor(repo: Repository, since: string | undefined) {
     this.repo = repo;
     this.since = since;
-    this.writers = {};
   }
 
   async start(url: string): Promise<void> {
@@ -76,6 +75,9 @@ export class BulkExporter {
 
   async writeResource(resource: Resource, writer: BulkFileWriter): Promise<void> {
     if (resource.resourceType === 'AuditEvent') {
+      return;
+    }
+    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
       return;
     }
     const ref = getReferenceString(resource);
