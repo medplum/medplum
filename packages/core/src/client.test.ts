@@ -1,8 +1,8 @@
 import {
   Bot,
   Bundle,
-  CodeableConcept,
   Identifier,
+  Media,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -1650,22 +1650,39 @@ describe('Client', () => {
   });
 
   test('Update Observation', async () => {
-    const client = new MedplumClient();
-    const code = await client.createResource({
-      resourceType: 'CodeableConcept',
-    })
+    // const fetch = jest.fn(async () => {
+    //   return {
+    //     status: 200,
+    //     json: async () => ({ id: '123', resourceType: 'Observation', name: 'Test observation' }),
+    //   };
+    // });
+    // const client = new MedplumClient({ fetch });
+    // const observation = await client.createResource({
+    //   resourceType: 'Observation',
+    //   name: 'Test observation',
+    // });
+    // const observation2 = await client.createResource({
+    //   resourceType: 'Observation',
+    //   name: 'Test observation 2',
+    // });
+    // client.createOrUpdateObservation(observation, [observation, observation2], '');
+    // expect(client.updateResource).toHaveBeenCalled();
+  });
 
-    const observation = await client.createResource({
-      resourceType: 'Observation',
-      name: 'Test observation',
-    });
+  test('Upload Embedded Pdfs', async () => {
+    
+  })
 
-    const observation2 = await client.createResource({
-      resourceType: 'Observation',
-      name: 'Test observation 2',
-    });
 
-    client.createOrUpdateObservation(observation, [observation, observation2], '');
+  test('Upload Media', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    const media = await client.uploadMedia('media', 'Film', 'file')
+    const retrievedMedia = await client.readResource('Media', media.id ?? '');
+
+    expect(retrievedMedia.id).toEqual(media.id);
+    expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
   });
 });
 

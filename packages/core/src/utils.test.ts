@@ -1,4 +1,4 @@
-import { Attachment, CodeableConcept, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
+import { Attachment, CodeableConcept, Observation, ObservationDefinition, Patient, Resource } from '@medplum/fhirtypes';
 import {
   arrayBufferToBase64,
   arrayBufferToHex,
@@ -30,7 +30,11 @@ import {
   resolveId,
   setCodeBySystem,
   stringify,
+  parseHl7Date,
+  streamToBuffer,
+  findByCode,
 } from './utils';
+import { Readable } from 'stream';
 
 if (typeof btoa === 'undefined') {
   global.btoa = function (str) {
@@ -780,5 +784,113 @@ describe('Core Utils', () => {
     expect(preciseGreaterThanOrEquals(5.002, 5.0, 2)).toBe(true);
     expect(preciseGreaterThanOrEquals(5.007, 5.0, 2)).toBe(true);
     expect(preciseGreaterThanOrEquals(5.01, 5.0, 2)).toBe(true);
+  });
+
+  test('Undefined for empty input', () => {
+    expect(parseHl7Date(undefined)).toBeUndefined();
+  });
+
+  test('Correct ISO-8601 format with default options', () => {
+    const hl7Date = '20230508103000';
+    const expectedResult = '2023-05-08T10:30:00.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Correct ISO-8601 format without seconds', () => {
+    const hl7Date = '202305081030';
+    const options = { seconds: false };
+    const expectedResult = '2023-05-08T10:30:00.000Z';
+    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+  });
+
+  test('Correct ISO-8601 format with custom timezone offset', () => {
+    const hl7Date = '20230508103000';
+    const options = { tzOffset: '+02:00' };
+    const expectedResult = '2023-05-08T10:30:00.000+02:00';
+    expect(parseHl7Date(hl7Date, options)).toBe(expectedResult);
+  });
+
+  test('Correct date strings with seconds', () => {
+    const hl7Date = '20230508103045';
+    const expectedResult = '2023-05-08T10:30:45.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Correct date strings with partial seconds', () => {
+    const hl7Date = '2023050810304';
+    const expectedResult = '2023-05-08T10:30:04.000Z';
+    expect(parseHl7Date(hl7Date)).toBe(expectedResult);
+  });
+
+  test('Return a Buffer', async () => {
+    const input = 'test data';
+    const stream = Readable.from(input);
+    const expectedBuffer = Buffer.from(input);
+
+    const result = await streamToBuffer(stream);
+    expect(result).toEqual(expectedBuffer);
+  });
+
+  test('Empty Readable stream', async () => {
+    const stream = Readable.from('');
+    const expectedBuffer = Buffer.from('');
+
+    const result = await streamToBuffer(stream);
+    expect(result).toEqual(expectedBuffer);
+  });
+
+  test('Error event and reject with an error', async () => {
+    const errorMessage = 'test error';
+    const stream = new Readable({
+      read() {
+        this.emit('error', new Error(errorMessage));
+      },
+    });
+
+    await expect(streamToBuffer(stream)).rejects.toThrow(errorMessage);
+  });
+
+  test('should find an Observation by code and system', () => {
+    const observations: Observation[] = [
+      {
+        resourceType: 'Observation',
+        id: '1',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '12-5',
+            },
+          ],
+        },
+      },
+      {
+        resourceType: 'Observation',
+        id: '2',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '5-9',
+            },
+          ],
+        },
+      },
+    ];
+
+    const codeToFind = {
+      coding: [
+        {
+          system: 'http://medplum.com',
+          code: '12-5',
+        },
+      ],
+    };
+  
+    const system = 'http://medplum.com';
+    const expectedResult = observations[0];
+
+    const result = findByCode(observations, codeToFind, system);
+    expect(result).toEqual(expectedResult);
   });
 });
