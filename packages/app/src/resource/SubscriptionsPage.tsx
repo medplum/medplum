@@ -4,7 +4,7 @@ import { Document, MemoizedSearchControl } from '@medplum/react';
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-export function SubscriptionPage(): JSX.Element | null {
+export function SubscriptionsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const navigate = useNavigate();
   const [search, setSearch] = useState<SearchRequest>({

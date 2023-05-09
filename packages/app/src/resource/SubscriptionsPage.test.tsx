@@ -9,7 +9,7 @@ import { AppRoutes } from '../AppRoutes';
 
 const medplum = new MockClient();
 
-describe('SubscriptionPage', () => {
+describe('SubscriptionsPage', () => {
   function setup(url: string): void {
     render(
       <MedplumProvider medplum={medplum}>
@@ -41,11 +41,11 @@ describe('SubscriptionPage', () => {
       setup(`/${getReferenceString(bot)}`);
     });
 
-    const subscriptionTab = screen.getByRole('tab', { name: 'Subscription' });
+    const subscriptionsTab = screen.getByRole('tab', { name: 'Subscriptions' });
 
-    // click on Subscription tab
+    // click on Subscriptions tab
     await act(async () => {
-      fireEvent.click(subscriptionTab);
+      fireEvent.click(subscriptionsTab);
     });
 
     expect(screen.getByText(`${subscription.id}`)).toBeInTheDocument();
@@ -73,9 +73,9 @@ describe('SubscriptionPage', () => {
       },
     });
 
-    // directly load bot subscription page
+    // directly load bot subscriptions page
     await act(async () => {
-      setup(`/${getReferenceString(bot)}/subscription`);
+      setup(`/${getReferenceString(bot)}/subscriptions`);
     });
 
     // click on a subscription
