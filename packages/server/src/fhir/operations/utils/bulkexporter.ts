@@ -63,11 +63,11 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle, writer: BulkFileWriter): Promise<void> {
+  async writeBundle(bundle: Bundle): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
-          await this.writeResource(entry.resource, writer);
+          await this.writeResource(entry.resource, await this.getWriter(entry.resource.resourceType));
         }
       }
     }
