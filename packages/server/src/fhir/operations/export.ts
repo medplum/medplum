@@ -58,13 +58,11 @@ async function exportResourceType(exporter: BulkExporter, project: Project, reso
       break;
     }
 
-    const writes = [];
     for (const entry of bundle.entry) {
       if (entry.resource?.id) {
-        writes.push(exporter.writeResource(entry.resource));
+        await exporter.writeResource(entry.resource);
       }
     }
-    await Promise.all(writes);
 
     const linkNext = bundle.link?.find((b) => b.relation === 'next');
     if (!linkNext?.url) {
