@@ -851,4 +851,21 @@ describe('Core Utils', () => {
     const result = findByCode(observations, codeToFind, system);
     expect(result).toEqual(undefined);
   });
+
+  test('Find by code if code is string', () => {
+    const observations: ResourceWithCode[] = [
+      {
+        resourceType: 'Observation',
+        id: '1',
+        code: 'codeString',
+      },
+    ];
+
+    const codeToFind = 'codeString';
+
+    const system = 'http://medplum.com';
+
+    const result = findByCode(observations, codeToFind, system);
+    expect(result).toEqual(observations[0]);
+  });
 });
