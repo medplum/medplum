@@ -2,7 +2,8 @@ import {
   Bot,
   Bundle,
   Identifier,
-  Media,
+  DiagnosticReport,
+  Observation,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -15,6 +16,7 @@ import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
 import { ProfileResource, createReference, stringify } from './utils';
+import { Hl7Message, Hl7Segment } from './hl7';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1649,40 +1651,103 @@ describe('Client', () => {
     expect(console.error).toHaveBeenCalledTimes(1);
   });
 
-  test('Update Observation', async () => {
-    // const fetch = jest.fn(async () => {
-    //   return {
-    //     status: 200,
-    //     json: async () => ({ id: '123', resourceType: 'Observation', name: 'Test observation' }),
-    //   };
-    // });
-    // const client = new MedplumClient({ fetch });
-    // const observation = await client.createResource({
-    //   resourceType: 'Observation',
-    //   name: 'Test observation',
-    // });
-    // const observation2 = await client.createResource({
-    //   resourceType: 'Observation',
-    //   name: 'Test observation 2',
-    // });
-    // client.createOrUpdateObservation(observation, [observation, observation2], '');
-    // expect(client.updateResource).toHaveBeenCalled();
+  describe('Observations', () => {
+    test('Create and Update Observation', async () => {
+      const fetch = jest.fn(async () => {
+        return {
+          status: 200,
+          json: () => ({}),
+        };
+      });
+      const client = new MedplumClient({ fetch });
+
+      // Create the mock Observation resources
+      const observation = await client.createResource({
+        resourceType: 'Observation',
+        name: 'Test observation',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '1234-5',
+            },
+          ],
+        },
+        category: [{ text: 'category1' }],
+      });
+      const observation2 = await client.createResource({
+        resourceType: 'Observation',
+        name: 'Test observation 2',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '5678-9',
+            },
+          ],
+        },
+        category: [{ text: 'category2' }],
+      });
+
+      // Create a new Observation resource for testing the createOrUpdateObservation method
+      const newObservation: Observation = {
+        resourceType: 'Observation',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '9999-0',
+            },
+          ],
+        },
+        category: [{ text: 'category30' }],
+      };
+
+      const updatedObservation: Observation = {
+        resourceType: 'Observation',
+        code: observation.code,
+        category: [{ text: 'category4' }],
+      };
+
+      // Mock the updateResource and createResource methods
+      const updateResource = jest.fn().mockResolvedValue(updatedObservation);
+      const createResource = jest.fn().mockResolvedValue(newObservation);
+
+      // Test the createOrUpdateObservation method with the updated Observation
+      await client.createOrUpdateObservation.call(
+        { updateResource, createResource },
+        updatedObservation,
+        [observation, observation2],
+        'http://medplum.com'
+      );
+
+      // Check if the updateResource method was called, and the createResource method was not called
+      expect(updateResource).toHaveBeenCalled();
+      expect(createResource).not.toHaveBeenCalled();
+
+      await client.createOrUpdateObservation.call(
+        { updateResource, createResource },
+        newObservation,
+        [observation, observation2],
+        'http://medplum.com'
+      );
+
+      // Test the createOrUpdateObservation method with the new Observation
+      expect(createResource).toHaveBeenCalled();
+    });
   });
 
-  test('Upload Embedded Pdfs', async () => {
-    
-  })
+  describe('Media', () => {
+    test('Upload Media', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
 
+      const media = await client.uploadMedia('media', 'Film', 'file');
+      const retrievedMedia = await client.readResource('Media', media.id ?? '');
 
-  test('Upload Media', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-
-    const media = await client.uploadMedia('media', 'Film', 'file')
-    const retrievedMedia = await client.readResource('Media', media.id ?? '');
-
-    expect(retrievedMedia.id).toEqual(media.id);
-    expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+      expect(retrievedMedia.id).toEqual(media.id);
+      expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+    });
   });
 });
 

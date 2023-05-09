@@ -2140,35 +2140,6 @@ export class MedplumClient extends EventTarget {
     }
     return this.createResource(observation);
   }
-  
-  async uploadEmbeddedPdfs(
-    report: DiagnosticReport,
-    bid: string,
-    message: Hl7Message
-  ): Promise<Media[]> {
-    // Upload PDF reports
-    const pdfLines = message.segments.filter((seg) => seg.get(3)?.get(1) === 'PDFBASE64');
-    const media = await Promise.all(
-      pdfLines.map(async (segment: Hl7Segment) => {
-        const encodedData = segment.get(5).get(4);
-        const decodedData = Buffer.from(encodedData, 'base64');
-        return this.uploadMedia(decodedData, 'application/pdf', `ADL_report_${bid}.pdf`, {
-          subject: report.subject,
-          basedOn: report.basedOn as Reference<ServiceRequest>[],
-        });
-      })
-    );
-  
-    if (media.length > 0) {
-      if (!report.presentedForm) {
-        report.presentedForm = [];
-      }
-      report.presentedForm.push(...media.filter((m) => m.content).map((m) => m.content as Attachment));
-    }
-  
-    return media;
-  }
-  
 
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
