@@ -49,6 +49,7 @@ import { SetPasswordPage } from './SetPasswordPage';
 import { SignInPage } from './SignInPage';
 import { SmartSearchPage } from './SmartSearchPage';
 import { QuestionnaireResponsePage } from './resource/QuestionnaireResponsePage';
+import { SubscriptionsPage } from './resource/SubscriptionsPage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -104,6 +105,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="responses" element={<QuestionnaireResponsePage />} />
           <Route path="report" element={<ReportPage />} />
           <Route path="ranges" element={<ReferenceRangesPage />} />
+          <Route path="subscriptions" element={<SubscriptionsPage />} />
           <Route path="timeline" element={<TimelinePage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
