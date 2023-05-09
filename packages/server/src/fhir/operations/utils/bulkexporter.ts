@@ -67,13 +67,13 @@ export class BulkExporter {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
-          await this.writeResource(entry.resource, await this.getWriter(entry.resource.resourceType));
+          await this.writeResource(entry.resource);
         }
       }
     }
   }
 
-  async writeResource(resource: Resource, writer: BulkFileWriter): Promise<void> {
+  async writeResource(resource: Resource): Promise<void> {
     if (resource.resourceType === 'AuditEvent') {
       return;
     }
@@ -82,6 +82,7 @@ export class BulkExporter {
     }
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
+      const writer = await this.getWriter(resource.resourceType);
       writer.write(resource);
       this.resourceSet.add(ref);
     }

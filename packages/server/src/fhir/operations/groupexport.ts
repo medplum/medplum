@@ -47,7 +47,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
           await exporter.writeBundle(bundle);
         } else {
           const resource = await repo.readResource(resourceType, memberId);
-          await exporter.writeResource(resource, await exporter.getWriter(resourceType));
+          await exporter.writeResource(resource);
         }
       } catch (err) {
         logger.warn('Unable to read patient: ' + member.entity?.reference);
