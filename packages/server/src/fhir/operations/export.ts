@@ -47,10 +47,12 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
 async function exportResourceType(exporter: BulkExporter, project: Project, resourceType: ResourceType): Promise<void> {
   const repo = exporter.repo;
   const hasMore = true;
+  let offset = 0;
   while (hasMore) {
     const bundle = await repo.search({
       resourceType,
       count: 1000,
+      offset,
     });
     if (!bundle.entry || bundle.entry.length === 0) {
       break;
@@ -70,6 +72,12 @@ async function exportResourceType(exporter: BulkExporter, project: Project, reso
     if (!linkNext?.url) {
       break;
     }
+    const params = new URLSearchParams(linkNext.url);
+    const newOffset = params.get('_offset');
+    if (!newOffset) {
+      break;
+    }
+    offset = parseInt(newOffset);
   }
 }
 
