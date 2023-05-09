@@ -308,6 +308,7 @@ describe('System export', () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
     const exporter = new BulkExporter(systemRepo, undefined);
+    const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
     const patient: Patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
       name: [
@@ -340,5 +341,6 @@ describe('System export', () => {
     await exportResourceType(exporter, 'Observation', 1);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
+    expect(exportWriteResourceSpy).toHaveBeenCalled();
   });
 });
