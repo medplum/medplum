@@ -227,6 +227,7 @@ describe('System export', () => {
         });
       expect(res2.status).toBe(201);
 
+      // Create 2nd observation
       const res3 = await request(app)
         .post(`/fhir/R4/Observation`)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -238,7 +239,8 @@ describe('System export', () => {
           subject: { reference: `Patient/${res1.body.id}` },
         });
       expect(res3.status).toBe(201);
-      // Create later observation
+
+      // Create third observation
       const res4 = await request(app)
         .post(`/fhir/R4/Observation`)
         .set('Authorization', 'Bearer ' + accessToken)
@@ -261,7 +263,6 @@ describe('System export', () => {
         .post('/fhir/R4/$export')
         .query({
           _type: 'Observation',
-          // _since: updatedDate.toISOString(),
         })
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', 'application/fhir+json')
@@ -294,7 +295,6 @@ describe('System export', () => {
     expect(dataRes.status).toBe(200);
 
     // Output format is "ndjson", new line delimited JSON
-    // However, we only expect one Observation, so we can parse it as JSON
     const resourceJSON = dataRes.text.trim().split('\n');
     expect(resourceJSON).toHaveLength(3);
     expect(JSON.parse(resourceJSON[0])?.code?.text).toEqual('test');
