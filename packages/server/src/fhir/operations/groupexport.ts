@@ -40,14 +40,15 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
         continue;
       }
       const [resourceType, memberId] = member.entity.reference.split('/') as [string, string];
+      const writer = await exporter.getWriter(resourceType);
       try {
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
           const bundle = await getPatientEverything(repo, patient);
-          await exporter.writeBundle(bundle);
+          await exporter.writeBundle(bundle, writer);
         } else {
           const resource = await repo.readResource(resourceType, memberId);
-          await exporter.writeResource(resource);
+          await exporter.writeResource(resource, writer);
         }
       } catch (err) {
         logger.warn('Unable to read patient: ' + member.entity?.reference);

@@ -59,7 +59,9 @@ async function exportResourceType(exporter: BulkExporter, project: Project, reso
     const writes = [];
     for (const entry of bundle.entry) {
       if (entry.resource?.id) {
-        writes.push(exporter.writeResource(entry.resource));
+        const writer = await exporter.getWriter(resourceType);
+
+        writes.push(exporter.writeResource(entry.resource, writer));
       }
     }
     await Promise.all(writes);

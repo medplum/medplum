@@ -33,12 +33,13 @@ export class BulkExporter {
   readonly repo: Repository;
   readonly since: string | undefined;
   private resource: BulkDataExport | undefined;
-  readonly writers: Record<string, BulkFileWriter> = {};
+  private writers: Record<string, BulkFileWriter>;
   readonly resourceSet: Set<string> = new Set();
 
   constructor(repo: Repository, since: string | undefined) {
     this.repo = repo;
     this.since = since;
+    this.writers = {};
   }
 
   async start(url: string): Promise<void> {
@@ -63,26 +64,22 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle, writer: BulkFileWriter): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
-          await this.writeResource(entry.resource);
+          await this.writeResource(entry.resource, writer);
         }
       }
     }
   }
 
-  async writeResource(resource: Resource): Promise<void> {
+  async writeResource(resource: Resource, writer: BulkFileWriter): Promise<void> {
     if (resource.resourceType === 'AuditEvent') {
-      return;
-    }
-    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
       return;
     }
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
-      const writer = await this.getWriter(resource.resourceType);
       writer.write(resource);
       this.resourceSet.add(ref);
     }
