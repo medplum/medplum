@@ -63,7 +63,7 @@ export async function exportResourceType(
     }
 
     for (const entry of bundle.entry) {
-      if (entry.resource?.id) {
+      if (entry.resource) {
         await exporter.writeResource(entry.resource);
       }
     }
