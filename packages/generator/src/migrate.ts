@@ -3,6 +3,7 @@ import {
   globalSchema,
   indexStructureDefinitionBundle,
   isResourceTypeSchema,
+  PropertyType,
   SearchParameterDetails,
   SearchParameterType,
   TypeSchema,
@@ -27,7 +28,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v30.ts'), builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v40.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -122,18 +123,6 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
   b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("system")');`);
   b.append(`await client.query('CREATE INDEX ON "${resourceType}_Token" ("value")');`);
   b.newLine();
-
-  builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "_profile" TEXT[]');`);
-  builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "_security" TEXT[]');`);
-  builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "_source" TEXT');`);
-  builder.append(`await client.query('ALTER TABLE "${resourceType}" ADD COLUMN "_tag" TEXT[]');`);
-  builder.newLine();
-
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("_profile")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("_security")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" ("_source")');`);
-  builder.append(`await client.query('CREATE INDEX ON "${resourceType}" USING GIN("_tag")');`);
-  builder.newLine();
 }
 
 function buildSearchColumns(resourceType: string): string[] {
@@ -151,6 +140,19 @@ function buildSearchColumns(resourceType: string): string[] {
     const columnName = details.columnName;
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
+
+    if (searchParam.type === 'date') {
+      const propertyType = details.elementDefinition?.type?.[0].code;
+      const previousColumnType =
+        propertyType === PropertyType.dateTime || propertyType === PropertyType.instant
+          ? SearchParameterType.DATETIME
+          : SearchParameterType.DATE;
+      if (newColumnType !== previousColumnType) {
+        builder.append(
+          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" ${newColumnType}');`
+        );
+      }
+    }
   }
   return result;
 }
