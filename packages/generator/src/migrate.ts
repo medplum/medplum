@@ -149,7 +149,7 @@ function buildSearchColumns(resourceType: string): string[] {
           : SearchParameterType.DATE;
       if (newColumnType !== previousColumnType) {
         builder.append(
-          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" ${newColumnType}');`
+          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType}');`
         );
       }
     }
@@ -213,7 +213,7 @@ function getColumnType(details: SearchParameterDetails): string {
       baseColumnType = 'DATE';
       break;
     case SearchParameterType.DATETIME:
-      baseColumnType = 'TIMESTAMP WITH TIME ZONE';
+      baseColumnType = 'TIMESTAMPTZ';
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
