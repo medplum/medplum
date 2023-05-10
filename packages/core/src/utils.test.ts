@@ -30,6 +30,8 @@ import {
   resolveId,
   setCodeBySystem,
   stringify,
+  findResourceByCode,
+  ResourceWithCode,
 } from './utils';
 
 if (typeof btoa === 'undefined') {
@@ -780,5 +782,97 @@ describe('Core Utils', () => {
     expect(preciseGreaterThanOrEquals(5.002, 5.0, 2)).toBe(true);
     expect(preciseGreaterThanOrEquals(5.007, 5.0, 2)).toBe(true);
     expect(preciseGreaterThanOrEquals(5.01, 5.0, 2)).toBe(true);
+  });
+
+  test('should find an Observation by code and system', () => {
+    const observations: ResourceWithCode[] = [
+      {
+        resourceType: 'Observation',
+        id: '1',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '12-5',
+            },
+          ],
+        },
+      },
+      {
+        resourceType: 'Observation',
+        id: '2',
+        code: {
+          coding: [
+            {
+              system: 'http://medplum.com',
+              code: '5-9',
+            },
+          ],
+        },
+      },
+    ];
+
+    const codeToFind = {
+      coding: [
+        {
+          system: 'http://medplum.com',
+          code: '12-5',
+        },
+      ],
+    };
+
+    const system = 'http://medplum.com';
+    const expectedResult = observations[0];
+
+    const result = findResourceByCode(observations, codeToFind, system);
+    expect(result).toEqual(expectedResult);
+  });
+
+  test('Result is undefined for not finding any matching code', () => {
+    const observations: ResourceWithCode[] = [
+      {
+        resourceType: 'Observation',
+        id: '1',
+        code: {},
+      },
+    ];
+
+    const codeToFind = {
+      coding: [
+        {
+          system: 'http://medplum.com',
+          code: '12-5',
+        },
+      ],
+    };
+
+    const system = 'http://medplum.com';
+
+    const result = findResourceByCode(observations, codeToFind, system);
+    expect(result).toEqual(undefined);
+  });
+
+  test('Find by code if code is string', () => {
+    const observations: ResourceWithCode[] = [
+      {
+        resourceType: 'Observation',
+        id: '1',
+        code: {
+          coding: [
+            {
+              system: 'codeString',
+              code: '5-9',
+            },
+          ],
+        },
+      },
+    ];
+
+    const codeToFindAsString = '5-9';
+
+    const system = 'codeString';
+
+    const result = findResourceByCode(observations, codeToFindAsString, system);
+    expect(result).toEqual(observations[0]);
   });
 });

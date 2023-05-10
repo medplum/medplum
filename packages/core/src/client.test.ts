@@ -1682,6 +1682,19 @@ describe('Client', () => {
     }
     expect(console.error).toHaveBeenCalledTimes(1);
   });
+
+  describe('Media', () => {
+    test('Upload Media', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+
+      const media = await client.uploadMedia('media', 'Film', 'file');
+      const retrievedMedia = await client.readResource('Media', media.id ?? '');
+
+      expect(retrievedMedia.id).toEqual(media.id);
+      expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+    });
+  });
 });
 
 function createPdf(

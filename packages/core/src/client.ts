@@ -12,6 +12,7 @@ import {
   Encounter,
   ExtractResource,
   Identifier,
+  Media,
   OperationOutcome,
   Patient,
   Project,
@@ -2117,6 +2118,32 @@ export class MedplumClient extends EventTarget {
     this.addFetchOptionsDefaults(options);
     const response = await this.fetch(url.toString(), options);
     return response.blob();
+  }
+
+  /**
+   * Upload media to the server and create a Media instance for the uploaded content.
+   * @param contents The contents of the media file, as a string, Uint8Array, File, or Blob.
+   * @param contentType The media type of the content
+   * @param filename The name of the file to be uploaded, or undefined if not applicable
+   * @param additionalFields  Additional fields for Media
+   * @returns Promise that resolves to the created Media
+   */
+  async uploadMedia(
+    contents: string | Uint8Array | File | Blob,
+    contentType: string,
+    filename: string | undefined,
+    additionalFields?: Partial<Media>
+  ): Promise<Media> {
+    const binary = await this.createBinary(contents, filename, contentType);
+    return this.createResource({
+      ...additionalFields,
+      resourceType: 'Media',
+      content: {
+        contentType: contentType,
+        url: 'Binary/' + binary.id,
+        title: filename,
+      },
+    });
   }
 
   //
