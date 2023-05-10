@@ -1763,11 +1763,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       } catch (ex) {
         // Silent ignore
       }
-    } else if (typeof value === 'object') {
-      if ('start' in value) {
-        // Can be a Period
-        return this.buildDateColumn(value.start);
-      }
+    } else if (typeof value === 'object' && 'start' in value) {
+      // Can be a Period
+      return this.buildDateColumn(value.start);
     }
     return undefined;
   }
@@ -1787,6 +1785,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       } catch (ex) {
         // Silent ignore
       }
+    } else if (typeof value === 'object' && 'start' in value) {
+      // Can be a Period
+      return this.buildDateColumn(value.start);
     }
     return undefined;
   }
