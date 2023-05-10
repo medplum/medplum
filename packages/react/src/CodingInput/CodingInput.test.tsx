@@ -71,4 +71,36 @@ describe('CodingInput', () => {
 
     expect(screen.getByText('Test Display')).toBeDefined();
   });
+
+  test('Renders with empty binding property', async () => {
+    const statusPropertyEmptyBinding: ElementDefinition = {
+      binding: undefined,
+    };
+
+    await setup(<CodingInput property={statusPropertyEmptyBinding} name="test" />);
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Enter random text
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test Empty' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+    // Despite an undefined binding value, the app still renders and functions
+    expect(screen.getByDisplayValue('Test Empty')).toBeDefined();
+  });
 });
