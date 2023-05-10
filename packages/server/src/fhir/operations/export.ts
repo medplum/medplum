@@ -50,7 +50,7 @@ export async function exportResourceType(
   maxResources = 1000
 ): Promise<void> {
   const repo = exporter.repo;
-  const hasMore = true;
+  let hasMore = true;
   let offset = 0;
   while (hasMore) {
     const bundle = await repo.search({
@@ -69,15 +69,8 @@ export async function exportResourceType(
     }
 
     const linkNext = bundle.link?.find((b) => b.relation === 'next');
-    if (!linkNext?.url) {
-      break;
-    }
-    const params = new URLSearchParams(linkNext.url);
-    const newOffset = params.get('_offset');
-    if (!newOffset) {
-      break;
-    }
-    offset = parseInt(newOffset);
+    hasMore = !!linkNext;
+    offset += maxResources;
   }
 }
 
