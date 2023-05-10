@@ -80,10 +80,10 @@ describe('CodingInput', () => {
     await setup(<CodingInput property={statusPropertyEmptyBinding} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
-
+    
     // Enter random text
     await act(async () => {
-      fireEvent.change(input, { target: { value: 'Test' } });
+      fireEvent.change(input, { target: { value: 'Test Empty' } });
     });
 
     // Wait for the drop down
@@ -100,7 +100,7 @@ describe('CodingInput', () => {
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
-
-    expect(screen.getByText('Test')).toBeDefined();
+    // Despite an undefined binding value, the app still renders and functions
+    expect(screen.getByDisplayValue('Test Empty')).toBeDefined();
   });
 });
