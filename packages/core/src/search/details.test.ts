@@ -120,6 +120,22 @@ describe('SearchParameterDetails', () => {
     expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
 
+  test('Observation-value-date', () => {
+    const valueDateParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      id: 'Observation-value-date',
+      code: 'value-date',
+      type: 'date',
+      expression: '(Observation.value as dateTime) | (Observation.value as Period)',
+    };
+
+    const details = getSearchParameterDetails('Observation', valueDateParam);
+    expect(details).toBeDefined();
+    expect(details.type).toEqual(SearchParameterType.DATETIME);
+    expect(details.columnName).toEqual('valueDate');
+    expect(details.elementDefinition).toBeDefined();
+  });
+
   test('Observation-value-quantity', () => {
     const valueQuantityParam: SearchParameter = {
       resourceType: 'SearchParameter',
