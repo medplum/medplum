@@ -80,7 +80,7 @@ describe('CodingInput', () => {
     await setup(<CodingInput property={statusPropertyEmptyBinding} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
-    
+
     // Enter random text
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Test Empty' } });
