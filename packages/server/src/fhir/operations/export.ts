@@ -62,11 +62,14 @@ export async function exportResourceType(
       break;
     }
 
+    const writes = [];
     for (const entry of bundle.entry) {
       if (entry.resource) {
-        await exporter.writeResource(entry.resource);
+        await exporter.getWriter(entry.resource.resourceType);
+        writes.push(exporter.writeResource(entry.resource));
       }
     }
+    await Promise.all(writes);
 
     const linkNext = bundle.link?.find((b) => b.relation === 'next');
     if (!linkNext?.url) {
