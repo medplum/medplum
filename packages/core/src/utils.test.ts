@@ -30,7 +30,7 @@ import {
   resolveId,
   setCodeBySystem,
   stringify,
-  findByCode,
+  findResourceByCode,
   ResourceWithCode,
 } from './utils';
 
@@ -824,7 +824,7 @@ describe('Core Utils', () => {
     const system = 'http://medplum.com';
     const expectedResult = observations[0];
 
-    const result = findByCode(observations, codeToFind, system);
+    const result = findResourceByCode(observations, codeToFind, system);
     expect(result).toEqual(expectedResult);
   });
 
@@ -848,7 +848,7 @@ describe('Core Utils', () => {
 
     const system = 'http://medplum.com';
 
-    const result = findByCode(observations, codeToFind, system);
+    const result = findResourceByCode(observations, codeToFind, system);
     expect(result).toEqual(undefined);
   });
 
@@ -857,15 +857,22 @@ describe('Core Utils', () => {
       {
         resourceType: 'Observation',
         id: '1',
-        code: 'codeString',
+        code: {
+          coding: [
+            {
+              system: 'codeString',
+              code: '5-9',
+            },
+          ],
+        },
       },
     ];
 
-    const codeToFind = 'codeString';
+    const codeToFindAsString = '5-9';
 
-    const system = 'http://medplum.com';
+    const system = 'codeString';
 
-    const result = findByCode(observations, codeToFind, system);
+    const result = findResourceByCode(observations, codeToFindAsString, system);
     expect(result).toEqual(observations[0]);
   });
 });

@@ -33,7 +33,7 @@ export interface InviteResult {
 }
 
 interface Code {
-  code?: CodeableConcept | string;
+  code?: CodeableConcept;
 }
 /**
  * @internal
@@ -757,14 +757,14 @@ function toPreciseInteger(a: number, precision?: number): number {
  * @param system - The system to search for.
  * @returns The first resource in the input array that matches the specified code and system, or undefined if no such resource is found.
  */
-export function findByCode(
+export function findResourceByCode(
   resources: ResourceWithCode[],
   code: CodeableConcept | string,
   system: string
 ): ResourceWithCode | undefined {
   return resources.find((r) =>
-    typeof code === 'string' || typeof r.code === 'string'
-      ? r.code === code
+    typeof code === 'string'
+      ? getCodeBySystem(r.code || {}, system) === code
       : getCodeBySystem(r.code || {}, system) === getCodeBySystem(code, system)
   );
 }
