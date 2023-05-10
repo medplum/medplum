@@ -12,7 +12,8 @@
     "prettier": "prettier --write ."
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "examples/*"
   ],
   "devDependencies": {
     "@babel/core": "7.21.4",
