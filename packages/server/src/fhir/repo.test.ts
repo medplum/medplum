@@ -2799,6 +2799,38 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle, e)).toBeTruthy();
   });
 
+  test('Encounter.period dateTime search', async () => {
+    const e = await systemRepo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      identifier: [{ value: randomUUID() }],
+      status: 'finished',
+      class: { code: 'test' },
+      period: {
+        start: '2020-02-01T13:30Z',
+        end: '2020-02-01T14:15Z',
+      },
+    });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'Encounter',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: e.identifier?.[0]?.value as string,
+        },
+        {
+          code: 'date',
+          operator: Operator.GREATER_THAN,
+          value: '2020-02-01T12:00Z',
+        },
+      ],
+      count: 1,
+    });
+
+    expect(bundleContains(bundle, e)).toBeTruthy();
+  });
+
   test('Condition.code system search', async () => {
     const p = await systemRepo.createResource({
       resourceType: 'Patient',
