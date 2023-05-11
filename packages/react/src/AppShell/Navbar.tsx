@@ -244,9 +244,21 @@ function getLinkScore(currentPathname: string, currentSearchParams: URLSearchPar
   if (currentPathname !== linkUrl.pathname) {
     return 0;
   }
-  let count = 1;
+  const ignoredParams = ['_count', '_offset'];
   for (const [key, value] of linkUrl.searchParams.entries()) {
-    if (key !== '_count' && key !== '_offset' && currentSearchParams.get(key) === value) {
+    if (ignoredParams.includes(key)) {
+      continue;
+    }
+    if (currentSearchParams.get(key) !== value) {
+      return 0;
+    }
+  }
+  let count = 1;
+  for (const [key, value] of currentSearchParams.entries()) {
+    if (ignoredParams.includes(key)) {
+      continue;
+    }
+    if (linkUrl.searchParams.get(key) === value) {
       count++;
     }
   }
