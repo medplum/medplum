@@ -1,4 +1,9 @@
 name: Sonar
+# Limit a single job to run at a time for a given branch/PR to save resources and speed up CI
+# see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+concurrency:
+  group: ci-{{ github.ref }}
+  cancel-in-progress: true
 on:
   workflow_run:
     workflows: [Build]
