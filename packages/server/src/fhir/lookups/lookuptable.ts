@@ -76,6 +76,7 @@ export abstract class LookupTable<T> {
             option
               .trim()
               .split(/\s+/)
+              .filter(Boolean)
               .map((token) => token + ':*')
               .join(' & ')
           )
