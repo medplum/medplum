@@ -2249,8 +2249,8 @@ describe('FHIR Repo', () => {
   });
 
   test('Include PlanDefinition mixed types', async () => {
-    const canonical = 'http://example.com/fhir/R4/ActivityDefinition/1';
-    const uri = 'http://example.com/fhir/R4/ActivityDefinition/2';
+    const canonical = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
+    const uri = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
     const plan = await systemRepo.createResource<PlanDefinition>({
       resourceType: 'PlanDefinition',
       status: 'active',

@@ -101,7 +101,7 @@ import {
   Operator,
   SelectQuery,
 } from './sql';
-import { getSearchParameter, getSearchParameters, getStructureDefinitions } from './structure';
+import { getSearchParameter, getSearchParameters } from './structure';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -1057,25 +1057,24 @@ export class Repository extends BaseRepository implements FhirRepository {
     const canonicalReferences = fhirPathResult
       .filter((typedValue) => typedValue.type === PropertyType.canonical || typedValue.type === PropertyType.uri)
       .map((typedValue) => typedValue.value as string);
-    const canonicalSearches = canonicalReferences?.flatMap((canonicalRef) =>
-      searchParam.target?.map((resourceType) =>
+    if (canonicalReferences.length > 0) {
+      const canonicalSearches = (searchParam.target || []).map((resourceType) =>
         this.searchResources({
           resourceType: resourceType,
           filters: [
             {
               code: 'url',
               operator: FhirOperator.EQUALS,
-              value: canonicalRef,
+              value: canonicalReferences.join(','),
             },
           ],
         })
-      )
-    );
-    (await Promise.all(canonicalSearches)).forEach((resources) => {
-      if (resources) {
+      );
+      (await Promise.all(canonicalSearches)).forEach((resources) => {
+        console.log('Including canonical', resources);
         includedResources.push(...resources);
-      }
-    });
+      });
+    }
 
     return includedResources.map(
       (resource: Resource) =>
@@ -1103,13 +1102,9 @@ export class Repository extends BaseRepository implements FhirRepository {
       );
     }
 
-    const structDef = getStructureDefinitions().types[revInclude.resourceType];
-
-    // NOTE(2023-05-03): This assumes that reference search parameters have an `expression` essentially like "ResourceType.referenceField"
-    const [_, ...pathParts] = searchParam.expression?.split('.') || [];
-    const referenceField = structDef.properties[pathParts[0]];
+    const paramDetails = getSearchParameterDetails(revInclude.resourceType, searchParam);
     let value: string;
-    if (referenceField.type?.some((t) => t.code === PropertyType.canonical)) {
+    if (paramDetails.type === SearchParameterType.CANONICAL) {
       value = resources
         .map((r) => (r as any).url)
         .filter((u) => u !== undefined)
