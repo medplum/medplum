@@ -1,5 +1,7 @@
 // See: https://hl7.org/fhir/search_filter.html
 
+import { Operator } from '../search/search';
+
 /**
  * The FhirFilterExpression type is the base type of all filter expressions.
  */
@@ -9,7 +11,7 @@ export type FhirFilterExpression = FhirFilterComparison | FhirFilterNegation | F
  * The FhirFilterComparison class represents a comparison expression.
  */
 export class FhirFilterComparison {
-  constructor(readonly path: string, readonly operator: string, readonly value: string) {}
+  constructor(readonly path: string, readonly operator: Operator, readonly value: string) {}
 }
 
 /**
