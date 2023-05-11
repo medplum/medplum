@@ -90,6 +90,20 @@ describe('HumanName Lookup Table', () => {
     expect(bundleContains(searchResult, patients[2])).toBe(false);
   });
 
+  test('Search with blank name', async () => {
+    const searchResult = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: '',
+        },
+      ],
+    });
+    expect(searchResult.entry).toBeDefined();
+  });
+
   test('Multiple names', async () => {
     const name = randomUUID();
     const other = randomUUID();
