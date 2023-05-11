@@ -68,3 +68,30 @@ export function Basic(): JSX.Element {
     </div>
   );
 }
+
+export function LongMenu(): JSX.Element {
+  const { classes } = useStyles();
+  return (
+    <div className={classes.root}>
+      <AppShell
+        logo={<Logo size={24} />}
+        version="your.version"
+        menus={Array(100).fill({
+          title: 'My Menu',
+          links: [
+            { href: '/notifications', label: 'Notifications', icon: <IconBellRinging /> },
+            { href: '/billing', label: 'Billing', icon: <IconReceipt2 /> },
+            { href: '/security', label: 'Security', icon: <IconFingerprint /> },
+            { href: '/sshkeys', label: 'SSH Keys', icon: <IconKey /> },
+            { href: '/databases', label: 'Databases', icon: <IconDatabaseImport /> },
+            { href: '/auth', label: 'Authentication', icon: <Icon2fa /> },
+            { href: '/settings', label: 'Other Settings', icon: <IconSettings /> },
+          ],
+        })}
+        displayAddBookmark={true}
+      >
+        Your application here
+      </AppShell>
+    </div>
+  );
+}

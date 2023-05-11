@@ -1,4 +1,4 @@
-import { Button, createStyles, Navbar as MantineNavbar, Space, Text } from '@mantine/core';
+import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
@@ -99,47 +99,49 @@ export function Navbar(props: NavbarProps): JSX.Element {
   return (
     <>
       <MantineNavbar width={{ sm: 250 }} p="xs">
-        <MantineNavbar.Section mb="sm">
-          <CodeInput
-            key={window.location.pathname}
-            name="resourceType"
-            placeholder="Resource Type"
-            property={{
-              binding: {
-                valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
-              },
-            }}
-            onChange={(newValue) => navigateResourceType(newValue)}
-            creatable={false}
-            maxSelectedValues={0}
-            clearSearchOnChange={true}
-            clearable={false}
-          />
-        </MantineNavbar.Section>
-        <MantineNavbar.Section grow>
-          {props.menus?.map((menu) => (
-            <React.Fragment key={`menu-${menu.title}`}>
-              <Text className={classes.menuTitle}>{menu.title}</Text>
-              {menu.links?.map((link) => (
-                <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
-                  <NavLinkIcon to={link.href} icon={link.icon} />
-                  <span>{link.label}</span>
-                </NavbarLink>
-              ))}
-            </React.Fragment>
-          ))}
-          {props.displayAddBookmark && (
-            <Button
-              variant="subtle"
-              size="xs"
-              mt="xl"
-              leftIcon={<IconPlus size="0.75rem" />}
-              onClick={() => setBookmarkDialogVisible(true)}
-            >
-              Add Bookmark
-            </Button>
-          )}
-        </MantineNavbar.Section>
+        <ScrollArea>
+          <MantineNavbar.Section mb="sm">
+            <CodeInput
+              key={window.location.pathname}
+              name="resourceType"
+              placeholder="Resource Type"
+              property={{
+                binding: {
+                  valueSet: 'http://hl7.org/fhir/ValueSet/resource-types',
+                },
+              }}
+              onChange={(newValue) => navigateResourceType(newValue)}
+              creatable={false}
+              maxSelectedValues={0}
+              clearSearchOnChange={true}
+              clearable={false}
+            />
+          </MantineNavbar.Section>
+          <MantineNavbar.Section grow>
+            {props.menus?.map((menu) => (
+              <React.Fragment key={`menu-${menu.title}`}>
+                <Text className={classes.menuTitle}>{menu.title}</Text>
+                {menu.links?.map((link) => (
+                  <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
+                    <NavLinkIcon to={link.href} icon={link.icon} />
+                    <span>{link.label}</span>
+                  </NavbarLink>
+                ))}
+              </React.Fragment>
+            ))}
+            {props.displayAddBookmark && (
+              <Button
+                variant="subtle"
+                size="xs"
+                mt="xl"
+                leftIcon={<IconPlus size="0.75rem" />}
+                onClick={() => setBookmarkDialogVisible(true)}
+              >
+                Add Bookmark
+              </Button>
+            )}
+          </MantineNavbar.Section>
+        </ScrollArea>
       </MantineNavbar>
       <BookmarkDialog
         visible={bookmarkDialogVisible}
