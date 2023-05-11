@@ -25,26 +25,16 @@ jobs:
             CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} -- "${path}*")
             if [ -n "$CHANGED_FILES" ]; then
               changed_paths+="$path;"
-
-              # Get commit message for the specific path
-              commit_message=$(git log -1 --pretty=%B -- "${path}")
-              commit_messages["$path"]="$commit_message"
             fi
           done
-          echo "::set-output name=changed_paths::$changed_paths"
-          # Convert the associative array to a string for output
-          commit_messages_string=$(declare -p commit_messages | sed 's/declare -A //' | tr -d '[:space:]')
-          echo "::set-output name=commit_messages::$commit_messages_string"
+          echo "changed_paths=$changed_paths" >> $GITHUB_ENV
       - name: Update listening repos, create PR, and clean up
-        if: steps.check_changes.outputs.changed_paths != ''
+        if: env.changed_paths != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Convert the string back to an associative array
-          declare -A commit_messages=(${{ steps.check_changes.outputs.commit_messages }})
-
           # This separates the strings with ; to turn it into an array
-          IFS=';' read -ra changed_paths_array <<< "${{ steps.check_changes.outputs.changed_paths }}"
+          IFS=';' read -ra changed_paths_array <<< "${{ env.changed_paths }}"
           echo "Changed paths array: ${changed_paths_array[@]}"
 
           # Configure Git
@@ -78,7 +68,7 @@ jobs:
             # Commit and push changes to the listening repo
             cd ${folder_name}
             git add .
-            git commit -m "${commit_messages["$path"]}"
+            git commit -m "Update from main medplum repo"
             git push origin main
 
             # Cleanup: Remove the cloned repo folder and delete the local branch
