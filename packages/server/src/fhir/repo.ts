@@ -1787,7 +1787,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       }
     } else if (typeof value === 'object' && 'start' in value) {
       // Can be a Period
-      return this.buildDateColumn(value.start);
+      return this.buildDateTimeColumn(value.start);
     }
     return undefined;
   }
