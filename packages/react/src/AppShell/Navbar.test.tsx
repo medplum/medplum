@@ -52,7 +52,7 @@ async function setup(initialUrl = '/'): Promise<void> {
               {
                 title: 'Menu 2',
                 links: [
-                  { label: 'Link 4', href: '/link?key=4' },
+                  { label: 'Link 4', href: '/link?key=4&_offset=0' },
                   { label: 'Link 5', href: '/link?key=5' },
                   { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
                 ],
@@ -109,6 +109,28 @@ describe('Navbar', () => {
 
   test('Highlighted by search params', async () => {
     await setup('/link?key=4');
+
+    const link1 = screen.getByText('Link 4');
+    expect(link1).toBeInTheDocument();
+
+    const link2 = screen.getByText('Link 5');
+    expect(link2).toBeInTheDocument();
+
+    const link3 = screen.getByText('Link 6');
+    expect(link3).toBeInTheDocument();
+
+    // Mantine will add a class to the parent element
+    // Mantine uses generated class names, so we can't test for the exact class name
+    const activeClass = link1.parentElement?.className;
+    const inactiveClass = link2.parentElement?.className;
+    expect(activeClass).not.toEqual(inactiveClass);
+    expect(link1.parentElement?.className).toEqual(activeClass);
+    expect(link2.parentElement?.className).toEqual(inactiveClass);
+    expect(link3.parentElement?.className).toEqual(inactiveClass);
+  });
+
+  test('Highlighted link ignores _offset', async () => {
+    await setup('/link?key=4&_offset=10');
 
     const link1 = screen.getByText('Link 4');
     expect(link1).toBeInTheDocument();

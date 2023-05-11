@@ -79,6 +79,9 @@ export interface NavbarProps {
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const activeLink = getActiveLink(location.pathname, searchParams, props.menus);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
@@ -122,7 +125,12 @@ export function Navbar(props: NavbarProps): JSX.Element {
               <React.Fragment key={`menu-${menu.title}`}>
                 <Text className={classes.menuTitle}>{menu.title}</Text>
                 {menu.links?.map((link) => (
-                  <NavbarLink key={link.href} to={link.href} onClick={(e) => onLinkClick(e, link.href)}>
+                  <NavbarLink
+                    key={link.href}
+                    to={link.href}
+                    active={link.href === activeLink?.href}
+                    onClick={(e) => onLinkClick(e, link.href)}
+                  >
                     <NavLinkIcon to={link.href} icon={link.icon} />
                     <span>{link.label}</span>
                   </NavbarLink>
@@ -151,39 +159,25 @@ export function Navbar(props: NavbarProps): JSX.Element {
     </>
   );
 }
+
 interface NavbarLinkProps {
   to: string;
+  active: boolean;
   onClick: React.MouseEventHandler;
   children: React.ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
   const { classes, cx } = useStyles();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const toUrl = new URL(props.to, window.location.protocol + '//' + window.location.host);
-  const isActive = location.pathname === toUrl.pathname && matchesParams(searchParams, toUrl);
-
   return (
-    <MedplumLink onClick={props.onClick} to={props.to} className={cx(classes.link, { [classes.linkActive]: isActive })}>
+    <MedplumLink
+      onClick={props.onClick}
+      to={props.to}
+      className={cx(classes.link, { [classes.linkActive]: props.active })}
+    >
       {props.children}
     </MedplumLink>
   );
-}
-
-/**
- * Returns true if the search params match.
- * @param searchParams The current search params.
- * @param toUrl The destination URL of the link.
- * @returns True if the search params match.
- */
-function matchesParams(searchParams: URLSearchParams, toUrl: URL): boolean {
-  for (const [key, value] of toUrl.searchParams.entries()) {
-    if (searchParams.get(key) !== value) {
-      return false;
-    }
-  }
-  return true;
 }
 
 interface NavLinkIconProps {
@@ -196,4 +190,77 @@ function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
     return props.icon;
   }
   return <Space w={30} />;
+}
+
+/**
+ * Returns the best "active" link for the menu.
+ * In most cases, the navbar links are simple, and an exact match can determine which link is active.
+ * However, we ignore some search parameters to support pagination.
+ * But we cannot ignore all search parameters, to support separate links based on search filters.
+ * So in the end, we use a simple scoring system based on the number of matching query search params.
+ * @param currentPathname The web browser current pathname.
+ * @param currentSearchParams The web browser current search parameters.
+ * @param menus Collection of navbar menus and links.
+ * @returns The active link if one is found.
+ */
+function getActiveLink(
+  currentPathname: string,
+  currentSearchParams: URLSearchParams,
+  menus: NavbarMenu[] | undefined
+): NavbarLink | undefined {
+  let bestLink = undefined;
+  let bestScore = 0;
+
+  if (menus) {
+    for (const menu of menus) {
+      if (menu.links) {
+        for (const link of menu.links) {
+          const score = getLinkScore(currentPathname, currentSearchParams, link.href);
+          if (score > bestScore) {
+            bestScore = score;
+            bestLink = link;
+          }
+        }
+      }
+    }
+  }
+
+  return bestLink;
+}
+
+/**
+ * Calculates a score for a link.
+ * Zero means "does not match at all".
+ * One means "matches the pathname only".
+ * Additional increases for each matching search parameter.
+ * Ignores pagination parameters "_count" and "_offset".
+ * @param currentPathname The web browser current pathname.
+ * @param currentSearchParams The web browser current search parameters.
+ * @param linkHref A candidate link href.
+ * @returns The link score.
+ */
+function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
+  const linkUrl = new URL(linkHref, 'https://example.com');
+  if (currentPathname !== linkUrl.pathname) {
+    return 0;
+  }
+  const ignoredParams = ['_count', '_offset'];
+  for (const [key, value] of linkUrl.searchParams.entries()) {
+    if (ignoredParams.includes(key)) {
+      continue;
+    }
+    if (currentSearchParams.get(key) !== value) {
+      return 0;
+    }
+  }
+  let count = 1;
+  for (const [key, value] of currentSearchParams.entries()) {
+    if (ignoredParams.includes(key)) {
+      continue;
+    }
+    if (linkUrl.searchParams.get(key) === value) {
+      count++;
+    }
+  }
+  return count;
 }
