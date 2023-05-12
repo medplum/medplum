@@ -103,15 +103,15 @@ describe('Group Export', () => {
     // Check the export status
     const contentLocation = new URL(res6.headers['content-location']);
 
-    let resBody: any;
+    let contentLocationRes: any;
     await waitFor(async () => {
-      resBody = await request(app)
+      contentLocationRes = await request(app)
         .get(contentLocation.pathname)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(resBody.status).toBe(200);
+      expect(contentLocationRes.status).toBe(200);
     });
 
-    const output = resBody.body.output as BulkDataExportOutput[];
+    const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(4);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Device')).toBeTruthy();
@@ -200,15 +200,15 @@ describe('Group Export', () => {
     // Check the export status
     const contentLocation = new URL(res5.headers['content-location']);
 
-    let res: any;
+    let contentLocationRes: any;
     await waitFor(async () => {
-      res = await request(app)
+      contentLocationRes = await request(app)
         .get(contentLocation.pathname)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res.status).toBe(200);
+      expect(contentLocationRes.status).toBe(200);
     });
 
-    const output = res.body.output as BulkDataExportOutput[];
+    const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(3);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
