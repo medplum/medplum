@@ -48,7 +48,6 @@ export class BulkExporter {
       request: url,
       requestTime: new Date().toISOString(),
     });
-
     return this.resource;
   }
 
