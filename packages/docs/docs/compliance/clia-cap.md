@@ -68,6 +68,8 @@ Review and refer to the following items in preparation for your inspection.
     - [ ] Receipt-in-laboratory-to-reporting turnaround: [Specimen.receivedTime](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,receivedTime&_offset=0&_sort=-_lastUpdated) to [DiagnosticReport.issued](https://app.medplum.com/DiagnosticReport?_count=20&_fields=id,_lastUpdated,subject,code,status,specimen,issued&_offset=0&_sort=-_lastUpdated)
   - Critical Result Reporting: Percent of critical results with written record that results have been reported to caregivers; percent of critical results for which the primary clinician cannot be contacted in a reasonable period of time
     - [ ] Patient contact are often implemented as [Communication](https://app.medplum.com/Communication?_count=20&_fields=id,_lastUpdated,status,subject,sender,payload&_offset=0&_sort=-_lastUpdated)
+    - [ ] Reason for outreach often represented in [CommunicationRequest.reasonReference](https://app.medplum.com/CommunicationRequest?_count=20&_fields=id,_lastUpdated,reasonReference&_offset=0&_sort=-_lastUpdated)
+    - [ ] [CommunicationRequests](https://app.medplum.com/CommunicationRequest?_count=20&_fields=id,_lastUpdated,reasonReference,status&_offset=0&_sort=-_lastUpdated&status:contains=completed) that have been completed.
 
 - GEN.43837 Downtime Result Reporting Phase II
   - [ ] Customer Satisfaction: Standardized satisfaction survey tool with a reference database of physician, nurse, or patient respondents. These will often be among [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse)
