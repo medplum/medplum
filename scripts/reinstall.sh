@@ -10,7 +10,7 @@ rm -rf node_modules
 rm -rf package-lock.json
 
 for dir in `ls packages`; do
-  if test -f "packages/$dir/node_modules"; then
+  if test -d "packages/$dir/node_modules"; then
     rm -rf "packages/$dir/node_modules"
   fi
 done
