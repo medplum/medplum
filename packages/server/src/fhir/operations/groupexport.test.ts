@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, waitFor } from '../../test.setup';
 import { systemRepo } from '../repo';
 
 const app = express();
@@ -102,18 +102,21 @@ describe('Group Export', () => {
 
     // Check the export status
     const contentLocation = new URL(res6.headers['content-location']);
-    const res7 = await request(app)
-      .get(contentLocation.pathname)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
 
-    const output = res7.body.output as BulkDataExportOutput[];
+    let resBody: any;
+    await waitFor(async () => {
+      resBody = await request(app)
+        .get(contentLocation.pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(resBody.status).toBe(200);
+    });
+
+    const output = resBody.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(4);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Device')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
     expect(output.some((o) => o.type === 'Group')).toBeTruthy();
-
     // Get the export content
     const outputLocation = new URL(output[0].url as string);
     const res8 = await request(app)
@@ -196,12 +199,16 @@ describe('Group Export', () => {
 
     // Check the export status
     const contentLocation = new URL(res5.headers['content-location']);
-    const res6 = await request(app)
-      .get(contentLocation.pathname)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
 
-    const output = res6.body.output as BulkDataExportOutput[];
+    let res: any;
+    await waitFor(async () => {
+      res = await request(app)
+        .get(contentLocation.pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res.status).toBe(200);
+    });
+
+    const output = res.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(3);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
