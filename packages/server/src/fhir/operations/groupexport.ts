@@ -25,14 +25,29 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
   const repo = res.locals.repo as Repository;
+  const project = res.locals.project as Project;
 
   // First read the group as the user to verify access
   const group = await repo.readResource<Group>('Group', id);
 
   // Start the exporter
   const exporter = new BulkExporter(repo, since);
-  await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
+  groupExportResources(exporter, project, group, repo)
+    .then(() => logger.info(`export for ${project.id} is completed`))
+    .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
+
+  // Send the response
+  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
+}
+
+async function groupExportResources(
+  exporter: BulkExporter,
+  project: Project,
+  group: Group,
+  repo: Repository
+): Promise<void> {
   // Read all patients in the group
   if (group.member) {
     for (const member of group.member) {
@@ -53,11 +68,8 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
         logger.warn('Unable to read patient: ' + member.entity?.reference);
       }
     }
+
+    // Close the exporter
+    await exporter.close(project);
   }
-
-  // Close the exporter
-  const bulkDataExport = await exporter.close(res.locals.project as Project);
-
-  // Send the response
-  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
 }
