@@ -40,6 +40,7 @@ Review and refer to the following items in preparation for your inspection.
   - [ ] Specimen related queries and reports
     - [ ] All [Specimens](https://app.medplum.com/Specimen)
     - [ ] [Specimen Quality](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,status&_offset=0&_sort=-_lastUpdated&status=unsatisfactory)
+    - [ ] [Specimen.condition](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition&_offset=0&_sort=-_lastUpdated) should include codes from the [`SpecimenRejectionReason` code system](https://terminology.hl7.org/CodeSystem-v2-0490.html) that will be the basis for rejecting.
 - GEN.43800 Data Input ID Phase II
   - All data in Medplum is versioned, and [version history](/docs/sdk/classes/MedplumClient#readhistory) for each resource is available
 - GEN.43825 Result Verification Phase II
@@ -52,3 +53,27 @@ Review and refer to the following items in preparation for your inspection.
   - [ ] Call logs (also known as Panic Logs) for patient contact are often implemented as [CommunicationRequest](https://app.medplum.com/CommunicationRequest?_count=20&_fields=id,_lastUpdated,category,patient&_offset=0&_sort=-_lastUpdated)
 - GEN.43837 Downtime Result Reporting Phase II
   - Refer to documentation on [availability](/security#availability)
+- GEN.20316 QMS Indicators of Quality - Phase II
+
+  - Patient/Specimen Identification: Percent of patient wristbands with errors (ie, mislabels), percent of specimens with patient labeling errors (ie, mislabels), or percent of results with identification errors
+    - [ ] The main field for recording issues is [Specimen.condition](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition&_offset=0&_sort=-_lastUpdated) should include codes from the [`SpecimenRejectionReason` code system](https://terminology.hl7.org/CodeSystem-v2-0490.html).
+    - [ ] In this case the correct code for rejected specimen is `RI - Identification Problem`
+  - Test Order Accuracy: Percent of test orders correctly entered into a laboratory computer
+    - Though manual entry of orders is expected to be rare, the [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse) resource is the source of truth for manual order entries.
+  - Specimen Acceptability: Percent of specimens received that are suitable for testing
+    - [ ] All [Specimens](https://app.medplum.com/Specimen)
+    - [ ] [Unsatisfactory Specimens](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,status&_offset=0&_sort=-_lastUpdated&status=unsatisfactory)
+  - Test Turnaround Time: Collection-to-reporting turnaround time or receipt-in- laboratory-to-reporting turnaround time of tests ordered. This may include orders of a “stat” priority (eg, emergency department or intensive care unit specimens), or routine priority, to include the percent of specimens with turnaround time that falls within an established limit (eg, the time that represents the 90th or 95th percentile of turnaround times or less than 30 minutes).
+    - [ ] Collection-to-reporting turnaround: [Specimen.collection.collectedDateTime](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition,collection&_offset=0&_sort=-_lastUpdated) to [DiagnosticReport.issued](https://app.medplum.com/DiagnosticReport?_count=20&_fields=id,_lastUpdated,subject,code,status,specimen,issued&_offset=0&_sort=-_lastUpdated)
+    - [ ] Receipt-in-laboratory-to-reporting turnaround: [Specimen.receivedTime](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,receivedTime&_offset=0&_sort=-_lastUpdated) to [DiagnosticReport.issued](https://app.medplum.com/DiagnosticReport?_count=20&_fields=id,_lastUpdated,subject,code,status,specimen,issued&_offset=0&_sort=-_lastUpdated)
+  - Critical Result Reporting: Percent of critical results with written record that results have been reported to caregivers; percent of critical results for which the primary clinician cannot be contacted in a reasonable period of time
+    - [ ] Patient contact are often implemented as [Communication](https://app.medplum.com/Communication?_count=20&_fields=id,_lastUpdated,status,subject,sender,payload&_offset=0&_sort=-_lastUpdated)
+
+- GEN.43837 Downtime Result Reporting Phase II
+  - [ ] Customer Satisfaction: Standardized satisfaction survey tool with a reference database of physician, nurse, or patient respondents. These will often be among [QuestionnaireResponse](https://app.medplum.com/QuestionnaireResponse)
+- Corrected Reports – General Laboratory: Percent of reports that are corrected Amended Reports
+  - [ ] Corrected/Amended [DiagnosticReports](https://app.medplum.com/DiagnosticReport?status=corrected,ammended)
+- Blood Culture Contamination: Percent of blood cultures that grow bacteria that are highly likely to represent contaminants
+  - [ ] The main field for recording issues is [Specimen.condition](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition&_offset=0&_sort=-_lastUpdated) should include codes from the [`SpecimenRejectionReason` code system](https://terminology.hl7.org/CodeSystem-v2-0490.html).
+    - [ ] In this case the correct code for rejected specimen is `RN - Contamination`
+- Laboratory Test Utilization: Percent of tests (or a test) that appear to be redundant, excessive or noncontributory to good patient care.

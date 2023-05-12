@@ -117,16 +117,4 @@ npm run build -- --filter=@medplum/server
 
 ## Run Medplum server
 
-Update the server config at packages/server/medplum.config.json with your configuration
-
-Run in development mode (from the `packages/server` directory):
-
-```bash
-npm run dev
-```
-
-Run in production mode (from the project root directory):
-
-```bash
-node packages/server/dist/index.js
-```
+See the instructions to start the server on [run the stack](/docs/contributing/run-the-stack)
