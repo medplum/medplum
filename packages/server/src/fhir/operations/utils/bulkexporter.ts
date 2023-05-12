@@ -41,13 +41,15 @@ export class BulkExporter {
     this.since = since;
   }
 
-  async start(url: string): Promise<void> {
+  async start(url: string): Promise<BulkDataExport> {
     this.resource = await this.repo.createResource<BulkDataExport>({
       resourceType: 'BulkDataExport',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
     });
+
+    return this.resource;
   }
 
   async getWriter(resourceType: string): Promise<BulkFileWriter> {

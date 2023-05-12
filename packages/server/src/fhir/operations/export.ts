@@ -2,6 +2,7 @@ import { accepted, getResourceTypes } from '@medplum/core';
 import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
+import { logger } from '../../logger';
 import { Repository, protectedResourceTypes, publicResourceTypes } from '../repo';
 import { BulkExporter } from './utils/bulkexporter';
 
@@ -26,8 +27,20 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   const project = res.locals.project as Project;
 
   const exporter = new BulkExporter(repo, since);
-  await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+  const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
+  exportAllResources(exporter, project, types)
+    .then(() => logger.info(`export for ${project.id} is completed`))
+    .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
+  // Send the response
+  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
+}
+
+export async function exportAllResources(
+  exporter: BulkExporter,
+  project: Project,
+  types: string[] | undefined
+): Promise<void> {
   const resourceTypes = getResourceTypes();
 
   for (const resourceType of resourceTypes) {
@@ -38,10 +51,7 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   }
 
   // Close the exporter
-  const bulkDataExport = await exporter.close(project);
-
-  // Send the response
-  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
+  await exporter.close(project);
 }
 
 export async function exportResourceType(
