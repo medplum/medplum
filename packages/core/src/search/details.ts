@@ -8,6 +8,7 @@ export enum SearchParameterType {
   QUANTITY = 'QUANTITY',
   TEXT = 'TEXT',
   REFERENCE = 'REFERENCE',
+  CANONICAL = 'CANONICAL',
   DATE = 'DATE',
   DATETIME = 'DATETIME',
   PERIOD = 'PERIOD',
@@ -75,7 +76,7 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
 
-    if (elementDefinition.max === '*') {
+    if (elementDefinition.max !== '0' && elementDefinition.max !== '1') {
       array = true;
     }
 
@@ -118,10 +119,10 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType?: Pro
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
-      if (propertyType === PropertyType.dateTime || propertyType === PropertyType.instant) {
-        type = SearchParameterType.DATETIME;
-      } else {
+      if (propertyType === PropertyType.date) {
         type = SearchParameterType.DATE;
+      } else {
+        type = SearchParameterType.DATETIME;
       }
       break;
     case 'number':
@@ -131,7 +132,11 @@ function getSearchParameterType(searchParam: SearchParameter, propertyType?: Pro
       type = SearchParameterType.QUANTITY;
       break;
     case 'reference':
-      type = SearchParameterType.REFERENCE;
+      if (propertyType === PropertyType.canonical) {
+        type = SearchParameterType.CANONICAL;
+      } else {
+        type = SearchParameterType.REFERENCE;
+      }
       break;
     case 'token':
       if (propertyType === 'boolean') {

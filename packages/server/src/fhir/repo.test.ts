@@ -2249,8 +2249,8 @@ describe('FHIR Repo', () => {
   });
 
   test('Include PlanDefinition mixed types', async () => {
-    const canonical = 'http://example.com/fhir/R4/ActivityDefinition/1';
-    const uri = 'http://example.com/fhir/R4/ActivityDefinition/2';
+    const canonical = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
+    const uri = 'http://example.com/fhir/R4/ActivityDefinition/' + randomUUID();
     const plan = await systemRepo.createResource<PlanDefinition>({
       resourceType: 'PlanDefinition',
       status: 'active',
@@ -2791,6 +2791,38 @@ describe('FHIR Repo', () => {
           code: 'date',
           operator: Operator.GREATER_THAN,
           value: '2020-01-01',
+        },
+      ],
+      count: 1,
+    });
+
+    expect(bundleContains(bundle, e)).toBeTruthy();
+  });
+
+  test('Encounter.period dateTime search', async () => {
+    const e = await systemRepo.createResource<Encounter>({
+      resourceType: 'Encounter',
+      identifier: [{ value: randomUUID() }],
+      status: 'finished',
+      class: { code: 'test' },
+      period: {
+        start: '2020-02-01T13:30Z',
+        end: '2020-02-01T14:15Z',
+      },
+    });
+
+    const bundle = await systemRepo.search({
+      resourceType: 'Encounter',
+      filters: [
+        {
+          code: 'identifier',
+          operator: Operator.EQUALS,
+          value: e.identifier?.[0]?.value as string,
+        },
+        {
+          code: 'date',
+          operator: Operator.GREATER_THAN,
+          value: '2020-02-01T12:00Z',
         },
       ],
       count: 1,

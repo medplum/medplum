@@ -8,7 +8,7 @@ import type {
   ReferenceObject,
   SchemaObject,
   TagObject,
-} from 'openapi3-ts/dist/mjs/oas31';
+} from 'openapi3-ts/oas31';
 import { getConfig } from './config';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 

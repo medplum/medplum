@@ -23,7 +23,7 @@
     "@medplum/definitions": "*",
     "@medplum/fhirtypes": "*",
     "@types/json-schema": "7.0.11",
-    "fhirpath": "3.3.2",
+    "fhirpath": "3.5.0",
     "fast-xml-parser": "4.2.2"
   }
 }

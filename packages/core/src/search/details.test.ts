@@ -131,7 +131,7 @@ describe('SearchParameterDetails', () => {
 
     const details = getSearchParameterDetails('Observation', valueDateParam);
     expect(details).toBeDefined();
-    expect(details.type).toEqual(SearchParameterType.DATE);
+    expect(details.type).toEqual(SearchParameterType.DATETIME);
     expect(details.columnName).toEqual('valueDate');
     expect(details.elementDefinition).toBeDefined();
   });
@@ -149,6 +149,45 @@ describe('SearchParameterDetails', () => {
     expect(details).toBeDefined();
     expect(details.type).toEqual(SearchParameterType.QUANTITY);
     expect(details.columnName).toEqual('valueQuantity');
+    expect(details.elementDefinition).toBeDefined();
+  });
+
+  test('Encounter-date', () => {
+    const clinicalDateParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      id: 'clinical-date',
+      url: 'http://hl7.org/fhir/SearchParameter/clinical-date',
+      name: 'date',
+      code: 'date',
+      base: [
+        'AllergyIntolerance',
+        'CarePlan',
+        'CareTeam',
+        'ClinicalImpression',
+        'Composition',
+        'Consent',
+        'DiagnosticReport',
+        'Encounter',
+        'EpisodeOfCare',
+        'FamilyMemberHistory',
+        'Flag',
+        'Immunization',
+        'List',
+        'Observation',
+        'Procedure',
+        'RiskAssessment',
+        'SupplyRequest',
+      ],
+      type: 'date',
+      expression:
+        'AllergyIntolerance.recordedDate | CarePlan.period | CareTeam.period | ClinicalImpression.date | Composition.date | Consent.dateTime | DiagnosticReport.effective | Encounter.period | EpisodeOfCare.period | FamilyMemberHistory.date | Flag.period | Immunization.occurrence | List.date | Observation.effective | Procedure.performed | (RiskAssessment.occurrence as dateTime) | SupplyRequest.authoredOn',
+      comparator: ['eq', 'ne', 'gt', 'ge', 'lt', 'le', 'sa', 'eb', 'ap'],
+    };
+
+    const details = getSearchParameterDetails('Encounter', clinicalDateParam);
+    expect(details).toBeDefined();
+    expect(details.type).toEqual(SearchParameterType.DATETIME);
+    expect(details.columnName).toEqual('date');
     expect(details.elementDefinition).toBeDefined();
   });
 
