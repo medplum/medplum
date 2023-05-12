@@ -29,14 +29,14 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   const exporter = new BulkExporter(repo, since);
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
-  exportAllResources(exporter, project, types)
+  exportResources(exporter, project, types)
     .then(() => logger.info(`export for ${project.id} is completed`))
     .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
   // Send the response
   res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
 }
 
-export async function exportAllResources(
+export async function exportResources(
   exporter: BulkExporter,
   project: Project,
   types: string[] | undefined
