@@ -799,4 +799,27 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
     expect(screen.queryByText('no filters')).not.toBeInTheDocument();
   });
+
+  test('Handle reference missing filter', async () => {
+    const props: SearchControlProps = {
+      search: {
+        resourceType: 'Patient',
+        fields: ['id', '_lastUpdated', 'name', 'organization'],
+        filters: [
+          {
+            code: 'organization',
+            operator: Operator.MISSING,
+            value: 'true',
+          },
+        ],
+      },
+      onLoad: jest.fn(),
+    };
+
+    await setup(props);
+
+    await waitFor(() => screen.getByText('missing true'));
+
+    expect(screen.getByText('missing true')).toBeInTheDocument();
+  });
 });
