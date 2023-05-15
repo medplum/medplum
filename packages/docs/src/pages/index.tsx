@@ -19,7 +19,10 @@ export default function IndexPage(): JSX.Element {
 
   return (
     <div className="page">
-      <Layout>
+      <Layout
+        title="Medplum"
+        description="Medplum is a headless EHR that makes it easier to build healthcare apps quickly with less code."
+      >
         <div className={styles.heroSection}>
           <div className={styles.pagePadding}>
             <div className={styles.section}>
@@ -34,11 +37,16 @@ export default function IndexPage(): JSX.Element {
                 </p>
                 <a href="/docs" className={styles.getStartedButton}>
                   <div>Get Started</div>
-                  <img src="/img/btn-arrow.svg" loading="lazy" alt="Go arrow" />
+                  <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
                 </a>
               </div>
               <div className={styles.heroImage}>
-                <img src="/img/illustration-header.svg" loading="lazy" alt="Robot working in a medical office" />
+                <img
+                  src="/img/illustration-header.svg"
+                  alt="Robot working in a medical office"
+                  width="514"
+                  height="472"
+                />
               </div>
             </div>
           </div>
@@ -53,18 +61,20 @@ export default function IndexPage(): JSX.Element {
                 </p>
                 <a href="/docs" className={styles.cardButton}>
                   <div>Learn more</div>
-                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" />
+                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" width="32" height="32" />
+                  <span className="screen-reader-text">Learn more about Medplum</span>
                 </a>
               </div>
               <div className={styles.cardItem}>
                 <h3>Build with Modern Tools</h3>
                 <p>
-                  Use modern <strong>TypeScript</strong>, <strong>React</strong>, and <strong>Node</strong> to build
+                  Use modern <strong>TypeScript</strong>, <strong>React</strong>, and <strong>Node.js</strong> to build
                   secure, data driven healthcare applications.
                 </p>
                 <a href="https://github.com/medplum/medplum" target="_blank" className={styles.cardButton}>
                   <div>Learn more</div>
-                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" />
+                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" width="32" height="32" />
+                  <span className="screen-reader-text">Learn more about TypeScript, React, and Node.js</span>
                 </a>
               </div>
               <div className={styles.cardItem}>
@@ -75,7 +85,8 @@ export default function IndexPage(): JSX.Element {
                 </p>
                 <a href="https://www.medplum.com/docs/fhir-basics" target="_blank" className={styles.cardButton}>
                   <div>Learn more</div>
-                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" />
+                  <img src="/img/arrow-small-btn.svg" loading="lazy" alt="Go arrow" width="32" height="32" />
+                  <span className="screen-reader-text">Learn more about FHIR Basics</span>
                 </a>
               </div>
             </div>
@@ -108,7 +119,7 @@ export default function IndexPage(): JSX.Element {
             <div className={styles.featureGrid}>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/security.svg" loading="lazy" alt="Security icon" />
+                  <img src="/img/icons/security.svg" loading="lazy" alt="Security icon" width="34" height="34" />
                 </div>
                 <h3>Out of the box security</h3>
                 <p>
@@ -121,7 +132,7 @@ export default function IndexPage(): JSX.Element {
               </div>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/icon.svg" loading="lazy" alt="Code icon" />
+                  <img src="/img/icons/icon.svg" loading="lazy" alt="Code icon" width="34" height="34" />
                 </div>
                 <h3>Open Source</h3>
                 <p>
@@ -134,7 +145,7 @@ export default function IndexPage(): JSX.Element {
               </div>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/cog-icon.svg" loading="lazy" alt="Cog icon" />
+                  <img src="/img/icons/cog-icon.svg" loading="lazy" alt="Cog icon" width="34" height="34" />
                 </div>
                 <h3>Workflow Automation</h3>
                 <p>
@@ -150,7 +161,13 @@ export default function IndexPage(): JSX.Element {
               </div>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/interoperability.svg" loading="lazy" alt="Interoperability icon" />
+                  <img
+                    src="/img/icons/interoperability.svg"
+                    loading="lazy"
+                    alt="Interoperability icon"
+                    width="34"
+                    height="34"
+                  />
                 </div>
                 <h3>Future-proof Data Storage</h3>
                 <p>
@@ -164,7 +181,7 @@ export default function IndexPage(): JSX.Element {
               </div>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/user-interface.svg" loading="lazy" alt="Mouse icon" />
+                  <img src="/img/icons/user-interface.svg" loading="lazy" alt="Mouse icon" width="34" height="34" />
                 </div>
                 <h3>Healthcare UI Components</h3>
                 <p>
@@ -177,7 +194,7 @@ export default function IndexPage(): JSX.Element {
               </div>
               <div className={styles.featureCell}>
                 <div className={styles.featureIcon}>
-                  <img src="/img/icons/clinical-logic.svg" loading="lazy" alt="Logic icon" />
+                  <img src="/img/icons/clinical-logic.svg" loading="lazy" alt="Logic icon" width="34" height="34" />
                 </div>
                 <h3>Interoperability</h3>
                 <p>

@@ -19,8 +19,7 @@
   --ifm-heading-color: #000000;
   --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
-  --docusaurus-highlighted-code-line-bg: rgba(72 ,77, 91,  .20);
-
+  --docusaurus-highlighted-code-line-bg: rgba(72, 77, 91, 0.2);
 }
 
 [data-theme='dark'] {
@@ -135,8 +134,6 @@ h1 {
   line-height: 130%;
 }
 
-
-
 /* Styles for the grid of cards on the docs homepage*/
 .homepage-grid {
   display: grid;
@@ -210,9 +207,23 @@ div.theme-code-block {
     --ifm-table-cell-padding: 0.25rem;
   }
 
-  .docs-wrapper  td {
-    --ifm-table-font-size : 12px;
+  .docs-wrapper td {
+    --ifm-table-font-size: 12px;
     font-size: var(--ifm-table-font-size);
   }
+}
 
+.screen-reader-text {
+  border: 0;
+  clip: rect(1px, 1px, 1px, 1px);
+  -webkit-clip-path: inset(50%);
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute !important;
+  width: 1px;
+  word-wrap: normal !important;
+  word-break: normal;
 }

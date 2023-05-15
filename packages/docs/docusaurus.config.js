@@ -86,6 +86,8 @@ const config = {
         logo: {
           alt: 'Medplum Logo',
           src: 'img/logo.svg',
+          width: 24,
+          height: 32,
         },
         items: [
           {
