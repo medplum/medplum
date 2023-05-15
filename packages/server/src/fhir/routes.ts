@@ -22,6 +22,7 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { asyncJobRouter } from './asyncjob';
 
 export const fhirRouter = Router();
 
@@ -96,6 +97,9 @@ protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler))
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
+
+// Async Job
+protectedRoutes.use('/job', asyncJobRouter);
 
 // Measure $evaluate-measure operation
 protectedRoutes.post('/Measure/:id/([$]|%24)evaluate-measure', asyncWrap(evaluateMeasureHandler));
