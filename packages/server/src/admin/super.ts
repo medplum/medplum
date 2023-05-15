@@ -1,4 +1,4 @@
-import { allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
+import { accepted, allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
@@ -12,6 +12,8 @@ import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
+import { AsyncJobManager } from '../fhir/operations/utils/asyncjobmanager';
+import { getConfig } from '../config';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -22,13 +24,28 @@ superAdminRouter.use(authenticateToken);
 superAdminRouter.post(
   '/valuesets',
   asyncWrap(async (_req: Request, res: Response) => {
+    const prefer = _req.header('Prefer');
     if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
       return;
     }
 
-    await createValueSets();
-    sendOutcome(res, allOk);
+    if (prefer === 'respond-async') {
+      const { baseUrl } = getConfig();
+      const jobManager = new AsyncJobManager(systemRepo);
+      const asyncJob = await jobManager.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      jobManager
+        .runInBackground(async () => {
+          await createValueSets();
+        })
+        .then(() => console.log('success'))
+        .catch(() => console.log('error'));
+      res.set('Content-Location', `${baseUrl}fhir/R4/job/${asyncJob.id}`).status(202).json(accepted);
+    } else {
+      await createValueSets();
+
+      sendOutcome(res, allOk);
+    }
   })
 );
 
