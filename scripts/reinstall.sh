@@ -15,4 +15,10 @@ for dir in `ls packages`; do
   fi
 done
 
+for dir in `ls examples`; do
+  if test -d "examples/$dir/node_modules"; then
+    rm -rf "examples/$dir/node_modules"
+  fi
+done
+
 npm i

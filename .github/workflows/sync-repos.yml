@@ -27,14 +27,14 @@ jobs:
               changed_paths+="$path;"
             fi
           done
-          echo "::set-output name=changed_paths::$changed_paths"
+          echo "changed_paths=$changed_paths" >> $GITHUB_ENV
       - name: Update listening repos, create PR, and clean up
-        if: steps.check_changes.outputs.changed_paths != ''
+        if: env.changed_paths != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # This separates the strings with ; to turn it into an array
-          IFS=';' read -ra changed_paths_array <<< "${{ steps.check_changes.outputs.changed_paths }}"
+          IFS=';' read -ra changed_paths_array <<< "${{ env.changed_paths }}"
           echo "Changed paths array: ${changed_paths_array[@]}"
 
           # Configure Git
@@ -63,7 +63,8 @@ jobs:
             git clone "$repo"
 
             # Copy changed files to the listening repo
-            rsync -a --delete --exclude .git/ "${initial_working_directory}/${path%}"/ ${folder_name}/
+            rsync -a --delete --exclude .git/ --exclude tsconfig.json "${initial_working_directory}/${path%}"/ ${folder_name}/
+            cp LICENSE.txt ${folder_name}/
 
             # Commit and push changes to the listening repo
             cd ${folder_name}
