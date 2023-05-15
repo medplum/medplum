@@ -1071,7 +1071,6 @@ export class Repository extends BaseRepository implements FhirRepository {
         })
       );
       (await Promise.all(canonicalSearches)).forEach((resources) => {
-        console.log('Including canonical', resources);
         includedResources.push(...resources);
       });
     }
