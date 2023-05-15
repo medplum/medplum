@@ -10,6 +10,7 @@ import { AdverseEvent } from './AdverseEvent';
 import { AllergyIntolerance } from './AllergyIntolerance';
 import { Appointment } from './Appointment';
 import { AppointmentResponse } from './AppointmentResponse';
+import { AsyncJob } from './AsyncJob';
 import { AuditEvent } from './AuditEvent';
 import { Basic } from './Basic';
 import { Binary } from './Binary';
@@ -170,6 +171,7 @@ export type Resource = AccessPolicy
   | AllergyIntolerance
   | Appointment
   | AppointmentResponse
+  | AsyncJob
   | AuditEvent
   | Basic
   | Binary

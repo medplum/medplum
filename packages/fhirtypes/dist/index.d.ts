@@ -13,6 +13,7 @@ export * from './AllergyIntolerance';
 export * from './Annotation';
 export * from './Appointment';
 export * from './AppointmentResponse';
+export * from './AsyncJob';
 export * from './Attachment';
 export * from './AuditEvent';
 export * from './BackboneElement';

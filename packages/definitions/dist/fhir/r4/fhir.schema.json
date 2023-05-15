@@ -163,7 +163,8 @@
       "UserConfiguration": "#/definitions/UserConfiguration",
       "BulkDataExport": "#/definitions/BulkDataExport",
       "SmartAppLaunch": "#/definitions/SmartAppLaunch",
-      "DomainConfiguration": "#/definitions/DomainConfiguration"
+      "DomainConfiguration": "#/definitions/DomainConfiguration",
+      "AsyncJob": "#/definitions/AsyncJob"
     }
   },
   "oneOf": [
@@ -643,6 +644,9 @@
     },
     {
       "$ref": "#/definitions/DomainConfiguration"
+    },
+    {
+      "$ref": "#/definitions/AsyncJob"
     }
   ],
   "definitions": {
@@ -1124,6 +1128,9 @@
         },
         {
           "$ref": "#/definitions/DomainConfiguration"
+        },
+        {
+          "$ref": "#/definitions/AsyncJob"
         }
       ]
     },
@@ -62305,6 +62312,54 @@
       "required": [
         "value",
         "action"
+      ]
+    },
+    "AsyncJob": {
+      "description": "Contains details of long running asynchronous/background jobs.",
+      "properties": {
+        "resourceType": {
+          "description": "This is a AsyncJob resource",
+          "const": "AsyncJob"
+        },
+        "id": {
+          "description": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+          "$ref": "#/definitions/id"
+        },
+        "meta": {
+          "description": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+          "$ref": "#/definitions/Meta"
+        },
+        "implicitRules": {
+          "description": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+          "$ref": "#/definitions/uri"
+        },
+        "language": {
+          "description": "The base language in which the resource is written.",
+          "$ref": "#/definitions/code"
+        },
+        "status": {
+          "description": "The status of the request.",
+          "$ref": "#/definitions/code"
+        },
+        "requestTime": {
+          "description": "Indicates the server\u0027s time when the query is requested.",
+          "$ref": "#/definitions/instant"
+        },
+        "transactionTime": {
+          "description": "Indicates the server\u0027s time when the query is run. The response SHOULD NOT include any resources modified after this instant, and SHALL include any matching resources modified up to and including this instant.",
+          "$ref": "#/definitions/instant"
+        },
+        "request": {
+          "description": "The full URL of the original kick-off request. In the case of a POST request, this URL will not include the request parameters.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resourceType",
+        "status",
+        "requestTime",
+        "request"
       ]
     }
   }
