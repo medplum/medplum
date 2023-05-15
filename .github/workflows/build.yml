@@ -1,4 +1,9 @@
 name: Build
+# Limit a single job to run at a time for a given branch/PR to save resources and speed up CI
+# see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+concurrency:
+  group: ci-build-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches: [main]
