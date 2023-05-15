@@ -40,7 +40,7 @@ First, create a FHIR `Measure`:
 Next, make an HTTP POST request to the `$evaluate-measure` endpoint:
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Measure/MY_MEASURE_ID/$validate' \
+curl 'https://api.medplum.com/fhir/R4/Measure/MY_MEASURE_ID/$evaluate-measure' \
   -X POST \
   -H "Content-Type: application/fhir+json" \
   -H "Authorization: Bearer MY_ACCESS_TOKEN" \
