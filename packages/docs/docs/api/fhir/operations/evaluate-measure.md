@@ -6,6 +6,12 @@ sidebar_position: 20
 
 Medplum supports the Measure [$evaluate-measure](https://hl7.org/fhir/R4/measure-operation-evaluate-measure.html) operation.
 
+:::caution
+
+`$evaluate-measure` is early and limited. At present, it only supports calculating counts using "application/x-fhir-query". Using FHIR `Library` is currently unsupported.
+
+:::
+
 ## Usage
 
 First, create a FHIR `Measure`:
