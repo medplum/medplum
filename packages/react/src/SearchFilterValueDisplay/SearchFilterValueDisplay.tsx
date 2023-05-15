@@ -1,4 +1,11 @@
-import { Filter, formatDateTime, getSearchParameterDetails, globalSchema, SearchParameterType } from '@medplum/core';
+import {
+  Filter,
+  formatDateTime,
+  getSearchParameterDetails,
+  globalSchema,
+  Operator,
+  SearchParameterType,
+} from '@medplum/core';
 import React from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 
@@ -12,7 +19,10 @@ export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): 
 
   const searchParam = globalSchema.types[resourceType]?.searchParams?.[filter.code];
   if (searchParam) {
-    if (searchParam.type === 'reference') {
+    if (
+      searchParam.type === 'reference' &&
+      (filter.operator === Operator.EQUALS || filter.operator === Operator.NOT_EQUALS)
+    ) {
       return <ResourceName value={{ reference: filter.value }} />;
     }
 
