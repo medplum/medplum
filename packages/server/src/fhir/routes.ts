@@ -8,8 +8,10 @@ import { bulkDataRouter } from './bulkdata';
 import { getCapabilityStatement } from './metadata';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
+import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
+import { bulkExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -20,7 +22,6 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { bulkExportHandler } from './operations/export';
 
 export const fhirRouter = Router();
 
@@ -95,6 +96,9 @@ protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler))
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
+
+// Measure $evaluate-measure operation
+protectedRoutes.post('/Measure/:id/([$]|%24)evaluate-measure', asyncWrap(evaluateMeasureHandler));
 
 // PlanDefinition $apply operation
 protectedRoutes.post('/PlanDefinition/:id/([$]|%24)apply', asyncWrap(planDefinitionApplyHandler));
