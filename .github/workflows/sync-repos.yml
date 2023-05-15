@@ -24,8 +24,7 @@ jobs:
       - name: Check for changes in specified path
         id: check_changes
         run: |
-          echo "GITHUB_ENV=$GITHUB_ENV" >> $GITHUB_ENV
-          ./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }}
+          echo "changed_paths=$(./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
       - name: Update listening repos, create PR, and clean up
         if: env.changed_paths != ''
         run: |

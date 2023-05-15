@@ -10,4 +10,4 @@ for path in examples/*/; do
     changed_paths+="$path;"
   fi
 done
-echo "changed_paths=$changed_paths" >> $GITHUB_ENV
+echo $changed_paths
