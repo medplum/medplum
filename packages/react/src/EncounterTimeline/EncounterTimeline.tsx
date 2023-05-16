@@ -5,7 +5,6 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface EncounterTimelineProps {
   encounter: Encounter | Reference<Encounter>;
-  options?: RequestInit;
 }
 
 export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
@@ -15,8 +14,8 @@ export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {
       loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
         return Promise.allSettled([
           medplum.readHistory('Encounter', id),
-          medplum.search('Communication', 'encounter=Encounter/' + id, props.options),
-          medplum.search('Media', 'encounter=Encounter/' + id, props.options),
+          medplum.search('Communication', 'encounter=Encounter/' + id),
+          medplum.search('Media', 'encounter=Encounter/' + id),
         ]);
       }}
       createCommunication={(resource: Encounter, sender: ProfileResource, text: string) => ({

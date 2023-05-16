@@ -8,4 +8,4 @@ export default {
   component: PatientTimeline,
 } as Meta;
 
-export const Patient = (): JSX.Element => <PatientTimeline patient={HomerSimpson} options={{ cache: 'reload' }} />;
+export const Patient = (): JSX.Element => <PatientTimeline patient={HomerSimpson} />;

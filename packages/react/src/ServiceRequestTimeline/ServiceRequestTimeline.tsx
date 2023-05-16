@@ -5,7 +5,6 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps {
   serviceRequest: ServiceRequest | Reference<ServiceRequest>;
-  options?: RequestInit;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
@@ -17,14 +16,10 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
         const _count = 100;
         return Promise.allSettled([
           medplum.readHistory('ServiceRequest', id),
-          medplum.search('Communication', { 'based-on': ref, _count }, props.options),
-          medplum.search('DiagnosticReport', { 'based-on': ref, _count }, props.options),
-          medplum.search('Media', { 'based-on': ref, _count }, props.options),
-          medplum.search(
-            'Task',
-            { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count },
-            props.options
-          ),
+          medplum.search('Communication', { 'based-on': ref, _count }),
+          medplum.search('DiagnosticReport', { 'based-on': ref, _count }),
+          medplum.search('Media', { 'based-on': ref, _count }),
+          medplum.search('Task', { _filter: `based-on eq ${ref} or focus eq ${ref} or subject eq ${ref}`, _count }),
         ]);
       }}
       createCommunication={(resource: ServiceRequest, sender: ProfileResource, text: string) => ({

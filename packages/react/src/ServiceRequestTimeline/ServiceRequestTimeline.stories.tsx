@@ -11,6 +11,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <ServiceRequestTimeline serviceRequest={HomerServiceRequest} options={{ cache: 'reload' }} />
+    <ServiceRequestTimeline serviceRequest={HomerServiceRequest} />
   </Document>
 );

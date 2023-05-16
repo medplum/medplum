@@ -616,6 +616,14 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Invalidates all cached values and flushes the cache.
+   * @category Caching
+   */
+  invalidateAll(): void {
+    this.requestCache?.clear();
+  }
+
+  /**
    * Invalidates all cached search results or cached requests for the given resourceType.
    * @category Caching
    * @param resourceType The resource type to invalidate.

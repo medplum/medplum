@@ -6,16 +6,15 @@ import { useParams } from 'react-router-dom';
 export function TimelinePage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
-  const reloadCache = { cache: 'reload' } as RequestInit;
 
   switch (resourceType) {
     case 'Encounter':
-      return <EncounterTimeline encounter={reference} options={reloadCache} />;
+      return <EncounterTimeline encounter={reference} />;
     case 'Patient':
-      return <PatientTimeline patient={reference} options={reloadCache} />;
+      return <PatientTimeline patient={reference} />;
     case 'ServiceRequest':
-      return <ServiceRequestTimeline serviceRequest={reference} options={reloadCache} />;
+      return <ServiceRequestTimeline serviceRequest={reference} />;
     default:
-      return <DefaultResourceTimeline resource={reference} options={reloadCache} />;
+      return <DefaultResourceTimeline resource={reference} />;
   }
 }
