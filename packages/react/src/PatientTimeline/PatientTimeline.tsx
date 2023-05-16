@@ -9,20 +9,23 @@ export interface PatientTimelineProps {
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {
-  const loadTimelineResources = useCallback((medplum: MedplumClient, resourceType: ResourceType, id: string) => {
-    const ref = `${resourceType}/${id}`;
-    const _count = 100;
-    return Promise.allSettled([
-      medplum.readHistory('Patient', id),
-      medplum.search('Communication', { subject: ref, _count }, props.options),
-      medplum.search('Device', { patient: ref, _count }, props.options),
-      medplum.search('DeviceRequest', { patient: ref, _count }, props.options),
-      medplum.search('DiagnosticReport', { subject: ref, _count }, props.options),
-      medplum.search('Media', { subject: ref, _count }, props.options),
-      medplum.search('ServiceRequest', { subject: ref, _count }, props.options),
-      medplum.search('Task', { subject: ref, _count }, props.options),
-    ]);
-  }, []);
+  const loadTimelineResources = useCallback(
+    (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
+      const ref = `${resourceType}/${id}`;
+      const _count = 100;
+      return Promise.allSettled([
+        medplum.readHistory('Patient', id),
+        medplum.search('Communication', { subject: ref, _count }, props.options),
+        medplum.search('Device', { patient: ref, _count }, props.options),
+        medplum.search('DeviceRequest', { patient: ref, _count }, props.options),
+        medplum.search('DiagnosticReport', { subject: ref, _count }, props.options),
+        medplum.search('Media', { subject: ref, _count }, props.options),
+        medplum.search('ServiceRequest', { subject: ref, _count }, props.options),
+        medplum.search('Task', { subject: ref, _count }, props.options),
+      ]);
+    },
+    [props.options]
+  );
 
   return (
     <ResourceTimeline

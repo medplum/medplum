@@ -5,7 +5,7 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface DefaultResourceTimelineProps {
   resource: Resource | Reference;
-  options?: RequestInit; 
+  options?: RequestInit;
 }
 
 export function DefaultResourceTimeline(props: DefaultResourceTimelineProps): JSX.Element {
