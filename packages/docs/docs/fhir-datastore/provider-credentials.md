@@ -47,9 +47,9 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 {ExampleCode}
 </MedplumCodeBlock>
 
-:::tip `Practioner.qualification` vs. `PractitionerRole.specialty`
+:::tip `Practitioner.qualification` vs. `PractitionerRole.specialty`
 
-Both the `Practioner.qualification` and `PractitionerRole.specialty` elements can be used to represent a provider's specialization, but there are important differences between how they are used.
+Both the `Practitioner.qualification` and `PractitionerRole.specialty` elements can be used to represent a provider's specialization, but there are important differences between how they are used.
 
 - `Practitioner.qualification` indicates the specific qualifications that a provider has obtained, and are associated with the provider's _person_. This is useful for illustrating a provider's overall skill set, education, and training, regardless of their current role or where they're practicing.
 
