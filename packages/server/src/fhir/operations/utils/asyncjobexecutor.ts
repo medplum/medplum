@@ -1,7 +1,7 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Repository, systemRepo } from '../../repo';
 
-export class AsyncJobManager {
+export class AsyncJobExecutor {
   readonly repo: Repository;
   private resource: AsyncJob | undefined;
   constructor(repo: Repository) {
@@ -19,20 +19,23 @@ export class AsyncJobManager {
     return this.resource;
   }
 
-  async runInBackground(callback: () => Promise<any>): Promise<void> {
-    await callback();
-    await this.complete();
-  }
-
-  async complete(): Promise<void> {
+  async run(callback: () => Promise<any>): Promise<void> {
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
-
+    await callback();
     await systemRepo.updateResource<AsyncJob>({
       ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
     });
+  }
+
+  getContentLocation(baseUrl: string): string {
+    if (!this.resource) {
+      throw new Error('AsyncJob missing');
+    }
+
+    return `${baseUrl}fhir/R4/AsyncJob/${this.resource.id}/status`;
   }
 }

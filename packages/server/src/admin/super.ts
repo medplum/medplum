@@ -3,6 +3,8 @@ import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
+import { getConfig } from '../config';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
@@ -12,8 +14,6 @@ import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { AsyncJobManager } from '../fhir/operations/utils/asyncjobmanager';
-import { getConfig } from '../config';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -32,20 +32,18 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const jobManager = new AsyncJobManager(systemRepo);
-      const asyncJob = await jobManager.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      jobManager
-        .runInBackground(async () => {
-          await createValueSets();
-        })
-        .then(() => console.log('success'))
-        .catch(() => console.log('error'));
-      res.set('Content-Location', `${baseUrl}fhir/R4/AsyncJob/${asyncJob.id}/status`).status(202).json(accepted);
-    } else {
-      await createValueSets();
-
-      sendOutcome(res, allOk);
+      const exec = new AsyncJobExecutor(systemRepo);
+      const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      exec
+        .run(createValueSets)
+        .then(() => logger.info(`async job for ${job.id} is completed`))
+        .catch((err) => logger.error(`async job for  ${job.id} failed: ${err}`));
+      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+      return;
     }
+
+    await createValueSets;
+    sendOutcome(res, allOk);
   })
 );
 
@@ -59,7 +57,19 @@ superAdminRouter.post(
       sendOutcome(res, forbidden);
       return;
     }
+    const prefer = _req.header('Prefer');
 
+    if (prefer === 'respond-async') {
+      const { baseUrl } = getConfig();
+      const exec = new AsyncJobExecutor(systemRepo);
+      const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      exec
+        .run(createStructureDefinitions)
+        .then(() => logger.info(`async job for ${job.id} is completed`))
+        .catch((err) => logger.error(`async job for  ${job.id} failed: ${err}`));
+      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+      return;
+    }
     await createStructureDefinitions();
     sendOutcome(res, allOk);
   })

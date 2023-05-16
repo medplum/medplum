@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { AsyncJobManager } from './operations/utils/asyncjobmanager';
+import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { systemRepo } from './repo';
 import { initTestAuth } from '../test.setup';
 
@@ -19,7 +19,7 @@ describe('AsyncJob status', () => {
   });
 
   test('in progress', async () => {
-    const asyncJobManager = new AsyncJobManager(systemRepo);
+    const asyncJobManager = new AsyncJobExecutor(systemRepo);
     const accessToken = await initTestAuth();
 
     const job = await asyncJobManager.start('http://example.com');
@@ -32,13 +32,13 @@ describe('AsyncJob status', () => {
   });
 
   test('completed', async () => {
-    const asyncJobManager = new AsyncJobManager(systemRepo);
+    const asyncJobManager = new AsyncJobExecutor(systemRepo);
     const accessToken = await initTestAuth();
 
     const job = await asyncJobManager.start('http://example.com');
     const callback = jest.fn();
 
-    await asyncJobManager.runInBackground(async () => {
+    await asyncJobManager.run(async () => {
       callback();
     });
 
