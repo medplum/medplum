@@ -1,8 +1,9 @@
-import { AsyncJob } from '@medplum/fhirtypes';
+import { AsyncJob, Bundle, BundleEntry, BundleEntryResponse } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { Repository } from './repo';
 import { allOk } from '@medplum/core';
+import { sendResponse } from './routes';
 
 // Asychronous API
 // https://hl7.org/fhir/R4/async.html
@@ -22,7 +23,19 @@ asyncJobRouter.get(
       return;
     }
 
-    res.status(200).type('application/json').json(allOk);
+    const entry: BundleEntry[] = [];
+    const response: BundleEntryResponse = {
+      status: '200 OK',
+      location: asyncJob.request,
+    };
+
+    entry.push({ response });
+
+    await sendResponse(res, allOk, {
+      resourceType: 'Bundle',
+      type: 'batch-response',
+      entry,
+    } as Bundle);
   })
 );
 

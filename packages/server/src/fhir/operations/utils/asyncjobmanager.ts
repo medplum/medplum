@@ -21,12 +21,12 @@ export class AsyncJobManager {
 
   async runInBackground(callback: () => Promise<any>): Promise<void> {
     await callback();
-    await this.close();
+    await this.complete();
   }
 
-  async close(): Promise<void> {
+  async complete(): Promise<void> {
     if (!this.resource) {
-      throw new Error('Async Job must be started before calling close()');
+      throw new Error('AsyncJob missing');
     }
 
     await systemRepo.updateResource<AsyncJob>({
