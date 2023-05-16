@@ -33,12 +33,13 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const exec = new AsyncJobExecutor(systemRepo);
+      const repo = res.locals.repo as Repository;
+      const exec = new AsyncJobExecutor(repo);
       const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createValueSets)
-        .then(() => logger.info(`createValueSets for AsyncJob, ${job.id}, is completed`))
-        .catch((err) => logger.error(`createValueSets for AsyncJob, ${job.id}, failed: ${err}`));
+        .then(() => logger.info(`createValueSets for AsyncJob: ${job.id}, is completed`))
+        .catch((err) => logger.error(`createValueSets for AsyncJob: ${job.id}, failed: ${err}`));
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -62,12 +63,13 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const exec = new AsyncJobExecutor(systemRepo);
+      const repo = res.locals.repo as Repository;
+      const exec = new AsyncJobExecutor(repo);
       const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createStructureDefinitions)
-        .then(() => logger.info(`async job for ${job.id} is completed`))
-        .catch((err) => logger.error(`async job for  ${job.id} failed: ${err}`));
+        .then(() => logger.info(`structuredefinitions AsyncJob: ${job.id} is completed`))
+        .catch((err) => logger.error(`structuredefinitions AsyncJob: ${job.id} failed: ${err}`));
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -91,12 +93,14 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const exec = new AsyncJobExecutor(systemRepo);
+      const repo = res.locals.repo as Repository;
+
+      const exec = new AsyncJobExecutor(repo);
       const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createSearchParameters)
-        .then(() => logger.info(`createSearchParameters for AsyncJob, ${job.id}, is completed`))
-        .catch((err) => logger.error(`createSearchParameters for AsyncJob, ${job.id}, failed: ${err}`));
+        .then(() => logger.info(`createSearchParameters for AsyncJob: ${job.id}, is completed`))
+        .catch((err) => logger.error(`createSearchParameters for AsyncJob: ${job.id}, failed: ${err}`));
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -124,14 +128,16 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const exec = new AsyncJobExecutor(systemRepo);
+      const repo = res.locals.repo as Repository;
+
+      const exec = new AsyncJobExecutor(repo);
       const job = await exec.start(req.protocol + '://' + req.get('host') + req.originalUrl);
       exec
         .run(async () => {
           await systemRepo.reindexResourceType(resourceType);
         })
-        .then(() => logger.info(`Reindexing ${resourceType} for AsyncJob, ${job.id}, is completed`))
-        .catch((err) => logger.error(`Reindexing ${resourceType} for AsyncJob, ${job.id}, failed: ${err}`));
+        .then(() => logger.info(`Reindexing ${resourceType} for AsyncJob: ${job.id}, is completed`))
+        .catch((err) => logger.error(`Reindexing ${resourceType} for AsyncJob: ${job.id}, failed: ${err}`));
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -164,15 +170,17 @@ superAdminRouter.post(
 
     if (prefer === 'respond-async') {
       const { baseUrl } = getConfig();
-      const exec = new AsyncJobExecutor(systemRepo);
+      const repo = res.locals.repo as Repository;
+
+      const exec = new AsyncJobExecutor(repo);
       const job = await exec.start(req.protocol + '://' + req.get('host') + req.originalUrl);
       exec
         .run(async () => {
           await systemRepo.rebuildCompartmentsForResourceType(resourceType);
         })
-        .then(() => logger.info(`Rebuilding compartments for ${resourceType}: AsyncJob ${job.id}, is completed.`))
+        .then(() => logger.info(`Rebuilding compartments for ${resourceType}: AsyncJob: ${job.id}, is completed.`))
         .catch((err) =>
-          logger.error(`Rebuilding compartments for ${resourceType}: AsyncJob ${job.id}, failed: ${err}`)
+          logger.error(`Rebuilding compartments for ${resourceType}: AsyncJob: ${job.id}, failed: ${err}`)
         );
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
