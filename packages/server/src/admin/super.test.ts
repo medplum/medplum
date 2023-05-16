@@ -115,6 +115,18 @@ describe('Super Admin routes', () => {
     expect(res.status).toEqual(200);
   });
 
+  test('Rebuild ValueSetElements as super admin with respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/valuesets')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+  });
+
   test('Rebuild ValueSetElements access denied', async () => {
     const res = await request(app)
       .post('/admin/super/valuesets')

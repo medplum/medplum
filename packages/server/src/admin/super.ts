@@ -40,7 +40,7 @@ superAdminRouter.post(
         })
         .then(() => console.log('success'))
         .catch(() => console.log('error'));
-      res.set('Content-Location', `${baseUrl}fhir/R4/job/${asyncJob.id}`).status(202).json(accepted);
+      res.set('Content-Location', `${baseUrl}fhir/R4/AsyncJob/${asyncJob.id}/status`).status(202).json(accepted);
     } else {
       await createValueSets();
 
