@@ -38,7 +38,7 @@ export const Basic = (): JSX.Element | null => {
 
   return (
     <Document>
-      <DefaultResourceTimeline resource={resource} />
+      <DefaultResourceTimeline resource={resource} options={{ cache: 'reload' }} />
     </Document>
   );
 };

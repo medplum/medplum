@@ -8,4 +8,6 @@ export default {
   component: EncounterTimeline,
 } as Meta;
 
-export const Encounter = (): JSX.Element => <EncounterTimeline encounter={HomerEncounter} />;
+export const Encounter = (): JSX.Element => (
+  <EncounterTimeline encounter={HomerEncounter} options={{ cache: 'reload' }} />
+);

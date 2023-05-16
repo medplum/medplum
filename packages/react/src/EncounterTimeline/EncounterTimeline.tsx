@@ -5,7 +5,7 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface EncounterTimelineProps {
   encounter: Encounter | Reference<Encounter>;
-  options?: RequestInit; 
+  options?: RequestInit;
 }
 
 export function EncounterTimeline(props: EncounterTimelineProps): JSX.Element {

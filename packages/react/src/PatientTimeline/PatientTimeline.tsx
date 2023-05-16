@@ -5,7 +5,7 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface PatientTimelineProps {
   patient: Patient | Reference<Patient>;
-  options?: RequestInit; 
+  options?: RequestInit;
 }
 
 export function PatientTimeline(props: PatientTimelineProps): JSX.Element {

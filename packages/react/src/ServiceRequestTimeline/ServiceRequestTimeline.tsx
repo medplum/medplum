@@ -5,7 +5,7 @@ import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps {
   serviceRequest: ServiceRequest | Reference<ServiceRequest>;
-  options?: RequestInit; 
+  options?: RequestInit;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
