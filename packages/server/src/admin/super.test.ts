@@ -147,6 +147,18 @@ describe('Super Admin routes', () => {
     expect(res.status).toEqual(200);
   });
 
+  test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/structuredefinitions')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+  });
+
   test('Rebuild StructureDefinitions access denied', async () => {
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
@@ -165,6 +177,18 @@ describe('Super Admin routes', () => {
       .send({});
 
     expect(res.status).toEqual(200);
+  });
+
+  test('Rebuild searchparameters as super admin with respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/searchparameters')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -213,6 +237,20 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
+  test('Reindex with respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+  });
+
   test('Rebuild compartments access denied', async () => {
     const res = await request(app)
       .post('/admin/super/compartments')
@@ -247,6 +285,20 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(400);
+  });
+
+  test('Rebuild compartments with respond-async', async () => {
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
   test('Set password access denied', async () => {
