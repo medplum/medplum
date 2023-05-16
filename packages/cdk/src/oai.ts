@@ -1,5 +1,4 @@
 import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-cdk-lib';
-import { Construct } from 'constructs';
 
 /**
  * Grants S3 bucket read access to the CloudFront Origin Access Identity (OAI).
@@ -13,12 +12,10 @@ import { Construct } from 'constructs';
  *
  * See: https://stackoverflow.com/a/60917015
  *
- * @param scope The CDK construct scope.
  * @param bucket The S3 bucket.
  * @param identity The CloudFront Origin Access Identity.
  */
 export function grantBucketAccessToOriginAccessIdentity(
-  scope: Construct,
   bucket: s3.IBucket,
   identity: cloudfront.OriginAccessIdentity
 ): void {
@@ -29,11 +26,5 @@ export function grantBucketAccessToOriginAccessIdentity(
   policyStatement.addResources(bucket.bucketArn);
   policyStatement.addResources(`${bucket.bucketArn}/*`);
   policyStatement.addCanonicalUserPrincipal(identity.cloudFrontOriginAccessIdentityS3CanonicalUserId);
-
-  let policy = bucket.policy;
-  if (!policy) {
-    policy = new s3.BucketPolicy(scope, 'Policy', { bucket });
-  }
-
-  policy.document.addStatements(policyStatement);
+  bucket.addToResourcePolicy(policyStatement);
 }

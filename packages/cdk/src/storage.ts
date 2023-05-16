@@ -1,12 +1,12 @@
 import {
+  Duration,
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_route53 as route53,
-  aws_route53_targets as targets,
   aws_s3 as s3,
+  aws_route53_targets as targets,
   aws_wafv2 as wafv2,
-  Duration,
 } from 'aws-cdk-lib';
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
@@ -102,7 +102,7 @@ export class Storage extends Construct {
 
       // Origin access identity
       const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      grantBucketAccessToOriginAccessIdentity(this, storageBucket, originAccessIdentity);
+      grantBucketAccessToOriginAccessIdentity(storageBucket, originAccessIdentity);
 
       // CloudFront distribution
       const distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
