@@ -5,14 +5,13 @@ import { Repository } from './repo';
 import { allOk } from '@medplum/core';
 import { sendResponse } from './routes';
 
-// Asychronous API
-// https://hl7.org/fhir/R4/async.html
+// Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
 
 export const asyncJobRouter = Router();
 
 asyncJobRouter.get(
-  '/:id',
+  '/:id/status',
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
     const repo = res.locals.repo as Repository;
@@ -39,6 +38,6 @@ asyncJobRouter.get(
   })
 );
 
-asyncJobRouter.delete('/:id', (req: Request, res: Response) => {
+asyncJobRouter.delete('/:id/status', (req: Request, res: Response) => {
   res.sendStatus(202);
 });

@@ -99,7 +99,7 @@ protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler))
 protectedRoutes.use('/bulkdata', bulkDataRouter);
 
 // Async Job
-protectedRoutes.use('/job', asyncJobRouter);
+protectedRoutes.use('/AsyncJob', asyncJobRouter);
 
 // Measure $evaluate-measure operation
 protectedRoutes.post('/Measure/:id/([$]|%24)evaluate-measure', asyncWrap(evaluateMeasureHandler));
