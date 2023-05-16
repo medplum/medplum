@@ -28,4 +28,4 @@ jobs:
       - name: Update listening repos, create PR, and clean up
         if: env.changed_paths != ''
         run: |
-          ./scripts/update-example-changes.sh ${{ secrets.PERSONAL_ACCESS_TOKEN }} ${{ env.changed_paths }}
+          ./scripts/update-example-changes.sh ${{ secrets.SYNC_REPO_TOKEN }} ${{ env.changed_paths }}

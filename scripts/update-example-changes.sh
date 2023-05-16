@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-personal_access_token=$1
+sync_repo_token=$1
 changed_paths=$2
 
 # This separates the strings with ; to turn it into an array
@@ -19,13 +19,13 @@ for path in "${changed_paths_array[@]}"; do
   folder_name=$(basename $path)
 
   # Check if the listening repo exists
-  repo="https://$personal_access_token:@github.com/medplum/${folder_name}.git"
-  REPO_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token $personal_access_token" "https://api.github.com/repos/medplum/${folder_name}")
+  repo="https://$sync_repo_token:@github.com/medplum/${folder_name}.git"
+  REPO_STATUS=$(curl -s -o /dev/null -I -w "%{http_code}" -H "Authorization: token $sync_repo_token" "https://api.github.com/repos/medplum/${folder_name}")
 
   # If the repo does not exist, create a new repo
   if [ $REPO_STATUS -eq 404 ]; then
     CREATE_REPO_PAYLOAD="{\"name\": \"${folder_name}\", \"default_branch\": \"main\"}"
-    CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token $personal_access_token" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data "$CREATE_REPO_PAYLOAD" "https://api.github.com/orgs/medplum/repos")
+    CREATE_REPO_RESPONSE=$(curl -s -X POST -H "Authorization: token $sync_repo_token" -H "Content-Type: application/json" -H "Accept: application/vnd.github+json" --data "$CREATE_REPO_PAYLOAD" "https://api.github.com/orgs/medplum/repos")
     echo "Created new repo: $(echo $CREATE_REPO_RESPONSE | jq -r '.html_url')"
   fi
 
