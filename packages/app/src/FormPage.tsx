@@ -145,7 +145,6 @@ export function FormPage(): JSX.Element {
 
   async function handleSubmit(questionnaireResponse: QuestionnaireResponse): Promise<void> {
     const responses = [] as QuestionnaireResponse[];
-
     if (!subjectList || subjectList.length === 0) {
       // If there is no subject, then simply submit the questionnaire response.
       responses.push(await medplum.createResource(questionnaireResponse));
