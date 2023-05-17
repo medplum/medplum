@@ -18,9 +18,6 @@ jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
 jest.mock('../seeds/searchparameters');
 
-jest.mock('../logger');
-logger as unknown as jest.Mock;
-
 const app = express();
 let project: Project;
 let client: ClientApplication;
@@ -31,6 +28,7 @@ describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    jest.resetAllMocks();
 
     ({ project, client } = await createTestProject());
 
@@ -142,10 +140,11 @@ describe('Super Admin routes', () => {
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
-  test('Rebuild ValueSetElements as super admin with respond-async rejected', async () => {
+  test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
     (createValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('test error'));
+      return Promise.reject(new Error('createvalueSet test error'));
     });
+    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/valuesets')
@@ -156,6 +155,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('createvalueSet test error'));
   });
 
   test('Rebuild ValueSetElements access denied', async () => {
@@ -194,10 +194,11 @@ describe('Super Admin routes', () => {
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
-  test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
+  test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
     (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('test error'));
+      return Promise.reject(new Error('structuredefinitions test error'));
     });
+    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
@@ -208,6 +209,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('structuredefinitions test error'));
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {
@@ -246,10 +248,11 @@ describe('Super Admin routes', () => {
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
-  test('Rebuild searchparameters as super admin with respond-async', async () => {
+  test('Rebuild searchparameters as super admin with respond-async error', async () => {
     (createSearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(new Error('test error'));
+      return Promise.reject(new Error('rebuild searchparameters test error'));
     });
+    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
 
     const res = await request(app)
       .post('/admin/super/searchparameters')
@@ -260,6 +263,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('rebuild searchparameters test error'));
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -322,6 +326,26 @@ describe('Super Admin routes', () => {
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
+  test('Reindex with respond-async error', async () => {
+    jest.spyOn(systemRepo, 'reindexResourceType').mockImplementationOnce((): Promise<any> => {
+      return Promise.reject(new Error('reindex test error'));
+    });
+    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(expect.stringContaining('reindex test error'));
+  });
+
   test('Rebuild compartments access denied', async () => {
     const res = await request(app)
       .post('/admin/super/compartments')
@@ -370,6 +394,28 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+  });
+
+  test('Rebuild compartments with respond-async error', async () => {
+    jest.spyOn(systemRepo, 'rebuildCompartmentsForResourceType').mockImplementationOnce((): Promise<any> => {
+      return Promise.reject(new Error('rebuildCompartmentsForResourceType test error'));
+    });
+    const loggerErrorSpy = jest.spyOn(logger, 'error').mockReturnValueOnce();
+
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    expect(loggerErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('rebuildCompartmentsForResourceType test error')
+    );
   });
 
   test('Set password access denied', async () => {
