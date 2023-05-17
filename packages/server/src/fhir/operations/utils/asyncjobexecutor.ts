@@ -1,5 +1,6 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Repository, systemRepo } from '../../repo';
+import { logger } from '../../../logger';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -17,6 +18,16 @@ export class AsyncJobExecutor {
     });
 
     return this.resource;
+  }
+
+  start(callback: () => Promise<any>): void {
+    if (!this.resource) {
+      throw new Error('AsyncJob missing');
+    }
+
+    this.run(callback)
+      .then(() => logger.info(`${callback.name} AsyncJob: ${this.resource?.id} is completed`))
+      .catch((err) => logger.error(`${callback.name} AsyncJob: ${this.resource?.id} failed: ${err}`));
   }
 
   async run(callback: () => Promise<any>): Promise<void> {
