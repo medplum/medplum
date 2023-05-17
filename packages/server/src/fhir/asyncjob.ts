@@ -22,18 +22,17 @@ asyncJobRouter.get(
       return;
     }
 
-    const entry: BundleEntry[] = [];
-    const response: BundleEntryResponse = {
-      status: '200 OK',
-      location: asyncJob.request,
-    };
-
-    entry.push({ response });
-
     await sendResponse(res, allOk, {
       resourceType: 'Bundle',
       type: 'batch-response',
-      entry,
+      entry: [
+        {
+          response: {
+            status: '200 OK',
+            location: asyncJob.request,
+          },
+        },
+      ],
     } as Bundle);
   })
 );
