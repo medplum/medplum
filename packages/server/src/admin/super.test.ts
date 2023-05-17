@@ -7,9 +7,16 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
-import { generateAccessToken } from '../oauth/keys';
-import { createTestProject, waitFor } from '../test.setup';
 import { logger } from '../logger';
+import { generateAccessToken } from '../oauth/keys';
+import { createStructureDefinitions } from '../seeds/structuredefinitions';
+import { createValueSets } from '../seeds/valuesets';
+import { createTestProject, waitFor } from '../test.setup';
+import { createSearchParameters } from '../seeds/searchparameters';
+
+jest.mock('../seeds/valuesets');
+jest.mock('../seeds/structuredefinitions');
+jest.mock('../seeds/searchparameters');
 
 jest.mock('../logger');
 logger as unknown as jest.Mock;
@@ -120,6 +127,10 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async', async () => {
+    (createValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+      return Promise.resolve(true);
+    });
+
     const res = await request(app)
       .post('/admin/super/valuesets')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -142,6 +153,10 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild StructureDefinitions as super admin', async () => {
+    (createStructureDefinitions as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+      return Promise.resolve(true);
+    });
+
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -186,17 +201,19 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild searchparameters as super admin with respond-async', async () => {
-    await waitFor(async () => {
-      const res = await request(app)
-        .post('/admin/super/searchparameters')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({});
-
-      expect(res.status).toEqual(202);
-      expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
+    (createSearchParameters as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
+      return Promise.resolve(true);
     });
+
+    const res = await request(app)
+      .post('/admin/super/searchparameters')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -246,19 +263,17 @@ describe('Super Admin routes', () => {
   });
 
   test('Reindex with respond-async', async () => {
-    await waitFor(async () => {
-      const res = await request(app)
-        .post('/admin/super/reindex')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({
-          resourceType: 'PaymentNotice',
-        });
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
 
-      expect(res.status).toEqual(202);
-      expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
-    });
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
   test('Rebuild compartments access denied', async () => {
@@ -298,19 +313,17 @@ describe('Super Admin routes', () => {
   });
 
   test('Rebuild compartments with respond-async', async () => {
-    await waitFor(async () => {
-      const res = await request(app)
-        .post('/admin/super/compartments')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({
-          resourceType: 'PaymentNotice',
-        });
+    const res = await request(app)
+      .post('/admin/super/compartments')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+      });
 
-      expect(res.status).toEqual(202);
-      expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
-    });
+    expect(res.status).toEqual(202);
+    expect(res.headers['content-location']).toMatch(/AsyncJob\/.+\/status/);
   });
 
   test('Set password access denied', async () => {
