@@ -19,7 +19,7 @@ describe('AsyncJobExecutor', () => {
   test('start', async () => {
     const exec = new AsyncJobExecutor(systemRepo);
 
-    const resource = await exec.start('http://example.com/async');
+    const resource = await exec.init('http://example.com/async');
 
     expect(resource.status).toBe('accepted');
   });
@@ -27,7 +27,7 @@ describe('AsyncJobExecutor', () => {
   test('run', async () => {
     const exec = new AsyncJobExecutor(systemRepo);
 
-    const resource = await exec.start('http://example.com/async');
+    const resource = await exec.init('http://example.com/async');
     const callback = jest.fn();
 
     await exec.run(async () => {
@@ -42,7 +42,7 @@ describe('AsyncJobExecutor', () => {
     const exec = new AsyncJobExecutor(systemRepo);
     const baseUrl = 'http://testbaseurl';
 
-    const resource = await exec.start('http://example.com/async');
+    const resource = await exec.init('http://example.com/async');
 
     const contentLocation = exec.getContentLocation(baseUrl);
 

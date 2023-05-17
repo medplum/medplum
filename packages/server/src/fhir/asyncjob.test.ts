@@ -22,7 +22,7 @@ describe('AsyncJob status', () => {
     const asyncJobManager = new AsyncJobExecutor(systemRepo);
     const accessToken = await initTestAuth();
 
-    const job = await asyncJobManager.start('http://example.com');
+    const job = await asyncJobManager.init('http://example.com');
 
     const res = await request(app)
       .get(`/fhir/R4/AsyncJob/${job.id}/status`)
@@ -35,7 +35,7 @@ describe('AsyncJob status', () => {
     const asyncJobManager = new AsyncJobExecutor(systemRepo);
     const accessToken = await initTestAuth();
 
-    const job = await asyncJobManager.start('http://example.com');
+    const job = await asyncJobManager.init('http://example.com');
     const callback = jest.fn();
 
     await asyncJobManager.run(async () => {
@@ -67,7 +67,7 @@ describe('AsyncJob status', () => {
     const asyncJobManager = new AsyncJobExecutor(systemRepo);
     const accessToken = await initTestAuth();
 
-    const job = await asyncJobManager.start('http://example.com');
+    const job = await asyncJobManager.init('http://example.com');
 
     const res = await request(app)
       .delete(`/fhir/R4/AsyncJob/${job.id}/status`)

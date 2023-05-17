@@ -8,7 +8,7 @@ export class AsyncJobExecutor {
     this.repo = repo;
   }
 
-  async start(url: string): Promise<AsyncJob> {
+  async init(url: string): Promise<AsyncJob> {
     this.resource = await this.repo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'accepted',

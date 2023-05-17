@@ -35,7 +35,7 @@ superAdminRouter.post(
       const { baseUrl } = getConfig();
       const repo = res.locals.repo as Repository;
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createValueSets)
         .then(() => logger.info(`createValueSets for AsyncJob: ${job.id}, is completed`))
@@ -65,7 +65,7 @@ superAdminRouter.post(
       const { baseUrl } = getConfig();
       const repo = res.locals.repo as Repository;
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createStructureDefinitions)
         .then(() => logger.info(`structuredefinitions AsyncJob: ${job.id} is completed`))
@@ -96,7 +96,7 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.start(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
       exec
         .run(createSearchParameters)
         .then(() => logger.info(`createSearchParameters for AsyncJob: ${job.id}, is completed`))
@@ -131,7 +131,7 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+      const job = await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
       exec
         .run(async () => {
           await systemRepo.reindexResourceType(resourceType);
@@ -173,7 +173,7 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.start(req.protocol + '://' + req.get('host') + req.originalUrl);
+      const job = await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
       exec
         .run(async () => {
           await systemRepo.rebuildCompartmentsForResourceType(resourceType);
