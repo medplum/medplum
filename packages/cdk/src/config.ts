@@ -8,8 +8,10 @@ export interface MedplumInfraConfig {
   apiPort: number;
   apiDomainName: string;
   apiSslCertArn: string;
+  apiInternetFacing?: boolean;
   appDomainName: string;
   appSslCertArn: string;
+  appApiProxy?: boolean;
   storageBucketName: string;
   storageDomainName: string;
   storageSslCertArn: string;

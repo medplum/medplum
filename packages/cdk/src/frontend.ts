@@ -126,14 +126,16 @@ export class FrontEnd extends Construct {
           responseHeadersPolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
-        additionalBehaviors: {
-          '/api/*': {
-            origin: new origins.HttpOrigin(config.apiDomainName),
-            allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-            cachePolicy: apiOriginCachePolicy,
-            viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          },
-        },
+        additionalBehaviors: config.appApiProxy
+          ? {
+              '/api/*': {
+                origin: new origins.HttpOrigin(config.apiDomainName),
+                allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+                cachePolicy: apiOriginCachePolicy,
+                viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+              },
+            }
+          : undefined,
         certificate: acm.Certificate.fromCertificateArn(this, 'AppCertificate', config.appSslCertArn),
         domainNames: [config.appDomainName],
         errorResponses: [
