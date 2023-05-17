@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
+import { PropertyType, buildTypeName, getElementDefinition, globalSchema } from '../types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -70,13 +70,21 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
   let array = false;
 
   for (let i = 1; i < expression.length; i++) {
-    const propertyName = expression[i];
+    let propertyName = expression[i];
+    let hasArrayIndex = false;
+
+    const arrayIndexMatch = propertyName.match(/\[\d+\]$/);
+    if (arrayIndexMatch) {
+      propertyName = propertyName.substring(0, propertyName.length - arrayIndexMatch[0].length);
+      hasArrayIndex = true;
+    }
+
     elementDefinition = getElementDefinition(baseType, propertyName);
     if (!elementDefinition) {
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
 
-    if (elementDefinition.max !== '0' && elementDefinition.max !== '1') {
+    if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
       array = true;
     }
 
@@ -170,10 +178,6 @@ function simplifyExpression(input: string): string {
 
   if (result.startsWith('(') && result.endsWith(')')) {
     result = result.substring(1, result.length - 1);
-  }
-
-  if (result.includes('[0]')) {
-    result = result.replaceAll('[0]', '');
   }
 
   const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.resolve(', '.where('];

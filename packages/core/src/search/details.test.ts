@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexStructureDefinitionBundle } from '../types';
-import { getSearchParameterDetails, SearchParameterType } from './details';
+import { SearchParameterType, getSearchParameterDetails } from './details';
 
 const searchParams = readJson('fhir/r4/search-parameters.json');
 
@@ -189,6 +189,23 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toEqual(SearchParameterType.DATETIME);
     expect(details.columnName).toEqual('date');
     expect(details.elementDefinition).toBeDefined();
+  });
+
+  test('Bundle-composition', () => {
+    const searchParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      id: 'Bundle-composition',
+      code: 'composition',
+      base: ['Bundle'],
+      type: 'reference',
+      expression: 'Bundle.entry[0].resource',
+      xpath: 'f:Bundle/f:entry[0]/f:resource',
+      xpathUsage: 'normal',
+      target: ['Composition'],
+    };
+    const details = getSearchParameterDetails('Bundle', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(false);
   });
 
   test('Everything', () => {

@@ -1,15 +1,15 @@
 import {
-  getSearchParameterDetails,
-  globalSchema,
-  indexStructureDefinitionBundle,
-  isResourceTypeSchema,
   PropertyType,
   SearchParameterDetails,
   SearchParameterType,
   TypeSchema,
+  getSearchParameterDetails,
+  globalSchema,
+  indexStructureDefinitionBundle,
+  isResourceTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder } from './filebuilder';
@@ -28,7 +28,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v41.ts'), builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v42.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {
@@ -132,32 +132,30 @@ function buildSearchColumns(resourceType: string): string[] {
     if (!searchParam.base?.includes(resourceType)) {
       continue;
     }
-    if (isLookupTableParam(searchParam)) {
+
+    const details = getSearchParameterDetails(resourceType, searchParam);
+    if (isLookupTableParam(searchParam, details)) {
       continue;
     }
 
-    const details = getSearchParameterDetails(resourceType, searchParam);
     const columnName = details.columnName;
     const newColumnType = getColumnType(details);
     result.push(`"${columnName}" ${newColumnType}`);
 
-    if (searchParam.type === 'date') {
-      const propertyType = details.elementDefinition?.type?.[0].code;
-      const previousColumnType =
-        propertyType === PropertyType.dateTime || propertyType === PropertyType.instant
-          ? SearchParameterType.DATETIME
-          : SearchParameterType.DATE;
-      if (newColumnType !== previousColumnType) {
-        builder.append(
-          `await client.query('ALTER TABLE "${resourceType}" ALTER COLUMN "${columnName}" TYPE ${newColumnType}');`
-        );
-      }
+    if (details.array) {
+      builder.append(
+        `await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_${columnName}_idx" ON "${resourceType}" USING GIN("${columnName}")');`
+      );
+    } else {
+      builder.append(
+        `await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_${columnName}_idx" ON "${resourceType}" ("${columnName}")');`
+      );
     }
   }
   return result;
 }
 
-function isLookupTableParam(searchParam: any): boolean {
+function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
   // Identifier
   if (searchParam.code === 'identifier' && searchParam.type === 'token') {
     return true;
@@ -172,7 +170,7 @@ function isLookupTableParam(searchParam: any): boolean {
     'Practitioner-name',
     'RelatedPerson-name',
   ];
-  if (nameParams.includes(searchParam.id)) {
+  if (nameParams.includes(searchParam.id as string)) {
     return true;
   }
 
@@ -185,19 +183,44 @@ function isLookupTableParam(searchParam: any): boolean {
     'OrganizationAffiliation-email',
     'OrganizationAffiliation-phone',
   ];
-  if (telecomParams.includes(searchParam.id)) {
+  if (telecomParams.includes(searchParam.id as string)) {
     return true;
   }
 
   // Address
   const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id)) {
+  if (addressParams.includes(searchParam.id as string)) {
     return true;
   }
 
   // "address-"
   if (searchParam.code?.startsWith('address-')) {
     return true;
+  }
+
+  // Token
+  if (searchParam.type === 'token') {
+    if (searchParam.code?.endsWith(':identifier')) {
+      return true;
+    }
+
+    const elementDefinition = details.elementDefinition;
+    if (elementDefinition?.type) {
+      // Check for any "Identifier", "CodeableConcept", or "Coding"
+      // Any of those value types require the "Token" table for full system|value search semantics.
+      // The common case is that the "type" property only has one value,
+      // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
+      for (const type of elementDefinition.type) {
+        if (
+          type.code === PropertyType.Identifier ||
+          type.code === PropertyType.CodeableConcept ||
+          type.code === PropertyType.Coding ||
+          type.code === PropertyType.ContactPoint
+        ) {
+          return true;
+        }
+      }
+    }
   }
 
   return false;
