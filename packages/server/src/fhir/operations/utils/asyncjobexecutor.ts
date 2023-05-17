@@ -11,7 +11,7 @@ export class AsyncJobExecutor {
   async start(url: string): Promise<AsyncJob> {
     this.resource = await this.repo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
-      status: 'active',
+      status: 'accepted',
       request: url,
       requestTime: new Date().toISOString(),
     });

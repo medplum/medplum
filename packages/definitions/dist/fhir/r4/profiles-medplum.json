@@ -2891,7 +2891,7 @@
           {
             "id" : "AsyncJob.status",
             "path" : "AsyncJob.status",
-            "short" : "active | error | completed",
+            "short" : "accepted | error | completed",
             "definition" : "The status of the request.",
             "min" : 1,
             "max" : "1",
