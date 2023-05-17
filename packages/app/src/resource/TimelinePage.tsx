@@ -6,7 +6,6 @@ import { useParams } from 'react-router-dom';
 export function TimelinePage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
-
   switch (resourceType) {
     case 'Encounter':
       return <EncounterTimeline encounter={reference} />;
