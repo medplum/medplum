@@ -3,6 +3,7 @@ import { Logo, SignInForm } from '@medplum/react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Login page
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
   return (
