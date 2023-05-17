@@ -8,9 +8,9 @@ import { sendResponse } from './routes';
 // Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
 
-export const asyncJobRouter = Router();
+export const jobRouter = Router();
 
-asyncJobRouter.get(
+jobRouter.get(
   '/:id/status',
   asyncWrap(async (req: Request, res: Response) => {
     const { id } = req.params;
@@ -37,6 +37,6 @@ asyncJobRouter.get(
   })
 );
 
-asyncJobRouter.delete('/:id/status', (req: Request, res: Response) => {
+jobRouter.delete('/:id/status', (req: Request, res: Response) => {
   res.sendStatus(202);
 });

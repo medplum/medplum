@@ -47,6 +47,6 @@ export class AsyncJobExecutor {
       throw new Error('AsyncJob missing');
     }
 
-    return `${baseUrl}fhir/R4/AsyncJob/${this.resource.id}/status`;
+    return `${baseUrl}fhir/R4/job/${this.resource.id}/status`;
   }
 }

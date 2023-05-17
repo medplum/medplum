@@ -2,13 +2,13 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
+import { initTestAuth } from '../test.setup';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { systemRepo } from './repo';
-import { initTestAuth } from '../test.setup';
 
 const app = express();
 
-describe('AsyncJob status', () => {
+describe('Job status', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -25,7 +25,7 @@ describe('AsyncJob status', () => {
     const job = await asyncJobManager.init('http://example.com');
 
     const res = await request(app)
-      .get(`/fhir/R4/AsyncJob/${job.id}/status`)
+      .get(`/fhir/R4/job/${job.id}/status`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(202);
@@ -45,7 +45,7 @@ describe('AsyncJob status', () => {
     expect(callback).toBeCalled();
 
     const resCompleted = await request(app)
-      .get(`/fhir/R4/AsyncJob/${job.id}/status`)
+      .get(`/fhir/R4/job/${job.id}/status`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(resCompleted.status).toBe(200);
@@ -70,7 +70,7 @@ describe('AsyncJob status', () => {
     const job = await asyncJobManager.init('http://example.com');
 
     const res = await request(app)
-      .delete(`/fhir/R4/AsyncJob/${job.id}/status`)
+      .delete(`/fhir/R4/job/${job.id}/status`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(202);
