@@ -62,4 +62,17 @@ describe('AsyncJob status', () => {
       ],
     });
   });
+
+  test('cancel', async () => {
+    const asyncJobManager = new AsyncJobExecutor(systemRepo);
+    const accessToken = await initTestAuth();
+
+    const job = await asyncJobManager.start('http://example.com');
+
+    const res = await request(app)
+      .delete(`/fhir/R4/AsyncJob/${job.id}/status`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(202);
+  });
 });

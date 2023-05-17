@@ -28,7 +28,6 @@ describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    jest.resetAllMocks();
 
     ({ project, client } = await createTestProject());
 
