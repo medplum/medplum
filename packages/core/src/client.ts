@@ -2267,11 +2267,17 @@ export class MedplumClient extends EventTarget {
     const retryDelay = 200;
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
-      response = (await this.fetch(url, options)) as Response;
-      if (response.status < 500) {
-        return response;
+      try {
+        response = (await this.fetch(url, options)) as Response;
+        if (response.status < 500) {
+          return response;
+        }
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      } catch (err: any) {
+        if (err.message === 'Failed to fetch') {
+          this.dispatchEvent({ type: 'offline' });
+        }
       }
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
     return response as Response;
   }

@@ -1,4 +1,5 @@
 import { MedplumClient, ProfileResource } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 const reactContext = createContext(undefined as MedplumContext | undefined);
@@ -41,10 +42,17 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
         profile: medplum.getProfile(),
       });
     }
-
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListeneer('change', eventListener);
   }, [medplum, state]);
+
+  useEffect(() => {
+    function eventListener(): void {
+      showNotification({ color: 'red', message: 'No Connection', autoClose: false });
+    }
+    medplum.addEventListener('offline', eventListener);
+    return () => medplum.removeEventListeneer('offline', eventListener);
+  }, []);
 
   const medplumContext = {
     ...state,
