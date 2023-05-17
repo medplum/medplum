@@ -35,11 +35,8 @@ superAdminRouter.post(
       const { baseUrl } = getConfig();
       const repo = res.locals.repo as Repository;
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec
-        .run(createValueSets)
-        .then(() => logger.info(`createValueSets for AsyncJob: ${job.id}, is completed`))
-        .catch((err) => logger.error(`createValueSets for AsyncJob: ${job.id}, failed: ${err}`));
+      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      exec.start(createValueSets);
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -65,11 +62,8 @@ superAdminRouter.post(
       const { baseUrl } = getConfig();
       const repo = res.locals.repo as Repository;
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec
-        .run(createStructureDefinitions)
-        .then(() => logger.info(`structuredefinitions AsyncJob: ${job.id} is completed`))
-        .catch((err) => logger.error(`structuredefinitions AsyncJob: ${job.id} failed: ${err}`));
+      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      exec.start(createStructureDefinitions);
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -96,11 +90,8 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec
-        .run(createSearchParameters)
-        .then(() => logger.info(`createSearchParameters for AsyncJob: ${job.id}, is completed`))
-        .catch((err) => logger.error(`createSearchParameters for AsyncJob: ${job.id}, failed: ${err}`));
+      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
+      exec.start(createSearchParameters);
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -131,13 +122,10 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
-      exec
-        .run(async () => {
-          await systemRepo.reindexResourceType(resourceType);
-        })
-        .then(() => logger.info(`Reindexing ${resourceType} for AsyncJob: ${job.id}, is completed`))
-        .catch((err) => logger.error(`Reindexing ${resourceType} for AsyncJob: ${job.id}, failed: ${err}`));
+      await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+      exec.start(async () => {
+        await systemRepo.reindexResourceType(resourceType);
+      });
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
@@ -173,15 +161,10 @@ superAdminRouter.post(
       const repo = res.locals.repo as Repository;
 
       const exec = new AsyncJobExecutor(repo);
-      const job = await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
-      exec
-        .run(async () => {
-          await systemRepo.rebuildCompartmentsForResourceType(resourceType);
-        })
-        .then(() => logger.info(`Rebuilding compartments for ${resourceType}: AsyncJob: ${job.id}, is completed.`))
-        .catch((err) =>
-          logger.error(`Rebuilding compartments for ${resourceType}: AsyncJob: ${job.id}, failed: ${err}`)
-        );
+      await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+      exec.start(async () => {
+        await systemRepo.rebuildCompartmentsForResourceType(resourceType);
+      });
       res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
