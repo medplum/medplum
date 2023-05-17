@@ -44,7 +44,7 @@ superAdminRouter.post(
       return;
     }
 
-    await createValueSets;
+    await createValueSets();
     sendOutcome(res, allOk);
   })
 );
