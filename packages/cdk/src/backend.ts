@@ -316,7 +316,7 @@ export class BackEnd extends Construct {
     // Load Balancer
     const loadBalancer = new elbv2.ApplicationLoadBalancer(this, 'LoadBalancer', {
       vpc: vpc,
-      internetFacing: true,
+      internetFacing: config.apiInternetFacing !== false, // default true
       http2Enabled: true,
     });
 
