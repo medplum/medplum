@@ -28,7 +28,7 @@ function writeMigrations(): void {
   const b = new FileBuilder();
   buildMigrationUp(b);
   // writeFileSync(resolve(__dirname, '../../server/src/migrations/init.ts'), b.toString(), 'utf8');
-  writeFileSync(resolve(__dirname, '../../server/src/migrations/v40.ts'), builder.toString(), 'utf8');
+  writeFileSync(resolve(__dirname, '../../server/src/migrations/v41.ts'), builder.toString(), 'utf8');
 }
 
 function buildMigrationUp(b: FileBuilder): void {

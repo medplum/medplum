@@ -1,8 +1,10 @@
-import { allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
+import { accepted, allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
+import { getConfig } from '../config';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
@@ -27,6 +29,11 @@ superAdminRouter.post(
       return;
     }
 
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createValueSets);
+      return;
+    }
+
     await createValueSets();
     sendOutcome(res, allOk);
   })
@@ -43,6 +50,11 @@ superAdminRouter.post(
       return;
     }
 
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createStructureDefinitions);
+      return;
+    }
+
     await createStructureDefinitions();
     sendOutcome(res, allOk);
   })
@@ -56,6 +68,11 @@ superAdminRouter.post(
   asyncWrap(async (_req: Request, res: Response) => {
     if (!res.locals.login.superAdmin) {
       sendOutcome(res, forbidden);
+      return;
+    }
+
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createSearchParameters);
       return;
     }
 
@@ -77,6 +94,13 @@ superAdminRouter.post(
 
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
+
+    if (req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(req, res, async () => {
+        await systemRepo.reindexResourceType(resourceType);
+      });
+      return;
+    }
 
     // Start reindex in the background
     // This can take a long time, so we don't want to block the response
@@ -102,6 +126,13 @@ superAdminRouter.post(
 
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
+
+    if (req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(req, res, async () => {
+        await systemRepo.rebuildCompartmentsForResourceType(resourceType);
+      });
+      return;
+    }
 
     // Start reindex in the background
     // This can take a long time, so we don't want to block the response
@@ -193,3 +224,12 @@ superAdminRouter.post(
     sendOutcome(res, allOk);
   })
 );
+
+async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
+  const { baseUrl } = getConfig();
+  const repo = res.locals.repo as Repository;
+  const exec = new AsyncJobExecutor(repo);
+  await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+  exec.start(callback);
+  res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+}

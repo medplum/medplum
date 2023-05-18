@@ -5,6 +5,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateToken } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
+import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
 import { csvHandler } from './operations/csv';
 import { deployHandler } from './operations/deploy';
@@ -96,6 +97,9 @@ protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler))
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
+
+// Async Job
+protectedRoutes.use('/job', jobRouter);
 
 // Measure $evaluate-measure operation
 protectedRoutes.post('/Measure/:id/([$]|%24)evaluate-measure', asyncWrap(evaluateMeasureHandler));
