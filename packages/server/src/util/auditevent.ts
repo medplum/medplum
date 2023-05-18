@@ -154,8 +154,8 @@ export function logAuthEvent(
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
   outcomeDesc?: string
-): void {
-  logAuditEvent(UserAuthenticationEvent, subtype, projectId, who, remoteAddress, outcome, outcomeDesc);
+): AuditEvent {
+  return logAuditEvent(UserAuthenticationEvent, subtype, projectId, who, remoteAddress, outcome, outcomeDesc);
 }
 
 export function logRestfulEvent(
@@ -167,8 +167,8 @@ export function logRestfulEvent(
   outcomeDesc?: string,
   resource?: Resource,
   searchQuery?: string
-): void {
-  logAuditEvent(
+): AuditEvent {
+  return logAuditEvent(
     RestfulOperationType,
     subtype,
     projectId,
@@ -191,7 +191,7 @@ export function logAuditEvent(
   outcomeDesc?: string,
   resource?: Resource,
   searchQuery?: string
-): void {
+): AuditEvent {
   const config = getConfig();
 
   let entity: AuditEventEntity[] | undefined = undefined;
@@ -230,4 +230,5 @@ export function logAuditEvent(
   };
 
   logger.logAuditEvent(auditEvent);
+  return auditEvent;
 }

@@ -2338,7 +2338,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     resource?: Resource,
     search?: SearchRequest
   ): void {
-    if (this.context.author.reference === 'system') {
+    if (this.context.author.reference === 'system' || (resource && resource.resourceType === "AuditEvent")) {
       // Don't log system events.
       return;
     }
@@ -2358,7 +2358,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (search) {
       query = search.resourceType + formatSearchQuery(search);
     }
-    logRestfulEvent(
+    let auditEvent = logRestfulEvent(
       subtype,
       this.context.project as string,
       this.context.author,
@@ -2368,6 +2368,11 @@ export class Repository extends BaseRepository implements FhirRepository {
       resource,
       query
     );
+
+    if (getConfig().saveAuditEvents) {
+      auditEvent.id = randomUUID();
+      this.updateResourceImpl(auditEvent, true);
+    }
   }
 }
 
