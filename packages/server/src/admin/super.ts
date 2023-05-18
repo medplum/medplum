@@ -29,15 +29,8 @@ superAdminRouter.post(
       return;
     }
 
-    const prefer = _req.header('Prefer');
-
-    if (prefer === 'respond-async') {
-      const { baseUrl } = getConfig();
-      const repo = res.locals.repo as Repository;
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec.start(createValueSets);
-      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createValueSets);
       return;
     }
 
@@ -56,15 +49,9 @@ superAdminRouter.post(
       sendOutcome(res, forbidden);
       return;
     }
-    const prefer = _req.header('Prefer');
 
-    if (prefer === 'respond-async') {
-      const { baseUrl } = getConfig();
-      const repo = res.locals.repo as Repository;
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec.start(createStructureDefinitions);
-      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createStructureDefinitions);
       return;
     }
 
@@ -83,16 +70,9 @@ superAdminRouter.post(
       sendOutcome(res, forbidden);
       return;
     }
-    const prefer = _req.header('Prefer');
 
-    if (prefer === 'respond-async') {
-      const { baseUrl } = getConfig();
-      const repo = res.locals.repo as Repository;
-
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(_req.protocol + '://' + _req.get('host') + _req.originalUrl);
-      exec.start(createSearchParameters);
-      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+    if (_req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(_req, res, createSearchParameters);
       return;
     }
 
@@ -115,20 +95,13 @@ superAdminRouter.post(
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
 
-    const prefer = req.header('Prefer');
-
-    if (prefer === 'respond-async') {
-      const { baseUrl } = getConfig();
-      const repo = res.locals.repo as Repository;
-
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
-      exec.start(async () => {
+    if (req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(req, res, async () => {
         await systemRepo.reindexResourceType(resourceType);
       });
-      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
+
     // Start reindex in the background
     // This can take a long time, so we don't want to block the response
     systemRepo
@@ -154,18 +127,10 @@ superAdminRouter.post(
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
 
-    const prefer = req.header('Prefer');
-
-    if (prefer === 'respond-async') {
-      const { baseUrl } = getConfig();
-      const repo = res.locals.repo as Repository;
-
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
-      exec.start(async () => {
+    if (req.header('Prefer') === 'respond-async') {
+      await sendAsyncResponse(req, res, async () => {
         await systemRepo.rebuildCompartmentsForResourceType(resourceType);
       });
-      res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
       return;
     }
 
@@ -259,3 +224,12 @@ superAdminRouter.post(
     sendOutcome(res, allOk);
   })
 );
+
+async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
+  const { baseUrl } = getConfig();
+  const repo = res.locals.repo as Repository;
+  const exec = new AsyncJobExecutor(repo);
+  await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
+  exec.start(callback);
+  res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+}
