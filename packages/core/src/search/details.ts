@@ -63,7 +63,6 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
     return { columnName, type: SearchParameterType.TEXT };
   }
 
-  const defaultType = getSearchParameterType(searchParam);
   let baseType = resourceType;
   let elementDefinition = undefined;
   let propertyType = undefined;
@@ -73,7 +72,7 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
     let propertyName = expression[i];
     let hasArrayIndex = false;
 
-    const arrayIndexMatch = propertyName.match(/\[\d+\]$/);
+    const arrayIndexMatch = /\[\d+\]$/.exec(propertyName);
     if (arrayIndexMatch) {
       propertyName = propertyName.substring(0, propertyName.length - arrayIndexMatch[0].length);
       hasArrayIndex = true;
@@ -88,12 +87,9 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
       array = true;
     }
 
-    propertyType = elementDefinition.type?.[0].code;
-    if (!propertyType) {
-      // This happens when one of parent properties uses contentReference
-      // In the future, explore following the reference
-      return { columnName, type: defaultType, array };
-    }
+    // "code" is only missing when using "contentReference"
+    // "contentReference" is handled above in "getElementDefinition"
+    propertyType = elementDefinition.type?.[0].code as string;
 
     if (i < expression.length - 1) {
       if (isBackboneElement(propertyType)) {
@@ -123,7 +119,7 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function getSearchParameterType(searchParam: SearchParameter, propertyType?: PropertyType): SearchParameterType {
+function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
