@@ -2231,6 +2231,8 @@ export class MedplumClient extends EventTarget {
     this.addFetchOptionsDefaults(options);
 
     const response = await this.fetchWithRetry(url, options);
+    console.log('response', response);
+
     if (response.status === 401) {
       // Refresh and try again
       return this.handleUnauthenticated(method, url, options);

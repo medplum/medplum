@@ -1667,6 +1667,21 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('Dispatch on bad connection', async () => {
+    const fetch = jest.fn(async () => {
+      throw { message: 'Failed to fetch' };
+    });
+    const mockDispatchEvent = jest.fn();
+    const client = new MedplumClient({ fetch });
+    client.dispatchEvent = mockDispatchEvent;
+    try {
+      await client.readResource('Patient', '123');
+    } catch (err) {
+      expect(mockDispatchEvent).toHaveBeenCalled();
+      expect(err).toBeDefined();
+    }
+  });
+
   test('Log non-JSON response', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,

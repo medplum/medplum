@@ -42,17 +42,18 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
         profile: medplum.getProfile(),
       });
     }
+
     medplum.addEventListener('change', eventListener);
     return () => medplum.removeEventListeneer('change', eventListener);
   }, [medplum, state]);
 
   useEffect(() => {
     function eventListener(): void {
-      showNotification({ color: 'red', message: 'No Connection', autoClose: false });
+      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
     }
     medplum.addEventListener('offline', eventListener);
     return () => medplum.removeEventListeneer('offline', eventListener);
-  }, []);
+  }, [medplum]);
 
   const medplumContext = {
     ...state,
