@@ -67,4 +67,4 @@ As a private sector collaboration [Da Vinci PDEX Payer Network guide](https://bu
 1. [Humana Insurance Plan API](https://developers.humana.com/apis/insuranceplan-api/doc)
 2. [Alliance Health Developer Resources](https://thealliance.health/developer-resources/provider-directory/)
 
-For information about how to represent provider directories, see our guides on [Provider Organizations](../provider-organizations) and [Provider Credentials](../provider-credentials).
+For information about how to represent provider directories, see our guides on [Provider Organizations](./provider-organizations) and [Provider Credentials](./provider-credentials).

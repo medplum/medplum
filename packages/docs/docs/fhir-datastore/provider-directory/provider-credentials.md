@@ -61,7 +61,7 @@ Both the `Practitioner.qualification` and `PractitionerRole.specialty` elements 
 
 - `Practitioner.qualification` indicates the specific qualifications that a provider has obtained, and are associated with the provider's _person_. This is useful for illustrating a provider's overall skill set, education, and training, regardless of their current role or where they're practicing.
 
-- `PractitionerRole.specialty` indicates the particular specialty a provider is currently practicing in a specific context or organization. This is more flexible as a provider can have different roles in different organizations or at different times. For example, a practitioner who is qualified as both a cardiologist and an internist might serve as a cardiologist at one hospital and an internist at another. See our guide on [Modeling Practitioner Organizations](/docs/fhir-datastore/provider-organizations) for more information about modeling providers who work across multiple organizations.
+- `PractitionerRole.specialty` indicates the particular specialty a provider is currently practicing in a specific context or organization. This is more flexible as a provider can have different roles in different organizations or at different times. For example, a practitioner who is qualified as both a cardiologist and an internist might serve as a cardiologist at one hospital and an internist at another. See our guide on [Modeling Practitioner Organizations](./provider-organizations) for more information about modeling providers who work across multiple organizations.
 
 ```mermaid
 graph LR
