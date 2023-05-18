@@ -23,9 +23,9 @@
     "@aws-sdk/client-sts": "3.332.0",
     "aws-cdk-lib": "2.79.1",
     "cdk": "2.72.1",
-    "cdk-nag": "2.27.2",
-    "cdk-serverless-clamscan": "2.4.233",
-    "constructs": "10.2.20"
+    "cdk-nag": "2.27.12",
+    "cdk-serverless-clamscan": "2.4.239",
+    "constructs": "10.2.27"
   },
   "bin": {
     "medplum-cdk-init": "./dist/cjs/init.cjs"

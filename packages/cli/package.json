@@ -26,13 +26,13 @@
     "commander": "10.0.1",
     "dotenv": "16.0.3",
     "fast-glob": "3.2.12",
-    "node-fetch": "2.6.9",
-    "tar": "6.1.14"
+    "node-fetch": "2.6.11",
+    "tar": "6.1.15"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
-    "@types/node-fetch": "2.6.3",
+    "@types/node-fetch": "2.6.4",
     "@types/tar": "6.1.5"
   },
   "bin": {
