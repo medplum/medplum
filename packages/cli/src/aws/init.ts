@@ -16,9 +16,9 @@ const getDomainCertSetting = (domain: MedplumDomainType): MedplumDomainCertSetti
 
 let terminal: readline.Interface;
 
-export async function main(t: readline.Interface): Promise<void> {
+export async function initStackCommand(): Promise<void> {
   const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
-  terminal = t;
+  terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
   print('');
@@ -501,13 +501,4 @@ async function writeParameters(region: string, prefix: string, params: Record<st
       await writeParameter(region, prefix + key, valueStr);
     }
   }
-}
-
-if (require.main === module) {
-  main(readline.createInterface({ input: process.stdin, output: process.stdout }))
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error((err as Error).message);
-      process.exit(1);
-    });
 }
