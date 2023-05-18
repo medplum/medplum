@@ -11,8 +11,6 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
 For providers that operate across multiple regions and specialties, properly representing provider credentials is critical for regulatory compliance, insurance billing, and referral management. In the U.S., virtual providers must ensure that physicians are licensed in the same state as their patients. Another important operational consideration is making sure that care coordinators, nurses, and doctors are practicing at the top of their license.
 
-This guide provides a practical approach to modeling provider qualifications in FHIR standard within the Medplum platform, based on the guidance in the [Davinci PDEX Payer Network](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/index.html) implementation guide. [The Da Vinci Project](http://www.hl7.org/about/davinci/index.cfm) is a private sector initiative comprised of [industry leaders](https://confluence.hl7.org/display/DVP/Da+Vinci+Project+Members), including Blue Cross Blue Shield, Cigna, and Optum, etc. working together to accelerate the adoption of FHIR as the standard to support and integrate value-based care (VBC) data exchange.
-
 ## Key Elements
 
 The key FHIR element for storing all licenses and degrees is the `Practitioner.qualifications` element. This is an array of all degrees, licenses, and certifications achieved achieved by the provider.
