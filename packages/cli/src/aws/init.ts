@@ -1,11 +1,11 @@
 import { ACMClient, CertificateSummary, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
+import { MedplumInfraConfig } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
 import { existsSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import readline from 'readline';
-import { MedplumInfraConfig } from './config';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;

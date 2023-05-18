@@ -1,21 +1,17 @@
+import { ACMClient, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
+import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
+import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
+import { ECSClient } from '@aws-sdk/client-ecs';
+import { S3Client } from '@aws-sdk/client-s3';
+import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MockClient } from '@medplum/mock';
+import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
 import readline from 'readline';
 import { main } from '../index';
-import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
-import { mockClient } from 'aws-sdk-client-mock';
-import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
-import { ECSClient } from '@aws-sdk/client-ecs';
-import { S3Client } from '@aws-sdk/client-s3';
 
-jest.mock('@aws-sdk/client-acm');
-jest.mock('@aws-sdk/client-cloudformation');
-jest.mock('@aws-sdk/client-cloudfront');
-jest.mock('@aws-sdk/client-ecs');
-jest.mock('@aws-sdk/client-s3');
-jest.mock('@aws-sdk/client-ssm');
-jest.mock('@aws-sdk/client-sts');
 jest.mock('readline');
 
 const medplum = new MockClient();
@@ -26,6 +22,36 @@ describe('init command', () => {
     mockClient(CloudFrontClient);
     mockClient(ECSClient);
     mockClient(S3Client);
+  });
+
+  beforeEach(() => {
+    const acmClient = mockClient(ACMClient);
+
+    acmClient.on(ListCertificatesCommand).resolves({
+      CertificateSummaryList: [
+        {
+          DomainName: 'example.com',
+        },
+        {
+          CertificateArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789013',
+          DomainName: 'api.existing.example.com',
+        },
+      ],
+    });
+
+    acmClient.on(RequestCertificateCommand).resolves({
+      CertificateArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
+    });
+
+    const ssmClient = mockClient(SSMClient);
+
+    ssmClient.on(PutParameterCommand).resolves({});
+
+    const stsClient = mockClient(STSClient);
+
+    stsClient.on(GetCallerIdentityCommand).resolves({
+      Account: '123456789012',
+    });
   });
 
   test('Init tool success', async () => {
@@ -153,6 +179,13 @@ describe('init command', () => {
   });
 
   test('Invalid AWS credentials', async () => {
+    const stsClient = mockClient(STSClient);
+    stsClient.on(GetCallerIdentityCommand).rejects(new Error('Invalid region'));
+
+    const acmClient = mockClient(ACMClient);
+    acmClient.on(ListCertificatesCommand).rejects(new Error('Invalid region'));
+    acmClient.on(RequestCertificateCommand).rejects(new Error('Invalid region'));
+
     const filename = `test-${randomUUID()}.json`;
 
     console.log = jest.fn();
@@ -211,8 +244,8 @@ describe('init command', () => {
       serverImage: 'medplum/medplum-server:latest',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'TODO',
-      appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
-      storageSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
+      appSslCertArn: 'TODO',
+      storageSslCertArn: 'TODO',
     });
     unlinkSync(filename);
   });

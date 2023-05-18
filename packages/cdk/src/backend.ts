@@ -1,3 +1,4 @@
+import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -17,7 +18,6 @@ import {
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { Construct } from 'constructs';
-import { MedplumInfraConfig } from './config';
 import { awsManagedRules } from './waf';
 
 /**

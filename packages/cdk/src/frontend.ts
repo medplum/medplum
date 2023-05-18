@@ -1,3 +1,4 @@
+import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   RemovalPolicy,
@@ -10,7 +11,6 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
-import { MedplumInfraConfig } from './config';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
 import { awsManagedRules } from './waf';
 
