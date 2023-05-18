@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/fhir-datastore/provider-credentials.ts'
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -32,9 +36,12 @@ The `issuer` is typically the state (e.g., "State of New York"). Although this e
 
 To augment the `issuer`, the Davinci PDEX implementation guide [defines an extension](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/StructureDefinition-qualification.html) for `Practitioner.qualification`, named `practitioner-qualification`. This extension contains an element, `whereValid` , which allows you to represent medical license jurisdictions using USPS postal codes for convenience.
 
+<details>
+<summary>Example</summary>
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
+</details>
 
 ## Medical Specialty
 
@@ -43,9 +50,12 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 - **Specialty Code**: The PDEX implementation guide requires selecting a provider's specialty code from the [NUCC provider taxonomy](http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet-IndividualAndGroupSpecialtiesVS.htmlUse).
 - **Issuer: **The issuer for specialist certifications are typically professional certification boards (e.g. American Board of Internal Medicine or American College of Obstetricians and Gynecologists )
 
+<details>
+<summary>Example</summary>
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
+</details>
 
 :::tip `Practitioner.qualification` vs. `PractitionerRole.specialty`
 
@@ -57,19 +67,19 @@ Both the `Practitioner.qualification` and `PractitionerRole.specialty` elements 
 
 ```mermaid
 graph LR
-    A[John Smith\n\nQualifications:\n- Medical Doctor\n-Internal Medicine\n-Cardiology]
+    A[<b>Practitioner</b>\nJohn Smith\n\nQualifications:\n<ul><li> Medical Doctor</li><li>Internal Medicine</li><li>Cardiology</li></ul>]
 
-    E[PractitionerRole 1<br/>Specialty: Internal Medicine]
-    F[PractitionerRole 2<br/>Specialty: Cardiology]
-    G[PractitionerRole 3<br/>Specialty: Internal Medicine, Cardiology]
+    E[<b>PractitionerRole</b><br/>Specialty: Internal Medicine]
+    F[<b>PractitionerRole</b><br/>Specialty: Cardiology]
+    G[<b>PractitionerRole</b><br/>Specialty: Internal Medicine, Cardiology]
 
     A ---> E
     A ---> F
     A ---> G
 
-    H[Organization 1]
-    I[Organization 2]
-    J[Organization 3]
+    H[<b>Organization</b> 1]
+    I[<b>Organization</b> 2]
+    J[<b>Organization</b> 3]
 
     E -- organization --> H
     F -- organization --> I
