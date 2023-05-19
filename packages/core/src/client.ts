@@ -2265,15 +2265,17 @@ export class MedplumClient extends EventTarget {
 
       if (contentLocation) {
         let checkStatus = true;
+        let resultResponse;
         while (checkStatus) {
-          const bulkExportRes = await this.fetchWithRetry(contentLocation, {
+          const statusResponse = await this.fetchWithRetry(contentLocation, {
             method: 'POST',
           });
-          if (bulkExportRes.status !== 202) {
+          if (statusResponse.status !== 202) {
             checkStatus = false;
-            return await this.parseResponse(bulkExportRes);
+            resultResponse = statusResponse;
           }
         }
+        return await this.parseResponse(resultResponse as Response);
       }
     }
 
