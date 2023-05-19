@@ -1705,7 +1705,13 @@ describe('Client', () => {
               ],
             };
           }),
-          headers: new Headers([['content-location', 'bulkdata/id/status']]),
+          headers: {
+            get(name: string): string | undefined {
+              return {
+                'content-location': 'bulkdata/id/status',
+              }[name];
+            },
+          },
         };
       }
 

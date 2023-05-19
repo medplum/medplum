@@ -2163,24 +2163,7 @@ export class MedplumClient extends EventTarget {
 
     url.searchParams.set('_type', resources);
 
-    const response = await this.fetch(url.toString(), {
-      method: 'POST',
-    });
-    const pollingLocation = response.headers.get('content-location');
-
-    let polling = true;
-    let result;
-    while (polling) {
-      const bulkExportRes = await this.fetch(pollingLocation, {
-        method: 'POST',
-      });
-      if (bulkExportRes.status !== 202) {
-        polling = false;
-        result = bulkExportRes;
-      }
-    }
-
-    return result.json();
+    return this.post(url, {});
   }
 
   //
@@ -2277,6 +2260,29 @@ export class MedplumClient extends EventTarget {
       }
     }
 
+    if (response.status === 202) {
+      const contentLocation = response.headers.get('content-location');
+      console.log(contentLocation);
+
+      if (contentLocation) {
+        let checkStatus = true;
+        while (checkStatus) {
+          console.log('polling');
+          const bulkExportRes = await this.fetchWithRetry(contentLocation, {
+            method: 'POST',
+          });
+          if (bulkExportRes.status !== 202) {
+            checkStatus = false;
+            return await this.parseResponse(bulkExportRes);
+          }
+        }
+      }
+    }
+
+    return await this.parseResponse(response);
+  }
+
+  private async parseResponse<T>(response: Response): Promise<T> {
     let obj: any = undefined;
     try {
       obj = await response.json();
