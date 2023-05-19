@@ -1,7 +1,6 @@
 import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import React, { useState } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
 import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
@@ -71,6 +70,8 @@ export interface NavbarMenu {
 }
 
 export interface NavbarProps {
+  pathname?: string;
+  searchParams?: URLSearchParams;
   menus?: NavbarMenu[];
   closeNavbar: () => void;
   displayAddBookmark?: boolean;
@@ -79,9 +80,7 @@ export interface NavbarProps {
 export function Navbar(props: NavbarProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
-  const location = useLocation();
-  const [searchParams] = useSearchParams();
-  const activeLink = getActiveLink(location.pathname, searchParams, props.menus);
+  const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
 
   function onLinkClick(e: React.SyntheticEvent, to: string): void {
@@ -151,11 +150,15 @@ export function Navbar(props: NavbarProps): JSX.Element {
           </MantineNavbar.Section>
         </ScrollArea>
       </MantineNavbar>
-      <BookmarkDialog
-        visible={bookmarkDialogVisible}
-        onOk={() => setBookmarkDialogVisible(false)}
-        onCancel={() => setBookmarkDialogVisible(false)}
-      />
+      {props.pathname && props.searchParams && (
+        <BookmarkDialog
+          pathname={props.pathname}
+          searchParams={props.searchParams}
+          visible={bookmarkDialogVisible}
+          onOk={() => setBookmarkDialogVisible(false)}
+          onCancel={() => setBookmarkDialogVisible(false)}
+        />
+      )}
     </>
   );
 }
@@ -204,10 +207,14 @@ function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
  * @returns The active link if one is found.
  */
 function getActiveLink(
-  currentPathname: string,
-  currentSearchParams: URLSearchParams,
+  currentPathname: string | undefined,
+  currentSearchParams: URLSearchParams | undefined,
   menus: NavbarMenu[] | undefined
 ): NavbarLink | undefined {
+  if (!currentPathname || !currentSearchParams || !menus) {
+    return undefined;
+  }
+
   let bestLink = undefined;
   let bestScore = 0;
 

@@ -3,7 +3,6 @@ import { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { BookmarkDialog } from './BookmarkDialog';
 
@@ -35,26 +34,35 @@ function getTestUserConfiguration(id: string): UserConfiguration {
 
 describe('BookmarkDialog', () => {
   beforeEach(() => {
-    (showNotification as unknown as jest.Mock).mockClear();
+    jest.clearAllMocks();
   });
+
   test('Render not visible', async () => {
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={new MockClient()} navigate={jest.fn()}>
-          <BookmarkDialog visible={false} onCancel={jest.fn()} onOk={jest.fn()} />{' '}
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={new MockClient()} navigate={jest.fn()}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={false}
+          onCancel={jest.fn()}
+          onOk={jest.fn()}
+        />
+      </MedplumProvider>
     );
     expect(screen.queryAllByPlaceholderText('bookmark name')).toHaveLength(0);
   });
 
   test('Render visible', async () => {
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={new MockClient()}>
-          <BookmarkDialog visible={true} onCancel={jest.fn()} onOk={jest.fn()} />{' '}
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={new MockClient()}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={true}
+          onCancel={jest.fn()}
+          onOk={jest.fn()}
+        />
+      </MedplumProvider>
     );
     expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
   });
@@ -67,11 +75,15 @@ describe('BookmarkDialog', () => {
       return getTestUserConfiguration('test-user-config-id');
     });
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={medplum}>
-          <BookmarkDialog visible={true} onCancel={jest.fn()} onOk={onOk} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={true}
+          onCancel={jest.fn()}
+          onOk={onOk}
+        />
+      </MedplumProvider>
     );
     const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
 
@@ -92,11 +104,15 @@ describe('BookmarkDialog', () => {
     const onOk = jest.fn();
     const onCancel = jest.fn();
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={new MockClient()}>
-          <BookmarkDialog visible={true} onCancel={onCancel} onOk={onOk} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={new MockClient()}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={true}
+          onCancel={onCancel}
+          onOk={onOk}
+        />
+      </MedplumProvider>
     );
     const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
 
@@ -124,11 +140,15 @@ describe('BookmarkDialog', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={medplum}>
-          <BookmarkDialog visible={true} onCancel={onCancel} onOk={onOk} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={true}
+          onCancel={onCancel}
+          onOk={onOk}
+        />
+      </MedplumProvider>
     );
     const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
     const bookmarkInput = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
@@ -170,11 +190,15 @@ describe('BookmarkDialog', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/']} initialIndex={0}>
-        <MedplumProvider medplum={medplum}>
-          <BookmarkDialog visible={true} onCancel={onCancel} onOk={onOk} />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <BookmarkDialog
+          pathname="/"
+          searchParams={new URLSearchParams()}
+          visible={true}
+          onCancel={onCancel}
+          onOk={onOk}
+        />
+      </MedplumProvider>
     );
     const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
     const bookmarkInput = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;

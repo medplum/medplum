@@ -8,6 +8,8 @@ import { Navbar, NavbarMenu } from './Navbar';
 
 export interface AppShellProps {
   logo: React.ReactNode;
+  pathname?: string;
+  searchParams?: URLSearchParams;
   version?: string;
   menus?: NavbarMenu[];
   children: React.ReactNode;
@@ -49,7 +51,13 @@ export function AppShell(props: AppShellProps): JSX.Element {
       header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
       navbar={
         profile && navbarOpen ? (
-          <Navbar menus={props.menus} closeNavbar={closeNavbar} displayAddBookmark={props.displayAddBookmark} />
+          <Navbar
+            pathname={props.pathname}
+            searchParams={props.searchParams}
+            menus={props.menus}
+            closeNavbar={closeNavbar}
+            displayAddBookmark={props.displayAddBookmark}
+          />
         ) : undefined
       }
     >

@@ -2,7 +2,6 @@ import { MockClient } from '@medplum/mock';
 import { IconStar } from '@tabler/icons-react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
-import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { Navbar } from './Navbar';
 
@@ -10,7 +9,8 @@ const medplum = new MockClient();
 const navigateMock = jest.fn();
 const closeMock = jest.fn();
 
-async function setup(initialUrl = '/'): Promise<void> {
+async function setup(initial = '/'): Promise<void> {
+  const initialUrl = new URL(initial, 'http://localhost');
   medplum.getUserConfiguration = jest.fn(() => {
     return {
       resourceType: 'UserConfiguration',
@@ -36,32 +36,32 @@ async function setup(initialUrl = '/'): Promise<void> {
   });
   await act(async () => {
     render(
-      <MemoryRouter initialEntries={[initialUrl]} initialIndex={0}>
-        <MedplumProvider medplum={medplum} navigate={navigateMock}>
-          <Navbar
-            closeNavbar={closeMock}
-            menus={[
-              {
-                title: 'Menu 1',
-                links: [
-                  { label: 'Link 1', href: '/link1' },
-                  { label: 'Link 2', href: '/link2' },
-                  { label: 'Link 3', href: '/link3' },
-                ],
-              },
-              {
-                title: 'Menu 2',
-                links: [
-                  { label: 'Link 4', href: '/link?key=4&_offset=0' },
-                  { label: 'Link 5', href: '/link?key=5' },
-                  { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
-                ],
-              },
-            ]}
-            displayAddBookmark={true}
-          />
-        </MedplumProvider>
-      </MemoryRouter>
+      <MedplumProvider medplum={medplum} navigate={navigateMock}>
+        <Navbar
+          pathname={initialUrl.pathname}
+          searchParams={initialUrl.searchParams}
+          closeNavbar={closeMock}
+          menus={[
+            {
+              title: 'Menu 1',
+              links: [
+                { label: 'Link 1', href: '/link1' },
+                { label: 'Link 2', href: '/link2' },
+                { label: 'Link 3', href: '/link3' },
+              ],
+            },
+            {
+              title: 'Menu 2',
+              links: [
+                { label: 'Link 4', href: '/link?key=4&_offset=0' },
+                { label: 'Link 5', href: '/link?key=5' },
+                { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
+              ],
+            },
+          ]}
+          displayAddBookmark={true}
+        />
+      </MedplumProvider>
     );
   });
 }
