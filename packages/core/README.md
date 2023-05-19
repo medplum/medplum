@@ -39,7 +39,7 @@ const medplum = new MedplumClient({
 });
 ```
 
-## Authenticate with client credenials
+## Authenticate with client credentials
 
 ```ts
 const medplum = new MedplumClient();
