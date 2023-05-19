@@ -4,6 +4,7 @@
 import {
   AccessPolicy,
   Binary,
+  BulkDataExport,
   Bundle,
   BundleEntry,
   BundleLink,
@@ -2152,6 +2153,35 @@ export class MedplumClient extends EventTarget {
         title: filename,
       },
     });
+  }
+
+  /**
+   * Kick off system level bulk export
+   */
+  async bulkExport(resources: string): Promise<Partial<BulkDataExport>> {
+    const url = this.fhirUrl('$export');
+
+    url.searchParams.set('_type', resources);
+
+    const response = await this.fetch(url.toString(), {
+      method: 'POST',
+    });
+    const status = response.headers.get('content-location');
+
+    let polling = true;
+    let result;
+    while (polling) {
+      const bulkExportRes = await this.fetch(status, {
+        method: 'POST',
+      });
+      if (bulkExportRes.status === 200) {
+        polling = false;
+        result = bulkExportRes;
+        break;
+      }
+    }
+
+    return result.json();
   }
 
   //
