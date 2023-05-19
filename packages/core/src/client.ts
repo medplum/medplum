@@ -2636,7 +2636,7 @@ export class MedplumClient extends EventTarget {
 
   private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
     // This is for the 1st retry to avoid multiple notifications
-    if (err.message === 'Failed to fetch' && retryNumber === 1) {
+    if (retryNumber === 1) {
       this.dispatchEvent({ type: 'offline' });
     }
     if (retryNumber === maxRetries - 1) {
