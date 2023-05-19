@@ -1223,7 +1223,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const rows = await builder.execute(client);
     for (const row of rows) {
       const queryPlan = row['QUERY PLAN'];
-      const match = /rows=([\d]+)/.exec(queryPlan);
+      const match = /rows=(\d+)/.exec(queryPlan);
       if (match) {
         return parseInt(match[1]);
       }
