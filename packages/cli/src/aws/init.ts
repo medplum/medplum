@@ -270,7 +270,7 @@ function header(text: string): void {
 function ask(text: string, defaultValue?: string | number): Promise<string> {
   return new Promise((resolve) => {
     terminal.question(text + (defaultValue ? ' (' + defaultValue + ')' : '') + ' ', (answer: string) => {
-      resolve(answer || defaultValue?.toString() || '');
+      resolve(answer ?? defaultValue?.toString() ?? '');
     });
   });
 }
@@ -280,7 +280,7 @@ async function choose(text: string, options: (string | number)[], defaultValue?:
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const answer = (await ask(str)) || defaultValue || '';
+    const answer = (await ask(str)) ?? defaultValue ?? '';
     if (options.includes(answer)) {
       return answer;
     }
@@ -294,7 +294,7 @@ async function chooseInt(text: string, options: number[], defaultValue?: number)
     await choose(
       text,
       options.map((o) => o.toString()),
-      defaultValue?.toString() || '0'
+      defaultValue?.toString() ?? '0'
     )
   );
 }
