@@ -31,6 +31,7 @@ import {
 import React, { useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
@@ -39,7 +40,6 @@ import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
-import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 
 export class SearchChangeEvent extends Event {
   readonly definition: SearchRequest;
@@ -166,7 +166,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     medplum
       .search(
         search.resourceType as ResourceType,
-        formatSearchQuery({ ...search, total: 'accurate', fields: undefined })
+        formatSearchQuery({ ...search, total: 'estimate', fields: undefined })
       )
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });
