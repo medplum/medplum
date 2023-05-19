@@ -1,6 +1,7 @@
 export * from './bundle';
 export * from './cache';
 export * from './client';
+export * from './config';
 export * from './fhirlexer';
 export * from './fhirmapper';
 export * from './fhirpath';

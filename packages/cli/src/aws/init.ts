@@ -1,11 +1,11 @@
 import { ACMClient, CertificateSummary, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
 import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
+import { MedplumInfraConfig } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
 import { existsSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import readline from 'readline';
-import { MedplumInfraConfig } from './config';
 
 type MedplumDomainType = 'api' | 'app' | 'storage';
 type MedplumDomainSetting = `${MedplumDomainType}DomainName`;
@@ -16,9 +16,9 @@ const getDomainCertSetting = (domain: MedplumDomainType): MedplumDomainCertSetti
 
 let terminal: readline.Interface;
 
-export async function main(t: readline.Interface): Promise<void> {
+export async function initStackCommand(): Promise<void> {
   const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
-  terminal = t;
+  terminal = readline.createInterface({ input: process.stdin, output: process.stdout });
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
   print('');
@@ -267,20 +267,20 @@ function header(text: string): void {
 }
 
 /** Prints a question and waits for user input. */
-function ask(text: string, defaultValue?: string | number): Promise<string> {
+function ask(text: string, defaultValue: string | number = ''): Promise<string> {
   return new Promise((resolve) => {
     terminal.question(text + (defaultValue ? ' (' + defaultValue + ')' : '') + ' ', (answer: string) => {
-      resolve(answer || defaultValue?.toString() || '');
+      resolve(answer || defaultValue.toString());
     });
   });
 }
 
 /** Prints a question and waits for user to choose one of the provided options. */
-async function choose(text: string, options: (string | number)[], defaultValue?: string): Promise<string> {
+async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const answer = (await ask(str)) || defaultValue || '';
+    const answer = (await ask(str)) || defaultValue;
     if (options.includes(answer)) {
       return answer;
     }
@@ -289,12 +289,12 @@ async function choose(text: string, options: (string | number)[], defaultValue?:
 }
 
 /** Prints a question and waits for the user to choose a valid integer option. */
-async function chooseInt(text: string, options: number[], defaultValue?: number): Promise<number> {
+async function chooseInt(text: string, options: number[], defaultValue = 0): Promise<number> {
   return parseInt(
     await choose(
       text,
       options.map((o) => o.toString()),
-      defaultValue?.toString() || '0'
+      defaultValue.toString()
     )
   );
 }
@@ -501,13 +501,4 @@ async function writeParameters(region: string, prefix: string, params: Record<st
       await writeParameter(region, prefix + key, valueStr);
     }
   }
-}
-
-if (require.main === module) {
-  main(readline.createInterface({ input: process.stdin, output: process.stdout }))
-    .then(() => process.exit(0))
-    .catch((err) => {
-      console.error((err as Error).message);
-      process.exit(1);
-    });
 }

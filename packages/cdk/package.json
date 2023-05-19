@@ -13,14 +13,11 @@
   "scripts": {
     "clean": "rimraf dist cdk.out",
     "build": "npm run clean && tsc && rollup --config rollup.config.mjs",
-    "init": "ts-node src/init.ts",
     "cdk": "cdk",
     "test": "jest --runInBand"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.332.0",
-    "@aws-sdk/client-ssm": "3.332.0",
-    "@aws-sdk/client-sts": "3.332.0",
+    "@medplum/core": "*",
     "aws-cdk-lib": "2.79.1",
     "cdk": "2.72.1",
     "cdk-nag": "2.27.12",

@@ -26,10 +26,13 @@ export default [
       },
     ],
     external: [
+      '@aws-sdk/client-acm',
       '@aws-sdk/client-cloudformation',
       '@aws-sdk/client-cloudfront',
       '@aws-sdk/client-ecs',
       '@aws-sdk/client-s3',
+      '@aws-sdk/client-ssm',
+      '@aws-sdk/client-sts',
       '@medplum/core',
       'commander',
       'dotenv',
