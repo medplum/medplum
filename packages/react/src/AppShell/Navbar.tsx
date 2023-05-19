@@ -218,15 +218,13 @@ function getActiveLink(
   let bestLink = undefined;
   let bestScore = 0;
 
-  if (menus) {
-    for (const menu of menus) {
-      if (menu.links) {
-        for (const link of menu.links) {
-          const score = getLinkScore(currentPathname, currentSearchParams, link.href);
-          if (score > bestScore) {
-            bestScore = score;
-            bestLink = link;
-          }
+  for (const menu of menus) {
+    if (menu.links) {
+      for (const link of menu.links) {
+        const score = getLinkScore(currentPathname, currentSearchParams, link.href);
+        if (score > bestScore) {
+          bestScore = score;
+          bestLink = link;
         }
       }
     }
