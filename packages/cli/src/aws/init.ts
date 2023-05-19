@@ -267,20 +267,20 @@ function header(text: string): void {
 }
 
 /** Prints a question and waits for user input. */
-function ask(text: string, defaultValue?: string | number): Promise<string> {
+function ask(text: string, defaultValue: string | number = ''): Promise<string> {
   return new Promise((resolve) => {
     terminal.question(text + (defaultValue ? ' (' + defaultValue + ')' : '') + ' ', (answer: string) => {
-      resolve(answer ?? defaultValue?.toString() ?? '');
+      resolve(answer || defaultValue.toString());
     });
   });
 }
 
 /** Prints a question and waits for user to choose one of the provided options. */
-async function choose(text: string, options: (string | number)[], defaultValue?: string): Promise<string> {
+async function choose(text: string, options: (string | number)[], defaultValue = ''): Promise<string> {
   const str = text + ' [' + options.map((o) => (o === defaultValue ? '(' + o + ')' : o)).join('|') + ']';
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const answer = (await ask(str)) ?? defaultValue ?? '';
+    const answer = (await ask(str)) || defaultValue;
     if (options.includes(answer)) {
       return answer;
     }
@@ -289,12 +289,12 @@ async function choose(text: string, options: (string | number)[], defaultValue?:
 }
 
 /** Prints a question and waits for the user to choose a valid integer option. */
-async function chooseInt(text: string, options: number[], defaultValue?: number): Promise<number> {
+async function chooseInt(text: string, options: number[], defaultValue = 0): Promise<number> {
   return parseInt(
     await choose(
       text,
       options.map((o) => o.toString()),
-      defaultValue?.toString() ?? '0'
+      defaultValue.toString()
     )
   );
 }
