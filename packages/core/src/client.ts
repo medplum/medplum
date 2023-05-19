@@ -2166,18 +2166,17 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(url.toString(), {
       method: 'POST',
     });
-    const status = response.headers.get('content-location');
+    const pollingLocation = response.headers.get('content-location');
 
     let polling = true;
     let result;
     while (polling) {
-      const bulkExportRes = await this.fetch(status, {
+      const bulkExportRes = await this.fetch(pollingLocation, {
         method: 'POST',
       });
-      if (bulkExportRes.status === 200) {
+      if (bulkExportRes.status !== 202) {
         polling = false;
         result = bulkExportRes;
-        break;
       }
     }
 
