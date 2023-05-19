@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 import ExampleCode from '!!raw-loader!@site/../examples/src/fhir-datastore/provider-credentials.ts'
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 
@@ -6,8 +10,6 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 ## Introduction
 
 For providers that operate across multiple regions and specialties, properly representing provider credentials is critical for regulatory compliance, insurance billing, and referral management. In the U.S., virtual providers must ensure that physicians are licensed in the same state as their patients. Another important operational consideration is making sure that care coordinators, nurses, and doctors are practicing at the top of their license.
-
-This guide provides a practical approach to modeling provider qualifications in FHIR standard within the Medplum platform, based on the guidance in the [Davinci PDEX Payer Network](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/index.html) implementation guide. [The Da Vinci Project](http://www.hl7.org/about/davinci/index.cfm) is a private sector initiative comprised of [industry leaders](https://confluence.hl7.org/display/DVP/Da+Vinci+Project+Members), including Blue Cross Blue Shield, Cigna, and Optum, etc. working together to accelerate the adoption of FHIR as the standard to support and integrate value-based care (VBC) data exchange.
 
 ## Key Elements
 
@@ -32,9 +34,12 @@ The `issuer` is typically the state (e.g., "State of New York"). Although this e
 
 To augment the `issuer`, the Davinci PDEX implementation guide [defines an extension](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/StructureDefinition-qualification.html) for `Practitioner.qualification`, named `practitioner-qualification`. This extension contains an element, `whereValid` , which allows you to represent medical license jurisdictions using USPS postal codes for convenience.
 
+<details>
+<summary>Example</summary>
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,license,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
+</details>
 
 ## Medical Specialty
 
@@ -43,9 +48,12 @@ A provider's specialty certifications can also be represented Unlike licensure, 
 - **Specialty Code**: The PDEX implementation guide requires selecting a provider's specialty code from the [NUCC provider taxonomy](http://hl7.org/fhir/us/davinci-pdex-plan-net/ValueSet-IndividualAndGroupSpecialtiesVS.htmlUse).
 - **Issuer: **The issuer for specialist certifications are typically professional certification boards (e.g. American Board of Internal Medicine or American College of Obstetricians and Gynecologists )
 
+<details>
+<summary>Example</summary>
 <MedplumCodeBlock language="ts" selectBlocks="practitioner-head,qualifications-head,specialty,qualifications-tail,practitioner-tail">
 {ExampleCode}
 </MedplumCodeBlock>
+</details>
 
 :::tip `Practitioner.qualification` vs. `PractitionerRole.specialty`
 
@@ -53,23 +61,23 @@ Both the `Practitioner.qualification` and `PractitionerRole.specialty` elements 
 
 - `Practitioner.qualification` indicates the specific qualifications that a provider has obtained, and are associated with the provider's _person_. This is useful for illustrating a provider's overall skill set, education, and training, regardless of their current role or where they're practicing.
 
-- `PractitionerRole.specialty` indicates the particular specialty a provider is currently practicing in a specific context or organization. This is more flexible as a provider can have different roles in different organizations or at different times. For example, a practitioner who is qualified as both a cardiologist and an internist might serve as a cardiologist at one hospital and an internist at another. See our guide on [Modeling Practitioner Organizations](/docs/fhir-datastore/provider-organizations) for more information about modeling providers who work across multiple organizations.
+- `PractitionerRole.specialty` indicates the particular specialty a provider is currently practicing in a specific context or organization. This is more flexible as a provider can have different roles in different organizations or at different times. For example, a practitioner who is qualified as both a cardiologist and an internist might serve as a cardiologist at one hospital and an internist at another. See our guide on [Modeling Practitioner Organizations](./provider-organizations) for more information about modeling providers who work across multiple organizations.
 
 ```mermaid
 graph LR
-    A[John Smith\n\nQualifications:\n- Medical Doctor\n-Internal Medicine\n-Cardiology]
+    A[<b>Practitioner</b>\nJohn Smith\n\nQualifications:\n<ul><li> Medical Doctor</li><li>Internal Medicine</li><li>Cardiology</li></ul>]
 
-    E[PractitionerRole 1<br/>Specialty: Internal Medicine]
-    F[PractitionerRole 2<br/>Specialty: Cardiology]
-    G[PractitionerRole 3<br/>Specialty: Internal Medicine, Cardiology]
+    E[<b>PractitionerRole</b><br/>Specialty: Internal Medicine]
+    F[<b>PractitionerRole</b><br/>Specialty: Cardiology]
+    G[<b>PractitionerRole</b><br/>Specialty: Internal Medicine, Cardiology]
 
     A ---> E
     A ---> F
     A ---> G
 
-    H[Organization 1]
-    I[Organization 2]
-    J[Organization 3]
+    H[<b>Organization</b> 1]
+    I[<b>Organization</b> 2]
+    J[<b>Organization</b> 3]
 
     E -- organization --> H
     F -- organization --> I
