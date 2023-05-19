@@ -2162,8 +2162,21 @@ export class MedplumClient extends EventTarget {
     const url = this.fhirUrl('$export');
 
     url.searchParams.set('_type', resources);
+    const fetchOptions = {
+      method: 'POST',
+    };
 
-    return this.post(url, {});
+    const response = await this.fetchWithRetry(url.toString(), fetchOptions);
+
+    if (response.status === 202) {
+      const contentLocation = response.headers.get('content-location');
+
+      if (contentLocation) {
+        return await this.pollStatus(contentLocation);
+      }
+    }
+
+    return await this.parseResponse(response, 'POST', url.toString());
   }
 
   //
@@ -2243,6 +2256,15 @@ export class MedplumClient extends EventTarget {
     this.addFetchOptionsDefaults(options);
 
     const response = await this.fetchWithRetry(url, options);
+    return await this.parseResponse(response, method, url, options);
+  }
+
+  private async parseResponse<T>(
+    response: Response,
+    method: string,
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     if (response.status === 401) {
       // Refresh and try again
       return this.handleUnauthenticated(method, url, options);
@@ -2259,30 +2281,6 @@ export class MedplumClient extends EventTarget {
         throw new OperationOutcomeError(notFound);
       }
     }
-
-    if (response.status === 202) {
-      const contentLocation = response.headers.get('content-location');
-
-      if (contentLocation) {
-        let checkStatus = true;
-        let resultResponse;
-        while (checkStatus) {
-          const statusResponse = await this.fetchWithRetry(contentLocation, {
-            method: 'POST',
-          });
-          if (statusResponse.status !== 202) {
-            checkStatus = false;
-            resultResponse = statusResponse;
-          }
-        }
-        return await this.parseResponse(resultResponse as Response);
-      }
-    }
-
-    return await this.parseResponse(response);
-  }
-
-  private async parseResponse<T>(response: Response): Promise<T> {
     let obj: any = undefined;
     try {
       obj = await response.json();
@@ -2309,6 +2307,24 @@ export class MedplumClient extends EventTarget {
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
     return response as Response;
+  }
+
+  private async pollStatus<T>(statusUrl: string): Promise<T> {
+    let checkStatus = true;
+    let resultResponse;
+    const retryDelay = 200;
+
+    while (checkStatus) {
+      const statusResponse = await this.fetchWithRetry(statusUrl, {
+        method: 'POST',
+      });
+      if (statusResponse.status !== 202) {
+        checkStatus = false;
+        resultResponse = statusResponse;
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+    return await this.parseResponse(resultResponse as Response, 'POST', statusUrl);
   }
 
   /**

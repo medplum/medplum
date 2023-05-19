@@ -1716,7 +1716,7 @@ describe('Client', () => {
       }
 
       if (url.includes('bulkdata/id/status')) {
-        if (count < 5) {
+        if (count < 1) {
           count++;
           return {
             status: 202,
@@ -1754,7 +1754,7 @@ describe('Client', () => {
       expect.stringContaining('bulkdata/id/status'),
       expect.objectContaining({ method: 'POST' })
     );
-    expect(fetch).toBeCalledTimes(7);
+    expect(fetch).toBeCalledTimes(3);
     expect(response.output?.length).toBe(1);
   });
 
