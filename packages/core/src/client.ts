@@ -2231,7 +2231,6 @@ export class MedplumClient extends EventTarget {
     this.addFetchOptionsDefaults(options);
 
     const response = await this.fetchWithRetry(url, options);
-    console.log('response', response);
 
     if (response.status === 401) {
       // Refresh and try again
@@ -2276,9 +2275,7 @@ export class MedplumClient extends EventTarget {
         }
         await new Promise((resolve) => setTimeout(resolve, retryDelay));
       } catch (err: any) {
-        if (err.message === 'Failed to fetch') {
-          this.dispatchEvent({ type: 'offline' });
-        }
+        this.retryCatch(retry, maxRetries, err);
       }
     }
     return response as Response;
@@ -2634,6 +2631,16 @@ export class MedplumClient extends EventTarget {
       });
     } catch (err) {
       // Silently ignore if this environment does not support storage events
+    }
+  }
+
+  private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
+    // This is for the 1st retry to avoid multiple notifications
+    if (err.message === 'Failed to fetch' && retryNumber === 1) {
+      this.dispatchEvent({ type: 'offline' });
+    }
+    if (retryNumber === maxRetries - 1) {
+      throw err;
     }
   }
 }
