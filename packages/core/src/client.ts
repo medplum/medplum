@@ -2262,12 +2262,10 @@ export class MedplumClient extends EventTarget {
 
     if (response.status === 202) {
       const contentLocation = response.headers.get('content-location');
-      console.log(contentLocation);
 
       if (contentLocation) {
         let checkStatus = true;
         while (checkStatus) {
-          console.log('polling');
           const bulkExportRes = await this.fetchWithRetry(contentLocation, {
             method: 'POST',
           });
