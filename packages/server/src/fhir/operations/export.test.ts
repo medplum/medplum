@@ -104,40 +104,37 @@ describe('System export', () => {
     const accessToken = await initTestAuth();
     expect(accessToken).toBeDefined();
 
-    // Create observation
-    let obs1;
-    let updatedDate = new Date();
-    await waitFor(async () => {
-      const res1 = await request(app)
-        .post(`/fhir/R4/Patient`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', 'application/fhir+json')
-        .send({
-          resourceType: 'Patient',
-          name: [{ given: ['Alice'], family: 'Smith' }],
-          address: [{ use: 'home', line: ['123 Main St'], city: 'Anywhere', state: 'CA', postalCode: '90210' }],
-          telecom: [
-            { system: 'phone', value: '555-555-5555' },
-            { system: 'email', value: 'alice@example.com' },
-          ],
-        });
-      expect(res1.status).toBe(201);
-      obs1 = await request(app)
-        .post(`/fhir/R4/Observation`)
-        .set('Authorization', 'Bearer ' + accessToken)
-        .set('Content-Type', 'application/fhir+json')
-        .send({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'test' },
-          subject: { reference: `Patient/${res1.body.id}` },
-        });
-      expect(obs1.status).toBe(201);
+    const res1 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        address: [{ use: 'home', line: ['123 Main St'], city: 'Anywhere', state: 'CA', postalCode: '90210' }],
+        telecom: [
+          { system: 'phone', value: '555-555-5555' },
+          { system: 'email', value: 'alice@example.com' },
+        ],
+      });
+    expect(res1.status).toBe(201);
 
-      updatedDate = new Date(obs1?.body?.meta.lastUpdated as string);
-      updatedDate.setMilliseconds(updatedDate.getMilliseconds() + 1);
+    // Create observation
+    const res2 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: `Patient/${res1.body.id}` },
+      });
+    expect(res2.status).toBe(201);
+
+    await waitFor(async () => {
       // Create later observation
-      const obs2 = await request(app)
+      const res3 = await request(app)
         .post(`/fhir/R4/Observation`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', 'application/fhir+json')
@@ -147,8 +144,10 @@ describe('System export', () => {
           code: { text: 'test2' },
           subject: { reference: `Patient/${res1.body.id}` },
         });
-      expect(obs2.status).toBe(201);
+      expect(res3.status).toBe(201);
     });
+    const updatedDate = new Date(res2.body.meta.lastUpdated);
+    updatedDate.setMilliseconds(updatedDate.getMilliseconds() + 1);
 
     // Start the export
     let initRes: any;
