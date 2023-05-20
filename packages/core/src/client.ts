@@ -2156,16 +2156,21 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
-   * Kick off system level bulk export
+   * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
+   *
+   * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
+   * @param resourceTypes A string of comma-delimited FHIR resource types.
+   * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
+   * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
    */
-  async bulkExport(resources: string): Promise<Partial<BulkDataExport>> {
-    const url = this.fhirUrl('$export');
-
-    url.searchParams.set('_type', resources);
+  async bulkExport(exportLevel = '', resourceTypes?: string, since?: string): Promise<Partial<BulkDataExport>> {
+    const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
+    const url = this.fhirUrl(`${fhirPath}$export`);
+    if (resourceTypes) url.searchParams.set('_type', resourceTypes);
+    if (since) url.searchParams.set('_since', since);
     const fetchOptions = {
       method: 'POST',
     };
-
     const response = await this.fetchWithRetry(url.toString(), fetchOptions);
 
     if (response.status === 202) {
