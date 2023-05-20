@@ -40,7 +40,6 @@
     "@types/node": "20.2.1",
     "@types/react": "18.2.6",
     "@types/react-dom": "18.2.4",
-    "@types/react-router-dom": "5.3.3",
     "dotenv-webpack": "8.0.1",
     "html-webpack-plugin": "5.5.1",
     "identity-obj-proxy": "3.0.0",

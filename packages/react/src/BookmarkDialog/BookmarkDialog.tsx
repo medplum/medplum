@@ -3,11 +3,12 @@ import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 import { Form } from '../Form/Form';
 import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
 interface BookmarkDialogProps {
+  pathname: string;
+  searchParams: URLSearchParams;
   visible: boolean;
   onOk: () => void;
   onCancel: () => void;
@@ -16,10 +17,10 @@ interface BookmarkDialogProps {
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
   const config = medplum.getUserConfiguration() as UserConfiguration;
-  const location = useLocation();
+
   function submitHandler(formData: Record<string, string>): void {
     const { menuname, bookmarkname: name } = formData;
-    const target = location.pathname + location.search;
+    const target = `${props.pathname}?${props.searchParams.toString()}`;
     const newConfig = deepClone(config) as UserConfiguration;
     const menu = newConfig?.menu?.find(({ title }) => title === menuname);
 
