@@ -116,4 +116,36 @@ describe('CodeableConceptInput', () => {
       ],
     });
   });
+
+  test('Malformed value', async () => {
+    const elementDefinition: ElementDefinition = {
+      type: [{ code: 'CodeableConcept' }],
+    };
+
+    const defaultValue: CodeableConcept = {
+      text: 'Test',
+      coding: [
+        {
+          system: 'https://example.com',
+          code: { foo: 'bar' } as unknown as string,
+        },
+      ],
+    };
+
+    await setup(
+      <CodeableConceptInput property={elementDefinition} name="test" defaultValue={defaultValue} onChange={jest.fn()} />
+    );
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.focus(input);
+    });
+
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'XYZ' } });
+    });
+
+    await waitFor(() => screen.getByText('+ Create XYZ'));
+  });
 });
