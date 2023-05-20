@@ -1689,6 +1689,27 @@ describe('Client', () => {
     beforeEach(() => {
       let count = 0;
       fetch = jest.fn(async (url) => {
+        if (url.includes('/$export?_since=200')) {
+          return {
+            status: 200,
+            json: jest.fn(async () => {
+              return {
+                resourceType: 'OperationOutcome',
+                id: 'accepted',
+                issue: [
+                  {
+                    severity: 'information',
+                    code: 'informational',
+                    details: {
+                      text: 'Accepted',
+                    },
+                  },
+                ],
+              };
+            }),
+          };
+        }
+
         if (url.includes('/$export')) {
           return {
             status: 202,
@@ -1749,9 +1770,21 @@ describe('Client', () => {
 
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport('', 'Observation');
+      const response = await medplum.bulkExport();
+      expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
       expect(fetch).toBeCalledWith(
-        expect.stringContaining('/$export?_type=Observation'),
+        expect.stringContaining('bulkdata/id/status'),
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(fetch).toBeCalledTimes(3);
+      expect(response.output?.length).toBe(1);
+    });
+
+    test('type and since params', async () => {
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport('', 'Observation', 'testdate');
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.objectContaining({ method: 'POST' })
       );
       expect(fetch).toBeCalledWith(
@@ -1791,6 +1824,26 @@ describe('Client', () => {
       );
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
+    });
+
+    test('Failed Kickoff', async () => {
+      const failFetch = jest.fn(async () => {
+        return {
+          status: 404,
+          json: jest.fn(async () => {
+            return notFound;
+          }),
+          headers: {
+            get: jest.fn(),
+          },
+        };
+      });
+      const medplum = new MedplumClient({ fetch: failFetch });
+      try {
+        await medplum.bulkExport(`Patient`);
+      } catch (err) {
+        expect((err as Error).message).toBe('Not found');
+      }
     });
   });
 
