@@ -34,7 +34,9 @@ describe('CLI', () => {
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn() as never;
+    process.exit = jest.fn<never, any, any>();
+    process.stdout.write = jest.fn();
+    process.stderr.write = jest.fn();
   });
 
   afterEach(() => {
