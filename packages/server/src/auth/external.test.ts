@@ -225,6 +225,34 @@ describe('External', () => {
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 
+  test('ClientApplication with DomainConfiguration success', async () => {
+    const url = new URL('https://example.com/auth/external');
+    url.searchParams.set('code', randomUUID());
+    url.searchParams.set(
+      'state',
+      JSON.stringify({
+        domain,
+        clientId: externalAuthClient.id,
+        redirectUri,
+      })
+    );
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => buildTokens(email),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url.toString().replace('https://example.com', ''));
+    expect(res.status).toBe(302);
+
+    const redirect = new URL(res.header.location);
+    expect(redirect.host).toEqual(domain);
+    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.searchParams.get('code')).toBeTruthy();
+  });
+
   test('Invalid client', async () => {
     const url = new URL('https://example.com/auth/external');
     url.searchParams.set('code', randomUUID());
