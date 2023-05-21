@@ -2173,7 +2173,9 @@ export class MedplumClient extends EventTarget {
     const url = this.fhirUrl(`${fhirPath}$export`);
     if (resourceTypes) url.searchParams.set('_type', resourceTypes);
     if (since) url.searchParams.set('_since', since);
-    options.method = 'POST';
+
+    options.method = exportLevel ? 'GET' : 'POST';
+
     this.addFetchOptionsDefaults(options);
     const response = await this.fetchWithRetry(url.toString(), options);
 

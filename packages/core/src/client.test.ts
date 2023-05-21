@@ -1801,7 +1801,7 @@ describe('Client', () => {
       const response = await medplum.bulkExport(`Group/${groupId}`);
       expect(fetch).toBeCalledWith(
         expect.stringContaining(`/Group/${groupId}/$export`),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
@@ -1816,7 +1816,7 @@ describe('Client', () => {
       const response = await medplum.bulkExport(`Patient`);
       expect(fetch).toBeCalledWith(
         expect.stringContaining(`/Patient/$export`),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
