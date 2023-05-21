@@ -1826,6 +1826,37 @@ describe('Client', () => {
       expect(response.output?.length).toBe(1);
     });
 
+    test('Kick off missing content-location', async () => {
+      const fetch = jest.fn(async () => {
+        return {
+          status: 202,
+          json: jest.fn(async () => {
+            return {
+              resourceType: 'OperationOutcome',
+              id: 'accepted',
+              issue: [
+                {
+                  severity: 'information',
+                  code: 'informational',
+                  details: {
+                    text: 'Accepted',
+                  },
+                },
+              ],
+            };
+          }),
+          headers: {
+            get: jest.fn(),
+          },
+        };
+      });
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport();
+
+      expect(response.output).not.toBeDefined();
+      expect(fetch).toBeCalledTimes(1);
+    });
+
     test('Failed Kickoff', async () => {
       const failFetch = jest.fn(async () => {
         return {
