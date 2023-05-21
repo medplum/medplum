@@ -1774,7 +1774,7 @@ describe('Client', () => {
       expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
@@ -1789,7 +1789,7 @@ describe('Client', () => {
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
@@ -1805,7 +1805,7 @@ describe('Client', () => {
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
@@ -1820,7 +1820,7 @@ describe('Client', () => {
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);

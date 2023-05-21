@@ -2163,15 +2163,19 @@ export class MedplumClient extends EventTarget {
    * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
    * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
    */
-  async bulkExport(exportLevel = '', resourceTypes?: string, since?: string): Promise<Partial<BulkDataExport>> {
+  async bulkExport(
+    exportLevel = '',
+    resourceTypes?: string,
+    since?: string,
+    options: RequestInit = {}
+  ): Promise<Partial<BulkDataExport>> {
     const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
     const url = this.fhirUrl(`${fhirPath}$export`);
     if (resourceTypes) url.searchParams.set('_type', resourceTypes);
     if (since) url.searchParams.set('_since', since);
-    const fetchOptions = {
-      method: 'POST',
-    };
-    const response = await this.fetchWithRetry(url.toString(), fetchOptions);
+    options.method = 'POST';
+    this.addFetchOptionsDefaults(options);
+    const response = await this.fetchWithRetry(url.toString(), options);
 
     if (response.status === 202) {
       const contentLocation = response.headers.get('content-location');
@@ -2320,9 +2324,11 @@ export class MedplumClient extends EventTarget {
     const retryDelay = 200;
 
     while (checkStatus) {
-      const statusResponse = await this.fetchWithRetry(statusUrl, {
-        method: 'POST',
-      });
+      const fetchOptions = {
+        method: 'GET',
+      };
+      this.addFetchOptionsDefaults(fetchOptions);
+      const statusResponse = await this.fetchWithRetry(statusUrl, fetchOptions);
       if (statusResponse.status !== 202) {
         checkStatus = false;
         resultResponse = statusResponse;
