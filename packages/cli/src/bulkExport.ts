@@ -17,11 +17,9 @@ bulkExport
   .action(async ({ exportLevel, types, since }) => {
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
-      if (url) {
-        const data = await medplum.download(url);
-        writeFile(`${type}.json`, await data.text(), () => {
-          console.log(`${type}.json is created`);
-        });
-      }
+      const data = await medplum.download(url as string);
+      writeFile(`${type}.json`, await data.text(), () => {
+        console.log(`${type}.json is created`);
+      });
     });
   });
