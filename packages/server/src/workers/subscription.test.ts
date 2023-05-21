@@ -8,8 +8,8 @@ import { loadTestConfig } from '../config';
 import { getClient } from '../database';
 import { Repository, systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
-import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 import { AuditEventOutcome } from '../util/auditevent';
+import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
 jest.mock('node-fetch');
 
@@ -702,6 +702,9 @@ describe('Subscription Worker', () => {
 
     await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
+      meta: {
+        project: bot.meta?.project,
+      },
       project: { reference: 'Project/' + bot.meta?.project },
       user: createReference(bot),
       profile: createReference(bot),

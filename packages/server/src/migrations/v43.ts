@@ -959,4 +959,10 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('CREATE INDEX ON "DomainConfiguration" ("projectId")');
   await client.query('CREATE INDEX ON "DomainConfiguration" ("fhirId")');
   await client.query('UPDATE "DomainConfiguration" SET "fhirId"="id"');
+
+  await client.query('ALTER TABLE "AsyncJob" ADD COLUMN "projectId" UUID');
+  await client.query('ALTER TABLE "AsyncJob" ADD COLUMN "fhirId" TEXT');
+  await client.query('CREATE INDEX ON "AsyncJob" ("projectId")');
+  await client.query('CREATE INDEX ON "AsyncJob" ("fhirId")');
+  await client.query('UPDATE "AsyncJob" SET "fhirId"="id"');
 }

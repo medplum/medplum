@@ -231,7 +231,13 @@ export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'P
  * System resource ID's are always assigned by the server.
  * System resource ID's are equal to FHIR ID's.
  */
-const systemResourceTypes = [...protectedResourceTypes, ...projectAdminResourceTypes, 'Bot', 'ClientApplication'];
+const systemResourceTypes = [
+  ...protectedResourceTypes,
+  ...projectAdminResourceTypes,
+  'AsyncJob',
+  'Bot',
+  'ClientApplication',
+];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -627,7 +633,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     await setCacheEntry(project, resourceType, id, wrapper);
-    // await addBackgroundJobs(result);
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
@@ -932,7 +937,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', Operator.EQUALS, id).execute(getClient());
+    await new DeleteQuery(resourceType).where('fhirId', Operator.EQUALS, id).execute(getClient());
     await new DeleteQuery(resourceType + '_History').where('id', Operator.EQUALS, id).execute(getClient());
     await deleteCacheEntry(this.context.project, resourceType, id);
   }
@@ -947,7 +952,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await new DeleteQuery(resourceType).where('id', Operator.IN, ids).execute(getClient());
+    await new DeleteQuery(resourceType).where('fhirId', Operator.IN, ids).execute(getClient());
     await new DeleteQuery(resourceType + '_History').where('id', Operator.IN, ids).execute(getClient());
     await deleteCacheEntries(this.context.project, resourceType, ids);
   }
@@ -1497,14 +1502,6 @@ export class Repository extends BaseRepository implements FhirRepository {
     const code = filter.code;
 
     if (code === '_id') {
-      // return this.buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
-      // this.#addTokenSearchFilter(
-      //   predicate,
-      //   resourceType,
-      //   { columnName: 'fhirId', type: SearchParameterType.TEXT },
-      //   filter
-      // );
-      // return true;
       return this.buildTokenSearchFilter(
         resourceType,
         { columnName: 'fhirId', type: SearchParameterType.TEXT },
@@ -1708,7 +1705,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param client The database client inside the transaction.
    * @param wrapper The resource wrapper.
    */
-  // private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
   private async writeResource(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
     const resource = wrapper.resource as Resource;
     const resourceType = resource.resourceType;
@@ -1740,7 +1736,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param client The database client inside the transaction.
    * @param wrapper The resource wrapper.
    */
-  // private async writeResourceVersion(client: PoolClient, resource: Resource): Promise<void> {
   private async writeResourceVersion(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
     const resource = wrapper.resource as Resource;
     const resourceType = resource.resourceType;
@@ -2003,7 +1998,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param client The database client inside the transaction.
    * @param wrapper The resource wrapper.
    */
-  // private async writeLookupTables(client: PoolClient, resource: Resource): Promise<void> {
   private async writeLookupTables(client: PoolClient, wrapper: ResourceWrapper): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, wrapper);
@@ -2015,7 +2009,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param client The database client inside the transaction.
    * @param wrapper The resource wrapper.
    */
-  // private async deleteFromLookupTables(client: Pool | PoolClient, resource: Resource): Promise<void> {
   private async deleteFromLookupTables(client: Pool | PoolClient, wrapper: ResourceWrapper): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.deleteValuesForResource(client, wrapper);
@@ -2506,11 +2499,8 @@ async function getCacheEntries(references: Reference[]): Promise<(ResourceWrappe
     // Return early to avoid calling mget() with no args, which is an error
     return [];
   }
-  return (await getRedis().mget(...referenceKeys)).map(
-    (cachedValue) => (cachedValue ? (JSON.parse(cachedValue) as ResourceWrapper<Resource>) : undefined)
-    // async function getCacheEntries(references: Reference[]): Promise<(ResourceWrapper<Resource> | undefined)[]> {
-    //   return (await getRedis().mget(...references.map((r) => r.reference as string))).map((cachedValue) =>
-    //     cachedValue ? (JSON.parse(cachedValue) as ResourceWrapper<Resource>) : undefined
+  return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
+    cachedValue ? (JSON.parse(cachedValue) as ResourceWrapper<Resource>) : undefined
   );
 }
 

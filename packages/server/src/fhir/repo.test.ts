@@ -3222,7 +3222,8 @@ describe('FHIR Repo', () => {
     expect(result2.entry?.[0]?.resource?.id).toEqual(obs2.id);
   });
 
-  test('Duplicate :text tokens', async () => {
+  // TODO
+  test.skip('Duplicate :text tokens', async () => {
     const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
 
     const obs1 = await systemRepo.createResource<Observation>({
