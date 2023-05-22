@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { login, whoami } from './auth';
 import { aws } from './aws/index';
 import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from './bots';
-import { bulkExport } from './bulkExport';
+import { bulk } from './bulk';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
 import { FileSystemStorage } from './storage';
@@ -39,7 +39,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
     index.addCommand(project);
 
     // Export
-    index.addCommand(bulkExport);
+    index.addCommand(bulk);
 
     // Bot Commands
     index.addCommand(bot);

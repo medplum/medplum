@@ -2,9 +2,10 @@ import { Command } from 'commander';
 import { writeFile } from 'fs';
 import { medplum } from '.';
 
-export const bulkExport = new Command('bulk-export');
+export const bulk = new Command('bulk');
 
-bulkExport
+bulk
+  .command('export')
   .option(
     '-e, --exportLevel <exportLevel>',
     'Optional export level. Defaults to system level export. "Group/:id" - Group of Patients, "Patient" - All Patients.'
