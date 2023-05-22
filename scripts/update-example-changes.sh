@@ -11,6 +11,13 @@ echo "Changed paths array: ${changed_paths_array[@]}"
 git config --global user.name "github-actions[bot]"
 git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
+# Get the SHA of the latest commit
+latest_commit_sha=$(git rev-parse HEAD)
+# Get the commit message of the latest commit
+commit_message=$(git log --format=%B -n 1 $latest_commit_sha)
+# Get the first line of the commit message
+formatted_title=$(echo "$commit_message" | head -n 1)
+
 for path in "${changed_paths_array[@]}"; do
   # Store the current working directory
   initial_working_directory=$(pwd)
@@ -41,7 +48,7 @@ for path in "${changed_paths_array[@]}"; do
   # Commit and push changes to the listening repo
   cd ${folder_name}
   git add .
-  git commit -m "Update from main medplum repo"
+  git commit -m "Merge from main repo: ${formatted_title}"
   git push origin main
 
   # Cleanup: Remove the cloned repo folder and delete the local branch
