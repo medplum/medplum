@@ -206,7 +206,7 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_summary':
-      searchRequest.total = 'estimate';
+      searchRequest.total = 'accurate';
       searchRequest.count = 0;
       break;
 
