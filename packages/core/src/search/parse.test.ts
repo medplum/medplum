@@ -100,7 +100,7 @@ describe('Search parser', () => {
   test('Parse summary', () => {
     expect(parseSearchRequest('Patient', { _summary: 'true' })).toMatchObject<SearchRequest>({
       resourceType: 'Patient',
-      total: 'estimate',
+      total: 'accurate',
       count: 0,
     });
   });
