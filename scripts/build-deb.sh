@@ -40,6 +40,7 @@ done
 cp package.json "$LIB_DIR"
 
 # Copy server config
+mkdir -p "$ETC_DIR"
 cp packages/server/medplum.config.json "$ETC_DIR"
 
 # Move into the working directory
