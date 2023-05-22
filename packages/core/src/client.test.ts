@@ -1676,6 +1676,7 @@ describe('Client', () => {
     client.dispatchEvent = mockDispatchEvent;
     try {
       await client.readResource('Patient', '123');
+      fail('Expected error');
     } catch (err) {
       expect(mockDispatchEvent).toHaveBeenCalled();
       expect(err).toBeDefined();
