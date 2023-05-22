@@ -6,6 +6,7 @@ export function PatientHistory(): JSX.Element {
   const { patient } = usePatientInfo().data;
   return (
     <Document>
+      <h3>Patient History</h3>
       <ResourceHistoryTable resourceType="Patient" id={patient.id} />
     </Document>
   );

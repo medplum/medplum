@@ -20,7 +20,6 @@ const PatientContext = React.createContext({} as PatientGraphQLResponse);
 export function PatientPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams();
-  const [tab, setTab] = useState<string | null>('');
 
   const [response, setResponse] = useState<PatientGraphQLResponse>();
 
@@ -85,7 +84,7 @@ export function PatientPage(): JSX.Element {
   return (
     <PatientContext.Provider value={response}>
       <PatientHeader patient={patient} key={getReferenceString(patient)} />
-      <Tabs value={tab} onTabChange={setTab}>
+      <Tabs>
         <Tabs.List bg="white">
           <TabLink value="overview" />
           <TabLink value="timeline" />

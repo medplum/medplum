@@ -15,6 +15,8 @@ export function PatientOverview(): JSX.Element {
   const { patient, orders, reports } = usePatientInfo().data;
   return (
     <Document>
+      <h3>Patient Overview</h3>
+
       <div className="patient-sidebar">
         <div className="patient-title">
           <ResourceName value={patient} />
