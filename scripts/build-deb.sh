@@ -36,6 +36,7 @@ cp -r packages/definitions/dist medplum-server-deb/usr/lib/medplum-server/packag
 cp packages/fhir-router/package.json medplum-server-deb/usr/lib/medplum-server/packages/fhir-router
 cp -r packages/fhir-router/dist medplum-server-deb/usr/lib/medplum-server/packages/fhir-router
 cp packages/server/package.json medplum-server-deb/usr/lib/medplum-server/packages/server
+cp packages/server/medplum.config.json medplum-server-deb/usr/lib/medplum-server/packages/server
 cp -r packages/server/dist medplum-server-deb/usr/lib/medplum-server/packages/server
 
 # Move into the medplum-server directory
