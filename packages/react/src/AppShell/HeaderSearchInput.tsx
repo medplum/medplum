@@ -53,6 +53,7 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
 
 export interface HeaderSearchInputProps {
   pathname?: string;
+  searchParams?: URLSearchParams;
 }
 
 export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
@@ -81,7 +82,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
 
   return (
     <AsyncAutocomplete
-      key={props.pathname}
+      key={`${props.pathname}?${props.searchParams}`}
       size="sm"
       radius="md"
       className={classes.searchInput}
@@ -92,6 +93,9 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
       toOption={toOption}
       onChange={handleSelect}
       loadOptions={loadData}
+      maxSelectedValues={0}
+      clearSearchOnChange
+      clearable={false}
     />
   );
 }
