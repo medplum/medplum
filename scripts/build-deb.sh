@@ -17,6 +17,7 @@ SERVICE_NAME="medplum-server"
 TMP_DIR="medplum-server-deb"
 LIB_DIR="$TMP_DIR/usr/lib/$SERVICE_NAME"
 ETC_DIR="$TMP_DIR/etc/$SERVICE_NAME"
+VAR_DIR="$TMP_DIR/var/lib/$SERVICE_NAME"
 SYSTEM_DIR="$TMP_DIR/lib/systemd/system"
 DEBIAN_DIR="$TMP_DIR/DEBIAN"
 
@@ -39,9 +40,14 @@ done
 # Copy root package.json
 cp package.json "$LIB_DIR"
 
-# Copy server config
+# Create the server config
 mkdir -p "$ETC_DIR"
 cp packages/server/medplum.config.json "$ETC_DIR"
+sed -i "s|file:./binary/|file:/var/lib/$SERVICE_NAME/binary/|g" "$ETC_DIR/medplum.config.json"
+
+# Create the data directory
+mkdir -p "$VAR_DIR/binary"
+cat "Medplum data files" > "$VAR_DIR/README.txt"
 
 # Move into the working directory
 pushd "$LIB_DIR"
@@ -62,8 +68,8 @@ After=network.target
 [Service]
 ExecStart=/usr/bin/node /usr/lib/$SERVICE_NAME/packages/server/dist/index.js "file:$ETC_DIR/medplum.config.json"
 Restart=always
-User=nobody
-Group=nogroup
+User=$SERVICE_NAME
+Group=$SERVICE_NAME
 Environment=PATH=/usr/bin:/usr/local/bin
 Environment=NODE_ENV=production
 WorkingDirectory=/usr/lib/$SERVICE_NAME
@@ -90,6 +96,8 @@ EOF
 # Create the Debian post-install script
 cat > "$DEBIAN_DIR/postinst" <<EOF
 #!/bin/sh
+addgroup --system $SERVICE_NAME
+adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME.service
 EOF
