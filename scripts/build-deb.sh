@@ -27,6 +27,7 @@ echo "Building version $VERSION"
 
 # Clear previous builds
 rm -rf "$TMP_DIR"
+rm -rf "$SERVICE_NAME-$VERSION.deb"
 
 # Copy package files
 PACKAGES=("core" "definitions" "fhir-router" "server")
@@ -47,7 +48,7 @@ sed -i "s|file:./binary/|file:/var/lib/$SERVICE_NAME/binary/|g" "$ETC_DIR/medplu
 
 # Create the data directory
 mkdir -p "$VAR_DIR/binary"
-cat "Medplum data files" > "$VAR_DIR/README.txt"
+echo "Medplum data files" > "$VAR_DIR/README.txt"
 
 # Move into the working directory
 pushd "$LIB_DIR"
@@ -66,7 +67,7 @@ Description=Medplum Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /usr/lib/$SERVICE_NAME/packages/server/dist/index.js "file:$ETC_DIR/medplum.config.json"
+ExecStart=/usr/bin/node /usr/lib/$SERVICE_NAME/packages/server/dist/index.js "file:/etc/$SERVICE_NAME/medplum.config.json"
 Restart=always
 User=$SERVICE_NAME
 Group=$SERVICE_NAME
@@ -98,6 +99,7 @@ cat > "$DEBIAN_DIR/postinst" <<EOF
 #!/bin/sh
 addgroup --system $SERVICE_NAME
 adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
+chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME.service
 EOF
