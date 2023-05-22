@@ -10,7 +10,7 @@ import {
   ResourceName,
   useMedplum,
 } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PatientHeader } from './PatientHeader';
 
@@ -21,6 +21,8 @@ interface PatientGraphQLResponse {
     reports: DiagnosticReport[];
   };
 }
+
+const PatientContext = React.createContext({} as PatientGraphQLResponse);
 
 export function PatientPage(): JSX.Element {
   const medplum = useMedplum();
@@ -89,7 +91,7 @@ export function PatientPage(): JSX.Element {
   const { patient, orders, reports } = response.data;
 
   return (
-    <>
+    <PatientContext.Provider value={response}>
       <PatientHeader patient={patient} key={getReferenceString(patient)} />
       {/* Use the Mantine Tabs components to implement a simple tabbed layout */}
       <Tabs value={tab} onTabChange={setTab}>
@@ -177,6 +179,14 @@ export function PatientPage(): JSX.Element {
           </Document>
         </Tabs.Panel>
       </Tabs>
-    </>
+    </PatientContext.Provider>
   );
+}
+
+export function usePatientInfo() {
+  const context = useContext(PatientContext);
+  if (!context) {
+    throw new Error('Missing PatientContext');
+  }
+  return context;
 }
