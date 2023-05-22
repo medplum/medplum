@@ -13,34 +13,37 @@ if ! command -v dpkg-deb >/dev/null 2>&1; then
   exit 1
 fi
 
+SERVICE_NAME="medplum-server"
+TMP_DIR="medplum-server-deb"
+LIB_DIR="$TMP_DIR/usr/lib/$SERVICE_NAME"
+ETC_DIR="$TMP_DIR/etc/$SERVICE_NAME"
+SYSTEM_DIR="$TMP_DIR/lib/systemd/system"
+DEBIAN_DIR="$TMP_DIR/DEBIAN"
+
 # Get version
 VERSION=$(node -p "require('./package.json').version")
-
 echo "Building version $VERSION"
 
 # Clear previous builds
-rm -rf medplum-server-deb
+rm -rf "$TMP_DIR"
 
-# Create a temp directory for the build
-mkdir -p medplum-server-deb/usr/lib/medplum-server/packages/core
-mkdir -p medplum-server-deb/usr/lib/medplum-server/packages/definitions
-mkdir -p medplum-server-deb/usr/lib/medplum-server/packages/fhir-router
-mkdir -p medplum-server-deb/usr/lib/medplum-server/packages/server
+# Copy package files
+PACKAGES=("core" "definitions" "fhir-router" "server")
+for package in ${PACKAGES[@]}; do
+  echo "Copy $package"
+  mkdir -p "$LIB_DIR/packages/$package"
+  cp "packages/$package/package.json" "$LIB_DIR/packages/$package"
+  cp -r "packages/$package/dist" "$LIB_DIR/packages/$package"
+done
 
-# Copy files
-cp package.json medplum-server-deb/usr/lib/medplum-server
-cp packages/core/package.json medplum-server-deb/usr/lib/medplum-server/packages/core
-cp -r packages/core/dist medplum-server-deb/usr/lib/medplum-server/packages/core
-cp packages/definitions/package.json medplum-server-deb/usr/lib/medplum-server/packages/definitions
-cp -r packages/definitions/dist medplum-server-deb/usr/lib/medplum-server/packages/definitions
-cp packages/fhir-router/package.json medplum-server-deb/usr/lib/medplum-server/packages/fhir-router
-cp -r packages/fhir-router/dist medplum-server-deb/usr/lib/medplum-server/packages/fhir-router
-cp packages/server/package.json medplum-server-deb/usr/lib/medplum-server/packages/server
-cp packages/server/medplum.config.json medplum-server-deb/usr/lib/medplum-server/packages/server
-cp -r packages/server/dist medplum-server-deb/usr/lib/medplum-server/packages/server
+# Copy root package.json
+cp package.json "$LIB_DIR"
 
-# Move into the medplum-server directory
-pushd medplum-server-deb/usr/lib/medplum-server
+# Copy server config
+cp packages/server/medplum.config.json "$ETC_DIR"
+
+# Move into the working directory
+pushd "$LIB_DIR"
 
 # Install dependencies
 npm i --omit=dev --omit=optional --omit=peer
@@ -49,31 +52,31 @@ npm i --omit=dev --omit=optional --omit=peer
 popd
 
 # Create the systemd service definition
-mkdir -p medplum-server-deb/lib/systemd/system
-cat > medplum-server-deb/lib/systemd/system/medplum-server.service <<EOF
+mkdir -p "$SYSTEM_DIR"
+cat > "$SYSTEM_DIR/$SERVICE_NAME.service" <<EOF
 [Unit]
 Description=Medplum Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /usr/lib/medplum-server/packages/server/dist/index.js
+ExecStart=/usr/bin/node /usr/lib/$SERVICE_NAME/packages/server/dist/index.js "file:$ETC_DIR/medplum.config.json"
 Restart=always
 User=nobody
 Group=nogroup
 Environment=PATH=/usr/bin:/usr/local/bin
 Environment=NODE_ENV=production
-WorkingDirectory=/usr/lib/medplum-server
+WorkingDirectory=/usr/lib/$SERVICE_NAME
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
 # Create Debian files
-mkdir -p medplum-server-deb/DEBIAN
+mkdir -p "$DEBIAN_DIR"
 
 # Create the Debian control file
-cat > medplum-server-deb/DEBIAN/control <<EOF
-Package: medplum-server
+cat > "$DEBIAN_DIR/control" <<EOF
+Package: $SERVICE_NAME
 Version: $VERSION
 Section: base
 Priority: optional
@@ -84,31 +87,28 @@ Description: Medplum FHIR Server
 EOF
 
 # Create the Debian post-install script
-cat > medplum-server-deb/DEBIAN/postinst <<EOF
+cat > "$DEBIAN_DIR/postinst" <<EOF
 #!/bin/sh
 systemctl daemon-reload
-systemctl enable medplum-server.service
+systemctl enable $SERVICE_NAME.service
 EOF
 
 # Create the Debian pre-remove script
-cat > medplum-server-deb/DEBIAN/prerm <<EOF
+cat > "$DEBIAN_DIR/prerm" <<EOF
 #!/bin/sh
-systemctl stop medplum-server.service
-systemctl disable medplum-server.service
+systemctl stop $SERVICE_NAME.service
+systemctl disable $SERVICE_NAME.service
 EOF
 
 # Set permissions
-chmod 755 medplum-server-deb/DEBIAN/postinst
-chmod 755 medplum-server-deb/DEBIAN/prerm
+chmod 755 "$DEBIAN_DIR/postinst"
+chmod 755 "$DEBIAN_DIR/prerm"
 
 # Build the package
-dpkg-deb --build medplum-server-deb
-
-# Rename the deb file
-mv medplum-server-deb.deb medplum-server-$VERSION.deb
+dpkg-deb --build "$TMP_DIR" "$SERVICE_NAME-$VERSION.deb"
 
 # Cleanup
-rm -rf medplum-server-deb
+rm -rf "$TMP_DIR"
 
 # Done
 echo "Done"
