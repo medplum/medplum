@@ -141,8 +141,10 @@ describe('CLI Bulk Commands', () => {
       expect(console.log).toBeCalledWith(expect.stringMatching('Project.json is created'));
     });
   });
+
   describe('import', () => {
     let fetch: any;
+
     beforeEach(() => {
       console.log = jest.fn();
       console.error = jest.fn();
@@ -169,6 +171,7 @@ describe('CLI Bulk Commands', () => {
         };
       });
     });
+
     test('success', async () => {
       medplum = new MedplumClient({ fetch });
       await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json']);
