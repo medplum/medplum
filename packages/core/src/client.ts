@@ -2428,9 +2428,7 @@ export class MedplumClient extends EventTarget {
 
     if (this.accessToken) {
       headers['Authorization'] = 'Bearer ' + this.accessToken;
-    }
-
-    if (this.basicAuth) {
+    } else if (this.basicAuth) {
       headers['Authorization'] = 'Basic ' + this.basicAuth;
     }
 
@@ -2643,12 +2641,23 @@ export class MedplumClient extends EventTarget {
    * @param formBody Token parameters in URL encoded format.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const response = await this.fetch(this.tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formBody,
-      credentials: 'include',
-    });
+    let options = {};
+    if (this.basicAuth) {
+      options = {
+        method: 'POST',
+        headers: { Authorization: `Basic ${this.basicAuth}` },
+        // body: formBody,
+        credentials: 'include',
+      };
+    } else {
+      options = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formBody,
+        credentials: 'include',
+      };
+    }
+    const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       throw new Error('Failed to fetch tokens');
@@ -2675,6 +2684,20 @@ export class MedplumClient extends EventTarget {
     }
 
     // Verify app_client_id
+    // external tokenPayload
+    if (tokenPayload.cid) {
+      if (tokenPayload.cid === this.clientId) {
+        return this.setActiveLogin({
+          accessToken: token,
+          refreshToken: tokens.refresh_token,
+          project: tokens.project,
+          profile: tokens.profile,
+        });
+      } else {
+        this.clearActiveLogin();
+        throw new Error('Token was not issued for this audience');
+      }
+    }
     if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
