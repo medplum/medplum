@@ -1,13 +1,16 @@
-import React from 'react';
-import { usePatientInfo } from '../pages/PatientPage';
+import { Title } from '@mantine/core';
 import { Document, ResourceHistoryTable } from '@medplum/react';
+import React from 'react';
+import { useParams } from 'react-router-dom';
 
 export function PatientHistory(): JSX.Element {
-  const { patient } = usePatientInfo().data;
+  const { id } = useParams();
   return (
     <Document>
-      <h3>Patient History</h3>
-      <ResourceHistoryTable resourceType="Patient" id={patient.id} />
+      <Title order={3} mb="xl">
+        Patient History
+      </Title>
+      <ResourceHistoryTable resourceType="Patient" id={id} />
     </Document>
   );
 }
