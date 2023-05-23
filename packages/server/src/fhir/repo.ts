@@ -1526,7 +1526,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       if (details.type === SearchParameterType.BOOLEAN) {
         value = valueStr === 'true';
       } else if (details.type === SearchParameterType.UUID) {
-        if (!validator.isUUID(valueStr)) {
+        if (valueStr.includes('/')) {
+          value = valueStr.split('/').pop() as string;
+        }
+        if (!validator.isUUID(value)) {
           value = '00000000-0000-0000-0000-000000000000';
         }
       } else if (valueStr.includes('|')) {
