@@ -40,6 +40,9 @@ tsconfig.tsbuildinfo
 # Server tarball
 medplum-server.tar.gz
 
+# Deb files
+*.deb
+
 # VSCode
 .vscode/
 

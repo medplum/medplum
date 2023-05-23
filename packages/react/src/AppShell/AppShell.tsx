@@ -48,7 +48,17 @@ export function AppShell(props: AppShellProps): JSX.Element {
       }}
       padding={0}
       fixed={true}
-      header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
+      header={
+        profile && (
+          <Header
+            pathname={props.pathname}
+            searchParams={props.searchParams}
+            logo={props.logo}
+            version={props.version}
+            navbarToggle={toggleNavbar}
+          />
+        )
+      }
       navbar={
         profile && navbarOpen ? (
           <Navbar

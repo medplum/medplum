@@ -166,7 +166,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     medplum
       .search(
         search.resourceType as ResourceType,
-        formatSearchQuery({ ...search, total: 'estimate', fields: undefined })
+        formatSearchQuery({ ...search, total: search.total ?? 'estimate', fields: undefined })
       )
       .then((response) => {
         setState({ ...stateRef.current, searchResponse: response });

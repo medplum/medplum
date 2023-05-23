@@ -10,7 +10,6 @@ export function streamToBuffer(stream: Readable): Promise<Buffer> {
   return new Promise<Buffer>((resolve, reject) => {
     stream.on('data', (chunk: Uint8Array) => chunks.push(Buffer.from(chunk)));
     stream.on('error', (err: Error) => {
-      console.error(err.message);
       stream.destroy();
       reject(err);
     });
