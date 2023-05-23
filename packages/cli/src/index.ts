@@ -18,7 +18,8 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   const clientId = process.env['MEDPLUM_CLIENT_ID'];
   const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
   if (clientId && clientSecret) {
-    await medplum.startClientLogin(clientId, clientSecret);
+    // await medplum.startClientLogin(clientId, clientSecret);
+    await medplum.setBasicAuth(clientId, clientSecret);
   }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
@@ -61,12 +62,22 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
 if (require.main === module) {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
+  // const tokenUrl = process.env['MEDPLUM_TOKEN_URL'] || 'https://api.medplum.com/';
+  const fhirUrlPath = process.env['MEDPLUM_URL_FHIR_PATH'] || '';
+  const accessToken = process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
+
   const medplumClient = new MedplumClient({
     fetch,
     baseUrl,
+    // tokenUrl,
+    fhirUrlPath,
     storage: new FileSystemStorage(),
     onUnauthenticated: onUnauthenticated,
   });
+
+  if (accessToken) {
+    medplumClient.setAccessToken(accessToken);
+  }
   main(medplumClient, process.argv).catch((err) => console.error('Unhandled error:', err));
 }
 
