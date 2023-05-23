@@ -18,8 +18,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   const clientId = process.env['MEDPLUM_CLIENT_ID'];
   const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
   if (clientId && clientSecret) {
-    // await medplum.startClientLogin(clientId, clientSecret);
-    await medplum.setBasicAuth(clientId, clientSecret);
+    await medplum.startClientLogin(clientId, clientSecret);
   }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
