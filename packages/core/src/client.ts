@@ -2265,6 +2265,7 @@ export class MedplumClient extends EventTarget {
 
   private async fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
     const maxRetries = 3;
+    const retryDelay = 200;
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
       try {
@@ -2275,6 +2276,7 @@ export class MedplumClient extends EventTarget {
       } catch (err: any) {
         this.retryCatch(retry, maxRetries, err);
       }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
     return response as Response;
   }
