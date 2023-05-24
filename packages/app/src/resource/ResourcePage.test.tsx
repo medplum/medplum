@@ -75,8 +75,8 @@ describe('ResourcePage', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Delete'));
     });
-
-    jest.runAllTimersAsync();
+    // cannot be awaited
+    void jest.runAllTimersAsync();
 
     try {
       await medplum.readResource('Practitioner', practitioner.id as string);
