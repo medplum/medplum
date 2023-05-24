@@ -12,6 +12,7 @@ export type FhirRequest = {
   body: any;
   params: Record<string, string>;
   query: Record<string, string>;
+  // options:
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
