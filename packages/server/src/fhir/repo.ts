@@ -1430,7 +1430,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const code = filter.code;
 
     if (code === '_id') {
-      return this.buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
+      return this.buildIdSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
     }
 
     if (code === '_lastUpdated') {
@@ -1438,7 +1438,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     if (code === '_compartment' || code === '_project') {
-      return this.buildTokenSearchFilter(
+      return this.buildIdSearchFilter(
         resourceType,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
         filter
@@ -1513,6 +1513,36 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
+   * Adds an ID search filter as "WHERE" clause to the query builder.
+   * @param resourceType The resource type.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  private buildIdSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
+    const column = new Column(resourceType, details.columnName);
+    const expressions = [];
+    for (const valueStr of filter.value.split(',')) {
+      let value: string | boolean = valueStr;
+      if (valueStr.includes('/')) {
+        value = valueStr.split('/').pop() as string;
+      }
+      if (!validator.isUUID(value)) {
+        value = '00000000-0000-0000-0000-000000000000';
+      }
+      if (details.array) {
+        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
+      } else {
+        expressions.push(new Condition(column, Operator.EQUALS, value));
+      }
+    }
+    const disjunction = new Disjunction(expressions);
+    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
+      return new Negation(disjunction);
+    }
+    return disjunction;
+  }
+
+  /**
    * Adds a token search filter as "WHERE" clause to the query builder.
    * @param resourceType The resource type.
    * @param details The search parameter details.
@@ -1525,13 +1555,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       let value: string | boolean = valueStr;
       if (details.type === SearchParameterType.BOOLEAN) {
         value = valueStr === 'true';
-      } else if (details.type === SearchParameterType.UUID) {
-        if (valueStr.includes('/')) {
-          value = valueStr.split('/').pop() as string;
-        }
-        if (!validator.isUUID(value)) {
-          value = '00000000-0000-0000-0000-000000000000';
-        }
       } else if (valueStr.includes('|')) {
         value = valueStr.split('|').pop() as string;
       }
