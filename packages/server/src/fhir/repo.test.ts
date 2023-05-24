@@ -1078,6 +1078,24 @@ describe('FHIR Repo', () => {
     expect(searchResult1?.entry?.length).toEqual(0);
   });
 
+  test('Reference string _compartment', async () => {
+    const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
+
+    const searchResult1 = await systemRepo.search({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: '_compartment',
+          operator: Operator.EQUALS,
+          value: getReferenceString(patient),
+        },
+      ],
+    });
+
+    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
+  });
+
   test('Filter by _project', async () => {
     const project1 = randomUUID();
     const project2 = randomUUID();
