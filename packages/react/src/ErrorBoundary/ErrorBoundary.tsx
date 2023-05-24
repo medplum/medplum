@@ -23,10 +23,6 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     this.state = {};
   }
 
-  static defaultProps = {
-    key: window.location.pathname,
-  };
-
   static getDerivedStateFromError(error: any): ErrorBoundaryState {
     return { error };
   }

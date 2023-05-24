@@ -1,7 +1,7 @@
 import { Space } from '@mantine/core';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
-import { AppShell, ErrorBoundary, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
+import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
 import {
   Icon,
   IconBrandAsana,
@@ -42,11 +42,9 @@ export function App(): JSX.Element {
       menus={userConfigToMenu(config)}
       displayAddBookmark={!!config?.id}
     >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <AppRoutes />
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        <AppRoutes />
+      </Suspense>
     </AppShell>
   );
 }
