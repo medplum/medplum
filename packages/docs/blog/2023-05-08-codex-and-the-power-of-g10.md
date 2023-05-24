@@ -25,7 +25,7 @@ With the roll out of the [Standardized API for Patient and Population Services (
 
 > (Above) The "old" way of connecting an application to an EHR
 
-![2022 in Review](/img/blog/connect-via-g10.png)
+![The new way of connecting](/img/blog/connect-via-g10.png)
 
 > (Above) The new (g)(10) based way of connecting an application to an EHR
 
