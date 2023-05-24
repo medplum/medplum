@@ -2371,8 +2371,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (getConfig().saveAuditEvents) {
       auditEvent.id = randomUUID();
-      this.updateResourceImpl(auditEvent, true)
-        .catch(console.log);
+      this.updateResourceImpl(auditEvent, true).catch(console.log);
     }
   }
 }
