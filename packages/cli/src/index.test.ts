@@ -22,6 +22,7 @@ jest.mock('fs', () => ({
     readFile: jest.fn(async () => '{}'),
   },
 }));
+const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
 
 let medplum: MedplumClient;
 
@@ -30,11 +31,12 @@ describe('CLI', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    jest.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn() as never;
+    process.exit = jest.fn<never, any, any>();
   });
 
   afterEach(() => {
@@ -44,14 +46,14 @@ describe('CLI', () => {
   test('Missing command', async () => {
     await main(medplum, ['node', 'index.js']);
     expect(process.exit).toHaveBeenCalledWith(1);
+    // default command help displays
+    expect(processError).toBeCalledWith(expect.stringContaining('Usage: medplum [options] [command]'));
+    expect(processError).toBeCalledWith(expect.stringContaining('Command to access Medplum CLI'));
   });
 
   test('Unknown command', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'xyz']);
-    } catch (err) {
-      expect(console.log).toBeCalledWith(expect.stringMatching('unknown command: xyz'));
-    }
+    await main(medplum, ['node', 'index.js', 'xyz']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
 
   test('Client ID and secret login', async () => {
@@ -144,11 +146,8 @@ describe('CLI', () => {
   });
 
   test('Get not found', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
-    } catch (err) {
-      expect(console.error).toBeCalledWith(expect.stringMatching('not found'));
-    }
+    await main(medplum, ['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
+    expect(console.error).toBeCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Get admin urls', async () => {
@@ -164,11 +163,9 @@ describe('CLI', () => {
 
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    try {
-      await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
-    } catch (err) {
-      expect((err as Error).message).toBe('unknown option');
-    }
+
+    await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown option '--bad-flag'`));
   });
 
   test('Post command', async () => {
@@ -203,11 +200,8 @@ describe('CLI', () => {
   //Bots
 
   test('Deploy bot missing name', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy']);
-    } catch (err) {
-      expect(console.error).toBe('missing required argument: botName');
-    }
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
   });
 
   test('Deploy bot config not found', async () => {
@@ -227,11 +221,8 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deprecate', 'does-not-exist']);
-    } catch (err) {
-      expect(console.error).toBeCalledWith(expect.stringMatching('does-not-exist not found'));
-    }
+    await main(medplum, ['node', 'index.js', 'bot', 'deprecate', 'does-not-exist']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'deprecate'`));
   });
 
   test('Deploy bot not found', async () => {
@@ -251,11 +242,9 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy', 'hello-world']);
-    } catch (err) {
-      expect(console.log).toBeCalledWith(expect.stringMatching('Not found'));
-    }
+
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy', 'hello-world']);
+    expect(console.error).toBeCalledWith(expect.stringContaining('Error: Not found'));
   });
 
   test('Save bot success', async () => {
@@ -368,12 +357,9 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Deploy bot multiple bot ending with bot name with no config', async () => {
@@ -381,12 +367,8 @@ describe('CLI', () => {
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
 
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Create bot command success', async () => {
@@ -411,11 +393,8 @@ describe('CLI', () => {
   // Deprecated bot commands
 
   test('Deprecate Deploy bot missing name', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot']);
-    } catch (err) {
-      expect(console.error).toBe('missing required argument: botName');
-    }
+    await main(medplum, ['node', 'index.js', 'deploy-bot']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
   });
 
   test('Deprecate Deploy bot config not found', async () => {
@@ -435,11 +414,9 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot', 'does-not-exist']);
-    } catch (err) {
-      expect(console.error).toBeCalledWith(expect.stringMatching('does-not-exist not found'));
-    }
+
+    await main(medplum, ['node', 'index.js', 'deploy-bot', 'does-not-exist']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Deprecate Deploy bot not found', async () => {
@@ -459,11 +436,8 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot', 'hello-world']);
-    } catch (err) {
-      expect(console.log).toBeCalledWith(expect.stringMatching('Not found'));
-    }
+    await main(medplum, ['node', 'index.js', 'deploy-bot', 'hello-world']);
+    expect(console.error).toBeCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Deprecate Save bot success', async () => {
@@ -576,12 +550,10 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+
+    await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
+
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Deprecate Deploy bot multiple bot ending with bot name with no config', async () => {
@@ -589,12 +561,9 @@ describe('CLI', () => {
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
 
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+    await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
+    expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Deprecate Create bot command success', async () => {

@@ -8,6 +8,8 @@ import { Navbar, NavbarMenu } from './Navbar';
 
 export interface AppShellProps {
   logo: React.ReactNode;
+  pathname?: string;
+  searchParams?: URLSearchParams;
   version?: string;
   menus?: NavbarMenu[];
   children: React.ReactNode;
@@ -46,14 +48,30 @@ export function AppShell(props: AppShellProps): JSX.Element {
       }}
       padding={0}
       fixed={true}
-      header={profile && <Header logo={props.logo} version={props.version} navbarToggle={toggleNavbar} />}
+      header={
+        profile && (
+          <Header
+            pathname={props.pathname}
+            searchParams={props.searchParams}
+            logo={props.logo}
+            version={props.version}
+            navbarToggle={toggleNavbar}
+          />
+        )
+      }
       navbar={
         profile && navbarOpen ? (
-          <Navbar menus={props.menus} closeNavbar={closeNavbar} displayAddBookmark={props.displayAddBookmark} />
+          <Navbar
+            pathname={props.pathname}
+            searchParams={props.searchParams}
+            menus={props.menus}
+            closeNavbar={closeNavbar}
+            displayAddBookmark={props.displayAddBookmark}
+          />
         ) : undefined
       }
     >
-      <ErrorBoundary>
+      <ErrorBoundary key={`${props.pathname}?${props.searchParams?.toString()}`}>
         <Suspense fallback={<Loading />}>{props.children}</Suspense>
       </ErrorBoundary>
     </MantineAppShell>

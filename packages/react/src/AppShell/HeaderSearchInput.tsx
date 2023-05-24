@@ -3,7 +3,6 @@ import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { IconSearch } from '@tabler/icons-react';
 import React, { forwardRef, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
@@ -52,11 +51,15 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
   };
 }
 
-export function HeaderSearchInput(): JSX.Element {
+export interface HeaderSearchInputProps {
+  pathname?: string;
+  searchParams?: URLSearchParams;
+}
+
+export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
   const { classes } = useStyles();
   const navigate = useMedplumNavigate();
   const medplum = useMedplum();
-  const location = useLocation();
 
   const loadData = useCallback(
     async (input: string, signal: AbortSignal): Promise<HeaderSearchTypes[]> => {
@@ -79,7 +82,7 @@ export function HeaderSearchInput(): JSX.Element {
 
   return (
     <AsyncAutocomplete
-      key={location.pathname}
+      key={`${props.pathname}?${props.searchParams}`}
       size="sm"
       radius="md"
       className={classes.searchInput}
@@ -90,6 +93,9 @@ export function HeaderSearchInput(): JSX.Element {
       toOption={toOption}
       onChange={handleSelect}
       loadOptions={loadData}
+      maxSelectedValues={0}
+      clearSearchOnChange
+      clearable={false}
     />
   );
 }

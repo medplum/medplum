@@ -9,6 +9,7 @@ import {
   FhirFilterConnective,
   FhirFilterExpression,
   FhirFilterNegation,
+  Operator as FhirOperator,
   Filter,
   forbidden,
   formatSearchQuery,
@@ -16,6 +17,7 @@ import {
   getSearchParameterDetails,
   getStatus,
   gone,
+  IncludeTarget,
   isGone,
   isNotFound,
   isOk,
@@ -25,7 +27,6 @@ import {
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
-  Operator as FhirOperator,
   parseFilterParameter,
   parseSearchUrl,
   PropertyType,
@@ -39,7 +40,6 @@ import {
   toTypedValue,
   validateResource,
   validateResourceType,
-  IncludeTarget,
 } from '@medplum/core';
 import { BaseRepository, FhirRepository } from '@medplum/fhir-router';
 import {
@@ -925,8 +925,10 @@ export class Repository extends BaseRepository implements FhirRepository {
       }
 
       let total = undefined;
-      if (searchRequest.total === 'estimate' || searchRequest.total === 'accurate') {
-        total = await this.getTotalCount(searchRequest);
+      if (searchRequest.total === 'accurate') {
+        total = await this.getAccurateCount(searchRequest);
+      } else if (searchRequest.total === 'estimate') {
+        total = await this.getEstimateCount(searchRequest);
       }
 
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
@@ -1183,7 +1185,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param searchRequest The search request.
    * @returns The total number of matching results.
    */
-  private async getTotalCount(searchRequest: SearchRequest): Promise<number> {
+  private async getAccurateCount(searchRequest: SearchRequest): Promise<number> {
     const client = getClient();
     const builder = new SelectQuery(searchRequest.resourceType);
     this.addDeletedFilter(builder);
@@ -1198,6 +1200,35 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const rows = await builder.execute(client);
     return rows[0].count as number;
+  }
+
+  /**
+   * Returns the estimated number of matching results for a search request.
+   * This ignores page number and page size.
+   * This uses the estimated row count technique as described here: https://wiki.postgresql.org/wiki/Count_estimate
+   * @param searchRequest The search request.
+   * @returns The total number of matching results.
+   */
+  private async getEstimateCount(searchRequest: SearchRequest): Promise<number> {
+    const client = getClient();
+    const builder = new SelectQuery(searchRequest.resourceType);
+    this.addDeletedFilter(builder);
+    this.addSecurityFilters(builder, searchRequest.resourceType);
+    this.addSearchFilters(builder, searchRequest);
+    builder.raw(`DISTINCT "${searchRequest.resourceType}"."id"`);
+    builder.explain = true;
+
+    // See: https://wiki.postgresql.org/wiki/Count_estimate
+    // This parses the query plan to find the estimated number of rows.
+    const rows = await builder.execute(client);
+    for (const row of rows) {
+      const queryPlan = row['QUERY PLAN'];
+      const match = /rows=(\d+)/.exec(queryPlan);
+      if (match) {
+        return parseInt(match[1]);
+      }
+    }
+    return 0;
   }
 
   /**
@@ -1399,7 +1430,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const code = filter.code;
 
     if (code === '_id') {
-      return this.buildTokenSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
+      return this.buildIdSearchFilter(resourceType, { columnName: 'id', type: SearchParameterType.UUID }, filter);
     }
 
     if (code === '_lastUpdated') {
@@ -1407,7 +1438,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     }
 
     if (code === '_compartment' || code === '_project') {
-      return this.buildTokenSearchFilter(
+      return this.buildIdSearchFilter(
         resourceType,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
         filter
@@ -1482,6 +1513,36 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   /**
+   * Adds an ID search filter as "WHERE" clause to the query builder.
+   * @param resourceType The resource type.
+   * @param details The search parameter details.
+   * @param filter The search filter.
+   */
+  private buildIdSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
+    const column = new Column(resourceType, details.columnName);
+    const expressions = [];
+    for (const valueStr of filter.value.split(',')) {
+      let value: string | boolean = valueStr;
+      if (valueStr.includes('/')) {
+        value = valueStr.split('/').pop() as string;
+      }
+      if (!validator.isUUID(value)) {
+        value = '00000000-0000-0000-0000-000000000000';
+      }
+      if (details.array) {
+        expressions.push(new Condition(column, Operator.ARRAY_CONTAINS, value, details.type + '[]'));
+      } else {
+        expressions.push(new Condition(column, Operator.EQUALS, value));
+      }
+    }
+    const disjunction = new Disjunction(expressions);
+    if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
+      return new Negation(disjunction);
+    }
+    return disjunction;
+  }
+
+  /**
    * Adds a token search filter as "WHERE" clause to the query builder.
    * @param resourceType The resource type.
    * @param details The search parameter details.
@@ -1494,10 +1555,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       let value: string | boolean = valueStr;
       if (details.type === SearchParameterType.BOOLEAN) {
         value = valueStr === 'true';
-      } else if (details.type === SearchParameterType.UUID) {
-        if (!validator.isUUID(valueStr)) {
-          value = '00000000-0000-0000-0000-000000000000';
-        }
       } else if (valueStr.includes('|')) {
         value = valueStr.split('|').pop() as string;
       }

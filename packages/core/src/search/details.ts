@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
+import { PropertyType, buildTypeName, getElementDefinition, globalSchema } from '../types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -63,29 +63,33 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
     return { columnName, type: SearchParameterType.TEXT };
   }
 
-  const defaultType = getSearchParameterType(searchParam);
   let baseType = resourceType;
   let elementDefinition = undefined;
   let propertyType = undefined;
   let array = false;
 
   for (let i = 1; i < expression.length; i++) {
-    const propertyName = expression[i];
+    let propertyName = expression[i];
+    let hasArrayIndex = false;
+
+    const arrayIndexMatch = /\[\d+\]$/.exec(propertyName);
+    if (arrayIndexMatch) {
+      propertyName = propertyName.substring(0, propertyName.length - arrayIndexMatch[0].length);
+      hasArrayIndex = true;
+    }
+
     elementDefinition = getElementDefinition(baseType, propertyName);
     if (!elementDefinition) {
       throw new Error(`Element definition not found for ${resourceType} ${searchParam.code}`);
     }
 
-    if (elementDefinition.max !== '0' && elementDefinition.max !== '1') {
+    if (elementDefinition.max !== '0' && elementDefinition.max !== '1' && !hasArrayIndex) {
       array = true;
     }
 
-    propertyType = elementDefinition.type?.[0].code;
-    if (!propertyType) {
-      // This happens when one of parent properties uses contentReference
-      // In the future, explore following the reference
-      return { columnName, type: defaultType, array };
-    }
+    // "code" is only missing when using "contentReference"
+    // "contentReference" is handled above in "getElementDefinition"
+    propertyType = elementDefinition.type?.[0].code as string;
 
     if (i < expression.length - 1) {
       if (isBackboneElement(propertyType)) {
@@ -115,7 +119,7 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function getSearchParameterType(searchParam: SearchParameter, propertyType?: PropertyType): SearchParameterType {
+function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
   let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
@@ -170,10 +174,6 @@ function simplifyExpression(input: string): string {
 
   if (result.startsWith('(') && result.endsWith(')')) {
     result = result.substring(1, result.length - 1);
-  }
-
-  if (result.includes('[0]')) {
-    result = result.replaceAll('[0]', '');
   }
 
   const stopStrings = [' != ', ' as ', '.as(', '.exists(', '.resolve(', '.where('];

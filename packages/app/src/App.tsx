@@ -1,7 +1,7 @@
 import { Space } from '@mantine/core';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
-import { AppShell, ErrorBoundary, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
+import { AppShell, Loading, Logo, NavbarMenu, useMedplum } from '@medplum/react';
 import {
   Icon,
   IconBrandAsana,
@@ -18,6 +18,7 @@ import {
   IconWebhook,
 } from '@tabler/icons-react';
 import React, { Suspense } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
 
 import './App.css';
@@ -25,6 +26,8 @@ import './App.css';
 export function App(): JSX.Element {
   const medplum = useMedplum();
   const config = medplum.getUserConfiguration();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   if (medplum.isLoading()) {
     return <Loading />;
@@ -33,15 +36,15 @@ export function App(): JSX.Element {
   return (
     <AppShell
       logo={<Logo size={24} />}
+      pathname={location.pathname}
+      searchParams={searchParams}
       version={MEDPLUM_VERSION}
       menus={userConfigToMenu(config)}
       displayAddBookmark={!!config?.id}
     >
-      <ErrorBoundary>
-        <Suspense fallback={<Loading />}>
-          <AppRoutes />
-        </Suspense>
-      </ErrorBoundary>
+      <Suspense fallback={<Loading />}>
+        <AppRoutes />
+      </Suspense>
     </AppShell>
   );
 }

@@ -7,7 +7,7 @@ import {
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { webcrypto } from 'crypto';
+import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
@@ -1697,6 +1697,201 @@ describe('Client', () => {
       expect(err).toBeDefined();
     }
     expect(console.error).toHaveBeenCalledTimes(1);
+  });
+
+  describe('Bulk Data Export', () => {
+    let fetch: any;
+
+    beforeEach(() => {
+      let count = 0;
+      fetch = jest.fn(async (url) => {
+        if (url.includes('/$export?_since=200')) {
+          return {
+            status: 200,
+            json: jest.fn(async () => {
+              return {
+                resourceType: 'OperationOutcome',
+                id: 'accepted',
+                issue: [
+                  {
+                    severity: 'information',
+                    code: 'informational',
+                    details: {
+                      text: 'Accepted',
+                    },
+                  },
+                ],
+              };
+            }),
+          };
+        }
+
+        if (url.includes('/$export')) {
+          return {
+            status: 202,
+            json: jest.fn(async () => {
+              return {
+                resourceType: 'OperationOutcome',
+                id: 'accepted',
+                issue: [
+                  {
+                    severity: 'information',
+                    code: 'informational',
+                    details: {
+                      text: 'Accepted',
+                    },
+                  },
+                ],
+              };
+            }),
+            headers: {
+              get(name: string): string | undefined {
+                return {
+                  'content-location': 'bulkdata/id/status',
+                }[name];
+              },
+            },
+          };
+        }
+
+        if (url.includes('bulkdata/id/status')) {
+          if (count < 1) {
+            count++;
+            return {
+              status: 202,
+              json: jest.fn(async () => {
+                return {};
+              }),
+            };
+          }
+        }
+
+        return {
+          status: 200,
+          json: jest.fn(async () => ({
+            transactionTime: '2023-05-18T22:55:31.280Z',
+            request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
+            requiresAccessToken: false,
+            output: [
+              {
+                type: 'ProjectMembership',
+                url: 'https://api.medplum.com/storage/TEST',
+              },
+            ],
+            error: [],
+          })),
+        };
+      });
+    });
+
+    test('System Level', async () => {
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport();
+      expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('bulkdata/id/status'),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledTimes(3);
+      expect(response.output?.length).toBe(1);
+    });
+
+    test('type and since params', async () => {
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport('', 'Observation', 'testdate');
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('/$export?_type=Observation&_since=testdate'),
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('bulkdata/id/status'),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledTimes(3);
+      expect(response.output?.length).toBe(1);
+    });
+
+    test('Group of Patients', async () => {
+      const medplum = new MedplumClient({ fetch });
+      const groupId = randomUUID();
+      const response = await medplum.bulkExport(`Group/${groupId}`);
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining(`/Group/${groupId}/$export`),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('bulkdata/id/status'),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledTimes(3);
+      expect(response.output?.length).toBe(1);
+    });
+
+    test('All Patient', async () => {
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport(`Patient`);
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining(`/Patient/$export`),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('bulkdata/id/status'),
+        expect.objectContaining({ method: 'GET' })
+      );
+      expect(fetch).toBeCalledTimes(3);
+      expect(response.output?.length).toBe(1);
+    });
+
+    test('Kick off missing content-location', async () => {
+      const fetch = jest.fn(async () => {
+        return {
+          status: 202,
+          json: jest.fn(async () => {
+            return {
+              resourceType: 'OperationOutcome',
+              id: 'accepted',
+              issue: [
+                {
+                  severity: 'information',
+                  code: 'informational',
+                  details: {
+                    text: 'Accepted',
+                  },
+                },
+              ],
+            };
+          }),
+          headers: {
+            get: jest.fn(),
+          },
+        };
+      });
+      const medplum = new MedplumClient({ fetch });
+      const response = await medplum.bulkExport();
+
+      expect(response.output).not.toBeDefined();
+      expect(fetch).toBeCalledTimes(1);
+    });
+
+    test('Failed Kickoff', async () => {
+      const failFetch = jest.fn(async () => {
+        return {
+          status: 404,
+          json: jest.fn(async () => {
+            return notFound;
+          }),
+          headers: {
+            get: jest.fn(),
+          },
+        };
+      });
+      const medplum = new MedplumClient({ fetch: failFetch });
+      try {
+        await medplum.bulkExport(`Patient`);
+      } catch (err) {
+        expect((err as Error).message).toBe('Not found');
+      }
+    });
   });
 
   describe('Media', () => {

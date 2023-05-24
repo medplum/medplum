@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "2.0.19",
+  "version": "2.0.20",
   "description": "Medplum Command Line Interface",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,10 +17,13 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-acm": "3.332.0",
     "@aws-sdk/client-cloudformation": "3.332.0",
     "@aws-sdk/client-cloudfront": "3.332.0",
     "@aws-sdk/client-ecs": "3.332.0",
     "@aws-sdk/client-s3": "3.332.0",
+    "@aws-sdk/client-ssm": "3.332.0",
+    "@aws-sdk/client-sts": "3.332.0",
     "@medplum/core": "*",
     "aws-sdk-client-mock": "2.1.1",
     "commander": "10.0.1",

@@ -1,3 +1,4 @@
+import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
   aws_certificatemanager as acm,
@@ -10,7 +11,6 @@ import {
 } from 'aws-cdk-lib';
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
-import { MedplumInfraConfig } from './config';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
 import { awsManagedRules } from './waf';
 

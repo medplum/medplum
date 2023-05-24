@@ -18,8 +18,21 @@ sudo reboot
 
 ## Install postgres
 
+Add the PostgreSQL 12 repository (see [PostgreSQL Apt Repository docs](https://www.postgresql.org/download/linux/ubuntu/))
+
 ```bash
-sudo apt install postgresql postgresql-contrib
+# Create the file repository configuration:
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+# Import the repository signing key:
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+# Update the package lists:
+sudo apt-get update
+```
+
+```bash
+sudo apt install postgresql-12 postgresql-client-12
 ```
 
 Start postgres
@@ -67,6 +80,10 @@ sudo apt-get install redis-server
 ```
 
 Open the redis config file
+
+```bash
+sudo vi /etc/redis/redis.conf
+```
 
 Uncomment the "requirepass" line and set a password
 

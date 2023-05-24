@@ -40,17 +40,4 @@ export default [
     plugins,
     external,
   },
-  {
-    input: 'src/init.ts',
-    output: [
-      {
-        file: 'dist/cjs/init.cjs',
-        format: 'cjs',
-        sourcemap: true,
-        banner: '#!/usr/bin/env node',
-      },
-    ],
-    plugins,
-    external,
-  },
 ];

@@ -1,3 +1,7 @@
+---
+sidebar_position: 0
+---
+
 # Modeling Provider Organizations
 
 ## Introduction
@@ -9,8 +13,6 @@ We'll cover
 - How to model divisions and sub-divisions inside a provider group
 - How to model provider care teams
 - How to assign practitioners to multiple divisions and teams
-
-This guide is based on, and compatible with, the [Da Vinci PDEX Payer Network guide](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/). [The Da Vinci Project](http://www.hl7.org/about/davinci/index.cfm) is a private sector initiative comprised of [industry leaders](https://confluence.hl7.org/display/DVP/Da+Vinci+Project+Members), including Blue Cross Blue Shield, Cigna, and Optum, etc. working together to accelerate the adoption of FHIR as the standard to support and integrate value-based care (VBC) data exchange.
 
 ## Modeling the Organizational Hierarchy
 

@@ -4,6 +4,7 @@
 import {
   AccessPolicy,
   Binary,
+  BulkDataExport,
   Bundle,
   BundleEntry,
   BundleLink,
@@ -2154,6 +2155,41 @@ export class MedplumClient extends EventTarget {
     });
   }
 
+  /**
+   * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
+   *
+   * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
+   * @param resourceTypes A string of comma-delimited FHIR resource types.
+   * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
+   * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
+   */
+  async bulkExport(
+    exportLevel = '',
+    resourceTypes?: string,
+    since?: string,
+    options: RequestInit = {}
+  ): Promise<Partial<BulkDataExport>> {
+    const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
+    const url = this.fhirUrl(`${fhirPath}$export`);
+    if (resourceTypes) url.searchParams.set('_type', resourceTypes);
+    if (since) url.searchParams.set('_since', since);
+
+    options.method = exportLevel ? 'GET' : 'POST';
+
+    this.addFetchOptionsDefaults(options);
+    const response = await this.fetchWithRetry(url.toString(), options);
+
+    if (response.status === 202) {
+      const contentLocation = response.headers.get('content-location');
+
+      if (contentLocation) {
+        return await this.pollStatus(contentLocation);
+      }
+    }
+
+    return await this.parseResponse(response, 'POST', url.toString());
+  }
+
   //
   // Private helpers
   //
@@ -2232,6 +2268,15 @@ export class MedplumClient extends EventTarget {
 
     const response = await this.fetchWithRetry(url, options);
 
+    return await this.parseResponse(response, method, url, options);
+  }
+
+  private async parseResponse<T>(
+    response: Response,
+    method: string,
+    url: string,
+    options: RequestInit = {}
+  ): Promise<T> {
     if (response.status === 401) {
       // Refresh and try again
       return this.handleUnauthenticated(method, url, options);
@@ -2248,7 +2293,6 @@ export class MedplumClient extends EventTarget {
         throw new OperationOutcomeError(notFound);
       }
     }
-
     let obj: any = undefined;
     try {
       obj = await response.json();
@@ -2279,6 +2323,26 @@ export class MedplumClient extends EventTarget {
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
     return response as Response;
+  }
+
+  private async pollStatus<T>(statusUrl: string): Promise<T> {
+    let checkStatus = true;
+    let resultResponse;
+    const retryDelay = 200;
+
+    while (checkStatus) {
+      const fetchOptions = {
+        method: 'GET',
+      };
+      this.addFetchOptionsDefaults(fetchOptions);
+      const statusResponse = await this.fetchWithRetry(statusUrl, fetchOptions);
+      if (statusResponse.status !== 202) {
+        checkStatus = false;
+        resultResponse = statusResponse;
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+    }
+    return await this.parseResponse(resultResponse as Response, 'POST', statusUrl);
   }
 
   /**

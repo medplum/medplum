@@ -15,12 +15,22 @@ export interface ValueSetAutocompleteProps
 }
 
 function toKey(element: ValueSetExpansionContains): string {
-  return element.code as string;
+  if (typeof element.code === 'string') {
+    return element.code;
+  }
+  return JSON.stringify(element);
+}
+
+function getDisplay(item: ValueSetExpansionContains): string {
+  if (typeof item.display === 'string') {
+    return item.display;
+  }
+  return toKey(item);
 }
 
 function toOption(element: ValueSetExpansionContains): AsyncAutocompleteOption<ValueSetExpansionContains> {
   return {
-    value: element.code as string,
+    value: toKey(element),
     label: getDisplay(element),
     resource: element,
   };
@@ -72,8 +82,4 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       getCreateLabel={creatable === false ? undefined : (query: any) => `+ Create ${query}`}
     />
   );
-}
-
-function getDisplay(item: ValueSetExpansionContains): string {
-  return item.display || item.code || '';
 }

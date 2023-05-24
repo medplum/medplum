@@ -1,8 +1,8 @@
+import { MedplumInfraConfig } from '@medplum/core';
 import { App, Stack, Tags } from 'aws-cdk-lib';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { BackEnd } from './backend';
-import { MedplumInfraConfig } from './config';
 import { FrontEnd } from './frontend';
 import { Storage } from './storage';
 

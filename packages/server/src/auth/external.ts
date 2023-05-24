@@ -93,6 +93,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
       return;
     }
     const redirectUrl = new URL(body.redirectUri);
+    redirectUrl.searchParams.set('login', login.id as string);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());
     return;
@@ -120,17 +121,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 async function getIdentityProvider(
   state: ExternalAuthState
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
-  if (state.domain) {
-    const domainConfig = await getDomainConfiguration(state.domain);
-    if (domainConfig?.identityProvider) {
-      return { idp: domainConfig.identityProvider };
-    }
-  }
-
   if (state.clientId) {
     const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
     if (client?.identityProvider) {
       return { idp: client.identityProvider, client };
+    }
+  }
+
+  if (state.domain) {
+    const domainConfig = await getDomainConfiguration(state.domain);
+    if (domainConfig?.identityProvider) {
+      return { idp: domainConfig.identityProvider };
     }
   }
 

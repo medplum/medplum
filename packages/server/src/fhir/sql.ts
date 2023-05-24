@@ -271,6 +271,7 @@ export class SqlBuilder {
 export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
+  explain = false;
 
   constructor(tableName: string) {
     this.tableName = tableName;
@@ -360,6 +361,9 @@ export class SelectQuery extends BaseQuery {
   }
 
   buildSql(sql: SqlBuilder): void {
+    if (this.explain) {
+      sql.append('EXPLAIN ');
+    }
     sql.append('SELECT ');
     this.buildDistinctOn(sql);
     this.buildColumns(sql);
