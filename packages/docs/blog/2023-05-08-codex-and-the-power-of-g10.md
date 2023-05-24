@@ -53,7 +53,7 @@ Below is a brief interview with the Codex engineering leadership Zane Silver and
 
 Video - 7 mins 51 seconds
 
-<iframe width="560" height="315" src="https://youtube.com/embed/ZCmGlio07GY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://youtube.com/embed/ZCmGlio07GY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
 **Background (Zane):** Let me just give you quick refresher of what we're doing here at Codex.
 
