@@ -30,13 +30,12 @@ describe('CLI', () => {
 
   beforeEach(() => {
     jest.resetModules();
+    jest.clearAllMocks();
     process.env = { ...env };
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
     process.exit = jest.fn<never, any, any>();
-    process.stdout.write = jest.fn();
-    // process.stderr.write = jest.fn();
   });
 
   afterEach(() => {
@@ -44,17 +43,20 @@ describe('CLI', () => {
   });
 
   test('Missing command', async () => {
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     await main(medplum, ['node', 'index.js']);
     expect(process.exit).toHaveBeenCalledWith(1);
-    // const processError = jest.spyOn(process.stderr, 'write').mockImplementation();
-    // expect(processError).toBeCalled();
+    expect(processError).toBeCalledTimes(2);
+    expect(processError).toBeCalledWith(expect.stringContaining('Usage: medplum [options] [command]'));
+    expect(processError).toBeCalledWith(expect.stringContaining('Command to access Medplum CLI'));
+    processError.mockRestore();
   });
 
   test('Unknown command', async () => {
     const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
 
     await main(medplum, ['node', 'index.js', 'xyz']);
-
     expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
 
@@ -210,15 +212,14 @@ describe('CLI', () => {
   //Bots
 
   test('Deploy bot missing name', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy']);
-    } catch (err) {
-      expect(console.error).toBe('missing required argument: botName');
-    }
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
   });
 
   test('Deploy bot config not found', async () => {
     const id = randomUUID();
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
 
     // Setup bot config
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
@@ -234,11 +235,8 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deprecate', 'does-not-exist']);
-    } catch (err) {
-      expect(console.error).toBeCalledWith(expect.stringMatching('does-not-exist not found'));
-    }
+    await main(medplum, ['node', 'index.js', 'bot', 'deprecate', 'does-not-exist']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'deprecate'`));
   });
 
   test('Deploy bot not found', async () => {
@@ -375,12 +373,9 @@ describe('CLI', () => {
         ],
       })
     );
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Deploy bot multiple bot ending with bot name with no config', async () => {
@@ -388,12 +383,8 @@ describe('CLI', () => {
     (fs.existsSync as unknown as jest.Mock).mockReturnValue(true);
     (fs.readFileSync as unknown as jest.Mock).mockReturnValue(undefined);
 
-    try {
-      await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
-    } catch (err) {
-      expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
-    }
+    await main(medplum, ['node', 'index.js', 'bot', 'deploy', '*-staging']);
+    expect(console.log).toBeCalledWith(expect.stringMatching(/Number of bots deployed: 0/));
   });
 
   test('Create bot command success', async () => {
@@ -411,18 +402,21 @@ describe('CLI', () => {
   });
 
   test('Create bot error with lack of commands', async () => {
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     await main(medplum, ['node', 'index.js', 'bot', 'create', 'test-bot']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Error while creating new bot'));
+    expect(processError).toBeCalledTimes(3);
+    processError.mockRestore();
   });
 
   // Deprecated bot commands
 
   test('Deprecate Deploy bot missing name', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'deploy-bot']);
-    } catch (err) {
-      expect(console.error).toBe('missing required argument: botName');
-    }
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
+
+    await main(medplum, ['node', 'index.js', 'deploy-bot']);
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: missing required argument 'botName'`));
   });
 
   test('Deprecate Deploy bot config not found', async () => {
@@ -600,7 +594,7 @@ describe('CLI', () => {
       await main(medplum, ['node', 'index.js', 'deploy-bot', '*-staging']);
     } catch (err) {
       expect(console.log).not.toBeCalledWith(expect.stringMatching(/Success/));
-      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not found/));
+      expect(console.log).toBeCalledWith(expect.stringMatching(/Error: \*-staging not foundfff/));
     }
   });
 
@@ -618,7 +612,11 @@ describe('CLI', () => {
   });
 
   test('Depreate Create bot error with lack of commands', async () => {
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
+
     await main(medplum, ['node', 'index.js', 'create-bot', 'test-bot']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Error while creating new bot'));
+    expect(processError).toBeCalledTimes(3);
+    processError.mockRestore();
   });
 });
