@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, OperationOutcomeError } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bot, Bundle, Practitioner, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -76,8 +76,15 @@ describe('ResourcePage', () => {
       fireEvent.click(screen.getByText('Delete'));
     });
 
-    // When deleted button is clicked, confirm Last Updated should appear
-    expect(screen.getByText('Last Updated')).toBeInTheDocument();
+    jest.runAllTimersAsync();
+
+    try {
+      await medplum.readResource('Practitioner', practitioner.id as string);
+      fail('Should have thrown');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.id).toEqual('not-found');
+    }
   });
 
   test('History tab renders', async () => {
