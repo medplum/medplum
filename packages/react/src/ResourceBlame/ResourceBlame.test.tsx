@@ -20,6 +20,10 @@ describe('ResourceBlame', () => {
     });
   }
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   test('ResourceBlame renders preloaded history', async () => {
     const history = await medplum.readHistory('Patient', '123');
     await setup({
@@ -43,6 +47,7 @@ describe('ResourceBlame', () => {
   });
 
   test('getTimeString', () => {
+    const dateSpy = jest.spyOn(global.Date, 'now').mockImplementation(() => new Date('2023-05-23').valueOf());
     expect(getTimeString(new Date(Date.now() - 1e3).toUTCString())).toEqual('1 second ago');
     expect(getTimeString(new Date(Date.now() - 2e3).toUTCString())).toEqual('2 seconds ago');
     expect(getTimeString(new Date(Date.now() - 60e3).toUTCString())).toEqual('1 minute ago');
@@ -55,5 +60,6 @@ describe('ResourceBlame', () => {
     expect(getTimeString(new Date(Date.now() - 5184000e3).toUTCString())).toEqual('2 months ago');
     expect(getTimeString(new Date(Date.now() - 31536000e3).toUTCString())).toEqual('1 year ago');
     expect(getTimeString(new Date(Date.now() - 63072000e3).toUTCString())).toEqual('2 years ago');
+    dateSpy.mockRestore();
   });
 });
