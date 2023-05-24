@@ -3,11 +3,9 @@ import {
   badRequest,
   getStatus,
   indexStructureDefinition,
-  isOk,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
-  OperationOutcomeError,
   ProfileResource,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
@@ -184,7 +182,7 @@ class MockFetchClient {
     this.repo = new MemoryRepository();
   }
 
-  async mockFetch(url: string, options: any): Promise<any> {
+  async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {
       if (!this.initPromise) {
         this.initPromise = this.initMockRepo();
@@ -210,13 +208,12 @@ class MockFetchClient {
       console.log('MockClient', JSON.stringify(response, null, 2));
     }
 
-    if (response?.resourceType === 'OperationOutcome' && !isOk(response)) {
-      return Promise.reject(response);
-    }
-
     return Promise.resolve({
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
+      headers: {
+        get: () => 'application/fhir+json',
+      } as unknown as Headers,
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
     });
@@ -543,9 +540,6 @@ class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
-      if (!isOk(result[0])) {
-        throw new OperationOutcomeError(result[0]);
-      }
       return result[0];
     } else {
       return result[1];
