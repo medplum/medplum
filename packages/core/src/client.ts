@@ -2639,7 +2639,7 @@ export class MedplumClient extends EventTarget {
     if (retryNumber === 1) {
       this.dispatchEvent({ type: 'offline' });
     }
-    if (retryNumber === maxRetries - 1) {
+    if (retryNumber >= maxRetries - 1) {
       throw err;
     }
   }
