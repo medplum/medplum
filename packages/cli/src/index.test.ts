@@ -36,7 +36,7 @@ describe('CLI', () => {
     console.error = jest.fn();
     process.exit = jest.fn<never, any, any>();
     process.stdout.write = jest.fn();
-    process.stderr.write = jest.fn();
+    // process.stderr.write = jest.fn();
   });
 
   afterEach(() => {
@@ -46,14 +46,16 @@ describe('CLI', () => {
   test('Missing command', async () => {
     await main(medplum, ['node', 'index.js']);
     expect(process.exit).toHaveBeenCalledWith(1);
+    // const processError = jest.spyOn(process.stderr, 'write').mockImplementation();
+    // expect(processError).toBeCalled();
   });
 
   test('Unknown command', async () => {
-    try {
-      await main(medplum, ['node', 'index.js', 'xyz']);
-    } catch (err) {
-      expect(console.log).toBeCalledWith(expect.stringMatching('unknown command: xyz'));
-    }
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
+
+    await main(medplum, ['node', 'index.js', 'xyz']);
+
+    expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
 
   test('Client ID and secret login', async () => {
@@ -166,11 +168,14 @@ describe('CLI', () => {
 
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
+    const processError = jest.spyOn(process.stderr, 'write').mockImplementationOnce(jest.fn());
+
     try {
       await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
     } catch (err) {
       expect((err as Error).message).toBe('unknown option');
     }
+    expect(processError).toBeCalled();
   });
 
   test('Post command', async () => {
