@@ -1817,9 +1817,9 @@ describe('Client', () => {
       expect(response.output?.length).toBe(1);
     });
 
-    test('type and since params', async () => {
+    test('with optional params type, since, options', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport('', 'Observation', 'testdate');
+      const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.objectContaining({ method: 'POST' })
