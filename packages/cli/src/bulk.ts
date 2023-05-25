@@ -1,4 +1,4 @@
-import { BundleEntry } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
@@ -35,14 +35,21 @@ bulk
   .argument('<filename>', 'File Name')
   .action(async (fileName) => {
     const path = resolve(process.cwd(), fileName);
-    const batchEntries = [] as BundleEntry[];
+    let batchEntries = [] as BundleEntry[];
     const fileStream = createReadStream(path);
     const rl = createInterface({
       input: fileStream,
     });
+    let byte = 0;
+    let importTotal = 0;
+    let importByteTotal = 0;
+    let resourceIds = [];
 
     for await (const line of rl) {
+      byte += line.length;
       const resource = JSON.parse(line);
+
+      resourceIds.push({ id: resource.id, type: resource.resouceType });
       batchEntries.push({
         resource: resource,
         request: {
@@ -50,12 +57,56 @@ bulk
           url: resource.resourceType,
         },
       });
+      if (byte >= 500000) {
+        importTotal += batchEntries.length;
+        importByteTotal += byte;
+        // console.log('sending', importTotal, byte, importByteTotal);
+
+        try {
+          const result = await sendBatchEntries(batchEntries);
+
+          result.entry?.forEach((resultEntry) => {
+            prettyPrint(resultEntry.response);
+          });
+          prettyPrint({
+            addedResources: resourceIds,
+            byte,
+            count: batchEntries.length,
+            importTotal,
+            importByteTotal,
+          });
+        } catch (err) {
+          console.log('something happened');
+          break;
+        }
+
+        byte = 0;
+        batchEntries = [];
+        resourceIds = [];
+      }
     }
 
-    const result = await medplum.executeBatch({
-      resourceType: 'Bundle',
-      type: 'transaction',
-      entry: batchEntries,
-    });
-    prettyPrint(result);
+    if (batchEntries.length > 0) {
+      importTotal += batchEntries.length;
+      importByteTotal += byte;
+      const result = await sendBatchEntries(batchEntries);
+      result.entry?.forEach((resultEntry) => {
+        prettyPrint(resultEntry.response);
+      });
+      prettyPrint({
+        addedResources: resourceIds,
+        byte,
+        count: batchEntries.length,
+        importTotal,
+        importByteTotal,
+      });
+    }
   });
+
+async function sendBatchEntries(batchEntries: BundleEntry[]): Promise<Bundle<Resource>> {
+  return await medplum.executeBatch({
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: batchEntries,
+  });
+}
