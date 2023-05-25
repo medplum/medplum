@@ -137,8 +137,8 @@ describe('CLI Bulk Commands', () => {
       });
       await main(medplum, ['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership.json is created'));
-      expect(console.log).toBeCalledWith(expect.stringMatching('Project.json is created'));
+      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership.ndjson is created'));
+      expect(console.log).toBeCalledWith(expect.stringMatching('Project.ndjson is created'));
     });
   });
 
