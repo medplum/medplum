@@ -61,7 +61,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
 if (require.main === module) {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const fhirUrlPath = process.env['MEDPLUM_URL_FHIR_PATH'] || '';
+  const fhirUrlPath = process.env['MEDPLUM_FHIR_URL_PATH'] || '';
   const accessToken = process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
 
   const medplumClient = new MedplumClient({

@@ -2175,10 +2175,10 @@ export class MedplumClient extends EventTarget {
     if (since) url.searchParams.set('_since', since);
 
     options.method = exportLevel ? 'GET' : 'POST';
-    options.headers = {};
-    options.headers['Accept'] = FHIR_CONTENT_TYPE;
-    options.headers['Prefer'] = 'respond-async';
     this.addFetchOptionsDefaults(options);
+    options.headers = {
+      Prefer: 'respond-async',
+    };
     const response = await this.fetchWithRetry(url.toString(), options);
 
     if (response.status === 202) {
@@ -2407,7 +2407,7 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-
+    headers['Accept'] = FHIR_CONTENT_TYPE;
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
