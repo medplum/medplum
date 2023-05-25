@@ -1,4 +1,4 @@
-import { allOk, badRequest, created, normalizeOperationOutcome, notFound, parseSearchRequest } from '@medplum/core';
+import { allOk, badRequest, created, notFound, parseSearchRequest } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation } from 'rfc6902';
 import { processBatch } from './batch';
@@ -129,10 +129,6 @@ export class FhirRouter {
     }
     const { handler, params } = result;
     req.params = params;
-    try {
-      return await handler(req, repo, this);
-    } catch (err) {
-      return [normalizeOperationOutcome(err)];
-    }
+    return handler(req, repo, this);
   }
 }

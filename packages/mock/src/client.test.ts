@@ -341,19 +341,6 @@ describe('MockClient', () => {
     }
   });
 
-  test('Read resource after delete', async () => {
-    const client = new MockClient();
-    const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
-    await client.deleteResource('Patient', patient.id as string);
-    try {
-      await client.readResource('Patient', randomUUID());
-      fail('Expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
-    }
-  });
-
   test('Read history', async () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });

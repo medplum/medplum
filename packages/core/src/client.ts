@@ -2267,7 +2267,6 @@ export class MedplumClient extends EventTarget {
     this.addFetchOptionsDefaults(options);
 
     const response = await this.fetchWithRetry(url, options);
-
     return await this.parseResponse(response, method, url, options);
   }
 
@@ -2312,13 +2311,9 @@ export class MedplumClient extends EventTarget {
     const retryDelay = 200;
     let response: Response | undefined = undefined;
     for (let retry = 0; retry < maxRetries; retry++) {
-      try {
-        response = (await this.fetch(url, options)) as Response;
-        if (response.status < 500) {
-          return response;
-        }
-      } catch (err: any) {
-        this.retryCatch(retry, maxRetries, err);
+      response = (await this.fetch(url, options)) as Response;
+      if (response.status < 500) {
+        return response;
       }
       await new Promise((resolve) => setTimeout(resolve, retryDelay));
     }
@@ -2695,16 +2690,6 @@ export class MedplumClient extends EventTarget {
       });
     } catch (err) {
       // Silently ignore if this environment does not support storage events
-    }
-  }
-
-  private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
-    // This is for the 1st retry to avoid multiple notifications
-    if (retryNumber === 1) {
-      this.dispatchEvent({ type: 'offline' });
-    }
-    if (retryNumber >= maxRetries - 1) {
-      throw err;
     }
   }
 }

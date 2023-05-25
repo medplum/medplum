@@ -18,10 +18,6 @@ function setup(url: string): void {
 }
 
 describe('SetPasswordPage', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
   test('Renders', () => {
     setup('/setpassword/123/456');
     expect(screen.getByRole('button', { name: 'Set password' })).toBeInTheDocument();
@@ -79,10 +75,6 @@ describe('SetPasswordPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button'));
-    });
-
-    await act(async () => {
-      await jest.runAllTimersAsync();
     });
 
     expect(screen.getByText('Invalid password')).toBeInTheDocument();

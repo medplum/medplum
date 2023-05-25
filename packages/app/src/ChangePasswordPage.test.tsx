@@ -15,10 +15,6 @@ function setup(): void {
 }
 
 describe('ChangePasswordPage', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
   test('Renders', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Change password' })).toBeInTheDocument();
@@ -63,10 +59,6 @@ describe('ChangePasswordPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button'));
-    });
-
-    await act(async () => {
-      await jest.runAllTimersAsync();
     });
 
     expect(screen.getByText('Incorrect password')).toBeInTheDocument();
