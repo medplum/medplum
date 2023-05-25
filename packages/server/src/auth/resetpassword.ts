@@ -44,7 +44,9 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
   });
 
   if (!user) {
-    sendOutcome(res, badRequest('User not found', 'email'));
+    // Per OWASP guidelines, send "ok" to prevent account enumeration attack
+    // See: https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/03-Identity_Management_Testing/04-Testing_for_Account_Enumeration_and_Guessable_User_Account
+    sendOutcome(res, allOk);
     return;
   }
 

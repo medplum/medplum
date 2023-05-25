@@ -62,7 +62,7 @@ describe('ResetPasswordPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     });
     expect(grecaptchaResolved).toHaveBeenCalled();
-    expect(screen.getByText('Email sent')).toBeInTheDocument();
+    expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });
 
   test('Submit success without recaptcha site key', async () => {
@@ -79,6 +79,6 @@ describe('ResetPasswordPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     });
     expect(grecaptchaResolved).not.toBeCalled();
-    expect(screen.getByText('Email sent')).toBeInTheDocument();
+    expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });
 });

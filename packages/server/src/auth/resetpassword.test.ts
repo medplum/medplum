@@ -76,9 +76,9 @@ describe('Reset Password', () => {
         email: `alex${randomUUID()}@example.com`,
         recaptchaToken: 'xyz',
       });
-    expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('User not found');
-    expect(res.body.issue[0].expression[0]).toBe('email');
+    expect(res.status).toBe(200);
+    expect(SESv2Client).not.toHaveBeenCalled();
+    expect(SendEmailCommand).not.toHaveBeenCalled();
   });
 
   test('Success', async () => {
