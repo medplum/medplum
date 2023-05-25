@@ -18,9 +18,17 @@ describe('ResourceVersionPage', () => {
     );
   }
 
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
   test('Resource not found', async () => {
     await act(async () => {
       setup('/Practitioner/not-found/_history/1');
+    });
+
+    await act(async () => {
+      await jest.runAllTimersAsync();
     });
 
     await act(async () => {

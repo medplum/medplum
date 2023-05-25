@@ -20,7 +20,6 @@ export function FormPage(): JSX.Element {
   const location = useLocation();
   const queryParams = Object.fromEntries(new URLSearchParams(location.search).entries()) as Record<string, string>;
   const subjectParam = queryParams.subject;
-  const clearCache = queryParams.clearCache === 'true';
   const medplum = useMedplum();
   const [loading, setLoading] = useState<boolean>(true);
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>();
@@ -158,9 +157,6 @@ export function FormPage(): JSX.Element {
           })
         );
       }
-    }
-    if (clearCache) {
-      medplum.invalidateAll();
     }
     setResult(responses);
   }

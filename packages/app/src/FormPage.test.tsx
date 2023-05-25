@@ -44,7 +44,7 @@ describe('FormPage', () => {
   });
 
   test('Patient subject', async () => {
-    await setup('/forms/123?subject=Patient/123&clearCache=true');
+    await setup('/forms/123?subject=Patient/123&');
     await waitFor(() => screen.getByText('First question'));
 
     expect(screen.getByText('First question')).toBeInTheDocument();

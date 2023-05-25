@@ -1,6 +1,14 @@
-import { allOk, badRequest, created, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  created,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  notFound,
+} from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, OperationOutcome, SearchParameter } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import { FhirRequest, FhirRouter } from './fhirrouter';
 import { FhirRepository, MemoryRepository } from './repo';
 
@@ -100,6 +108,34 @@ describe('FHIR Router', () => {
     );
     expect(res3).toMatchObject(allOk);
     expect(patient3).toBeDefined();
+  });
+
+  test('Read resource by ID not found', async () => {
+    const [res2, patient2] = await router.handleRequest(
+      {
+        method: 'GET',
+        pathname: `/Patient/${randomUUID()}`,
+        body: {},
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res2).toMatchObject(notFound);
+    expect(patient2).toBeUndefined();
+
+    const [res3, patient3] = await router.handleRequest(
+      {
+        method: 'GET',
+        pathname: `/Patient/${randomUUID()}/_history/${randomUUID()}`,
+        body: {},
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res3).toMatchObject(notFound);
+    expect(patient3).toBeUndefined();
   });
 
   test('Update incorrect resource type', async () => {
