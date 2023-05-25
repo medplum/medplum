@@ -1782,7 +1782,17 @@ describe('Client', () => {
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport();
-      expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('/$export'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: 'application/fhir+json',
+            Prefer: 'respond-async',
+            'X-Medplum': 'extended',
+          },
+        })
+      );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
         expect.objectContaining({ method: 'GET' })
