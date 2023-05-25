@@ -1,29 +1,29 @@
 import { ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { TypedValue } from './types';
-import { getTypedPropertyValue } from './fhirpath';
+import { TypedValue } from '../types';
+import { getTypedPropertyValue } from '../fhirpath';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
  */
 export interface InternalTypeSchema {
   name: ResourceType;
-  fields: Record<string, FieldValidator>;
+  fields: Record<string, ElementValidator>;
   constraints: Constraint[];
 }
 
-export interface FieldValidator {
+export interface ElementValidator {
   min: number;
   max: number;
   isArray: boolean;
   constraints: Constraint[];
-  type: FieldType[];
+  type: ElementType[];
   slicing?: SlicingRules;
   fixed?: TypedValue;
   pattern?: TypedValue;
   binding?: string;
 }
 
-export interface FieldType {
+export interface ElementType {
   code: string;
   targetProfile: string[];
 }
@@ -35,10 +35,6 @@ export interface Constraint {
   description: string;
 }
 
-export interface SearchParam {
-  code: string;
-}
-
 export interface SlicingRules {
   discriminator: SliceDiscriminator[];
   ordered: boolean;
@@ -48,7 +44,7 @@ export interface SlicingRules {
 
 export interface SliceDefinition {
   name: string;
-  fields: Record<string, FieldValidator>;
+  fields: Record<string, ElementValidator>;
   min: number;
   max: number;
 }
@@ -64,11 +60,15 @@ export interface SliceDiscriminator {
  *
  * @param sd The StructureDefinition resource to parse
  * @returns The parsed schema for the given resource type
+ * @experimental
  */
 export function parseStructureDefinition(sd: StructureDefinition): InternalTypeSchema {
   return new StructureDefinitionParser(sd).parse();
 }
 
+/**
+ * @experimental
+ */
 class StructureDefinitionParser {
   readonly elements: ElementDefinition[];
   private index: number;
@@ -187,7 +187,7 @@ function fieldPath(element: ElementDefinition): string {
   return path.substring(path.indexOf('.') + 1);
 }
 
-function parseFieldDefinition(ed: ElementDefinition): FieldValidator {
+function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
   const max = parseCardinality(ed.max as string);
   const baseMax = ed.base && ed.base.max ? parseCardinality(ed.base.max) : max;
   const typedElementDef = { type: 'ElementDefinition', value: ed };

@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { FieldValidator, SlicingRules, parseStructureDefinition } from './typesnew';
+import { ElementValidator, SlicingRules, parseStructureDefinition } from './types';
 import { resolve } from 'path';
 
 describe('FHIR resource and data type representations', () => {
@@ -47,7 +47,7 @@ describe('FHIR resource and data type representations', () => {
       ],
       ordered: false,
     });
-    expect(profile.fields['component']).toMatchObject<Partial<FieldValidator>>({
+    expect(profile.fields['component']).toMatchObject<Partial<ElementValidator>>({
       min: 2,
       max: Number.POSITIVE_INFINITY,
     });
