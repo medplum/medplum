@@ -95,7 +95,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           item = (onCreate as (input: string) => T)(value);
         }
 
-        if (item) result.push(item);
+        if (item) {
+          result.push(item);
+        }
       }
       onChange(result);
     },

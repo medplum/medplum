@@ -2171,8 +2171,12 @@ export class MedplumClient extends EventTarget {
   ): Promise<Partial<BulkDataExport>> {
     const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
     const url = this.fhirUrl(`${fhirPath}$export`);
-    if (resourceTypes) url.searchParams.set('_type', resourceTypes);
-    if (since) url.searchParams.set('_since', since);
+    if (resourceTypes) {
+      url.searchParams.set('_type', resourceTypes);
+    }
+    if (since) {
+      url.searchParams.set('_since', since);
+    }
 
     options.method = exportLevel ? 'GET' : 'POST';
 
