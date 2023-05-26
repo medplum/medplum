@@ -2172,11 +2172,6 @@ export class MedplumClient extends EventTarget {
   ): Promise<Partial<BulkDataExport>> {
     const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
     const url = this.fhirUrl(`${fhirPath}$export`);
-    let headers = options.headers as Record<string, string> | undefined;
-    if (!headers) {
-      headers = {};
-      options.headers = headers;
-    }
 
     if (resourceTypes) {
       url.searchParams.set('_type', resourceTypes);
@@ -2186,8 +2181,10 @@ export class MedplumClient extends EventTarget {
     }
 
     options.method = exportLevel ? 'GET' : 'POST';
-    headers['Prefer'] = 'respond-async';
     this.addFetchOptionsDefaults(options);
+
+    const headers = options.headers as Record<string, string>;
+    headers['Prefer'] = 'respond-async';
     const response = await this.fetchWithRetry(url.toString(), options);
 
     if (response.status === 202) {

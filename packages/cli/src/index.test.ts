@@ -43,12 +43,12 @@ describe('CLI', () => {
     process.env = env;
   });
 
-  test('init', () => {
+  test('run', () => {
     run();
     expect(process.exit).toBeCalledWith(1);
   });
 
-  test('init with optional env set', () => {
+  test('run with optional env set', () => {
     process.env.MEDPLUM_BASE_URL = 'http://example.com';
     process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
     process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
