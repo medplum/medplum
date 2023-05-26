@@ -145,6 +145,29 @@ describe('GraphQL', () => {
     expect(outcome).toMatchObject(forbidden);
   });
 
+  test('Introspection allowed', async () => {
+    // https://graphql.org/learn/introspection/
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `{
+            __type(name: "Patient") {
+              name
+              kind
+            }
+          }`,
+      },
+      options: { introspectionEnabled: true },
+    };
+
+    const res = await graphqlHandler(request, repo);
+
+    expect(res[0]).toMatchObject(allOk);
+  });
+
   test('Read by ID', async () => {
     const request: FhirRequest = {
       method: 'POST',
