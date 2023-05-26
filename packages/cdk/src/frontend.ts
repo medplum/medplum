@@ -35,7 +35,7 @@ export class FrontEnd extends Construct {
         removalPolicy: RemovalPolicy.DESTROY,
         encryption: s3.BucketEncryption.S3_MANAGED,
         enforceSSL: true,
-        versioned: false,
+        versioned: true,
       });
     } else {
       // Otherwise, reference the bucket by name and region
