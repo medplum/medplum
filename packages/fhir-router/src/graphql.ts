@@ -150,8 +150,9 @@ export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Pr
     return [invalidRequest(validationErrors)];
   }
 
-  const introspection =  isIntrospectionQuery(query);
-  if (introspection && !!req.options?.introspectionEnabled) {
+  const introspection = isIntrospectionQuery(query);
+  const introspectionEnabled = !!req.options?.introspectionEnabled;
+  if (introspection && !introspectionEnabled) {
     return [forbidden];
   }
 
