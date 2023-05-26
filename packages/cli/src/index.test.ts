@@ -5,7 +5,7 @@ import cp from 'child_process';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import http from 'http';
-import { main } from '.';
+import { main, run } from '.';
 import { FileSystemStorage } from './storage';
 
 jest.mock('child_process');
@@ -41,6 +41,19 @@ describe('CLI', () => {
 
   afterEach(() => {
     process.env = env;
+  });
+
+  test('init', () => {
+    run();
+    expect(process.exit).toBeCalledWith(1);
+  });
+
+  test('init with optional env set', () => {
+    process.env.MEDPLUM_BASE_URL = 'http://example.com';
+    process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
+    process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
+    run();
+    expect(process.exit).toBeCalledWith(1);
   });
 
   test('Missing command', async () => {
