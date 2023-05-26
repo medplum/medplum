@@ -509,6 +509,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
+          Accept: 'application/fhir+json',
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -535,6 +536,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
+          Accept: 'application/fhir+json',
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -771,6 +773,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
           'X-Medplum': 'extended',
         },
@@ -833,6 +836,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
           'X-Medplum': 'extended',
         },
@@ -887,6 +891,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'text/plain',
           'X-Medplum': 'extended',
         },
@@ -904,6 +909,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'text/plain',
           'X-Medplum': 'extended',
         },
@@ -977,6 +983,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1000,6 +1007,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1427,6 +1435,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
           'X-Medplum': 'extended',
         },
@@ -1449,6 +1458,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/json',
           'X-Medplum': 'extended',
         },
@@ -1526,6 +1536,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/json',
           'X-Medplum': 'extended',
         },
@@ -1787,7 +1798,17 @@ describe('Client', () => {
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport();
-      expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('/$export'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: 'application/fhir+json',
+            Prefer: 'respond-async',
+            'X-Medplum': 'extended',
+          },
+        })
+      );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
         expect.objectContaining({ method: 'GET' })
@@ -1796,9 +1817,9 @@ describe('Client', () => {
       expect(response.output?.length).toBe(1);
     });
 
-    test('type and since params', async () => {
+    test('with optional params type, since, options', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport('', 'Observation', 'testdate');
+      const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.objectContaining({ method: 'POST' })
