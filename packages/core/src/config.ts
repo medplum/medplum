@@ -12,10 +12,14 @@ export interface MedplumInfraConfig {
   appDomainName: string;
   appSslCertArn: string;
   appApiProxy?: boolean;
+  appLoggingBucket?: string;
+  appLoggingPrefix?: string;
   storageBucketName: string;
   storageDomainName: string;
   storageSslCertArn: string;
   storagePublicKey: string;
+  storageLoggingBucket?: string;
+  storageLoggingPrefix?: string;
   maxAzs: number;
   rdsInstances: number;
   rdsInstanceType: string;
@@ -25,9 +29,8 @@ export interface MedplumInfraConfig {
   serverImage: string;
   serverMemory: number;
   serverCpu: number;
-  loadBalancerLoggingEnabled: boolean;
-  loadBalancerLoggingBucket: string;
-  loadBalancerLoggingPrefix: string;
+  loadBalancerLoggingBucket?: string;
+  loadBalancerLoggingPrefix?: string;
   clamscanEnabled: boolean;
   clamscanLoggingBucket: string;
   clamscanLoggingPrefix: string;

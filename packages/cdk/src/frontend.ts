@@ -1,10 +1,10 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
-  Duration,
-  RemovalPolicy,
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
+  Duration,
   aws_cloudfront_origins as origins,
+  RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_route53_targets as targets,
@@ -151,6 +151,10 @@ export class FrontEnd extends Construct {
           },
         ],
         webAclId: waf.attrArn,
+        logBucket: config.appLoggingBucket
+          ? s3.Bucket.fromBucketName(this, 'LoggingBucket', config.appLoggingBucket)
+          : undefined,
+        logFilePrefix: config.appLoggingPrefix,
       });
 
       // DNS
