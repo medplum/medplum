@@ -12,8 +12,8 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
-import { ProfileResource, createReference, stringify } from './utils';
+import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { createReference, ProfileResource, stringify } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -1389,13 +1389,8 @@ describe('Client', () => {
     );
   });
 
-  test('Execute batch', async () => {
-    const fetch = mockFetch(200, {
-      resourceType: 'Bundle',
-      type: 'transaction-response',
-    });
-    const client = new MedplumClient({ fetch });
-    const result = await client.executeBatch({
+  describe('Batch', () => {
+    const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'transaction',
       entry: [
@@ -1428,20 +1423,52 @@ describe('Client', () => {
           },
         },
       ],
+    };
+    test('Execute batch', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+      });
+      const client = new MedplumClient({ fetch });
+      const result = await client.executeBatch(bundle);
+      expect(result).toBeDefined();
+      expect(fetch).toBeCalledWith(
+        'https://api.medplum.com/fhir/R4',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: 'application/fhir+json',
+            'Content-Type': 'application/fhir+json',
+            'X-Medplum': 'extended',
+          },
+          body: expect.stringContaining('Bundle'),
+        })
+      );
     });
-    expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
-      'https://api.medplum.com/fhir/R4',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          Accept: 'application/fhir+json',
-          'Content-Type': 'application/fhir+json',
-          'X-Medplum': 'extended',
-        },
-        body: expect.stringContaining('Bundle'),
-      })
-    );
+
+    test('Execute batch with options', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+      });
+      const signal = new AbortController().signal;
+      const options: RequestInit = { headers: { 'X-Test': '123' }, signal };
+      const client = new MedplumClient({ fetch });
+      const result = await client.executeBatch(bundle, options);
+      expect(result).toBeDefined();
+      expect(fetch).toBeCalledWith(
+        'https://api.medplum.com/fhir/R4',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            'X-Medplum': 'extended',
+            ...options.headers,
+          },
+          body: expect.stringContaining('Bundle'),
+        })
+      );
+    });
   });
 
   test('Send email', async () => {

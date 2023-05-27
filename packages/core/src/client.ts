@@ -1895,10 +1895,11 @@ export class MedplumClient extends EventTarget {
    * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
    * @category Batch
    * @param bundle The FHIR batch/transaction bundle.
+   * @param options Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl.slice(0, -1), bundle);
+  executeBatch(bundle: Bundle, options: RequestInit = {}): Promise<Bundle> {
+    return this.post(this.fhirBaseUrl.slice(0, -1), bundle, undefined, options);
   }
 
   /**
