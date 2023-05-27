@@ -1,7 +1,6 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   Duration,
-  RemovalPolicy,
   aws_ec2 as ec2,
   aws_ecs as ecs,
   aws_elasticache as elasticache,
@@ -9,6 +8,7 @@ import {
   aws_iam as iam,
   aws_logs as logs,
   aws_rds as rds,
+  RemovalPolicy,
   aws_route53 as route53,
   aws_s3 as s3,
   aws_secretsmanager as secretsmanager,
@@ -115,7 +115,7 @@ export class BackEnd extends Construct {
     const redisCluster = new elasticache.CfnReplicationGroup(this, 'RedisCluster', {
       engine: 'Redis',
       engineVersion: '6.x',
-      cacheNodeType: 'cache.t2.medium',
+      cacheNodeType: config.cacheNodeType ?? 'cache.t2.medium',
       replicationGroupDescription: 'RedisReplicationGroup',
       authToken: redisPassword.secretValueFromJson('password').toString(),
       transitEncryptionEnabled: true,
