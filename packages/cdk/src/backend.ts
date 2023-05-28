@@ -320,7 +320,7 @@ export class BackEnd extends Construct {
       http2Enabled: true,
     });
 
-    if (config.loadBalancerLoggingEnabled) {
+    if (config.loadBalancerLoggingBucket) {
       // Load Balancer logging
       loadBalancer.logAccessLogs(
         s3.Bucket.fromBucketName(this, 'LoggingBucket', config.loadBalancerLoggingBucket),
