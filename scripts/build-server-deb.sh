@@ -88,7 +88,7 @@ Package: $SERVICE_NAME
 Version: $VERSION
 Section: base
 Priority: optional
-Architecture: amd64
+Architecture: all
 Depends: nodejs
 Maintainer: Medplum <hello@medplum.com>
 Description: Medplum FHIR Server
@@ -116,7 +116,7 @@ chmod 755 "$DEBIAN_DIR/postinst"
 chmod 755 "$DEBIAN_DIR/prerm"
 
 # Build the package
-dpkg-deb --build "$TMP_DIR" "$SERVICE_NAME-$VERSION.deb"
+dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME-$VERSION.deb"
 
 # Cleanup
 rm -rf "$TMP_DIR"
