@@ -1,10 +1,21 @@
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, created } from '@medplum/core';
 import { main } from '.';
 
+const testLineOutput = [`{"resourceType":"Patient", "id":"1111111"}`, `{"resourceType":"Patient", "id":"2222222"}`];
 jest.mock('child_process');
 jest.mock('http');
+jest.mock('readline', () => ({
+  createInterface: jest.fn().mockReturnValue({
+    [Symbol.asyncIterator]: jest.fn(function* () {
+      for (const line of testLineOutput) {
+        yield line;
+      }
+    }),
+  }),
+}));
 
 jest.mock('fs', () => ({
+  createReadStream: jest.fn(),
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
   writeFileSync: jest.fn(),
@@ -126,8 +137,66 @@ describe('CLI Bulk Commands', () => {
       });
       await main(medplum, ['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership.json is created'));
-      expect(console.log).toBeCalledWith(expect.stringMatching('Project.json is created'));
+      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership.ndjson is created'));
+      expect(console.log).toBeCalledWith(expect.stringMatching('Project.ndjson is created'));
+    });
+  });
+
+  describe('import', () => {
+    let fetch: any;
+
+    beforeEach(() => {
+      console.log = jest.fn();
+      console.error = jest.fn();
+      jest.resetModules();
+      jest.clearAllMocks();
+      fetch = jest.fn(async () => {
+        return {
+          status: 200,
+          json: jest.fn(async () => ({
+            resourceType: 'Bundle',
+            type: 'transaction-response',
+            entry: [
+              {
+                response: {
+                  outcome: created,
+                  status: '201',
+                },
+                resource: {
+                  resourceType: 'QuestionnaireResponse',
+                },
+              },
+            ],
+          })),
+        };
+      });
+    });
+
+    test('success', async () => {
+      medplum = new MedplumClient({ fetch });
+      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json']);
+
+      testLineOutput.forEach((line) => {
+        const resource = JSON.parse(line);
+        expect(fetch).toBeCalledWith(
+          expect.stringMatching(`/fhir/R4`),
+          expect.objectContaining({
+            body: expect.stringContaining(
+              JSON.stringify({
+                resource: resource,
+                request: {
+                  method: 'POST',
+                  url: resource.resourceType,
+                },
+              })
+            ),
+          })
+        );
+      });
+
+      expect(console.log).toBeCalledWith(expect.stringMatching(`"status": "201"`));
+      expect(console.log).toBeCalledWith(expect.stringMatching(`"type": "transaction-response"`));
+      expect(console.log).toBeCalledWith(expect.stringMatching(`"text": "Created"`));
     });
   });
 });

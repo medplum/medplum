@@ -31,7 +31,15 @@ export interface SignInFormProps extends BaseLoginRequest {
  * 5) Success - Return to the caller with either a code or a redirect
  */
 export function SignInForm(props: SignInFormProps): JSX.Element {
-  const { chooseScopes, onSuccess, onForgotPassword, onRegister, onCode, ...baseLoginRequest } = props;
+  const {
+    login: loginCode,
+    chooseScopes,
+    onSuccess,
+    onForgotPassword,
+    onRegister,
+    onCode,
+    ...baseLoginRequest
+  } = props;
   const medplum = useMedplum();
   const [login, setLogin] = useState<string | undefined>(undefined);
   const [mfaRequired, setAuthenticatorRequired] = useState<boolean>(false);
@@ -86,13 +94,17 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   );
 
   useEffect(() => {
-    if (props.login) {
+    // Beware the race condition here
+    // The `useMedplum` hook will return a new instance of the MedplumClient on login
+    // We do not want to request the login status again in that case
+    // Only request login status once
+    if (loginCode && !login) {
       medplum
-        .get('auth/login/' + props.login)
+        .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
         .catch(console.error);
     }
-  }, [medplum, props, handleAuthResponse]);
+  }, [medplum, loginCode, login, handleAuthResponse]);
 
   return (
     <Document width={450}>

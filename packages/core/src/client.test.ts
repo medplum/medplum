@@ -12,8 +12,8 @@ import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
-import { OperationOutcomeError, getStatus, isOperationOutcome, notFound, unauthorized } from './outcomes';
-import { ProfileResource, createReference, stringify } from './utils';
+import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
+import { createReference, ProfileResource, stringify } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -509,6 +509,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
+          Accept: 'application/fhir+json',
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -535,6 +536,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'GET',
         headers: {
+          Accept: 'application/fhir+json',
           Authorization: 'Basic dGVzdC1jbGllbnQtaWQ6dGVzdC1jbGllbnQtc2VjcmV0',
           'X-Medplum': 'extended',
         },
@@ -771,6 +773,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
           'X-Medplum': 'extended',
         },
@@ -833,6 +836,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'PUT',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
           'X-Medplum': 'extended',
         },
@@ -887,6 +891,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'text/plain',
           'X-Medplum': 'extended',
         },
@@ -904,6 +909,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'text/plain',
           'X-Medplum': 'extended',
         },
@@ -977,6 +983,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1000,6 +1007,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/pdf',
           'X-Medplum': 'extended',
         },
@@ -1381,13 +1389,8 @@ describe('Client', () => {
     );
   });
 
-  test('Execute batch', async () => {
-    const fetch = mockFetch(200, {
-      resourceType: 'Bundle',
-      type: 'transaction-response',
-    });
-    const client = new MedplumClient({ fetch });
-    const result = await client.executeBatch({
+  describe('Batch', () => {
+    const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'transaction',
       entry: [
@@ -1420,19 +1423,52 @@ describe('Client', () => {
           },
         },
       ],
+    };
+    test('Execute batch', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+      });
+      const client = new MedplumClient({ fetch });
+      const result = await client.executeBatch(bundle);
+      expect(result).toBeDefined();
+      expect(fetch).toBeCalledWith(
+        'https://api.medplum.com/fhir/R4',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: 'application/fhir+json',
+            'Content-Type': 'application/fhir+json',
+            'X-Medplum': 'extended',
+          },
+          body: expect.stringContaining('Bundle'),
+        })
+      );
     });
-    expect(result).toBeDefined();
-    expect(fetch).toBeCalledWith(
-      'https://api.medplum.com/fhir/R4',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/fhir+json',
-          'X-Medplum': 'extended',
-        },
-        body: expect.stringContaining('Bundle'),
-      })
-    );
+
+    test('Execute batch with options', async () => {
+      const fetch = mockFetch(200, {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+      });
+      const signal = new AbortController().signal;
+      const options: RequestInit = { headers: { 'X-Test': '123' }, signal };
+      const client = new MedplumClient({ fetch });
+      const result = await client.executeBatch(bundle, options);
+      expect(result).toBeDefined();
+      expect(fetch).toBeCalledWith(
+        'https://api.medplum.com/fhir/R4',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/fhir+json',
+            'X-Medplum': 'extended',
+            ...options.headers,
+          },
+          body: expect.stringContaining('Bundle'),
+        })
+      );
+    });
   });
 
   test('Send email', async () => {
@@ -1449,6 +1485,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/json',
           'X-Medplum': 'extended',
         },
@@ -1526,6 +1563,7 @@ describe('Client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: {
+          Accept: 'application/fhir+json',
           'Content-Type': 'application/json',
           'X-Medplum': 'extended',
         },
@@ -1667,6 +1705,22 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('Dispatch on bad connection', async () => {
+    const fetch = jest.fn(async () => {
+      throw { message: 'Failed to fetch' };
+    });
+    const mockDispatchEvent = jest.fn();
+    const client = new MedplumClient({ fetch });
+    client.dispatchEvent = mockDispatchEvent;
+    try {
+      await client.readResource('Patient', '123');
+      fail('Expected error');
+    } catch (err) {
+      expect(mockDispatchEvent).toHaveBeenCalled();
+      expect(err).toBeDefined();
+    }
+  });
+
   test('Log non-JSON response', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,
@@ -1771,7 +1825,17 @@ describe('Client', () => {
     test('System Level', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport();
-      expect(fetch).toBeCalledWith(expect.stringContaining('/$export'), expect.objectContaining({ method: 'POST' }));
+      expect(fetch).toBeCalledWith(
+        expect.stringContaining('/$export'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: 'application/fhir+json',
+            Prefer: 'respond-async',
+            'X-Medplum': 'extended',
+          },
+        })
+      );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
         expect.objectContaining({ method: 'GET' })
@@ -1780,9 +1844,9 @@ describe('Client', () => {
       expect(response.output?.length).toBe(1);
     });
 
-    test('type and since params', async () => {
+    test('with optional params type, since, options', async () => {
       const medplum = new MedplumClient({ fetch });
-      const response = await medplum.bulkExport('', 'Observation', 'testdate');
+      const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
         expect.objectContaining({ method: 'POST' })

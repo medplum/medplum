@@ -73,7 +73,9 @@
     "parserOptions": {
       "project": "./tsconfig.base.json"
     },
-    "plugins": ["@typescript-eslint"],
+    "plugins": [
+      "@typescript-eslint"
+    ],
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/recommended",
@@ -97,10 +99,18 @@
           "varsIgnorePattern": "^_"
         }
       ],
-      "eqeqeq": ["error", "always"],
+      "curly": [
+        "error",
+        "all"
+      ],
+      "eqeqeq": [
+        "error",
+        "always"
+      ],
       "prefer-promise-reject-errors": "error"
     },
     "ignorePatterns": [
+      "coverage",
       "dist",
       "node_modules",
       "packages/**/dist/",

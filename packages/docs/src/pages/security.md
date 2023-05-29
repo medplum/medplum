@@ -44,6 +44,33 @@ Hosted Medplum leverages the native physical and network security features of th
 - Client’s data protection complies with SOC 2 standards to encrypt data in transit and at rest, ensuring customer and company data and sensitive information is protected at all times.
 - We implement role-based access controls and the principles of least privileged access, and review revoke access as needed.
 
+### Guidelines
+
+#### General Server Security (NIST SP 800-123)
+
+All servers will be installed, hardened, and maintained in accordance with the principles outlined in NIST SP 800-123. This includes, but is not limited to:
+
+- Performing risk assessments to understand the potential threats and vulnerabilities to each server.
+- Implementing necessary security controls during server installation.
+- Regularly updating and patching servers to address known security vulnerabilities.
+- Conducting regular audits to ensure the ongoing security of each server.
+
+#### Application Container Security (NIST SP 800-190)
+
+For all applications deployed in containers, we will follow the security guidelines provided in NIST SP 800-190. This includes, but is not limited to:
+
+- Implementing secure configurations for host OS, container runtime, and the container itself.
+- Regularly scanning containers and container images for vulnerabilities.
+- Enforcing resource management and isolation at the container and kernel level.
+
+#### Definition and Use of Microservices, Application Containers, and System Virtual Machines (NIST SP 800-180)
+
+We will adhere to the definitions and best practices outlined in NIST SP 800-180 when designing and implementing architectures involving microservices, application containers, and system virtual machines. This includes:
+
+- Ensuring microservices are small, autonomous, and perform a single business capability.
+- Implementing security at all levels of the architecture, from individual microservices to the orchestration level.
+- Utilizing system virtual machines to isolate different applications and services as needed.
+
 ## Application Security
 
 - Encryption - Data is encrypted in transit with TLS 1.2. Data is encrypted at rest with AES.

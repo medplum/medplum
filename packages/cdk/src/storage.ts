@@ -1,8 +1,8 @@
 import { MedplumInfraConfig } from '@medplum/core';
 import {
-  Duration,
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
+  Duration,
   aws_cloudfront_origins as origins,
   aws_route53 as route53,
   aws_s3 as s3,
@@ -31,7 +31,7 @@ export class Storage extends Construct {
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
         encryption: s3.BucketEncryption.S3_MANAGED,
         enforceSSL: true,
-        versioned: false,
+        versioned: true,
       });
 
       if (config.clamscanEnabled) {
@@ -115,6 +115,10 @@ export class Storage extends Construct {
         certificate: acm.Certificate.fromCertificateArn(this, 'StorageCertificate', config.storageSslCertArn),
         domainNames: [config.storageDomainName],
         webAclId: waf.attrArn,
+        logBucket: config.storageLoggingBucket
+          ? s3.Bucket.fromBucketName(this, 'LoggingBucket', config.storageLoggingBucket)
+          : undefined,
+        logFilePrefix: config.storageLoggingPrefix,
       });
 
       // DNS

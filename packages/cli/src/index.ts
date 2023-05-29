@@ -58,16 +58,28 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   }
 }
 
-if (require.main === module) {
+export function run(): void {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
+  const fhirUrlPath = process.env['MEDPLUM_FHIR_URL_PATH'] || '';
+  const accessToken = process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
+
   const medplumClient = new MedplumClient({
     fetch,
     baseUrl,
+    fhirUrlPath,
     storage: new FileSystemStorage(),
     onUnauthenticated: onUnauthenticated,
   });
+
+  if (accessToken) {
+    medplumClient.setAccessToken(accessToken);
+  }
   main(medplumClient, process.argv).catch((err) => console.error('Unhandled error:', err));
+}
+
+if (require.main === module) {
+  run();
 }
 
 function onUnauthenticated(): void {

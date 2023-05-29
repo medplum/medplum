@@ -1,4 +1,5 @@
 import {
+  OperationOutcomeError,
   badRequest,
   evalFhirPath,
   formatAddress,
@@ -6,7 +7,15 @@ import {
   isResourceType,
   parseSearchRequest,
 } from '@medplum/core';
-import { Address, CodeableConcept, ContactPoint, HumanName, Reference, ResourceType } from '@medplum/fhirtypes';
+import {
+  Address,
+  CodeableConcept,
+  ContactPoint,
+  HumanName,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
@@ -62,7 +71,7 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
 
     // For each column...
     for (const expression of expressions) {
-      const values = evalFhirPath(expression, resource);
+      const values = tryEvalFhirPath(expression, resource);
       if (values.length > 0) {
         row.push(tryCsvExcape(values[0]));
       } else {
@@ -80,6 +89,14 @@ export async function csvHandler(req: Request, res: Response): Promise<void> {
   // Respond with the CSV content
   // Use Content-Disposition to force file download
   res.type('text/csv').set('Content-Disposition', 'attachment; filename=export.csv').send(content);
+}
+
+function tryEvalFhirPath(expression: string, resource: Resource): unknown[] {
+  try {
+    return evalFhirPath(expression, resource);
+  } catch (err) {
+    throw new OperationOutcomeError(badRequest('Invalid FHIRPath expression'), err);
+  }
 }
 
 function tryCsvExcape(input: unknown): string {

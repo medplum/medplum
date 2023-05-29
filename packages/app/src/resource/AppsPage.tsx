@@ -74,7 +74,7 @@ export function AppsPage(): JSX.Element | null {
       {questionnaires.map((questionnaire) => (
         <div key={questionnaire.id}>
           <Title order={3}>
-            <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(resource)}&clearCache=true`}>
+            <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(resource)}`}>
               {questionnaire.title || questionnaire.name}
             </MedplumLink>
           </Title>

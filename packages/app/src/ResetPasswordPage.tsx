@@ -32,9 +32,7 @@ export function ResetPasswordPage(): JSX.Element {
           medplum
             .post('auth/resetpassword', { ...formData, recaptchaToken })
             .then(() => setSuccess(true))
-            .catch((err) => {
-              setOutcome(normalizeOperationOutcome(err));
-            });
+            .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
         <Stack spacing="lg" mb="xl" align="center">
@@ -59,7 +57,7 @@ export function ResetPasswordPage(): JSX.Element {
             </Group>
           </Stack>
         )}
-        {success && <div data-testid="success">Email sent</div>}
+        {success && <div>If the account exists on our system, a password reset email will be sent.</div>}
       </Form>
     </Document>
   );

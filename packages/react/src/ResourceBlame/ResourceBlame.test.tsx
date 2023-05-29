@@ -43,6 +43,7 @@ describe('ResourceBlame', () => {
   });
 
   test('getTimeString', () => {
+    jest.useFakeTimers();
     expect(getTimeString(new Date(Date.now() - 1e3).toUTCString())).toEqual('1 second ago');
     expect(getTimeString(new Date(Date.now() - 2e3).toUTCString())).toEqual('2 seconds ago');
     expect(getTimeString(new Date(Date.now() - 60e3).toUTCString())).toEqual('1 minute ago');
@@ -55,5 +56,6 @@ describe('ResourceBlame', () => {
     expect(getTimeString(new Date(Date.now() - 5184000e3).toUTCString())).toEqual('2 months ago');
     expect(getTimeString(new Date(Date.now() - 31536000e3).toUTCString())).toEqual('1 year ago');
     expect(getTimeString(new Date(Date.now() - 63072000e3).toUTCString())).toEqual('2 years ago');
+    jest.useRealTimers();
   });
 });
