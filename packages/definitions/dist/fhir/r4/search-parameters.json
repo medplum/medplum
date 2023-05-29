@@ -65999,5 +65999,33 @@
       "xpathUsage" : "normal",
       "target" : ["User"]
     }
+  },
+  {
+    "fullUrl" : "http://hl7.org/fhir/SearchParameter/Task-due-date",
+    "resource" : {
+      "resourceType" : "SearchParameter",
+      "id" : "Task-due-date",
+      "url" : "http://hl7.org/fhir/SearchParameter/Task-due-date",
+      "version" : "4.0.1",
+      "name" : "due-date",
+      "status" : "draft",
+      "publisher" : "Medplum",
+      "description" : "Search by period Task is/was due",
+      "code" : "due-date",
+      "base" : ["Task"],
+      "type" : "date",
+      "expression" : "Task.restriction.period",
+      "xpath" : "f:Task/f:restriction/f:period",
+      "xpathUsage" : "normal",
+      "comparator" : ["eq",
+      "ne",
+      "gt",
+      "ge",
+      "lt",
+      "le",
+      "sa",
+      "eb",
+      "ap"]
+    }
   }]
 }
