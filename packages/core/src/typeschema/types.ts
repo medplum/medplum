@@ -1,4 +1,4 @@
-import { ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 
@@ -64,6 +64,21 @@ export interface SliceDiscriminator {
  */
 export function parseStructureDefinition(sd: StructureDefinition): InternalTypeSchema {
   return new StructureDefinitionParser(sd).parse();
+}
+
+const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
+
+export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
+  if (Object.keys(DATA_TYPES).length > 0) {
+    return;
+  }
+  for (const { resource: sd } of bundle.entry || []) {
+    if (!sd || !sd.name) {
+      throw new Error(`Failed loading StructureDefinition from bundle`);
+    }
+    DATA_TYPES[sd.name] = parseStructureDefinition(sd);
+  }
+  Object.freeze(DATA_TYPES);
 }
 
 /**
