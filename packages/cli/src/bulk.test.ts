@@ -1,7 +1,11 @@
 import { MedplumClient, created } from '@medplum/core';
 import { main } from '.';
 
-const testLineOutput = [`{"resourceType":"Patient", "id":"1111111"}`, `{"resourceType":"Patient", "id":"2222222"}`];
+const testLineOutput = [
+  `{"resourceType":"Patient", "id":"1111111"}`,
+  `{"resourceType":"Patient", "id":"2222222"}`,
+  `{"resourceType":"Patient", "id":"3333333"}`,
+];
 jest.mock('child_process');
 jest.mock('http');
 jest.mock('readline', () => ({
@@ -199,7 +203,7 @@ describe('CLI Bulk Commands', () => {
 
     test('success with option numResourcesPerRequest', async () => {
       medplum = new MedplumClient({ fetch });
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '1']);
+      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '2']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);

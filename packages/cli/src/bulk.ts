@@ -35,15 +35,17 @@ bulk
   .argument('<filename>', 'File Name')
   .option(
     '--numResourcesPerRequest <numResourcesPerRequest>',
-    'optional number of resources to import per batch request'
+    'optional number of resources to import per batch request. Defaults to 25.'
   )
   .action(async (fileName, options) => {
     const path = resolve(process.cwd(), fileName);
     const { numResourcesPerRequest } = options;
-    await importFile(path, numResourcesPerRequest);
+
+    const num = numResourcesPerRequest ? parseInt(numResourcesPerRequest) : 25;
+    await importFile(path, num);
   });
 
-async function importFile(path: string, numResourcesPerRequest = 25): Promise<void> {
+async function importFile(path: string, numResourcesPerRequest: number): Promise<void> {
   let entries = [] as BundleEntry[];
   const fileStream = createReadStream(path);
   const rl = createInterface({
