@@ -10,6 +10,7 @@ import { createRoot } from 'react-dom/client';
 import 'regenerator-runtime/runtime.js';
 
 import 'graphiql/graphiql.css';
+import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
 #
@@ -62,7 +63,8 @@ const theme: MantineThemeOverride = {
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
-    return fetch('/schema/schema-v4.json').then((res) => res.json());
+    const config =  getConfig().introspectionFilePath;
+    return fetch(config).then((res) => res.json());
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
 }
