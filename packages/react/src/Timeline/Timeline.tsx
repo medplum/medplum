@@ -21,6 +21,7 @@ export function Timeline(props: TimelineProps): JSX.Element {
 export interface TimelineItemProps extends PanelProps {
   resource: Resource;
   profile?: Reference;
+  dateTime?: string;
   padding?: boolean;
   popupMenuItems?: React.ReactNode;
 }
@@ -28,6 +29,7 @@ export interface TimelineItemProps extends PanelProps {
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
   const { resource, profile, padding, popupMenuItems, ...others } = props;
   const author = profile ?? resource.meta?.author;
+  const dateTime = props.dateTime ?? resource.meta?.lastUpdated;
 
   return (
     <Panel data-testid="timeline-item" fill={true} {...others}>
@@ -39,7 +41,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
           </Text>
           <Text size="xs">
             <MedplumLink color="dimmed" to={props.resource}>
-              {formatDateTime(props.resource.meta?.lastUpdated)}
+              {formatDateTime(dateTime)}
             </MedplumLink>
             <Text component="span" color="dimmed" mx={8}>
               &middot;
