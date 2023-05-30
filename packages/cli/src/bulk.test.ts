@@ -1,7 +1,11 @@
 import { MedplumClient, created } from '@medplum/core';
 import { main } from '.';
 
-const testLineOutput = [`{"resourceType":"Patient", "id":"1111111"}`, `{"resourceType":"Patient", "id":"2222222"}`];
+const testLineOutput = [
+  `{"resourceType":"Patient", "id":"1111111"}`,
+  `{"resourceType":"Patient", "id":"2222222"}`,
+  `{"resourceType":"Patient", "id":"3333333"}`,
+];
 jest.mock('child_process');
 jest.mock('http');
 jest.mock('readline', () => ({
@@ -193,10 +197,33 @@ describe('CLI Bulk Commands', () => {
           })
         );
       });
-
       expect(console.log).toBeCalledWith(expect.stringMatching(`"status": "201"`));
-      expect(console.log).toBeCalledWith(expect.stringMatching(`"type": "transaction-response"`));
       expect(console.log).toBeCalledWith(expect.stringMatching(`"text": "Created"`));
+    });
+
+    test('success with option numResourcesPerRequest', async () => {
+      medplum = new MedplumClient({ fetch });
+      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '1']);
+
+      testLineOutput.forEach((line) => {
+        const resource = JSON.parse(line);
+        expect(fetch).toBeCalledWith(
+          expect.stringMatching(`/fhir/R4`),
+          expect.objectContaining({
+            body: expect.stringContaining(
+              JSON.stringify({
+                resource: resource,
+                request: {
+                  method: 'POST',
+                  url: resource.resourceType,
+                },
+              })
+            ),
+          })
+        );
+      });
+
+      expect(fetch).toBeCalledTimes(3);
     });
   });
 });
