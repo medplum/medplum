@@ -3404,4 +3404,45 @@ describe('FHIR Repo', () => {
     expect(bundle.entry?.length).toEqual(1);
     expect(bundleContains(bundle, s)).toBeTruthy();
   });
+
+  test('Filter task by due date', async () => {
+    const code = randomUUID();
+
+    // Create 3 tasks
+    // Mix of "no due date", using "start", and using "end"
+    const task1 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      code: { coding: [{ code }] },
+    });
+    const task2 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      code: { coding: [{ code }] },
+      restriction: { period: { start: '2023-06-02T00:00:00.000Z' } },
+    });
+    const task3 = await systemRepo.createResource<Task>({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      code: { coding: [{ code }] },
+      restriction: { period: { end: '2023-06-03T00:00:00.000Z' } },
+    });
+
+    // Sort and filter by due date
+    const bundle = await systemRepo.search<Task>({
+      resourceType: 'Task',
+      filters: [
+        { code: 'code', operator: Operator.EQUALS, value: code },
+        { code: 'due-date', operator: Operator.GREATER_THAN, value: '2023-06-01T00:00:00.000Z' },
+      ],
+      sortRules: [{ code: 'due-date' }],
+    });
+    expect(bundle.entry?.length).toEqual(2);
+    expect(bundle.entry?.[0]?.resource?.id).toEqual(task2.id);
+    expect(bundle.entry?.[1]?.resource?.id).toEqual(task3.id);
+    expect(bundleContains(bundle, task1)).not.toBeTruthy();
+  });
 });
