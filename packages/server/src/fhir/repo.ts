@@ -1807,6 +1807,9 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @returns The date string if parsed; undefined otherwise.
    */
   private buildDateColumn(value: any): string | undefined {
+    // "Date" column is a special case that only applies when the following conditions are true:
+    // 1. The search parameter is a date type.
+    // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
     if (typeof value === 'string') {
       try {
         const date = new Date(value);
@@ -1814,9 +1817,6 @@ export class Repository extends BaseRepository implements FhirRepository {
       } catch (ex) {
         // Silent ignore
       }
-    } else if (typeof value === 'object' && 'start' in value) {
-      // Can be a Period
-      return this.buildDateColumn(value.start);
     }
     return undefined;
   }
@@ -1836,9 +1836,13 @@ export class Repository extends BaseRepository implements FhirRepository {
       } catch (ex) {
         // Silent ignore
       }
-    } else if (typeof value === 'object' && 'start' in value) {
+    } else if (typeof value === 'object') {
       // Can be a Period
-      return this.buildDateTimeColumn(value.start);
+      if ('start' in value) {
+        return this.buildDateTimeColumn(value.start);
+      } else if ('end' in value) {
+        return this.buildDateTimeColumn(value.end);
+      }
     }
     return undefined;
   }
