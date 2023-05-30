@@ -33,34 +33,41 @@ bulk
 bulk
   .command('import')
   .argument('<filename>', 'File Name')
-  .action(async (fileName) => {
+  .option(
+    '--numResourcesPerRequest <numResourcesPerRequest>',
+    'optional number of resources to import per batch request'
+  )
+  .action(async (fileName, options) => {
     const path = resolve(process.cwd(), fileName);
-    let entries = [] as BundleEntry[];
-    const fileStream = createReadStream(path);
-    const rl = createInterface({
-      input: fileStream,
-    });
-    const numResourcePerBatch = 25;
-
-    for await (const line of rl) {
-      const resource = JSON.parse(line);
-      entries.push({
-        resource: resource,
-        request: {
-          method: 'POST',
-          url: resource.resourceType,
-        },
-      });
-      if (entries.length % numResourcePerBatch === 0) {
-        await sendBatchEntries(entries);
-        entries = [];
-      }
-    }
-    if (entries.length > 0) {
-      console.log('last batch');
-      await sendBatchEntries(entries);
-    }
+    const { numResourcesPerRequest } = options;
+    await importFile(path, numResourcesPerRequest);
   });
+
+async function importFile(path: string, numResourcesPerRequest = 25): Promise<void> {
+  let entries = [] as BundleEntry[];
+  const fileStream = createReadStream(path);
+  const rl = createInterface({
+    input: fileStream,
+  });
+
+  for await (const line of rl) {
+    const resource = JSON.parse(line);
+    entries.push({
+      resource: resource,
+      request: {
+        method: 'POST',
+        url: resource.resourceType,
+      },
+    });
+    if (entries.length % numResourcesPerRequest === 0) {
+      await sendBatchEntries(entries);
+      entries = [];
+    }
+  }
+  if (entries.length > 0) {
+    await sendBatchEntries(entries);
+  }
+}
 
 async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
   const result = await medplum.executeBatch({
