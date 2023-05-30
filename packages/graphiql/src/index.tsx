@@ -63,7 +63,7 @@ const theme: MantineThemeOverride = {
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
-    const config =  getConfig().introspectionUrl;
+    const config = getConfig().introspectionUrl;
     if (config) {
       return fetch(config).then((res) => res.json());
     }
