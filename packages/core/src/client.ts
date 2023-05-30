@@ -1895,10 +1895,11 @@ export class MedplumClient extends EventTarget {
    * See The FHIR "batch/transaction" section for full details: https://hl7.org/fhir/http.html#transaction
    * @category Batch
    * @param bundle The FHIR batch/transaction bundle.
+   * @param options Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle): Promise<Bundle> {
-    return this.post(this.fhirBaseUrl.slice(0, -1), bundle);
+  executeBatch(bundle: Bundle, options: RequestInit = {}): Promise<Bundle> {
+    return this.post(this.fhirBaseUrl.slice(0, -1), bundle, undefined, options);
   }
 
   /**
@@ -2161,6 +2162,7 @@ export class MedplumClient extends EventTarget {
    * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
    * @param resourceTypes A string of comma-delimited FHIR resource types.
    * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
+   * @param options Optional fetch options.
    * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
    */
   async bulkExport(
@@ -2171,12 +2173,19 @@ export class MedplumClient extends EventTarget {
   ): Promise<Partial<BulkDataExport>> {
     const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
     const url = this.fhirUrl(`${fhirPath}$export`);
-    if (resourceTypes) url.searchParams.set('_type', resourceTypes);
-    if (since) url.searchParams.set('_since', since);
+
+    if (resourceTypes) {
+      url.searchParams.set('_type', resourceTypes);
+    }
+    if (since) {
+      url.searchParams.set('_since', since);
+    }
 
     options.method = exportLevel ? 'GET' : 'POST';
-
     this.addFetchOptionsDefaults(options);
+
+    const headers = options.headers as Record<string, string>;
+    headers['Prefer'] = 'respond-async';
     const response = await this.fetchWithRetry(url.toString(), options);
 
     if (response.status === 202) {
@@ -2410,7 +2419,7 @@ export class MedplumClient extends EventTarget {
       headers = {};
       options.headers = headers;
     }
-
+    headers['Accept'] = FHIR_CONTENT_TYPE;
     headers['X-Medplum'] = 'extended';
 
     if (options.body && !headers['Content-Type']) {
