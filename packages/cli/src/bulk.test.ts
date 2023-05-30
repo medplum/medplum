@@ -203,7 +203,7 @@ describe('CLI Bulk Commands', () => {
 
     test('success with option numResourcesPerRequest', async () => {
       medplum = new MedplumClient({ fetch });
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '2']);
+      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '1']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
@@ -223,7 +223,7 @@ describe('CLI Bulk Commands', () => {
         );
       });
 
-      expect(fetch).toBeCalledTimes(2);
+      expect(fetch).toBeCalledTimes(3);
     });
   });
 });
