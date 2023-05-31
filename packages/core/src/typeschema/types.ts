@@ -81,6 +81,14 @@ export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
   Object.freeze(DATA_TYPES);
 }
 
+export function getDataType(type: string): InternalTypeSchema {
+  const schema = DATA_TYPES[type];
+  if (!schema) {
+    throw new Error('Unknown data type: ' + type);
+  }
+  return schema;
+}
+
 /**
  * @experimental
  */
@@ -99,18 +107,16 @@ class StructureDefinitionParser {
     if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
       throw new Error('No snapshot defined for StructureDefinition');
     }
-
     const root = sd.snapshot.element[0];
-    const resourceSchema: InternalTypeSchema = {
-      name: sd.type as ResourceType,
-      fields: {},
-      constraints: parseFieldDefinition(root).constraints,
-    };
 
     this.elements = sd.snapshot.element.slice(1);
     this.index = 0;
     this.total = sd.snapshot.element.length;
-    this.resourceSchema = resourceSchema;
+    this.resourceSchema = {
+      name: sd.type as ResourceType,
+      fields: {},
+      constraints: parseFieldDefinition(root).constraints,
+    };
   }
 
   parse(): InternalTypeSchema {
@@ -125,8 +131,7 @@ class StructureDefinitionParser {
       } else if (element.id?.includes(':')) {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
-          let path = fieldPath(element);
-          path = path.substring(path.indexOf('.') + 1); // Remove sliced field path prefix, so path refers to sub-field
+          const path = trimPrefix(fieldPath(element), this.slicingContext.path);
           this.slicingContext.current.fields[path] = parseFieldDefinition(element);
         }
       } else {
@@ -134,7 +139,8 @@ class StructureDefinitionParser {
         if (this.slicingContext?.current) {
           this.slicingContext.field.slices.push(this.slicingContext.current);
         }
-        this.resourceSchema.fields[fieldPath(element)] = parseFieldDefinition(element);
+        this.resourceSchema.fields[trimPrefix(fieldPath(element), this.resourceSchema.name)] =
+          parseFieldDefinition(element);
         if (this.slicingContext && !element.path?.startsWith(this.slicingContext.path + '.')) {
           // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
           // same slice group; otherwise, that group is finished and this is the start of a new field
@@ -173,7 +179,7 @@ class StructureDefinitionParser {
       ordered: element.slicing?.ordered || false,
       rule: element.slicing?.rules,
     };
-    this.resourceSchema.fields[fieldPath(element)] = field;
+    this.resourceSchema.fields[trimPrefix(fieldPath(element), this.resourceSchema.name)] = field;
     this.slicingContext = { field: field.slicing, path: element.path || '' };
   }
 
@@ -198,8 +204,8 @@ function parseCardinality(c: string): number {
 }
 
 function fieldPath(element: ElementDefinition): string {
-  const path = element.path as string;
-  return path.substring(path.indexOf('.') + 1);
+  return element.path || '';
+  // return path.substring(path.indexOf('.') + 1);
 }
 
 function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
@@ -225,4 +231,19 @@ function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
     pattern: [getTypedPropertyValue(typedElementDef, 'pattern')].flat()[0],
     binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
   };
+}
+
+export function isComplexDataType(type: string): boolean {
+  if (!type) {
+    return false;
+  }
+  const firstChar = type.charAt(0);
+  return firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase() && type !== 'BackboneElement';
+}
+
+function trimPrefix(str: string, prefix: string): string {
+  if (str.indexOf(prefix) === 0) {
+    return str.substring(prefix.length + 1);
+  }
+  return str;
 }
