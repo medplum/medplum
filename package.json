@@ -36,6 +36,7 @@
     "cross-env": "7.0.3",
     "eslint": "8.41.0",
     "eslint-config-prettier": "8.8.0",
+    "eslint-plugin-jsdoc": "46.1.0",
     "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-react-hooks": "4.6.0",
     "identity-obj-proxy": "3.0.0",
@@ -79,6 +80,7 @@
     "extends": [
       "eslint:recommended",
       "plugin:@typescript-eslint/recommended",
+      "plugin:jsdoc/recommended-typescript-error",
       "plugin:prettier/recommended",
       "plugin:react-hooks/recommended"
     ],
