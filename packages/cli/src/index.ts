@@ -14,13 +14,6 @@ export let medplum: MedplumClient;
 export async function main(medplumClient: MedplumClient, argv: string[]): Promise<void> {
   medplum = medplumClient;
 
-  // Legacy support for MEDPLUM_CLIENT_ID and MEDPLUM_CLIENT_SECRET environment variables
-  const clientId = process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
-  if (clientId && clientSecret) {
-    medplum.setBasicAuth(clientId, clientSecret);
-    await medplum.startClientLogin(clientId, clientSecret);
-  }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
     index.version(MEDPLUM_VERSION);
@@ -59,7 +52,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   }
 }
 
-export function run(): void {
+export async function run(): Promise<void> {
   dotenv.config();
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
   const fhirUrlPath = process.env['MEDPLUM_FHIR_URL_PATH'] || '';
@@ -78,11 +71,17 @@ export function run(): void {
   if (accessToken) {
     medplumClient.setAccessToken(accessToken);
   }
-  main(medplumClient, process.argv).catch((err) => console.error('Unhandled error:', err));
+  const clientId = process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
+  if (clientId && clientSecret) {
+    medplumClient.setBasicAuth(clientId, clientSecret);
+    await medplumClient.startClientLogin(clientId, clientSecret);
+  }
+  await main(medplumClient, process.argv);
 }
 
 if (require.main === module) {
-  run();
+  run().catch((err) => console.error('Unhandled error:', err));
 }
 
 function onUnauthenticated(): void {

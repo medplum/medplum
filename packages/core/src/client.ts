@@ -2032,9 +2032,7 @@ export class MedplumClient extends EventTarget {
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
-    if (this.refreshToken) {
-      await this.refreshProfile();
-    }
+    await this.refreshProfile();
   }
 
   /**
@@ -2071,7 +2069,10 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
-      if (this.isExternalAuth()) {
+      if (this.basicAuth) {
+        console.log('do not auth me');
+
+        resolve(false);
         return;
       }
       this.get('auth/me')
@@ -2692,22 +2693,18 @@ export class MedplumClient extends EventTarget {
     // Verify app_client_id
     // external tokenPayload
     if (tokenPayload.cid) {
-      if (tokenPayload.cid === this.clientId) {
-        this.setAccessToken(token);
-        return this.setActiveLogin({
-          accessToken: token,
-          refreshToken: tokens.refresh_token,
-          project: tokens.project,
-          profile: tokens.profile,
-        });
-      } else {
+      if (tokenPayload.cid !== this.clientId) {
         this.clearActiveLogin();
         throw new Error('Token was not issued for this audience');
       }
-    }
-    if (this.clientId && tokenPayload.client_id !== this.clientId) {
+    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
+    }
+
+    if (this.basicAuth) {
+      this.setAccessToken(token);
+      return;
     }
 
     return this.setActiveLogin({
@@ -2745,10 +2742,6 @@ export class MedplumClient extends EventTarget {
     if (retryNumber >= maxRetries - 1) {
       throw err;
     }
-  }
-
-  private isExternalAuth(): boolean {
-    return true;
   }
 }
 
