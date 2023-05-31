@@ -27,7 +27,7 @@ import { getConfig } from '../config';
 
 export const fhirRouter = Router();
 
-let router: FhirRouter;
+let internalFhirRouter: FhirRouter;
 
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -158,7 +158,9 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
-    router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+    if (!internalFhirRouter) {
+      internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+    }
     const repo = res.locals.repo as Repository;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
@@ -168,7 +170,7 @@ protectedRoutes.use(
       body: req.body,
     };
 
-    const result = await router.handleRequest(request, repo);
+    const result = await internalFhirRouter.handleRequest(request, repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);
