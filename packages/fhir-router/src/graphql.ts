@@ -62,7 +62,7 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse } from './fhirrouter';
+import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
 
 const typeCache: Record<string, GraphQLOutputType | undefined> = {
@@ -130,7 +130,11 @@ interface ConnectionEdge {
  *
  * See: https://www.hl7.org/fhir/graphql.html
  */
-export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+export async function graphqlHandler(
+  req: FhirRequest,
+  repo: FhirRepository,
+  router: FhirRouter
+): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
     return [badRequest('Must provide query.')];
@@ -151,8 +155,7 @@ export async function graphqlHandler(req: FhirRequest, repo: FhirRepository): Pr
   }
 
   const introspection = isIntrospectionQuery(query);
-  const introspectionEnabled = !!req.options?.introspectionEnabled;
-  if (introspection && !introspectionEnabled) {
+  if (introspection && !router.options?.introspectionEnabled) {
     return [forbidden];
   }
 

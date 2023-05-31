@@ -1,9 +1,9 @@
 export interface MedplumGraphiQLConfig {
-  introspectionUrl: string;
+  introspectionUrl?: string;
 }
 
 const config: MedplumGraphiQLConfig = {
-  introspectionUrl: process.env.MEDPLUM_INTROSPECTION_URL || '/schema/schema-v4.json',
+  introspectionUrl: process.env.MEDPLUM_INTROSPECTION_URL || undefined,
 };
 
 export function getConfig(): MedplumGraphiQLConfig {

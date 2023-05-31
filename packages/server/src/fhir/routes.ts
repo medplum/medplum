@@ -26,7 +26,15 @@ import { smartConfigurationHandler, smartStylingHandler } from './smart';
 import { getConfig } from '../config';
 
 export const fhirRouter = Router();
-const router = new FhirRouter();
+
+// If the config file is not present, assume introspection is disabled
+let config;
+try {
+  config = getConfig();
+} catch (error) {
+  config = { introspectionEnabled: false };
+}
+const router = new FhirRouter({ introspectionEnabled: config.introspectionEnabled });
 
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -157,8 +165,6 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
-    const introspectionEnabled = getConfig().introspectionEnabled;
-
     const repo = res.locals.repo as Repository;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
@@ -166,7 +172,6 @@ protectedRoutes.use(
       params: req.params,
       query: req.query as Record<string, string>,
       body: req.body,
-      options: { introspectionEnabled: !!introspectionEnabled },
     };
 
     const result = await router.handleRequest(request, repo);

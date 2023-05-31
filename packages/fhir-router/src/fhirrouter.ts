@@ -12,7 +12,6 @@ export type FhirRequest = {
   body: any;
   params: Record<string, string>;
   query: Record<string, string>;
-  options?: Record<string, any>;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -108,8 +107,11 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
 
 export class FhirRouter {
   readonly router = new Router<FhirRouteHandler>();
+  readonly options: Record<string, any>;
 
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
+
     this.router.add('POST', '', batch);
     this.router.add('GET', ':resourceType', search);
     this.router.add('POST', ':resourceType/_search', searchByPost);

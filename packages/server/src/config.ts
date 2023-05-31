@@ -202,7 +202,6 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
-  config.introspectionEnabled = config.introspectionEnabled ?? false;
   return config;
 }
 

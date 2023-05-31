@@ -6,11 +6,11 @@ import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/r
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { getConfig } from './config';
 
 import 'regenerator-runtime/runtime.js';
 
 import 'graphiql/graphiql.css';
-import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
 #
