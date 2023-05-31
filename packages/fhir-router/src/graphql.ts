@@ -16,7 +16,6 @@ import {
   isLowerCase,
   isResourceTypeSchema,
   LRUCache,
-  MedplumClient,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -65,6 +64,7 @@ import {
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
+import { Operation } from 'rfc6902';
 
 const typeCache: Record<string, GraphQLOutputType | undefined> = {
   base64Binary: GraphQLString,
@@ -237,10 +237,10 @@ function buildRootSchema(): GraphQLSchema {
     };
 
     // Mutation API
-    mutationFields['patch' + resourceType] = {
+    mutationFields[resourceType + 'Update'] = {
       type: graphQLType,
       args: buildUpdateArgs(resourceType),
-      resolve: resolveByPatch,
+      resolve: resolveByUpdate,
     };
   }
 
@@ -576,7 +576,8 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
   });
 }
 
-async function resolveByPatch(
+// create update and delete
+async function resolveByUpdate(
   source: any,
   args: Record<string, string>,
   ctx: GraphQLContext,
@@ -584,7 +585,8 @@ async function resolveByPatch(
 ): Promise<Resource | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring('update'.length) as ResourceType;
-  const resource = await medplum.updateResource({ resourceType: resourceType, id: args.id });
+  // const body = parsePatchArgs(args) as Operation[];
+  const resource = await ctx.repo.updateResource();
   return resource;
 }
 
@@ -757,7 +759,6 @@ function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<s
       value: getReferenceString(source as Resource),
     };
   }
-
   // Reverse the transform of dashes to underscores, back to dashes
   args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
 
@@ -770,7 +771,7 @@ function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<s
     const existingFilters = searchRequest.filters || [];
     searchRequest.filters = [referenceFilter, ...existingFilters];
   }
-
+  console.log(searchRequest)
   return searchRequest;
 }
 

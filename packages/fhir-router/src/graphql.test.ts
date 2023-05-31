@@ -1073,7 +1073,7 @@ describe('GraphQL', () => {
         query: `
       mutation {
         patchPatient(
-          id: "${patient.id}"
+          _id: "${patient.id}"
           gender: "male"
         ) {
           id
@@ -1085,9 +1085,9 @@ describe('GraphQL', () => {
       `,
       },
     };
-
-    const res = await graphqlHandler(request, repo);
-    console.log(res);
+    const fhirRouter = new FhirRouter();
+    console.log('in here');
+    const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
   });
 });
