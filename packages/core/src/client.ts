@@ -30,6 +30,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -40,7 +41,6 @@ import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
 import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
-import { encodeBase64 } from './base64';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -2071,6 +2071,9 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
+      if (this.isExternalAuth()) {
+        return;
+      }
       this.get('auth/me')
         .then((result) => {
           this.profilePromise = undefined;
@@ -2647,7 +2650,7 @@ export class MedplumClient extends EventTarget {
       options = {
         method: 'POST',
         headers: { Authorization: `Basic ${this.basicAuth}` },
-        // body: formBody,
+        body: formBody,
         credentials: 'include',
       };
     } else {
@@ -2658,6 +2661,7 @@ export class MedplumClient extends EventTarget {
         credentials: 'include',
       };
     }
+
     const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
@@ -2741,6 +2745,10 @@ export class MedplumClient extends EventTarget {
     if (retryNumber >= maxRetries - 1) {
       throw err;
     }
+  }
+
+  private isExternalAuth(): boolean {
+    return true;
   }
 }
 
