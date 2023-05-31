@@ -2070,9 +2070,6 @@ export class MedplumClient extends EventTarget {
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
       if (this.basicAuth) {
-        console.log('do not auth me');
-
-        resolve(false);
         return;
       }
       this.get('auth/me')
