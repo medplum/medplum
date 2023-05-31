@@ -16,6 +16,7 @@ import {
   isLowerCase,
   isResourceTypeSchema,
   LRUCache,
+  MedplumClient,
   normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
@@ -205,6 +206,7 @@ function buildRootSchema(): GraphQLSchema {
 
   // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, GraphQLContext> = {};
+  const mutationFields: GraphQLFieldConfigMap<any, GraphQLContext> = {};
   for (const resourceType of getResourceTypes()) {
     const graphQLType = getGraphQLType(resourceType);
 
@@ -233,12 +235,23 @@ function buildRootSchema(): GraphQLSchema {
       args: buildSearchArgs(resourceType),
       resolve: resolveByConnectionApi,
     };
+
+    // Mutation API
+    mutationFields['patch' + resourceType] = {
+      type: graphQLType,
+      args: buildUpdateArgs(resourceType),
+      resolve: resolveByPatch,
+    };
   }
 
   return new GraphQLSchema({
     query: new GraphQLObjectType({
       name: 'QueryType',
       fields,
+    }),
+    mutation: new GraphQLObjectType({
+      name: 'MutationType',
+      fields: mutationFields,
     }),
   });
 }
@@ -512,6 +525,22 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
+function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
+  let args: GraphQLFieldConfigArgumentMap = {};
+  const searchParams = getSearchParameters(resourceType);
+  if (searchParams) {
+    for (const [code, searchParam] of Object.entries(searchParams)) {
+      // GraphQL does not support dashes in argument names
+      // So convert dashes to underscores
+      args[fhirParamToGraphQLField(code)] = {
+        type: GraphQLString,
+        description: searchParam.description,
+      };
+    }
+  }
+  return args;
+}
+
 function getPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
   const graphqlType = getGraphQLType(typeName);
   if (elementDefinition.max === '*') {
@@ -545,6 +574,18 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
       },
     },
   });
+}
+
+async function resolveByPatch(
+  source: any,
+  args: Record<string, string>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<Resource | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring('update'.length) as ResourceType;
+  const resource = await medplum.updateResource({ resourceType: resourceType, id: args.id });
+  return resource;
 }
 
 /**

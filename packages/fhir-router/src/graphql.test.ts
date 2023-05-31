@@ -1058,4 +1058,36 @@ describe('GraphQL', () => {
       edges: [{ resource: { name: [{ given: ['Alice'] }] } }],
     });
   });
+
+  test('Updating Patient Record', async () => {
+    const family = randomUUID();
+
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
+
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        patchPatient(
+          id: "${patient.id}"
+          gender: "male"
+        ) {
+          id
+          name {
+            family
+          }
+        }
+      }
+      `,
+      },
+    };
+
+    const res = await graphqlHandler(request, repo);
+    console.log(res);
+    expect(res[0]).toMatchObject(allOk);
+  });
 });
