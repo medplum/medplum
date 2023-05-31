@@ -23,8 +23,11 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { getConfig } from '../config';
 
 export const fhirRouter = Router();
+
+let internalFhirRouter: FhirRouter;
 
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -155,9 +158,10 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
-    const router = new FhirRouter();
+    if (!internalFhirRouter) {
+      internalFhirRouter = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+    }
     const repo = res.locals.repo as Repository;
-
     const request: FhirRequest = {
       method: req.method as HttpMethod,
       pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
@@ -166,7 +170,7 @@ protectedRoutes.use(
       body: req.body,
     };
 
-    const result = await router.handleRequest(request, repo);
+    const result = await internalFhirRouter.handleRequest(request, repo);
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);

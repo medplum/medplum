@@ -18,6 +18,10 @@ export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
 
 export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: FhirRouter) => Promise<FhirResponse>;
 
+interface FhirOptions {
+  introspectionEnabled?: boolean;
+}
+
 // Execute batch
 async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter): Promise<FhirResponse> {
   const bundle = req.body as Resource;
@@ -107,8 +111,11 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
 
 export class FhirRouter {
   readonly router = new Router<FhirRouteHandler>();
+  readonly options: FhirOptions;
 
-  constructor() {
+  constructor(options = {}) {
+    this.options = options;
+
     this.router.add('POST', '', batch);
     this.router.add('GET', ':resourceType', search);
     this.router.add('POST', ':resourceType/_search', searchByPost);
