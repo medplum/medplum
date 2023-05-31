@@ -94,7 +94,7 @@ describe('GraphQL', () => {
   });
 
   test('Missing query', async () => {
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const [outcome] = await graphqlHandler(
       {
         method: 'POST',
@@ -110,7 +110,7 @@ describe('GraphQL', () => {
   });
 
   test('Syntax error', async () => {
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const [outcome] = await graphqlHandler(
       {
         method: 'POST',
@@ -191,7 +191,7 @@ describe('GraphQL', () => {
     `,
       },
     };
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
     expect(result).toBeDefined();
     expect(result.length).toBe(2);
@@ -221,7 +221,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -250,7 +250,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -275,7 +275,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -301,7 +301,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -327,7 +327,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -354,7 +354,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -385,7 +385,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -430,7 +430,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
     expect(result).toBeDefined();
     expect(result.length).toBe(2);
@@ -475,7 +475,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -508,7 +508,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -540,7 +540,7 @@ describe('GraphQL', () => {
     `,
       },
     };
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]?.issue?.[0]?.details?.text).toEqual(
       'Field "ObservationList" argument "_reference" of type "Patient_Observation_reference!" is required, but it was not provided.'
@@ -582,7 +582,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res1 = await graphqlHandler(request1, repo, fhirRouter);
     expect(res1[0]).toMatchObject(allOk);
 
@@ -723,7 +723,7 @@ describe('GraphQL', () => {
         }`,
       },
     };
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const [outcome, result] = (await graphqlHandler(request, repo, fhirRouter)) as [OperationOutcome, any];
     expect(outcome).toMatchObject(allOk);
     expect(result.data.StructureDefinitionList).toBeDefined();
@@ -760,7 +760,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -801,7 +801,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -841,7 +841,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -883,7 +883,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -923,7 +923,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -968,7 +968,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -1011,7 +1011,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
@@ -1046,7 +1046,7 @@ describe('GraphQL', () => {
       },
     };
 
-    const fhirRouter = new FhirRouter({ introspectionEnabled: false });
+    const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 

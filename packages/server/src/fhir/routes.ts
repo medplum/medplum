@@ -27,14 +27,7 @@ import { getConfig } from '../config';
 
 export const fhirRouter = Router();
 
-// If the config file is not present, assume introspection is disabled
-let config;
-try {
-  config = getConfig();
-} catch (error) {
-  config = { introspectionEnabled: false };
-}
-const router = new FhirRouter({ introspectionEnabled: config.introspectionEnabled });
+let router: FhirRouter;
 
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -165,6 +158,7 @@ protectedRoutes.post(
 protectedRoutes.use(
   '*',
   asyncWrap(async (req: Request, res: Response) => {
+    router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
     const repo = res.locals.repo as Repository;
     const request: FhirRequest = {
       method: req.method as HttpMethod,
