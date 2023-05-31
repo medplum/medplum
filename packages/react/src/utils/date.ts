@@ -7,8 +7,8 @@ import { Resource } from '@medplum/fhirtypes';
  */
 export function sortByDateAndPriority(resources: Resource[], timelineResource?: Resource): void {
   resources.sort((a: Resource, b: Resource): number => {
-    const priority1 = getPriorityScore(a);
-    const priority2 = getPriorityScore(b);
+    const priority1 = getPriorityScore(a, timelineResource);
+    const priority2 = getPriorityScore(b, timelineResource);
     if (priority1 > priority2) {
       return 1;
     }
@@ -19,10 +19,14 @@ export function sortByDateAndPriority(resources: Resource[], timelineResource?: 
   });
 }
 
-function getPriorityScore(resource: Resource): number {
-  const priority = (resource as any).priority;
-  if (typeof priority === 'string') {
-    return { stat: 4, asap: 3, urgent: 2 }[priority] || 0;
+function getPriorityScore(resource: Resource, timelineResource: Resource | undefined): number {
+  if (!isSameResourceType(resource, timelineResource)) {
+    // Only use priority if not the primary resource of a timeline view.
+
+    const priority = (resource as any).priority;
+    if (typeof priority === 'string') {
+      return { stat: 4, asap: 3, urgent: 2 }[priority] || 0;
+    }
   }
   return 0;
 }
