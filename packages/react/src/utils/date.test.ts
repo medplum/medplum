@@ -45,4 +45,27 @@ describe('Date utils', () => {
     sortByDateAndPriority(input);
     expect(input).toMatchObject(expected);
   });
+
+  test('Ignore sorting special cases on timeline', () => {
+    // When looking at a particular resource's timeline view,
+    // history events for that resource should not use the sorting special cases
+    const resourceType = 'Communication';
+    const id = '1234';
+    const input: Communication[] = [
+      { resourceType, id, meta: { lastUpdated: '2001-01-01T00:00:00.000Z' } },
+      { resourceType, id, meta: { lastUpdated: '2001-01-02T00:00:00.000Z' }, sent: '2000-01-01T00:00:00.000Z' },
+      { resourceType, id, meta: { lastUpdated: '2001-01-03T00:00:00.000Z' } },
+      { resourceType, id, meta: { lastUpdated: '2001-01-04T00:00:00.000Z' }, priority: 'stat' },
+      { resourceType, id, meta: { lastUpdated: '2001-01-05T00:00:00.000Z' }, priority: 'routine' },
+    ];
+    const expected: Communication[] = [
+      { resourceType, id, meta: { lastUpdated: '2001-01-01T00:00:00.000Z' } },
+      { resourceType, id, meta: { lastUpdated: '2001-01-02T00:00:00.000Z' }, sent: '2000-01-01T00:00:00.000Z' },
+      { resourceType, id, meta: { lastUpdated: '2001-01-03T00:00:00.000Z' } },
+      { resourceType, id, meta: { lastUpdated: '2001-01-04T00:00:00.000Z' }, priority: 'stat' },
+      { resourceType, id, meta: { lastUpdated: '2001-01-05T00:00:00.000Z' }, priority: 'routine' },
+    ];
+    sortByDateAndPriority(input, input[0]);
+    expect(input).toMatchObject(expected);
+  });
 });
