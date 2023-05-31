@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirtypes",
-  "version": "2.0.20",
+  "version": "2.0.21",
   "description": "Medplum FHIR Type Definitions",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
