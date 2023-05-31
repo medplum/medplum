@@ -18,8 +18,8 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   const clientId = process.env['MEDPLUM_CLIENT_ID'];
   const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
   if (clientId && clientSecret) {
-    // await medplum.startClientLogin(clientId, clientSecret);
-    await medplum.setBasicAuth(clientId, clientSecret);
+    medplum.setBasicAuth(clientId, clientSecret);
+    await medplum.startClientLogin(clientId, clientSecret);
   }
   try {
     const index = new Command('medplum').description('Command to access Medplum CLI');
@@ -64,12 +64,12 @@ export function run(): void {
   const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
   const fhirUrlPath = process.env['MEDPLUM_FHIR_URL_PATH'] || '';
   const accessToken = process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
-  // const tokenUrl = process.env['MEDPLUM_TOKEN_URL'] || 'https://api.medplum.com/';
+  const tokenUrl = process.env['MEDPLUM_TOKEN_URL'] || 'https://api.medplum.com/';
 
   const medplumClient = new MedplumClient({
     fetch,
     baseUrl,
-    // tokenUrl,
+    tokenUrl,
     fhirUrlPath,
     storage: new FileSystemStorage(),
     onUnauthenticated: onUnauthenticated,

@@ -2032,7 +2032,9 @@ export class MedplumClient extends EventTarget {
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
     this.refreshPromise = undefined;
-    await this.refreshProfile();
+    if (this.refreshToken) {
+      await this.refreshProfile();
+    }
   }
 
   /**
@@ -2431,7 +2433,6 @@ export class MedplumClient extends EventTarget {
     } else if (this.basicAuth) {
       headers['Authorization'] = 'Basic ' + this.basicAuth;
     }
-
     if (!options.cache) {
       options.cache = 'no-cache';
     }
@@ -2678,6 +2679,7 @@ export class MedplumClient extends EventTarget {
 
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
+
     if (Date.now() >= (tokenPayload.exp as number) * 1000) {
       this.clearActiveLogin();
       throw new Error('Token expired');
@@ -2687,6 +2689,7 @@ export class MedplumClient extends EventTarget {
     // external tokenPayload
     if (tokenPayload.cid) {
       if (tokenPayload.cid === this.clientId) {
+        this.setAccessToken(token);
         return this.setActiveLogin({
           accessToken: token,
           refreshToken: tokens.refresh_token,
