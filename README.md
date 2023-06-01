@@ -93,12 +93,6 @@ medplum/
 
 See developer setup documentation: https://www.medplum.com/docs/contributing
 
-## Careers
-
-![Medplum is hiring](packages/docs/static/img/hiring.webp)
-
-Medplum is hiring! Learn more on our [careers page](https://www.medplum.com/careers).
-
 ## License
 
 [Apache 2.0](LICENSE.txt)

@@ -19,13 +19,11 @@ Medplum is a small team of industry veterans and repeat founders. Our team membe
 
 :::info
 
-Medplum had a great year in 2022. The response from developers and healthcare providers has been overwhelming. We reached the point where we need more than the founders working on it full-time.
-
-If you're interested, please email careers@medplum.com with your resume and a short introduction. We're excited to meet you.
+While we're not currently hiring, we always appreciate hearing from those deeply passionate about our mission. Don't hesitate to reach out to careers@medplum.com, as we value potential connections for future opportunities.
 
 :::
 
-## Founding Engineer (Front-End)
+## Software Engineer (Front-End)
 
 #### What you’ll do
 
@@ -60,7 +58,7 @@ Engineers at Medplum are comfortable working on new products under fluid conditi
 - Experience with a regulated environment and test driven development
 - Familiarity with healthcare data and standards like FHIR and HIPAA
 
-## Founding Engineer (Fullstack)
+## Software Engineer (Fullstack)
 
 #### What you’ll do
 
