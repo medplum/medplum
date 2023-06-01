@@ -2665,7 +2665,10 @@ export class MedplumClient extends EventTarget {
 
     const response = await this.fetch(this.tokenUrl, {
       method: 'POST',
-      headers: { Authorization: `Basic ${encodeBase64(clientId + ':' + clientSecret)}` },
+      headers: {
+        Authorization: `Basic ${encodeBase64(clientId + ':' + clientSecret)}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
       body: formBody,
       credentials: 'include',
     });
