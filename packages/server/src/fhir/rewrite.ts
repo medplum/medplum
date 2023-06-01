@@ -174,7 +174,7 @@ class Rewriter {
  * When comparing two binary URLs, we want to compare the binary ID and version ID.
  *
  * @param url The input URL.
- * @returns
+ * @returns The normalized binary ID and version ID.
  */
 function normalizeBinaryUrl(url: string): { id?: string; versionId?: string } {
   const config = getConfig();

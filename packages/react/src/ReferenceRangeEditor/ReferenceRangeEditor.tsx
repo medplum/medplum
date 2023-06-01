@@ -350,7 +350,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
  * Helper function that assigns ids to each qualifiedInterval of an ObservationDefinition
  * @param definition An ObservationDefinition
  * @param setIntervalId React setState function for the intervalId
- * @returns
+ * @returns The updated observation definition.
  */
 function ensureQualifiedIntervalKeys(
   definition: ObservationDefinition,

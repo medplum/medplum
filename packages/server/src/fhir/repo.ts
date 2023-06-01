@@ -2054,7 +2054,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * then use the provided value.
    * Otherwise uses the current context profile.
    * @param resource The FHIR resource.
-   * @returns
+   * @returns The author value.
    */
   private getAuthor(resource: Resource): Reference {
     // If the resource has an author (whether provided or from existing),

@@ -132,6 +132,7 @@ interface ConnectionEdge {
  *
  * @param req The request details.
  * @param repo The current user FHIR repository.
+ * @param router The router for router options.
  * @returns The response.
  */
 export async function graphqlHandler(

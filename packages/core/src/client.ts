@@ -1168,7 +1168,7 @@ export class MedplumClient extends EventTarget {
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns An async generator, where each result is an array of resources for each page.
+   * @yields An async generator, where each result is an array of resources for each page.
    */
   async *searchResourcePages<K extends ResourceType>(
     resourceType: K,

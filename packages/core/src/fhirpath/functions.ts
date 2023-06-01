@@ -572,7 +572,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#toboolean-boolean
    *
    * @param input The input collection.
-   * @returns
+   * @returns The input converted to boolean value.
    */
   toBoolean: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -617,7 +617,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: http://hl7.org/fhirpath/#convertstoboolean-boolean
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the input can be converted to boolean.
    */
   convertsToBoolean: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -680,7 +680,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#convertstointeger-boolean
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the input can be converted to an integer.
    */
   convertsToInteger: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -1588,7 +1588,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns true if the input collection evaluates to false, and false if it evaluates to true. Otherwise, the result is empty ({ }):
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the input evaluates to false.
    */
   not: (input: TypedValue[]): TypedValue[] => {
     return functions.toBoolean(input).map((value) => ({ type: PropertyType.boolean, value: !value.value }));
@@ -1603,7 +1603,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * For each item in the collection, if it is a string that is a uri (or canonical or url), locate the target of the reference, and add it to the resulting collection. If the item does not resolve to a resource, the item is ignored and nothing is added to the output collection.
    * The items in the collection may also represent a Reference, in which case the Reference.reference is resolved.
    * @param input The input collection.
-   * @returns
+   * @returns The resolved resource.
    */
   resolve: (input: TypedValue[]): TypedValue[] => {
     return input
@@ -1661,7 +1661,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#model-information
    *
    * @param input The input collection.
-   * @returns
+   * @returns The type of the input value.
    */
   type: (input: TypedValue[]): TypedValue[] => {
     return input.map(({ value }) => {
