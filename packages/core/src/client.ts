@@ -2031,6 +2031,9 @@ export class MedplumClient extends EventTarget {
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
     this.accessToken = login.accessToken;
+    if (this.basicAuth) {
+      return;
+    }
     this.refreshToken = login.refreshToken;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2695,11 +2698,6 @@ export class MedplumClient extends EventTarget {
     } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
-    }
-
-    if (this.basicAuth) {
-      this.setAccessToken(token);
-      return;
     }
 
     return this.setActiveLogin({
