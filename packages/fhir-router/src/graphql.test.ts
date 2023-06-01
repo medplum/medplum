@@ -926,7 +926,6 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
-
     const data = (res?.[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.extension).toHaveLength(1);
@@ -1060,10 +1059,7 @@ describe('GraphQL', () => {
   });
 
   test('Updating Patient Record', async () => {
-    const family = randomUUID();
-
-    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
-
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', gender: 'female' });
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -1072,22 +1068,22 @@ describe('GraphQL', () => {
       body: {
         query: `
       mutation {
-        patchPatient(
-          _id: "${patient.id}"
+        PatientUpdate(
+          id: "${patient.id}"
           gender: "male"
         ) {
           id
-          name {
-            family
-          }
+          gender
         }
       }
       `,
       },
     };
     const fhirRouter = new FhirRouter();
-    console.log('in here');
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
+
+    const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
+    expect(retrievePatient.gender).toEqual('male');
   });
 });

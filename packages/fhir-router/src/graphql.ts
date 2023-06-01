@@ -526,7 +526,12 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
 }
 
 function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
-  let args: GraphQLFieldConfigArgumentMap = {};
+  let args: GraphQLFieldConfigArgumentMap = {
+    id: {
+      type: new GraphQLNonNull(GraphQLID),
+      description: resourceType + ' ID',
+    },
+  };
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {
     for (const [code, searchParam] of Object.entries(searchParams)) {
@@ -584,9 +589,10 @@ async function resolveByUpdate(
   info: GraphQLResolveInfo
 ): Promise<Resource | undefined> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring('update'.length) as ResourceType;
-  // const body = parsePatchArgs(args) as Operation[];
-  const resource = await ctx.repo.updateResource();
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  const updatedResource = { ...args, resourceType };
+  const resource = await ctx.repo.updateResource(updatedResource as Resource);
+  // console.log(resource);
   return resource;
 }
 
@@ -771,7 +777,6 @@ function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<s
     const existingFilters = searchRequest.filters || [];
     searchRequest.filters = [referenceFilter, ...existingFilters];
   }
-  console.log(searchRequest)
   return searchRequest;
 }
 
