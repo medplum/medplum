@@ -76,8 +76,12 @@ export interface InviteRequest {
 export async function inviteUser(
   request: InviteRequest
 ): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
+  if (request.email) {
+    request.email = request.email.toLowerCase();
+  }
+
   const project = request.project;
-  const email = request.email?.toLowerCase();
+  const email = request.email;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
@@ -127,7 +131,8 @@ export async function inviteUser(
 }
 
 async function createUser(request: InviteRequest): Promise<User> {
-  const { firstName, lastName, email, externalId } = request;
+  const { firstName, lastName, externalId } = request;
+  const email = request.email?.toLowerCase();
   const password = request.password || generateSecret(16);
   logger.info('Create user ' + email);
   const passwordHash = await bcryptHashPassword(password);
