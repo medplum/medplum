@@ -2643,21 +2643,16 @@ export class MedplumClient extends EventTarget {
    * @param formBody Token parameters in URL encoded format.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    let options = {};
+    const options = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formBody,
+      credentials: 'include',
+    };
+    const headers = options.headers as Record<string, string>;
+
     if (this.basicAuth) {
-      options = {
-        method: 'POST',
-        headers: { Authorization: `Basic ${this.basicAuth}` },
-        body: formBody,
-        credentials: 'include',
-      };
-    } else {
-      options = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: formBody,
-        credentials: 'include',
-      };
+      headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
 
     const response = await this.fetch(this.tokenUrl, options);
