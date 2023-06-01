@@ -612,6 +612,41 @@ describe('Client', () => {
     }
   });
 
+  test('requestAccessToken missmatched cid', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: 'header.' + window.btoa(JSON.stringify({ cid: 'different-client-id' })) + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.requestAccessToken(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token was not issued for this audience');
+    }
+  });
+
+  test('requestAccessToken fail to fetch tokens', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(500, () => ({}));
+
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.requestAccessToken(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Failed to fetch tokens');
+    }
+  });
+
   test('Invite user', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
