@@ -43,16 +43,16 @@ describe('CLI', () => {
     process.env = env;
   });
 
-  test('run', () => {
-    run();
+  test('run', async () => {
+    await run();
     expect(process.exit).toBeCalledWith(1);
   });
 
-  test('run with optional env set', () => {
+  test('run with optional env set', async () => {
     process.env.MEDPLUM_BASE_URL = 'http://example.com';
     process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
     process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
-    run();
+    await run();
     expect(process.exit).toBeCalledWith(1);
   });
 
@@ -73,7 +73,7 @@ describe('CLI', () => {
     process.env.MEDPLUM_CLIENT_ID = '123';
     process.env.MEDPLUM_CLIENT_SECRET = 'abc';
     await main(medplum, ['node', 'index.js', 'whoami']);
-    expect(medplum.getActiveLogin()).toBeDefined();
+    expect(medplum.getAccessToken()).toBeDefined();
   });
 
   test('Login success', async () => {

@@ -15,6 +15,12 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
   medplum = medplumClient;
 
   try {
+    const clientId = process.env['MEDPLUM_CLIENT_ID'];
+    const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
+    if (clientId && clientSecret) {
+      medplumClient.setBasicAuth(clientId, clientSecret);
+      await medplumClient.startClientLogin(clientId, clientSecret);
+    }
     const index = new Command('medplum').description('Command to access Medplum CLI');
     index.version(MEDPLUM_VERSION);
 
@@ -70,12 +76,6 @@ export async function run(): Promise<void> {
 
   if (accessToken) {
     medplumClient.setAccessToken(accessToken);
-  }
-  const clientId = process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
-  if (clientId && clientSecret) {
-    medplumClient.setBasicAuth(clientId, clientSecret);
-    await medplumClient.startClientLogin(clientId, clientSecret);
   }
   await main(medplumClient, process.argv);
 }
