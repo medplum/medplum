@@ -73,7 +73,7 @@ describe('CLI', () => {
     process.env.MEDPLUM_CLIENT_ID = '123';
     process.env.MEDPLUM_CLIENT_SECRET = 'abc';
     await main(medplum, ['node', 'index.js', 'whoami']);
-    expect(medplum.getActiveLogin()).toBeDefined();
+    expect(medplum.getAccessToken()).toBeDefined();
   });
 
   test('Login success', async () => {

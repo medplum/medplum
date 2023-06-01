@@ -2689,7 +2689,7 @@ export class MedplumClient extends EventTarget {
       if (tokenPayload.cid !== clientId) {
         throw new Error('Token was not issued for this audience');
       }
-    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
+    } else if (clientId && tokenPayload.client_id !== clientId) {
       throw new Error('Token was not issued for this audience');
     }
 
