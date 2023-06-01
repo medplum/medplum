@@ -408,7 +408,7 @@ function addFilter(searchRequest: SearchRequest, filter: Filter): void {
 /**
  * Formats a search definition object into a query string.
  * Note: The return value does not include the resource type.
- * @param {!SearchRequest} definition The search definition.
+ * @param definition The search definition.
  * @returns Formatted URL.
  */
 export function formatSearchQuery(definition: SearchRequest): string {

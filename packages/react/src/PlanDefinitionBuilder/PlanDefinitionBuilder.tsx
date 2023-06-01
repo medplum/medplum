@@ -458,7 +458,8 @@ let nextId = 1;
  * React needs unique IDs for components for rendering performance.
  * All of the important components in the questionnaire builder have id properties for this:
  * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
- * @return A unique key.
+ * @param existing Optional existing id which will update nextId.
+ * @returns A unique key.
  */
 function generateId(existing?: string): string {
   if (existing) {

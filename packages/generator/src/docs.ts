@@ -43,8 +43,8 @@ export function main(): void {
 }
 
 /**
- *
- * @param searchParams
+ * Indexes searcch parameters by "base" resource type.
+ * @param searchParams The bundle of SearchParameter resources.
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
 function indexSearchParameters(searchParams: Bundle): Record<string, SearchParameter[]> {

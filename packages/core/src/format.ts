@@ -440,9 +440,10 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
 
 /**
  * Returns the input number increased by the `n` units of the specified precision
- * @param a The input number
+ * @param a The input number.
  * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to add
+ * @param n (default 1) The number of units to add.
+ * @returns The result of the increment.
  */
 function preciseIncrement(a: number, precision: number, n = 1): number {
   return (toPreciseInteger(a, precision) + n) * Math.pow(10, -precision);
@@ -450,9 +451,10 @@ function preciseIncrement(a: number, precision: number, n = 1): number {
 
 /**
  * Returns the input number decreased by the `n` units of the specified precision
- * @param a The input number
+ * @param a The input number.
  * @param precision The precision in number of digits.
- * @param n (default 1) The number of units to subtract
+ * @param n (default 1) The number of units to subtract.
+ * @returns The result of the decrement.
  */
 function preciseDecrement(a: number, precision: number, n = 1): number {
   return (toPreciseInteger(a, precision) - n) * Math.pow(10, -precision);

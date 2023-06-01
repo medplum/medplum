@@ -113,9 +113,10 @@ async function validateParameters(req: Request, res: Response): Promise<PlanDefi
 /**
  * Creates a Task and RequestGroup action for the given PlanDefinition action.
  * @param repo The repository configured for the current user.
+ * @param requester The user who requested the plan definition.
  * @param params The apply operation parameters (subject, etc).
  * @param action The PlanDefinition action.
- * @return The RequestGroup action.
+ * @returns The RequestGroup action.
  */
 async function createAction(
   repo: Repository,
@@ -132,9 +133,10 @@ async function createAction(
 /**
  * Creates a Task and RequestGroup action to complete a Questionnaire.
  * @param repo The repository configured for the current user.
+ * @param requester The user who requested the plan definition.
  * @param params The apply operation parameters (subject, etc).
  * @param action The PlanDefinition action.
- * @return The RequestGroup action.
+ * @returns The RequestGroup action.
  */
 async function createQuestionnaireTask(
   repo: Repository,
@@ -162,7 +164,7 @@ async function createQuestionnaireTask(
  * @param params The apply operation parameters (subject, etc).
  * @param action The PlanDefinition action.
  * @param input Optional input details.
- * @return The RequestGroup action.
+ * @returns The RequestGroup action.
  */
 async function createTask(
   repo: Repository,

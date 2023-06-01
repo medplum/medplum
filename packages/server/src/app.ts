@@ -80,7 +80,8 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
  */
 function errorHandler(err: any, req: Request, res: Response, next: NextFunction): void {
   if (res.headersSent) {
-    return next(err);
+    next(err);
+    return;
   }
   if (err.outcome) {
     sendOutcome(res, err.outcome as OperationOutcome);

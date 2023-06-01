@@ -33,6 +33,7 @@ let worker: Worker<DownloadJobData> | undefined = undefined;
  * Initializes the download worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
+ * @param config The Redis config.
  */
 export function initDownloadWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {

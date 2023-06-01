@@ -303,6 +303,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
  * See: https://datatracker.ietf.org/doc/html/rfc8693
  * @param req The HTTP request.
  * @param res The HTTP response.
+ * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
   return exchangeExternalAuthToken(req, res, req.body.client_id, req.body.subject_token, req.body.subject_token_type);

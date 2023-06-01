@@ -92,7 +92,9 @@ export class ValueSetElementTable extends LookupTable<ValueSetExpansionContains>
   /**
    * Recursively adds CodeSystem concepts.
    * See: https://www.hl7.org/fhir/codesystem-definitions.html#CodeSystem.concept
+   * @param codeSystem The CodeSystem.
    * @param concept The CodeSystem concept.
+   * @param result The output value set concept array.
    */
   private buildCodeSystemElements(
     codeSystem: CodeSystem,

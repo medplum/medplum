@@ -56,6 +56,8 @@ export async function updateAppCommand(tag: string): Promise<void> {
  * Returns NPM package metadata for a given package name.
  * See: https://github.com/npm/registry/blob/master/docs/REGISTRY-API.md#getpackageversion
  * @param packageName The npm package name.
+ * @param version The npm package version string.
+ * @returns The package.json metadata content.
  */
 async function getNpmPackageMetadata(packageName: string, version: string): Promise<any> {
   const url = `https://registry.npmjs.org/${packageName}/${version}`;
@@ -159,6 +161,11 @@ async function uploadAppToS3(tmpDir: string, bucketName: string): Promise<void> 
 /**
  * Uploads a directory of files to S3.
  * @param options The upload options such as bucket name, content type, and cache control.
+ * @param options.rootDir The root directory of the upload.
+ * @param options.bucketName The destination bucket name.
+ * @param options.fileNamePattern The glob file pattern to upload.
+ * @param options.contentType The content type MIME type.
+ * @param options.cached True to mark as public and cached forever.
  */
 async function uploadFolderToS3(options: {
   rootDir: string;
@@ -177,6 +184,10 @@ async function uploadFolderToS3(options: {
  * Uploads a file to S3.
  * @param filePath The file path.
  * @param options The upload options such as bucket name, content type, and cache control.
+ * @param options.rootDir The root directory of the upload.
+ * @param options.bucketName The destination bucket name.
+ * @param options.contentType The content type MIME type.
+ * @param options.cached True to mark as public and cached forever.
  */
 async function uploadFileToS3(
   filePath: string,

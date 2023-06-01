@@ -17,6 +17,7 @@ export interface FhirPathFunction {
 
 /**
  * Temporary placholder for unimplemented methods.
+ * @returns Empty array.
  */
 const stub: FhirPathFunction = (): [] => [];
 
@@ -49,8 +50,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#existscriteria-expression-boolean
    *
-   * @param input
-   * @param criteria
+   * @param input The input collection.
+   * @param criteria Optional criteria applied to the collection.
    * @returns True if the collection has unknown elements, and false otherwise.
    */
   exists: (input: TypedValue[], criteria?: Atom): TypedValue[] => {
@@ -85,7 +86,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#alltrue-boolean
    *
    * @param input The input collection.
-   * @param criteria The evaluation criteria.
    * @returns True if all the items are true.
    */
   allTrue: (input: TypedValue[]): TypedValue[] => {
@@ -104,7 +104,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#anytrue-boolean
    *
    * @param input The input collection.
-   * @param criteria The evaluation criteria.
    * @returns True if unknown of the items are true.
    */
   anyTrue: (input: TypedValue[]): TypedValue[] => {
@@ -124,7 +123,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#allfalse-boolean
    *
    * @param input The input collection.
-   * @param criteria The evaluation criteria.
    * @returns True if all the items are false.
    */
   allFalse: (input: TypedValue[]): TypedValue[] => {
@@ -143,7 +141,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#anyfalse-boolean
    *
    * @param input The input collection.
-   * @param criteria The evaluation criteria.
    * @returns True if for every element in the input collection, criteria evaluates to true.
    */
   anyFalse: (input: TypedValue[]): TypedValue[] => {
@@ -252,7 +249,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#wherecriteria-expression-collection
    *
    * @param input The input collection.
-   * @param condition The condition atom.
+   * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   where: (input: TypedValue[], criteria: Atom): TypedValue[] => {
@@ -269,6 +266,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * the input collection is empty ({ }), the result is empty as well.
    *
    * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
+   *
+   * @param input The input collection.
+   * @param criteria The condition atom.
+   * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   select: (input: TypedValue[], criteria: Atom): TypedValue[] => {
     return input.map((e) => criteria.eval([e])).flat();
@@ -290,6 +291,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * must resolve to the name of a type in a model
    *
    * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
+   *
+   * @param input The input collection.
+   * @param criteria The condition atom.
+   * @returns A collection containing only those elements in the input collection that are of the given type or a subclass thereof.
    */
   ofType: (input: TypedValue[], criteria: Atom): TypedValue[] => {
     return input.filter((e) => e.type === (criteria as SymbolAtom).name);
@@ -366,6 +371,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#skipnum-integer-collection
    *
    * @param input The input collection.
+   * @param num The atom representing the number of elements to skip.
    * @returns A collection containing all but the first item in the input collection.
    */
   skip: (input: TypedValue[], num: Atom): TypedValue[] => {
@@ -391,6 +397,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#takenum-integer-collection
    *
    * @param input The input collection.
+   * @param num The atom representing the number of elements to take.
    * @returns A collection containing the first num items in the input collection.
    */
   take: (input: TypedValue[], num: Atom): TypedValue[] => {
@@ -413,6 +420,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * Order of items is not guaranteed to be preserved in the result of this function.
    *
    * See: http://hl7.org/fhirpath/#intersectother-collection-collection
+   *
+   * @param input The input collection.
+   * @param other The atom representing the collection of elements to intersect.
+   * @returns A collection containing the elements that are in both collections.
    */
   intersect: (input: TypedValue[], other: Atom): TypedValue[] => {
     if (!other) {
@@ -435,6 +446,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * e.g. (1 | 2 | 3).exclude(2) returns (1 | 3).
    *
    * See: http://hl7.org/fhirpath/#excludeother-collection-collection
+   *
+   * @param input The input collection.
+   * @param other The atom representing the collection of elements to exclude.
+   * @returns A collection containing the elements that are in the input collection but not the other collection.
    */
   exclude: (input: TypedValue[], other: Atom): TypedValue[] => {
     if (!other) {
@@ -464,6 +479,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * In other words, this function returns the distinct list of elements from both inputs.
    *
    * See: http://hl7.org/fhirpath/#unionother-collection
+   *
+   * @param input The input collection.
+   * @param other The atom representing the collection of elements to merge.
+   * @returns A collection containing the elements that represent the union of both collections.
    */
   union: (input: TypedValue[], other: Atom): TypedValue[] => {
     if (!other) {
@@ -481,6 +500,10 @@ export const functions: Record<string, FhirPathFunction> = {
    * There is no expectation of order in the resulting collection.
    *
    * See: http://hl7.org/fhirpath/#combineother-collection-collection
+   *
+   * @param input The input collection.
+   * @param other The atom representing the collection of elements to merge.
+   * @returns A collection containing the elements that represent the combination of both collections including duplicates.
    */
   combine: (input: TypedValue[], other: Atom): TypedValue[] => {
     if (!other) {
@@ -512,11 +535,11 @@ export const functions: Record<string, FhirPathFunction> = {
    * and otherwise-result should only be evaluated otherwise. For implementations,
    * this means delaying evaluation of the arguments.
    *
-   * @param input
-   * @param criterion
-   * @param trueResult
-   * @param otherwiseResult
-   * @returns
+   * @param input The input collection.
+   * @param criterion The atom representing the conditional.
+   * @param trueResult The atom to be used if the conditional evaluates to true.
+   * @param otherwiseResult Optional atom to be used if the conditional evaluates to false.
+   * @returns The result of the iif function.
    */
   iif: (input: TypedValue[], criterion: Atom, trueResult: Atom, otherwiseResult?: Atom): TypedValue[] => {
     const evalResult = criterion.eval(input);
@@ -548,8 +571,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#toboolean-boolean
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns The input converted to boolean value.
    */
   toBoolean: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -593,8 +616,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: http://hl7.org/fhirpath/#convertstoboolean-boolean
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns True if the input can be converted to boolean.
    */
   convertsToBoolean: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -657,7 +680,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#convertstointeger-boolean
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the input can be converted to an integer.
    */
   convertsToInteger: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -681,6 +704,9 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#todate-date
+   *
+   * @param input The input collection.
+   * @returns The value converted to a date if possible; otherwise empty array.
    */
   toDate: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -708,6 +734,9 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodate-boolean
+   *
+   * @param input The input collection.
+   * @returns True if the item can be converted to a date.
    */
   convertsToDate: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -717,26 +746,26 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
- * If the input collection contains a single item, this function will return a single datetime if:
- *   1) the item is a DateTime
- *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
- *   3) the item is a String and is convertible to a DateTime
- *
- * If the item is not one of the above types, the result is empty.
- *
- * If the item is a String, but the string is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is empty.
- *
- * If the item contains a partial datetime (e.g. '2012-01-01T10:00'), the result is a partial datetime.
- *
- * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
- *
- * If the input collection is empty, the result is empty.
-
- * See: https://hl7.org/fhirpath/#todatetime-datetime
- *
- * @param input
- * @returns
- */
+   * If the input collection contains a single item, this function will return a single datetime if:
+   *   1) the item is a DateTime
+   *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
+   *   3) the item is a String and is convertible to a DateTime
+   *
+   * If the item is not one of the above types, the result is empty.
+   *
+   * If the item is a String, but the string is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is empty.
+   *
+   * If the item contains a partial datetime (e.g. '2012-01-01T10:00'), the result is a partial datetime.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#todatetime-datetime
+   *
+   * @param input The input collection.
+   * @returns The value converted to a dateTime if possible; otherwise empty array.
+   */
   toDateTime: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
@@ -762,8 +791,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#convertstodatetime-boolean
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns True if the item can be converted to a dateTime.
    */
   convertsToDateTime: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -788,7 +817,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#decimal-conversion-functions
    *
    * @param input The input collection.
-   * @returns
+   * @returns The value converted to a decimal if possible; otherwise empty array.
    */
   toDecimal: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -808,22 +837,22 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
- * If the input collection contains a single item, this function will true if:
- *   1) the item is an Integer or Decimal
- *   2) the item is a String and is convertible to a Decimal
- *   3) the item is a Boolean
- *
- * If the item is not one of the above types, or is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is false.
- *
- * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
- *
- * If the input collection is empty, the result is empty.
-
- * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
- *
- * @param input The input collection.
- * @returns
- */
+   * If the input collection contains a single item, this function will true if:
+   *   1) the item is an Integer or Decimal
+   *   2) the item is a String and is convertible to a Decimal
+   *   3) the item is a Boolean
+   *
+   * If the item is not one of the above types, or is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is false.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
+   *
+   * @param input The input collection.
+   * @returns True if the item can be converted to a decimal.
+   */
   convertsToDecimal: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
@@ -843,7 +872,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#quantity-conversion-functions
    *
    * @param input The input collection.
-   * @returns
+   * @returns The value converted to a quantity if possible; otherwise empty array.
    */
   toQuantity: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -886,7 +915,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#convertstoquantityunit-string-boolean
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the item can be converted to a quantity.
    */
   convertsToQuantity: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -943,7 +972,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#tostring-string
    *
    * @param input The input collection.
-   * @returns
+   * @returns True if the item can be converted to a string
    */
   convertsToString: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -969,8 +998,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#totime-time
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns The value converted to a time if possible; otherwise empty array.
    */
   toTime: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -999,8 +1028,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#convertstotime-boolean
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns True if the item can be converted to a time.
    */
   convertsToTime: (input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -1027,10 +1056,11 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#indexofsubstring-string-integer
    *
    * @param input The input collection.
+   * @param searchStringAtom The substring to search for.
    * @returns The index of the substring.
    */
-  indexOf: (input: TypedValue[], substringAtom: Atom): TypedValue[] => {
-    return applyStringFunc((str, substring) => str.indexOf(substring as string), input, substringAtom);
+  indexOf: (input: TypedValue[], searchStringAtom: Atom): TypedValue[] => {
+    return applyStringFunc((str, substring) => str.indexOf(substring as string), input, searchStringAtom);
   },
 
   /**
@@ -1045,7 +1075,9 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param startAtom The start index atom.
+   * @param lengthAtom Optional length atom.
+   * @returns The substring.
    */
   substring: (input: TypedValue[], startAtom: Atom, lengthAtom?: Atom): TypedValue[] => {
     return applyStringFunc(
@@ -1061,54 +1093,109 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
+   * Returns true when the input string starts with the given prefix.
+   *
+   * If prefix is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#startswithprefix-string-boolean
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param prefixAtom The prefix substring to test.
+   * @returns True if the input string starts with the given prefix string.
    */
   startsWith: (input: TypedValue[], prefixAtom: Atom): TypedValue[] => {
     return applyStringFunc((str, prefix) => str.startsWith(prefix as string), input, prefixAtom);
   },
 
   /**
+   * Returns true when the input string ends with the given suffix.
+   *
+   * If suffix is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#endswithsuffix-string-boolean
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param suffixAtom The suffix substring to test.
+   * @returns True if the input string ends with the given suffix string.
    */
   endsWith: (input: TypedValue[], suffixAtom: Atom): TypedValue[] => {
     return applyStringFunc((str, suffix) => str.endsWith(suffix as string), input, suffixAtom);
   },
 
   /**
+   * Returns true when the given substring is a substring of the input string.
+   *
+   * If substring is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#containssubstring-string-boolean
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param substringAtom The substring to test.
+   * @returns True if the input string contains the given substring.
    */
   contains: (input: TypedValue[], substringAtom: Atom): TypedValue[] => {
     return applyStringFunc((str, substring) => str.includes(substring as string), input, substringAtom);
   },
 
   /**
+   * Returns the input string with all characters converted to upper case.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#upper-string
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @returns The string converted to upper case.
    */
   upper: (input: TypedValue[]): TypedValue[] => {
     return applyStringFunc((str) => str.toUpperCase(), input);
   },
 
   /**
+   * Returns the input string with all characters converted to lower case.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#lower-string
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @returns The string converted to lower case.
    */
   lower: (input: TypedValue[]): TypedValue[] => {
     return applyStringFunc((str) => str.toLowerCase(), input);
   },
 
   /**
+   * Returns the input string with all instances of pattern replaced with substitution. If the substitution is the empty string (''),
+   * instances of pattern are removed from the result. If pattern is the empty string (''), every character in the input string is
+   * surrounded by the substitution, e.g. 'abc'.replace('','x') becomes 'xaxbxcx'.
+   *
+   * If the input collection, pattern, or substitution are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#replacepattern-string-substitution-string-string
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param patternAtom The pattern to search for.
+   * @param substitionAtom The substition to replace with.
+   * @returns The string with all instances of the search pattern replaced with the substitution string.
    */
   replace: (input: TypedValue[], patternAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
@@ -1120,18 +1207,35 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
+   * Returns true when the value matches the given regular expression. Regular expressions should function consistently, regardless of any culture- and locale-specific settings in the environment, should be case-sensitive, use 'single line' mode and allow Unicode characters.
+   *
+   * If the input collection or regex are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#matchesregex-string-boolean
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param regexAtom The regular expression atom.
+   * @returns True if the input string matches the given regular expression.
    */
   matches: (input: TypedValue[], regexAtom: Atom): TypedValue[] => {
     return applyStringFunc((str, regex) => !!str.match(regex as string), input, regexAtom);
   },
 
   /**
+   * Matches the input using the regular expression in regex and replaces each match with the substitution string. The substitution may refer to identified match groups in the regular expression.
+   *
+   * If the input collection, regex, or substitution are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#replacematchesregex-string-substitution-string-string
    *
    * @param input The input collection.
-   * @returns The index of the substring.
+   * @param regexAtom The regular expression atom.
+   * @param substitionAtom The substition to replace with.
+   * @returns The string with all instances of the search pattern replaced with the substitution string.
    */
   replaceMatches: (input: TypedValue[], regexAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
@@ -1157,6 +1261,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#tochars-collection
    *
    * @param input The input collection.
+   * @returns Array of characters.
    */
   toChars: (input: TypedValue[]): TypedValue[] => {
     return applyStringFunc((str) => (str ? str.split('') : undefined), input);
@@ -1264,6 +1369,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#logbase-decimal-decimal
    *
    * @param input The input collection.
+   * @param baseAtom The logarithm base.
    * @returns A collection containing the result.
    */
   log: (input: TypedValue[], baseAtom: Atom): TypedValue[] => {
@@ -1282,6 +1388,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#powerexponent-integer-decimal-integer-decimal
    *
    * @param input The input collection.
+   * @param expAtom The exponent power.
    * @returns A collection containing the result.
    */
   power: (input: TypedValue[], expAtom: Atom): TypedValue[] => {
@@ -1370,6 +1477,7 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * @param input The input collection.
    * @param nameAtom The log name.
+   * @returns The input collection.
    */
   trace: (input: TypedValue[], nameAtom: Atom): TypedValue[] => {
     console.log('trace', input, nameAtom);
@@ -1380,6 +1488,8 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current date and time, including timezone offset.
    *
    * See: https://hl7.org/fhirpath/#now-datetime
+   *
+   * @returns The current dateTime.
    */
   now: (): TypedValue[] => {
     return [{ type: PropertyType.dateTime, value: new Date().toISOString() }];
@@ -1389,6 +1499,8 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current time.
    *
    * See: https://hl7.org/fhirpath/#timeofday-time
+   *
+   * @returns The current time string.
    */
   timeOfDay: (): TypedValue[] => {
     return [{ type: PropertyType.time, value: new Date().toISOString().substring(11) }];
@@ -1398,6 +1510,8 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current date.
    *
    * See: https://hl7.org/fhirpath/#today-date
+   *
+   * @returns The current date string.
    */
   today: (): TypedValue[] => {
     return [{ type: PropertyType.date, value: new Date().toISOString().substring(0, 10) }];
@@ -1410,6 +1524,12 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * IBM FHIR issue: https://github.com/IBM/FHIR/issues/1014
    * IBM FHIR PR: https://github.com/IBM/FHIR/pull/1023
+   *
+   * @param input The input collection.
+   * @param startAtom The start date/time.
+   * @param endAtom The end date/time.
+   * @param unitsAtom Which units to return ("years", "months", or "days").
+   * @returns The Quantity of time between the two dates.
    */
   between: (input: TypedValue[], startAtom: Atom, endAtom: Atom, unitsAtom: Atom): TypedValue[] => {
     const startDate = functions.toDateTime(startAtom.eval(input));
@@ -1441,9 +1561,9 @@ export const functions: Record<string, FhirPathFunction> = {
    * handling when processing the argument to treat it as a type specifier rather
    * than an identifier expression:
    *
-   * @param input
-   * @param typeAtom
-   * @returns
+   * @param input The input collection.
+   * @param typeAtom The desired type.
+   * @returns True if the input element is of the desired type.
    */
   is: (input: TypedValue[], typeAtom: Atom): TypedValue[] => {
     let typeName = '';
@@ -1467,8 +1587,8 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * Returns true if the input collection evaluates to false, and false if it evaluates to true. Otherwise, the result is empty ({ }):
    *
-   * @param input
-   * @returns
+   * @param input The input collection.
+   * @returns True if the input evaluates to false.
    */
   not: (input: TypedValue[]): TypedValue[] => {
     return functions.toBoolean(input).map((value) => ({ type: PropertyType.boolean, value: !value.value }));
@@ -1483,7 +1603,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * For each item in the collection, if it is a string that is a uri (or canonical or url), locate the target of the reference, and add it to the resulting collection. If the item does not resolve to a resource, the item is ignored and nothing is added to the output collection.
    * The items in the collection may also represent a Reference, in which case the Reference.reference is resolved.
    * @param input The input collection.
-   * @returns
+   * @returns The resolved resource.
    */
   resolve: (input: TypedValue[]): TypedValue[] => {
     return input
@@ -1541,7 +1661,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#model-information
    *
    * @param input The input collection.
-   * @returns
+   * @returns The type of the input value.
    */
   type: (input: TypedValue[]): TypedValue[] => {
     return input.map(({ value }) => {

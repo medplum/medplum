@@ -44,12 +44,10 @@ export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> 
  *
  * Normally postMessage implies global event listeners. This method uses
  * MessageChannel to create a message channel between the iframe and the parent.
- *
- * See: https://advancedweb.hu/how-to-use-async-await-with-postmessage/
- *
  * @param frame The receiving IFrame.
  * @param command The command to send.
  * @returns Promise to the response from the IFrame.
+ * @see https://advancedweb.hu/how-to-use-async-await-with-postmessage/
  */
 export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -78,9 +76,9 @@ export function getProjectId(medplum: MedplumClient): string {
 }
 
 /**
- * Creates a Blob object from the JSON object given and downloads the
- * object
- * @param json
+ * Creates a Blob object from the JSON object given and downloads the object.
+ * @param jsonString The JSON string.
+ * @param fileName Optional file name. Default is based on current timestamp.
  */
 export function exportJSONFile(jsonString: string, fileName?: string): void {
   const blobForExport = new Blob([jsonString], { type: 'application/json' });

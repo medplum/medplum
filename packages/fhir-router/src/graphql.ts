@@ -129,6 +129,11 @@ interface ConnectionEdge {
  * Handles FHIR GraphQL requests.
  *
  * See: https://www.hl7.org/fhir/graphql.html
+ *
+ * @param req The request details.
+ * @param repo The current user FHIR repository.
+ * @param router The router for router options.
+ * @returns The response.
  */
 export async function graphqlHandler(
   req: FhirRequest,
@@ -556,7 +561,6 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
  * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveBySearch(
   source: any,
@@ -580,7 +584,6 @@ async function resolveBySearch(
  * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoures for the query.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveByConnectionApi(
   source: any,
@@ -616,7 +619,6 @@ async function resolveByConnectionApi(
  * @param ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the schema, and additional field details.
  * @returns Promise to read the resoure for the query.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveById(
   _source: any,
@@ -638,7 +640,6 @@ async function resolveById(
  * @param _args The GraphQL search arguments.
  * @param ctx The GraphQL context.
  * @returns Promise to read the resoure(s) for the query.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
   try {
@@ -653,7 +654,6 @@ async function resolveByReference(source: any, _args: any, ctx: GraphQLContext):
  * When loading a resource via reference, GraphQL needs to know the type of the resource.
  * @param resource The loaded resource.
  * @returns The GraphQL type of the resource.
- * @implements {GraphQLTypeResolver}
  */
 function resolveTypeByReference(resource: Resource | undefined): string | undefined {
   const resourceType = resource?.resourceType;
@@ -673,7 +673,6 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
  * @param _ctx The GraphQL context.
  * @param info The GraphQL resolve info.  This includes the field name.
  * @returns Promise to read the resoure for the query.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: GraphQLResolveInfo): Promise<any> {
   const fieldValue = source?.[info.fieldName];

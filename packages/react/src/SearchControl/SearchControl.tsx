@@ -142,6 +142,8 @@ const useStyles = createStyles((theme) => ({
  * The SearchControl component represents the embeddable search table control.
  * It includes the table, rows, headers, sorting, etc.
  * It does not include the field editor, filter editor, pagination buttons.
+ * @param props The SearchControl React props.
+ * @returns The SearchControl React node.
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const { classes } = useStyles();

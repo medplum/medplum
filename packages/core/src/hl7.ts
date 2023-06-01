@@ -268,7 +268,7 @@ interface Hl7DateParseOptions {
  * Returns a formatted string representing the date in ISO-8601 format.
  * @param hl7Date Date string.
  * @param options Optional configuration Object
- * @returns
+ * @returns The date in ISO-8601 format.
  */
 export function parseHl7Date(hl7Date: string | undefined, options?: Hl7DateParseOptions): string | undefined {
   if (!hl7Date) {
