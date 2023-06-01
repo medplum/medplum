@@ -2652,8 +2652,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Request oauth token with client credentials
-   * 
-   *  ```typescript
+   *
+   * ```typescript
    * medplum.requestAccessToken(process.env.MEDPLUM_CLIENT_ID, process.env.MEDPLUM_CLIENT_SECRET)
    * // Example Search
    * await medplum.searchResources('Patient')
