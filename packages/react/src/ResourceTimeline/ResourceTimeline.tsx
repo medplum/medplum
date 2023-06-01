@@ -464,6 +464,7 @@ function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>):
     <TimelineItem
       resource={props.resource}
       profile={props.resource.sender}
+      dateTime={props.resource.sent}
       padding={true}
       className={className}
       popupMenuItems={<TimelineItemPopupMenu {...props} />}

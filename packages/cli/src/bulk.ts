@@ -33,29 +33,52 @@ bulk
 bulk
   .command('import')
   .argument('<filename>', 'File Name')
-  .action(async (fileName) => {
+  .option(
+    '--numResourcesPerRequest <numResourcesPerRequest>',
+    'optional number of resources to import per batch request. Defaults to 25.',
+    '25'
+  )
+  .action(async (fileName, options) => {
     const path = resolve(process.cwd(), fileName);
-    const batchEntries = [] as BundleEntry[];
-    const fileStream = createReadStream(path);
-    const rl = createInterface({
-      input: fileStream,
-    });
+    const { numResourcesPerRequest } = options;
 
-    for await (const line of rl) {
-      const resource = JSON.parse(line);
-      batchEntries.push({
-        resource: resource,
-        request: {
-          method: 'POST',
-          url: resource.resourceType,
-        },
-      });
-    }
-
-    const result = await medplum.executeBatch({
-      resourceType: 'Bundle',
-      type: 'transaction',
-      entry: batchEntries,
-    });
-    prettyPrint(result);
+    await importFile(path, parseInt(numResourcesPerRequest));
   });
+
+async function importFile(path: string, numResourcesPerRequest: number): Promise<void> {
+  let entries = [] as BundleEntry[];
+  const fileStream = createReadStream(path);
+  const rl = createInterface({
+    input: fileStream,
+  });
+
+  for await (const line of rl) {
+    const resource = JSON.parse(line);
+    entries.push({
+      resource: resource,
+      request: {
+        method: 'POST',
+        url: resource.resourceType,
+      },
+    });
+    if (entries.length % numResourcesPerRequest === 0) {
+      await sendBatchEntries(entries);
+      entries = [];
+    }
+  }
+  if (entries.length > 0) {
+    await sendBatchEntries(entries);
+  }
+}
+
+async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
+  const result = await medplum.executeBatch({
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: entries,
+  });
+
+  result.entry?.forEach((resultEntry) => {
+    prettyPrint(resultEntry.response);
+  });
+}

@@ -37,6 +37,7 @@ export interface MedplumServerConfig {
   auditEventLogStream?: string;
   registerEnabled?: boolean;
   bcryptHashSalt: number;
+  introspectionEnabled?: boolean;
 }
 
 /**

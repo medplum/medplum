@@ -119,8 +119,8 @@ Medplum continuously monitors all services to track security best practices.
 
 [Mozilla Observatory](https://observatory.mozilla.org/) is a tool that is geared towards informing website owners of best practices for securing their sites.
 
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=api.medplum.com"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
-<a href="https://www.ssllabs.com/ssltest/analyze.html?d=app.medplum.com"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
+<a href="https://observatory.mozilla.org/analyze/api.medplum.com"><img src="/img/compliance/mozilla-observatory-api.png" alt="Mozilla Observatory api.medplum.com screenshot" width="350" /></a>
+<a href="https://observatory.mozilla.org/analyze/app.medplum.com"><img src="/img/compliance/mozilla-observatory-app.png" alt="Mozilla Observatory app.medplum.com screenshot" width="350" /></a>
 
 ### SSL Labs
 

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cdk",
-  "version": "2.0.20",
+  "version": "2.0.21",
   "description": "Medplum CDK Infra as Code",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -17,12 +17,13 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@aws-sdk/types": "3.342.0",
     "@medplum/core": "*",
-    "aws-cdk-lib": "2.79.1",
+    "aws-cdk-lib": "2.81.0",
     "cdk": "2.72.1",
-    "cdk-nag": "2.27.12",
-    "cdk-serverless-clamscan": "2.4.239",
-    "constructs": "10.2.27"
+    "cdk-nag": "2.27.23",
+    "cdk-serverless-clamscan": "2.4.252",
+    "constructs": "10.2.38"
   },
   "bin": {
     "medplum-cdk-init": "./dist/cjs/init.cjs"

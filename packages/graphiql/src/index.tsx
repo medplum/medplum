@@ -6,6 +6,7 @@ import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/r
 import GraphiQL from 'graphiql';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { getConfig } from './config';
 
 import 'regenerator-runtime/runtime.js';
 
@@ -62,7 +63,10 @@ const theme: MantineThemeOverride = {
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
-    return fetch('/schema/schema-v4.json').then((res) => res.json());
+    const config = getConfig().introspectionUrl;
+    if (config) {
+      return fetch(config).then((res) => res.json());
+    }
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
 }
