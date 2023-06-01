@@ -76,8 +76,12 @@ export interface InviteRequest {
 export async function inviteUser(
   request: InviteRequest
 ): Promise<{ user: User; profile: ProfileResource; membership: ProjectMembership }> {
+  if (request.email) {
+    request.email = request.email.toLowerCase();
+  }
+
   const project = request.project;
-  const email = request.email?.toLowerCase();
+  const email = request.email;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;

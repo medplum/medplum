@@ -431,7 +431,7 @@ describe('Admin Invite', () => {
 
   test('Email sending error due to SES not being set up', async () => {
     // AWS is mocked to not be set up
-    (SESv2Client as unknown as jest.Mock).mockImplementation(() => {
+    (SESv2Client as unknown as jest.Mock).mockImplementationOnce(() => {
       throw new Error('error');
     });
 
@@ -487,5 +487,43 @@ describe('Admin Invite', () => {
       });
     expect(res.status).toBe(200);
     expect((res.body as ProjectMembership).project?.reference).toBe(getReferenceString(aliceRegistration.project));
+  });
+
+  test('Convert capitalized email to lower case', async () => {
+    // First, Alice creates a project
+    const { project, accessToken } = await registerNew({
+      firstName: 'Alice',
+      lastName: 'Smith',
+      projectName: 'Alice Project',
+      email: `alice${randomUUID()}@example.com`,
+      password: 'password!@#',
+    });
+
+    // Second, Alice invites Bob to the project
+    const upperBobEmail = `BOB${randomUUID()}@example.com`;
+    const lowerBobEmail = upperBobEmail.toLowerCase();
+    const res2 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: upperBobEmail,
+      });
+
+    expect(res2.status).toBe(200);
+    if (!res2.body.user) {
+      console.log(JSON.stringify(res2.body, null, 2));
+    }
+    expect(res2.body.user.display).toBe(lowerBobEmail);
+    expect(SESv2Client).toHaveBeenCalledTimes(1);
+    expect(SendEmailCommand).toHaveBeenCalledTimes(1);
+
+    const args = (SendEmailCommand as unknown as jest.Mock).mock.calls[0][0];
+    expect(args.Destination.ToAddresses[0]).toBe(lowerBobEmail);
+
+    const parsed = await simpleParser(args.Content.Raw.Data);
+    expect(parsed.subject).toBe('Welcome to Medplum');
   });
 });
