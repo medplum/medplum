@@ -40,6 +40,7 @@ function buildSpec(): any {
 /**
  * Builds the base structure of the OpenAPI specification.
  * See: https://swagger.io/specification/
+ * @returns The OpenAPI specification.
  */
 function buildBaseSpec(): OpenAPIObjectWithPaths {
   const config = getConfig();

@@ -8,6 +8,7 @@ import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } 
 
 /**
  * Initializes all background workers.
+ * @param config The Redis config.
  */
 export function initWorkers(config: MedplumRedisConfig): void {
   logger.debug('Initializing workers...');

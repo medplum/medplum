@@ -51,8 +51,6 @@ class BatchProcessor {
 
   /**
    * Processes a FHIR batch request.
-   * @param repo The FHIR repository.
-   * @param bundle The input bundle.
    * @returns The bundle response.
    */
   async processBatch(): Promise<Bundle> {

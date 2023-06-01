@@ -7,6 +7,7 @@ import { useMedplum } from '../MedplumProvider/MedplumProvider';
  * React Hook to use a FHIR reference.
  * Handles the complexity of resolving references and caching resources.
  * @param value The resource or reference to resource.
+ * @param setOutcome Optional callback to set the OperationOutcome.
  * @returns The resolved resource.
  */
 export function useResource<T extends Resource>(

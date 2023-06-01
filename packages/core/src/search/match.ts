@@ -27,6 +27,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
 /**
  * Determines if the resource matches the search filter.
  * @param resource The resource that was created or updated.
+ * @param searchRequest The search request.
  * @param filter One of the filters of a subscription criteria.
  * @returns True if the resource satisfies the search filter.
  */

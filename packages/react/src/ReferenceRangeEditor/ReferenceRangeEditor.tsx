@@ -112,6 +112,8 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
 
   /**
    * Add/Remove/Update specific Qualified Intervals
+   * @param groupId The reference range group ID.
+   * @param changedInterval The updated reference range interval.
    */
   function changeInterval(groupId: string, changedInterval: ObservationDefinitionQualifiedInterval): void {
     setIntervalGroups((groups) => {
@@ -257,7 +259,9 @@ interface ReferenceRangeGroupFiltersProps {
 }
 
 /**
- * Render the "filters" section of the IntervalGroup. Also populates some initial
+ * Render the "filters" section of the IntervalGroup.
+ * @param props The ReferenceRangeGroupFilter React props.
+ * @returns The ReferenceRangeGroupFilter React node.
  */
 function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX.Element {
   const { intervalGroup, onChange } = props;
@@ -380,7 +384,10 @@ function ensureQualifiedIntervalKeys(
 
 /**
  * Group all ObservationDefinitionQualifiedIntervals based on the values of their "filter" properties,
- * so that similar ranges can be grouped together
+ * so that similar ranges can be grouped together.
+ * @param intervals Array of reference range intervals.
+ * @param setGroupId Callback to set the group ID.
+ * @returns The grouped intervals.
  */
 function groupQualifiedIntervals(
   intervals: ObservationDefinitionQualifiedInterval[],
@@ -404,10 +411,10 @@ function groupQualifiedIntervals(
 }
 
 /**
- * Generates a unique string for each set of filter values, so that similarly filtered intervals can be grouped together
- * @return A "group key" that corresponds to the value of the interval filter properties.
+ * Generates a unique string for each set of filter values, so that similarly filtered intervals can be grouped together.
+ * @param interval The reference range interval.
+ * @returns A "group key" that corresponds to the value of the interval filter properties.
  */
-
 function generateGroupKey(interval: ObservationDefinitionQualifiedInterval): string {
   const results = [
     `gender=${interval.gender}`,

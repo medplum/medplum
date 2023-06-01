@@ -41,6 +41,7 @@ let worker: Worker<CronJobData> | undefined = undefined;
  * Initializes the Cron worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
+ * @param config The Redis config.
  */
 export function initCronWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -162,6 +163,7 @@ async function addCronJobData(job: CronJobData, repeatable: Repeatable): Promise
 /**
  * BullMQ repeat option, which conducts the job has a cron-parser's pattern
  * @param timing The Cron property from the bot, which is a Timing Type.
+ * @returns The cron string.
  */
 export function convertTimingToCron(timing: Timing): string | undefined {
   let minute = '0';

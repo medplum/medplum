@@ -103,6 +103,7 @@ export class TokenTable extends LookupTable<Token> {
    * @param selectQuery The select query builder.
    * @param resourceType The resource type.
    * @param filter The search filter details.
+   * @returns The select query where expression.
    */
   buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
     const tableName = getTableName(resourceType);
@@ -341,6 +342,8 @@ function buildSimpleToken(
 
 /**
  * Returns the existing list of indexed tokens.
+ * @param client The current database client.
+ * @param resourceType The FHIR resource type.
  * @param resourceId The FHIR resource ID.
  * @returns Promise for the list of indexed tokens  .
  */

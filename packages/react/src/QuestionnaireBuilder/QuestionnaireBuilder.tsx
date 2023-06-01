@@ -407,7 +407,8 @@ let nextId = 1;
 /**
  * Generates a link ID for an item.
  * Link IDs are required properties on QuestionnaireItem objects.
- * @return A unique link ID.
+ * @param prefix The link ID prefix string.
+ * @returns A unique link ID.
  */
 function generateLinkId(prefix: string): string {
   return prefix + nextLinkId++;
@@ -418,7 +419,7 @@ function generateLinkId(prefix: string): string {
  * React needs unique IDs for components for rendering performance.
  * All of the important components in the questionnaire builder have id properties for this:
  * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
- * @return A unique key.
+ * @returns A unique key.
  */
 function generateId(): string {
   return 'id-' + nextId++;

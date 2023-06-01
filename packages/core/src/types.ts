@@ -205,6 +205,7 @@ function indexType(structureDefinition: StructureDefinition, elementDefinition: 
 
 /**
  * Indexes PropertySchema from an ElementDefinition.
+ * @param structureDefinition The input StructureDefinition.
  * @param element The input ElementDefinition.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */

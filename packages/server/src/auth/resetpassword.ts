@@ -77,7 +77,7 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * Creates a "password change request" for the user.
  * Returns the URL to the password change request.
  * @param user The user to create the password change request for.
- * @return The URL to reset the password.
+ * @returns The URL to reset the password.
  */
 export async function resetPassword(user: User): Promise<string> {
   // Create the password change request

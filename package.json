@@ -109,6 +109,11 @@
         "error",
         "always"
       ],
+      "jsdoc/check-tag-names": 0,
+      "jsdoc/require-jsdoc": 0,
+      "jsdoc/require-returns-description": 0,
+      "jsdoc/require-yields": 0,
+      "jsdoc/tag-lines": 0,
       "prefer-promise-reject-errors": "error"
     },
     "ignorePatterns": [

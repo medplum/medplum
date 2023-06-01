@@ -1,6 +1,7 @@
 /**
  * Parses an HTML form and returns the result as a JavaScript object.
  * @param form The HTML form element.
+ * @returns Form values in key value pairs.
  */
 export function parseForm(form: HTMLFormElement): Record<string, string> {
   const result: Record<string, string> = {};
@@ -22,8 +23,8 @@ export function parseForm(form: HTMLFormElement): Record<string, string> {
  * Parses an HTML input element.
  * Sets the name/value pair in the result,
  * but only if the element is enabled and checked.
- * @param el The input element.
  * @param result The result builder.
+ * @param el The input element.
  */
 function parseInputElement(result: Record<string, string>, el: HTMLInputElement): void {
   if (el.disabled) {
