@@ -556,7 +556,8 @@ describe('Client', () => {
 
       if (url.includes('oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: clientId })) + '.signature',
+          access_token:
+            'header.' + Buffer.from(JSON.stringify({ client_id: clientId })).toString('base64') + '.signature',
         };
       }
       return {};
@@ -597,7 +598,10 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'different-client-id' })) + '.signature',
+          access_token:
+            'header.' +
+            Buffer.from(JSON.stringify({ client_id: 'different-client-id' })).toString('base64') +
+            '.signature',
         };
       }
       return {};
@@ -618,7 +622,8 @@ describe('Client', () => {
     const fetch = mockFetch(200, (url) => {
       if (url.includes('oauth2/token')) {
         return {
-          access_token: 'header.' + window.btoa(JSON.stringify({ cid: 'different-client-id' })) + '.signature',
+          access_token:
+            'header.' + Buffer.from(JSON.stringify({ cid: 'different-client-id' })).toString('base64') + '.signature',
         };
       }
       return {};
@@ -637,13 +642,35 @@ describe('Client', () => {
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
     const fetch = mockFetch(500, () => ({}));
-
     const client = new MedplumClient({ fetch });
     try {
       await client.requestAccessToken(clientId, clientSecret);
       throw new Error('test');
     } catch (err) {
       expect((err as Error).message).toBe('Failed to fetch tokens');
+    }
+  });
+
+  test('requestAccessToken expired', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const oneMinuteAgo = Date.now() / 1000 - 60;
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token:
+            'header.' + Buffer.from(JSON.stringify({ exp: oneMinuteAgo })).toString('base64') + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.requestAccessToken(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token expired');
     }
   });
 
