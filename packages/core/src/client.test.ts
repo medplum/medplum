@@ -14,6 +14,7 @@ import { TextEncoder } from 'util';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
 import { createReference, ProfileResource, stringify } from './utils';
+import { encodeBase64 } from './base64';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
@@ -542,6 +543,73 @@ describe('Client', () => {
         },
       })
     );
+  });
+
+  test('requestAccessToken', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: clientId })) + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    await client.requestAccessToken(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/fhir+json',
+          Authorization: `Bearer ${client.getAccessToken()}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+    );
+  });
+
+  test('requestAccessToken missmatched client id', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: 'different-client-id' })) + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      await client.requestAccessToken(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token was not issued for this audience');
+    }
   });
 
   test('Invite user', async () => {
