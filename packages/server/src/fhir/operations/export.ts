@@ -14,7 +14,6 @@ import { BulkExporter } from './utils/bulkexporter';
  *
  * See: https://hl7.org/fhir/uv/bulkdata/export.html
  * See: https://hl7.org/fhir/R4/async.html
- *
  * @param req The HTTP request.
  * @param res The HTTP response.
  */

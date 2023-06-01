@@ -95,7 +95,6 @@ binaryRouter.get(
  *
  * Unfortunately body-parser will always write the content to a temporary file on local disk.
  * That is not acceptable for multi gigabyte files, which could easily fill up the disk.
- *
  * @param req The HTTP request.
  * @returns The content stream.
  */

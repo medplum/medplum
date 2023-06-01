@@ -645,7 +645,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `readResource()`, `search()`, etc.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
@@ -688,7 +687,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `createResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
@@ -714,7 +712,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `updateResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
@@ -740,7 +737,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `patchResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param operations Array of JSONPatch operations.
@@ -762,7 +758,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `deleteResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
@@ -780,7 +775,6 @@ export class MedplumClient extends EventTarget {
    * This method is part of the two different user registration flows:
    * 1) New Practitioner and new Project
    * 2) New Patient registration
-   *
    * @category Authentication
    * @param newUserRequest Register request including email and password.
    * @returns Promise to the authentication response.
@@ -798,7 +792,6 @@ export class MedplumClient extends EventTarget {
    * Initiates a new project flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   *
    * @param newProjectRequest Register request including email and password.
    * @returns Promise to the authentication response.
    */
@@ -810,7 +803,6 @@ export class MedplumClient extends EventTarget {
    * Initiates a new patient flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   *
    * @param newPatientRequest Register request including email and password.
    * @returns Promise to the authentication response.
    */
@@ -1032,7 +1024,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1080,7 +1071,6 @@ export class MedplumClient extends EventTarget {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1122,7 +1112,6 @@ export class MedplumClient extends EventTarget {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1163,7 +1152,6 @@ export class MedplumClient extends EventTarget {
    *  }
    * }
    * ```
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1193,7 +1181,6 @@ export class MedplumClient extends EventTarget {
   /**
    * Searches a ValueSet resource using the "expand" operation.
    * See: https://www.hl7.org/fhir/operation-valueset-expand.html
-   *
    * @category Search
    * @param system The ValueSet system url.
    * @param filter The search string.
@@ -1251,7 +1238,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1280,7 +1266,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
    * @category Read
    * @param reference The FHIR reference object.
    * @param options Optional fetch options.
@@ -1393,7 +1378,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1419,7 +1403,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1447,7 +1430,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
-   *
    * @category Read
    * @param id The Patient Id
    * @param options Optional fetch options.
@@ -1476,7 +1458,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
-   *
    * @category Create
    * @param resource The FHIR resource to create.
    * @returns The result of the create operation.
@@ -1523,7 +1504,6 @@ export class MedplumClient extends EventTarget {
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
    *
    * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
-   *
    * @category Create
    * @param resource The FHIR resource to create.
    * @param query The search query for an equivalent resource (should not include resource type or "?").
@@ -1550,7 +1530,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
-   *
    * @category Create
    * @param data The binary data to upload.
    * @param filename Optional filename for the binary.
@@ -1628,7 +1607,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
-   *
    * @category Media
    * @param docDefinition The PDF document definition.
    * @param filename Optional filename for the PDF binary resource.
@@ -1653,7 +1631,6 @@ export class MedplumClient extends EventTarget {
    * Creates a FHIR `Communication` resource with the provided data content.
    *
    * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
-   *
    * @category Create
    * @param resource The FHIR resource to comment on.
    * @param text The text of the comment.
@@ -1709,7 +1686,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
-   *
    * @category Write
    * @param resource The FHIR resource to update.
    * @returns The result of the update operation.
@@ -1750,7 +1726,6 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#patch
    *
    * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
-   *
    * @category Write
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1776,7 +1751,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
-   *
    * @category Delete
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1801,7 +1775,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
-   *
    * @param resource The FHIR resource.
    * @returns The validate operation outcome.
    */
@@ -1987,7 +1960,6 @@ export class MedplumClient extends EventTarget {
    * See the GraphQL documentation for more details: https://graphql.org/learn/
    *
    * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
-   *
    * @category Read
    * @param query The GraphQL query.
    * @param operationName Optional GraphQL operation name.
@@ -2177,7 +2149,6 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
-   *
    * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
    * @param resourceTypes A string of comma-delimited FHIR resource types.
    * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
@@ -2639,7 +2610,6 @@ export class MedplumClient extends EventTarget {
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
-   *
    * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.

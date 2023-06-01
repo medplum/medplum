@@ -18,7 +18,6 @@ import { HttpMethod } from './urlrouter';
  * Processes a FHIR batch request.
  *
  * See: https://www.hl7.org/fhir/http.html#transaction
- *
  * @param router The FHIR router.
  * @param repo The FHIR repository.
  * @param bundle The input bundle.

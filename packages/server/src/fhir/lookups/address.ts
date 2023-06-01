@@ -56,7 +56,6 @@ export class AddressTable extends LookupTable<Address> {
    *   address-postalcode | postalCode
    *   address-state      | state
    *   addrses-use        | use
-   *
    * @param code The search parameter code.
    * @returns The column name.
    */

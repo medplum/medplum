@@ -78,7 +78,6 @@ const baseResourceProperties = new Set<string>([
  * const medplum = new MedplumClient();
  * await medplum.requestSchema('Patient');
  * ```
- *
  * @param resourceType The candidate resource type string.
  * @returns True if the resource type is a valid FHIR resource type.
  */
@@ -121,7 +120,6 @@ export function isResourceType(resourceType: string): boolean {
  * const medplum = new MedplumClient();
  * await medplum.requestSchema('Patient');
  * ```
- *
  * @param resourceType The candidate resource type string.
  */
 export function validateResourceType(resourceType: string): void {
@@ -163,7 +161,6 @@ export function validateResourceType(resourceType: string): void {
  * const medplum = new MedplumClient();
  * await medplum.requestSchema('Patient');
  * ```
- *
  * @param resource The candidate resource.
  */
 export function validateResource<T extends Resource>(resource: T): void {
@@ -369,7 +366,6 @@ export class FhirSchemaValidator<T extends Resource> {
    *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
    *
    * See: https://hl7.org/fhir/json.html#primitive
-   *
    * @param path The path to the property
    * @param key The key in the current typed value.
    * @param typedValue The current typed value.
@@ -438,7 +434,6 @@ function isChoiceOfType(
  * Recursively checks for null values in an object.
  *
  * Note that "null" is a special value in JSON that is not allowed in FHIR.
- *
  * @param value Input value of any type.
  * @param path Path string to the value for OperationOutcome.
  * @param issues Output list of issues.

@@ -84,7 +84,6 @@ const operatorNames: Record<Operator, string> = {
 
 /**
  * Sets the array of filters.
- *
  * @param definition The original search request.
  * @param filters The new filters.
  * @returns The updated search request.
@@ -109,7 +108,6 @@ export function clearFilters(definition: SearchRequest): SearchRequest {
 
 /**
  * Clears all of the filters on a certain field.
- *
  * @param definition The original search request.
  * @param code The field key name to clear filters.
  * @returns The updated search request.
@@ -123,7 +121,6 @@ export function clearFiltersOnField(definition: SearchRequest, code: string): Se
 
 /**
  * Adds a filter.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param op The operation key name.
@@ -153,7 +150,6 @@ export function addFilter(
 
 /**
  * Adds a field.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -176,7 +172,6 @@ export function addField(definition: SearchRequest, field: string): SearchReques
 
 /**
  * Deletes a filter at the specified index.
- *
  * @param definition The original search request.
  * @param index The filter index.
  * @returns The updated search request.
@@ -196,7 +191,6 @@ export function deleteFilter(definition: SearchRequest, index: number): SearchRe
 
 /**
  * Adds a filter that constrains the specified field to "yesterday".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -207,7 +201,6 @@ export function addYesterdayFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "today".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -218,7 +211,6 @@ export function addTodayFilter(definition: SearchRequest, field: string): Search
 
 /**
  * Adds a filter that constrains the specified field to "tomorrow".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -233,7 +225,6 @@ export function addTomorrowFilter(definition: SearchRequest, field: string): Sea
  * "Today" would be 0.
  * "Yesterday" would be -1.
  * "Tomorrow" would be 1.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param delta The number of days from this day.
@@ -253,7 +244,6 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
 
 /**
  * Adds a filter that constrains the specified field to "last month".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -264,7 +254,6 @@ export function addLastMonthFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "this month".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -275,7 +264,6 @@ export function addThisMonthFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "next month".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -290,7 +278,6 @@ export function addNextMonthFilter(definition: SearchRequest, field: string): Se
  * "This month" would be 0.
  * "Last month" would be -1.
  * "Next month" would be 1.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param delta The number of months from this month.
@@ -313,7 +300,6 @@ function addMonthFilter(definition: SearchRequest, field: string, delta: number)
 
 /**
  * Adds a filter that constrains the specified field to the year to date.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @returns The updated search request.
@@ -331,7 +317,6 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
 
 /**
  * Adds a filter for a date between two dates (inclusive of both dates).
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param d1 The start date.
@@ -347,7 +332,6 @@ export function addDateFilterBetween(definition: SearchRequest, field: string, d
 
 /**
  * Adds a filter for a date before a certain date/time.
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param op The date/time operation.
@@ -360,7 +344,6 @@ function addDateFilterImpl(definition: SearchRequest, field: string, op: Operato
 
 /**
  * Adds a filter that constrains the specified field to "missing".
- *
  * @param definition The original search request.
  * @param field The field key name.
  * @param value Optional boolean value. Default is true.
@@ -372,7 +355,6 @@ export function addMissingFilter(definition: SearchRequest, field: string, value
 
 /**
  * Sets the offset (starting at zero).
- *
  * @param definition The original search request.
  * @param offset The offset number.
  * @returns The updated search request.
@@ -403,7 +385,6 @@ export function setPage(definition: SearchRequest, page: number): SearchRequest 
 /**
  * Sorts the search by the specified key, and optional direction.
  * Direction defaults to ascending ('asc') if not specified.
- *
  * @param definition The original search request.
  * @param sort The sort key.
  * @param desc Optional descending flag. Default is false.
@@ -429,7 +410,6 @@ export function setSort(definition: SearchRequest, sort: string, desc?: boolean)
  * Toggles the sort of the search by key.
  * If the search is already sorted by the key, reverses the direction.
  * If the search is not sorted by the key, sort in ascending order.
- *
  * @param definition The original search request.
  * @param key The field key name.
  * @returns The updated search request.
@@ -470,7 +450,6 @@ export function getSearchOperators(searchParam: SearchParameter): Operator[] | u
 
 /**
  * Returns a string representing the operation.
- *
  * @param op The operation code.
  * @returns A display string for the operation.
  */

@@ -109,9 +109,17 @@
         "error",
         "always"
       ],
-      "jsdoc/check-tag-names": 0,
+      "jsdoc/check-tag-names": [
+        "error",
+        {
+          "definedTags": [
+            "category",
+            "experimental",
+            "ts-ignore"
+          ]
+        }
+      ],
       "jsdoc/require-jsdoc": 0,
-      "jsdoc/tag-lines": 0,
       "prefer-promise-reject-errors": "error"
     },
     "ignorePatterns": [

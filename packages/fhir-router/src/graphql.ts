@@ -129,7 +129,6 @@ interface ConnectionEdge {
  * Handles FHIR GraphQL requests.
  *
  * See: https://www.hl7.org/fhir/graphql.html
- *
  * @param req The request details.
  * @param repo The current user FHIR repository.
  * @param router The router for router options.
@@ -186,7 +185,6 @@ export async function graphqlHandler(
  * Introspection queries ask for the schema, which is expensive.
  *
  * See: https://graphql.org/learn/introspection/
- *
  * @param query The GraphQL query.
  * @returns True if the query is an introspection query.
  */
@@ -347,7 +345,6 @@ function buildPropertyField(
  *   4. All properties of the list element type.
  *
  * See: https://hl7.org/fhir/R4/graphql.html#list
- *
  * @param fieldTypeName The type name of the field.
  * @returns The arguments for the field.
  */
@@ -442,7 +439,6 @@ function buildListPropertyFieldArg(
  * (except that the "id" argument is prohibited here as nonsensical).
  *
  * See: https://www.hl7.org/fhir/graphql.html#reverse
- *
  * @param resourceType The resource type to build fields for.
  * @param fields The fields object to add fields to.
  */

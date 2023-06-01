@@ -286,7 +286,6 @@ function buildQuestionnaireAnswerItems(
  * If multiple identifiers exist with the same system, the first one is returned.
  *
  * If the system is not found, then returns undefined.
- *
  * @param resource The resource to check.
  * @param system The identifier system.
  * @returns The identifier value if found; otherwise undefined.
@@ -466,7 +465,6 @@ function deepEqualsObject(
  *
  * See: https://web.dev/structured-clone/
  * See: https://stackoverflow.com/questions/40488190/how-is-structured-clone-algorithm-different-from-deep-copy
- *
  * @param input The input to clone.
  * @returns A deep clone of the input.
  */
