@@ -34,7 +34,6 @@ export enum RewriteMode {
  *
  * Uses the repository to verify that the referenced resources exist and that
  * the current user has permission to read them.
- *
  * @param mode The mode to use when rewriting the attachments.
  * @param repo The repository configured for the current user.
  * @param input The input value (object, array, or primitive).
@@ -172,7 +171,6 @@ class Rewriter {
  *   3) Presigned URL (https://storage.medplum.com/binary/123/456?Signature=...)
  *
  * When comparing two binary URLs, we want to compare the binary ID and version ID.
- *
  * @param url The input URL.
  * @returns The normalized binary ID and version ID.
  */

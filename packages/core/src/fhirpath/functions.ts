@@ -31,7 +31,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns true if the input collection is empty ({ }) and false otherwise.
    *
    * See: https://hl7.org/fhirpath/#empty-boolean
-   *
    * @param input The input collection.
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
@@ -49,7 +48,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * for where(criteria).exists().
    *
    * See: https://hl7.org/fhirpath/#existscriteria-expression-boolean
-   *
    * @param input The input collection.
    * @param criteria Optional criteria applied to the collection.
    * @returns True if the collection has unknown elements, and false otherwise.
@@ -69,7 +67,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#allcriteria-expression-boolean
-   *
    * @param input The input collection.
    * @param criteria The evaluation criteria.
    * @returns True if for every element in the input collection, criteria evaluates to true.
@@ -84,7 +81,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#alltrue-boolean
-   *
    * @param input The input collection.
    * @returns True if all the items are true.
    */
@@ -102,7 +98,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If all the items are false, or if the input is empty ({ }), the result is false.
    *
    * See: https://hl7.org/fhirpath/#anytrue-boolean
-   *
    * @param input The input collection.
    * @returns True if unknown of the items are true.
    */
@@ -121,7 +116,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#allfalse-boolean
-   *
    * @param input The input collection.
    * @returns True if all the items are false.
    */
@@ -139,7 +133,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If all the items are true, or if the input is empty ({ }), the result is false.
    *
    * See: https://hl7.org/fhirpath/#anyfalse-boolean
-   *
    * @param input The input collection.
    * @returns True if for every element in the input collection, criteria evaluates to true.
    */
@@ -183,7 +176,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns 0 when the input collection is empty.
    *
    * See: https://hl7.org/fhirpath/#count-integer
-   *
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
    */
@@ -202,7 +194,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * preserved in the result.
    *
    * See: https://hl7.org/fhirpath/#distinct-collection
-   *
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
    */
@@ -222,7 +213,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * as defined below.
    *
    * See: https://hl7.org/fhirpath/#isdistinct-boolean
-   *
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
    */
@@ -247,7 +237,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * consistent with singleton evaluation of collections behavior.
    *
    * See: https://hl7.org/fhirpath/#wherecriteria-expression-collection
-   *
    * @param input The input collection.
    * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
@@ -266,7 +255,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * the input collection is empty ({ }), the result is empty as well.
    *
    * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
-   *
    * @param input The input collection.
    * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
@@ -291,7 +279,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * must resolve to the name of a type in a model
    *
    * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
-   *
    * @param input The input collection.
    * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection that are of the given type or a subclass thereof.
@@ -312,7 +299,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * about cardinality is violated at run-time.
    *
    * See: https://hl7.org/fhirpath/#single-collection
-   *
    * @param input The input collection.
    * @returns The single item in the input if there is just one item.
    */
@@ -328,7 +314,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * This function is equivalent to item[0], so it will return an empty collection if the input collection has no items.
    *
    * See: https://hl7.org/fhirpath/#first-collection
-   *
    * @param input The input collection.
    * @returns A collection containing only the first item in the input collection.
    */
@@ -341,7 +326,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Will return an empty collection if the input collection has no items.
    *
    * See: https://hl7.org/fhirpath/#last-collection
-   *
    * @param input The input collection.
    * @returns A collection containing only the last item in the input collection.
    */
@@ -354,7 +338,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Will return an empty collection if the input collection has no items, or only one item.
    *
    * See: https://hl7.org/fhirpath/#tail-collection
-   *
    * @param input The input collection.
    * @returns A collection containing all but the first item in the input collection.
    */
@@ -369,7 +352,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If num is less than or equal to zero, the input collection is simply returned.
    *
    * See: https://hl7.org/fhirpath/#skipnum-integer-collection
-   *
    * @param input The input collection.
    * @param num The atom representing the number of elements to skip.
    * @returns A collection containing all but the first item in the input collection.
@@ -395,7 +377,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * take returns an empty collection.
    *
    * See: https://hl7.org/fhirpath/#takenum-integer-collection
-   *
    * @param input The input collection.
    * @param num The atom representing the number of elements to take.
    * @returns A collection containing the first num items in the input collection.
@@ -420,7 +401,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Order of items is not guaranteed to be preserved in the result of this function.
    *
    * See: http://hl7.org/fhirpath/#intersectother-collection-collection
-   *
    * @param input The input collection.
    * @param other The atom representing the collection of elements to intersect.
    * @returns A collection containing the elements that are in both collections.
@@ -446,7 +426,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * e.g. (1 | 2 | 3).exclude(2) returns (1 | 3).
    *
    * See: http://hl7.org/fhirpath/#excludeother-collection-collection
-   *
    * @param input The input collection.
    * @param other The atom representing the collection of elements to exclude.
    * @returns A collection containing the elements that are in the input collection but not the other collection.
@@ -479,7 +458,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * In other words, this function returns the distinct list of elements from both inputs.
    *
    * See: http://hl7.org/fhirpath/#unionother-collection
-   *
    * @param input The input collection.
    * @param other The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the union of both collections.
@@ -500,7 +478,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * There is no expectation of order in the resulting collection.
    *
    * See: http://hl7.org/fhirpath/#combineother-collection-collection
-   *
    * @param input The input collection.
    * @param other The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the combination of both collections including duplicates.
@@ -534,7 +511,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * true-result should only be evaluated if the criterion evaluates to true,
    * and otherwise-result should only be evaluated otherwise. For implementations,
    * this means delaying evaluation of the arguments.
-   *
    * @param input The input collection.
    * @param criterion The atom representing the conditional.
    * @param trueResult The atom to be used if the conditional evaluates to true.
@@ -570,7 +546,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one the above types, or the item is a String, Integer, or Decimal, but is not equal to one of the possible values convertible to a Boolean, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#toboolean-boolean
-   *
    * @param input The input collection.
    * @returns The input converted to boolean value.
    */
@@ -615,7 +590,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: http://hl7.org/fhirpath/#convertstoboolean-boolean
-   *
    * @param input The input collection.
    * @returns True if the input can be converted to boolean.
    */
@@ -643,7 +617,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tointeger-integer
-   *
    * @param input The input collection.
    * @returns The string representation of the input.
    */
@@ -678,7 +651,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstointeger-boolean
-   *
    * @param input The input collection.
    * @returns True if the input can be converted to an integer.
    */
@@ -704,7 +676,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#todate-date
-   *
    * @param input The input collection.
    * @returns The value converted to a date if possible; otherwise empty array.
    */
@@ -734,7 +705,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodate-boolean
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a date.
    */
@@ -762,7 +732,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#todatetime-datetime
-   *
    * @param input The input collection.
    * @returns The value converted to a dateTime if possible; otherwise empty array.
    */
@@ -790,7 +759,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodatetime-boolean
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a dateTime.
    */
@@ -815,7 +783,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#decimal-conversion-functions
-   *
    * @param input The input collection.
    * @returns The value converted to a decimal if possible; otherwise empty array.
    */
@@ -849,7 +816,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a decimal.
    */
@@ -870,7 +836,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one of the above types, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#quantity-conversion-functions
-   *
    * @param input The input collection.
    * @returns The value converted to a quantity if possible; otherwise empty array.
    */
@@ -913,7 +878,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the unit argument is provided, it must be the string representation of a UCUM code (or a FHIRPath calendar duration keyword), and is used to determine whether the input quantity can be converted to the given unit, according to the unit conversion rules specified by UCUM. If the input quantity can be converted, the result is true, otherwise, the result is false.
    *
    * See: https://hl7.org/fhirpath/#convertstoquantityunit-string-boolean
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a quantity.
    */
@@ -936,7 +900,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one of the above types, the result is false.
    *
    * See: https://hl7.org/fhirpath/#tostring-string
-   *
    * @param input The input collection.
    * @returns The string representation of the input.
    */
@@ -970,7 +933,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tostring-string
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a string
    */
@@ -997,7 +959,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#totime-time
-   *
    * @param input The input collection.
    * @returns The value converted to a time if possible; otherwise empty array.
    */
@@ -1027,7 +988,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstotime-boolean
-   *
    * @param input The input collection.
    * @returns True if the item can be converted to a time.
    */
@@ -1054,7 +1014,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#indexofsubstring-string-integer
-   *
    * @param input The input collection.
    * @param searchStringAtom The substring to search for.
    * @returns The index of the substring.
@@ -1073,7 +1032,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If an empty length is provided, the behavior is the same as if length had not been provided.
    *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   *
    * @param input The input collection.
    * @param startAtom The start index atom.
    * @param lengthAtom Optional length atom.
@@ -1102,7 +1060,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#startswithprefix-string-boolean
-   *
    * @param input The input collection.
    * @param prefixAtom The prefix substring to test.
    * @returns True if the input string starts with the given prefix string.
@@ -1121,7 +1078,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#endswithsuffix-string-boolean
-   *
    * @param input The input collection.
    * @param suffixAtom The suffix substring to test.
    * @returns True if the input string ends with the given suffix string.
@@ -1140,7 +1096,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#containssubstring-string-boolean
-   *
    * @param input The input collection.
    * @param substringAtom The substring to test.
    * @returns True if the input string contains the given substring.
@@ -1157,7 +1112,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#upper-string
-   *
    * @param input The input collection.
    * @returns The string converted to upper case.
    */
@@ -1173,7 +1127,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#lower-string
-   *
    * @param input The input collection.
    * @returns The string converted to lower case.
    */
@@ -1191,7 +1144,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#replacepattern-string-substitution-string-string
-   *
    * @param input The input collection.
    * @param patternAtom The pattern to search for.
    * @param substitionAtom The substition to replace with.
@@ -1214,7 +1166,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#matchesregex-string-boolean
-   *
    * @param input The input collection.
    * @param regexAtom The regular expression atom.
    * @returns True if the input string matches the given regular expression.
@@ -1231,7 +1182,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#replacematchesregex-string-substitution-string-string
-   *
    * @param input The input collection.
    * @param regexAtom The regular expression atom.
    * @param substitionAtom The substition to replace with.
@@ -1247,7 +1197,6 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
-   *
    * @param input The input collection.
    * @returns The index of the substring.
    */
@@ -1259,7 +1208,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the list of characters in the input string. If the input collection is empty ({ }), the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tochars-collection
-   *
    * @param input The input collection.
    * @returns Array of characters.
    */
@@ -1279,7 +1227,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#abs-integer-decimal-quantity
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1295,7 +1242,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#ceiling-integer
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1313,7 +1259,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#exp-decimal
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1329,7 +1274,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#floor-integer
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1347,7 +1291,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#ln-decimal
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1367,7 +1310,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#logbase-decimal-decimal
-   *
    * @param input The input collection.
    * @param baseAtom The logarithm base.
    * @returns A collection containing the result.
@@ -1386,7 +1328,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#powerexponent-integer-decimal-integer-decimal
-   *
    * @param input The input collection.
    * @param expAtom The exponent power.
    * @returns A collection containing the result.
@@ -1407,7 +1348,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1427,7 +1367,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Note that this function is equivalent to raising a number of the power of 0.5 using the power() function.
    *
    * See: https://hl7.org/fhirpath/#sqrt-decimal
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1443,7 +1382,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#truncate-integer
-   *
    * @param input The input collection.
    * @returns A collection containing the result.
    */
@@ -1474,7 +1412,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * function unchanged.
    *
    * See: https://hl7.org/fhirpath/#tracename-string-projection-expression-collection
-   *
    * @param input The input collection.
    * @param nameAtom The log name.
    * @returns The input collection.
@@ -1488,7 +1425,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current date and time, including timezone offset.
    *
    * See: https://hl7.org/fhirpath/#now-datetime
-   *
    * @returns The current dateTime.
    */
   now: (): TypedValue[] => {
@@ -1499,7 +1435,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current time.
    *
    * See: https://hl7.org/fhirpath/#timeofday-time
-   *
    * @returns The current time string.
    */
   timeOfDay: (): TypedValue[] => {
@@ -1510,7 +1445,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the current date.
    *
    * See: https://hl7.org/fhirpath/#today-date
-   *
    * @returns The current date string.
    */
   today: (): TypedValue[] => {
@@ -1524,7 +1458,6 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * IBM FHIR issue: https://github.com/IBM/FHIR/issues/1014
    * IBM FHIR PR: https://github.com/IBM/FHIR/pull/1023
-   *
    * @param input The input collection.
    * @param startAtom The start date/time.
    * @param endAtom The end date/time.
@@ -1560,7 +1493,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * For implementations with compile-time typing, this requires special-case
    * handling when processing the argument to treat it as a type specifier rather
    * than an identifier expression:
-   *
    * @param input The input collection.
    * @param typeAtom The desired type.
    * @returns True if the input element is of the desired type.
@@ -1586,7 +1518,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * 6.5.3. not() : Boolean
    *
    * Returns true if the input collection evaluates to false, and false if it evaluates to true. Otherwise, the result is empty ({ }):
-   *
    * @param input The input collection.
    * @returns True if the input evaluates to false.
    */
@@ -1659,7 +1590,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * https://hl7.org/fhirpath/modelinfo.xsd
    *
    * See: https://hl7.org/fhirpath/#model-information
-   *
    * @param input The input collection.
    * @returns The type of the input value.
    */

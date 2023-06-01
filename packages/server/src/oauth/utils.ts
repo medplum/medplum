@@ -660,7 +660,6 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
  * The built-in function timingSafeEqual requires that buffers are equal length.
  * Per the discussion here: https://github.com/nodejs/node/issues/17178
  * That is considered ok, and does not invalidate the protection from timing attack.
- *
  * @param a First string.
  * @param b Second string.
  * @returns True if the strings are equal.

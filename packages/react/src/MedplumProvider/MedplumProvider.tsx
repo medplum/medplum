@@ -25,7 +25,6 @@ export interface MedplumContext {
  * Medplum context includes:
  *   1) medplum - Medplum client library
  *   2) profile - The current user profile (if signed in)
- *
  * @param props The MedplumProvider React props.
  * @returns The MedplumProvider React node.
  */

@@ -26,7 +26,6 @@ export interface FhirRepository {
    * Creates a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#create
-   *
    * @param resource The FHIR resource to create.
    * @returns The created resource.
    */
@@ -36,7 +35,6 @@ export interface FhirRepository {
    * Reads a FHIR resource by ID.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns The FHIR resource.
@@ -47,7 +45,6 @@ export interface FhirRepository {
    * Reads a FHIR resource by reference.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   *
    * @param reference The FHIR reference.
    * @returns The FHIR resource.
    */
@@ -57,7 +54,6 @@ export interface FhirRepository {
    * Reads a collection of FHIR resources by reference.
    *
    * See: https://www.hl7.org/fhir/http.html#read
-   *
    * @param references The FHIR references.
    * @returns The FHIR resources.
    */
@@ -69,7 +65,6 @@ export interface FhirRepository {
    * Results are sorted with oldest versions last
    *
    * See: https://www.hl7.org/fhir/http.html#history
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
@@ -80,7 +75,6 @@ export interface FhirRepository {
    * Reads a FHIR resource version.
    *
    * See: https://www.hl7.org/fhir/http.html#vread
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @param vid The FHIR resource version ID.
@@ -91,7 +85,6 @@ export interface FhirRepository {
    * Updates a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#update
-   *
    * @param resource The FHIR resource to update.
    * @returns The updated resource.
    */
@@ -101,7 +94,6 @@ export interface FhirRepository {
    * Deletes a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#delete
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    */
@@ -111,7 +103,6 @@ export interface FhirRepository {
    * Patches a FHIR resource.
    *
    * See: https://www.hl7.org/fhir/http.html#patch
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @param patch The JSONPatch operations.
@@ -123,7 +114,6 @@ export interface FhirRepository {
    * Searches for FHIR resources.
    *
    * See: https://www.hl7.org/fhir/http.html#search
-   *
    * @param searchRequest The FHIR search request.
    * @returns The search results.
    */
@@ -137,7 +127,6 @@ export interface FhirRepository {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @param searchRequest The FHIR search request.
    * @returns Promise to the first search result or undefined.
    */
@@ -151,7 +140,6 @@ export interface FhirRepository {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @param searchRequest The FHIR search request.
    * @returns Promise to the array of search results.
    */
@@ -163,7 +151,6 @@ export abstract class BaseRepository {
    * Searches for FHIR resources.
    *
    * See: https://www.hl7.org/fhir/http.html#search
-   *
    * @param searchRequest The FHIR search request.
    * @returns The search results.
    */
@@ -177,7 +164,6 @@ export abstract class BaseRepository {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @param searchRequest The FHIR search request.
    * @returns Promise to the first search result or undefined.
    */
@@ -194,7 +180,6 @@ export abstract class BaseRepository {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @param searchRequest The FHIR search request.
    * @returns Promise to the array of search results.
    */

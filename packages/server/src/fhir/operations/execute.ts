@@ -233,7 +233,6 @@ export function getLambdaFunctionName(bot: Bot): string {
  * so we attempt to scrub away all of that extra metadata.
  *
  * See: https://docs.aws.amazon.com/lambda/latest/dg/nodejs-logging.html
- *
  * @param logResult The raw log result from the AWS lambda event.
  * @returns The parsed log result.
  */

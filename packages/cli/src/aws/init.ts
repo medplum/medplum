@@ -409,7 +409,6 @@ async function listCertificates(region: string): Promise<CertificateSummary[]> {
  * 1. If the certificate already exists, return the ARN.
  * 2. If the certificate does not exist, and the user wants to create a new certificate, create it and return the ARN.
  * 3. If the certificate does not exist, and the user does not want to create a new certificate, return a placeholder.
- *
  * @param config In-progress config settings.
  * @param allCerts List of all existing certificates.
  * @param region The AWS region where the certificate is needed.
@@ -476,7 +475,6 @@ async function requestCert(region: string, domain: string): Promise<string> {
  *   3. It must be a 2048-bit key pair.
  *
  * See: https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-trusted-signers.html#private-content-creating-cloudfront-key-pairs
- *
  * @returns A new signing key.
  */
 function generateSigningKey(): { publicKey: string; privateKey: string; passphrase: string } {

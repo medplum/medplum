@@ -25,7 +25,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   /**
    * Handles a key down event on the "available" field.
    * If the user presses enter, it is a shortcut for the "Add" button.
-   *
    * @param e The keyboard event.
    */
   function handleAvailableKeyDown(e: React.KeyboardEvent): void {
@@ -45,7 +44,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
   /**
    * Handles a key down event on the "available" field.
    * If the user presses enter, it is a shortcut for the "Add" button.
-   *
    * @param e The keyboard event.
    */
   function handleSelectedKeyDown(e: React.KeyboardEvent): void {

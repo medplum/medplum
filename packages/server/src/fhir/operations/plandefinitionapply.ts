@@ -43,7 +43,6 @@ interface PlanDefinitionApplyParameters {
  * The operation converts a PlanDefinition to a RequestGroup.
  *
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- *
  * @param req The HTTP request.
  * @param res The HTTP response.
  */

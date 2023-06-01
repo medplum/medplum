@@ -103,7 +103,6 @@ export class CloudWatchLogger {
    * This method takes the full queue and splits it into acceptable batches.
    *
    * In the common case, one call to processEvents will result in one call to putEvents.
-   *
    * @param logEvents All of the events in the queue at the time of the timer.
    */
   private async processEvents(logEvents: LogEvent[]): Promise<void> {
@@ -135,7 +134,6 @@ export class CloudWatchLogger {
    * Uploads a batch of events to CloudWatch logs.
    *
    * T?his method assumes that the PutLogEvents constraints are satisfied.
-   *
    * @param logEvents Batch of events for single call to PutLogEvents.
    */
   private async putEvents(logEvents: LogEvent[]): Promise<void> {

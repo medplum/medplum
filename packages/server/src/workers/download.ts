@@ -94,7 +94,6 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * at that moment in time.  For each matching download, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
- *
  * @param resource The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
@@ -119,7 +118,6 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
  *  1) They refer to a fully qualified fhir/R4/Binary/ endpoint.
  *  2) They refer to the Medplum storage URL.
  *  3) They refer to a Binary in canonical form (i.e., "Binary/123").
- *
  * @param url The Media content URL.
  * @returns True if the URL is an external URL.
  */

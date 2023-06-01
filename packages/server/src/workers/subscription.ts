@@ -109,7 +109,6 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * at that moment in time.  For each matching subscription, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
- *
  * @param resource The resource that was created or updated.
  * @param context The background job context.
  */

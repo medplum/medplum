@@ -385,7 +385,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Results are sorted with oldest versions last
    *
    * See: https://www.hl7.org/fhir/http.html#history
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
@@ -1038,7 +1037,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns bundle entries for the resources that are included in the search result.
    *
    * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
-   *
    * @param include The include parameter.
    * @param resources The base search result resources.
    * @returns The bundle entries for the included resources.
@@ -1093,7 +1091,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns bundle entries for the resources that are reverse included in the search result.
    *
    * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
-   *
    * @param revInclude The revInclude parameter.
    * @param resources The base search result resources.
    * @returns The bundle entries for the reverse included resources.
@@ -1390,7 +1387,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds a search filter expression for a normal search parameter.
    *
    * Not any special cases, just a normal search parameter.
-   *
    * @param resourceType The FHIR resource type.
    * @param param The FHIR search parameter.
    * @param filter The search filter.
@@ -1419,7 +1415,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns true if the search parameter code is a special search parameter.
    *
    * See: https://www.hl7.org/fhir/search.html#all
-   *
    * @param selectQuery The select query builder.
    * @param searchRequest The overall search request.
    * @param filter The search filter.

@@ -128,7 +128,6 @@ class S3Storage implements BinaryStorage {
    *
    * Learn more:
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
-   *
    * @param binary The binary resource destination.
    * @param filename Optional binary filename.
    * @param contentType Optional binary content type.

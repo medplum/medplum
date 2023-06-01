@@ -386,7 +386,6 @@ export async function exchangeExternalAuthToken(
  * 3. Form body (client_secret_post)
  *
  * See SMART "token_endpoint_auth_methods_supported"
- *
  * @param req The HTTP request.
  * @returns The client ID and secret on success, or an error message on failure.
  */
@@ -421,7 +420,6 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * 2. https://www.hl7.org/fhir/smart-app-launch/example-backend-services.html#step-2-discovery
  * 3. https://docs.oracle.com/en/cloud/get-started/subscriptions-cloud/csimg/obtaining-access-token-using-self-signed-client-assertion.html
  * 4. https://darutk.medium.com/oauth-2-0-client-authentication-4b5f929305d4
- *
  * @param clientAssertiontype The client assertion type.
  * @param clientAssertion The client assertion JWT.
  * @returns The parsed client ID and secret on success, or an error message on failure.

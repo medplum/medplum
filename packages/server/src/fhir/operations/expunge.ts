@@ -9,7 +9,6 @@ import { logger } from '../../logger';
  * Handles an expunge request.
  *
  * Endpoint: [fhir base]/[resourceType]/[id]/$expunge
- *
  * @param req The HTTP request.
  * @param res The HTTP response.
  */

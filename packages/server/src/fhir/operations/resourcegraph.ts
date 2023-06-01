@@ -31,7 +31,6 @@ import { sendResponse } from '../routes';
  * The operation fetches all the data related to this resources as defined by a GraphDefinition resource
  *
  * See: https://hl7.org/fhir/plandefinition-operation-apply.html
- *
  * @param req The HTTP request.
  * @param res The HTTP response.
  */
@@ -240,7 +239,6 @@ async function followCanonicalElements(
 /**
  * Fetches all resources referenced by this GraphDefinition link,
  * where the link is specified using search parameters
- *
  * @param repo The repository object for fetching data
  * @param resource The resource for which this GraphDefinition is being applied
  * @param link A link element defined in the GraphDefinition

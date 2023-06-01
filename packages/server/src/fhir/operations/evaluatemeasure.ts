@@ -35,7 +35,6 @@ interface EvaluateMeasureParameters {
  * 4. location parameter
  *
  * See: https://hl7.org/fhir/measure-operation-evaluate-measure.html
- *
  * @param req The HTTP request.
  * @param res The HTTP response.
  */

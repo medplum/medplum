@@ -10,7 +10,6 @@ import { ScimListResponse, ScimUser } from './types';
  *
  * See SCIM 3.4.2 - Query Resources
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.2
- *
  * @param project The project.
  * @returns List of SCIM users in the project.
  */
@@ -42,7 +41,6 @@ export async function searchScimUsers(project: Project): Promise<ScimListRespons
  *
  * See SCIM 3.3 - Creating Resources
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.3
- *
  * @param invitedBy The user who invited the new user.
  * @param project The project.
  * @param scimUser The new user definition.
@@ -83,7 +81,6 @@ export async function createScimUser(
  *
  * See SCIM 3.4.1 - Retrieve a Known Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.1
- *
  * @param project The project.
  * @param id The user ID.
  * @returns The user.
@@ -103,7 +100,6 @@ export async function readScimUser(project: Project, id: string): Promise<ScimUs
  *
  * See SCIM 3.5.1 - Replace a Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.5.1
- *
  * @param project The project.
  * @param scimUser The updated user definition.
  * @returns The updated user.
@@ -136,7 +132,6 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
  *
  * See SCIM 3.4.1 - Retrieve a Known Resource
  * https://www.rfc-editor.org/rfc/rfc7644#section-3.4.1
- *
  * @param project The project.
  * @param id The user ID.
  * @returns The user.
@@ -156,7 +151,6 @@ export async function deleteScimUser(project: Project, id: string): Promise<void
  * By default, a SCIM User does not have the equivalent of a FHIR resource type.
  *
  * This function looks for the Medplum extension, which contains the resource type.
- *
  * @param scimUser The SCIM user definition.
  * @returns The FHIR profile resource type if found; otherwise, undefined.
  */

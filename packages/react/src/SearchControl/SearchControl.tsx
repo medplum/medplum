@@ -238,7 +238,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   /**
    * Handles a click on a order row.
-   *
    * @param e The click event.
    * @param resource The FHIR resource.
    */
