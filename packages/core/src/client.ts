@@ -2651,6 +2651,52 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Request oauth token with client credentials
+   *
+   * @category Authentication
+   * @param clientId The client ID.
+   * @param clientSecret The client secret.
+   */
+  async requestAccessToken(clientId: string, clientSecret: string): Promise<void> {
+    const formBody = new URLSearchParams();
+    formBody.set('grant_type', OAuthGrantType.ClientCredentials);
+    formBody.set('client_id', clientId);
+    formBody.set('client_secret', clientSecret);
+
+    const response = await this.fetch(this.tokenUrl, {
+      method: 'POST',
+      headers: { Authorization: `Basic ${encodeBase64(clientId + ':' + clientSecret)}` },
+      body: formBody,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch tokens');
+    }
+    const tokens = await response.json();
+    const accessToken = tokens.access_token;
+
+    // Verify token has not expired
+    const tokenPayload = parseJWTPayload(accessToken);
+
+    if (Date.now() >= (tokenPayload.exp as number) * 1000) {
+      throw new Error('Token expired');
+    }
+
+    // Verify app_client_id
+    // external tokenPayload
+    if (tokenPayload.cid) {
+      if (tokenPayload.cid !== clientId) {
+        throw new Error('Token was not issued for this audience');
+      }
+    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
+      throw new Error('Token was not issued for this audience');
+    }
+
+    this.setAccessToken(accessToken);
+  }
+
+  /**
    * Invite a user to a project.
    * @param projectId The project ID.
    * @param body The InviteBody.
