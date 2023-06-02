@@ -109,40 +109,53 @@ class ResourceValidator {
   }
 
   private checkProperty(value: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const property = getTypedPropertyValue(value, key);
-    if (property === null) {
-      this.issues.push(createStructureIssue(path, 'Invalid null value'));
-      return;
-    }
-
-    const element = schema.fields[key];
-    if (!element) {
-      throw new Error(`Missing element validation schema for ${key}`);
-    }
-
-    if (isEmpty(property)) {
-      if (element.min > 0) {
-        this.issues.push(createStructureIssue(path, 'Missing required property'));
+    const [firstProp, ...nestedProps] = key.split('.');
+    let propertyValues = [getTypedPropertyValue(value, firstProp)];
+    for (const prop of nestedProps) {
+      const next = [];
+      for (const current of propertyValues) {
+        if (current === undefined) {
+          continue;
+        } else if (Array.isArray(current)) {
+          for (const element of current) {
+            next.push(getTypedPropertyValue(element, prop));
+          }
+        } else {
+          next.push(getTypedPropertyValue(current, prop));
+        }
       }
-      return;
+      propertyValues = next;
     }
+    for (const property of propertyValues) {
+      const element = schema.fields[key];
+      if (!element) {
+        throw new Error(`Missing element validation schema for ${key}`);
+      }
 
-    let values: TypedValue[];
-    if (element.isArray) {
-      if (!Array.isArray(property)) {
-        this.issues.push(createStructureIssue(path, 'Expected array of values'));
+      if (isEmpty(property)) {
+        if (element.min > 0) {
+          this.issues.push(createStructureIssue(path, 'Missing required property'));
+        }
         return;
       }
-      values = property;
-    } else {
-      if (Array.isArray(property)) {
-        this.issues.push(createStructureIssue(path, 'Expected single value'));
-        return;
+
+      let values: TypedValue[];
+      if (element.isArray) {
+        if (!Array.isArray(property)) {
+          this.issues.push(createStructureIssue(path, 'Expected array of values'));
+          return;
+        }
+        values = property;
+      } else {
+        if (Array.isArray(property)) {
+          this.issues.push(createStructureIssue(path, 'Expected single value'));
+          return;
+        }
+        values = [property as TypedValue];
       }
-      values = [property as TypedValue];
-    }
-    for (const value of values) {
-      this.checkPropertyValue(value, path);
+      for (const value of values) {
+        this.checkPropertyValue(value, path);
+      }
     }
   }
 

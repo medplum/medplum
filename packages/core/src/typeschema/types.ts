@@ -71,14 +71,18 @@ const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
 // const RESOURCE_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
 
 export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
-  if (Object.keys(DATA_TYPES).length > 0) {
-    return;
-  }
   for (const { resource: sd } of bundle.entry || []) {
     if (!sd || !sd.name) {
       throw new Error(`Failed loading StructureDefinition from bundle`);
     }
-    DATA_TYPES[sd.name] = parseStructureDefinition(sd);
+    if (sd.resourceType !== 'StructureDefinition') {
+      continue;
+    }
+    const schema = parseStructureDefinition(sd);
+    DATA_TYPES[sd.name] = schema;
+    for (const inner of schema.innerTypes) {
+      DATA_TYPES[inner.name] = inner;
+    }
   }
 }
 
@@ -107,7 +111,7 @@ class StructureDefinitionParser {
    */
   constructor(sd: StructureDefinition) {
     if (!sd.snapshot?.element || sd.snapshot.element.length === 0) {
-      throw new Error('No snapshot defined for StructureDefinition');
+      throw new Error(`No snapshot defined for StructureDefinition '${sd.name}'`);
     }
     const root = sd.snapshot.element[0];
 
@@ -209,21 +213,6 @@ class StructureDefinitionParser {
       return element;
     }
     return undefined;
-  }
-
-  private parseSlicedField(element: ElementDefinition): void {
-    const field = parseFieldDefinition(element);
-    field.slicing = {
-      discriminator: (element.slicing?.discriminator || []).map((d) => ({
-        path: d.path as string,
-        type: d.type as string,
-      })),
-      slices: [],
-      ordered: element.slicing?.ordered || false,
-      rule: element.slicing?.rules,
-    };
-    this.resourceSchema.fields[fieldPath(element, this.resourceSchema.name)] = field;
-    this.slicingContext = { field: field.slicing, path: element.path || '' };
   }
 
   private parseSliceStart(element: ElementDefinition): void {

@@ -12,6 +12,7 @@ describe('FHIR resource validation', () => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     loadDataTypes(readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>);
+    loadDataTypes(readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>);
   });
 
   test('Basic validation', () => {
@@ -47,6 +48,16 @@ describe('FHIR resource validation', () => {
             coding: [
               {
                 code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+        {
+          code: {
+            coding: [
+              {
+                code: '8462-4',
                 system: 'http://loinc.org',
               },
             ],
