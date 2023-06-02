@@ -2171,7 +2171,7 @@ export class MedplumClient extends EventTarget {
       url.searchParams.set('_since', since);
     }
 
-    options.method = exportLevel ? 'GET' : 'POST';
+    options.method = 'GET';
     this.addFetchOptionsDefaults(options);
 
     const headers = options.headers as Record<string, string>;

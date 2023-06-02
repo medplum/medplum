@@ -77,6 +77,7 @@ protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
 
 // Project $export
+protectedRoutes.get('/([$]|%24)export', bulkExportHandler);
 protectedRoutes.post('/([$]|%24)export', bulkExportHandler);
 
 // Project $clone
