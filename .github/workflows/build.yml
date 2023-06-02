@@ -89,7 +89,6 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
           MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
