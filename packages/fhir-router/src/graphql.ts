@@ -64,7 +64,6 @@ import {
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
-import { Operation } from 'rfc6902';
 
 const typeCache: Record<string, GraphQLOutputType | undefined> = {
   base64Binary: GraphQLString,
@@ -241,6 +240,17 @@ function buildRootSchema(): GraphQLSchema {
       type: graphQLType,
       args: buildUpdateArgs(resourceType),
       resolve: resolveByUpdate,
+    };
+
+    mutationFields[resourceType + 'Delete'] = {
+      type: graphQLType,
+      args: {
+        id: {
+          type: new GraphQLNonNull(GraphQLID),
+          description: resourceType + ' ID',
+        },
+      },
+      resolve: resolveByDelete,
     };
   }
 
@@ -532,6 +542,7 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       description: resourceType + ' ID',
     },
   };
+
   const searchParams = getSearchParameters(resourceType);
   if (searchParams) {
     for (const [code, searchParam] of Object.entries(searchParams)) {
@@ -581,9 +592,9 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
   });
 }
 
-// create update and delete
+// create update
 async function resolveByUpdate(
-  source: any,
+  _: any,
   args: Record<string, string>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
@@ -592,8 +603,19 @@ async function resolveByUpdate(
   const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
   const updatedResource = { ...args, resourceType };
   const resource = await ctx.repo.updateResource(updatedResource as Resource);
-  // console.log(resource);
   return resource;
+}
+
+async function resolveByDelete(
+  _: any,
+  args: Record<string, string>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<void> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
+  await ctx.repo.deleteResource(resourceType, args.id as string);
+  return undefined
 }
 
 /**

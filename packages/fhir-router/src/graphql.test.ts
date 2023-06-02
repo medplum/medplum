@@ -1059,7 +1059,11 @@ describe('GraphQL', () => {
   });
 
   test('Updating Patient Record', async () => {
-    const patient = await repo.createResource<Patient>({ resourceType: 'Patient', gender: 'female' });
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'] }],
+    });
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -1071,6 +1075,7 @@ describe('GraphQL', () => {
         PatientUpdate(
           id: "${patient.id}"
           gender: "male"
+          name: [{ given: ["Bob"] }]
         ) {
           id
           gender
@@ -1085,5 +1090,40 @@ describe('GraphQL', () => {
 
     const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
     expect(retrievePatient.gender).toEqual('male');
+    expect(retrievePatient?.name?.[0].given).toEqual('Bob');
+  });
+
+  test('Delete Patient Record', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'] }],
+    });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientDelete(
+          id: "${patient.id}"
+        ) {
+          id
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+    try {
+      await repo.readReference(createReference(patient));
+      throw new Error('Expected error');
+    } catch (err) {
+      expect((err as Error).message).toBe('Not found');
+    }
   });
 });
