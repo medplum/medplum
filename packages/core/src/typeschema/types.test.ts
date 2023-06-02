@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { ElementValidator, SlicingRules, parseStructureDefinition } from './types';
+import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition } from './types';
 import { resolve } from 'path';
 
 describe('FHIR resource and data type representations', () => {
@@ -18,10 +18,8 @@ describe('FHIR resource and data type representations', () => {
       'obs-7',
       'vs-2',
     ]);
-    expect(profile.fields['Observation.status'].binding).toEqual(
-      'http://hl7.org/fhir/ValueSet/observation-status|4.0.1'
-    );
-    expect(profile.fields['Observation.category'].slicing).toMatchObject<SlicingRules>({
+    expect(profile.fields['status'].binding).toEqual('http://hl7.org/fhir/ValueSet/observation-status|4.0.1');
+    expect(profile.fields['category'].slicing).toMatchObject<SlicingRules>({
       discriminator: [
         { type: 'value', path: 'coding.code' },
         { type: 'value', path: 'coding.system' },
@@ -49,12 +47,12 @@ describe('FHIR resource and data type representations', () => {
       ],
       ordered: false,
     });
-    expect(profile.fields['Observation.component']).toMatchObject<Partial<ElementValidator>>({
+    expect(profile.fields['component']).toMatchObject<Partial<ElementValidator>>({
       min: 2,
       max: Number.POSITIVE_INFINITY,
     });
-    expect(profile.fields['Observation.component'].constraints.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
-    expect(profile.fields['Observation.component'].slicing).toMatchObject<SlicingRules>({
+    expect(profile.fields['component'].constraints.map((c) => c.key).sort()).toEqual(['ele-1', 'vs-3']);
+    expect(profile.fields['component'].slicing).toMatchObject<SlicingRules>({
       discriminator: [{ type: 'pattern', path: 'code' }],
       slices: [
         {
@@ -99,6 +97,24 @@ describe('FHIR resource and data type representations', () => {
         },
       ],
       ordered: false,
+    });
+    expect(profile.innerTypes).toHaveLength(2);
+    const [refRange, component] = profile.innerTypes;
+    expect(refRange).toMatchObject<Partial<InternalTypeSchema>>({
+      name: 'ObservationReferenceRange',
+      fields: {
+        id: expect.objectContaining({}),
+        low: expect.objectContaining({}),
+        high: expect.objectContaining({}),
+      },
+    });
+    expect(component).toMatchObject<Partial<InternalTypeSchema>>({
+      name: 'ObservationComponent',
+      fields: {
+        id: expect.objectContaining({}),
+        code: expect.objectContaining({}),
+        'value[x]': expect.objectContaining({}),
+      },
     });
   });
 });
