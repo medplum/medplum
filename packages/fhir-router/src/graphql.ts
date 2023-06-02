@@ -48,6 +48,10 @@ import {
   GraphQLFieldConfigMap,
   GraphQLFloat,
   GraphQLID,
+  GraphQLInputFieldConfig,
+  GraphQLInputFieldConfigMap,
+  GraphQLInputObjectType,
+  GraphQLInputType,
   GraphQLInt,
   GraphQLList,
   GraphQLNonNull,
@@ -65,7 +69,36 @@ import {
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
 
-const typeCache: Record<string, GraphQLOutputType | undefined> = {
+const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
+  base64Binary: GraphQLString,
+  boolean: GraphQLBoolean,
+  canonical: GraphQLString,
+  code: GraphQLString,
+  date: GraphQLString,
+  dateTime: GraphQLString,
+  decimal: GraphQLFloat,
+  id: GraphQLID,
+  instant: GraphQLString,
+  integer: GraphQLFloat,
+  markdown: GraphQLString,
+  number: GraphQLFloat,
+  positiveInt: GraphQLFloat,
+  string: GraphQLString,
+  time: GraphQLString,
+  unsignedInt: GraphQLFloat,
+  uri: GraphQLString,
+  url: GraphQLString,
+  xhtml: GraphQLString,
+  'http://hl7.org/fhirpath/System.Boolean': GraphQLBoolean,
+  'http://hl7.org/fhirpath/System.Date': GraphQLString,
+  'http://hl7.org/fhirpath/System.DateTime': GraphQLString,
+  'http://hl7.org/fhirpath/System.Decimal': GraphQLFloat,
+  'http://hl7.org/fhirpath/System.Integer': GraphQLFloat,
+  'http://hl7.org/fhirpath/System.String': GraphQLString,
+  'http://hl7.org/fhirpath/System.Time': GraphQLString,
+};
+
+const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
   base64Binary: GraphQLString,
   boolean: GraphQLBoolean,
   canonical: GraphQLString,
@@ -200,18 +233,19 @@ function buildRootSchema(): GraphQLSchema {
   // First, create placeholder types
   // We need this first for circular dependencies
   for (const resourceType of getResourceTypes()) {
-    typeCache[resourceType] = buildGraphQLType(resourceType);
+    outputTypeCache[resourceType] = buildGraphQLOutputType(resourceType);
   }
 
   // Next, fill in all of the type properties
   const fields: GraphQLFieldConfigMap<any, GraphQLContext> = {};
   const mutationFields: GraphQLFieldConfigMap<any, GraphQLContext> = {};
+
   for (const resourceType of getResourceTypes()) {
-    const graphQLType = getGraphQLType(resourceType);
+    const graphQLOutputType = getGraphQLOutputType(resourceType);
 
     // Get resource by ID
     fields[resourceType] = {
-      type: graphQLType,
+      type: graphQLOutputType,
       args: {
         id: {
           type: new GraphQLNonNull(GraphQLID),
@@ -223,27 +257,27 @@ function buildRootSchema(): GraphQLSchema {
 
     // Search resource by search parameters
     fields[resourceType + 'List'] = {
-      type: new GraphQLList(graphQLType),
+      type: new GraphQLList(graphQLOutputType),
       args: buildSearchArgs(resourceType),
       resolve: resolveBySearch,
     };
 
     // FHIR GraphQL Connection API
     fields[resourceType + 'Connection'] = {
-      type: buildConnectionType(resourceType, graphQLType),
+      type: buildConnectionType(resourceType, graphQLOutputType),
       args: buildSearchArgs(resourceType),
       resolve: resolveByConnectionApi,
     };
 
     // Mutation API
     mutationFields[resourceType + 'Update'] = {
-      type: graphQLType,
+      type: graphQLOutputType,
       args: buildUpdateArgs(resourceType),
       resolve: resolveByUpdate,
     };
 
     mutationFields[resourceType + 'Delete'] = {
-      type: graphQLType,
+      type: graphQLOutputType,
       args: {
         id: {
           type: new GraphQLNonNull(GraphQLID),
@@ -266,23 +300,33 @@ function buildRootSchema(): GraphQLSchema {
   });
 }
 
-function getGraphQLType(resourceType: string): GraphQLOutputType {
-  let result = typeCache[resourceType];
+function getGraphQLOutputType(resourceType: string): GraphQLOutputType {
+  let result = outputTypeCache[resourceType];
   if (!result) {
-    result = buildGraphQLType(resourceType);
-    typeCache[resourceType] = result;
+    result = buildGraphQLOutputType(resourceType);
+    outputTypeCache[resourceType] = result;
+  }
+
+  return result;
+}
+//
+function getGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
+  let result = inputTypeCache[resourceType];
+  if (!result) {
+    result = buildGraphQLInputType(resourceType, nameSuffix);
+    inputTypeCache[resourceType] = result;
   }
 
   return result;
 }
 
-function buildGraphQLType(resourceType: string): GraphQLOutputType {
+function buildGraphQLOutputType(resourceType: string): GraphQLOutputType {
   if (resourceType === 'ResourceList') {
     return new GraphQLUnionType({
       name: 'ResourceList',
       types: () =>
         getResourceTypes()
-          .map(getGraphQLType)
+          .map(getGraphQLOutputType)
           .filter((t) => !!t) as GraphQLObjectType[],
       resolveType: resolveTypeByReference,
     });
@@ -292,18 +336,33 @@ function buildGraphQLType(resourceType: string): GraphQLOutputType {
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
-    fields: () => buildGraphQLFields(resourceType as ResourceType),
+    fields: () => buildGraphQLOutputFields(resourceType as ResourceType),
+  });
+}
+//
+function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
+  const schema = getResourceTypeSchema(resourceType);
+  return new GraphQLInputObjectType({
+    name: resourceType + nameSuffix,
+    description: schema.description,
+    fields: () => buildGraphQLInputFields(resourceType as ResourceType, nameSuffix),
   });
 }
 
-function buildGraphQLFields(resourceType: ResourceType): GraphQLFieldConfigMap<any, any> {
+function buildGraphQLOutputFields(resourceType: ResourceType): GraphQLFieldConfigMap<any, any> {
   const fields: GraphQLFieldConfigMap<any, any> = {};
-  buildPropertyFields(resourceType, fields);
+  buildOutputPropertyFields(resourceType, fields);
   buildReverseLookupFields(resourceType, fields);
   return fields;
 }
 
-function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
+function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string): GraphQLInputFieldConfigMap {
+  const fields: GraphQLInputFieldConfigMap = {};
+  buildInputPropertyFields(resourceType, fields, nameSuffix);
+  return fields;
+}
+
+function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
   const schema = getResourceTypeSchema(resourceType);
   const properties = schema.properties;
 
@@ -317,7 +376,7 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
   if (resourceType === 'Reference') {
     fields.resource = {
       description: 'Reference',
-      type: getGraphQLType('ResourceList'),
+      type: getGraphQLOutputType('ResourceList'),
       resolve: resolveByReference,
     };
   }
@@ -325,12 +384,24 @@ function buildPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap
   for (const key of Object.keys(properties)) {
     const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
-      buildPropertyField(fields, key, elementDefinition, type);
+      buildOutputPropertyField(fields, key, elementDefinition, type);
     }
   }
 }
 
-function buildPropertyField(
+//
+function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
+  const schema = getResourceTypeSchema(resourceType);
+  const properties = schema.properties;
+  for (const key of Object.keys(properties)) {
+    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+    for (const type of elementDefinition.type as ElementDefinitionType[]) {
+      buildInputPropertyField(fields, key, elementDefinition, type, nameSuffix);
+    }
+  }
+}
+
+function buildOutputPropertyField(
   fields: GraphQLFieldConfigMap<any, any>,
   key: string,
   elementDefinition: ElementDefinition,
@@ -343,13 +414,35 @@ function buildPropertyField(
 
   const fieldConfig: GraphQLFieldConfig<any, any> = {
     description: elementDefinition.short,
-    type: getPropertyType(elementDefinition, typeName),
+    type: getOutputPropertyType(elementDefinition, typeName),
     resolve: resolveField,
   };
 
   if (elementDefinition.max === '*') {
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
+
+  const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
+  fields[propertyName] = fieldConfig;
+}
+
+//
+function buildInputPropertyField(
+  fields: GraphQLInputFieldConfigMap,
+  key: string,
+  elementDefinition: ElementDefinition,
+  elementDefinitionType: ElementDefinitionType,
+  nameSuffix: string
+): void {
+  let typeName = elementDefinitionType.code as string;
+  if (typeName === 'Element' || typeName === 'BackboneElement') {
+    typeName = buildTypeName(elementDefinition.path?.split('.') as string[]);
+  }
+
+  const fieldConfig: GraphQLInputFieldConfig = {
+    description: elementDefinition.short,
+    type: getGraphQLInputType(typeName, nameSuffix),
+  };
 
   const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
   fields[propertyName] = fieldConfig;
@@ -466,7 +559,7 @@ function buildListPropertyFieldArg(
  */
 function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
   for (const childResourceType of getResourceTypes()) {
-    const childGraphQLType = getGraphQLType(childResourceType);
+    const childGraphQLType = getGraphQLOutputType(childResourceType);
     const childSearchParams = getSearchParameters(childResourceType);
     const enumValues: GraphQLEnumValueConfigMap = {};
     let count = 0;
@@ -541,24 +634,17 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       type: new GraphQLNonNull(GraphQLID),
       description: resourceType + ' ID',
     },
+    res: {
+      type: getGraphQLInputType(resourceType, 'Update'),
+      description: resourceType + ' Update',
+    },
   };
 
-  const searchParams = getSearchParameters(resourceType);
-  if (searchParams) {
-    for (const [code, searchParam] of Object.entries(searchParams)) {
-      // GraphQL does not support dashes in argument names
-      // So convert dashes to underscores
-      args[fhirParamToGraphQLField(code)] = {
-        type: GraphQLString,
-        description: searchParam.description,
-      };
-    }
-  }
   return args;
 }
 
-function getPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
-  const graphqlType = getGraphQLType(typeName);
+function getOutputPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
+  const graphqlType = getGraphQLOutputType(typeName);
   if (elementDefinition.max === '*') {
     return new GraphQLList(graphqlType);
   }
@@ -592,20 +678,43 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
   });
 }
 
-// create update
+/**
+ * GraphQL resolver function for update requests.
+ * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
+ * The args should include the data to be updated for the specified resource type.
+ * @param _ The source/root object. In the case of updates, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the new data for the resource.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the updated resource, or undefined if the resource could not be found or updated.
+ * @implements {GraphQLFieldResolver}
+ */
 async function resolveByUpdate(
   _: any,
-  args: Record<string, string>,
+  args: Record<string, any>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
 ): Promise<Resource | undefined> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
-  const updatedResource = { ...args, resourceType };
+  const resourceArgs = args.res;
+  const resourceId = args.id;
+  const updatedResource = {...resourceArgs, resourceType, id: resourceId};
   const resource = await ctx.repo.updateResource(updatedResource as Resource);
   return resource;
 }
 
+/**
+ * GraphQL resolver function for delete requests.
+ * The field name should end with "Delete" (e.g., "PatientDelete" for deleting a Patient).
+ * The args should include the ID of the resource to be deleted.
+ * @param _ The source/root object. In the case of deletions, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the ID of the resource to be deleted.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves when the resource has been deleted. No value is returned.
+ * @implements {GraphQLFieldResolver}
+ */
 async function resolveByDelete(
   _: any,
   args: Record<string, string>,
@@ -615,7 +724,7 @@ async function resolveByDelete(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
   await ctx.repo.deleteResource(resourceType, args.id as string);
-  return undefined
+  return undefined;
 }
 
 /**
@@ -732,7 +841,7 @@ function resolveTypeByReference(resource: Resource | undefined): string | undefi
     return undefined;
   }
 
-  return (getGraphQLType(resourceType) as GraphQLObjectType).name;
+  return (getGraphQLOutputType(resourceType) as GraphQLObjectType).name;
 }
 
 /**

@@ -1074,11 +1074,18 @@ describe('GraphQL', () => {
       mutation {
         PatientUpdate(
           id: "${patient.id}"
-          gender: "male"
-          name: [{ given: ["Bob"] }]
+          res: {
+            gender: "male"
+            name: {
+              given: "Bob"
+            }
+          }
         ) {
           id
           gender
+          name {
+            given
+          }
         }
       }
       `,
@@ -1089,6 +1096,8 @@ describe('GraphQL', () => {
     expect(res[0]).toMatchObject(allOk);
 
     const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
+
+    console.log(retrievePatient);
     expect(retrievePatient.gender).toEqual('male');
     expect(retrievePatient?.name?.[0].given).toEqual('Bob');
   });
