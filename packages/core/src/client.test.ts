@@ -1828,7 +1828,7 @@ describe('Client', () => {
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
-          method: 'POST',
+          method: 'GET',
           headers: {
             Accept: 'application/fhir+json',
             Prefer: 'respond-async',
@@ -1849,7 +1849,7 @@ describe('Client', () => {
       const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
-        expect.objectContaining({ method: 'POST' })
+        expect.objectContaining({ method: 'GET' })
       );
       expect(fetch).toBeCalledWith(
         expect.stringContaining('bulkdata/id/status'),
