@@ -113,7 +113,7 @@ describe('CLI Bulk Commands', () => {
             output: [
               {
                 type: 'ProjectMembership',
-                url: 'https://api.medplum.com/storage/20fabdd3-e036-49fc-9260-8a30eaffefb1/498475fe-5eb0-46e5-b9f4-b46943c9719b?Expires=1685749878&Key-Pair-Id=my-key-id&Signature=PWyrVFf'
+                url: 'https://api.medplum.com/storage/20fabdd3-e036-49fc-9260-8a30eaffefb1/498475fe-5eb0-46e5-b9f4-b46943c9719b?Expires=1685749878&Key-Pair-Id=my-key-id&Signature=PWyrVFf',
               },
               {
                 type: 'Project',
@@ -141,8 +141,14 @@ describe('CLI Bulk Commands', () => {
       });
       await main(medplum, ['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created'));
-      expect(console.log).toBeCalledWith(expect.stringMatching('Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created'));
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching(
+          'ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created'
+        )
+      );
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching('Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created')
+      );
     });
   });
 
