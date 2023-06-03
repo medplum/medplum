@@ -17,5 +17,10 @@ async function testPostgres(): Promise<boolean> {
 }
 
 async function testRedis(): Promise<boolean> {
-  return (await getRedis().ping()) === 'PONG';
+  try {
+
+    return (await getRedis().ping()) === 'PONG';
+  } catch(err) {
+    return false
+  }
 }

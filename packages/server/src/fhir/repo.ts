@@ -325,22 +325,28 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
-    const cacheEntries = await getCacheEntries(references);
     const result: (Resource | Error)[] = new Array(references.length);
 
-    for (let i = 0; i < result.length; i++) {
-      const reference = references[i];
-      const cacheEntry = cacheEntries[i];
-      let entryResult = await this.processReadReferenceEntry(reference, cacheEntry);
-      if (entryResult instanceof Error) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult);
-      } else {
-        entryResult = this.removeHiddenFields(entryResult);
-        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, entryResult);
-      }
-      result[i] = entryResult;
-    }
+    try {
 
+      const cacheEntries = await getCacheEntries(references);
+  
+      for (let i = 0; i < result.length; i++) {
+        const reference = references[i];
+        const cacheEntry = cacheEntries[i];
+        let entryResult = await this.processReadReferenceEntry(reference, cacheEntry);
+        if (entryResult instanceof Error) {
+          this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult);
+        } else {
+          entryResult = this.removeHiddenFields(entryResult);
+          this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, entryResult);
+        }
+        result[i] = entryResult;
+      }
+  
+    } catch (err) {
+      console.log('nothing')
+    }
     return result;
   }
 
@@ -2431,8 +2437,14 @@ export class Repository extends BaseRepository implements FhirRepository {
  * @returns The cache entry if found; otherwise, undefined.
  */
 async function getCacheEntry<T extends Resource>(resourceType: string, id: string): Promise<CacheEntry<T> | undefined> {
-  const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+  try {
+
+    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+  } catch(err) {
+    console.log('swallow redis being down');
+  }
+  return undefined;
 }
 
 /**
@@ -2456,12 +2468,16 @@ async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Res
  * @param resource The resource to cache.
  */
 async function setCacheEntry(resource: Resource): Promise<void> {
-  await getRedis().set(
-    getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId: resource.meta?.project }),
-    'EX',
-    24 * 60 * 60 // 24 hours in seconds
-  );
+  try {
+    await getRedis().set(
+      getCacheKey(resource.resourceType, resource.id as string),
+      JSON.stringify({ resource, projectId: resource.meta?.project }),
+      'EX',
+      24 * 60 * 60 // 24 hours in seconds
+    );
+  } catch (err) {
+    console.log('swallow setCacheEntry')
+  }
 }
 
 /**
