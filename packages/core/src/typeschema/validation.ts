@@ -1,11 +1,11 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { getDataType, parseStructureDefinition } from './types';
+import { ElementValidator, getDataType, parseStructureDefinition } from './types';
 import { InternalTypeSchema } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { isEmpty, isLowerCase } from '../utils';
+import { capitalize, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -98,14 +98,13 @@ class ResourceValidator {
   }
 
   private validateObject(value: TypedValue, schema: InternalTypeSchema, path: string): void {
-    // Detect extraneous properties in a single pass by keeping track of all keys that were correctly matched to resource properties
-    // const keys = Object.fromEntries(Object.entries(value.value).map(([k, _]) => [k, true]));
-
     for (const [key, _propSchema] of Object.entries(schema.fields)) {
       this.checkProperty(value, key, schema, path + '.' + key);
     }
 
-    //@TODO: Check for extraneous properties
+    //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
+    // were correctly matched to resource properties as elements are validated above
+    this.checkAdditionalProperties(value, schema.fields, path);
   }
 
   private checkProperty(value: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
@@ -169,6 +168,58 @@ class ResourceValidator {
     }
   }
 
+  private checkAdditionalProperties(
+    typedValue: TypedValue,
+    properties: Record<string, ElementValidator>,
+    path: string
+  ): void {
+    const object = typedValue.value as Record<string, unknown>;
+    for (const key of Object.keys(object)) {
+      if (key === 'resourceType') {
+        continue; // Skip special resource type discriminator property in JSON
+      }
+      if (
+        !(key in properties) &&
+        !isChoiceOfType(typedValue, key, properties) &&
+        !this.checkPrimitiveProperty(typedValue, key, path)
+      ) {
+        const expression = `${path}.${key}`;
+        this.issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
+      }
+    }
+  }
+
+  /**
+   * Checks the element for a primitive.
+   *
+   * FHIR elements with primitive data types are represented in two parts:
+   *   1) A JSON property with the name of the element, which has a JSON type of number, boolean, or string
+   *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
+   *
+   * See: https://hl7.org/fhir/json.html#primitive
+   *
+   * @param path The path to the property
+   * @param key
+   * @param typedValue
+   */
+  private checkPrimitiveProperty(typedValue: TypedValue, key: string, path: string): boolean {
+    // Primitive element starts with underscore
+    if (!key.startsWith('_')) {
+      return false;
+    }
+
+    // Validate the non-underscore property exists
+    const primitiveKey = key.slice(1);
+    if (!(primitiveKey in typedValue.value)) {
+      return false;
+    }
+
+    // Then validate the element
+    //@TODO(mattwiller 2023-06-05): Move this to occur along with the rest of validation
+    this.validateObject({ type: 'Element', value: typedValue.value[key] }, getDataType('Element'), path);
+    return true;
+  }
+
   private validatePrimitiveType(typedValue: TypedValue, path: string): void {
     const { type, value } = typedValue;
 
@@ -220,4 +271,33 @@ function isIntegerType(propertyType: PropertyType): boolean {
     propertyType === PropertyType.positiveInt ||
     propertyType === PropertyType.unsignedInt
   );
+}
+
+function isChoiceOfType(
+  typedValue: TypedValue,
+  key: string,
+  propertyDefinitions: Record<string, ElementValidator>
+): boolean {
+  for (const propertyName of Object.keys(propertyDefinitions)) {
+    if (!propertyName.endsWith('[x]')) {
+      continue;
+    }
+    const basePropertyName = propertyName.replace('[x]', '');
+    if (!key.startsWith(basePropertyName)) {
+      continue;
+    }
+    let typedPropertyValue = getTypedPropertyValue(typedValue, propertyName);
+    if (!typedPropertyValue) {
+      continue;
+    }
+    if (Array.isArray(typedPropertyValue)) {
+      // At present, there are no choice types that are arrays in the FHIR spec
+      // Leaving this here to make TypeScript happy, and in case that changes
+      typedPropertyValue = typedPropertyValue[0];
+    }
+    if (typedPropertyValue && key === basePropertyName + capitalize(typedPropertyValue.type)) {
+      return true;
+    }
+  }
+  return false;
 }
