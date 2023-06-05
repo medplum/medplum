@@ -166,6 +166,9 @@ class StructureDefinitionParser {
 
   private checkFieldEnter(element: ElementDefinition, field: ElementValidator): void {
     if (element.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code as string))) {
+      if (this.backboneContext) {
+        this.innerTypes.push(this.backboneContext.type);
+      }
       this.backboneContext = {
         type: {
           name: buildTypeName(element.path?.split('.') || []) as ResourceType,

@@ -3,7 +3,19 @@ import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefin
 import { resolve } from 'path';
 
 describe('FHIR resource and data type representations', () => {
-  test('Basic parsing', () => {
+  test('Base resource parsing', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'base-patient.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.name).toBe('Patient');
+    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+      'PatientCommunication',
+      'PatientContact',
+      'PatientLink',
+    ]);
+  });
+
+  test('Constraining profile parsing', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
