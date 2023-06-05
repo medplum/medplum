@@ -198,7 +198,7 @@ describe('GraphQL', () => {
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result?.[1] as any).data;
-    console.log(data.Patient.name);
+
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
@@ -927,6 +927,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
+
     const data = (res?.[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.extension).toHaveLength(1);

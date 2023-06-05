@@ -306,20 +306,20 @@ function buildRootSchema(): GraphQLSchema {
   });
 }
 
-function getGraphQLOutputType(resourceType: string): GraphQLOutputType {
-  let result = outputTypeCache[resourceType];
+function getGraphQLOutputType(inputType: string): GraphQLOutputType {
+  let result = outputTypeCache[inputType];
   if (!result) {
-    result = buildGraphQLOutputType(resourceType);
-    outputTypeCache[resourceType] = result;
+    result = buildGraphQLOutputType(inputType);
+    outputTypeCache[inputType] = result;
   }
   return result;
 }
 
-function getGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
-  let result = inputTypeCache[resourceType];
+function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
+  let result = inputTypeCache[inputType];
   if (!result) {
-    result = buildGraphQLInputType(resourceType, nameSuffix);
-    inputTypeCache[resourceType] = result;
+    result = buildGraphQLInputType(inputType, nameSuffix);
+    inputTypeCache[inputType] = result;
   }
   return result;
 }
@@ -939,6 +939,7 @@ function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<s
       value: getReferenceString(source as Resource),
     };
   }
+
   // Reverse the transform of dashes to underscores, back to dashes
   args = Object.fromEntries(Object.entries(args).map(([key, value]) => [graphQLFieldToFhirParam(key), value]));
 
@@ -951,6 +952,7 @@ function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<s
     const existingFilters = searchRequest.filters || [];
     searchRequest.filters = [referenceFilter, ...existingFilters];
   }
+
   return searchRequest;
 }
 
