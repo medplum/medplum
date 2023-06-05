@@ -270,6 +270,12 @@ function buildRootSchema(): GraphQLSchema {
     };
 
     // Mutation API
+    mutationFields[resourceType + 'Create'] = {
+      type: graphQLOutputType,
+      args: buildCreateArgs(resourceType),
+      resolve: resolveByCreate,
+    };
+
     mutationFields[resourceType + 'Update'] = {
       type: graphQLOutputType,
       args: buildUpdateArgs(resourceType),
@@ -316,7 +322,7 @@ function getGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLI
     result = buildGraphQLInputType(resourceType, nameSuffix);
     inputTypeCache[resourceType] = result;
   }
-
+  console.log(result)
   return result;
 }
 
@@ -339,7 +345,7 @@ function buildGraphQLOutputType(resourceType: string): GraphQLOutputType {
     fields: () => buildGraphQLOutputFields(resourceType as ResourceType),
   });
 }
-//
+
 function buildGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
   const schema = getResourceTypeSchema(resourceType);
   return new GraphQLInputObjectType({
@@ -389,7 +395,6 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
   }
 }
 
-//
 function buildInputPropertyFields(resourceType: string, fields: GraphQLInputFieldConfigMap, nameSuffix: string): void {
   const schema = getResourceTypeSchema(resourceType);
   const properties = schema.properties;
@@ -426,7 +431,6 @@ function buildOutputPropertyField(
   fields[propertyName] = fieldConfig;
 }
 
-//
 function buildInputPropertyField(
   fields: GraphQLInputFieldConfigMap,
   key: string,
@@ -443,7 +447,6 @@ function buildInputPropertyField(
     description: elementDefinition.short,
     type: getGraphQLInputType(typeName, nameSuffix),
   };
-
   const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
   fields[propertyName] = fieldConfig;
 }
@@ -628,6 +631,17 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   return args;
 }
 
+function buildCreateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
+  let args: GraphQLFieldConfigArgumentMap = {
+    res: {
+      type: getGraphQLInputType(resourceType, 'Create'),
+      description: resourceType + ' Create',
+    },
+  };
+
+  return args;
+}
+
 function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   let args: GraphQLFieldConfigArgumentMap = {
     id: {
@@ -679,6 +693,31 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
 }
 
 /**
+ * GraphQL resolver function for create requests.
+ * The field name should end with "Create" (i.e., "PatientCreate" for updating a Patient).
+ * The args should include the data to be created for the specified resource type.
+ * @param _ The source/root object. In the case of creates, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the new data for the resource.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the created resource, or undefined if the resource could not be found or updated.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveByCreate(
+  _: any,
+  args: Record<string, any>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<Resource | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  const resourceArgs = args.res;
+  const resourceObject = { ...resourceArgs, resourceType };
+  const resource = await ctx.repo.createResource(resourceObject as Resource);
+  return resource;
+}
+
+/**
  * GraphQL resolver function for update requests.
  * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
  * The args should include the data to be updated for the specified resource type.
@@ -699,7 +738,7 @@ async function resolveByUpdate(
   const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
   const resourceArgs = args.res;
   const resourceId = args.id;
-  const updatedResource = {...resourceArgs, resourceType, id: resourceId};
+  const updatedResource = { ...resourceArgs, resourceType, id: resourceId };
   const resource = await ctx.repo.updateResource(updatedResource as Resource);
   return resource;
 }

@@ -198,6 +198,7 @@ describe('GraphQL', () => {
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result?.[1] as any).data;
+    console.log(data.Patient.name);
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
@@ -1058,12 +1059,7 @@ describe('GraphQL', () => {
     });
   });
 
-  test('Updating Patient Record', async () => {
-    const patient = await repo.createResource<Patient>({
-      resourceType: 'Patient',
-      gender: 'female',
-      name: [{ given: ['Alice'] }],
-    });
+  test('Create Patient Record', async () => {
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -1072,8 +1068,7 @@ describe('GraphQL', () => {
       body: {
         query: `
       mutation {
-        PatientUpdate(
-          id: "${patient.id}"
+        PatientCreate(
           res: {
             gender: "male"
             name: {
@@ -1095,11 +1090,58 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
+    const data = (res?.[1] as any).data;
+    console.log(data)
+    expect(data.PatientCreate).toBeDefined();
+
+    const retrievePatient = await repo.readResource<Patient>('Patient', data.PatientCreate.id ?? '');
+
+    expect(retrievePatient.gender).toEqual('male');
+  });
+
+  test('Updating Patient Record', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'] }],
+    });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+          res: {
+            gender: "male"
+            name: [
+              {
+                given: "Bob"
+              }
+            ]
+          }
+        ) {
+          id
+          gender
+          name {
+            given
+          }
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
     const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
 
-    console.log(retrievePatient);
     expect(retrievePatient.gender).toEqual('male');
-    expect(retrievePatient?.name?.[0].given).toEqual('Bob');
+    expect(retrievePatient?.name?.given).toEqual('Bob');
   });
 
   test('Delete Patient Record', async () => {
