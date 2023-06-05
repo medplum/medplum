@@ -635,7 +635,7 @@ function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
 }
 
 function buildCreateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
-  let args: GraphQLFieldConfigArgumentMap = {
+  const args: GraphQLFieldConfigArgumentMap = {
     res: {
       type: getGraphQLInputType(resourceType, 'Create'),
       description: resourceType + ' Create',
@@ -646,7 +646,7 @@ function buildCreateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
 }
 
 function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
-  let args: GraphQLFieldConfigArgumentMap = {
+  const args: GraphQLFieldConfigArgumentMap = {
     id: {
       type: new GraphQLNonNull(GraphQLID),
       description: resourceType + ' ID',
@@ -692,80 +692,6 @@ function buildConnectionType(resourceType: ResourceType, resourceGraphQLType: Gr
       },
     },
   });
-}
-
-/**
- * GraphQL resolver function for create requests.
- * The field name should end with "Create" (i.e., "PatientCreate" for updating a Patient).
- * The args should include the data to be created for the specified resource type.
- * @param _ The source/root object. In the case of creates, this is typically not used and is thus ignored (hence the underscore).
- * @param args The GraphQL arguments, containing the new data for the resource.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
- * @returns A Promise that resolves to the created resource, or undefined if the resource could not be found or updated.
- * @implements {GraphQLFieldResolver}
- */
-async function resolveByCreate(
-  _: any,
-  args: Record<string, any>,
-  ctx: GraphQLContext,
-  info: GraphQLResolveInfo
-): Promise<Resource | undefined> {
-  const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
-  const resourceArgs = args.res;
-  const resourceObject = { ...resourceArgs, resourceType };
-  const resource = await ctx.repo.createResource(resourceObject as Resource);
-  return resource;
-}
-
-/**
- * GraphQL resolver function for update requests.
- * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
- * The args should include the data to be updated for the specified resource type.
- * @param _ The source/root object. In the case of updates, this is typically not used and is thus ignored (hence the underscore).
- * @param args The GraphQL arguments, containing the new data for the resource.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
- * @returns A Promise that resolves to the updated resource, or undefined if the resource could not be found or updated.
- * @implements {GraphQLFieldResolver}
- */
-async function resolveByUpdate(
-  _: any,
-  args: Record<string, any>,
-  ctx: GraphQLContext,
-  info: GraphQLResolveInfo
-): Promise<Resource | undefined> {
-  const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
-  const resourceArgs = args.res;
-  const resourceId = args.id;
-  const updatedResource = { ...resourceArgs, resourceType, id: resourceId };
-  const resource = await ctx.repo.updateResource(updatedResource as Resource);
-  return resource;
-}
-
-/**
- * GraphQL resolver function for delete requests.
- * The field name should end with "Delete" (e.g., "PatientDelete" for deleting a Patient).
- * The args should include the ID of the resource to be deleted.
- * @param _ The source/root object. In the case of deletions, this is typically not used and is thus ignored (hence the underscore).
- * @param args The GraphQL arguments, containing the ID of the resource to be deleted.
- * @param ctx The GraphQL context. This includes the repository where resources are stored.
- * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
- * @returns A Promise that resolves when the resource has been deleted. No value is returned.
- * @implements {GraphQLFieldResolver}
- */
-async function resolveByDelete(
-  _: any,
-  args: Record<string, string>,
-  ctx: GraphQLContext,
-  info: GraphQLResolveInfo
-): Promise<void> {
-  const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
-  await ctx.repo.deleteResource(resourceType, args.id as string);
-  return undefined;
 }
 
 /**
@@ -922,6 +848,82 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
   }
 
   return array;
+}
+
+/**
+ * GraphQL resolver function for create requests.
+ * The field name should end with "Create" (i.e., "PatientCreate" for updating a Patient).
+ * The args should include the data to be created for the specified resource type.
+ * @param _ The source/root object. In the case of creates, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the new data for the resource.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the created resource, or undefined if the resource could not be found or updated.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveByCreate(
+  _: any,
+  args: Record<string, any>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<Resource | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  const resourceArgs = args.res;
+  const resourceObject = { ...resourceArgs, resourceType };
+  const resource = await ctx.repo.createResource(resourceObject as Resource);
+  return resource;
+}
+
+// Mutation Resolvers
+
+/**
+ * GraphQL resolver function for update requests.
+ * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
+ * The args should include the data to be updated for the specified resource type.
+ * @param _ The source/root object. In the case of updates, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the new data for the resource.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves to the updated resource, or undefined if the resource could not be found or updated.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveByUpdate(
+  _: any,
+  args: Record<string, any>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<Resource | undefined> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  const resourceArgs = args.res;
+  const resourceId = args.id;
+  const updatedResource = { ...resourceArgs, resourceType, id: resourceId };
+  const resource = await ctx.repo.updateResource(updatedResource as Resource);
+  return resource;
+}
+
+/**
+ * GraphQL resolver function for delete requests.
+ * The field name should end with "Delete" (e.g., "PatientDelete" for deleting a Patient).
+ * The args should include the ID of the resource to be deleted.
+ * @param _ The source/root object. In the case of deletions, this is typically not used and is thus ignored (hence the underscore).
+ * @param args The GraphQL arguments, containing the ID of the resource to be deleted.
+ * @param ctx The GraphQL context. This includes the repository where resources are stored.
+ * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
+ * @returns A Promise that resolves when the resource has been deleted. No value is returned.
+ * @implements {GraphQLFieldResolver}
+ */
+async function resolveByDelete(
+  _: any,
+  args: Record<string, string>,
+  ctx: GraphQLContext,
+  info: GraphQLResolveInfo
+): Promise<void> {
+  const fieldName = info.fieldName;
+  const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
+  await ctx.repo.deleteResource(resourceType, args.id as string);
+  return undefined;
 }
 
 function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
