@@ -1071,9 +1071,11 @@ describe('GraphQL', () => {
         PatientCreate(
           res: {
             gender: "male"
-            name: {
-              given: "Bob"
-            }
+            name: [
+              {
+                given: "Bob"
+              }
+            ]
           }
         ) {
           id
@@ -1091,12 +1093,12 @@ describe('GraphQL', () => {
     expect(res[0]).toMatchObject(allOk);
 
     const data = (res?.[1] as any).data;
-    console.log(data)
     expect(data.PatientCreate).toBeDefined();
 
     const retrievePatient = await repo.readResource<Patient>('Patient', data.PatientCreate.id ?? '');
 
     expect(retrievePatient.gender).toEqual('male');
+    expect(retrievePatient.name?.[0].given).toEqual(['Bob']);
   });
 
   test('Updating Patient Record', async () => {
@@ -1120,6 +1122,9 @@ describe('GraphQL', () => {
             name: [
               {
                 given: "Bob"
+              },
+              {
+                family: "Smith"
               }
             ]
           }
@@ -1139,9 +1144,8 @@ describe('GraphQL', () => {
     expect(res[0]).toMatchObject(allOk);
 
     const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
-
     expect(retrievePatient.gender).toEqual('male');
-    expect(retrievePatient?.name?.given).toEqual('Bob');
+    expect(retrievePatient?.name?.[1].family).toEqual('Smith');
   });
 
   test('Delete Patient Record', async () => {

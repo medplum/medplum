@@ -312,17 +312,15 @@ function getGraphQLOutputType(resourceType: string): GraphQLOutputType {
     result = buildGraphQLOutputType(resourceType);
     outputTypeCache[resourceType] = result;
   }
-
   return result;
 }
-//
+
 function getGraphQLInputType(resourceType: string, nameSuffix: string): GraphQLInputType {
   let result = inputTypeCache[resourceType];
   if (!result) {
     result = buildGraphQLInputType(resourceType, nameSuffix);
     inputTypeCache[resourceType] = result;
   }
-  console.log(result)
   return result;
 }
 
@@ -447,6 +445,11 @@ function buildInputPropertyField(
     description: elementDefinition.short,
     type: getGraphQLInputType(typeName, nameSuffix),
   };
+
+  if (elementDefinition.max === '*') {
+    fieldConfig.type = new GraphQLList(getGraphQLInputType(typeName, nameSuffix));
+  }
+
   const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
   fields[propertyName] = fieldConfig;
 }
@@ -653,7 +656,6 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       description: resourceType + ' Update',
     },
   };
-
   return args;
 }
 
