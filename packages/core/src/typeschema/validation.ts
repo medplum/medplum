@@ -63,17 +63,21 @@ const validationRegexes: Record<string, RegExp> = {
   xhtml: /.*/,
 };
 
-export function validateResource(resource: Resource, profile: StructureDefinition): void {
-  return new ResourceValidator(profile).validate(resource);
+export function validateResource(resource: Resource, profile?: StructureDefinition): void {
+  return new ResourceValidator(resource.resourceType, profile).validate(resource);
 }
 
 class ResourceValidator {
   private issues: OperationOutcomeIssue[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(profile: StructureDefinition) {
+  constructor(resourceType: string, profile?: StructureDefinition) {
     this.issues = [];
-    this.schema = parseStructureDefinition(profile);
+    if (!profile) {
+      this.schema = getDataType(resourceType);
+    } else {
+      this.schema = parseStructureDefinition(profile);
+    }
   }
 
   validate(resource: Resource): void {

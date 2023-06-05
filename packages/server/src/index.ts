@@ -22,10 +22,12 @@ export async function main(configName: string): Promise<void> {
 
   // Preload the schema
   const dataTypes = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
+  const resourceTypes = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
   indexStructureDefinitionBundle(dataTypes);
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  indexStructureDefinitionBundle(resourceTypes);
   indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
   loadDataTypes(dataTypes);
+  loadDataTypes(resourceTypes);
 
   const app = await initApp(express(), config);
   app.listen(config.port);

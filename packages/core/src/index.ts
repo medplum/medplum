@@ -20,3 +20,4 @@ export * from './storage';
 export * from './types';
 export * from './utils';
 export { loadDataTypes } from './typeschema/types';
+export { validateResource as experimentalValidateResource } from './typeschema/validation';
