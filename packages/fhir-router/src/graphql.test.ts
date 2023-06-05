@@ -198,7 +198,6 @@ describe('GraphQL', () => {
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result?.[1] as any).data;
-
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
