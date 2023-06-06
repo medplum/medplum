@@ -69,7 +69,7 @@ import {
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
 
-const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
+const typeCache: Record<string, GraphQLObjectType | GraphQLInputType | undefined> = {
   base64Binary: GraphQLString,
   boolean: GraphQLBoolean,
   canonical: GraphQLString,
@@ -98,33 +98,12 @@ const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
 
+const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
+  ...typeCache as Record<string, GraphQLOutputType | undefined>,
+};
+
 const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
-  base64Binary: GraphQLString,
-  boolean: GraphQLBoolean,
-  canonical: GraphQLString,
-  code: GraphQLString,
-  date: GraphQLString,
-  dateTime: GraphQLString,
-  decimal: GraphQLFloat,
-  id: GraphQLID,
-  instant: GraphQLString,
-  integer: GraphQLFloat,
-  markdown: GraphQLString,
-  number: GraphQLFloat,
-  positiveInt: GraphQLFloat,
-  string: GraphQLString,
-  time: GraphQLString,
-  unsignedInt: GraphQLFloat,
-  uri: GraphQLString,
-  url: GraphQLString,
-  xhtml: GraphQLString,
-  'http://hl7.org/fhirpath/System.Boolean': GraphQLBoolean,
-  'http://hl7.org/fhirpath/System.Date': GraphQLString,
-  'http://hl7.org/fhirpath/System.DateTime': GraphQLString,
-  'http://hl7.org/fhirpath/System.Decimal': GraphQLFloat,
-  'http://hl7.org/fhirpath/System.Integer': GraphQLFloat,
-  'http://hl7.org/fhirpath/System.String': GraphQLString,
-  'http://hl7.org/fhirpath/System.Time': GraphQLString,
+  ...typeCache as Record<string, GraphQLInputType | undefined>,
 };
 
 /**
