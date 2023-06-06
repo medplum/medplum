@@ -57,8 +57,8 @@ const validationRegexes: Record<string, RegExp> = {
   oid: /^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$/,
   string: /^[\s\S]+$/,
   time: /^([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]{1,9})?$/,
-  uri: /^\S*^/,
-  url: /^\S*^/,
+  uri: /^\S*$/,
+  url: /^\S*$/,
   uuid: /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
   xhtml: /.*/,
 };
