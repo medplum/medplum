@@ -859,7 +859,6 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves to the created resource, or undefined if the resource could not be found or updated.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveByCreate(
   _source: any,
@@ -886,7 +885,6 @@ async function resolveByCreate(
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves to the updated resource, or undefined if the resource could not be found or updated.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveByUpdate(
   _source: any,
@@ -912,7 +910,6 @@ async function resolveByUpdate(
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
  * @returns A Promise that resolves when the resource has been deleted. No value is returned.
- * @implements {GraphQLFieldResolver}
  */
 async function resolveByDelete(
   _source: any,
