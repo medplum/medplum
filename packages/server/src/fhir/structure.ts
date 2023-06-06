@@ -5,7 +5,7 @@ import {
   indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 
 let loaded = false;
 
