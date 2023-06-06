@@ -200,10 +200,10 @@ class ResourceValidator {
    *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
    *
    * See: https://hl7.org/fhir/json.html#primitive
-   *
-   * @param typedValue
-   * @param key
+   * @param typedValue The parent value
+   * @param key The property key to check
    * @param path The path to the property
+   * @returns Whether the element is a primitive extension
    */
   private isPrimitiveExtension(typedValue: TypedValue, key: string, path: string): boolean {
     // Primitive element starts with underscore
