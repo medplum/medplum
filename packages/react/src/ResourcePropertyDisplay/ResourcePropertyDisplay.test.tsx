@@ -94,7 +94,11 @@ describe('ResourcePropertyDisplay', () => {
         value={'hello\nworld'}
       />
     );
-    expect(screen.getByText('hello world')).toBeInTheDocument();
+    const textElement = screen.getByText('hello world');
+    const lines = textElement.textContent?.split('\n');
+    const numberOfLines = lines?.length || 0;
+    expect(numberOfLines).toBe(2);
+    expect(numberOfLines).not.toBe(1);
   });
 
   test('Renders canonical', () => {
