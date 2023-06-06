@@ -22,8 +22,10 @@ bulk
   .action(async ({ exportLevel, types, since }) => {
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
+      const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
-      const fileName = `${type}.ndjson`;
+      const fileName = `${type}_${fileUrl.pathname}`.replace(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
+
       writeFile(`${fileName}`, await data.text(), () => {
         console.log(`${fileName} is created`);
       });
