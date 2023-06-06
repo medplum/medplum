@@ -193,7 +193,7 @@ class ResourceValidator {
   }
 
   /**
-   * Checks the element for a primitive.
+   * Checks the element for a primitive extension.
    *
    * FHIR elements with primitive data types are represented in two parts:
    *   1) A JSON property with the name of the element, which has a JSON type of number, boolean, or string
@@ -201,9 +201,9 @@ class ResourceValidator {
    *
    * See: https://hl7.org/fhir/json.html#primitive
    *
-   * @param path The path to the property
-   * @param key
    * @param typedValue
+   * @param key
+   * @param path The path to the property
    */
   private isPrimitiveExtension(typedValue: TypedValue, key: string, path: string): boolean {
     // Primitive element starts with underscore
