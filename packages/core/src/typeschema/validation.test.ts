@@ -1,4 +1,4 @@
-import { Bundle, Observation, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { validateResource } from './validation';
@@ -7,16 +7,107 @@ import { readJson } from '@medplum/definitions';
 import { loadDataTypes } from './types';
 
 describe('FHIR resource validation', () => {
+  let observationProfile: StructureDefinition;
+
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
     loadDataTypes(readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>);
     loadDataTypes(readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>);
+
+    observationProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
+    );
   });
 
-  test('Basic validation', () => {
-    const profile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
+  test('Valid base resource', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      gender: 'unknown',
+      birthDate: '1949-08-14',
+    };
+    expect(() => {
+      validateResource(patient);
+    }).not.toThrow();
+  });
+
+  test('Invalid cardinality', () => {
+    const invalidMultiple: Patient = {
+      resourceType: 'Patient',
+      gender: ['male', 'female'],
+      birthDate: '1949-08-14',
+    };
+    const invalidSingle: Patient = {
+      resourceType: 'Patient',
+      identifier: {
+        system: 'http://example.com',
+        value: 'I12345',
+      },
+    };
+    expect(() => {
+      validateResource(invalidMultiple);
+    }).toThrow();
+    expect(() => {
+      validateResource(invalidSingle);
+    }).toThrow();
+  });
+
+  test('Invalid value type', () => {
+    const invalidType: Patient = {
+      resourceType: 'Patient',
+      birthDate: Date.parse('1949-08-14'),
+    };
+    expect(() => {
+      validateResource(invalidType);
+    }).toThrow();
+  });
+
+  test('Invalid string format', () => {
+    const invalidFormat: Patient = {
+      resourceType: 'Patient',
+      birthDate: 'Aug 14, 1949',
+    };
+    expect(() => {
+      validateResource(invalidFormat);
+    }).toThrow();
+  });
+
+  test('Invalid extraneous property', () => {
+    const invalidFormat: Patient = {
+      resourceType: 'Patient',
+      foo: 'bar',
+    };
+    expect(() => {
+      validateResource(invalidFormat);
+    }).toThrow();
+  });
+
+  test('Valid property name special cases', () => {
+    const primitiveExtension: Patient = {
+      resourceType: 'Patient',
+      _birthDate: {
+        extension: [
+          {
+            url: 'http://example.com/data-missing-reason',
+            valueString: 'Forgot to ask patient at check-in',
+          },
+        ],
+      },
+    };
+    const choiceType: Patient = {
+      resourceType: 'Patient',
+      deceasedBoolean: false,
+    };
+    expect(() => {
+      validateResource(primitiveExtension);
+    }).not.toThrow();
+    expect(() => {
+      validateResource(choiceType);
+    }).not.toThrow();
+  });
+
+  test('Valid resource under constraining profile', () => {
     const observation: Observation = {
       resourceType: 'Observation',
       status: 'final',
@@ -67,7 +158,7 @@ describe('FHIR resource validation', () => {
     };
 
     expect(() => {
-      validateResource(observation, profile);
+      validateResource(observation, observationProfile);
     }).not.toThrow();
   });
 });

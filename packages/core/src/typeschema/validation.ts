@@ -185,10 +185,9 @@ class ResourceValidator {
       if (
         !(key in properties) &&
         !isChoiceOfType(typedValue, key, properties) &&
-        !this.checkPrimitiveProperty(typedValue, key, path)
+        !this.isPrimitiveExtension(typedValue, key, path)
       ) {
-        const expression = `${path}.${key}`;
-        this.issues.push(createStructureIssue(expression, `Invalid additional property "${expression}"`));
+        this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
   }
@@ -206,15 +205,9 @@ class ResourceValidator {
    * @param key
    * @param typedValue
    */
-  private checkPrimitiveProperty(typedValue: TypedValue, key: string, path: string): boolean {
+  private isPrimitiveExtension(typedValue: TypedValue, key: string, path: string): boolean {
     // Primitive element starts with underscore
     if (!key.startsWith('_')) {
-      return false;
-    }
-
-    // Validate the non-underscore property exists
-    const primitiveKey = key.slice(1);
-    if (!(primitiveKey in typedValue.value)) {
       return false;
     }
 
