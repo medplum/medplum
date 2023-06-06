@@ -37,14 +37,14 @@ describe('FHIR resource validation', () => {
       resourceType: 'Patient',
       gender: ['male', 'female'],
       birthDate: '1949-08-14',
-    };
+    } as unknown as Patient;
     const invalidSingle: Patient = {
       resourceType: 'Patient',
       identifier: {
         system: 'http://example.com',
         value: 'I12345',
       },
-    };
+    } as unknown as Patient;
     expect(() => {
       validateResource(invalidMultiple);
     }).toThrow();
@@ -57,7 +57,7 @@ describe('FHIR resource validation', () => {
     const invalidType: Patient = {
       resourceType: 'Patient',
       birthDate: Date.parse('1949-08-14'),
-    };
+    } as unknown as Patient;
     expect(() => {
       validateResource(invalidType);
     }).toThrow();
@@ -74,17 +74,17 @@ describe('FHIR resource validation', () => {
   });
 
   test('Invalid extraneous property', () => {
-    const invalidFormat: Patient = {
+    const invalidFormat = {
       resourceType: 'Patient',
       foo: 'bar',
-    };
+    } as unknown as Patient;
     expect(() => {
       validateResource(invalidFormat);
     }).toThrow();
   });
 
   test('Valid property name special cases', () => {
-    const primitiveExtension: Patient = {
+    const primitiveExtension = {
       resourceType: 'Patient',
       _birthDate: {
         extension: [
@@ -94,7 +94,7 @@ describe('FHIR resource validation', () => {
           },
         ],
       },
-    };
+    } as unknown as Patient;
     const choiceType: Patient = {
       resourceType: 'Patient',
       deceasedBoolean: false,
