@@ -854,7 +854,7 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
  * GraphQL resolver function for create requests.
  * The field name should end with "Create" (i.e., "PatientCreate" for updating a Patient).
  * The args should include the data to be created for the specified resource type.
- * @param source The source/root object. In the case of creates, this is typically not used and is thus ignored (hence the underscore).
+ * @param _source The source/root object. In the case of creates, this is typically not used and is thus ignored.
  * @param args The GraphQL arguments, containing the new data for the resource.
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
@@ -862,7 +862,7 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByCreate(
-  _: any,
+  _source: any,
   args: Record<string, any>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
@@ -881,7 +881,7 @@ async function resolveByCreate(
  * GraphQL resolver function for update requests.
  * The field name should end with "Update" (i.e., "PatientUpdate" for updating a Patient).
  * The args should include the data to be updated for the specified resource type.
- * @param source The source/root object. In the case of updates, this is typically not used and is thus ignored (hence the underscore).
+ * @param _source The source/root object. In the case of updates, this is typically not used and is thus ignored.
  * @param args The GraphQL arguments, containing the new data for the resource.
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
@@ -889,7 +889,7 @@ async function resolveByCreate(
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByUpdate(
-  _: any,
+  _source: any,
   args: Record<string, any>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
@@ -907,7 +907,7 @@ async function resolveByUpdate(
  * GraphQL resolver function for delete requests.
  * The field name should end with "Delete" (e.g., "PatientDelete" for deleting a Patient).
  * The args should include the ID of the resource to be deleted.
- * @param source The source/root object. In the case of deletions, this is typically not used and is thus ignored (hence the underscore).
+ * @param _source The source/root object. In the case of deletions, this is typically not used and is thus ignored.
  * @param args The GraphQL arguments, containing the ID of the resource to be deleted.
  * @param ctx The GraphQL context. This includes the repository where resources are stored.
  * @param info The GraphQL resolve info. This includes the schema, field details, and other query-specific information.
@@ -915,7 +915,7 @@ async function resolveByUpdate(
  * @implements {GraphQLFieldResolver}
  */
 async function resolveByDelete(
-  _: any,
+  _source: any,
   args: Record<string, string>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
