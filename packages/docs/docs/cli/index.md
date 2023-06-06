@@ -196,16 +196,19 @@ Invite a user to a project
 ```bash
 medplum project invite <firstName> <lastName> <email>
 ```
+
 #### optional flags for `invite`
 
 - `--send-email`
+
   - If you want to send the email when inviting the user
 
 - `--admin`
+
   - If the user you are inviting is an admin
 
 - `--role` `-r` `<role>`
-  - The type of role the new user will have 
+  - The type of role the new user will have
   - Choices are Patient, Practitioner, and RelatedPerson
     - Default will be Practitioner
 
@@ -377,3 +380,9 @@ You can then use the Medplum CLI to deploy it.
 ```bash
 npx medplum bot deploy hello-world
 ```
+
+### Bulk
+
+#### export
+
+#### import

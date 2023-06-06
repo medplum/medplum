@@ -15,7 +15,7 @@ conn = http.client.HTTPSConnection('api.medplum.com')
 # actual exported data, but instead a URL that you can poll to get the status of
 # the export operation
 conn.request(
-  'POST', '/fhir/R4/$export', None, {
+  'GET', '/fhir/R4/$export', None, {
     'Authorization': 'Bearer ' + access_token,
     'Content-Type': 'application/fhir+json',
   })
