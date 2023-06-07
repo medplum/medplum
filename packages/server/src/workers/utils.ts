@@ -108,25 +108,6 @@ export async function createAuditEvent(
   });
 }
 
-export function shouldTriggerJob(subscription: Subscription): boolean {
-  const criteria = getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria')
-  if (!criteria) {
-    return true;
-  }
-
-  let previous = '';
-  let next; 
-  
-  if (!previous) {
-    return true;
-  }
-  if (previous !== next) {
-    return true;
-  }
-  
-  return false;
-}
-
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,

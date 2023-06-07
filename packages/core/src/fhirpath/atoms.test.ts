@@ -3,11 +3,18 @@ import { Bundle, Observation } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle, PropertyType } from '../types';
 import { LiteralAtom, SymbolAtom } from './atoms';
 import { evalFhirPath, parseFhirPath } from './parse';
+import { AtomContext } from '../fhirlexer';
+
+let context: AtomContext;
 
 describe('Atoms', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    context = {
+      parent: undefined,
+      variables: {},
+    };
   });
 
   test('LiteralAtom', () => {
@@ -34,7 +41,7 @@ describe('Atoms', () => {
 
   test('EmptySetAtom', () => {
     const atom = parseFhirPath('{}');
-    expect(atom.eval([])).toEqual([]);
+    expect(atom.eval(context, [])).toEqual([]);
     expect(atom.toString()).toEqual('{}');
   });
 

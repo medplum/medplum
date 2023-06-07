@@ -1,14 +1,17 @@
 import { TypedValue } from '../types';
 import { Token } from './tokenize';
-
+export interface AtomContext {
+  parent: AtomContext | undefined;
+  variables: Record<string, TypedValue>;
+}
 export interface Atom {
-  eval(context: TypedValue[]): TypedValue[];
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 }
 
 export abstract class PrefixOperatorAtom implements Atom {
   constructor(public readonly operator: string, public readonly child: Atom) {}
 
-  abstract eval(context: TypedValue[]): TypedValue[];
+  abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
   toString(): string {
     return `${this.operator}(${this.child.toString()})`;
@@ -18,7 +21,7 @@ export abstract class PrefixOperatorAtom implements Atom {
 export abstract class InfixOperatorAtom implements Atom {
   constructor(public readonly operator: string, public readonly left: Atom, public readonly right: Atom) {}
 
-  abstract eval(context: TypedValue[]): TypedValue[];
+  abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
   toString(): string {
     return `${this.left.toString()} ${this.operator} ${this.right.toString()}`;

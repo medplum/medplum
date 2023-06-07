@@ -1,5 +1,5 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer';
+import { Atom, AtomContext, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer';
 import { PropertyType, TypedValue } from '../types';
 import {
   AndAtom,
@@ -251,5 +251,9 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(expression: string, input: TypedValue[]): TypedValue[] {
-  return parseFhirPath(expression).eval(input);
+  const context: AtomContext = {
+    parent: undefined,
+    variables: {},
+  };
+  return parseFhirPath(expression).eval(context, input);
 }
