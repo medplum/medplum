@@ -59,9 +59,9 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   switch (propertyType) {
     case PropertyType.boolean:
       return <>{value === undefined ? '' : Boolean(value).toString()}</>;
+    case PropertyType.SystemString:
     case PropertyType.string:
       return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
-    case PropertyType.SystemString:
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.integer:
