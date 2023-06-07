@@ -23,6 +23,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const { id } = req.params;
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
+  const types = query._type?.split(',');
   const repo = res.locals.repo as Repository;
   const project = res.locals.project as Project;
 
@@ -30,7 +31,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const group = await repo.readResource<Group>('Group', id);
 
   // Start the exporter
-  const exporter = new BulkExporter(repo, since);
+  const exporter = new BulkExporter(repo, since, types);
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   groupExportResources(exporter, project, group, repo)
