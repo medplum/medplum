@@ -272,7 +272,7 @@ describe('Group Export', () => {
       });
     expect(res3.status).toBe(201);
 
-    // Start the export with the "_since" filter
+    // Start the export with the "_type" filter
     const res4 = await request(app)
       .get(`/fhir/R4/Group/${res3.body.id}/$export?_type=Patient`)
       .set('Authorization', 'Bearer ' + accessToken);
