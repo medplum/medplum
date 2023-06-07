@@ -1070,6 +1070,7 @@ describe('GraphQL', () => {
       mutation {
         PatientCreate(
           res: {
+            resourceType: "Patient"
             gender: "male"
             name: [
               {
@@ -1118,6 +1119,8 @@ describe('GraphQL', () => {
         PatientUpdate(
           id: "${patient.id}"
           res: {
+            id: "${patient.id}"
+            resourceType: "Patient"
             gender: "male"
             name: [
               {

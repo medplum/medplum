@@ -58,6 +58,7 @@ import {
   GraphQLObjectType,
   GraphQLOutputType,
   GraphQLResolveInfo,
+  GraphQLScalarType,
   GraphQLSchema,
   GraphQLString,
   GraphQLUnionType,
@@ -68,8 +69,9 @@ import {
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
+import { isResourceType } from '@medplum/core';
 
-const typeCache: Record<string, GraphQLObjectType | GraphQLInputType | undefined> = {
+const typeCache: Record<string, GraphQLScalarType | undefined> = {
   base64Binary: GraphQLString,
   boolean: GraphQLBoolean,
   canonical: GraphQLString,
@@ -99,11 +101,11 @@ const typeCache: Record<string, GraphQLObjectType | GraphQLInputType | undefined
 };
 
 const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
-  ...typeCache as Record<string, GraphQLOutputType | undefined>,
+  ...typeCache,
 };
 
 const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
-  ...typeCache as Record<string, GraphQLInputType | undefined>,
+  ...typeCache,
 };
 
 /**
@@ -300,6 +302,7 @@ function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInpu
     result = buildGraphQLInputType(inputType, nameSuffix);
     inputTypeCache[inputType] = result;
   }
+
   return result;
 }
 
@@ -341,6 +344,16 @@ function buildGraphQLOutputFields(resourceType: ResourceType): GraphQLFieldConfi
 
 function buildGraphQLInputFields(resourceType: ResourceType, nameSuffix: string): GraphQLInputFieldConfigMap {
   const fields: GraphQLInputFieldConfigMap = {};
+
+  // Add resourceType field for root resource
+  if (isResourceType(resourceType)) {
+    const propertyFieldConfig: GraphQLInputFieldConfig = {
+      description: 'The type of resource',
+      type: GraphQLString,
+    };
+    fields['resourceType'] = propertyFieldConfig;
+  }
+
   buildInputPropertyFields(resourceType, fields, nameSuffix);
   return fields;
 }
@@ -844,12 +857,15 @@ async function resolveByCreate(
   args: Record<string, any>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
-): Promise<Resource | undefined> {
+): Promise<any> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  // 'Create.length'=== 6 && 'Update.length' === 6
+  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
   const resourceArgs = args.res;
-  const resourceObject = { ...resourceArgs, resourceType };
-  const resource = await ctx.repo.createResource(resourceObject as Resource);
+  if (resourceArgs.resourceType !== resourceType) {
+    return [badRequest('Invalid resourceType')];
+  }
+  const resource = await ctx.repo.createResource(resourceArgs as Resource);
   return resource;
 }
 
@@ -870,13 +886,19 @@ async function resolveByUpdate(
   args: Record<string, any>,
   ctx: GraphQLContext,
   info: GraphQLResolveInfo
-): Promise<Resource | undefined> {
+): Promise<any> {
   const fieldName = info.fieldName;
-  const resourceType = fieldName.substring(0, fieldName.length - 'Update'.length) as ResourceType;
+  // 'Create.length'=== 6 && 'Update.length' === 6
+  const resourceType = fieldName.substring(0, fieldName.length - 6) as ResourceType;
   const resourceArgs = args.res;
   const resourceId = args.id;
-  const updatedResource = { ...resourceArgs, resourceType, id: resourceId };
-  const resource = await ctx.repo.updateResource(updatedResource as Resource);
+  if (resourceArgs.resourceType !== resourceType) {
+    return [badRequest('Invalid resourceType')];
+  }
+  if (resourceId !== resourceArgs.id) {
+    return [badRequest('Incorrect ID')];
+  }
+  const resource = await ctx.repo.updateResource(resourceArgs as Resource);
   return resource;
 }
 
@@ -899,7 +921,6 @@ async function resolveByDelete(
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
   await ctx.repo.deleteResource(resourceType, args.id as string);
-  return undefined;
 }
 
 function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
