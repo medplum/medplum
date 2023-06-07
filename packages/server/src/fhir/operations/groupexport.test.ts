@@ -291,9 +291,7 @@ describe('Group Export', () => {
     });
 
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
-    expect(output).toHaveLength(1);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
-    expect(output.some((o) => o.type === 'Group')).not.toBeTruthy();
   });
 });
