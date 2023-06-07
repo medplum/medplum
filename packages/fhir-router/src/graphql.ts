@@ -14,6 +14,7 @@ import {
   getSearchParameters,
   globalSchema,
   isLowerCase,
+  isResourceType,
   isResourceTypeSchema,
   LRUCache,
   normalizeOperationOutcome,
@@ -69,7 +70,6 @@ import {
 } from 'graphql';
 import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
 import { FhirRepository } from './repo';
-import { isResourceType } from '@medplum/core';
 
 const typeCache: Record<string, GraphQLScalarType | undefined> = {
   base64Binary: GraphQLString,
@@ -920,7 +920,7 @@ async function resolveByDelete(
 ): Promise<void> {
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'Delete'.length) as ResourceType;
-  await ctx.repo.deleteResource(resourceType, args.id as string);
+  await ctx.repo.deleteResource(resourceType, args.id);
 }
 
 function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
