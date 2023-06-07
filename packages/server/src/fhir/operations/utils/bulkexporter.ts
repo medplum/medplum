@@ -75,7 +75,7 @@ export class BulkExporter {
   }
 
   async writeResource(resource: Resource, types: string[] = []): Promise<void> {
-    if (types && types.length > 0 && !types.includes(resource.resourceType)) {
+    if (types.length > 0 && !types.includes(resource.resourceType)) {
       return;
     }
     if (resource.resourceType === 'AuditEvent') {
