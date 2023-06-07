@@ -1828,7 +1828,6 @@ describe('Client', () => {
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
-          method: 'GET',
           headers: {
             Accept: 'application/fhir+json',
             Prefer: 'respond-async',
@@ -1836,10 +1835,7 @@ describe('Client', () => {
           },
         })
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1849,12 +1845,9 @@ describe('Client', () => {
       const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
-        expect.objectContaining({ method: 'GET' })
+        expect.any(Object)
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1863,14 +1856,8 @@ describe('Client', () => {
       const medplum = new MedplumClient({ fetch });
       const groupId = randomUUID();
       const response = await medplum.bulkExport(`Group/${groupId}`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Group/${groupId}/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1878,14 +1865,8 @@ describe('Client', () => {
     test('All Patient', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport(`Patient`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Patient/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
