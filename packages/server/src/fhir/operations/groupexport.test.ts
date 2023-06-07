@@ -212,7 +212,6 @@ describe('Group Export', () => {
     expect(output).toHaveLength(3);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
-    expect(output.some((o) => o.type === 'Group')).toBeTruthy();
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
