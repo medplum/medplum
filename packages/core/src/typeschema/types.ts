@@ -68,11 +68,10 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
 }
 
 const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
-// const RESOURCE_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
 
 export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
-  for (const { resource: sd } of bundle.entry || []) {
-    if (!sd || !sd.name) {
+  for (const { resource: sd } of bundle.entry ?? []) {
+    if (!sd?.name) {
       throw new Error(`Failed loading StructureDefinition from bundle`);
     }
     if (sd.resourceType !== 'StructureDefinition') {
@@ -135,7 +134,7 @@ class StructureDefinitionParser {
       } else if (element.id?.includes(':')) {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
-          const path = fieldPath(element, this.slicingContext.path);
+          const path = elementPath(element, this.slicingContext.path);
           this.slicingContext.current.fields[path] = parseFieldDefinition(element);
         }
       } else {
@@ -143,10 +142,10 @@ class StructureDefinitionParser {
         const field = parseFieldDefinition(element);
         this.checkFieldEnter(element, field);
         if (this.backboneContext && element.path?.startsWith(this.backboneContext.path + '.')) {
-          this.backboneContext.type.fields[fieldPath(element, this.backboneContext.path)] =
+          this.backboneContext.type.fields[elementPath(element, this.backboneContext.path)] =
             parseFieldDefinition(element);
         }
-        this.resourceSchema.fields[fieldPath(element, this.resourceSchema.name)] = field;
+        this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
 
         // Clean up contextual book-keeping
         this.checkFieldExit(element);
@@ -171,25 +170,25 @@ class StructureDefinitionParser {
       }
       this.backboneContext = {
         type: {
-          name: buildTypeName(element.path?.split('.') || []) as ResourceType,
+          name: buildTypeName(element.path?.split('.') ?? []) as ResourceType,
           fields: {},
           constraints: parseFieldDefinition(element).constraints,
           innerTypes: [],
         },
-        path: element.path || '',
+        path: element.path ?? '',
       };
     }
     if (element.slicing && !this.slicingContext) {
       field.slicing = {
-        discriminator: (element.slicing?.discriminator || []).map((d) => ({
+        discriminator: (element.slicing?.discriminator ?? []).map((d) => ({
           path: d.path as string,
           type: d.type as string,
         })),
         slices: [],
-        ordered: element.slicing?.ordered || false,
+        ordered: element.slicing?.ordered ?? false,
         rule: element.slicing?.rules,
       };
-      this.slicingContext = { field: field.slicing, path: element.path || '' };
+      this.slicingContext = { field: field.slicing, path: element.path ?? '' };
     }
   }
 
@@ -226,9 +225,9 @@ class StructureDefinitionParser {
       this.slicingContext.field.slices.push(this.slicingContext.current);
     }
     this.slicingContext.current = {
-      name: element.sliceName || '',
+      name: element.sliceName ?? '',
       fields: {},
-      min: element.min || 0,
+      min: element.min ?? 0,
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string),
     };
   }
@@ -238,8 +237,8 @@ function parseCardinality(c: string): number {
   return c === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(c);
 }
 
-function fieldPath(element: ElementDefinition, prefix = ''): string {
-  return trimPrefix(element.path || '', prefix);
+function elementPath(element: ElementDefinition, prefix = ''): string {
+  return trimPrefix(element.path ?? '', prefix);
 }
 
 function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
@@ -248,18 +247,18 @@ function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
   const typedElementDef = { type: 'ElementDefinition', value: ed };
 
   return {
-    min: ed.min || 0,
+    min: ed.min ?? 0,
     max: max,
     isArray: baseMax > 1,
-    constraints: (ed.constraint || []).map((c) => ({
-      key: c.key || '',
-      severity: c.severity || 'error',
-      expression: c.expression || '',
-      description: c.human || '',
+    constraints: (ed.constraint ?? []).map((c) => ({
+      key: c.key ?? '',
+      severity: c.severity ?? 'error',
+      expression: c.expression ?? '',
+      description: c.human ?? '',
     })),
-    type: (ed.type || []).map((t) => ({
-      code: t.code || '',
-      targetProfile: t.targetProfile || [],
+    type: (ed.type ?? []).map((t) => ({
+      code: t.code ?? '',
+      targetProfile: t.targetProfile ?? [],
     })),
     fixed: [getTypedPropertyValue(typedElementDef, 'fixed')].flat()[0],
     pattern: [getTypedPropertyValue(typedElementDef, 'pattern')].flat()[0],
@@ -267,16 +266,8 @@ function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
   };
 }
 
-export function isComplexDataType(type: string): boolean {
-  if (!type) {
-    return false;
-  }
-  const firstChar = type.charAt(0);
-  return firstChar === firstChar.toUpperCase() && firstChar !== firstChar.toLowerCase() && type !== 'BackboneElement';
-}
-
 function trimPrefix(str: string, prefix: string): string {
-  if (prefix && str.indexOf(prefix) === 0) {
+  if (prefix && str.startsWith(prefix)) {
     return str.substring(prefix.length + 1);
   }
   return str;

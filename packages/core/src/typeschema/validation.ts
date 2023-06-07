@@ -1,6 +1,5 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { ElementValidator, getDataType, parseStructureDefinition } from './types';
-import { InternalTypeSchema } from './types';
+import { ElementValidator, getDataType, parseStructureDefinition, InternalTypeSchema } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
@@ -112,23 +111,7 @@ class ResourceValidator {
   }
 
   private checkProperty(value: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const [firstProp, ...nestedProps] = key.split('.');
-    let propertyValues = [getTypedPropertyValue(value, firstProp)];
-    for (const prop of nestedProps) {
-      const next = [];
-      for (const current of propertyValues) {
-        if (current === undefined) {
-          continue;
-        } else if (Array.isArray(current)) {
-          for (const element of current) {
-            next.push(getTypedPropertyValue(element, prop));
-          }
-        } else {
-          next.push(getTypedPropertyValue(current, prop));
-        }
-      }
-      propertyValues = next;
-    }
+    const propertyValues = getNestedProperty(value, key);
     for (const property of propertyValues) {
       const element = schema.fields[key];
       if (!element) {
@@ -244,7 +227,7 @@ class ResourceValidator {
     }
 
     const regex = validationRegexes[type];
-    if (regex && !str.match(regex)) {
+    if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
     }
   }
@@ -297,4 +280,25 @@ function isChoiceOfType(
     }
   }
   return false;
+}
+
+function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedValue[] | undefined)[] {
+  const [firstProp, ...nestedProps] = key.split('.');
+  let propertyValues = [getTypedPropertyValue(value, firstProp)];
+  for (const prop of nestedProps) {
+    const next = [];
+    for (const current of propertyValues) {
+      if (current === undefined) {
+        continue;
+      } else if (Array.isArray(current)) {
+        for (const element of current) {
+          next.push(getTypedPropertyValue(element, prop));
+        }
+      } else {
+        next.push(getTypedPropertyValue(current, prop));
+      }
+    }
+    propertyValues = next;
+  }
+  return propertyValues;
 }

@@ -21,6 +21,15 @@ describe('FHIR resource validation', () => {
     );
   });
 
+  test('Invalid resource', () => {
+    expect(() => {
+      validateResource(undefined as unknown as Patient);
+    }).toThrow();
+    expect(() => {
+      validateResource({} as unknown as Patient);
+    }).toThrow();
+  });
+
   test('Valid base resource', () => {
     const patient: Patient = {
       resourceType: 'Patient',
@@ -73,6 +82,16 @@ describe('FHIR resource validation', () => {
     }).toThrow();
   });
 
+  test('Invalid numeric value', () => {
+    const patientExtension: Patient = {
+      resourceType: 'Patient',
+      multipleBirthInteger: 4.2,
+    };
+    expect(() => {
+      validateResource(patientExtension);
+    }).toThrow();
+  });
+
   test('Invalid extraneous property', () => {
     const invalidFormat = {
       resourceType: 'Patient',
@@ -104,6 +123,21 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
     expect(() => {
       validateResource(choiceType);
+    }).not.toThrow();
+  });
+
+  test('Valid resource with extension', () => {
+    const patientExtension: Patient = {
+      resourceType: 'Patient',
+      extension: [
+        {
+          url: 'http://example.com/ext',
+          valuePositiveInt: 1,
+        },
+      ],
+    };
+    expect(() => {
+      validateResource(patientExtension);
     }).not.toThrow();
   });
 
