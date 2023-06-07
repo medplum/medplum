@@ -30,6 +30,7 @@ import {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
@@ -40,7 +41,6 @@ import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
 import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
-import { encodeBase64 } from './base64';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -596,6 +596,9 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
+    if (this.basicAuth) {
+      return;
+    }
     this.storage.setString('activeLogin', undefined);
     this.requestCache?.clear();
     this.accessToken = undefined;
@@ -2005,6 +2008,9 @@ export class MedplumClient extends EventTarget {
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
     this.accessToken = login.accessToken;
+    if (this.basicAuth) {
+      return;
+    }
     this.refreshToken = login.refreshToken;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2050,6 +2056,9 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
+      if (this.basicAuth) {
+        return;
+      }
       this.get('auth/me')
         .then((result) => {
           this.profilePromise = undefined;
@@ -2415,12 +2424,9 @@ export class MedplumClient extends EventTarget {
 
     if (this.accessToken) {
       headers['Authorization'] = 'Bearer ' + this.accessToken;
-    }
-
-    if (this.basicAuth) {
+    } else if (this.basicAuth) {
       headers['Authorization'] = 'Basic ' + this.basicAuth;
     }
-
     if (!options.cache) {
       options.cache = 'no-cache';
     }
@@ -2634,12 +2640,19 @@ export class MedplumClient extends EventTarget {
    * @returns The user profile resource.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const response = await this.fetch(this.tokenUrl, {
+    const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
       credentials: 'include',
-    });
+    };
+    const headers = options.headers as Record<string, string>;
+
+    if (this.basicAuth) {
+      headers['Authorization'] = `Basic ${this.basicAuth}`;
+    }
+
+    const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       throw new Error('Failed to fetch tokens');
@@ -2661,13 +2674,20 @@ export class MedplumClient extends EventTarget {
 
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
+
     if (Date.now() >= (tokenPayload.exp as number) * 1000) {
       this.clearActiveLogin();
       throw new Error('Token expired');
     }
 
     // Verify app_client_id
-    if (this.clientId && tokenPayload.client_id !== this.clientId) {
+    // external tokenPayload
+    if (tokenPayload.cid) {
+      if (tokenPayload.cid !== this.clientId) {
+        this.clearActiveLogin();
+        throw new Error('Token was not issued for this audience');
+      }
+    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
     }
