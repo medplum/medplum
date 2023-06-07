@@ -23,6 +23,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const { id } = req.params;
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
+  const types = query._type?.split(',');
   const repo = res.locals.repo as Repository;
   const project = res.locals.project as Project;
 
@@ -33,7 +34,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const exporter = new BulkExporter(repo, since);
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
-  groupExportResources(exporter, project, group, repo)
+  groupExportResources(exporter, project, group, repo, types)
     .then(() => logger.info(`export for ${project.id} is completed`))
     .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
 
@@ -45,7 +46,8 @@ async function groupExportResources(
   exporter: BulkExporter,
   project: Project,
   group: Group,
-  repo: Repository
+  repo: Repository,
+  types: string[] = []
 ): Promise<void> {
   // Read all patients in the group
   if (group.member) {
@@ -58,10 +60,10 @@ async function groupExportResources(
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
           const bundle = await getPatientEverything(repo, patient);
-          await exporter.writeBundle(bundle);
+          await exporter.writeBundle(bundle, types);
         } else {
           const resource = await repo.readResource(resourceType, memberId);
-          await exporter.writeResource(resource);
+          await exporter.writeResource(resource, types);
         }
       } catch (err) {
         logger.warn('Unable to read patient: ' + member.entity?.reference);

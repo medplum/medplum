@@ -212,6 +212,7 @@ describe('Group Export', () => {
     expect(output).toHaveLength(3);
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).toBeTruthy();
+    expect(output.some((o) => o.type === 'Group')).toBeTruthy();
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
@@ -224,5 +225,75 @@ describe('Group Export', () => {
     // However, we only expect one Observation, so we can parse it as JSON
     expect(res7.text.trim().split('\n')).toHaveLength(1);
     expect(JSON.parse(res7.text).id).toEqual(res2.body.id);
+  });
+
+  test('Type filter', async () => {
+    // Create patient
+    const res1 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        address: [{ use: 'home', line: ['123 Main St'], city: 'Anywhere', state: 'CA', postalCode: '90210' }],
+        telecom: [
+          { system: 'phone', value: '555-555-5555' },
+          { system: 'email', value: 'alice@example.com' },
+        ],
+      });
+    expect(res1.status).toBe(201);
+
+    // Create observation
+    // (Use extended mode to get the project metadata)
+    const res2 = await request(app)
+      .post(`/fhir/R4/Observation`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'test' },
+        subject: { reference: `Patient/${res1.body.id}` },
+      });
+    expect(res2.status).toBe(201);
+
+    // Create group
+    const res3 = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: { reference: `Patient/${res1.body.id}` } }],
+      });
+    expect(res3.status).toBe(201);
+
+    // Start the export with the "_since" filter
+    const res4 = await request(app)
+      .get(`/fhir/R4/Group/${res3.body.id}/$export?_type=Patient`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(202);
+    expect(res4.headers['content-location']).toBeDefined();
+
+    // Check the export status
+    const contentLocation = new URL(res4.headers['content-location']);
+
+    let contentLocationRes: any;
+    await waitFor(async () => {
+      contentLocationRes = await request(app)
+        .get(contentLocation.pathname)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(contentLocationRes.status).toBe(200);
+    });
+
+    const output = contentLocationRes.body.output as BulkDataExportOutput[];
+    expect(output).toHaveLength(1);
+    expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
+    expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
+    expect(output.some((o) => o.type === 'Group')).not.toBeTruthy();
   });
 });

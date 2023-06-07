@@ -64,17 +64,20 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle, types: string[] = []): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
-          await this.writeResource(entry.resource);
+          await this.writeResource(entry.resource, types);
         }
       }
     }
   }
 
-  async writeResource(resource: Resource): Promise<void> {
+  async writeResource(resource: Resource, types: string[] = []): Promise<void> {
+    if (types && types.length > 0 && !types.includes(resource.resourceType)) {
+      return;
+    }
     if (resource.resourceType === 'AuditEvent') {
       return;
     }
