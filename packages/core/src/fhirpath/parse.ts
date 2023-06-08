@@ -248,12 +248,19 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
  * Evaluates a FHIRPath expression against a resource or other object.
  * @param expression The FHIRPath expression to parse.
  * @param input The resource or object to evaluate the expression against.
+ * @param context The context to use when evaluating the expression.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPathTyped(expression: string, input: TypedValue[]): TypedValue[] {
-  const context: AtomContext = {
-    parent: undefined,
-    variables: {},
-  };
+export function evalFhirPathTyped(
+  expression: string,
+  input: TypedValue[],
+  context: AtomContext | undefined = undefined
+): TypedValue[] {
+  if (!context) {
+    context = {
+      parent: undefined,
+      variables: {},
+    };
+  }
   return parseFhirPath(expression).eval(context, input);
 }
