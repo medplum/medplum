@@ -1,6 +1,6 @@
-import express from 'express';
-import { main } from '.';
+import http from 'http';
 import { shutdownApp } from './app';
+import { main } from './index';
 
 jest.mock('ioredis');
 
@@ -65,8 +65,9 @@ jest.mock('pg', () => {
 
 describe('Server', () => {
   test('Main', async () => {
+    const createServerSpy = jest.spyOn(http, 'createServer');
     await main('file:medplum.config.json');
-    expect((express as any).listen).toHaveBeenCalledWith(8103);
+    expect(createServerSpy).toHaveBeenCalled();
     await shutdownApp();
   });
 });

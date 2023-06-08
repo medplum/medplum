@@ -59,7 +59,8 @@
     "pg-cursor": "2.10.1",
     "rfc6902": "5.0.1",
     "ua-parser-js": "1.0.35",
-    "validator": "13.9.0"
+    "validator": "13.9.0",
+    "ws": "8.13.0"
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.6.1",
@@ -83,12 +84,14 @@
     "@types/supertest": "2.0.12",
     "@types/ua-parser-js": "0.7.36",
     "@types/validator": "13.7.17",
+    "@types/ws": "8.5.5",
     "aws-sdk-client-mock": "3.0.0",
     "aws-sdk-client-mock-jest": "3.0.0",
     "mailparser": "3.6.5",
     "openapi3-ts": "4.1.2",
     "set-cookie-parser": "2.6.0",
     "supertest": "6.3.3",
+    "superwstest": "2.0.3",
     "ts-node-dev": "2.0.0"
   }
 }

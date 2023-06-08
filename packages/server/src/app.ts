@@ -3,6 +3,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
+import http from 'http';
 import { adminRouter } from './admin';
 import { asyncWrap } from './async';
 import { authRouter } from './auth';
@@ -30,6 +31,9 @@ import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { closeWebSockets, initWebSockets } from './websockets';
+
+let server: http.Server | undefined = undefined;
 
 /**
  * Sets standard headers for all requests.
@@ -106,8 +110,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export async function initApp(app: Express, config: MedplumServerConfig): Promise<Express> {
+export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
+  server = http.createServer(app);
+  initWebSockets(server);
 
   app.set('etag', false);
   app.set('trust proxy', true);
@@ -156,7 +162,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);
-  return app;
+  return server;
 }
 
 export async function initAppServices(config: MedplumServerConfig): Promise<void> {
@@ -174,4 +180,15 @@ export async function shutdownApp(): Promise<void> {
   await closeDatabase();
   closeRedis();
   closeRateLimiter();
+  closeWebSockets();
+
+  if (server) {
+    server.close();
+    setImmediate(() => {
+      if (server) {
+        server.emit('close');
+      }
+      server = undefined;
+    });
+  }
 }
