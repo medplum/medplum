@@ -4,6 +4,8 @@ import { existsSync, readFileSync, writeFile } from 'fs';
 import { resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
+import { onUnauthenticated } from '.';
+import { FileSystemStorage } from './storage';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -168,4 +170,33 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
       return true;
     },
   });
+}
+
+export async function getMedplumClient(options: any): Promise<MedplumClient> {
+  const { base_url, fhir_url_path, token_url, client_id, client_secret } = options;
+  const baseUrl = base_url || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
+  const fhirUrlPath = fhir_url_path || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
+  const accessToken = token_url || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
+  const tokenUrl = token_url || process.env['MEDPLUM_TOKEN_URL'] || '';
+
+  const medplumClient = new MedplumClient({
+    fetch,
+    baseUrl,
+    tokenUrl,
+    fhirUrlPath,
+    storage: new FileSystemStorage(),
+    onUnauthenticated: onUnauthenticated,
+  });
+
+  if (accessToken) {
+    medplumClient.setAccessToken(accessToken);
+  }
+
+  const clientId = client_id || process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = client_secret || process.env['MEDPLUM_CLIENT_SECRET'];
+  if (clientId && clientSecret) {
+    medplumClient.setBasicAuth(clientId, clientSecret);
+    await medplumClient.startClientLogin(clientId, clientSecret);
+  }
+  return medplumClient;
 }

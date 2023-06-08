@@ -84,6 +84,6 @@ if (require.main === module) {
   run().catch((err) => console.error('Unhandled error:', err));
 }
 
-function onUnauthenticated(): void {
+export function onUnauthenticated(): void {
   console.log('Unauthenticated: run `npx medplum login` to sign in');
 }

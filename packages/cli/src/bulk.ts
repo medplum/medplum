@@ -4,7 +4,7 @@ import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { medplum } from '.';
-import { prettyPrint } from './utils';
+import { getMedplumClient, prettyPrint } from './utils';
 
 export const bulk = new Command('bulk');
 
@@ -19,7 +19,9 @@ bulk
     '-s, --since <since>',
     'optional Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).'
   )
-  .action(async ({ exportLevel, types, since }) => {
+  .action(async (options) => {
+    const { exportLevel, types, since } = options;
+    const medplum = await getMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
