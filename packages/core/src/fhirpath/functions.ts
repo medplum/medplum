@@ -769,15 +769,15 @@ export const functions: Record<string, FhirPathFunction> = {
  * If the input collection is empty, the result is empty.
 
  * See: https://hl7.org/fhirpath/#todatetime-datetime
- * @param context The evaluation context.
+ * @param _context The evaluation context.
  * @param input
  * @returns
  */
-  toDateTime: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toDateTime: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'string' && value.match(/^\d{4}(-\d{2}(-\d{2})?)?/)) {
       return [{ type: PropertyType.dateTime, value: parseDateString(value) }];
     }
@@ -885,7 +885,7 @@ export const functions: Record<string, FhirPathFunction> = {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput( input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (isQuantity(value)) {
       return [{ type: PropertyType.Quantity, value }];
     }
