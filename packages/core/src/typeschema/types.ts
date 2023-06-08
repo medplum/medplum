@@ -1,6 +1,7 @@
 import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { TypedValue, buildTypeName } from '../types';
+import { TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
+import { capitalize } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -93,16 +94,23 @@ export function getDataType(type: string): InternalTypeSchema {
   return schema;
 }
 
+interface BackboneContext {
+  type: InternalTypeSchema;
+  path: string;
+  parent?: BackboneContext;
+}
+
 /**
  * @experimental
  */
 class StructureDefinitionParser {
   private readonly elements: ElementDefinition[];
+  private readonly elementIndex: Record<string, ElementDefinition>;
   private index: number;
   private readonly resourceSchema: InternalTypeSchema;
   private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
   private innerTypes: InternalTypeSchema[];
-  private backboneContext: { type: InternalTypeSchema; path: string } | undefined;
+  private backboneContext: BackboneContext | undefined;
 
   /**
    * @param sd The StructureDefinition to parse
@@ -115,11 +123,12 @@ class StructureDefinitionParser {
     const root = sd.snapshot.element[0];
 
     this.elements = sd.snapshot.element.slice(1);
+    this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
       name: sd.type as ResourceType,
       fields: {},
-      constraints: parseFieldDefinition(root).constraints,
+      constraints: this.parseFieldDefinition(root).constraints,
       innerTypes: [],
     };
     this.innerTypes = [];
@@ -135,17 +144,21 @@ class StructureDefinitionParser {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
           const path = elementPath(element, this.slicingContext.path);
-          this.slicingContext.current.fields[path] = parseFieldDefinition(element);
+          this.slicingContext.current.fields[path] = this.parseFieldDefinition(element);
         }
       } else {
         // Normal field definition
-        const field = parseFieldDefinition(element);
+        const field = this.parseFieldDefinition(element);
         this.checkFieldEnter(element, field);
+
+        // Record field in schema
         if (this.backboneContext && element.path?.startsWith(this.backboneContext.path + '.')) {
-          this.backboneContext.type.fields[elementPath(element, this.backboneContext.path)] =
-            parseFieldDefinition(element);
+          this.backboneContext.type.fields[elementPath(element, this.backboneContext.path)] = field;
+        } else if (this.backboneContext?.parent && element.path?.startsWith(this.backboneContext.parent.path + '.')) {
+          this.backboneContext.parent.type.fields[elementPath(element, this.backboneContext.parent.path)] = field;
+        } else {
+          this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
         }
-        this.resourceSchema.fields[elementPath(element, this.resourceSchema.name)] = field;
 
         // Clean up contextual book-keeping
         this.checkFieldExit(element);
@@ -164,18 +177,23 @@ class StructureDefinitionParser {
   }
 
   private checkFieldEnter(element: ElementDefinition, field: ElementValidator): void {
-    if (element.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code as string))) {
-      if (this.backboneContext) {
+    if (this.isInnerType(element)) {
+      while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
+        // Starting new inner type, unwind type stack to this property's parent
         this.innerTypes.push(this.backboneContext.type);
+        this.backboneContext = this.backboneContext.parent;
       }
       this.backboneContext = {
         type: {
           name: buildTypeName(element.path?.split('.') ?? []) as ResourceType,
           fields: {},
-          constraints: parseFieldDefinition(element).constraints,
+          constraints: this.parseFieldDefinition(element).constraints,
           innerTypes: [],
         },
         path: element.path ?? '',
+        parent: pathsCompatible(this.backboneContext?.path, element.path)
+          ? this.backboneContext
+          : this.backboneContext?.parent,
       };
     }
     if (element.slicing && !this.slicingContext) {
@@ -193,10 +211,17 @@ class StructureDefinitionParser {
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {
-    if (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path as string)) {
+    if (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path)) {
       // Leaving BackboneElement child fields
-      this.innerTypes.push(this.backboneContext.type);
-      delete this.backboneContext;
+      if (this.backboneContext.parent) {
+        do {
+          this.innerTypes.push(this.backboneContext.type);
+          this.backboneContext = this.backboneContext.parent;
+        } while (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path));
+      } else {
+        this.innerTypes.push(this.backboneContext.type);
+        delete this.backboneContext;
+      }
     }
     if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
       // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
@@ -209,12 +234,41 @@ class StructureDefinitionParser {
   }
 
   private next(): ElementDefinition | undefined {
-    const element = this.elements[this.index];
+    const element = this.peek();
     if (element) {
       this.index++;
       return element;
     }
     return undefined;
+  }
+
+  private peek(): ElementDefinition | undefined {
+    const element = this.elements[this.index];
+    if (element) {
+      this.elementIndex[element.path ?? ''] = element;
+      if (element.contentReference) {
+        const ref = this.elementIndex[element.contentReference.slice(element.contentReference.indexOf('#') + 1)];
+        if (!ref) {
+          return undefined;
+        }
+        return {
+          ...ref,
+          id: element.id,
+          path: element.path,
+        };
+      }
+      return element;
+    }
+    return undefined;
+  }
+
+  private isInnerType(current: ElementDefinition): boolean {
+    // const current = this.elements[this.index - 1];
+    const next = this.peek();
+    return !!(
+      pathsCompatible(current?.path, next?.path) &&
+      current.type?.some((t) => ['BackboneElement', 'Element'].includes(t.code as string))
+    );
   }
 
   private parseSliceStart(element: ElementDefinition): void {
@@ -231,6 +285,32 @@ class StructureDefinitionParser {
       max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string),
     };
   }
+
+  private parseFieldDefinition(ed: ElementDefinition): ElementValidator {
+    const max = parseCardinality(ed.max as string);
+    const baseMax = ed.base && ed.base.max ? parseCardinality(ed.base.max) : max;
+    const typedElementDef = { type: 'ElementDefinition', value: ed };
+    return {
+      min: ed.min ?? 0,
+      max: max,
+      isArray: baseMax > 1,
+      constraints: (ed.constraint ?? []).map((c) => ({
+        key: c.key ?? '',
+        severity: c.severity ?? 'error',
+        expression: c.expression ?? '',
+        description: c.human ?? '',
+      })),
+      type: (ed.type ?? []).map((t) => ({
+        code: ['BackboneElement', 'Element'].includes(t.code as string)
+          ? buildTypeName(ed.base?.path?.split('.') ?? [])
+          : t.code ?? '',
+        targetProfile: t.targetProfile ?? [],
+      })),
+      fixed: [getTypedPropertyValue(typedElementDef, 'fixed')].flat()[0],
+      pattern: [getTypedPropertyValue(typedElementDef, 'pattern')].flat()[0],
+      binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
+    };
+  }
 }
 
 function parseCardinality(c: string): number {
@@ -239,31 +319,6 @@ function parseCardinality(c: string): number {
 
 function elementPath(element: ElementDefinition, prefix = ''): string {
   return trimPrefix(element.path ?? '', prefix);
-}
-
-function parseFieldDefinition(ed: ElementDefinition): ElementValidator {
-  const max = parseCardinality(ed.max as string);
-  const baseMax = ed.base && ed.base.max ? parseCardinality(ed.base.max) : max;
-  const typedElementDef = { type: 'ElementDefinition', value: ed };
-
-  return {
-    min: ed.min ?? 0,
-    max: max,
-    isArray: baseMax > 1,
-    constraints: (ed.constraint ?? []).map((c) => ({
-      key: c.key ?? '',
-      severity: c.severity ?? 'error',
-      expression: c.expression ?? '',
-      description: c.human ?? '',
-    })),
-    type: (ed.type ?? []).map((t) => ({
-      code: t.code ?? '',
-      targetProfile: t.targetProfile ?? [],
-    })),
-    fixed: [getTypedPropertyValue(typedElementDef, 'fixed')].flat()[0],
-    pattern: [getTypedPropertyValue(typedElementDef, 'pattern')].flat()[0],
-    binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
-  };
 }
 
 function trimPrefix(str: string, prefix: string): string {
@@ -279,9 +334,16 @@ function trimPrefix(str: string, prefix: string): string {
  * @param child The child path to test for compatibility with the parent path.
  * @returns True if the given path is a child of the parent.
  */
-function pathsCompatible(parent: string, child: string): boolean {
+function pathsCompatible(parent: string | undefined, child: string | undefined): boolean {
   if (!parent || !child) {
     return false;
   }
   return child.startsWith(parent + '.') || child === parent;
+}
+
+function buildTypeName(components: string[]): string {
+  if (components.length === 1) {
+    return components[0];
+  }
+  return components.map(capitalize).join('');
 }

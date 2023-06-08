@@ -129,4 +129,50 @@ describe('FHIR resource and data type representations', () => {
       },
     });
   });
+
+  test('Nested BackboneElement parsing', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'capability-statement.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+      'CapabilityStatementDocument',
+      'CapabilityStatementImplementation',
+      'CapabilityStatementMessaging',
+      'CapabilityStatementMessagingEndpoint',
+      'CapabilityStatementMessagingSupportedMessage',
+      'CapabilityStatementRest',
+      'CapabilityStatementRestInteraction',
+      'CapabilityStatementRestResource',
+      'CapabilityStatementRestResourceInteraction',
+      'CapabilityStatementRestResourceOperation',
+      'CapabilityStatementRestResourceSearchParam',
+      'CapabilityStatementRestSecurity',
+      'CapabilityStatementSoftware',
+    ]);
+
+    const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
+    const restProperties = Object.keys(rest?.fields ?? {});
+    expect(restProperties.sort()).toEqual([
+      'compartment',
+      'documentation',
+      'extension',
+      'id',
+      'interaction',
+      'mode',
+      'modifierExtension',
+      'operation',
+      'resource',
+      'searchParam',
+      'security',
+    ]);
+    expect(rest?.fields['interaction']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestInteraction', targetProfile: [] }],
+    });
+    expect(rest?.fields['searchParam']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestResourceSearchParam', targetProfile: [] }],
+    });
+    expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
+    });
+  });
 });

@@ -195,4 +195,11 @@ describe('FHIR resource validation', () => {
       validateResource(observation, observationProfile);
     }).not.toThrow();
   });
+
+  test('StructureDefinition', () => {
+    const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
+    expect(() => {
+      validateResource(structureDefinition);
+    }).not.toThrow();
+  });
 });
