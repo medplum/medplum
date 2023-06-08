@@ -34,6 +34,7 @@ await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
  * We will use this in the "conditional create".
  * When creating an order, and if you don't know if the patient exists,
  * you can use this MRN to check.
+ * @param patientMrn The patient medical record number (MRN).
  */
 async function createServiceRequest(patientMrn: string): Promise<void> {
   // First, create the patient if they don't exist.
@@ -80,15 +81,16 @@ await createServiceRequest('MRN1234');
 // start-block create-specimen
 /**
  * Creates a Specimen for a given ServiceRequest
+ * @param serviceRequestId The ServiceRequest ID.
  */
-async function createSpecimenForServiceRequest(serviceRequestID: string): Promise<void> {
+async function createSpecimenForServiceRequest(serviceRequestId: string): Promise<void> {
   // First, create the specimen resource
   const specimen: Specimen = await medplum.createResource({
     resourceType: 'Specimen',
     status: 'available',
     request: [
       {
-        reference: `ServiceRequest/${serviceRequestID}`,
+        reference: `ServiceRequest/${serviceRequestId}`,
       },
     ],
     type: {
@@ -103,7 +105,7 @@ async function createSpecimenForServiceRequest(serviceRequestID: string): Promis
   });
 
   // Next, update the ServiceRequest to show that the specimen was collected.
-  const serviceRequest = await medplum.readResource('ServiceRequest', serviceRequestID);
+  const serviceRequest = await medplum.readResource('ServiceRequest', serviceRequestId);
   serviceRequest.orderDetail = [
     {
       text: 'SAMPLE_COLLECTED',

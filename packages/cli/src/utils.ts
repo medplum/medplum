@@ -142,7 +142,6 @@ function escapeRegex(str: string): string {
  * Expanding archive files without controlling resource consumption is security-sensitive
  *
  * See: https://sonarcloud.io/organizations/medplum/rules?open=typescript%3AS5042&rule_key=typescript%3AS5042
- *
  * @param destinationDir The destination directory where all files will be extracted.
  * @returns A tar file extractor.
  */

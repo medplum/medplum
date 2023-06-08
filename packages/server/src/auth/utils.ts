@@ -61,7 +61,6 @@ export async function createProjectMembership(
  * If the user has multiple profiles, sends the list of profiles to choose from.
  * Otherwise, sends the authorization code.
  * @param res The response object.
- * @param user The user.
  * @param login The login details.
  */
 export async function sendLoginResult(res: Response, login: Login): Promise<void> {

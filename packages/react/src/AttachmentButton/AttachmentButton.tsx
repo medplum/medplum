@@ -29,8 +29,7 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
 
   /**
    * Processes a single file.
-   *
-   * @param {File} file The file descriptor.
+   * @param file The file descriptor.
    */
   function processFile(file: File): void {
     if (!file) {

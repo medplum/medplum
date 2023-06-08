@@ -30,6 +30,7 @@ export class HumanNameTable extends LookupTable<HumanName> {
   /**
    * Returns the column name for the given search parameter.
    * @param code The search parameter code.
+   * @returns The column name.
    */
   getColumnName(code: string): string {
     return code;

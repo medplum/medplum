@@ -13,6 +13,9 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
     services:
       postgres:
         image: postgres
@@ -33,7 +36,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: ${{ matrix.node-version }}
       - name: Cache node modules
         uses: actions/cache@v3
         env:
@@ -51,6 +54,7 @@ jobs:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
           MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
+          MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}
           RECAPTCHA_SITE_KEY: ${{ secrets.RECAPTCHA_SITE_KEY }}
           POSTGRES_HOST: localhost
           POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
@@ -86,7 +90,6 @@ jobs:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           ECS_CLUSTER: ${{ secrets.ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.ECS_SERVICE }}
           MEDPLUM_INTROSPECTION_URL: ${{ secrets.MEDPLUM_INTROSPECTION_URL }}

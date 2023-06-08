@@ -228,7 +228,7 @@ async function generateJwt(exp: '1h' | '2w', claims: JWTPayload): Promise<string
 
 /**
  * Decodes and verifies a JWT.
- * @param jwt The jwt token / bearer token.
+ * @param token The jwt token / bearer token.
  * @returns Returns the decoded claims on success.
  */
 export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; protectedHeader: JWSHeaderParameters }> {

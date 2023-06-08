@@ -25,6 +25,8 @@ export interface MedplumContext {
  * Medplum context includes:
  *   1) medplum - Medplum client library
  *   2) profile - The current user profile (if signed in)
+ * @param props The MedplumProvider React props.
+ * @returns The MedplumProvider React node.
  */
 export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   const medplum = props.medplum;
@@ -66,6 +68,7 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
 
 /**
  * Returns the MedplumContext instance.
+ * @returns The MedplumContext instance.
  */
 export function useMedplumContext(): MedplumContext {
   return useContext(reactContext) as MedplumContext;
@@ -74,6 +77,7 @@ export function useMedplumContext(): MedplumContext {
 /**
  * Returns the MedplumClient instance.
  * This is a shortcut for useMedplumContext().medplum.
+ * @returns The MedplumClient instance.
  */
 export function useMedplum(): MedplumClient {
   return useMedplumContext().medplum;

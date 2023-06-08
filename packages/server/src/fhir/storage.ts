@@ -128,9 +128,10 @@ class S3Storage implements BinaryStorage {
    *
    * Learn more:
    * https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/Expiration.html
-   *
    * @param binary The binary resource destination.
-   * @param req The HTTP request with the binary content.
+   * @param filename Optional binary filename.
+   * @param contentType Optional binary content type.
+   * @param stream The Node.js stream of readable content.
    */
   async writeBinary(
     binary: Binary,

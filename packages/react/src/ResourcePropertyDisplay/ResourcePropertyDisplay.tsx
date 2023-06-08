@@ -37,7 +37,9 @@ export interface ResourcePropertyDisplayProps {
 }
 
 /**
- * Low-level component that renders a property from a given resource, given type information
+ * Low-level component that renders a property from a given resource, given type information.
+ * @param props The ResourcePropertyDisplay React props.
+ * @returns The ResourcePropertyDisplay React node.
  */
 export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
   const { property, propertyType, value } = props;
@@ -60,11 +62,12 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.boolean:
       return <>{value === undefined ? '' : Boolean(value).toString()}</>;
     case PropertyType.SystemString:
+    case PropertyType.string:
+      return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.integer:
     case PropertyType.positiveInt:
-    case PropertyType.string:
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:
@@ -139,7 +142,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
  * According to the spec, there can only be one property for a given element definition.
  * This function returns the value and the type.
  * @param context The base context (usually a FHIR resource).
- * @param property The property definition.
+ * @param path The property path.
  * @returns The value of the property and the property type.
  */
 export function getValueAndType(context: TypedValue, path: string): [any, PropertyType] {

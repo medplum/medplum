@@ -252,6 +252,7 @@ async function authenticate(request: LoginRequest, user: User): Promise<void> {
  * On error, throws an error.
  * @param login The login resource.
  * @param token The user supplied MFA token.
+ * @returns The updated login resource.
  */
 export async function verifyMfaToken(login: Login, token: string): Promise<Login> {
   if (login.revoked) {
@@ -587,7 +588,7 @@ export async function getUserByExternalId(externalId: string, projectId: string)
  * Searches for user by email.
  * @param email The email string.
  * @param projectId Optional project ID.
- * @return The user if found; otherwise, undefined.
+ * @returns The user if found; otherwise, undefined.
  */
 export async function getUserByEmail(email: string, projectId: string | undefined): Promise<User | undefined> {
   if (projectId && projectId !== 'new') {
@@ -659,7 +660,6 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
  * The built-in function timingSafeEqual requires that buffers are equal length.
  * Per the discussion here: https://github.com/nodejs/node/issues/17178
  * That is considered ok, and does not invalidate the protection from timing attack.
- *
  * @param a First string.
  * @param b Second string.
  * @returns True if the strings are equal.

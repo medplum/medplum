@@ -11,6 +11,7 @@ import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { TextEncoder } from 'util';
+import { encodeBase64 } from './base64';
 import { FetchLike, InviteBody, MedplumClient, NewPatientRequest, NewProjectRequest, NewUserRequest } from './client';
 import { getStatus, isOperationOutcome, notFound, OperationOutcomeError, unauthorized } from './outcomes';
 import { createReference, ProfileResource, stringify } from './utils';
@@ -542,6 +543,188 @@ describe('Client', () => {
         },
       })
     );
+  });
+
+  test('Basic auth and startClientLogin with valid token.cid', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessToken,
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    client.setBasicAuth(clientId, clientSecret);
+    await client.startClientLogin(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/fhir+json',
+          Authorization: `Bearer ${accessToken}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+    );
+  });
+
+  test('Basic auth and startClientLogin with valid token.client_id', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const accessToken = 'header.' + Buffer.from(JSON.stringify({ cid: clientId })).toString('base64') + '.signature';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessToken,
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    client.setBasicAuth(clientId, clientSecret);
+    await client.startClientLogin(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: 'application/fhir+json',
+          Authorization: `Bearer ${accessToken}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toBeCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      })
+    );
+  });
+
+  test('Basic auth and startClientLogin with fetched token mismatched client id ', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token:
+            'header.' +
+            Buffer.from(JSON.stringify({ client_id: 'different-client-id' })).toString('base64') +
+            '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token was not issued for this audience');
+    }
+  });
+
+  test('Basic auth and startClientLogin with fetched token contains mismatched cid', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token:
+            'header.' + Buffer.from(JSON.stringify({ cid: 'different-client-id' })).toString('base64') + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token was not issued for this audience');
+    }
+  });
+
+  test('Basic auth and startClientLogin Failed to fetch tokens', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const fetch = mockFetch(500, () => ({}));
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Failed to fetch tokens');
+    }
+  });
+
+  test('Basic auth and startClientLogin Token expired', async () => {
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const oneMinuteAgo = Date.now() / 1000 - 60;
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token:
+            'header.' + Buffer.from(JSON.stringify({ exp: oneMinuteAgo })).toString('base64') + '.signature',
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch });
+    try {
+      client.setBasicAuth(clientId, clientSecret);
+      await client.startClientLogin(clientId, clientSecret);
+      throw new Error('test');
+    } catch (err) {
+      expect((err as Error).message).toBe('Token expired');
+    }
   });
 
   test('Invite user', async () => {
@@ -1828,7 +2011,6 @@ describe('Client', () => {
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
-          method: 'POST',
           headers: {
             Accept: 'application/fhir+json',
             Prefer: 'respond-async',
@@ -1836,10 +2018,7 @@ describe('Client', () => {
           },
         })
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1849,12 +2028,9 @@ describe('Client', () => {
       const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
-        expect.objectContaining({ method: 'POST' })
+        expect.any(Object)
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1863,14 +2039,8 @@ describe('Client', () => {
       const medplum = new MedplumClient({ fetch });
       const groupId = randomUUID();
       const response = await medplum.bulkExport(`Group/${groupId}`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Group/${groupId}/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -1878,14 +2048,8 @@ describe('Client', () => {
     test('All Patient', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport(`Patient`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Patient/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });

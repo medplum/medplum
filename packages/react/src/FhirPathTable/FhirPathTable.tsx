@@ -31,6 +31,8 @@ export interface SmartSearchResponse {
 
 /**
  * The FhirPathTable component represents the embeddable search table control.
+ * @param props FhirPathTable React props.
+ * @returns FhirPathTable React node.
  */
 export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();

@@ -90,6 +90,7 @@ export function convertLocalToIso(localString: string | undefined): string {
  * Returns the input type for the requested type.
  * JSDOM does not support many of the valid <input> type attributes.
  * For example, it won't fire change events for <input type="datetime-local">.
+ * @returns The input type for the current environment.
  */
 function getInputType(): string {
   return process.env.NODE_ENV === 'test' ? 'text' : 'datetime-local';

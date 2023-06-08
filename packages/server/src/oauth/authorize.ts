@@ -43,6 +43,10 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
  * This is used for both GET and POST requests.
  * We currently only support query string parameters.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
+ * @param req The HTTP request.
+ * @param res The HTTP response.
+ * @param params The params (query string params for GET, form body params for POST).
+ * @returns True on success; false on error.
  */
 async function validateAuthorizeRequest(req: Request, res: Response, params: Record<string, any>): Promise<boolean> {
   // First validate the client and the redirect URI.

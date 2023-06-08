@@ -48,6 +48,7 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  * Initializes the subscription worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
+ * @param config The Redis config.
  */
 export function initSubscriptionWorker(config: MedplumRedisConfig): void {
   const defaultOptions: QueueBaseOptions = {
@@ -108,7 +109,6 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * at that moment in time.  For each matching subscription, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
- *
  * @param resource The resource that was created or updated.
  * @param context The background job context.
  */
@@ -135,6 +135,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
  * Determines if the resource matches the subscription criteria.
  * @param resource The resource that was created or updated.
  * @param subscription The subscription.
+ * @param context Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
 function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): boolean {

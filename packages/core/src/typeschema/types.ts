@@ -57,7 +57,6 @@ export interface SliceDiscriminator {
 /**
  * Parses a StructureDefinition resource into an internal schema better suited for
  * programmatic validation and usage in internal systems
- *
  * @param sd The StructureDefinition resource to parse
  * @returns The parsed schema for the given resource type
  * @experimental

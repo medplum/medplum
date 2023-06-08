@@ -30,17 +30,17 @@ import {
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
+import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';
 import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { OperationOutcomeError, isOk, normalizeOperationOutcome, notFound } from './outcomes';
+import { isOk, normalizeOperationOutcome, notFound, OperationOutcomeError } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
-import { IndexedStructureDefinition, globalSchema, indexSearchParameter, indexStructureDefinition } from './types';
-import { InviteResult, ProfileResource, arrayBufferToBase64, createReference } from './utils';
-import { encodeBase64 } from './base64';
+import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
+import { arrayBufferToBase64, createReference, InviteResult, ProfileResource } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -499,7 +499,6 @@ export enum OAuthTokenType {
  *  <head>
  *    <meta name="algolia:pageRank" content="100" />
  *  </head>
-
  */
 export class MedplumClient extends EventTarget {
   private readonly fetch: FetchLike;
@@ -597,6 +596,9 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
+    if (this.basicAuth) {
+      return;
+    }
     this.storage.setString('activeLogin', undefined);
     this.requestCache?.clear();
     this.accessToken = undefined;
@@ -646,7 +648,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `readResource()`, `search()`, etc.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
@@ -689,7 +690,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `createResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
@@ -715,7 +715,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `updateResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
@@ -741,7 +740,6 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `patchResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param operations Array of JSONPatch operations.
@@ -763,13 +761,12 @@ export class MedplumClient extends EventTarget {
    * This is a lower level method for custom requests.
    * For common operations, we recommend using higher level methods
    * such as `deleteResource()`.
-   *
    * @category HTTP
    * @param url The target URL.
    * @param options Optional fetch options.
    * @returns Promise to the response content.
    */
-  delete(url: URL | string, options: RequestInit = {}): Promise<any> {
+  delete(url: URL | string, options?: RequestInit): Promise<any> {
     url = url.toString();
     this.invalidateUrl(url);
     return this.request('DELETE', url, options);
@@ -781,56 +778,76 @@ export class MedplumClient extends EventTarget {
    * This method is part of the two different user registration flows:
    * 1) New Practitioner and new Project
    * 2) New Patient registration
-   *
    * @category Authentication
    * @param newUserRequest Register request including email and password.
+   * @param options Optional fetch options.
    * @returns Promise to the authentication response.
    */
-  async startNewUser(newUserRequest: NewUserRequest): Promise<LoginAuthenticationResponse> {
+  async startNewUser(newUserRequest: NewUserRequest, options?: RequestInit): Promise<LoginAuthenticationResponse> {
     const { codeChallengeMethod, codeChallenge } = await this.startPkce();
-    return this.post('auth/newuser', {
-      ...newUserRequest,
-      codeChallengeMethod,
-      codeChallenge,
-    }) as Promise<LoginAuthenticationResponse>;
+    return this.post(
+      'auth/newuser',
+      {
+        ...newUserRequest,
+        codeChallengeMethod,
+        codeChallenge,
+      },
+      undefined,
+      options
+    ) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
    * Initiates a new project flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   *
    * @param newProjectRequest Register request including email and password.
+   * @param options Optional fetch options.
    * @returns Promise to the authentication response.
    */
-  async startNewProject(newProjectRequest: NewProjectRequest): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newproject', newProjectRequest) as Promise<LoginAuthenticationResponse>;
+  async startNewProject(
+    newProjectRequest: NewProjectRequest,
+    options?: RequestInit
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newproject', newProjectRequest, undefined, options) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
    * Initiates a new patient flow.
    *
    * This requires a partial login from `startNewUser` or `startNewGoogleUser`.
-   *
    * @param newPatientRequest Register request including email and password.
+   * @param options Optional fetch options.
    * @returns Promise to the authentication response.
    */
-  async startNewPatient(newPatientRequest: NewPatientRequest): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/newpatient', newPatientRequest) as Promise<LoginAuthenticationResponse>;
+  async startNewPatient(
+    newPatientRequest: NewPatientRequest,
+    options?: RequestInit
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post('auth/newpatient', newPatientRequest, undefined, options) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
    * Initiates a user login flow.
    * @category Authentication
    * @param loginRequest Login request including email and password.
+   * @param options Optional fetch options.
    * @returns Promise to the authentication response.
    */
-  async startLogin(loginRequest: EmailPasswordLoginRequest): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/login', {
-      ...(await this.ensureCodeChallenge(loginRequest)),
-      clientId: loginRequest.clientId ?? this.clientId,
-      scope: loginRequest.scope,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startLogin(
+    loginRequest: EmailPasswordLoginRequest,
+    options?: RequestInit
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post(
+      'auth/login',
+      {
+        ...(await this.ensureCodeChallenge(loginRequest)),
+        clientId: loginRequest.clientId ?? this.clientId,
+        scope: loginRequest.scope,
+      },
+      undefined,
+      options
+    ) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -839,14 +856,23 @@ export class MedplumClient extends EventTarget {
    * See: https://developers.google.com/identity/gsi/web/guides/handle-credential-responses-js-functions
    * @category Authentication
    * @param loginRequest Login request including Google credential response.
+   * @param options Optional fetch options.
    * @returns Promise to the authentication response.
    */
-  async startGoogleLogin(loginRequest: GoogleLoginRequest): Promise<LoginAuthenticationResponse> {
-    return this.post('auth/google', {
-      ...(await this.ensureCodeChallenge(loginRequest)),
-      clientId: loginRequest.clientId ?? this.clientId,
-      scope: loginRequest.scope,
-    }) as Promise<LoginAuthenticationResponse>;
+  async startGoogleLogin(
+    loginRequest: GoogleLoginRequest,
+    options?: RequestInit
+  ): Promise<LoginAuthenticationResponse> {
+    return this.post(
+      'auth/google',
+      {
+        ...(await this.ensureCodeChallenge(loginRequest)),
+        clientId: loginRequest.clientId ?? this.clientId,
+        scope: loginRequest.scope,
+      },
+      undefined,
+      options
+    ) as Promise<LoginAuthenticationResponse>;
   }
 
   /**
@@ -880,6 +906,7 @@ export class MedplumClient extends EventTarget {
    * This may result in navigating away to the sign in page.
    * @category Authentication
    * @param loginParams Optional login parameters.
+   * @returns The user profile resource if available.
    */
   async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | void> {
     const urlParams = new URLSearchParams(window.location.search);
@@ -923,6 +950,7 @@ export class MedplumClient extends EventTarget {
    * Exchange an external access token for a Medplum access token.
    * @param token The access token that was generated by the external identity provider.
    * @param clientId The ID of the `ClientApplication` in your Medplum project that will be making the exchange request.
+   * @returns The user profile resource.
    * @category Authentication
    */
   async exchangeExternalAccessToken(token: string, clientId?: string): Promise<ProfileResource> {
@@ -1031,7 +1059,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1041,7 +1068,7 @@ export class MedplumClient extends EventTarget {
   search<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-search';
@@ -1079,7 +1106,6 @@ export class MedplumClient extends EventTarget {
    * The return value is the resource, if available; otherwise, undefined.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1089,7 +1115,7 @@ export class MedplumClient extends EventTarget {
   searchOne<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
@@ -1121,7 +1147,6 @@ export class MedplumClient extends EventTarget {
    * The return value is an array of resources.
    *
    * See FHIR search for full details: https://www.hl7.org/fhir/search.html
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
@@ -1131,7 +1156,7 @@ export class MedplumClient extends EventTarget {
   searchResources<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<ExtractResource<K>[]> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = url.toString() + '-searchResources';
@@ -1162,17 +1187,16 @@ export class MedplumClient extends EventTarget {
    *  }
    * }
    * ```
-   *
    * @category Search
    * @param resourceType The FHIR resource type.
    * @param query Optional FHIR search query or structured query object. Can be any valid input to the URLSearchParams() constructor.
    * @param options Optional fetch options.
-   * @returns An async generator, where each result is an array of resources for each page.
+   * @yields An async generator, where each result is an array of resources for each page.
    */
   async *searchResourcePages<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options: RequestInit = {}
+    options?: RequestInit
   ): AsyncGenerator<ExtractResource<K>[]> {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
@@ -1192,14 +1216,13 @@ export class MedplumClient extends EventTarget {
   /**
    * Searches a ValueSet resource using the "expand" operation.
    * See: https://www.hl7.org/fhir/operation-valueset-expand.html
-   *
    * @category Search
    * @param system The ValueSet system url.
    * @param filter The search string.
    * @param options Optional fetch options.
    * @returns Promise to expanded ValueSet.
    */
-  searchValueSet(system: string, filter: string, options: RequestInit = {}): ReadablePromise<ValueSet> {
+  searchValueSet(system: string, filter: string, options?: RequestInit): ReadablePromise<ValueSet> {
     const url = this.fhirUrl('ValueSet', '$expand');
     url.searchParams.set('url', system);
     url.searchParams.set('filter', filter);
@@ -1221,8 +1244,7 @@ export class MedplumClient extends EventTarget {
   /**
    * Returns a cached resource if it is available.
    * @category Caching
-   * @param resourceType The FHIR resource type.
-   * @param id The FHIR resource ID.
+   * @param reference The FHIR reference.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
   getCachedReference<T extends Resource>(reference: Reference<T>): T | undefined {
@@ -1251,7 +1273,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1261,7 +1282,7 @@ export class MedplumClient extends EventTarget {
   readResource<K extends ResourceType>(
     resourceType: K,
     id: string,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<ExtractResource<K>> {
     return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
@@ -1280,13 +1301,12 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "read" operation for full details: https://www.hl7.org/fhir/http.html#read
-   *
    * @category Read
    * @param reference The FHIR reference object.
    * @param options Optional fetch options.
    * @returns The resource if available; undefined otherwise.
    */
-  readReference<T extends Resource>(reference: Reference<T>, options: RequestInit = {}): ReadablePromise<T> {
+  readReference<T extends Resource>(reference: Reference<T>, options?: RequestInit): ReadablePromise<T> {
     const refString = reference?.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
@@ -1393,7 +1413,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "history" operation for full details: https://www.hl7.org/fhir/http.html#history
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1403,7 +1422,7 @@ export class MedplumClient extends EventTarget {
   readHistory<K extends ResourceType>(
     resourceType: K,
     id: string,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'), options);
   }
@@ -1419,7 +1438,6 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "vread" operation for full details: https://www.hl7.org/fhir/http.html#vread
-   *
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
@@ -1431,7 +1449,7 @@ export class MedplumClient extends EventTarget {
     resourceType: K,
     id: string,
     vid: string,
-    options: RequestInit = {}
+    options?: RequestInit
   ): ReadablePromise<ExtractResource<K>> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
   }
@@ -1447,13 +1465,12 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "patient-everything" operation for full details: https://hl7.org/fhir/operation-patient-everything.html
-   *
    * @category Read
    * @param id The Patient Id
    * @param options Optional fetch options.
    * @returns A Bundle of all Resources related to the Patient
    */
-  readPatientEverything(id: string, options: RequestInit = {}): ReadablePromise<Bundle> {
+  readPatientEverything(id: string, options?: RequestInit): ReadablePromise<Bundle> {
     return this.get(this.fhirUrl('Patient', id, '$everything'), options);
   }
 
@@ -1476,17 +1493,17 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
-   *
    * @category Create
    * @param resource The FHIR resource to create.
+   * @param options Optional fetch options.
    * @returns The result of the create operation.
    */
-  createResource<T extends Resource>(resource: T): Promise<T> {
+  createResource<T extends Resource>(resource: T, options?: RequestInit): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
     this.invalidateSearches(resource.resourceType);
-    return this.post(this.fhirUrl(resource.resourceType), resource);
+    return this.post(this.fhirUrl(resource.resourceType), resource, undefined, options);
   }
 
   /**
@@ -1523,14 +1540,15 @@ export class MedplumClient extends EventTarget {
    * The query parameter only contains the search parameters (what would be in the URL following the "?").
    *
    * See the FHIR "conditional create" operation for full details: https://www.hl7.org/fhir/http.html#ccreate
-   *
    * @category Create
    * @param resource The FHIR resource to create.
    * @param query The search query for an equivalent resource (should not include resource type or "?").
+   * @param options Optional fetch options.
    * @returns The result of the create operation.
    */
-  async createResourceIfNoneExist<T extends Resource>(resource: T, query: string): Promise<T> {
-    return ((await this.searchOne(resource.resourceType, query)) ?? this.createResource(resource)) as Promise<T>;
+  async createResourceIfNoneExist<T extends Resource>(resource: T, query: string, options?: RequestInit): Promise<T> {
+    return ((await this.searchOne(resource.resourceType, query, options)) ??
+      this.createResource(resource, options)) as Promise<T>;
   }
 
   /**
@@ -1550,11 +1568,11 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
-   *
    * @category Create
    * @param data The binary data to upload.
    * @param filename Optional filename for the binary.
    * @param contentType Content type for the binary.
+   * @param onProgress Optional callback for progress events.
    * @returns The result of the create operation.
    */
   createBinary(
@@ -1627,9 +1645,11 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the pdfmake document definition for full details: https://pdfmake.github.io/docs/0.1/document-definition-object/
-   *
    * @category Media
    * @param docDefinition The PDF document definition.
+   * @param filename Optional filename for the PDF binary resource.
+   * @param tableLayouts Optional pdfmake custom table layout.
+   * @param fonts Optional pdfmake custom font dictionary.
    * @returns The result of the create operation.
    */
   async createPdf(
@@ -1649,13 +1669,13 @@ export class MedplumClient extends EventTarget {
    * Creates a FHIR `Communication` resource with the provided data content.
    *
    * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
-   *
    * @category Create
    * @param resource The FHIR resource to comment on.
    * @param text The text of the comment.
+   * @param options Optional fetch options.
    * @returns The result of the create operation.
    */
-  createComment(resource: Resource, text: string): Promise<Communication> {
+  createComment(resource: Resource, text: string, options?: RequestInit): Promise<Communication> {
     const profile = this.getProfile();
     let encounter: Reference<Encounter> | undefined = undefined;
     let subject: Reference<Patient> | undefined = undefined;
@@ -1674,15 +1694,18 @@ export class MedplumClient extends EventTarget {
       subject = createReference(resource);
     }
 
-    return this.createResource<Communication>({
-      resourceType: 'Communication',
-      basedOn: [createReference(resource)],
-      encounter,
-      subject,
-      sender: profile ? createReference(profile) : undefined,
-      sent: new Date().toISOString(),
-      payload: [{ contentString: text }],
-    });
+    return this.createResource<Communication>(
+      {
+        resourceType: 'Communication',
+        basedOn: [createReference(resource)],
+        encounter,
+        subject,
+        sender: profile ? createReference(profile) : undefined,
+        sent: new Date().toISOString(),
+        payload: [{ contentString: text }],
+      },
+      options
+    );
   }
 
   /**
@@ -1705,12 +1728,12 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#update
-   *
    * @category Write
    * @param resource The FHIR resource to update.
+   * @param options Optional fetch options.
    * @returns The result of the update operation.
    */
-  async updateResource<T extends Resource>(resource: T): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: RequestInit): Promise<T> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -1718,7 +1741,7 @@ export class MedplumClient extends EventTarget {
       throw new Error('Missing id');
     }
     this.invalidateSearches(resource.resourceType);
-    let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource);
+    let result = await this.put(this.fhirUrl(resource.resourceType, resource.id), resource, undefined, options);
     if (!result) {
       // On 304 not modified, result will be undefined
       // Return the user input instead
@@ -1746,20 +1769,21 @@ export class MedplumClient extends EventTarget {
    * See the FHIR "update" operation for full details: https://www.hl7.org/fhir/http.html#patch
    *
    * See the JSONPatch specification for full details: https://tools.ietf.org/html/rfc6902
-   *
    * @category Write
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @param operations The JSONPatch operations.
+   * @param options Optional fetch options.
    * @returns The result of the patch operations.
    */
   patchResource<K extends ResourceType>(
     resourceType: K,
     id: string,
-    operations: PatchOperation[]
+    operations: PatchOperation[],
+    options?: RequestInit
   ): Promise<ExtractResource<K>> {
     this.invalidateSearches(resourceType);
-    return this.patch(this.fhirUrl(resourceType, id), operations);
+    return this.patch(this.fhirUrl(resourceType, id), operations, options);
   }
 
   /**
@@ -1772,16 +1796,16 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "delete" operation for full details: https://www.hl7.org/fhir/http.html#delete
-   *
    * @category Delete
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param options Optional fetch options.
    * @returns The result of the delete operation.
    */
-  deleteResource(resourceType: ResourceType, id: string): Promise<any> {
+  deleteResource(resourceType: ResourceType, id: string, options?: RequestInit): Promise<any> {
     this.deleteCacheEntry(this.fhirUrl(resourceType, id).toString());
     this.invalidateSearches(resourceType);
-    return this.delete(this.fhirUrl(resourceType, id));
+    return this.delete(this.fhirUrl(resourceType, id), options);
   }
 
   /**
@@ -1797,12 +1821,12 @@ export class MedplumClient extends EventTarget {
    * ```
    *
    * See the FHIR "$validate" operation for full details: https://www.hl7.org/fhir/resource-operation-validate.html
-   *
    * @param resource The FHIR resource.
+   * @param options Optional fetch options.
    * @returns The validate operation outcome.
    */
-  validateResource<T extends Resource>(resource: T): Promise<OperationOutcome> {
-    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource);
+  validateResource<T extends Resource>(resource: T, options?: RequestInit): Promise<OperationOutcome> {
+    return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource, undefined, options);
   }
 
   /**
@@ -1837,7 +1861,7 @@ export class MedplumClient extends EventTarget {
     idOrIdentifier: string | Identifier,
     body: any,
     contentType?: string,
-    options: RequestInit = {}
+    options?: RequestInit
   ): Promise<any> {
     let url;
     if (typeof idOrIdentifier === 'string') {
@@ -1898,7 +1922,7 @@ export class MedplumClient extends EventTarget {
    * @param options Optional fetch options.
    * @returns The FHIR batch/transaction response bundle.
    */
-  executeBatch(bundle: Bundle, options: RequestInit = {}): Promise<Bundle> {
+  executeBatch(bundle: Bundle, options?: RequestInit): Promise<Bundle> {
     return this.post(this.fhirBaseUrl.slice(0, -1), bundle, undefined, options);
   }
 
@@ -1936,11 +1960,12 @@ export class MedplumClient extends EventTarget {
    *
    * See options here: https://nodemailer.com/extras/mailcomposer/
    * @category Media
-   * @param options The MailComposer options.
+   * @param email The MailComposer options.
+   * @param options Optional fetch options.
    * @returns Promise to the operation outcome.
    */
-  sendEmail(email: MailOptions): Promise<OperationOutcome> {
-    return this.post('email/v1/send', email, 'application/json');
+  sendEmail(email: MailOptions, options?: RequestInit): Promise<OperationOutcome> {
+    return this.post('email/v1/send', email, 'application/json', options);
   }
 
   /**
@@ -1983,7 +2008,6 @@ export class MedplumClient extends EventTarget {
    * See the GraphQL documentation for more details: https://graphql.org/learn/
    *
    * See the FHIR GraphQL documentation for FHIR specific details: https://www.hl7.org/fhir/graphql.html
-   *
    * @category Read
    * @param query The GraphQL query.
    * @param operationName Optional GraphQL operation name.
@@ -1999,19 +2023,20 @@ export class MedplumClient extends EventTarget {
    *
    * Executes the $graph operation on this resource to fetch a Bundle of resources linked to the target resource
    * according to a graph definition
-
    * @category Read
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
    * @param graphName `name` parameter of the GraphDefinition
+   * @param options Optional fetch options.
    * @returns A Bundle
    */
   readResourceGraph<K extends ResourceType>(
     resourceType: K,
     id: string,
-    graphName: string
+    graphName: string,
+    options?: RequestInit
   ): ReadablePromise<Bundle<Resource>> {
-    return this.get<Bundle<Resource>>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`);
+    return this.get<Bundle<Resource>>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
   }
 
   /**
@@ -2023,11 +2048,16 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Sets the active login.
+   * @param login The new active login state.
    * @category Authentication
    */
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
     this.accessToken = login.accessToken;
+    if (this.basicAuth) {
+      return;
+    }
     this.refreshToken = login.refreshToken;
     this.storage.setObject('activeLogin', login);
     this.addLogin(login);
@@ -2037,6 +2067,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Returns the current access token.
+   * @returns The current access token.
    * @category Authentication
    */
   getAccessToken(): string | undefined {
@@ -2045,6 +2076,7 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Sets the current access token.
+   * @param accessToken The new access token.
    * @category Authentication
    */
   setAccessToken(accessToken: string): void {
@@ -2055,6 +2087,8 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the list of available logins.
+   * @returns The list of available logins.
    * @category Authentication
    */
   getLogins(): LoginState[] {
@@ -2069,6 +2103,9 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
+      if (this.basicAuth) {
+        return;
+      }
       this.get('auth/me')
         .then((result) => {
           this.profilePromise = undefined;
@@ -2084,6 +2121,8 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns true if the client is waiting for authentication.
+   * @returns True if the client is waiting for authentication.
    * @category Authentication
    */
   isLoading(): boolean {
@@ -2091,6 +2130,9 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current user profile resource if available.
+   * This method does not wait for loading promises.
+   * @returns The current user profile resource if available.
    * @category User Profile
    */
   getProfile(): ProfileResource | undefined {
@@ -2098,6 +2140,9 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current user profile resource if available.
+   * This method waits for loading promises.
+   * @returns The current user profile resource if available.
    * @category User Profile
    */
   async getProfileAsync(): Promise<ProfileResource | undefined> {
@@ -2108,6 +2153,8 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current user configuration if available.
+   * @returns The current user configuration if available.
    * @category User Profile
    */
   getUserConfiguration(): UserConfiguration | undefined {
@@ -2116,9 +2163,9 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Downloads the URL as a blob.
-   *
    * @category Read
    * @param url The URL to request.
+   * @param options Optional fetch request init options.
    * @returns Promise to the response body as a blob.
    */
   async download(url: URL | string, options: RequestInit = {}): Promise<Blob> {
@@ -2133,32 +2180,36 @@ export class MedplumClient extends EventTarget {
   /**
    * Upload media to the server and create a Media instance for the uploaded content.
    * @param contents The contents of the media file, as a string, Uint8Array, File, or Blob.
-   * @param contentType The media type of the content
-   * @param filename The name of the file to be uploaded, or undefined if not applicable
-   * @param additionalFields  Additional fields for Media
+   * @param contentType The media type of the content.
+   * @param filename The name of the file to be uploaded, or undefined if not applicable.
+   * @param additionalFields Additional fields for Media.
+   * @param options Optional fetch options.
    * @returns Promise that resolves to the created Media
    */
   async uploadMedia(
     contents: string | Uint8Array | File | Blob,
     contentType: string,
     filename: string | undefined,
-    additionalFields?: Partial<Media>
+    additionalFields?: Partial<Media>,
+    options?: RequestInit
   ): Promise<Media> {
     const binary = await this.createBinary(contents, filename, contentType);
-    return this.createResource({
-      ...additionalFields,
-      resourceType: 'Media',
-      content: {
-        contentType: contentType,
-        url: 'Binary/' + binary.id,
-        title: filename,
+    return this.createResource(
+      {
+        ...additionalFields,
+        resourceType: 'Media',
+        content: {
+          contentType: contentType,
+          url: 'Binary/' + binary.id,
+          title: filename,
+        },
       },
-    });
+      options
+    );
   }
 
   /**
    * Performs Bulk Data Export operation request flow. See The FHIR "Bulk Data Export" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#bulk-data-export
-   *
    * @param exportLevel Optional export level. Defaults to system level export. 'Group/:id' - Group of Patients, 'Patient' - All Patients.
    * @param resourceTypes A string of comma-delimited FHIR resource types.
    * @param since Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).
@@ -2181,7 +2232,6 @@ export class MedplumClient extends EventTarget {
       url.searchParams.set('_since', since);
     }
 
-    options.method = exportLevel ? 'GET' : 'POST';
     this.addFetchOptionsDefaults(options);
 
     const headers = options.headers as Record<string, string>;
@@ -2258,10 +2308,10 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Makes an HTTP request.
-   * @param {string} method
-   * @param {string} url
-   * @param {string=} contentType
-   * @param {Object=} body
+   * @param method The HTTP method (GET, POST, etc).
+   * @param url The target URL.
+   * @param options Optional fetch request init options.
+   * @returns The JSON content body if available.
    */
   private async request<T>(method: string, url: string, options: RequestInit = {}): Promise<T> {
     if (this.refreshPromise) {
@@ -2340,9 +2390,7 @@ export class MedplumClient extends EventTarget {
     const retryDelay = 200;
 
     while (checkStatus) {
-      const fetchOptions = {
-        method: 'GET',
-      };
+      const fetchOptions = {};
       this.addFetchOptionsDefaults(fetchOptions);
       const statusResponse = await this.fetchWithRetry(statusUrl, fetchOptions);
       if (statusResponse.status !== 202) {
@@ -2428,12 +2476,9 @@ export class MedplumClient extends EventTarget {
 
     if (this.accessToken) {
       headers['Authorization'] = 'Bearer ' + this.accessToken;
-    }
-
-    if (this.basicAuth) {
+    } else if (this.basicAuth) {
       headers['Authorization'] = 'Basic ' + this.basicAuth;
     }
-
     if (!options.cache) {
       options.cache = 'no-cache';
     }
@@ -2480,8 +2525,8 @@ export class MedplumClient extends EventTarget {
    * Otherwise, calls unauthenticated callbacks and rejects.
    * @param method The HTTP method of the original request.
    * @param url The URL of the original request.
-   * @param contentType The content type of the original request.
-   * @param body The body of the original request.
+   * @param options Optional fetch request init options.
+   * @returns The result of the retry.
    */
   private handleUnauthenticated(method: string, url: string, options: RequestInit): Promise<any> {
     if (this.refresh()) {
@@ -2498,6 +2543,7 @@ export class MedplumClient extends EventTarget {
    * Starts a new PKCE flow.
    * These PKCE values are stateful, and must survive redirects and page refreshes.
    * @category Authentication
+   * @returns The PKCE code challenge details.
    */
   async startPkce(): Promise<{ codeChallengeMethod: string; codeChallenge: string }> {
     const pkceState = getRandomString();
@@ -2516,7 +2562,8 @@ export class MedplumClient extends EventTarget {
   /**
    * Redirects the user to the login screen for authorization.
    * Clears all auth state including local storage and session storage.
-   * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
+   * @param loginParams The authorization login parameters.
+   * @see https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
    */
   private async requestAuthorization(loginParams?: Partial<BaseLoginRequest>): Promise<void> {
     const loginRequest = await this.ensureCodeChallenge(loginParams || {});
@@ -2536,6 +2583,7 @@ export class MedplumClient extends EventTarget {
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenRequest
    * @param code The authorization code received by URL parameter.
    * @param loginParams Optional login parameters.
+   * @returns The user profile resource.
    * @category Authentication
    */
   processCode(code: string, loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource> {
@@ -2557,7 +2605,8 @@ export class MedplumClient extends EventTarget {
 
   /**
    * Tries to refresh the auth tokens.
-   * See: https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
+   * @returns The refresh promise if available; otherwise undefined.
+   * @see https://openid.net/specs/openid-connect-core-1_0.html#RefreshTokens
    */
   private refresh(): Promise<void> | undefined {
     if (this.refreshPromise) {
@@ -2616,7 +2665,6 @@ export class MedplumClient extends EventTarget {
    * // Example Search
    * await medplum.searchResources('Patient')
    * ```
-   *
    * @category Authentication
    * @param clientId The client ID.
    * @param clientSecret The client secret.
@@ -2641,14 +2689,22 @@ export class MedplumClient extends EventTarget {
    * Makes a POST request to the tokens endpoint.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
    * @param formBody Token parameters in URL encoded format.
+   * @returns The user profile resource.
    */
   private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const response = await this.fetch(this.tokenUrl, {
+    const options = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formBody,
       credentials: 'include',
-    });
+    };
+    const headers = options.headers as Record<string, string>;
+
+    if (this.basicAuth) {
+      headers['Authorization'] = `Basic ${this.basicAuth}`;
+    }
+
+    const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
       throw new Error('Failed to fetch tokens');
@@ -2662,20 +2718,28 @@ export class MedplumClient extends EventTarget {
    * Verifies the tokens received from the auth server.
    * Validates the JWT against the JWKS.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
-   * @param tokens
+   * @param tokens The token response.
+   * @returns Promise to complete.
    */
   private async verifyTokens(tokens: TokenResponse): Promise<void> {
     const token = tokens.access_token;
 
     // Verify token has not expired
     const tokenPayload = parseJWTPayload(token);
+
     if (Date.now() >= (tokenPayload.exp as number) * 1000) {
       this.clearActiveLogin();
       throw new Error('Token expired');
     }
 
     // Verify app_client_id
-    if (this.clientId && tokenPayload.client_id !== this.clientId) {
+    // external tokenPayload
+    if (tokenPayload.cid) {
+      if (tokenPayload.cid !== this.clientId) {
+        this.clearActiveLogin();
+        throw new Error('Token was not issued for this audience');
+      }
+    } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
       this.clearActiveLogin();
       throw new Error('Token was not issued for this audience');
     }
@@ -2733,6 +2797,7 @@ function getDefaultFetch(): FetchLike {
 
 /**
  * Returns the base URL for the current page.
+ * @returns The window origin string.
  * @category HTTP
  */
 function getWindowOrigin(): string {

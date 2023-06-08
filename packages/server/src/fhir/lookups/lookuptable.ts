@@ -55,6 +55,7 @@ export abstract class LookupTable<T> {
    * @param selectQuery The select query builder.
    * @param resourceType The FHIR resource type.
    * @param filter The search filter details.
+   * @returns The select query where expression.
    */
   buildWhere(selectQuery: SelectQuery, resourceType: ResourceType, filter: Filter): Expression {
     const tableName = this.getTableName(resourceType);

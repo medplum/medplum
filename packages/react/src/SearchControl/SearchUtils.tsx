@@ -84,8 +84,9 @@ const operatorNames: Record<Operator, string> = {
 
 /**
  * Sets the array of filters.
- *
- * @param {Array} filters The new filters.
+ * @param definition The original search request.
+ * @param filters The new filters.
+ * @returns The updated search request.
  */
 export function setFilters(definition: SearchRequest, filters: Filter[]): SearchRequest {
   return {
@@ -98,6 +99,8 @@ export function setFilters(definition: SearchRequest, filters: Filter[]): Search
 
 /**
  * Clears all of the filters.
+ * @param definition The original search request.
+ * @returns The updated search request.
  */
 export function clearFilters(definition: SearchRequest): SearchRequest {
   return setFilters(definition, []);
@@ -105,8 +108,9 @@ export function clearFilters(definition: SearchRequest): SearchRequest {
 
 /**
  * Clears all of the filters on a certain field.
- *
- * @param {string} code The field key name to clear filters.
+ * @param definition The original search request.
+ * @param code The field key name to clear filters.
+ * @returns The updated search request.
  */
 export function clearFiltersOnField(definition: SearchRequest, code: string): SearchRequest {
   return setFilters(
@@ -117,11 +121,12 @@ export function clearFiltersOnField(definition: SearchRequest, code: string): Se
 
 /**
  * Adds a filter.
- *
- * @param {string} field The field key name.
- * @param {Operator} op The operation key name.
- * @param {?string} value The filter value.
- * @param {boolean=} opt_clear Optional flag to clear filters on the field.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param op The operation key name.
+ * @param value The filter value.
+ * @param opt_clear Optional flag to clear filters on the field.
+ * @returns The updated search request.
  */
 export function addFilter(
   definition: SearchRequest,
@@ -145,8 +150,9 @@ export function addFilter(
 
 /**
  * Adds a field.
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addField(definition: SearchRequest, field: string): SearchRequest {
   if (definition.fields && definition.fields.includes(field)) {
@@ -166,8 +172,9 @@ export function addField(definition: SearchRequest, field: string): SearchReques
 
 /**
  * Deletes a filter at the specified index.
- *
- * @param {number} index The filter index.
+ * @param definition The original search request.
+ * @param index The filter index.
+ * @returns The updated search request.
  */
 export function deleteFilter(definition: SearchRequest, index: number): SearchRequest {
   if (!definition.filters) {
@@ -184,8 +191,9 @@ export function deleteFilter(definition: SearchRequest, index: number): SearchRe
 
 /**
  * Adds a filter that constrains the specified field to "yesterday".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addYesterdayFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter(definition, field, -1);
@@ -193,8 +201,9 @@ export function addYesterdayFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "today".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addTodayFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter(definition, field, 0);
@@ -202,8 +211,9 @@ export function addTodayFilter(definition: SearchRequest, field: string): Search
 
 /**
  * Adds a filter that constrains the specified field to "tomorrow".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addTomorrowFilter(definition: SearchRequest, field: string): SearchRequest {
   return addDayFilter(definition, field, 1);
@@ -215,9 +225,10 @@ export function addTomorrowFilter(definition: SearchRequest, field: string): Sea
  * "Today" would be 0.
  * "Yesterday" would be -1.
  * "Tomorrow" would be 1.
- *
- * @param {string} field The field key name.
- * @param {number} delta The number of days from this day.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param delta The number of days from this day.
+ * @returns The updated search request.
  */
 function addDayFilter(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
@@ -233,8 +244,9 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
 
 /**
  * Adds a filter that constrains the specified field to "last month".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addLastMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter(definition, field, -1);
@@ -242,8 +254,9 @@ export function addLastMonthFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "this month".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addThisMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter(definition, field, 0);
@@ -251,8 +264,9 @@ export function addThisMonthFilter(definition: SearchRequest, field: string): Se
 
 /**
  * Adds a filter that constrains the specified field to "next month".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addNextMonthFilter(definition: SearchRequest, field: string): SearchRequest {
   return addMonthFilter(definition, field, 1);
@@ -264,9 +278,10 @@ export function addNextMonthFilter(definition: SearchRequest, field: string): Se
  * "This month" would be 0.
  * "Last month" would be -1.
  * "Next month" would be 1.
- *
- * @param {string} field The field key name.
- * @param {number} delta The number of months from this month.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param delta The number of months from this month.
+ * @returns The updated search request.
  */
 function addMonthFilter(definition: SearchRequest, field: string, delta: number): SearchRequest {
   const startTime = new Date();
@@ -285,8 +300,9 @@ function addMonthFilter(definition: SearchRequest, field: string, delta: number)
 
 /**
  * Adds a filter that constrains the specified field to the year to date.
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @returns The updated search request.
  */
 export function addYearToDateFilter(definition: SearchRequest, field: string): SearchRequest {
   const startTime = new Date();
@@ -301,10 +317,11 @@ export function addYearToDateFilter(definition: SearchRequest, field: string): S
 
 /**
  * Adds a filter for a date between two dates (inclusive of both dates).
- *
- * @param {string} field The field key name.
- * @param {Date} d1 The start date.
- * @param {Date} d2 The end date.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param d1 The start date.
+ * @param d2 The end date.
+ * @returns The updated search request.
  */
 export function addDateFilterBetween(definition: SearchRequest, field: string, d1: Date, d2: Date): SearchRequest {
   definition = clearFiltersOnField(definition, field);
@@ -315,10 +332,11 @@ export function addDateFilterBetween(definition: SearchRequest, field: string, d
 
 /**
  * Adds a filter for a date before a certain date/time.
- *
- * @param {string} field The field key name.
- * @param {Operator} op The date/time operation.
- * @param {Date} value The date.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param op The date/time operation.
+ * @param value The date.
+ * @returns The updated search request.
  */
 function addDateFilterImpl(definition: SearchRequest, field: string, op: Operator, value: Date): SearchRequest {
   return addFilter(definition, field, op, value.toISOString());
@@ -326,8 +344,10 @@ function addDateFilterImpl(definition: SearchRequest, field: string, op: Operato
 
 /**
  * Adds a filter that constrains the specified field to "missing".
- *
- * @param {string} field The field key name.
+ * @param definition The original search request.
+ * @param field The field key name.
+ * @param value Optional boolean value. Default is true.
+ * @returns The updated search request.
  */
 export function addMissingFilter(definition: SearchRequest, field: string, value = true): SearchRequest {
   return addFilter(definition, field, Operator.MISSING, value.toString());
@@ -335,8 +355,9 @@ export function addMissingFilter(definition: SearchRequest, field: string, value
 
 /**
  * Sets the offset (starting at zero).
- *
- * @param {number} offset The offset number.
+ * @param definition The original search request.
+ * @param offset The offset number.
+ * @returns The updated search request.
  */
 export function setOffset(definition: SearchRequest, offset: number): SearchRequest {
   if (definition.offset === offset) {
@@ -353,7 +374,7 @@ export function setOffset(definition: SearchRequest, offset: number): SearchRequ
  * Creates a new search request with the search offset at the specified page.
  * @param definition The search definition.
  * @param page The new page number
- * @return The new search definition.
+ * @returns The new search definition.
  */
 export function setPage(definition: SearchRequest, page: number): SearchRequest {
   const count = definition.count ?? DEFAULT_SEARCH_COUNT;
@@ -364,8 +385,10 @@ export function setPage(definition: SearchRequest, page: number): SearchRequest 
 /**
  * Sorts the search by the specified key, and optional direction.
  * Direction defaults to ascending ('asc') if not specified.
- *
- * @param {string} sortField The sort key.
+ * @param definition The original search request.
+ * @param sort The sort key.
+ * @param desc Optional descending flag. Default is false.
+ * @returns The updated search request.
  */
 export function setSort(definition: SearchRequest, sort: string, desc?: boolean): SearchRequest {
   if (sort === getSortField(definition) && desc !== undefined && desc === isSortDescending(definition)) {
@@ -387,8 +410,9 @@ export function setSort(definition: SearchRequest, sort: string, desc?: boolean)
  * Toggles the sort of the search by key.
  * If the search is already sorted by the key, reverses the direction.
  * If the search is not sorted by the key, sort in ascending order.
- *
- * @param {string} key The field key name.
+ * @param definition The original search request.
+ * @param key The field key name.
+ * @returns The updated search request.
  */
 export function toggleSort(definition: SearchRequest, key: string): SearchRequest {
   let desc = false;
@@ -426,9 +450,8 @@ export function getSearchOperators(searchParam: SearchParameter): Operator[] | u
 
 /**
  * Returns a string representing the operation.
- *
- * @param {string} op The operation code.
- * @return {string} A display string for the operation.
+ * @param op The operation code.
+ * @returns A display string for the operation.
  */
 export function getOpString(op: Operator): string {
   return operatorNames[op] ?? '';
@@ -479,7 +502,7 @@ export function buildFieldNameString(key: string): string {
 /**
  * Returns a fragment to be displayed in the search table for the value.
  * @param resource The parent resource.
- * @param key The search code or FHIRPath expression.
+ * @param field The search code or FHIRPath expression.
  * @returns The fragment to display.
  */
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {

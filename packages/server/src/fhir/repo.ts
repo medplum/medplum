@@ -385,7 +385,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Results are sorted with oldest versions last
    *
    * See: https://www.hl7.org/fhir/http.html#history
-   *
    * @param resourceType The FHIR resource type.
    * @param id The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
@@ -612,6 +611,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType The FHIR resource type.
    * @param id The resource ID.
+   * @param create Flag for "creating" vs "updating".
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
@@ -733,6 +733,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * This should not result in any change to the resource or its history.
    * @param resourceType The resource type.
    * @param id The resource ID.
+   * @returns Promise to complete.
    */
   async reindexResource<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.isSuperAdmin()) {
@@ -776,6 +777,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * This should not result in any change to the resource or its history.
    * @param resourceType The resource type.
    * @param id The resource ID.
+   * @returns Promise to complete.
    */
   async resendSubscriptions<T extends Resource>(resourceType: string, id: string): Promise<void> {
     if (!this.isSuperAdmin() && !this.isProjectAdmin()) {
@@ -1035,7 +1037,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns bundle entries for the resources that are included in the search result.
    *
    * See documentation on _include: https://hl7.org/fhir/R4/search.html#include
-   *
    * @param include The include parameter.
    * @param resources The base search result resources.
    * @returns The bundle entries for the included resources.
@@ -1090,7 +1091,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns bundle entries for the resources that are reverse included in the search result.
    *
    * See documentation on _revinclude: https://hl7.org/fhir/R4/search.html#revinclude
-   *
    * @param revInclude The revInclude parameter.
    * @param resources The base search result resources.
    * @returns The bundle entries for the reverse included resources.
@@ -1310,7 +1310,6 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Adds all search filters as "WHERE" clauses to the query builder.
    * @param selectQuery The select query builder.
-   * @param predicate The predicate conjunction.
    * @param searchRequest The search request.
    */
   private addSearchFilters(selectQuery: SelectQuery, searchRequest: SearchRequest): void {
@@ -1344,6 +1343,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param selectQuery The select query builder.
    * @param searchRequest The search request.
    * @param filter The search filter.
+   * @returns The search query where expression
    */
   private buildSearchFilterExpression(
     selectQuery: SelectQuery,
@@ -1387,7 +1387,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Builds a search filter expression for a normal search parameter.
    *
    * Not any special cases, just a normal search parameter.
-   *
    * @param resourceType The FHIR resource type.
    * @param param The FHIR search parameter.
    * @param filter The search filter.
@@ -1416,8 +1415,8 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns true if the search parameter code is a special search parameter.
    *
    * See: https://www.hl7.org/fhir/search.html#all
-   *
-   * @param resourceType The resource type.
+   * @param selectQuery The select query builder.
+   * @param searchRequest The overall search request.
    * @param filter The search filter.
    * @returns True if the search parameter is a special code.
    */
@@ -1504,6 +1503,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Adds a string search filter as "WHERE" clause to the query builder.
    * @param details The search parameter details.
    * @param filter The search filter.
+   * @returns The select query condition.
    */
   private buildStringSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     if (filter.operator === FhirOperator.EXACT) {
@@ -1517,6 +1517,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resourceType The resource type.
    * @param details The search parameter details.
    * @param filter The search filter.
+   * @returns The select query condition.
    */
   private buildIdSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
     const column = new Column(resourceType, details.columnName);
@@ -1547,6 +1548,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * @param resourceType The resource type.
    * @param details The search parameter details.
    * @param filter The search filter.
+   * @returns The select query condition.
    */
   private buildTokenSearchFilter(resourceType: string, details: SearchParameterDetails, filter: Filter): Expression {
     const column = new Column(resourceType, details.columnName);
@@ -1575,9 +1577,9 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds a reference search filter as "WHERE" clause to the query builder.
-   * @param predicate The select query predicate conjunction.
    * @param details The search parameter details.
    * @param filter The search filter.
+   * @returns The select query condition.
    */
   private buildReferenceSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const values = [];
@@ -1599,9 +1601,9 @@ export class Repository extends BaseRepository implements FhirRepository {
 
   /**
    * Adds a date or date/time search filter.
-   * @param predicate The select query predicate conjunction.
    * @param details The search parameter details.
    * @param filter The search filter.
+   * @returns The select query condition.
    */
   private buildDateSearchFilter(details: SearchParameterDetails, filter: Filter): Expression {
     const dateValue = new Date(filter.value);
@@ -1850,6 +1852,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Builds the columns to write for a Reference value.
    * @param value The property value of the reference.
+   * @returns The reference column value.
    */
   private buildReferenceColumns(value: any): string | undefined {
     if (value) {
@@ -1983,6 +1986,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns the last updated timestamp for the resource.
    * During historical data migration, some client applications are allowed
    * to override the timestamp.
+   * @param existing Existing resource if one exists.
    * @param resource The FHIR resource.
    * @returns The last updated date.
    */
@@ -2045,7 +2049,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * then use the provided value.
    * Otherwise uses the current context profile.
    * @param resource The FHIR resource.
-   * @returns
+   * @returns The author value.
    */
   private getAuthor(resource: Resource): Reference {
     // If the resource has an author (whether provided or from existing),
@@ -2063,8 +2067,10 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param resource The FHIR resource.
-   * @returns
+   * @param existing Existing resource if one exists.
+   * @param updated The incoming updated resource.
+   * @param create Flag for when "creating" vs "updating".
+   * @returns The account value.
    */
   private async getAccount(
     existing: Resource | undefined,
@@ -2207,16 +2213,16 @@ export class Repository extends BaseRepository implements FhirRepository {
   /**
    * Returns true if the resource satisfies the current access policy.
    * @param resource The resource.
-   * @param readonly True if the resource is being read.
+   * @param readonlyMode True if the resource is being read.
    * @returns True if the resource matches the access policy.
    */
-  private matchesAccessPolicy(resource: Resource, readonly: boolean): boolean {
+  private matchesAccessPolicy(resource: Resource, readonlyMode: boolean): boolean {
     if (!this.context.accessPolicy) {
       return true;
     }
     if (this.context.accessPolicy.resource) {
       for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (this.matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonly)) {
+        if (this.matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonlyMode)) {
           return true;
         }
       }
@@ -2228,19 +2234,19 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Returns true if the resource satisfies the specified access policy resource policy.
    * @param resource The resource.
    * @param resourcePolicy One per-resource policy section from the access policy.
-   * @param readonly True if the resource is being read.
+   * @param readonlyMode True if the resource is being read.
    * @returns True if the resource matches the access policy.
    */
   private matchesAccessPolicyResourcePolicy(
     resource: Resource,
     resourcePolicy: AccessPolicyResource,
-    readonly: boolean
+    readonlyMode: boolean
   ): boolean {
     const resourceType = resource.resourceType;
     if (!this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
       return false;
     }
-    if (!readonly && resourcePolicy.readonly) {
+    if (!readonlyMode && resourcePolicy.readonly) {
       return false;
     }
     if (
@@ -2295,6 +2301,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * Removes hidden fields from a resource as defined by the access policy.
    * This should be called for any "read" operation.
    * @param input The input resource.
+   * @returns The resource with hidden fields removed.
    */
   private removeHiddenFields<T extends Resource>(input: T): T {
     const policy = this.getResourceAccessPolicy(input.resourceType);
@@ -2319,6 +2326,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    * This should be called for any "write" operation.
    * @param input The input resource.
    * @param original The previous version, if it exists.
+   * @returns The resource with restored hidden fields.
    */
   private restoreReadonlyFields<T extends Resource>(input: T, original: T | undefined): T {
     const policy = this.getResourceAccessPolicy(input.resourceType);

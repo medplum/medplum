@@ -85,7 +85,7 @@ export function isProfileResource(resource: Resource): resource is ProfileResour
 /**
  * Returns a display string for the resource.
  * @param resource The input resource.
- * @return Human friendly display string.
+ * @returns Human friendly display string.
  */
 export function getDisplayString(resource: Resource): string {
   if (isProfileResource(resource)) {
@@ -263,7 +263,7 @@ export function getQuestionnaireAnswers(
 
 /**
  * Recursively builds the questionnaire answer items map.
- * @param item The current questionnaire response item.
+ * @param items The current questionnaire response items.
  * @param result The cumulative result map.
  */
 function buildQuestionnaireAnswerItems(
@@ -286,7 +286,6 @@ function buildQuestionnaireAnswerItems(
  * If multiple identifiers exist with the same system, the first one is returned.
  *
  * If the system is not found, then returns undefined.
- *
  * @param resource The resource to check.
  * @param system The identifier system.
  * @returns The identifier value if found; otherwise undefined.
@@ -358,8 +357,9 @@ export function stringify(value: any, pretty?: boolean): string {
  * Evaluates JSON key/value pairs for FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.
- * @param {string} k Property key.
- * @param {*} v Property value.
+ * @param k Property key.
+ * @param v Property value.
+ * @returns The replaced value.
  */
 function stringifyReplacer(k: string, v: any): any {
   return !isArrayKey(k) && isEmpty(v) ? undefined : v;
@@ -392,6 +392,7 @@ export function isEmpty(v: any): boolean {
  * Ignores meta.versionId and meta.lastUpdated.
  * @param object1 The first object.
  * @param object2 The second object.
+ * @param path Optional path string.
  * @returns True if the objects are equal.
  */
 export function deepEquals(object1: unknown, object2: unknown, path?: string): boolean {
@@ -464,7 +465,6 @@ function deepEqualsObject(
  *
  * See: https://web.dev/structured-clone/
  * See: https://stackoverflow.com/questions/40488190/how-is-structured-clone-algorithm-different-from-deep-copy
- *
  * @param input The input to clone.
  * @returns A deep clone of the input.
  */
@@ -483,7 +483,7 @@ export function isUUID(input: string): boolean {
 
 /**
  * Returns true if the input is an object.
- * @param object The candidate object.
+ * @param obj The candidate object.
  * @returns True if the input is a non-null non-undefined object.
  */
 export function isObject(obj: unknown): obj is Record<string, unknown> {
@@ -576,6 +576,7 @@ export function setCodeBySystem(concept: CodeableConcept, system: string, code: 
  * @param definition The observation definition.
  * @param patient The patient.
  * @param value The observation value.
+ * @param category Optional interval category restriction.
  * @returns The observation interval if found; otherwise undefined.
  */
 export function findObservationInterval(

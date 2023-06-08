@@ -11,7 +11,7 @@
 # linux/amd64, linux/arm64, linux/arm/v7
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
 
-FROM node:18-slim
+FROM --platform=$TARGETPLATFORM node:18-slim
 ENV NODE_ENV production
 WORKDIR /usr/src/medplum
 ADD ./medplum-server.tar.gz ./

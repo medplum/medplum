@@ -19,7 +19,6 @@ Medplum is a developer platform that enables flexible and rapid development of h
   - [Codebase](#codebase)
     - [Technologies](#technologies)
     - [Folder Structure](#folder-structure)
-    - [Code Style](#code-style)
   - [First time setup](#first-time-setup)
 
 ## Contributing
@@ -92,12 +91,6 @@ medplum/
 ### First time setup
 
 See developer setup documentation: https://www.medplum.com/docs/contributing
-
-## Careers
-
-![Medplum is hiring](packages/docs/static/img/hiring.webp)
-
-Medplum is hiring! Learn more on our [careers page](https://www.medplum.com/careers).
 
 ## License
 

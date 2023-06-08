@@ -11,7 +11,6 @@ import { aws_cloudfront as cloudfront, aws_iam as iam, aws_s3 as s3 } from 'aws-
  * However, if importing an S3 bucket via `s3.Bucket.fromBucketAttributes()`, that does not work.
  *
  * See: https://stackoverflow.com/a/60917015
- *
  * @param bucket The S3 bucket.
  * @param identity The CloudFront Origin Access Identity.
  */
