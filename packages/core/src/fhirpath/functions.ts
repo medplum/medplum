@@ -49,10 +49,9 @@ export const functions: Record<string, FhirPathFunction> = {
    * for where(criteria).exists().
    *
    * See: https://hl7.org/fhirpath/#existscriteria-expression-boolean
-   *
    * @param context The evaluation context.
-   * @param input
-   * @param criteria
+   * @param input The input collection.
+   * @param criteria The evaluation criteria.
    * @returns True if the collection has unknown elements, and false otherwise.
    */
   exists: (context: AtomContext, input: TypedValue[], criteria?: Atom): TypedValue[] => {
@@ -70,7 +69,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#allcriteria-expression-boolean
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param criteria The evaluation criteria.
@@ -86,7 +84,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#alltrue-boolean
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if all the items are true.
@@ -105,7 +102,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If all the items are false, or if the input is empty ({ }), the result is false.
    *
    * See: https://hl7.org/fhirpath/#anytrue-boolean
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if unknown of the items are true.
@@ -125,7 +121,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input is empty ({ }), the result is true.
    *
    * See: https://hl7.org/fhirpath/#allfalse-boolean
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if all the items are false.
@@ -144,7 +139,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If all the items are true, or if the input is empty ({ }), the result is false.
    *
    * See: https://hl7.org/fhirpath/#anyfalse-boolean
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if for every element in the input collection, criteria evaluates to true.
@@ -189,7 +183,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns 0 when the input collection is empty.
    *
    * See: https://hl7.org/fhirpath/#count-integer
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
@@ -209,7 +202,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * preserved in the result.
    *
    * See: https://hl7.org/fhirpath/#distinct-collection
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
@@ -230,7 +222,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * as defined below.
    *
    * See: https://hl7.org/fhirpath/#isdistinct-boolean
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
@@ -256,7 +247,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * consistent with singleton evaluation of collections behavior.
    *
    * See: https://hl7.org/fhirpath/#wherecriteria-expression-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param criteria The condition atom.
@@ -322,7 +312,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * about cardinality is violated at run-time.
    *
    * See: https://hl7.org/fhirpath/#single-collection
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The single item in the input if there is just one item.
@@ -339,7 +328,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * This function is equivalent to item[0], so it will return an empty collection if the input collection has no items.
    *
    * See: https://hl7.org/fhirpath/#first-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing only the first item in the input collection.
@@ -367,7 +355,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Will return an empty collection if the input collection has no items, or only one item.
    *
    * See: https://hl7.org/fhirpath/#tail-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing all but the first item in the input collection.
@@ -383,7 +370,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If num is less than or equal to zero, the input collection is simply returned.
    *
    * See: https://hl7.org/fhirpath/#skipnum-integer-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param num The atom representing the number of elements to skip.
@@ -410,7 +396,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * take returns an empty collection.
    *
    * See: https://hl7.org/fhirpath/#takenum-integer-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param num The atom representing the number of elements to take.
@@ -495,6 +480,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * In other words, this function returns the distinct list of elements from both inputs.
    *
    * See: http://hl7.org/fhirpath/#unionother-collection
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param other The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the union of both collections.
@@ -591,15 +577,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one the above types, or the item is a String, Integer, or Decimal, but is not equal to one of the possible values convertible to a Boolean, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#toboolean-boolean
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The input converted to boolean value.
    */
-  toBoolean: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toBoolean: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'boolean') {
       return [{ type: PropertyType.boolean, value }];
     }
@@ -664,16 +650,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tointeger-integer
-   *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The string representation of the input.
    */
-  toInteger: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toInteger: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'number') {
       return [{ type: PropertyType.integer, value }];
     }
@@ -700,7 +685,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstointeger-boolean
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the input can be converted to an integer.
@@ -727,15 +711,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#todate-date
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a date if possible; otherwise empty array.
    */
-  toDate: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toDate: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'string' && value.match(/^\d{4}(-\d{2}(-\d{2})?)?/)) {
       return [{ type: PropertyType.date, value: parseDateString(value) }];
     }
@@ -785,7 +769,7 @@ export const functions: Record<string, FhirPathFunction> = {
  * If the input collection is empty, the result is empty.
 
  * See: https://hl7.org/fhirpath/#todatetime-datetime
- *
+ * @param context The evaluation context.
  * @param input
  * @returns
  */
@@ -813,6 +797,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodatetime-boolean
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the item can be converted to a dateTime.
    */
@@ -837,16 +822,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#decimal-conversion-functions
-   *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a decimal if possible; otherwise empty array.
    */
-  toDecimal: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toDecimal: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'number') {
       return [{ type: PropertyType.decimal, value }];
     }
@@ -872,7 +856,6 @@ export const functions: Record<string, FhirPathFunction> = {
  * If the input collection is empty, the result is empty.
 
  * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
- *
  * @param context The evaluation context.
  * @param input The input collection.
  * @returns
@@ -894,16 +877,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one of the above types, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#quantity-conversion-functions
-   *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a quantity if possible; otherwise empty array.
    */
-  toQuantity: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toQuantity: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput( input, 1);
     if (isQuantity(value)) {
       return [{ type: PropertyType.Quantity, value }];
     }
@@ -938,7 +920,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the unit argument is provided, it must be the string representation of a UCUM code (or a FHIRPath calendar duration keyword), and is used to determine whether the input quantity can be converted to the given unit, according to the unit conversion rules specified by UCUM. If the input quantity can be converted, the result is true, otherwise, the result is false.
    *
    * See: https://hl7.org/fhirpath/#convertstoquantityunit-string-boolean
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the item can be converted to a quantity.
@@ -962,16 +943,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one of the above types, the result is false.
    *
    * See: https://hl7.org/fhirpath/#tostring-string
-   *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The string representation of the input.
    */
-  toString: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toString: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (value === null || value === undefined) {
       return [];
     }
@@ -997,7 +977,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tostring-string
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the item can be converted to a string
@@ -1025,15 +1004,15 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#totime-time
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a time if possible; otherwise empty array.
    */
-  toTime: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  toTime: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
     }
-    const [{ value }] = validateInput(context, input, 1);
+    const [{ value }] = validateInput(input, 1);
     if (typeof value === 'string') {
       const match = value.match(/^T?(\d{2}(:\d{2}(:\d{2})?)?)/);
       if (match) {
@@ -1055,6 +1034,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstotime-boolean
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the item can be converted to a time.
    */
@@ -1081,7 +1061,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#indexofsubstring-string-integer
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param searchStringAtom The substring to search for.
@@ -1101,7 +1080,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If an empty length is provided, the behavior is the same as if length had not been provided.
    *
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param startAtom The start index atom.
@@ -1124,7 +1102,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the input string starts with the given prefix.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param prefixAtom The prefix substring to test.
@@ -1136,7 +1113,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the input string ends with the given suffix.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param suffixAtom The suffix substring to test.
@@ -1148,7 +1124,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the given substring is a substring of the input string.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param substringAtom The substring to test.
@@ -1171,7 +1146,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns the input string with all characters converted to lower case.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The string converted to lower case.
@@ -1184,7 +1158,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the input string with all instances of pattern replaced with substitution. If the substitution is the empty string (''),
    * instances of pattern are removed from the result. If pattern is the empty string (''), every character in the input string is
    * surrounded by the substitution, e.g. 'abc'.replace('','x') becomes 'xaxbxcx'.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param patternAtom The pattern to search for.
@@ -1203,7 +1176,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the value matches the given regular expression. Regular expressions should function consistently, regardless of any culture- and locale-specific settings in the environment, should be case-sensitive, use 'single line' mode and allow Unicode characters.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param regexAtom The regular expression atom.
@@ -1215,7 +1187,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Matches the input using the regular expression in regex and replaces each match with the substitution string. The substitution may refer to identified match groups in the regular expression.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param regexAtom The regular expression atom.
@@ -1233,7 +1204,6 @@ export const functions: Record<string, FhirPathFunction> = {
   },
 
   /**
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The index of the substring.
@@ -1246,7 +1216,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the list of characters in the input string. If the input collection is empty ({ }), the result is empty.
    *
    * See: https://hl7.org/fhirpath/#tochars-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns Array of characters.
@@ -1267,7 +1236,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#abs-integer-decimal-quantity
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1284,7 +1252,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#ceiling-integer
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1303,7 +1270,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#exp-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1320,7 +1286,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#floor-integer
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1339,7 +1304,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#ln-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1360,7 +1324,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#logbase-decimal-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param baseAtom The logarithm base.
@@ -1380,7 +1343,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#powerexponent-integer-decimal-integer-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param expAtom The exponent power.
@@ -1402,7 +1364,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#roundprecision-integer-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1423,7 +1384,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Note that this function is equivalent to raising a number of the power of 0.5 using the power() function.
    *
    * See: https://hl7.org/fhirpath/#sqrt-decimal
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1440,7 +1400,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
    *
    * See: https://hl7.org/fhirpath/#truncate-integer
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing the result.
@@ -1472,7 +1431,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * function unchanged.
    *
    * See: https://hl7.org/fhirpath/#tracename-string-projection-expression-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @param nameAtom The log name.
@@ -1712,7 +1670,7 @@ function applyStringFunc<T>(
   if (input.length === 0) {
     return [];
   }
-  const [{ value }] = validateInput(context, input, 1);
+  const [{ value }] = validateInput(input, 1);
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
@@ -1735,7 +1693,7 @@ function applyMathFunc(
   if (input.length === 0) {
     return [];
   }
-  const [{ value }] = validateInput(context, input, 1);
+  const [{ value }] = validateInput(input, 1);
   const quantity = isQuantity(value);
   const numberInput = quantity ? value.value : value;
   if (typeof numberInput !== 'number') {
@@ -1747,7 +1705,7 @@ function applyMathFunc(
   return [{ type, value: returnValue }];
 }
 
-function validateInput(context: AtomContext, input: TypedValue[], count: number): TypedValue[] {
+function validateInput(input: TypedValue[], count: number): TypedValue[] {
   if (input.length !== count) {
     throw new Error(`Expected ${count} arguments`);
   }
