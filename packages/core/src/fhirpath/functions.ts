@@ -341,7 +341,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * Will return an empty collection if the input collection has no items.
    *
    * See: https://hl7.org/fhirpath/#last-collection
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns A collection containing only the last item in the input collection.
@@ -752,7 +751,7 @@ export const functions: Record<string, FhirPathFunction> = {
     return booleanToTypedValue(functions.toDate(context, input).length === 1);
   },
 
-  /**
+/**
  * If the input collection contains a single item, this function will return a single datetime if:
  *   1) the item is a DateTime
  *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
@@ -770,8 +769,8 @@ export const functions: Record<string, FhirPathFunction> = {
 
  * See: https://hl7.org/fhirpath/#todatetime-datetime
  * @param _context The evaluation context.
- * @param input
- * @returns
+ * @param input The input collection.
+ * @returns The value converted to a datetime if possible; otherwise empty array.
  */
   toDateTime: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -843,7 +842,7 @@ export const functions: Record<string, FhirPathFunction> = {
     return [];
   },
 
-  /**
+/**
  * If the input collection contains a single item, this function will true if:
  *   1) the item is an Integer or Decimal
  *   2) the item is a String and is convertible to a Decimal
@@ -858,7 +857,7 @@ export const functions: Record<string, FhirPathFunction> = {
  * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
  * @param context The evaluation context.
  * @param input The input collection.
- * @returns
+ * @returns The value converted to a decimal if possible; otherwise empty array.
  */
   convertsToDecimal: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
@@ -1063,7 +1062,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * See: https://hl7.org/fhirpath/#indexofsubstring-string-integer
    * @param context The evaluation context.
    * @param input The input collection.
-   * @param searchStringAtom The substring to search for.
+   * @param substringAtom The substring to search for.
    * @returns The index of the substring.
    */
   indexOf: (context: AtomContext, input: TypedValue[], substringAtom: Atom): TypedValue[] => {
@@ -1135,7 +1134,6 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns the input string with all characters converted to upper case.
-   *
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The string converted to upper case.
@@ -1621,7 +1619,6 @@ export const functions: Record<string, FhirPathFunction> = {
    * https://hl7.org/fhirpath/modelinfo.xsd
    *
    * See: https://hl7.org/fhirpath/#model-information
-   *
    * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The type of the input value.
