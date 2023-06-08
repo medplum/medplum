@@ -11,10 +11,7 @@ describe('Atoms', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    context = {
-      parent: undefined,
-      variables: {},
-    };
+    context = { variables: {} };
   });
 
   test('LiteralAtom', () => {

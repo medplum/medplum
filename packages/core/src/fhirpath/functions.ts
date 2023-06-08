@@ -1101,6 +1101,14 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the input string starts with the given prefix.
+   *
+   * If prefix is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#startswithprefix-string-boolean
    * @param context The evaluation context.
    * @param input The input collection.
    * @param prefixAtom The prefix substring to test.
@@ -1112,6 +1120,14 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the input string ends with the given suffix.
+   *
+   * If suffix is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#endswithsuffix-string-boolean
    * @param context The evaluation context.
    * @param input The input collection.
    * @param suffixAtom The suffix substring to test.
@@ -1123,6 +1139,14 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the given substring is a substring of the input string.
+   *
+   * If substring is the empty string (''), the result is true.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#containssubstring-string-boolean
    * @param context The evaluation context.
    * @param input The input collection.
    * @param substringAtom The substring to test.
@@ -1134,6 +1158,11 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns the input string with all characters converted to upper case.
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#upper-string
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The string converted to upper case.
@@ -1144,6 +1173,12 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns the input string with all characters converted to lower case.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#lower-string
    * @param context The evaluation context.
    * @param input The input collection.
    * @returns The string converted to lower case.
@@ -1156,6 +1191,12 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns the input string with all instances of pattern replaced with substitution. If the substitution is the empty string (''),
    * instances of pattern are removed from the result. If pattern is the empty string (''), every character in the input string is
    * surrounded by the substitution, e.g. 'abc'.replace('','x') becomes 'xaxbxcx'.
+   *
+   * If the input collection, pattern, or substitution are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#replacepattern-string-substitution-string-string
    * @param context The evaluation context.
    * @param input The input collection.
    * @param patternAtom The pattern to search for.
@@ -1174,6 +1215,12 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Returns true when the value matches the given regular expression. Regular expressions should function consistently, regardless of any culture- and locale-specific settings in the environment, should be case-sensitive, use 'single line' mode and allow Unicode characters.
+   *
+   * If the input collection or regex are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#matchesregex-string-boolean
    * @param context The evaluation context.
    * @param input The input collection.
    * @param regexAtom The regular expression atom.
@@ -1185,6 +1232,12 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * Matches the input using the regular expression in regex and replaces each match with the substitution string. The substitution may refer to identified match groups in the regular expression.
+   *
+   * If the input collection, regex, or substitution are empty, the result is empty ({ }).
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * See: https://hl7.org/fhirpath/#replacematchesregex-string-substitution-string-string
    * @param context The evaluation context.
    * @param input The input collection.
    * @param regexAtom The regular expression atom.

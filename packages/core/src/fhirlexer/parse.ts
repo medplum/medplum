@@ -1,7 +1,8 @@
 import { TypedValue } from '../types';
 import { Token } from './tokenize';
+
 export interface AtomContext {
-  parent: AtomContext | undefined;
+  parent?: AtomContext;
   variables: Record<string, TypedValue>;
 }
 export interface Atom {
