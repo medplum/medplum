@@ -31,11 +31,11 @@ export const functions: Record<string, FhirPathFunction> = {
    * Returns true if the input collection is empty ({ }) and false otherwise.
    *
    * See: https://hl7.org/fhirpath/#empty-boolean
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if the input collection is empty ({ }) and false otherwise.
    */
-  empty: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  empty: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return booleanToTypedValue(input.length === 0);
   },
 
@@ -87,11 +87,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#alltrue-boolean
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if all the items are true.
    */
-  allTrue: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  allTrue: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     for (const value of input) {
       if (!value.value) {
         return booleanToTypedValue(false);
@@ -106,11 +106,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#anytrue-boolean
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if unknown of the items are true.
    */
-  anyTrue: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  anyTrue: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     for (const value of input) {
       if (value.value) {
         return booleanToTypedValue(true);
@@ -126,11 +126,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#allfalse-boolean
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if all the items are false.
    */
-  allFalse: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  allFalse: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     for (const value of input) {
       if (value.value) {
         return booleanToTypedValue(false);
@@ -145,11 +145,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#anyfalse-boolean
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns True if for every element in the input collection, criteria evaluates to true.
    */
-  anyFalse: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  anyFalse: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     for (const value of input) {
       if (!value.value) {
         return booleanToTypedValue(true);
@@ -190,11 +190,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#count-integer
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
    */
-  count: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  count: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return [{ type: PropertyType.integer, value: input.length }];
   },
 
@@ -210,11 +210,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#distinct-collection
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The integer count of the number of items in the input collection.
    */
-  distinct: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  distinct: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     const result: TypedValue[] = [];
     for (const value of input) {
       if (!result.some((e) => e.value === value.value)) {
@@ -276,6 +276,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * the input collection is empty ({ }), the result is empty as well.
    *
    * See: http://hl7.org/fhirpath/#selectprojection-expression-collection
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
@@ -300,11 +301,12 @@ export const functions: Record<string, FhirPathFunction> = {
    * must resolve to the name of a type in a model
    *
    * See: http://hl7.org/fhirpath/#oftypetype-type-specifier-collection
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @param criteria The condition atom.
    * @returns A collection containing only those elements in the input collection that are of the given type or a subclass thereof.
    */
-  ofType: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
+  ofType: (_context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
     return input.filter((e) => e.type === (criteria as SymbolAtom).name);
   },
 
@@ -321,11 +323,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#single-collection
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The single item in the input if there is just one item.
    */
-  single: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  single: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length > 1) {
       throw new Error('Expected input length one for single()');
     }
@@ -434,6 +436,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * Order of items is not guaranteed to be preserved in the result of this function.
    *
    * See: http://hl7.org/fhirpath/#intersectother-collection-collection
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param other The atom representing the collection of elements to intersect.
    * @returns A collection containing the elements that are in both collections.
@@ -459,6 +462,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * e.g. (1 | 2 | 3).exclude(2) returns (1 | 3).
    *
    * See: http://hl7.org/fhirpath/#excludeother-collection-collection
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param other The atom representing the collection of elements to exclude.
    * @returns A collection containing the elements that are in the input collection but not the other collection.
@@ -511,6 +515,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * There is no expectation of order in the resulting collection.
    *
    * See: http://hl7.org/fhirpath/#combineother-collection-collection
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param other The atom representing the collection of elements to merge.
    * @returns A collection containing the elements that represent the combination of both collections including duplicates.
@@ -544,6 +549,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * true-result should only be evaluated if the criterion evaluates to true,
    * and otherwise-result should only be evaluated otherwise. For implementations,
    * this means delaying evaluation of the arguments.
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param criterion The atom representing the conditional.
    * @param trueResult The atom to be used if the conditional evaluates to true.
@@ -585,6 +591,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the item is not one the above types, or the item is a String, Integer, or Decimal, but is not equal to one of the possible values convertible to a Boolean, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#toboolean-boolean
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns The input converted to boolean value.
    */
@@ -629,6 +636,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: http://hl7.org/fhirpath/#convertstoboolean-boolean
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the input can be converted to boolean.
    */
@@ -719,6 +727,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#todate-date
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a date if possible; otherwise empty array.
    */
@@ -748,6 +757,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#convertstodate-boolean
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the item can be converted to a date.
    */
@@ -1015,6 +1025,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * If the input collection is empty, the result is empty.
    *
    * See: https://hl7.org/fhirpath/#totime-time
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns The value converted to a time if possible; otherwise empty array.
    */
@@ -1509,6 +1520,7 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * IBM FHIR issue: https://github.com/IBM/FHIR/issues/1014
    * IBM FHIR PR: https://github.com/IBM/FHIR/pull/1023
+   * @param context The evaluation context.
    * @param input The input collection.
    * @param startAtom The start date/time.
    * @param endAtom The end date/time.
@@ -1550,11 +1562,12 @@ export const functions: Record<string, FhirPathFunction> = {
    * For implementations with compile-time typing, this requires special-case
    * handling when processing the argument to treat it as a type specifier rather
    * than an identifier expression:
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @param typeAtom The desired type.
    * @returns True if the input element is of the desired type.
    */
-  is: (context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
+  is: (_context: AtomContext, input: TypedValue[], typeAtom: Atom): TypedValue[] => {
     let typeName = '';
     if (typeAtom instanceof SymbolAtom) {
       typeName = typeAtom.name;
@@ -1575,6 +1588,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * 6.5.3. not() : Boolean
    *
    * Returns true if the input collection evaluates to false, and false if it evaluates to true. Otherwise, the result is empty ({ }):
+   * @param context The evaluation context.
    * @param input The input collection.
    * @returns True if the input evaluates to false.
    */
@@ -1590,11 +1604,11 @@ export const functions: Record<string, FhirPathFunction> = {
   /**
    * For each item in the collection, if it is a string that is a uri (or canonical or url), locate the target of the reference, and add it to the resulting collection. If the item does not resolve to a resource, the item is ignored and nothing is added to the output collection.
    * The items in the collection may also represent a Reference, in which case the Reference.reference is resolved.
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The resolved resource.
    */
-  resolve: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  resolve: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return input
       .map((e) => {
         const value = e.value;
@@ -1627,10 +1641,11 @@ export const functions: Record<string, FhirPathFunction> = {
 
   /**
    * The as operator can be used to treat a value as a specific type.
+   * @param _context The evaluation context.
    * @param input The input value.
    * @returns The value as the specific type.
    */
-  as: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  as: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return input;
   },
 
@@ -1649,11 +1664,11 @@ export const functions: Record<string, FhirPathFunction> = {
    *
    * See: https://hl7.org/fhirpath/#model-information
    *
-   * @param context The evaluation context.
+   * @param _context The evaluation context.
    * @param input The input collection.
    * @returns The type of the input value.
    */
-  type: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
+  type: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     return input.map(({ value }) => {
       if (typeof value === 'boolean') {
         return { type: PropertyType.BackboneElement, value: { namespace: 'System', name: 'Boolean' } };
