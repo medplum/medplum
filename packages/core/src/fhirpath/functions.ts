@@ -751,27 +751,27 @@ export const functions: Record<string, FhirPathFunction> = {
     return booleanToTypedValue(functions.toDate(context, input).length === 1);
   },
 
-/**
- * If the input collection contains a single item, this function will return a single datetime if:
- *   1) the item is a DateTime
- *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
- *   3) the item is a String and is convertible to a DateTime
- *
- * If the item is not one of the above types, the result is empty.
- *
- * If the item is a String, but the string is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is empty.
- *
- * If the item contains a partial datetime (e.g. '2012-01-01T10:00'), the result is a partial datetime.
- *
- * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
- *
- * If the input collection is empty, the result is empty.
-
- * See: https://hl7.org/fhirpath/#todatetime-datetime
- * @param _context The evaluation context.
- * @param input The input collection.
- * @returns The value converted to a datetime if possible; otherwise empty array.
- */
+  /**
+   * If the input collection contains a single item, this function will return a single datetime if:
+   *   1) the item is a DateTime
+   *   2) the item is a Date, in which case the result is a DateTime with the year, month, and day of the Date, and the time components empty (not set to zero)
+   *   3) the item is a String and is convertible to a DateTime
+   *
+   * If the item is not one of the above types, the result is empty.
+   *
+   * If the item is a String, but the string is not convertible to a DateTime (using the format YYYY-MM-DDThh:mm:ss.fff(+|-)hh:mm), the result is empty.
+   *
+   * If the item contains a partial datetime (e.g. '2012-01-01T10:00'), the result is a partial datetime.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#todatetime-datetime
+   * @param _context The evaluation context.
+   * @param input The input collection.
+   * @returns The value converted to a datetime if possible; otherwise empty array.
+   */
   toDateTime: (_context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
@@ -842,23 +842,23 @@ export const functions: Record<string, FhirPathFunction> = {
     return [];
   },
 
-/**
- * If the input collection contains a single item, this function will true if:
- *   1) the item is an Integer or Decimal
- *   2) the item is a String and is convertible to a Decimal
- *   3) the item is a Boolean
- *
- * If the item is not one of the above types, or is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is false.
- *
- * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
- *
- * If the input collection is empty, the result is empty.
-
- * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
- * @param context The evaluation context.
- * @param input The input collection.
- * @returns The value converted to a decimal if possible; otherwise empty array.
- */
+  /**
+   * If the input collection contains a single item, this function will true if:
+   *   1) the item is an Integer or Decimal
+   *   2) the item is a String and is convertible to a Decimal
+   *   3) the item is a Boolean
+   *
+   * If the item is not one of the above types, or is not convertible to a Decimal (using the regex format (\\+|-)?\d+(\.\d+)?), the result is false.
+   *
+   * If the input collection contains multiple items, the evaluation of the expression will end and signal an error to the calling environment.
+   *
+   * If the input collection is empty, the result is empty.
+   *
+   * See: https://hl7.org/fhirpath/#convertstodecimal-boolean
+   * @param context The evaluation context.
+   * @param input The input collection.
+   * @returns The value converted to a decimal if possible; otherwise empty array.
+   */
   convertsToDecimal: (context: AtomContext, input: TypedValue[]): TypedValue[] => {
     if (input.length === 0) {
       return [];
