@@ -244,6 +244,11 @@ describe('Subscription Worker', () => {
 
     // Update should not trigger the subscription
     expect(queue.add).not.toHaveBeenCalled();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).not.toHaveBeenCalled();
   });
 
   test('Delete-only subscription', async () => {
@@ -296,7 +301,7 @@ describe('Subscription Worker', () => {
     expect(fetch).toHaveBeenCalledWith(
       url,
       expect.objectContaining({
-        method: 'POST',
+        method: 'DELETE',
         body: stringify({ id: patient.id }),
       })
     );

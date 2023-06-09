@@ -330,11 +330,12 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
   let error: Error | undefined = undefined;
+  const fetchMethod = checkIfDeleteExtension(subscription) ? 'DELETE' : 'POST';
 
   try {
     logger.info('Sending rest hook to: ' + url);
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body });
+    const response = await fetch(url, { method: fetchMethod, headers, body });
     logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
