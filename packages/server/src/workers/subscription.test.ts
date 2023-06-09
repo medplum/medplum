@@ -301,7 +301,7 @@ describe('Subscription Worker', () => {
     expect(fetch).toHaveBeenCalledWith(
       url,
       expect.objectContaining({
-        method: 'DELETE',
+        method: 'POST',
         body: stringify({ resourceType: 'Patient', id: patient.id }),
       })
     );
