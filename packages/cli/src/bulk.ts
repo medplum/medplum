@@ -2,7 +2,6 @@ import { BundleEntry } from '@medplum/fhirtypes';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
-import { medplum } from '.';
 import { createMedplumClient, MedplumCommand, prettyPrint } from './utils';
 
 export const bulk = new MedplumCommand('bulk');
@@ -45,10 +44,10 @@ bulk
     const path = resolve(process.cwd(), fileName);
     const { numResourcesPerRequest } = options;
 
-    await importFile(path, parseInt(numResourcesPerRequest));
+    await importFile(path, parseInt(numResourcesPerRequest), options);
   });
 
-async function importFile(path: string, numResourcesPerRequest: number): Promise<void> {
+async function importFile(path: string, numResourcesPerRequest: number, options: any): Promise<void> {
   let entries = [] as BundleEntry[];
   const fileStream = createReadStream(path);
   const rl = createInterface({
@@ -65,16 +64,17 @@ async function importFile(path: string, numResourcesPerRequest: number): Promise
       },
     });
     if (entries.length % numResourcesPerRequest === 0) {
-      await sendBatchEntries(entries);
+      await sendBatchEntries(entries, options);
       entries = [];
     }
   }
   if (entries.length > 0) {
-    await sendBatchEntries(entries);
+    await sendBatchEntries(entries, options);
   }
 }
 
-async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
+async function sendBatchEntries(entries: BundleEntry[], options: any): Promise<void> {
+  const medplum = await createMedplumClient(options);
   const result = await medplum.executeBatch({
     resourceType: 'Bundle',
     type: 'transaction',
