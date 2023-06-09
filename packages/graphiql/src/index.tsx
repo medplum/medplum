@@ -61,7 +61,7 @@ const theme: MantineThemeOverride = {
   },
 };
 
-async function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
     const config = getConfig().introspectionUrl;
     if (config) {
@@ -89,17 +89,12 @@ const medplumPlugin: GraphiQLPlugin = {
 };
 
 // Parse the search string to get url parameters.
-const search = window.location.search;
-const parameters: FetcherParams = {} as FetcherParams;
-search
-  .substring(1)
-  .split('&')
-  .forEach((entry) => {
-    const eq = entry.indexOf('=');
-    if (eq >= 0) {
-      parameters[decodeURIComponent(entry.slice(0, eq))] = decodeURIComponent(entry.slice(eq + 1));
-    }
-  });
+const searchParams = new URLSearchParams(location.search);
+const parameters: FetcherParams = {
+  query: searchParams.get('query'),
+  variables: searchParams.get('variables'),
+  operationName: searchParams.get('operationName'),
+};
 
 if (parameters.variables) {
   try {
@@ -110,29 +105,27 @@ if (parameters.variables) {
   }
 }
 
-function onEditQuery(newQuery: string) {
+function onEditQuery(newQuery: string): void {
   parameters.query = newQuery;
   updateURL();
 }
 
-function onEditVariables(newVariables: string) {
+function onEditVariables(newVariables: string): void {
   parameters.variables = newVariables;
   updateURL();
 }
 
-function onEditOperationName(newOperationName: string) {
+function onEditOperationName(newOperationName: string): void {
   parameters.operationName = newOperationName;
   updateURL();
 }
 
-function updateURL() {
-  const newSearch =
-    '?' +
-    Object.keys(parameters)
-      .filter((key) => Boolean(parameters[key]))
-      .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(parameters[key]))
-      .join('&');
-  history.replaceState(null, null, newSearch);
+function updateURL(): void {
+  const newSearch = new URLSearchParams();
+  newSearch.set('query', encodeURIComponent(parameters.query));
+  newSearch.set('variables', encodeURIComponent(parameters.variables));
+  newSearch.set('operationName ', encodeURIComponent(parameters.operationName));
+  history.replaceState(null, '', `?${newSearch}`);
 }
 
 function App(): JSX.Element {
@@ -140,7 +133,9 @@ function App(): JSX.Element {
   return profile ? (
     <GraphiQL
       fetcher={fetcher}
-      defaultQuery={HELP_TEXT}
+      defaultQuery={parameters.query || HELP_TEXT}
+      variables={parameters.variables}
+      operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}
       onEditVariables={onEditVariables}
