@@ -167,7 +167,6 @@ function matchesCriteria(resource: Resource, subscription: Subscription, context
     subscription,
     'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
   );
-
   if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
     logger.debug(
       `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
@@ -246,6 +245,7 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
+
   let subscription;
   try {
     subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
