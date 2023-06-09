@@ -20,13 +20,32 @@ describe('createMedplumClient', () => {
 
   test('with optional env set', async () => {
     process.env.MEDPLUM_BASE_URL = 'http://example.com';
-    process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
-    process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
+    process.env.MEDPLUM_FHIR_URL_PATH = 'fhir/test/path/';
+    process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test-access-token';
     process.env.MEDPLUM_TOKEN_URL = 'http://example.com/oauth/token';
     const medplumClient = await createMedplumClient({});
 
     expect(medplumClient.getBaseUrl()).toContain('http://example.com/');
-    expect(medplumClient.getAccessToken()).toBeDefined();
+    expect(medplumClient.getAccessToken()).toBe('test-access-token');
+    expect(medplumClient.fhirUrl('test').toString()).toContain('/fhir/test/path/');
+  });
+
+  test('with global options set', async () => {
+    const options = {
+      baseUrl: 'http://example.com/',
+      fhirPathUrl: '/fhir/test/path/',
+      tokenUrl: 'http://example.com/oauth/token',
+      accessToken: 'test-access-token',
+    };
+    process.env.MEDPLUM_BASE_URL = 'http://example.com';
+    process.env.MEDPLUM_FHIR_URL_PATH = '/fhir/test/path/';
+    process.env.MEDPLUM_CLIENT_ACCESS_TOKEN = 'test_token';
+    process.env.MEDPLUM_TOKEN_URL = 'http://example.com/oauth/token';
+    const medplumClient = await createMedplumClient(options);
+
+    expect(medplumClient.getBaseUrl()).toContain('http://example.com/');
+    expect(medplumClient.getAccessToken()).toBe('test-access-token');
+    expect(medplumClient.fhirUrl('test').toString()).toContain('/fhir/test/path/');
   });
 
   test('setBasicAuth and startClientLogin', async () => {
