@@ -88,10 +88,59 @@ const medplumPlugin: GraphiQLPlugin = {
   ),
 };
 
+// Parse the search string to get url parameters.
+const searchParams = new URLSearchParams(location.search);
+const parameters: FetcherParams = {
+  query: searchParams.get('query'),
+  variables: searchParams.get('variables'),
+  operationName: searchParams.get('operationName'),
+};
+
+if (parameters.variables) {
+  try {
+    parameters.variables = JSON.stringify(JSON.parse(parameters.variables), null, 2);
+  } catch (e) {
+    // Do nothing, we want to display the invalid JSON as a string, rather
+    // than present an error.
+  }
+}
+
+function onEditQuery(newQuery: string): void {
+  parameters.query = newQuery;
+  updateURL();
+}
+
+function onEditVariables(newVariables: string): void {
+  parameters.variables = newVariables;
+  updateURL();
+}
+
+function onEditOperationName(newOperationName: string): void {
+  parameters.operationName = newOperationName;
+  updateURL();
+}
+
+function updateURL(): void {
+  const newSearch = new URLSearchParams();
+  newSearch.set('query', encodeURIComponent(parameters.query));
+  newSearch.set('variables', encodeURIComponent(parameters.variables));
+  newSearch.set('operationName ', encodeURIComponent(parameters.operationName));
+  history.replaceState(null, '', `?${newSearch}`);
+}
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} plugins={[medplumPlugin]} />
+    <GraphiQL
+      fetcher={fetcher}
+      defaultQuery={parameters.query || HELP_TEXT}
+      variables={parameters.variables}
+      operationName={parameters.operationName || undefined}
+      plugins={[medplumPlugin]}
+      onEditQuery={onEditQuery}
+      onEditVariables={onEditVariables}
+      onEditOperationName={onEditOperationName}
+    />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
