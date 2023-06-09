@@ -43,9 +43,6 @@ medplum-server.tar.gz
 # Deb files
 *.deb
 
-# VSCode
-.vscode/
-
 # Turborepo
 .turbo
 
