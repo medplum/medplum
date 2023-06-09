@@ -103,6 +103,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   const config = await loadConfig('file:medplum.config.json');
   return {
     ...config,
+    allowedOrigins: undefined,
     database: {
       ...config.database,
       host: process.env['POSTGRES_HOST'] ?? 'localhost',
