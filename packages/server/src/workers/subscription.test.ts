@@ -302,7 +302,7 @@ describe('Subscription Worker', () => {
       url,
       expect.objectContaining({
         method: 'DELETE',
-        body: stringify({ id: patient.id }),
+        body: stringify({ resourceType: 'Patient', id: patient.id }),
       })
     );
   });

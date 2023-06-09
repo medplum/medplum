@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { checkIfDeleteExtension, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { validDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -167,6 +167,7 @@ function matchesCriteria(resource: Resource, subscription: Subscription, context
     subscription,
     'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
   );
+
   if (supportedInteractionExtension && supportedInteractionExtension.valueCode !== context.interaction) {
     logger.debug(
       `Ignore rest hook for different interaction (wanted "${supportedInteractionExtension.valueCode}", received "${context.interaction}")`
@@ -262,7 +263,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription has been disabled, then stop processing it.
     return;
   }
-  const deletedInteraction = checkIfDeleteExtension(subscription);
+  const deletedInteraction = validDeleteInteraction(subscription);
 
   if (!deletedInteraction) {
     let currentVersion;
@@ -285,7 +286,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
   }
 
   try {
-    const resourceVersion = deletedInteraction ? { id } : await systemRepo.readVersion(resourceType, id, versionId);
+    const resourceVersion = deletedInteraction
+      ? { resourceType, id }
+      : await systemRepo.readVersion(resourceType, id, versionId);
     const channelType = subscription?.channel?.type;
     if (channelType === 'rest-hook') {
       if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
@@ -330,7 +333,7 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
   let error: Error | undefined = undefined;
-  const fetchMethod = checkIfDeleteExtension(subscription) ? 'DELETE' : 'POST';
+  const fetchMethod = validDeleteInteraction(subscription) ? 'DELETE' : 'POST';
 
   try {
     logger.info('Sending rest hook to: ' + url);
