@@ -61,7 +61,7 @@ const theme: MantineThemeOverride = {
   },
 };
 
-function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+async function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
     const config = getConfig().introspectionUrl;
     if (config) {
@@ -88,10 +88,64 @@ const medplumPlugin: GraphiQLPlugin = {
   ),
 };
 
+// Parse the search string to get url parameters.
+const search = window.location.search;
+const parameters: FetcherParams = {} as FetcherParams;
+search
+  .substring(1)
+  .split('&')
+  .forEach((entry) => {
+    const eq = entry.indexOf('=');
+    if (eq >= 0) {
+      parameters[decodeURIComponent(entry.slice(0, eq))] = decodeURIComponent(entry.slice(eq + 1));
+    }
+  });
+
+if (parameters.variables) {
+  try {
+    parameters.variables = JSON.stringify(JSON.parse(parameters.variables), null, 2);
+  } catch (e) {
+    // Do nothing, we want to display the invalid JSON as a string, rather
+    // than present an error.
+  }
+}
+
+function onEditQuery(newQuery: string) {
+  parameters.query = newQuery;
+  updateURL();
+}
+
+function onEditVariables(newVariables: string) {
+  parameters.variables = newVariables;
+  updateURL();
+}
+
+function onEditOperationName(newOperationName: string) {
+  parameters.operationName = newOperationName;
+  updateURL();
+}
+
+function updateURL() {
+  const newSearch =
+    '?' +
+    Object.keys(parameters)
+      .filter((key) => Boolean(parameters[key]))
+      .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(parameters[key]))
+      .join('&');
+  history.replaceState(null, null, newSearch);
+}
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} plugins={[medplumPlugin]} />
+    <GraphiQL
+      fetcher={fetcher}
+      defaultQuery={HELP_TEXT}
+      plugins={[medplumPlugin]}
+      onEditQuery={onEditQuery}
+      onEditVariables={onEditVariables}
+      onEditOperationName={onEditOperationName}
+    />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
