@@ -16,10 +16,10 @@ export async function createMedplumClient(options: MedplumClientCommandOptions):
   const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
   const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
   const tokenUrl = options.tokenUrl || process.env['MEDPLUM_TOKEN_URL'] || '';
-  const fetchOptions = options.fetch || fetch;
+  const fetchApi = options.fetch || fetch;
 
   const medplumClient = new MedplumClient({
-    fetch: fetchOptions,
+    fetch: fetchApi,
     baseUrl,
     tokenUrl,
     fhirUrlPath,
