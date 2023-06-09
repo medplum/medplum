@@ -829,6 +829,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       await this.deleteFromLookupTables(client, resource);
       this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+      await addSubscriptionJobs(resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;

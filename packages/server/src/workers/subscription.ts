@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { checkIfDeleteExtension, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -245,7 +245,6 @@ async function getSubscriptions(resource: Resource): Promise<Subscription[]> {
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const { subscriptionId, resourceType, id, versionId } = job.data;
-
   let subscription;
   try {
     subscription = await systemRepo.readResource<Subscription>('Subscription', subscriptionId);
@@ -263,34 +262,36 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription has been disabled, then stop processing it.
     return;
   }
+  const deletedInteraction = checkIfDeleteExtension(subscription);
 
-  let currentVersion;
-  try {
-    currentVersion = await systemRepo.readResource(resourceType, id);
-  } catch (err) {
-    const outcome = normalizeOperationOutcome(err);
-    if (isGone(outcome)) {
-      // If the resource was deleted, then stop processing it.
+  if (!deletedInteraction) {
+    let currentVersion;
+    try {
+      currentVersion = await systemRepo.readResource(resourceType, id);
+    } catch (err) {
+      const outcome = normalizeOperationOutcome(err);
+      if (isGone(outcome)) {
+        // If the resource was deleted, then stop processing it.
+        return;
+      }
+      // Otherwise re-throw
+      throw err;
+    }
+
+    if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+      // If this is a retry and the resource is not the current version, then stop processing it.
       return;
     }
-    // Otherwise re-throw
-    throw err;
-  }
-
-  if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
-    // If this is a retry and the resource is not the current version, then stop processing it.
-    return;
   }
 
   try {
-    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
-
+    const resourceVersion = deletedInteraction ? { id } : await systemRepo.readVersion(resourceType, id, versionId);
     const channelType = subscription?.channel?.type;
     if (channelType === 'rest-hook') {
       if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-        await execBot(subscription, resourceVersion);
+        await execBot(subscription, resourceVersion as Resource);
       } else {
-        await sendRestHook(job, subscription, resourceVersion);
+        await sendRestHook(job, subscription, resourceVersion as Resource);
       }
     }
   } catch (err) {
@@ -325,7 +326,6 @@ async function sendRestHook(
     logger.debug(`Ignore rest hook missing URL`);
     return;
   }
-
   const startTime = new Date().toISOString();
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);

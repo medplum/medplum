@@ -246,6 +246,62 @@ describe('Subscription Worker', () => {
     expect(queue.add).not.toHaveBeenCalled();
   });
 
+  test('Delete-only subscription', async () => {
+    const url = 'https://example.com/subscription';
+
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'delete',
+        },
+      ],
+    });
+    expect(subscription).toBeDefined();
+
+    // Clear the queue
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    // Create the patient
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    // Create should trigger the subscription
+    expect(queue.add).not.toHaveBeenCalled();
+
+    // Update the patient
+    await repo.updateResource({ ...patient, active: true });
+
+    // Update should not trigger the subscription
+    expect(queue.add).not.toHaveBeenCalled();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).toHaveBeenCalled();
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: stringify({ id: patient.id }),
+      })
+    );
+  });
+
   test('Send subscriptions with signature', async () => {
     const url = 'https://example.com/subscription';
     const secret = '0123456789';
