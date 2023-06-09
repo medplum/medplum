@@ -11,7 +11,7 @@ export const bulk = new Command('bulk');
 bulk
   .command('export')
   .option(
-    '-e, --exportLevel <exportLevel>',
+    '-e, --export-level <exportLevel>',
     'Optional export level. Defaults to system level export. "Group/:id" - Group of Patients, "Patient" - All Patients.'
   )
   .option('-t, --types <types>', 'optional resource types to export')
@@ -36,7 +36,7 @@ bulk
   .command('import')
   .argument('<filename>', 'File Name')
   .option(
-    '--numResourcesPerRequest <numResourcesPerRequest>',
+    '--num-resources-per-request <numResourcesPerRequest>',
     'optional number of resources to import per batch request. Defaults to 25.',
     '25'
   )
