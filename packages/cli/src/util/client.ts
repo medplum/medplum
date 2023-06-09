@@ -1,5 +1,4 @@
 import { MedplumClient } from '@medplum/core';
-import { onUnauthenticated } from '..';
 import { FileSystemStorage } from '../storage';
 
 export async function createMedplumClient(options: any): Promise<MedplumClient> {
@@ -29,4 +28,8 @@ export async function createMedplumClient(options: any): Promise<MedplumClient> 
     await medplumClient.startClientLogin(clientId, clientSecret);
   }
   return medplumClient;
+}
+
+export function onUnauthenticated(): void {
+  console.log('Unauthenticated: run `npx medplum login` to sign in');
 }
