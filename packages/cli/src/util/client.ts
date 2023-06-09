@@ -1,7 +1,7 @@
-import { MedplumClient } from '@medplum/core';
+import { FetchLike, MedplumClient } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 
-export async function createMedplumClient(options: any): Promise<MedplumClient> {
+export async function createMedplumClient(options: any, fetch?: FetchLike): Promise<MedplumClient> {
   const baseUrl = options.baseUrl || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
   const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
   const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
