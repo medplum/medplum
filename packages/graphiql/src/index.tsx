@@ -1,7 +1,7 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { MedplumClient, ProfileResource, getDisplayString } from '@medplum/core';
+import { decodeBase64, encodeBase64, getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
@@ -91,19 +91,10 @@ const medplumPlugin: GraphiQLPlugin = {
 // Parse the search string to get url parameters.
 const searchParams = new URLSearchParams(location.search);
 const parameters: FetcherParams = {
-  query: searchParams.get('query'),
-  variables: searchParams.get('variables'),
-  operationName: searchParams.get('operationName'),
+  query: tryDecodeBase64(searchParams.get('query')),
+  variables: tryDecodeBase64(searchParams.get('variables')),
+  operationName: tryDecodeBase64(searchParams.get('operationName')),
 };
-
-if (parameters.variables) {
-  try {
-    parameters.variables = JSON.stringify(JSON.parse(parameters.variables), null, 2);
-  } catch (e) {
-    // Do nothing, we want to display the invalid JSON as a string, rather
-    // than present an error.
-  }
-}
 
 function onEditQuery(newQuery: string): void {
   parameters.query = newQuery;
@@ -122,10 +113,32 @@ function onEditOperationName(newOperationName: string): void {
 
 function updateURL(): void {
   const newSearch = new URLSearchParams();
-  newSearch.set('query', encodeURIComponent(parameters.query));
-  newSearch.set('variables', encodeURIComponent(parameters.variables));
-  newSearch.set('operationName ', encodeURIComponent(parameters.operationName));
+  newSearch.set('query', tryEncodeBase64(parameters.query));
+  newSearch.set('variables', tryEncodeBase64(parameters.variables));
+  newSearch.set('operationName', tryEncodeBase64(parameters.operationName));
   history.replaceState(null, '', `?${newSearch}`);
+}
+
+function tryEncodeBase64(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+  try {
+    return encodeBase64(value);
+  } catch (err) {
+    return '';
+  }
+}
+
+function tryDecodeBase64(value: string | null): string {
+  if (!value) {
+    return '';
+  }
+  try {
+    return decodeBase64(value);
+  } catch (err) {
+    return '';
+  }
 }
 
 function App(): JSX.Element {
@@ -133,7 +146,8 @@ function App(): JSX.Element {
   return profile ? (
     <GraphiQL
       fetcher={fetcher}
-      defaultQuery={parameters.query || HELP_TEXT}
+      defaultQuery={HELP_TEXT}
+      query={parameters.query}
       variables={parameters.variables}
       operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
