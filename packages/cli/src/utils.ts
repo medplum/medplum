@@ -4,9 +4,6 @@ import { existsSync, readFileSync, writeFile } from 'fs';
 import { resolve } from 'path';
 import internal from 'stream';
 import tar from 'tar';
-import { onUnauthenticated } from '.';
-import { FileSystemStorage } from './storage';
-import { Command } from 'commander';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -171,46 +168,4 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
       return true;
     },
   });
-}
-
-export async function createMedplumClient(options: any): Promise<MedplumClient> {
-  const baseUrl = options.baseUrl || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
-  const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
-  const tokenUrl = options.tokenUrl || process.env['MEDPLUM_TOKEN_URL'] || '';
-
-  const medplumClient = new MedplumClient({
-    fetch,
-    baseUrl,
-    tokenUrl,
-    fhirUrlPath,
-    storage: new FileSystemStorage(),
-    onUnauthenticated: onUnauthenticated,
-  });
-
-  if (accessToken) {
-    medplumClient.setAccessToken(accessToken);
-  }
-
-  const clientId = options.clientId || process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = options.clientSecret || process.env['MEDPLUM_CLIENT_SECRET'];
-
-  if (clientId && clientSecret) {
-    medplumClient.setBasicAuth(clientId, clientSecret);
-    await medplumClient.startClientLogin(clientId, clientSecret);
-  }
-  return medplumClient;
-}
-
-export class MedplumCommand extends Command {
-  createCommand(name: string | undefined): Command {
-    const cmd = new Command(name);
-    cmd.option('--client-id <clientId>', 'FHIR server client id');
-    cmd.option('--client-secret <clientSecret>', 'FHIR server client secret');
-    cmd.option('--base-url <baseUrl>', 'FHIR server base url');
-    cmd.option('--token-url <tokenUrl>', 'FHIR server token url');
-    cmd.option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path');
-
-    return cmd;
-  }
 }

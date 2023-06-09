@@ -1,0 +1,32 @@
+import { MedplumClient } from '@medplum/core';
+import { onUnauthenticated } from '..';
+import { FileSystemStorage } from '../storage';
+
+export async function createMedplumClient(options: any): Promise<MedplumClient> {
+  const baseUrl = options.baseUrl || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
+  const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
+  const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
+  const tokenUrl = options.tokenUrl || process.env['MEDPLUM_TOKEN_URL'] || '';
+
+  const medplumClient = new MedplumClient({
+    fetch,
+    baseUrl,
+    tokenUrl,
+    fhirUrlPath,
+    storage: new FileSystemStorage(),
+    onUnauthenticated: onUnauthenticated,
+  });
+
+  if (accessToken) {
+    medplumClient.setAccessToken(accessToken);
+  }
+
+  const clientId = options.clientId || process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = options.clientSecret || process.env['MEDPLUM_CLIENT_SECRET'];
+
+  if (clientId && clientSecret) {
+    medplumClient.setBasicAuth(clientId, clientSecret);
+    await medplumClient.startClientLogin(clientId, clientSecret);
+  }
+  return medplumClient;
+}

@@ -1,11 +1,13 @@
 import { MedplumClient, created } from '@medplum/core';
 import { main } from '.';
+import { createMedplumClient } from './util/client';
 
 const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
   `{"resourceType":"Patient", "id":"2222222"}`,
   `{"resourceType":"Patient", "id":"3333333"}`,
 ];
+jest.mock('./util/client');
 jest.mock('child_process');
 jest.mock('http');
 jest.mock('readline', () => ({
@@ -128,6 +130,8 @@ describe('CLI Bulk Commands', () => {
       jest.clearAllMocks();
       medplum = new MedplumClient({ fetch });
 
+      (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
       console.log = jest.fn();
       console.error = jest.fn();
       process.exit = jest.fn() as never;
@@ -180,10 +184,11 @@ describe('CLI Bulk Commands', () => {
           })),
         };
       });
+      medplum = new MedplumClient({ fetch });
+      (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
     });
 
     test('success', async () => {
-      medplum = new MedplumClient({ fetch });
       await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json']);
 
       testLineOutput.forEach((line) => {
@@ -208,7 +213,6 @@ describe('CLI Bulk Commands', () => {
     });
 
     test('success with option numResourcesPerRequest', async () => {
-      medplum = new MedplumClient({ fetch });
       await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
 
       testLineOutput.forEach((line) => {

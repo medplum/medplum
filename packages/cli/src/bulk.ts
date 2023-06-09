@@ -3,9 +3,11 @@ import { BundleEntry } from '@medplum/fhirtypes';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
-import { createMedplumClient, MedplumCommand, prettyPrint } from './utils';
+import { createMedplumClient } from './util/client';
+import { createMedplumCommand } from './util/command';
+import { prettyPrint } from './utils';
 
-export const bulk = new MedplumCommand('bulk');
+export const bulk = createMedplumCommand('bulk');
 
 bulk
   .command('export')
