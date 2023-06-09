@@ -1,4 +1,4 @@
-import { createMedplumClient } from './client';
+import { createMedplumClient, MedplumClientCommandOptions } from './client';
 
 jest.mock('node-fetch');
 
@@ -31,9 +31,9 @@ describe('createMedplumClient', () => {
   });
 
   test('with global options set', async () => {
-    const options = {
+    const options: MedplumClientCommandOptions = {
       baseUrl: 'http://example.com/',
-      fhirPathUrl: '/fhir/test/path/',
+      fhirUrlPath: '/fhir/test/path/',
       tokenUrl: 'http://example.com/oauth/token',
       accessToken: 'test-access-token',
     };
@@ -63,7 +63,7 @@ describe('createMedplumClient', () => {
     });
     process.env.MEDPLUM_CLIENT_ID = 'testclientid';
     process.env.MEDPLUM_CLIENT_SECRET = 'secret123';
-    const medplumClient = await createMedplumClient({}, fetch);
+    const medplumClient = await createMedplumClient({ fetch });
 
     expect(medplumClient.getAccessToken()).toBeDefined();
   });
