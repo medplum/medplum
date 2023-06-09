@@ -1,4 +1,4 @@
-import { Atom, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
+import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer';
 import { PropertyType, TypedValue, isResource } from '../types';
 import { functions } from './functions';
 import {
@@ -13,16 +13,15 @@ import {
   toJsBoolean,
   toTypedValue,
 } from './utils';
-
 export class FhirPathAtom implements Atom {
   constructor(public readonly original: string, public readonly child: Atom) {}
 
-  eval(context: TypedValue[]): TypedValue[] {
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     try {
-      if (context.length > 0) {
-        return context.map((e) => this.child.eval([e])).flat();
+      if (input.length > 0) {
+        return input.map((e) => this.child.eval(context, [e])).flat();
       } else {
-        return this.child.eval([]);
+        return this.child.eval(context, []);
       }
     } catch (error) {
       throw new Error(`FhirPathError on "${this.original}": ${error}`);
@@ -51,11 +50,11 @@ export class LiteralAtom implements Atom {
 
 export class SymbolAtom implements Atom {
   constructor(public readonly name: string) {}
-  eval(context: TypedValue[]): TypedValue[] {
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     if (this.name === '$this') {
-      return context;
+      return input;
     }
-    return context.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
+    return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
   }
 
   private evalValue(typedValue: TypedValue): TypedValue[] | TypedValue | undefined {
@@ -91,8 +90,8 @@ export class UnaryOperatorAtom extends PrefixOperatorAtom {
     super(operator, child);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    return this.impl(this.child.eval(context));
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    return this.impl(this.child.eval(context, input));
   }
 
   toString(): string {
@@ -105,8 +104,8 @@ export class AsAtom extends InfixOperatorAtom {
     super('as', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    return functions.ofType(this.left.eval(context), this.right);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    return functions.ofType(context, this.left.eval(context, input), this.right);
   }
 }
 
@@ -120,12 +119,12 @@ export class ArithemticOperatorAtom extends InfixOperatorAtom {
     super(operator, left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftEvalResult = this.left.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftEvalResult = this.left.eval(context, input);
     if (leftEvalResult.length !== 1) {
       return [];
     }
-    const rightEvalResult = this.right.eval(context);
+    const rightEvalResult = this.right.eval(context, input);
     if (rightEvalResult.length !== 1) {
       return [];
     }
@@ -149,9 +148,9 @@ export class ConcatAtom extends InfixOperatorAtom {
     super('&', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     const result = [...leftValue, ...rightValue];
     if (result.length > 0 && result.every((e) => typeof e.value === 'string')) {
       return [{ type: PropertyType.string, value: result.map((e) => e.value as string).join('') }];
@@ -165,9 +164,9 @@ export class ContainsAtom extends InfixOperatorAtom {
     super('contains', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return booleanToTypedValue(leftValue.some((e) => e.value === rightValue[0].value));
   }
 }
@@ -177,9 +176,9 @@ export class InAtom extends InfixOperatorAtom {
     super('in', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return booleanToTypedValue(rightValue.some((e) => e.value === leftValue[0].value));
   }
 }
@@ -189,8 +188,8 @@ export class DotAtom extends InfixOperatorAtom {
     super('.', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    return this.right.eval(this.left.eval(context));
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    return this.right.eval(context, this.left.eval(context, input));
   }
 
   toString(): string {
@@ -203,9 +202,9 @@ export class UnionAtom extends InfixOperatorAtom {
     super('|', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftResult = this.left.eval(context);
-    const rightResult = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftResult = this.left.eval(context, input);
+    const rightResult = this.right.eval(context, input);
     return removeDuplicates([...leftResult, ...rightResult]);
   }
 }
@@ -215,9 +214,9 @@ export class EqualsAtom extends InfixOperatorAtom {
     super('=', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return fhirPathArrayEquals(leftValue, rightValue);
   }
 }
@@ -227,9 +226,9 @@ export class NotEqualsAtom extends InfixOperatorAtom {
     super('!=', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return fhirPathNot(fhirPathArrayEquals(leftValue, rightValue));
   }
 }
@@ -239,9 +238,9 @@ export class EquivalentAtom extends InfixOperatorAtom {
     super('~', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return fhirPathArrayEquivalent(leftValue, rightValue);
   }
 }
@@ -251,9 +250,9 @@ export class NotEquivalentAtom extends InfixOperatorAtom {
     super('!~', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     return fhirPathNot(fhirPathArrayEquivalent(leftValue, rightValue));
   }
 }
@@ -263,8 +262,8 @@ export class IsAtom extends InfixOperatorAtom {
     super('is', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
     if (leftValue.length !== 1) {
       return [];
     }
@@ -284,9 +283,9 @@ export class AndAtom extends InfixOperatorAtom {
     super('and', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
-    const rightValue = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
+    const rightValue = this.right.eval(context, input);
     if (leftValue[0]?.value === true && rightValue[0]?.value === true) {
       return booleanToTypedValue(true);
     }
@@ -302,13 +301,13 @@ export class OrAtom extends InfixOperatorAtom {
     super('or', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftValue = this.left.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftValue = this.left.eval(context, input);
     if (toJsBoolean(leftValue)) {
       return leftValue;
     }
 
-    const rightValue = this.right.eval(context);
+    const rightValue = this.right.eval(context, input);
     if (toJsBoolean(rightValue)) {
       return rightValue;
     }
@@ -328,9 +327,9 @@ export class XorAtom extends InfixOperatorAtom {
     super('xor', left, right);
   }
 
-  eval(context: TypedValue[]): TypedValue[] {
-    const leftResult = this.left.eval(context);
-    const rightResult = this.right.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const leftResult = this.left.eval(context, input);
+    const rightResult = this.right.eval(context, input);
     if (leftResult.length === 0 && rightResult.length === 0) {
       return [];
     }
@@ -348,12 +347,12 @@ export class XorAtom extends InfixOperatorAtom {
 
 export class FunctionAtom implements Atom {
   constructor(public readonly name: string, public readonly args: Atom[]) {}
-  eval(context: TypedValue[]): TypedValue[] {
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const impl = functions[this.name];
     if (!impl) {
       throw new Error('Unrecognized function: ' + this.name);
     }
-    return impl(context, ...this.args);
+    return impl(context, input, ...this.args);
   }
 
   toString(): string {
@@ -363,8 +362,8 @@ export class FunctionAtom implements Atom {
 
 export class IndexerAtom implements Atom {
   constructor(public readonly left: Atom, public readonly expr: Atom) {}
-  eval(context: TypedValue[]): TypedValue[] {
-    const evalResult = this.expr.eval(context);
+  eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
+    const evalResult = this.expr.eval(context, input);
     if (evalResult.length !== 1) {
       return [];
     }
@@ -372,7 +371,7 @@ export class IndexerAtom implements Atom {
     if (typeof index !== 'number') {
       throw new Error(`Invalid indexer expression: should return integer}`);
     }
-    const leftResult = this.left.eval(context);
+    const leftResult = this.left.eval(context, input);
     if (!(index in leftResult)) {
       return [];
     }
