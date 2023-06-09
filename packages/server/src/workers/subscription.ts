@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { validDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { isValidDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -263,7 +263,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription has been disabled, then stop processing it.
     return;
   }
-  const deletedInteraction = validDeleteInteraction(subscription);
+  const deletedInteraction = isValidDeleteInteraction(subscription);
 
   if (!deletedInteraction) {
     let currentVersion;
@@ -333,12 +333,11 @@ async function sendRestHook(
   const headers = buildRestHookHeaders(subscription, resource);
   const body = stringify(resource);
   let error: Error | undefined = undefined;
-  const fetchMethod = validDeleteInteraction(subscription) ? 'DELETE' : 'POST';
 
   try {
     logger.info('Sending rest hook to: ' + url);
     logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: fetchMethod, headers, body });
+    const response = await fetch(url, { method: 'POST', headers, body });
     logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
