@@ -395,7 +395,7 @@ medplum bulk export [options]
 
 ##### optional flags for `bulk export`
 
-- `-e, --exportLevel <exportLevel>`
+- `-e, --export-level <exportLevel>`
 
   - Export level. Defaults to system level export.
 
