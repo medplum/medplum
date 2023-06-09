@@ -205,11 +205,11 @@ export async function createMedplumClient(options: any): Promise<MedplumClient> 
 export class MedplumCommand extends Command {
   createCommand(name: string | undefined): Command {
     const cmd = new Command(name);
-    cmd.option('--client-id <clientId>', 'client id');
-    cmd.option('--client-secret <clientSecret>', 'client secret');
-    cmd.option('--base-url <baseUrl>', 'client id');
-    cmd.option('--token-url <tokenUrl>', 'client secret');
-    cmd.option('--fhir-url-path <fhirUrlPath>', 'client secret');
+    cmd.option('--client-id <clientId>', 'FHIR server client id');
+    cmd.option('--client-secret <clientSecret>', 'FHIR server client secret');
+    cmd.option('--base-url <baseUrl>', 'FHIR server base url');
+    cmd.option('--token-url <tokenUrl>', 'FHIR server token url');
+    cmd.option('--fhir-url-path <fhirUrlPath>', 'FHIR server url path');
 
     return cmd;
   }
