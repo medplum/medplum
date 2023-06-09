@@ -6,6 +6,7 @@ import internal from 'stream';
 import tar from 'tar';
 import { onUnauthenticated } from '.';
 import { FileSystemStorage } from './storage';
+import { Command } from 'commander';
 
 interface MedplumConfig {
   readonly baseUrl?: string;
@@ -172,12 +173,11 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
   });
 }
 
-export async function getMedplumClient(options: any): Promise<MedplumClient> {
-  const { base_url, fhir_url_path, token_url, client_id, client_secret } = options;
-  const baseUrl = base_url || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const fhirUrlPath = fhir_url_path || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
-  const accessToken = token_url || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
-  const tokenUrl = token_url || process.env['MEDPLUM_TOKEN_URL'] || '';
+export async function createMedplumClient(options: any): Promise<MedplumClient> {
+  const baseUrl = options.baseUrl || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
+  const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
+  const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
+  const tokenUrl = options.tokenUrl || process.env['MEDPLUM_TOKEN_URL'] || '';
 
   const medplumClient = new MedplumClient({
     fetch,
@@ -192,11 +192,25 @@ export async function getMedplumClient(options: any): Promise<MedplumClient> {
     medplumClient.setAccessToken(accessToken);
   }
 
-  const clientId = client_id || process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = client_secret || process.env['MEDPLUM_CLIENT_SECRET'];
+  const clientId = options.clientId || process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = options.clientSecret || process.env['MEDPLUM_CLIENT_SECRET'];
+
   if (clientId && clientSecret) {
     medplumClient.setBasicAuth(clientId, clientSecret);
     await medplumClient.startClientLogin(clientId, clientSecret);
   }
   return medplumClient;
+}
+
+export class MedplumCommand extends Command {
+  createCommand(name: string | undefined): Command {
+    const cmd = new Command(name);
+    cmd.option('--client-id <clientId>', 'client id');
+    cmd.option('--client-secret <clientSecret>', 'client secret');
+    cmd.option('--base-url <baseUrl>', 'client id');
+    cmd.option('--token-url <tokenUrl>', 'client secret');
+    cmd.option('--fhir-url-path <fhirUrlPath>', 'client secret');
+
+    return cmd;
+  }
 }

@@ -1,12 +1,11 @@
 import { BundleEntry } from '@medplum/fhirtypes';
-import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { medplum } from '.';
-import { getMedplumClient, prettyPrint } from './utils';
+import { createMedplumClient, MedplumCommand, prettyPrint } from './utils';
 
-export const bulk = new Command('bulk');
+export const bulk = new MedplumCommand('bulk');
 
 bulk
   .command('export')
@@ -21,7 +20,7 @@ bulk
   )
   .action(async (options) => {
     const { exportLevel, types, since } = options;
-    const medplum = await getMedplumClient(options);
+    const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
