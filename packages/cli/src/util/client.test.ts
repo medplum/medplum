@@ -8,6 +8,7 @@ describe('createMedplumClient', () => {
 
   beforeEach(() => {
     process.env = { ...env };
+    console.log = jest.fn();
   });
 
   afterEach(() => {
@@ -67,5 +68,21 @@ describe('createMedplumClient', () => {
     const medplumClient = await createMedplumClient({ fetch });
 
     expect(medplumClient.getAccessToken()).toBeDefined();
+  });
+
+  test('Unauthenticated', async () => {
+    const fetch = jest.fn(async () => {
+      return {
+        status: 401,
+      };
+    });
+
+    const medplumClient = await createMedplumClient({ fetch });
+    try {
+      await medplumClient.post('Patient', {});
+      throw new Error('testing');
+    } catch {
+      expect(console.log).toBeCalledWith('Unauthenticated: run `npx medplum login` to sign in');
+    }
   });
 });

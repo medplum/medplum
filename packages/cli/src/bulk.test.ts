@@ -1,4 +1,4 @@
-import { MedplumClient, created } from '@medplum/core';
+import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
 import { createMedplumClient } from './util/client';
 
