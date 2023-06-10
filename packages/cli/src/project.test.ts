@@ -4,7 +4,9 @@ import { Project } from '@medplum/fhirtypes';
 import fs from 'fs';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
+import { createMedplumClient } from './util/client';
 
+jest.mock('./util/client');
 jest.mock('child_process');
 jest.mock('http');
 
@@ -27,6 +29,8 @@ describe('CLI Project', () => {
     jest.resetModules();
     jest.clearAllMocks();
     medplum = new MockClient({ storage: new FileSystemStorage() });
+    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
     console.log = jest.fn();
     console.error = jest.fn();
     process.exit = jest.fn() as never;

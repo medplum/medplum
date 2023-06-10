@@ -1,13 +1,14 @@
+import { InviteBody, LoginState, MedplumClient } from '@medplum/core';
 import { Command, Option } from 'commander';
-import { medplum } from '.';
-import { MedplumClient, LoginState, InviteBody } from '@medplum/core';
+import { createMedplumClient } from './util/client';
 
 export const project = new Command('project');
 
 project
   .command('list')
   .description('List of current projects')
-  .action(async () => {
+  .action(async (options) => {
+    const medplum = await createMedplumClient(options);
     projectList(medplum);
   });
 
@@ -24,7 +25,8 @@ function projectList(medplum: MedplumClient): void {
 project
   .command('current')
   .description('Project you are currently on')
-  .action(() => {
+  .action(async (options) => {
+    const medplum = await createMedplumClient(options);
     const login = medplum.getActiveLogin();
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
@@ -36,7 +38,8 @@ project
   .command('switch')
   .description('Switching to another project from the current one')
   .argument('<projectId>')
-  .action(async (projectId) => {
+  .action(async (projectId, options) => {
+    const medplum = await createMedplumClient(options);
     await switchProject(medplum, projectId);
   });
 
@@ -52,6 +55,7 @@ project
       .default('Practitioner')
   )
   .action(async (firstName, lastName, email, options) => {
+    const medplum = await createMedplumClient(options);
     const login = medplum.getActiveLogin();
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
@@ -69,7 +73,7 @@ project
       sendEmail: !!options.sendEmail,
       admin: !!options.admin,
     };
-    await inviteUser(projectId, inviteBody);
+    await inviteUser(projectId, inviteBody, medplum);
   });
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
@@ -83,7 +87,7 @@ async function switchProject(medplum: MedplumClient, projectId: string): Promise
   }
 }
 
-async function inviteUser(projectId: string, inviteBody: InviteBody): Promise<void> {
+async function inviteUser(projectId: string, inviteBody: InviteBody, medplum: MedplumClient): Promise<void> {
   try {
     await medplum.invite(projectId, inviteBody);
     if (inviteBody.sendEmail) {
