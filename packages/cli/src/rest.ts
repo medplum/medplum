@@ -1,15 +1,16 @@
 import { convertToTransactionBundle } from '@medplum/core';
-import { Command } from 'commander';
-import { medplum } from '.';
+import { createMedplumCommand } from './util/command';
 import { prettyPrint } from './utils';
+import { createMedplumClient } from './util/client';
 
-export const deleteObject = new Command('delete');
-export const get = new Command('get');
-export const patch = new Command('patch');
-export const post = new Command('post');
-export const put = new Command('put');
+export const deleteObject = createMedplumCommand('delete');
+export const get = createMedplumCommand('get');
+export const patch = createMedplumCommand('patch');
+export const post = createMedplumCommand('post');
+export const put = createMedplumCommand('put');
 
-deleteObject.argument('<url>', 'Resource/$id').action(async (url) => {
+deleteObject.argument('<url>', 'Resource/$id').action(async (url, options) => {
+  const medplum = await createMedplumClient(options);
   prettyPrint(await medplum.delete(cleanUrl(url)));
 });
 
@@ -17,6 +18,7 @@ get
   .argument('<url>', 'Resource/$id')
   .option('--as-transaction', 'Print out the bundle as a transaction type')
   .action(async (url, options) => {
+    const medplum = await createMedplumClient(options);
     const response = await medplum.get(cleanUrl(url));
     if (options.asTransaction) {
       prettyPrint(convertToTransactionBundle(response));
@@ -25,15 +27,21 @@ get
     }
   });
 
-patch.arguments('<url> <body>').action(async (url, body) => {
+patch.arguments('<url> <body>').action(async (url, body, options) => {
+  const medplum = await createMedplumClient(options);
+
   prettyPrint(await medplum.patch(cleanUrl(url), parseBody(body)));
 });
 
-post.arguments('<url> <body>').action(async (url, body) => {
+post.arguments('<url> <body>').action(async (url, body, options) => {
+  const medplum = await createMedplumClient(options);
+
   prettyPrint(await medplum.post(cleanUrl(url), parseBody(body)));
 });
 
-put.arguments('<url> <body>').action(async (url, body) => {
+put.arguments('<url> <body>').action(async (url, body, options) => {
+  const medplum = await createMedplumClient(options);
+
   prettyPrint(await medplum.put(cleanUrl(url), parseBody(body)));
 });
 
