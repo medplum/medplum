@@ -112,6 +112,20 @@ export interface MedplumClientOptions {
   clientId?: string;
 
   /**
+   * The client secret.
+   *
+   * Client secret can be used for FHIR Oauth Client Credential flows
+   */
+  clientSecret?: string;
+
+  /**
+   * The OAuth Access Token.
+   *
+   * Access Token used to connect to make request to FHIR servers
+   */
+  accessToken?: string;
+
+  /**
    * Number of resources to store in the cache.
    *
    * Default value is 1000.
