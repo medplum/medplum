@@ -1,4 +1,5 @@
-import { createMedplumClient, MedplumClientCommandOptions } from './client';
+import { MedplumClientOptions } from '@medplum/core';
+import { createMedplumClient } from './client';
 
 jest.mock('node-fetch');
 
@@ -31,7 +32,7 @@ describe('createMedplumClient', () => {
   });
 
   test('with global options set', async () => {
-    const options: MedplumClientCommandOptions = {
+    const options: MedplumClientOptions = {
       baseUrl: 'http://example.com/',
       fhirUrlPath: '/fhir/test/path/',
       tokenUrl: 'http://example.com/oauth/token',

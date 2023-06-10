@@ -1,22 +1,12 @@
-import { FetchLike, MedplumClient } from '@medplum/core';
+import { MedplumClient, MedplumClientOptions } from '@medplum/core';
 import { FileSystemStorage } from '../storage';
 
-export interface MedplumClientCommandOptions {
-  fetch?: FetchLike;
-  baseUrl?: string;
-  fhirUrlPath?: string;
-  accessToken?: string;
-  tokenUrl?: string;
-  clientId?: string;
-  clientSecret?: string;
-}
-
-export async function createMedplumClient(options: MedplumClientCommandOptions): Promise<MedplumClient> {
-  const baseUrl = options.baseUrl || process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const fhirUrlPath = options.fhirUrlPath || process.env['MEDPLUM_FHIR_URL_PATH'] || '';
-  const accessToken = options.accessToken || process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
-  const tokenUrl = options.tokenUrl || process.env['MEDPLUM_TOKEN_URL'] || '';
-  const fetchApi = options.fetch || fetch;
+export async function createMedplumClient(options: MedplumClientOptions): Promise<MedplumClient> {
+  const baseUrl = options.baseUrl ?? process.env['MEDPLUM_BASE_URL'] ?? 'https://api.medplum.com/';
+  const fhirUrlPath = options.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';
+  const accessToken = options.accessToken ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] ?? '';
+  const tokenUrl = options.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
+  const fetchApi = options.fetch ?? fetch;
 
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
