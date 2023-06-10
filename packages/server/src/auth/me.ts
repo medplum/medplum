@@ -17,24 +17,15 @@ interface UserSession {
 interface UserSecurity {
   mfaEnrolled: boolean;
   sessions: UserSession[];
+  userId: string | undefined;
 }
 
-export async function meHandler(req: Request, res: Response): Promise<void> {
+export async function meHandler(_: Request, res: Response): Promise<void> {
   const membership = res.locals.membership as ProjectMembership;
 
-  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
-
+  const profile = await getUserProfile(membership);
   const config = await getUserConfiguration(membership);
-
-  let security: UserSecurity | undefined = undefined;
-  if (membership.user?.reference?.startsWith('User/')) {
-    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
-    const sessions = await getSessions(user);
-    security = {
-      mfaEnrolled: !!user.mfaEnrolled,
-      sessions,
-    };
-  }
+  const security = await getUserSecurity(membership);
 
   const result = {
     profile,
@@ -44,6 +35,27 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
 
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
+
+async function getUserProfile(membership: ProjectMembership): Promise<ProfileResource> {
+  return await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
+}
+
+async function getUserSecurity(membership: ProjectMembership): Promise<UserSecurity | undefined> {
+  let security: UserSecurity | undefined = undefined;
+
+  if (membership.user?.reference?.startsWith('User/')) {
+    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+    const sessions = await getSessions(user);
+
+    security = {
+      mfaEnrolled: !!user.mfaEnrolled,
+      sessions,
+      userId: user.id,
+    };
+  }
+
+  return security;
+};
 
 async function getUserConfiguration(membership: ProjectMembership): Promise<UserConfiguration> {
   if (membership.userConfiguration) {
