@@ -463,6 +463,14 @@ export enum OAuthTokenType {
   Saml2Token = 'urn:ietf:params:oauth:token-type:saml2',
 }
 
+interface SessionDetails {
+  project: Project;
+  membership: ProjectMembership;
+  profile: ProfileResource;
+  config: UserConfiguration;
+  accessPolicy: AccessPolicy;
+}
+
 /**
  * The MedplumClient class provides a client for the Medplum FHIR server.
  *
@@ -535,8 +543,7 @@ export class MedplumClient extends EventTarget {
   private refreshToken?: string;
   private refreshPromise?: Promise<any>;
   private profilePromise?: Promise<any>;
-  private profile?: ProfileResource;
-  private config?: UserConfiguration;
+  private sessionDetails?: SessionDetails;
   private basicAuth?: string;
 
   constructor(options?: MedplumClientOptions) {
@@ -617,8 +624,7 @@ export class MedplumClient extends EventTarget {
     this.requestCache?.clear();
     this.accessToken = undefined;
     this.refreshToken = undefined;
-    this.profile = undefined;
-    this.config = undefined;
+    this.sessionDetails = undefined;
     this.dispatchEvent({ type: 'change' });
   }
 
@@ -2096,8 +2102,7 @@ export class MedplumClient extends EventTarget {
   setAccessToken(accessToken: string): void {
     this.accessToken = accessToken;
     this.refreshToken = undefined;
-    this.profile = undefined;
-    this.config = undefined;
+    this.sessionDetails = undefined;
   }
 
   /**
@@ -2121,12 +2126,11 @@ export class MedplumClient extends EventTarget {
         return;
       }
       this.get('auth/me')
-        .then((result) => {
+        .then((result: SessionDetails) => {
           this.profilePromise = undefined;
-          this.profile = result.profile;
-          this.config = result.config;
+          this.sessionDetails = result;
           this.dispatchEvent({ type: 'change' });
-          resolve(this.profile);
+          resolve(result.profile);
         })
         .catch(reject);
     });
@@ -2144,13 +2148,49 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns true if the current user is authenticated as a super admin.
+   * @returns True if the current user is authenticated as a super admin.
+   * @category Authentication
+   */
+  isSuperAdmin(): boolean {
+    return !!this.sessionDetails?.project?.superAdmin;
+  }
+
+  /**
+   * Returns true if the current user is authenticated as a project admin.
+   * @returns True if the current user is authenticated as a project admin.
+   * @category Authentication
+   */
+  isProjectAdmin(): boolean {
+    return !!this.sessionDetails?.membership?.admin;
+  }
+
+  /**
+   * Returns the current project if available.
+   * @returns The current project if available.
+   * @category User Profile
+   */
+  getProject(): Project | undefined {
+    return this.sessionDetails?.project;
+  }
+
+  /**
+   * Returns the current project membership if available.
+   * @returns The current project membership if available.
+   * @category User Profile
+   */
+  getProjectMembership(): ProjectMembership | undefined {
+    return this.sessionDetails?.membership;
+  }
+
+  /**
    * Returns the current user profile resource if available.
    * This method does not wait for loading promises.
    * @returns The current user profile resource if available.
    * @category User Profile
    */
   getProfile(): ProfileResource | undefined {
-    return this.profile;
+    return this.sessionDetails?.profile;
   }
 
   /**
@@ -2172,7 +2212,16 @@ export class MedplumClient extends EventTarget {
    * @category User Profile
    */
   getUserConfiguration(): UserConfiguration | undefined {
-    return this.config;
+    return this.sessionDetails?.config;
+  }
+
+  /**
+   * Returns the current user access policy if available.
+   * @returns The current user access policy if available.
+   * @category User Profile
+   */
+  getAccessPolicy(): AccessPolicy | undefined {
+    return this.sessionDetails?.accessPolicy;
   }
 
   /**

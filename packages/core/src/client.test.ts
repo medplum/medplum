@@ -151,8 +151,11 @@ describe('Client', () => {
       }
       if (url.includes('auth/me')) {
         return {
+          project: { resourceType: 'Project', id: '123' },
+          membership: { resourceType: 'ProjectMembership', id: '123' },
           profile: { resouceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
       }
       return {};
@@ -161,15 +164,65 @@ describe('Client', () => {
     const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
     expect(client.getBaseUrl()).toEqual('https://x/');
     expect(client.isLoading()).toBe(true);
+    expect(client.getProject()).toBeUndefined();
+    expect(client.getProjectMembership()).toBeUndefined();
     expect(client.getProfile()).toBeUndefined();
     expect(client.getProfileAsync()).toBeDefined();
     expect(client.getUserConfiguration()).toBeUndefined();
+    expect(client.getAccessPolicy()).toBeUndefined();
 
     const profile = (await client.getProfileAsync()) as ProfileResource;
     expect(client.isLoading()).toBe(false);
     expect(profile.id).toBe('123');
+    expect(client.getProject()).toBeDefined();
+    expect(client.getProjectMembership()).toBeDefined();
     expect(client.getProfile()).toBeDefined();
     expect(client.getUserConfiguration()).toBeDefined();
+    expect(client.getAccessPolicy()).toBeDefined();
+    expect(client.isSuperAdmin()).toBe(false);
+    expect(client.isProjectAdmin()).toBe(false);
+  });
+
+  test('Admin check', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: '123',
+        refreshToken: '456',
+        project: {
+          reference: 'Project/123',
+        },
+        profile: {
+          reference: 'Practitioner/123',
+        },
+      })
+    );
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('/oauth2/token')) {
+        return {
+          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('auth/me')) {
+        return {
+          project: { resourceType: 'Project', id: '123', superAdmin: true },
+          membership: { resourceType: 'ProjectMembership', id: '123', admin: true },
+          profile: { resouceType: 'Practitioner', id: '123' },
+          config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
+    const profile = (await client.getProfileAsync()) as ProfileResource;
+    expect(profile.id).toBe('123');
+    expect(client.isSuperAdmin()).toBe(true);
+    expect(client.isProjectAdmin()).toBe(true);
   });
 
   test('Clear', () => {

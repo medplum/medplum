@@ -1,7 +1,8 @@
 import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
-import { Login, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { UAParser } from 'ua-parser-js';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { systemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
@@ -20,11 +21,12 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
+  const login = res.locals.login as Login;
+  const project = res.locals.project as Project;
   const membership = res.locals.membership as ProjectMembership;
-
   const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
-
-  const config = await getUserConfiguration(membership);
+  const config = await getUserConfiguration(project, membership);
+  const accessPolicy = await getAccessPolicyForLogin(login, membership);
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
@@ -37,39 +39,70 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   }
 
   const result = {
+    project: {
+      resourceType: 'Project',
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      strictMode: project.strictMode,
+      superAdmin: project.superAdmin,
+    },
+    membership: {
+      resourceType: 'ProjectMembership',
+      id: membership.id,
+      user: membership.user,
+      profile: membership.profile,
+      admin: membership.admin,
+    },
     profile,
     config,
+    accessPolicy,
     security,
   };
 
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(membership: ProjectMembership): Promise<UserConfiguration> {
+async function getUserConfiguration(project: Project, membership: ProjectMembership): Promise<UserConfiguration> {
   if (membership.userConfiguration) {
     return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
   }
 
   const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];
 
-  return {
+  const result = {
     resourceType: 'UserConfiguration',
     menu: [
       {
         title: 'Favorites',
         link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
       },
-      {
-        title: 'Admin',
-        link: [
-          { name: 'Project', target: '/admin/project' },
-          { name: 'AccessPolicy', target: '/AccessPolicy' },
-          { name: 'Subscriptions', target: '/Subscription' },
-          { name: 'Batch', target: '/batch' },
-        ],
-      },
     ],
-  };
+  } satisfies UserConfiguration;
+
+  if (membership.admin) {
+    result.menu.push({
+      title: 'Admin',
+      link: [
+        { name: 'Project', target: '/admin/project' },
+        { name: 'AccessPolicy', target: '/AccessPolicy' },
+        { name: 'Subscriptions', target: '/Subscription' },
+        { name: 'Batch', target: '/batch' },
+      ],
+    });
+  }
+
+  if (project.superAdmin) {
+    result.menu.push({
+      title: 'Super Admin',
+      link: [
+        { name: 'Projects', target: '/Project' },
+        { name: 'Super Config', target: '/admin/super' },
+      ],
+    });
+  }
+
+  return result;
 }
 
 async function getSessions(user: User): Promise<UserSession[]> {

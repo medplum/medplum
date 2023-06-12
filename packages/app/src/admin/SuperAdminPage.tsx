@@ -1,11 +1,23 @@
 import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
-import { convertLocalToIso, DateTimeInput, Document, Form, FormSection, useMedplum } from '@medplum/react';
+import { forbidden, normalizeErrorString } from '@medplum/core';
+import {
+  convertLocalToIso,
+  DateTimeInput,
+  Document,
+  Form,
+  FormSection,
+  OperationOutcomeAlert,
+  useMedplum,
+} from '@medplum/react';
 import React from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
+
+  if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
+    return <OperationOutcomeAlert outcome={forbidden} />;
+  }
 
   function rebuildStructureDefinitions(): void {
     medplum
