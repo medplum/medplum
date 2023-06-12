@@ -134,4 +134,10 @@ describe('SuperAdminPage', () => {
 
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
+
+  test('Access denied', async () => {
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
+    setup();
+    expect(screen.getByText('Forbidden')).toBeInTheDocument();
+  });
 });
