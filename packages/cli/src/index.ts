@@ -27,7 +27,7 @@ export async function main(argv: string[]): Promise<void> {
     // Project
     index.addCommand(project);
 
-    // Export
+    // Bulk Commands
     index.addCommand(bulk);
 
     // Bot Commands

@@ -1,17 +1,24 @@
 import { MedplumClient } from '@medplum/core';
+import { Command } from 'commander';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { createBot, deployBot, readBotConfigs, saveBot } from './utils';
 
-export const bot = createMedplumCommand('bot');
+const botSaveCommand = createMedplumCommand('save');
+const botDeployCommand = createMedplumCommand('deploy');
+const botCreateCommand = createMedplumCommand('create');
+
+export const bot = new Command('bot')
+  .addCommand(botSaveCommand)
+  .addCommand(botDeployCommand)
+  .addCommand(botCreateCommand);
 
 // Commands to deprecate
 export const saveBotDeprecate = createMedplumCommand('save-bot');
 export const deployBotDeprecate = createMedplumCommand('deploy-bot');
 export const createBotDeprecate = createMedplumCommand('create-bot');
 
-bot
-  .command('save')
+botSaveCommand
   .description('Saving the bot')
   .argument('<botName>')
   .action(async (botName, options) => {
@@ -20,8 +27,7 @@ bot
     await botWrapper(medplum, botName);
   });
 
-bot
-  .command('deploy')
+botDeployCommand
   .description('Deploy the app to AWS')
   .argument('<botName>')
   .action(async (botName, options) => {
@@ -30,8 +36,7 @@ bot
     await botWrapper(medplum, botName, true);
   });
 
-bot
-  .command('create')
+botCreateCommand
   .arguments('<botName> <projectId> <sourceFile> <distFile>')
   .description('Creating a bot')
   .action(async (botName, projectId, sourceFile, distFile, options) => {
