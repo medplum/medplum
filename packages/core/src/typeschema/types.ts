@@ -263,7 +263,6 @@ class StructureDefinitionParser {
   }
 
   private isInnerType(current: ElementDefinition): boolean {
-    // const current = this.elements[this.index - 1];
     const next = this.peek();
     return !!(
       pathsCompatible(current?.path, next?.path) &&
