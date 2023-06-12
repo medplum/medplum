@@ -1,8 +1,9 @@
 import { InviteBody, LoginState, MedplumClient } from '@medplum/core';
-import { Command, Option } from 'commander';
+import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
+import { createMedplumCommand } from './util/command';
 
-export const project = new Command('project');
+export const project = createMedplumCommand('project');
 
 project
   .command('list')
