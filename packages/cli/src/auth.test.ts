@@ -22,7 +22,7 @@ jest.mock('fs', () => ({
   },
 }));
 
-describe('CLI rest', () => {
+describe('CLI auth', () => {
   const env = process.env;
   let medplum: MedplumClient;
 
