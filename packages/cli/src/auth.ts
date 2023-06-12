@@ -1,21 +1,23 @@
-import { Command } from 'commander';
-import { medplum } from '.';
 import { MedplumClient, getDisplayString, normalizeErrorString } from '@medplum/core';
 import { platform } from 'os';
 import { exec } from 'child_process';
 import { createServer } from 'http';
+import { createMedplumCommand } from './util/command';
+import { createMedplumClient } from './util/client';
 
 const clientId = 'medplum-cli';
 const redirectUri = 'http://localhost:9615';
 
-export const login = new Command('login');
-export const whoami = new Command('whoami');
+export const login = createMedplumCommand('login');
+export const whoami = createMedplumCommand('whoami');
 
-login.action(async () => {
+login.action(async (options) => {
+  const medplum = await createMedplumClient(options);
   await startLogin(medplum);
 });
 
-whoami.action(() => {
+whoami.action(async (options) => {
+  const medplum = await createMedplumClient(options);
   printMe(medplum);
 });
 
