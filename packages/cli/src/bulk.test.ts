@@ -143,7 +143,7 @@ describe('CLI Bulk Commands', () => {
           text: jest.fn(),
         };
       });
-      await main(medplum, ['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
+      await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toBeCalled();
       expect(console.log).toBeCalledWith(
         expect.stringMatching(
@@ -189,7 +189,7 @@ describe('CLI Bulk Commands', () => {
     });
 
     test('success', async () => {
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json']);
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
@@ -213,7 +213,7 @@ describe('CLI Bulk Commands', () => {
     });
 
     test('success with option numResourcesPerRequest', async () => {
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);

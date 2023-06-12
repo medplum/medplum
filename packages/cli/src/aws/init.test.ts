@@ -5,7 +5,6 @@ import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
 import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
-import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
 import { readFileSync, unlinkSync, writeFileSync } from 'fs';
@@ -13,8 +12,6 @@ import readline from 'readline';
 import { main } from '../index';
 
 jest.mock('readline');
-
-const medplum = new MockClient();
 
 describe('init command', () => {
   beforeAll(() => {
@@ -87,7 +84,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
@@ -150,7 +147,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
@@ -220,7 +217,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     expect(console.log).toHaveBeenCalledWith('Warning: Unable to get AWS account ID', 'Invalid region');
 
@@ -282,7 +279,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
@@ -340,7 +337,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
@@ -401,7 +398,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
@@ -462,7 +459,7 @@ describe('init command', () => {
       )
     );
 
-    await main(medplum, ['node', 'index.js', 'aws', 'init']);
+    await main(['node', 'index.js', 'aws', 'init']);
 
     const config = JSON.parse(readFileSync(filename, 'utf8'));
     expect(config).toMatchObject({
