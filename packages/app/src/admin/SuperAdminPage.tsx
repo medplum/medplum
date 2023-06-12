@@ -7,6 +7,10 @@ import React from 'react';
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
 
+  if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
+    return <div>Not authorized</div>;
+  }
+
   function rebuildStructureDefinitions(): void {
     medplum
       .post('admin/super/structuredefinitions', {})

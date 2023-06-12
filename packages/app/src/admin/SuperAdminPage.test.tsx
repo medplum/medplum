@@ -23,6 +23,10 @@ function setup(): void {
 }
 
 describe('SuperAdminPage', () => {
+  beforeEach(() => {
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+  });
+
   test('Rebuild StructureDefinitions', async () => {
     setup();
 
