@@ -1,12 +1,13 @@
+import { MedplumClient } from '@medplum/core';
 import { BundleEntry } from '@medplum/fhirtypes';
-import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
-import { medplum } from '.';
+import { createMedplumClient } from './util/client';
+import { createMedplumCommand } from './util/command';
 import { prettyPrint } from './utils';
 
-export const bulk = new Command('bulk');
+export const bulk = createMedplumCommand('bulk');
 
 bulk
   .command('export')
@@ -19,7 +20,9 @@ bulk
     '-s, --since <since>',
     'optional Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).'
   )
-  .action(async ({ exportLevel, types, since }) => {
+  .action(async (options) => {
+    const { exportLevel, types, since } = options;
+    const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
@@ -43,11 +46,12 @@ bulk
   .action(async (fileName, options) => {
     const path = resolve(process.cwd(), fileName);
     const { numResourcesPerRequest } = options;
+    const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest));
+    await importFile(path, parseInt(numResourcesPerRequest), medplum);
   });
 
-async function importFile(path: string, numResourcesPerRequest: number): Promise<void> {
+async function importFile(path: string, numResourcesPerRequest: number, medplum: MedplumClient): Promise<void> {
   let entries = [] as BundleEntry[];
   const fileStream = createReadStream(path);
   const rl = createInterface({
@@ -64,16 +68,16 @@ async function importFile(path: string, numResourcesPerRequest: number): Promise
       },
     });
     if (entries.length % numResourcesPerRequest === 0) {
-      await sendBatchEntries(entries);
+      await sendBatchEntries(entries, medplum);
       entries = [];
     }
   }
   if (entries.length > 0) {
-    await sendBatchEntries(entries);
+    await sendBatchEntries(entries, medplum);
   }
 }
 
-async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
+async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient): Promise<void> {
   const result = await medplum.executeBatch({
     resourceType: 'Bundle',
     type: 'transaction',

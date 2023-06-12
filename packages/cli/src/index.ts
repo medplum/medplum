@@ -8,6 +8,7 @@ import { bulk } from './bulk';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
 import { FileSystemStorage } from './storage';
+import { onUnauthenticated } from './util/client';
 
 export let medplum: MedplumClient;
 
@@ -82,8 +83,4 @@ export async function run(): Promise<void> {
 
 if (require.main === module) {
   run().catch((err) => console.error('Unhandled error:', err));
-}
-
-function onUnauthenticated(): void {
-  console.log('Unauthenticated: run `npx medplum login` to sign in');
 }
