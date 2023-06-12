@@ -8,6 +8,7 @@ const external = [
   '@aws-sdk/client-sts',
   'aws-cdk-lib',
   'aws-cdk-lib/aws-ecr',
+  'aws-cdk-lib/aws-rds',
   'cdk',
   'cdk-nag',
   'cdk-serverless-clamscan',
