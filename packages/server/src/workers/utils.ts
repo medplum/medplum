@@ -8,7 +8,7 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, getExtension, Operator } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, MedplumClient, Operator } from '@medplum/core';
 import { AuditEventOutcome } from '../util/auditevent';
 import { logger } from '../logger';
 
@@ -114,6 +114,25 @@ export function isDeleteInteraction(subscription: Subscription): boolean {
     'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
   );
   return supportedInteractionExtension?.valueCode === 'delete';
+}
+
+export async function isFhirCriteriaMet(
+  subscription: Subscription,
+  currentResource: Resource,
+  medplum: MedplumClient
+): Promise<boolean> {
+  const criteria = getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-criteria');
+  if (!criteria?.valueString) {
+    return true;
+  }
+  const history = await medplum.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const previousResource = history.entry?.[1]?.resource;
+  const evalInput = { current: { value: currentResource }, previous: { value: previousResource } };
+  const evalString = evalFhirPathTyped(criteria.valueString, [currentResource], evalInput);
+  if (evalString[0].value.toString() === 'true') {
+    return true;
+  }
+  return false;
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
