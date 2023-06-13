@@ -19,7 +19,8 @@ export class FhirPathAtom implements Atom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     try {
       if (input.length > 0) {
-        return input.map((e) => this.child.eval(context, [e])).flat();
+        const ret = input.map((e) => this.child.eval(context, [e])).flat();
+        return ret;
       } else {
         return this.child.eval(context, []);
       }
