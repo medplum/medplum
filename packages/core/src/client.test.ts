@@ -126,6 +126,14 @@ describe('Client', () => {
     expect(client.getBaseUrl()).toBe('https://x/');
   });
 
+  test('getAuthorizeUrl', () => {
+    const baseUrl = 'https://x';
+    const authorizeUrl = 'https://example.com/custom/authorize';
+    const client = new MedplumClient({ baseUrl, authorizeUrl });
+
+    expect(client.getAuthorizeUrl()).toBe(authorizeUrl);
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
