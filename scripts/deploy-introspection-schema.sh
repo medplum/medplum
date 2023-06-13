@@ -15,7 +15,7 @@ curl 'http://localhost:8103/fhir/R4/$graphql' \
 gzip schema-$version.json
 
 aws s3api put-bucket-cors \
-  --bucket "s3://graphiq.medplum.com/schema/" \
+  --bucket graphiq.medplum.com \
   --cors-configuration $cors_file
 
 aws s3 cp ../schema-$version.json.gz "s3://graphiq.medplum.com/schema/" \
