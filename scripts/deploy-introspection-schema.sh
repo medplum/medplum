@@ -13,10 +13,10 @@ curl 'http://localhost:8103/fhir/R4/$graphql' \
 
 gzip schema-$version.json
 
-aws s3 cp ../schema-$version.json.gz "s3://graphiq.medplum.com/schema/" \
+aws s3 cp ./schema-$version.json "s3://graphiq.medplum.com/schema/schema-$version.json" \
   --content-type "application/json" \
   --content-encoding "gzip" \
   --cache-control "public, max-age=31536000"
 
-secret_value="/schema/schema-$version.json.gz"
+secret_value="/schema/schema-$version.json"
 gh secret set MEDPLUM_INTROSPECTION_URL -b"$secret_value"
