@@ -329,9 +329,14 @@ async function sendRestHook(
     logger.debug(`Ignore rest hook missing URL`);
     return;
   }
+  const deletedInteraction = isValidDeleteInteraction(subscription);
+
   const startTime = new Date().toISOString();
-  const headers = buildRestHookHeaders(subscription, resource);
-  const body = stringify(resource);
+  const options = deletedInteraction
+    ? { 'X-Medplum-Deleted-Resource': `${resource.resourceType}/${resource.id}` }
+    : undefined;
+  const headers = buildRestHookHeaders(subscription, resource, options);
+  const body = deletedInteraction ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
   try {
@@ -372,11 +377,17 @@ async function sendRestHook(
  * Builds a collection of HTTP request headers for the rest-hook subscription.
  * @param subscription The subscription resource.
  * @param resource The trigger resource.
+ * @param options Additional options.
  * @returns The HTTP request headers.
  */
-function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
+function buildRestHookHeaders(
+  subscription: Subscription,
+  resource: Resource,
+  options?: Record<string, any>
+): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/fhir+json',
+    ...options,
   };
 
   if (subscription.channel?.header) {

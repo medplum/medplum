@@ -302,7 +302,11 @@ describe('Subscription Worker', () => {
       url,
       expect.objectContaining({
         method: 'POST',
-        body: stringify({ resourceType: 'Patient', id: patient.id }),
+        body: '{}',
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
+        },
       })
     );
   });
