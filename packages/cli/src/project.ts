@@ -1,17 +1,23 @@
 import { InviteBody, LoginState, MedplumClient } from '@medplum/core';
-import { Option } from 'commander';
+import { Command, Option } from 'commander';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 
-export const project = createMedplumCommand('project');
+const projectListCommand = createMedplumCommand('list');
+const projectCurrentCommand = createMedplumCommand('current');
+const projectSwitchCommand = createMedplumCommand('switch');
+const projectInviteCommand = createMedplumCommand('invite');
 
-project
-  .command('list')
-  .description('List of current projects')
-  .action(async (options) => {
-    const medplum = await createMedplumClient(options);
-    projectList(medplum);
-  });
+export const project = new Command('project')
+  .addCommand(projectListCommand)
+  .addCommand(projectCurrentCommand)
+  .addCommand(projectSwitchCommand)
+  .addCommand(projectInviteCommand);
+
+projectListCommand.description('List of current projects').action(async (options) => {
+  const medplum = await createMedplumClient(options);
+  projectList(medplum);
+});
 
 function projectList(medplum: MedplumClient): void {
   const logins = medplum.getLogins();
@@ -23,20 +29,16 @@ function projectList(medplum: MedplumClient): void {
   console.log(projects);
 }
 
-project
-  .command('current')
-  .description('Project you are currently on')
-  .action(async (options) => {
-    const medplum = await createMedplumClient(options);
-    const login = medplum.getActiveLogin();
-    if (!login) {
-      throw new Error('Unauthenticated: run `npx medplum login` to login');
-    }
-    console.log(`${login.project.display} (${login.project.reference})`);
-  });
+projectCurrentCommand.description('Project you are currently on').action(async (options) => {
+  const medplum = await createMedplumClient(options);
+  const login = medplum.getActiveLogin();
+  if (!login) {
+    throw new Error('Unauthenticated: run `npx medplum login` to login');
+  }
+  console.log(`${login.project.display} (${login.project.reference})`);
+});
 
-project
-  .command('switch')
+projectSwitchCommand
   .description('Switching to another project from the current one')
   .argument('<projectId>')
   .action(async (projectId, options) => {
@@ -44,8 +46,7 @@ project
     await switchProject(medplum, projectId);
   });
 
-project
-  .command('invite')
+projectInviteCommand
   .description('Invite a member to your current project (run npx medplum project current to confirm)')
   .arguments('<firstName> <lastName> <email>')
   .option('--send-email', 'If you want to send the email when inviting the user')

@@ -1,5 +1,6 @@
 import { MedplumClient } from '@medplum/core';
 import { BundleEntry } from '@medplum/fhirtypes';
+import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
@@ -7,10 +8,12 @@ import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { prettyPrint } from './utils';
 
-export const bulk = createMedplumCommand('bulk');
+const bulkExportCommand = createMedplumCommand('export');
+const bulkImportCommand = createMedplumCommand('import');
 
-bulk
-  .command('export')
+export const bulk = new Command('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
+
+bulkExportCommand
   .option(
     '-e, --export-level <exportLevel>',
     'Optional export level. Defaults to system level export. "Group/:id" - Group of Patients, "Patient" - All Patients.'
@@ -35,8 +38,7 @@ bulk
     });
   });
 
-bulk
-  .command('import')
+bulkImportCommand
   .argument('<filename>', 'File Name')
   .option(
     '--num-resources-per-request <numResourcesPerRequest>',
