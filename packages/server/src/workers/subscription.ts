@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { isValidDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { isDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -263,32 +263,32 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription has been disabled, then stop processing it.
     return;
   }
-  const deletedInteraction = isValidDeleteInteraction(subscription);
+  const isDelete = isDeleteInteraction(subscription);
+  if (isDelete) {
+    sendDeleteRestHook(job, subscription, resource);
+    return;
+  }
 
-  if (!deletedInteraction) {
-    let currentVersion;
-    try {
-      currentVersion = await systemRepo.readResource(resourceType, id);
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      if (isGone(outcome)) {
-        // If the resource was deleted, then stop processing it.
-        return;
-      }
-      // Otherwise re-throw
-      throw err;
-    }
-
-    if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
-      // If this is a retry and the resource is not the current version, then stop processing it.
+  let currentVersion;
+  try {
+    currentVersion = await systemRepo.readResource(resourceType, id);
+  } catch (err) {
+    const outcome = normalizeOperationOutcome(err);
+    if (isGone(outcome)) {
+      // If the resource was deleted, then stop processing it.
       return;
     }
+    // Otherwise re-throw
+    throw err;
+  }
+
+  if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
+    // If this is a retry and the resource is not the current version, then stop processing it.
+    return;
   }
 
   try {
-    const resourceVersion = deletedInteraction
-      ? { resourceType, id }
-      : await systemRepo.readVersion(resourceType, id, versionId);
+    const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
     const channelType = subscription?.channel?.type;
     if (channelType === 'rest-hook') {
       if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
@@ -329,14 +329,10 @@ async function sendRestHook(
     logger.debug(`Ignore rest hook missing URL`);
     return;
   }
-  const deletedInteraction = isValidDeleteInteraction(subscription);
 
   const startTime = new Date().toISOString();
-  const options = deletedInteraction
-    ? { 'X-Medplum-Deleted-Resource': `${resource.resourceType}/${resource.id}` }
-    : undefined;
-  const headers = buildRestHookHeaders(subscription, resource, options);
-  const body = deletedInteraction ? '{}' : stringify(resource);
+  const headers = buildRestHookHeaders(subscription, resource);
+  const body = stringify(resource);
   let error: Error | undefined = undefined;
 
   try {
@@ -377,17 +373,17 @@ async function sendRestHook(
  * Builds a collection of HTTP request headers for the rest-hook subscription.
  * @param subscription The subscription resource.
  * @param resource The trigger resource.
- * @param options Additional options.
+ * @param additionalHeaders Additional Headers.
  * @returns The HTTP request headers.
  */
 function buildRestHookHeaders(
   subscription: Subscription,
   resource: Resource,
-  options?: Record<string, any>
+  additionalHeaders?: HeadersInit
 ): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/fhir+json',
-    ...options,
+    ...additionalHeaders,
   };
 
   if (subscription.channel?.header) {
@@ -453,4 +449,46 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   }
 
   await createAuditEvent(resource, startTime, outcome, logResult, subscription, bot);
+}
+
+async function sendDeleteRestHook(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource
+): Promise<void> {
+  const url = subscription?.channel?.endpoint as string;
+  if (!url) {
+    // This can happen if a user updates the Subscription after the job is created.
+    logger.debug(`Ignore rest hook missing URL`);
+    return;
+  }
+
+  const startTime = new Date().toISOString();
+  const headers = buildRestHookHeaders(subscription, resource, {
+    'X-Medplum-Deleted-Resource': `${resource.resourceType}/${resource.id}`,
+  });
+
+  try {
+    logger.info('Sending rest hook to: ' + url);
+    logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    const response = await fetch(url, { method: 'POST', headers, body: '{}' });
+    logger.info('Received rest hook status: ' + response.status);
+    const success = isJobSuccessful(subscription, response.status);
+    await createAuditEvent(
+      resource,
+      startTime,
+      success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received status ${response.status}`,
+      subscription
+    );
+  } catch (ex) {
+    logger.info('Subscription exception: ' + ex);
+    await createAuditEvent(
+      resource,
+      startTime,
+      AuditEventOutcome.MinorFailure,
+      `Attempt ${job.attemptsMade} received error ${ex}`,
+      subscription
+    );
+  }
 }

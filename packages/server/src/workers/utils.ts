@@ -108,15 +108,12 @@ export async function createAuditEvent(
   });
 }
 
-export function isValidDeleteInteraction(subscription: Subscription): boolean {
+export function isDeleteInteraction(subscription: Subscription): boolean {
   const supportedInteractionExtension = getExtension(
     subscription,
     'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
   );
-  if (supportedInteractionExtension?.valueCode === 'delete') {
-    return true;
-  }
-  return false;
+  return supportedInteractionExtension?.valueCode === 'delete';
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
