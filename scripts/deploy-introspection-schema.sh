@@ -17,3 +17,6 @@ aws s3 cp ../schema-$version.json.gz "s3://graphiq.medplum.com/schema/" \
   --content-type "application/json" \
   --content-encoding "gzip" \
   --cache-control "public, max-age=31536000"
+
+secret_value="/schema/schema-$version.json.gz"
+gh secret set MEDPLUM_INTROSPECTION_URL -b"$secret_value"
