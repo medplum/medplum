@@ -15,4 +15,5 @@ gzip schema-$version.json
 
 aws s3 cp ../schema-$version.json.gz "s3://graphiq.medplum.com/schema/" \
   --content-type "application/json" \
-  --content-encoding "gzip"
+  --content-encoding "gzip" \
+  --cache-control "public, max-age=31536000"
