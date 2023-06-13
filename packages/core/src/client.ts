@@ -40,7 +40,7 @@ import { isOk, normalizeOperationOutcome, notFound, OperationOutcomeError } from
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, InviteResult, ProfileResource } from './utils';
+import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -2742,9 +2742,9 @@ export class MedplumClient extends EventTarget {
    * Invite a user to a project.
    * @param projectId The project ID.
    * @param body The InviteBody.
-   * @returns Promise that returns an invite result or an operation outcome.
+   * @returns Promise that returns a project membership or an operation outcome.
    */
-  async invite(projectId: string, body: InviteBody): Promise<InviteResult | OperationOutcome> {
+  async invite(projectId: string, body: InviteBody): Promise<ProjectMembership | OperationOutcome> {
     return this.post('admin/projects/' + projectId + '/invite', body);
   }
 

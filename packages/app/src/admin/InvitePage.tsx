@@ -1,61 +1,67 @@
 import { Button, Checkbox, Group, List, NativeSelect, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  isOperationOutcome,
-  normalizeErrorString,
-  normalizeOperationOutcome,
-  InviteResult,
-  InviteBody,
-} from '@medplum/core';
-import { AccessPolicy, OperationOutcome, Reference } from '@medplum/fhirtypes';
-import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
-import { getProjectId } from '../utils';
+import { InviteBody, isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
+import { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Form, FormSection, MedplumLink, ResourceInput, getErrorsForInput, useMedplum } from '@medplum/react';
+import React, { useCallback, useRef, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
-  const projectId = getProjectId(medplum);
+  const [project, setProject] = useState<Project | undefined>(medplum.getProject());
   const [accessPolicy, setAccessPolicy] = useState<Reference<AccessPolicy>>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [emailSent, setEmailSent] = useState(false);
-  const [result, setResult] = useState<InviteResult | undefined>(undefined);
+  const [result, setResult] = useState<ProjectMembership | undefined>(undefined);
+
+  const handleSubmit = useCallback(
+    (formData: Record<string, string>) => {
+      const body = {
+        resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        sendEmail: formData.sendEmail === 'on',
+        accessPolicy,
+        admin: formData.isAdmin === 'on',
+      };
+      medplum
+        .invite(project?.id as string, body as InviteBody)
+        .then((response: ProjectMembership | OperationOutcome) => {
+          medplum.invalidateSearches('Patient');
+          medplum.invalidateSearches('Practitioner');
+          medplum.invalidateSearches('ProjectMembership');
+          if (isOperationOutcome(response)) {
+            setOutcome(response);
+          } else {
+            setResult(response);
+          }
+          setEmailSent(body.sendEmail ?? false);
+          showNotification({ color: 'green', message: 'Invite success' });
+        })
+        .catch((err) => {
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          setOutcome(normalizeOperationOutcome(err));
+        });
+    },
+    [medplum, project, accessPolicy]
+  );
 
   return (
-    <Form
-      onSubmit={(formData: Record<string, string>) => {
-        const body = {
-          resourceType: formData.resourceType as 'Practitioner' | 'Patient' | 'RelatedPerson',
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          sendEmail: formData.sendEmail === 'on',
-          accessPolicy,
-          admin: formData.isAdmin === 'on',
-        };
-        medplum
-          .invite(projectId, body as InviteBody)
-          .then((response: InviteResult | OperationOutcome) => {
-            medplum.invalidateSearches('Patient');
-            medplum.invalidateSearches('Practitioner');
-            medplum.invalidateSearches('ProjectMembership');
-            if (isOperationOutcome(response)) {
-              setOutcome(response);
-            } else {
-              setResult(response);
-            }
-            setEmailSent(body.sendEmail ?? false);
-            showNotification({ color: 'green', message: 'Invite success' });
-          })
-          .catch((err) => {
-            showNotification({ color: 'red', message: normalizeErrorString(err) });
-            setOutcome(normalizeOperationOutcome(err));
-          });
-      }}
-    >
+    <Form onSubmit={handleSubmit}>
       {!result && !outcome && (
         <Stack>
           <Title>Invite new member</Title>
+          {medplum.isSuperAdmin() && (
+            <FormSection title="Project" htmlFor="project" outcome={outcome}>
+              <ResourceInput<Project>
+                resourceType="Project"
+                name="project"
+                defaultValue={project}
+                onChange={setProject}
+              />
+            </FormSection>
+          )}
           <NativeSelect
             name="resourceType"
             label="Role"
@@ -103,7 +109,7 @@ export function InvitePage(): JSX.Element {
           {emailSent && <Text>Email sent</Text>}
           <List>
             <List.Item>
-              <MedplumLink to={result.membership}>Go to new membership</MedplumLink>
+              <MedplumLink to={result as ProjectMembership}>Go to new membership</MedplumLink>
             </List.Item>
             <List.Item>
               <MedplumLink to={result.profile}>Go to new profile</MedplumLink>
