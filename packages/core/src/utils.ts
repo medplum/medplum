@@ -8,7 +8,6 @@ import {
   ObservationDefinitionQualifiedInterval,
   Patient,
   Practitioner,
-  ProjectMembership,
   QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
@@ -23,14 +22,6 @@ import { formatHumanName } from './format';
  * @internal
  */
 export type ProfileResource = Patient | Practitioner | RelatedPerson;
-
-/**
- * @internal
- */
-export interface InviteResult {
-  profile: ProfileResource;
-  membership: ProjectMembership;
-}
 
 interface Code {
   code?: CodeableConcept;
