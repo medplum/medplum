@@ -461,7 +461,7 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
-  test('Testing context type comparison', () => {
+  test('Context type comparison', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       telecom: [
@@ -473,7 +473,7 @@ describe('FHIRPath parser', () => {
     const patient2: Patient = {
       resourceType: 'Patient',
       telecom: [
-        { system: 'phone', value: '555-555-7832' },
+        { system: 'phone', value: '555-555-5555' },
         { system: 'email', value: 'alice@example.com' },
       ],
     };
