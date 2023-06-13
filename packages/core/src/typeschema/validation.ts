@@ -4,7 +4,7 @@ import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { capitalize, isEmpty, isLowerCase } from '../utils';
+import { isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -258,26 +258,16 @@ function isChoiceOfType(
   key: string,
   propertyDefinitions: Record<string, ElementValidator>
 ): boolean {
-  for (const propertyName of Object.keys(propertyDefinitions)) {
-    if (!propertyName.endsWith('[x]')) {
+  const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
+  let testProperty = '';
+  for (let i = 0; i < parts.length; i++) {
+    // const testProperty = parts.slice(0, i).join('');
+    testProperty += parts[i];
+    if (!propertyDefinitions[testProperty + '[x]']) {
       continue;
     }
-    const basePropertyName = propertyName.replace('[x]', '');
-    if (!key.startsWith(basePropertyName)) {
-      continue;
-    }
-    let typedPropertyValue = getTypedPropertyValue(typedValue, propertyName);
-    if (!typedPropertyValue) {
-      continue;
-    }
-    if (Array.isArray(typedPropertyValue)) {
-      // At present, there are no choice types that are arrays in the FHIR spec
-      // Leaving this here to make TypeScript happy, and in case that changes
-      typedPropertyValue = typedPropertyValue[0];
-    }
-    if (typedPropertyValue && key === basePropertyName + capitalize(typedPropertyValue.type)) {
-      return true;
-    }
+    const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
+    return !!typedPropertyValue;
   }
   return false;
 }
