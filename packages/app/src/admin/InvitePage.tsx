@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { InviteBody, isOperationOutcome, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceInput, getErrorsForInput, useMedplum } from '@medplum/react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {
