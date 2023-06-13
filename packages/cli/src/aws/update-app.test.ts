@@ -6,7 +6,6 @@ import {
 } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient, CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
-import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
 import fs from 'fs';
@@ -42,8 +41,6 @@ jest.mock('tar', () => ({
 }));
 
 const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
-
-const medplum = new MockClient();
 
 describe('update-app command', () => {
   beforeAll(() => {
@@ -193,7 +190,7 @@ describe('update-app command', () => {
     // Mock the glob search for files to upload
     (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
 
-    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
+    await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
     expect(fetch).toHaveBeenNthCalledWith(1, 'https://registry.npmjs.org/@medplum/app/latest');
     expect(fetch).toHaveBeenNthCalledWith(2, 'https://example.com/tarball.tar.gz');
@@ -252,7 +249,7 @@ describe('update-app command', () => {
     // Mock the glob search for files to upload
     (fastGlob.sync as jest.Mock).mockReturnValueOnce(['index.html']);
 
-    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'dev']);
+    await main(['node', 'index.js', 'aws', 'update-app', 'dev']);
 
     expect(console.log).toBeCalledWith('Done');
   });
@@ -261,7 +258,7 @@ describe('update-app command', () => {
     (fs.existsSync as jest.Mock).mockReturnValueOnce(false);
 
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
+    await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
     expect(console.log).toBeCalledWith('Config not found');
   });
 
@@ -271,7 +268,7 @@ describe('update-app command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'not-found']);
+    await main(['node', 'index.js', 'aws', 'update-app', 'not-found']);
     expect(console.log).toBeCalledWith('Stack not found');
   });
 
@@ -281,7 +278,7 @@ describe('update-app command', () => {
     (fs.readFileSync as jest.Mock).mockReturnValueOnce('{}');
 
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-app', 'incomplete']);
+    await main(['node', 'index.js', 'aws', 'update-app', 'incomplete']);
     expect(console.log).toBeCalledWith('App bucket not found');
   });
 });

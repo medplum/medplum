@@ -42,13 +42,6 @@ describe('CLI auth', () => {
     process.env = env;
   });
 
-  test('Client ID and secret login', async () => {
-    process.env.MEDPLUM_CLIENT_ID = '123';
-    process.env.MEDPLUM_CLIENT_SECRET = 'abc';
-    await main(medplum, ['node', 'index.js', 'whoami']);
-    expect(medplum.getAccessToken()).toBeDefined();
-  });
-
   test('Login success', async () => {
     (cp.exec as unknown as jest.Mock).mockReturnValue(true);
     (http.createServer as unknown as jest.Mock).mockReturnValue({
@@ -61,7 +54,7 @@ describe('CLI auth', () => {
     expect(medplum.getActiveLogin()).toBeUndefined();
 
     // Start the login
-    await main(medplum, ['node', 'index.js', 'login']);
+    await main(['node', 'index.js', 'login']);
 
     // Get the handler
     const handler = (http.createServer as unknown as jest.Mock).mock.calls[0][0];
@@ -103,7 +96,7 @@ describe('CLI auth', () => {
       })
     );
 
-    await main(medplum, ['node', 'index.js', 'whoami']);
+    await main(['node', 'index.js', 'whoami']);
 
     expect((console.log as unknown as jest.Mock).mock.calls).toEqual([
       ['Server:  https://example.com/'],

@@ -1,5 +1,3 @@
-import { MedplumClient } from '@medplum/core';
-import { MockClient } from '@medplum/mock';
 import { main, run } from '.';
 
 jest.mock('fs', () => ({
@@ -15,8 +13,6 @@ jest.mock('fs', () => ({
 }));
 const processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
 
-let medplum: MedplumClient;
-
 describe('CLI', () => {
   const env = process.env;
 
@@ -24,7 +20,6 @@ describe('CLI', () => {
     jest.resetModules();
     jest.clearAllMocks();
     process.env = { ...env };
-    medplum = new MockClient();
     process.exit = jest.fn<never, any, any>();
   });
 
@@ -47,7 +42,7 @@ describe('CLI', () => {
   });
 
   test('Missing command', async () => {
-    await main(medplum, ['node', 'index.js']);
+    await main(['node', 'index.js']);
     expect(process.exit).toHaveBeenCalledWith(1);
     // default command help displays
     expect(processError).toBeCalledWith(expect.stringContaining('Usage: medplum [options] [command]'));
@@ -55,7 +50,7 @@ describe('CLI', () => {
   });
 
   test('Unknown command', async () => {
-    await main(medplum, ['node', 'index.js', 'xyz']);
+    await main(['node', 'index.js', 'xyz']);
     expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
 });

@@ -30,7 +30,7 @@ describe('CLI rest', () => {
   });
   test('Delete command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, ['node', 'index.js', 'delete', `Patient/${patient.id}`]);
+    await main(['node', 'index.js', 'delete', `Patient/${patient.id}`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('OK'));
     try {
       await medplum.readReference(createReference(patient));
@@ -42,54 +42,48 @@ describe('CLI rest', () => {
 
   test('Get command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, ['node', 'index.js', 'get', `Patient/${patient.id}`]);
+    await main(['node', 'index.js', 'get', `Patient/${patient.id}`]);
 
     expect(console.log).toBeCalledWith(expect.stringMatching(patient.id as string));
   });
 
   test('Get not found', async () => {
-    await main(medplum, ['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
+    await main(['node', 'index.js', 'get', `Patient/${randomUUID()}`]);
     expect(console.error).toBeCalledWith(expect.stringMatching('Error: Not found'));
   });
 
   test('Get admin urls', async () => {
-    await main(medplum, ['node', 'index.js', 'get', 'admin/projects/123']);
+    await main(['node', 'index.js', 'get', 'admin/projects/123']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Project 123'));
   });
 
   test('Get command with as-transaction flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, ['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
+    await main(['node', 'index.js', 'get', '--as-transaction', `Patient?_count=2`]);
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
-    await main(medplum, ['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
+    await main(['node', 'index.js', 'get', '--bad-flag', `Patient?_count=2`]);
     expect(processError).toBeCalledWith(expect.stringContaining(`error: unknown option '--bad-flag'`));
   });
 
   test('Post command', async () => {
-    await main(medplum, ['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
+    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
   });
 
   test('Put command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(medplum, [
-      'node',
-      'index.js',
-      'put',
-      `Patient/${patient.id}`,
-      JSON.stringify({ ...patient, gender: 'male' }),
-    ]);
+    await main(['node', 'index.js', 'put', `Patient/${patient.id}`, JSON.stringify({ ...patient, gender: 'male' })]);
     expect(console.log).toBeCalledWith(expect.stringMatching('male'));
   });
 
   test('Patch command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
-    await main(new MockClient(), [
+    await main([
       'node',
       'index.js',
       'patch',
