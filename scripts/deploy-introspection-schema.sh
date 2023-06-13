@@ -4,6 +4,7 @@
 version=$1
 client_id=$2
 client_secret=$3
+cors_file=$4
 
 curl 'http://localhost:8103/fhir/R4/$graphql' \
   -u $client_id:$client_secret \
@@ -12,6 +13,10 @@ curl 'http://localhost:8103/fhir/R4/$graphql' \
   > schema-$version.json
 
 gzip schema-$version.json
+
+aws s3api put-bucket-cors \
+  --bucket "s3://graphiq.medplum.com/schema/" \
+  --cors-configuration $cors_file
 
 aws s3 cp ../schema-$version.json.gz "s3://graphiq.medplum.com/schema/" \
   --content-type "application/json" \
