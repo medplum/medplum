@@ -24,7 +24,7 @@ whoami.action(async (options) => {
 async function startLogin(medplum: MedplumClient): Promise<void> {
   await startWebServer(medplum);
 
-  const loginUrl = new URL('/oauth2/authorize', medplum.getBaseUrl());
+  const loginUrl = new URL(medplum.getAuthorizeUrl());
   loginUrl.searchParams.set('client_id', clientId);
   loginUrl.searchParams.set('redirect_uri', redirectUri);
   loginUrl.searchParams.set('scope', 'openid');

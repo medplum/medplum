@@ -603,6 +603,17 @@ export class MedplumClient extends EventTarget {
   }
 
   /**
+   * Returns the current authorize URL.
+   * By default, this is set to `https://api.medplum.com/oauth2/authorize`.
+   * This can be overridden by setting the `authorizeUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current authorize URL.
+   */
+  getAuthorizeUrl(): string {
+    return this.authorizeUrl;
+  }
+
+  /**
    * Clears all auth state including local storage and session storage.
    * @category Authentication
    */
