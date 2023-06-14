@@ -298,9 +298,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const channelType = subscription?.channel?.type;
     if (channelType === 'rest-hook') {
       if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
-        await execBot(subscription, resourceVersion as Resource);
+        await execBot(subscription, resourceVersion);
       } else {
-        await sendRestHook(job, subscription, resourceVersion as Resource);
+        await sendRestHook(job, subscription, resourceVersion);
       }
     }
   } catch (err) {
@@ -460,7 +460,7 @@ async function sendDeleteRestHook(
   }
 
   const startTime = new Date().toISOString();
-  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
+  const headers = buildRestHookHeaders(subscription, resource);
 
   headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
 
