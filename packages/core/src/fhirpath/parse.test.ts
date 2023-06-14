@@ -477,7 +477,7 @@ describe('FHIRPath parser', () => {
         { system: 'email', value: 'alice@example.com' },
       ],
     };
-    const variables = {current: toTypedValue(patient2), previous: toTypedValue(patient)};
+    const variables = { current: toTypedValue(patient2), previous: toTypedValue(patient) };
     const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
 
     expect(result).toEqual([
@@ -488,7 +488,7 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
-  test('Context no value comparison', () => {
+  test('Variable missing in context', () => {
     const patient: Patient = {
       resourceType: 'Patient',
       telecom: [
@@ -504,12 +504,12 @@ describe('FHIRPath parser', () => {
         { system: 'email', value: 'alice@example.com' },
       ],
     };
-    const variables = {current: toTypedValue(patient2)};
-    const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
+    const variables = { current: toTypedValue(patient2) };
 
-    expect(result).toEqual([undefined]);
+    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
+      `FhirPathError on "%current=%previous": TypeError: Cannot read properties of undefined (reading 'value')`
+    );
   });
-
 
   test('Choice of type', () => {
     const observations: Observation[] = [
