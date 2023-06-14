@@ -2781,12 +2781,12 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/json')) {
-        throw new OperationOutcomeError(badRequest('Unexpected error while fetching tokens'));
+      try {
+        const error = await response.json();
+        throw new OperationOutcomeError(badRequest(error.error_description));
+      } catch (err) {
+        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), err);
       }
-      const error = await response.json();
-      throw new OperationOutcomeError(badRequest(error.error_description));
     }
     const tokens = await response.json();
     await this.verifyTokens(tokens);

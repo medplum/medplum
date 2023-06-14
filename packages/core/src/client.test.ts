@@ -54,7 +54,8 @@ const schemaResponse = {
 
 function mockFetch(
   status: number,
-  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any)
+  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
+  contentType = 'application/fhir+json'
 ): FetchLike & jest.Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
   return jest.fn((url: string, options?: any) => {
@@ -63,6 +64,7 @@ function mockFetch(
     return Promise.resolve({
       ok: responseStatus < 400,
       status: responseStatus,
+      headers: { get: () => contentType },
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
     });
