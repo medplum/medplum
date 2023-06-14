@@ -34,10 +34,10 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouter } from './fhirrouter';
-import { FhirRepository } from './repo';
-import { getGraphQLInputType } from './graphql-input';
-import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './graphql-output';
+import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
+import { FhirRepository } from '../repo';
+import { getGraphQLInputType } from './input-types';
+import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
   buildSearchArgs,
   getDepth,

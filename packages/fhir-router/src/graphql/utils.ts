@@ -9,7 +9,7 @@ import {
   GraphQLScalarType,
   GraphQLString,
 } from 'graphql';
-import { FhirRepository } from './repo';
+import { FhirRepository } from '../repo';
 import DataLoader from 'dataloader';
 import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
