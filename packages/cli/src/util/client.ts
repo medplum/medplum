@@ -6,6 +6,7 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
   const fhirUrlPath = options.fhirUrlPath ?? process.env['MEDPLUM_FHIR_URL_PATH'] ?? '';
   const accessToken = options.accessToken ?? process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] ?? '';
   const tokenUrl = options.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
+  const authorizeUrl = options.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
   const fetchApi = options.fetch ?? fetch;
 
   const medplumClient = new MedplumClient({
@@ -13,6 +14,7 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     baseUrl,
     tokenUrl,
     fhirUrlPath,
+    authorizeUrl,
     storage: new FileSystemStorage(),
     onUnauthenticated: onUnauthenticated,
   });
