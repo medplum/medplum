@@ -36,7 +36,7 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { isOk, normalizeOperationOutcome, notFound, OperationOutcomeError } from './outcomes';
+import { badRequest, isOk, normalizeOperationOutcome, notFound, OperationOutcomeError } from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -2781,7 +2781,12 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetch(this.tokenUrl, options);
     if (!response.ok) {
       this.clearActiveLogin();
-      throw new Error('Failed to fetch tokens');
+      try {
+        const error = await response.json();
+        throw new OperationOutcomeError(badRequest(error.error_description));
+      } catch (err) {
+        throw new OperationOutcomeError(badRequest('Failed to fetch tokens'), err);
+      }
     }
     const tokens = await response.json();
     await this.verifyTokens(tokens);
