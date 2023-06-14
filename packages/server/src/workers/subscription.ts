@@ -105,7 +105,7 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  * 2) Subscription jobs can fail, and must be retried independently.
  * 3) Subscriptions should be evaluated at the time of the resource change.
  *
- * So, when a resource changes (create or update), we evaluate all subscriptions
+ * So, when a resource changes (create, update, or delete), we evaluate all subscriptions
  * at that moment in time.  For each matching subscription, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
@@ -460,7 +460,7 @@ async function sendDeleteRestHook(
   }
 
   const startTime = new Date().toISOString();
-  const headers = buildRestHookHeaders(subscription, resource) as any;
+  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
 
   headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
 
@@ -471,7 +471,7 @@ async function sendDeleteRestHook(
     logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
-      {} as Resource,
+      resource,
       startTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`,
@@ -480,7 +480,7 @@ async function sendDeleteRestHook(
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
-      {} as Resource,
+      resource,
       startTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`,
