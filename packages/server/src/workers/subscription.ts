@@ -460,7 +460,7 @@ async function sendDeleteRestHook(
   }
 
   const startTime = new Date().toISOString();
-  const headers = buildRestHookHeaders(subscription, resource);
+  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
 
   headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
 
