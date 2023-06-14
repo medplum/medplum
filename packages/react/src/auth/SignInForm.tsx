@@ -1,4 +1,5 @@
-import { BaseLoginRequest, LoginAuthenticationResponse } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
@@ -59,7 +60,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               onSuccess();
             }
           })
-          .catch(console.log);
+          .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
       }
     },
     [medplum, onCode, onSuccess]
@@ -104,7 +105,7 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
       medplum
         .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
-        .catch(console.error);
+        .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
   }, [medplum, loginCode, login, handleAuthResponse]);
 
