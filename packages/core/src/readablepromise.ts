@@ -51,9 +51,9 @@ export class ReadablePromise<T> implements Promise<T> {
   read(): T {
     switch (this.status) {
       case 'pending':
-        throw this.suspender;
+        throw this.suspender; //eslint-disable-line @typescript-eslint/no-throw-literal
       case 'error':
-        throw this.error;
+        throw this.error as Error;
       default:
         return this.response as T;
     }

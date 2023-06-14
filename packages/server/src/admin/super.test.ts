@@ -91,18 +91,18 @@ describe('Super Admin routes', () => {
     });
 
     adminAccessToken = await generateAccessToken({
-      login_id: login1?.id as string,
-      sub: user1?.id as string,
-      username: user1?.id as string,
+      login_id: login1.id as string,
+      sub: user1.id as string,
+      username: user1.id as string,
       client_id: client.id as string,
       profile: getReferenceString(practitioner1 as Practitioner),
       scope: 'openid',
     });
 
     nonAdminAccessToken = await generateAccessToken({
-      login_id: login2?.id as string,
-      sub: user2?.id as string,
-      username: user2?.id as string,
+      login_id: login2.id as string,
+      sub: user2.id as string,
+      username: user2.id as string,
       client_id: client.id as string,
       profile: getReferenceString(practitioner2 as Practitioner),
       scope: 'openid',

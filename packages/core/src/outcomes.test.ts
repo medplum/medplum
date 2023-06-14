@@ -61,7 +61,7 @@ describe('Outcomes', () => {
 
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
-    expect(badRequest('bad', 'bad')?.issue?.[0]?.expression?.[0]).toBe('bad');
+    expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
   });
 
   test('Status', () => {

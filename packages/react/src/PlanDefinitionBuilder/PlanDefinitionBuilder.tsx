@@ -464,7 +464,7 @@ let nextId = 1;
 function generateId(existing?: string): string {
   if (existing) {
     if (existing.startsWith('id-')) {
-      const existingNum = parseInt(existing.substring(3));
+      const existingNum = parseInt(existing.substring(3), 10);
       if (!isNaN(existingNum)) {
         nextId = Math.max(nextId, existingNum + 1);
       }

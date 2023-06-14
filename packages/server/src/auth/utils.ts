@@ -80,8 +80,8 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
     // User only has one profile, so proceed
     sendLoginCookie(res, login);
     res.json({
-      login: login?.id,
-      code: login?.code,
+      login: login.id,
+      code: login.code,
     });
     return;
   }
@@ -97,7 +97,7 @@ export async function sendLoginResult(res: Response, login: Login): Promise<void
   }));
   res.json(
     await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, {
-      login: login?.id,
+      login: login.id,
       memberships: redactedMemberships,
     })
   );

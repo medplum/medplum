@@ -240,7 +240,7 @@ function getTypeScriptProperties(property: ElementDefinition): { name: string; t
   } else {
     result.push({
       name,
-      typeName: getTypeScriptTypeForProperty(property, property?.type?.[0] as ElementDefinitionType),
+      typeName: getTypeScriptTypeForProperty(property, property.type?.[0] as ElementDefinitionType),
     });
   }
 

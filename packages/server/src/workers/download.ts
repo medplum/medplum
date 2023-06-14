@@ -182,7 +182,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
       resourceType: 'Binary',
       contentType,
       meta: {
-        project: resource?.meta?.project,
+        project: resource.meta?.project,
       },
     });
     if (response.body === null) {
@@ -190,7 +190,7 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     }
     await getBinaryStorage().writeBinary(binary, contentDisposition, contentType, response.body);
 
-    const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary?.id}`)) as Resource;
+    const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
     logger.info('Downloaded content successfully');

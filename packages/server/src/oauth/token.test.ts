@@ -953,7 +953,7 @@ describe('OAuth2 Token', () => {
 
     const res3 = await request(app)
       .post('/oauth2/token')
-      .set('Authorization', 'Basic ' + Buffer.from('wrong-id' + ':' + client.secret).toString('base64'))
+      .set('Authorization', 'Basic ' + Buffer.from('wrong-id:' + client.secret).toString('base64'))
       .type('form')
       .send({
         grant_type: 'refresh_token',
@@ -1537,7 +1537,8 @@ class MockJoseMultipleMatchingError extends Error {
     this.name = 'CustomError';
     this.code = code;
     this[Symbol.asyncIterator] = async function* () {
-      yield 'key1', yield 'key2';
+      yield 'key1';
+      yield 'key2';
     };
   }
 }

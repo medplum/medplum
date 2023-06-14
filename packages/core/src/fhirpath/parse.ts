@@ -29,6 +29,7 @@ import { parseDateString } from './date';
 import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
 
+/* eslint-disable @typescript-eslint/no-duplicate-enum-values */
 /**
  * Operator precedence
  * See: https://hl7.org/fhirpath/#operator-precedence
@@ -66,6 +67,7 @@ export const enum OperatorPrecedence {
   Arrow = 100,
   Semicolon = 200,
 }
+/* eslint-enable @typescript-eslint/no-duplicate-enum-values */
 
 const PARENTHESES_PARSELET: PrefixParselet = {
   parse(parser: Parser) {
@@ -110,7 +112,7 @@ function parseQuantity(str: string): Quantity {
   const parts = str.split(' ');
   const value = parseFloat(parts[0]);
   let unit = parts[1];
-  if (unit && unit.startsWith("'") && unit.endsWith("'")) {
+  if (unit?.startsWith("'") && unit.endsWith("'")) {
     unit = unit.substring(1, unit.length - 1);
   } else {
     unit = '{' + unit + '}';

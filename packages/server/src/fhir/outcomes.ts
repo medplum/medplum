@@ -25,7 +25,7 @@ function getValidationErrorExpression(error: ValidationError): string[] | undefi
   return undefined;
 }
 
-export function sendOutcome(res: Response, outcome: OperationOutcome): Response<any, Record<string, any>> {
+export function sendOutcome(res: Response, outcome: OperationOutcome): Response {
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }

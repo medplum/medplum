@@ -54,7 +54,7 @@ describe('AccessPolicy', () => {
     });
 
     try {
-      await repo2.readResource('Patient', patient?.id as string);
+      await repo2.readResource('Patient', patient.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
@@ -288,11 +288,11 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     expect(patient).toBeDefined();
-    expect(patient?.meta?.account?.reference).toEqual('Organization/' + orgId);
+    expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
 
-    const readPatient = await repo.readResource('Patient', patient?.id as string);
+    const readPatient = await repo.readResource('Patient', patient.id as string);
     expect(readPatient).toBeDefined();
-    expect(readPatient?.meta?.account?.reference).toEqual('Organization/' + orgId);
+    expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
   });
 
   test('Access policy blocks account override', async () => {
@@ -339,7 +339,7 @@ describe('AccessPolicy', () => {
     expect(patient.meta?.account).toBeDefined();
     expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
 
-    const readPatient = await repo.readResource('Patient', patient?.id as string);
+    const readPatient = await repo.readResource('Patient', patient.id as string);
     expect(readPatient.meta?.account).toBeDefined();
     expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
   });
@@ -400,12 +400,12 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     expect(patient1).toBeDefined();
-    expect(patient1?.meta?.account).toBeDefined();
-    expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
+    expect(patient1.meta?.account).toBeDefined();
+    expect(patient1.meta?.account?.reference).toEqual('Organization/' + org1);
 
-    const readPatient1 = await repo1.readResource('Patient', patient1?.id as string);
+    const readPatient1 = await repo1.readResource('Patient', patient1.id as string);
     expect(readPatient1).toBeDefined();
-    expect(readPatient1?.meta?.account).toBeDefined();
+    expect(readPatient1.meta?.account).toBeDefined();
 
     const patient2 = await repo2.createResource<Patient>({
       resourceType: 'Patient',
@@ -413,17 +413,17 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     expect(patient2).toBeDefined();
-    expect(patient2?.meta?.account).toBeDefined();
-    expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
+    expect(patient2.meta?.account).toBeDefined();
+    expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
 
-    const readPatient2 = await repo2.readResource('Patient', patient2?.id as string);
+    const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
     expect(readPatient2).toBeDefined();
-    expect(readPatient2?.meta?.account).toBeDefined();
+    expect(readPatient2.meta?.account).toBeDefined();
 
     // Try to read patient1 with repo2
     // This should fail
     try {
-      await repo2.readResource('Patient', patient1?.id as string);
+      await repo2.readResource('Patient', patient1.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -432,7 +432,7 @@ describe('AccessPolicy', () => {
     // Try to read patient2 with repo1
     // This should fail
     try {
-      await repo1.readResource('Patient', patient2?.id as string);
+      await repo1.readResource('Patient', patient2.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -497,8 +497,8 @@ describe('AccessPolicy', () => {
     patient = await repo2.updateResource(patient);
 
     expect(patient).toBeDefined();
-    expect(patient?.meta?.account).toBeDefined();
-    expect(patient?.meta?.account?.reference).toEqual('Organization/' + org1);
+    expect(patient.meta?.account).toBeDefined();
+    expect(patient.meta?.account?.reference).toEqual('Organization/' + org1);
   });
 
   test('Access policy restrict criteria', async () => {
@@ -553,12 +553,12 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     expect(patient1).toBeDefined();
-    expect(patient1?.meta?.account).toBeDefined();
-    expect(patient1?.meta?.account?.reference).toEqual('Organization/' + org1);
+    expect(patient1.meta?.account).toBeDefined();
+    expect(patient1.meta?.account?.reference).toEqual('Organization/' + org1);
 
-    const readPatient1 = await repo1.readResource('Patient', patient1?.id as string);
+    const readPatient1 = await repo1.readResource('Patient', patient1.id as string);
     expect(readPatient1).toBeDefined();
-    expect(readPatient1?.meta?.account).toBeDefined();
+    expect(readPatient1.meta?.account).toBeDefined();
 
     const patient2 = await repo2.createResource<Patient>({
       resourceType: 'Patient',
@@ -566,17 +566,17 @@ describe('AccessPolicy', () => {
       birthDate: '1970-01-01',
     });
     expect(patient2).toBeDefined();
-    expect(patient2?.meta?.account).toBeDefined();
-    expect(patient2?.meta?.account?.reference).toEqual('Organization/' + org2);
+    expect(patient2.meta?.account).toBeDefined();
+    expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
 
-    const readPatient2 = await repo2.readResource('Patient', patient2?.id as string);
+    const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
     expect(readPatient2).toBeDefined();
-    expect(readPatient2?.meta?.account).toBeDefined();
+    expect(readPatient2.meta?.account).toBeDefined();
 
     // Try to read patient1 with repo2
     // This should fail
     try {
-      await repo2.readResource('Patient', patient1?.id as string);
+      await repo2.readResource('Patient', patient1.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -585,7 +585,7 @@ describe('AccessPolicy', () => {
     // Try to read patient2 with repo1
     // This should fail
     try {
-      await repo1.readResource('Patient', patient2?.id as string);
+      await repo1.readResource('Patient', patient2.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -710,8 +710,8 @@ describe('AccessPolicy', () => {
     expect(patient).toBeDefined();
 
     // The Patient should have the account value set
-    const patientCheck = await systemRepo.readResource('Patient', patient?.id as string);
-    expect(patientCheck?.meta?.account?.reference).toEqual(account);
+    const patientCheck = await systemRepo.readResource('Patient', patient.id as string);
+    expect(patientCheck.meta?.account?.reference).toEqual(account);
 
     // Create an Observation using the ClientApplication
     const observation = await clientRepo.createResource<Observation>({
@@ -726,8 +726,8 @@ describe('AccessPolicy', () => {
     expect(observation).toBeDefined();
 
     // The Observation should have the account value set
-    const observationCheck = await systemRepo.readResource('Observation', observation?.id as string);
-    expect(observationCheck?.meta?.account?.reference).toEqual(account);
+    const observationCheck = await systemRepo.readResource('Observation', observation.id as string);
+    expect(observationCheck.meta?.account?.reference).toEqual(account);
 
     // Create a Patient outside of the account
     const patient2 = await systemRepo.createResource<Patient>({
@@ -739,7 +739,7 @@ describe('AccessPolicy', () => {
 
     // The ClientApplication should not be able to access it
     try {
-      await clientRepo.readResource<Patient>('Patient', patient2?.id as string);
+      await clientRepo.readResource<Patient>('Patient', patient2.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -759,7 +759,7 @@ describe('AccessPolicy', () => {
 
     // The ClientApplication should not be able to access it
     try {
-      await clientRepo.readResource<Observation>('Observation', observation2?.id as string);
+      await clientRepo.readResource<Observation>('Observation', observation2.id as string);
       fail('Expected error');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
@@ -854,7 +854,7 @@ describe('AccessPolicy', () => {
       accessPolicy,
     });
 
-    const readResource = await repo2.readResource<Patient>('Patient', patient?.id as string);
+    const readResource = await repo2.readResource<Patient>('Patient', patient.id as string);
     expect(readResource).toMatchObject({
       resourceType: 'Patient',
       name: [{ given: ['Alice'], family: 'Smith' }],
@@ -1047,14 +1047,14 @@ describe('AccessPolicy', () => {
       accessPolicy,
     });
 
-    const readResource = await repo2.readResource<Patient>('Patient', patient?.id as string);
+    const readResource = await repo2.readResource<Patient>('Patient', patient.id as string);
     expect(readResource).toMatchObject({
       resourceType: 'Patient',
       birthDate: '1970-01-01',
     });
     expect(readResource.name).toBeUndefined();
 
-    const historyBundle = await repo2.readHistory<Patient>('Patient', patient?.id as string);
+    const historyBundle = await repo2.readHistory<Patient>('Patient', patient.id as string);
     expect(historyBundle).toMatchObject({
       resourceType: 'Bundle',
       type: 'history',
@@ -1102,7 +1102,7 @@ describe('AccessPolicy', () => {
       accessPolicy,
     });
 
-    const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest?.id as string);
+    const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id as string);
     expect(readResource).toMatchObject({
       resourceType: 'ServiceRequest',
       code: {
@@ -1113,7 +1113,7 @@ describe('AccessPolicy', () => {
     expect(readResource.subject?.reference).toBeDefined();
     expect(readResource.subject?.display).toBeUndefined();
 
-    const historyBundle = await repo2.readHistory<ServiceRequest>('ServiceRequest', serviceRequest?.id as string);
+    const historyBundle = await repo2.readHistory<ServiceRequest>('ServiceRequest', serviceRequest.id as string);
     expect(historyBundle).toMatchObject({
       resourceType: 'Bundle',
       type: 'history',
@@ -1164,7 +1164,7 @@ describe('AccessPolicy', () => {
       accessPolicy,
     });
 
-    const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest?.id as string);
+    const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id as string);
     expect(readResource).toMatchObject({
       resourceType: 'ServiceRequest',
       code: {
@@ -1175,7 +1175,7 @@ describe('AccessPolicy', () => {
     expect(readResource.subject?.reference).toBeDefined();
     expect(readResource.subject?.display).toBeUndefined();
 
-    const historyBundle = await repo2.readHistory<ServiceRequest>('ServiceRequest', serviceRequest?.id as string);
+    const historyBundle = await repo2.readHistory<ServiceRequest>('ServiceRequest', serviceRequest.id as string);
     expect(historyBundle).toMatchObject({
       resourceType: 'Bundle',
       type: 'history',
@@ -1220,10 +1220,10 @@ describe('AccessPolicy', () => {
       accessPolicy,
     });
 
-    const readResource = await repo2.readResource<Questionnaire>('Questionnaire', questionnaire?.id as string);
+    const readResource = await repo2.readResource<Questionnaire>('Questionnaire', questionnaire.id as string);
     expect(readResource.id).toBe(questionnaire.id);
 
-    const historyBundle = await repo2.readHistory<Questionnaire>('Questionnaire', questionnaire?.id as string);
+    const historyBundle = await repo2.readHistory<Questionnaire>('Questionnaire', questionnaire.id as string);
     expect(historyBundle.entry).toHaveLength(1);
     expect(historyBundle.entry?.[0]?.resource?.id).toBe(questionnaire.id);
   });

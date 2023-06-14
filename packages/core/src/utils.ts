@@ -541,7 +541,7 @@ export function isLowerCase(c: string): boolean {
  * @returns The code if found; otherwise undefined.
  */
 export function getCodeBySystem(concept: CodeableConcept, system: string): string | undefined {
-  return concept?.coding?.find((coding) => coding.system === system)?.code;
+  return concept.coding?.find((coding) => coding.system === system)?.code;
 }
 
 /**
@@ -554,11 +554,11 @@ export function setCodeBySystem(concept: CodeableConcept, system: string, code: 
   if (!concept.coding) {
     concept.coding = [];
   }
-  const coding = concept.coding?.find((c) => c.system === system);
+  const coding = concept.coding.find((c) => c.system === system);
   if (coding) {
     coding.code = code;
   } else {
-    concept.coding?.push({ system, code });
+    concept.coding.push({ system, code });
   }
 }
 

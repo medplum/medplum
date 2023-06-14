@@ -318,7 +318,8 @@ async function chooseInt(text: string, options: number[], defaultValue = 0): Pro
       text,
       options.map((o) => o.toString()),
       defaultValue.toString()
-    )
+    ),
+    10
   );
 }
 

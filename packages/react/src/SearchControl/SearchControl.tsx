@@ -202,7 +202,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
-    const searchResponse = stateRef.current?.searchResponse;
+    const searchResponse = stateRef.current.searchResponse;
     if (checked && searchResponse?.entry) {
       searchResponse.entry.forEach((entry) => {
         if (entry.resource?.id) {
@@ -275,7 +275,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       .catch(console.log);
   }, [medplum, props.search.resourceType]);
 
-  const typeSchema = schemaLoaded && globalSchema?.types?.[props.search.resourceType];
+  const typeSchema = schemaLoaded && globalSchema.types[props.search.resourceType];
   if (!typeSchema) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>

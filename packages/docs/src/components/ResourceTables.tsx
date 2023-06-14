@@ -89,7 +89,7 @@ export function SearchParamsTable(props: { searchParams: SearchParamDocInfo[] })
 
 function renderPropertyTypes(property: PropertyDocInfo): JSX.Element {
   const types = property.types;
-  if (types?.[0].datatype === 'BackboneElement') {
+  if (types[0].datatype === 'BackboneElement') {
     return <>{buildTypeName(property.path.split('.'))}</>;
   }
 
@@ -121,7 +121,7 @@ function renderReferenceType(referenceTypes: PropertyTypeDocInfo[]): JSX.Element
   return (
     <>
       <span>Reference&lt;</span>
-      {referenceTypes?.map((refType, i) => (
+      {referenceTypes.map((refType, i) => (
         <>
           {getTypeLink(refType, `${i === 0 && verticalizeLinks ? '\n  ' : ''}${refType.datatype}`)}
           <span key={`reference-separator-${refType.datatype}`}>{separator(i)}</span>

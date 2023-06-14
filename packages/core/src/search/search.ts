@@ -131,8 +131,8 @@ export function parseSearchRequest<T extends Resource = Resource>(
   const queryArray: [string, string][] = [];
   for (const [key, value] of Object.entries(query)) {
     if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        queryArray.push([key, value[i]]);
+      for (const v of value) {
+        queryArray.push([key, v]);
       }
     } else {
       queryArray.push([key, value || '']);
@@ -204,11 +204,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_count':
-      searchRequest.count = parseInt(value);
+      searchRequest.count = parseInt(value, 10);
       break;
 
     case '_offset':
-      searchRequest.offset = parseInt(value);
+      searchRequest.offset = parseInt(value, 10);
       break;
 
     case '_total':
@@ -305,6 +305,8 @@ function parseParameter(
       break;
     case 'quantity':
       parseQuantity(searchRequest, searchParam, value);
+      break;
+    default:
       break;
   }
 }

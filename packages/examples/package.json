@@ -20,5 +20,13 @@
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "jest": "29.5.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "../eslint-config"
+    ],
+    "rules": {
+      "no-duplicate-imports": "off"
+    }
   }
 }

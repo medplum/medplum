@@ -525,6 +525,6 @@ function buildPatchPath(): any {
 }
 
 function isResourceType(definition: JSONSchema4): boolean {
-  const props = definition?.properties;
+  const props = definition.properties;
   return !!(isResource(props) && 'id' in props && 'meta' in props);
 }

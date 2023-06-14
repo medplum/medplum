@@ -34,7 +34,6 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
-  Resource,
   ResourceType,
   SearchParameter,
   ServiceRequest,
@@ -234,25 +233,25 @@ describe('FHIR Repo', () => {
       },
     });
     expect(version1).toBeDefined();
-    expect(version1?.id).toBeDefined();
+    expect(version1.id).toBeDefined();
 
     const version2 = await systemRepo.updateResource<Patient>({
       resourceType: 'Patient',
-      id: version1?.id,
+      id: version1.id,
       active: true,
       meta: {
         lastUpdated: new Date().toISOString(),
       },
     });
     expect(version2).toBeDefined();
-    expect(version2?.id).toEqual(version1?.id);
-    expect(version2?.meta?.versionId).not.toEqual(version1?.meta?.versionId);
+    expect(version2.id).toEqual(version1.id);
+    expect(version2.meta?.versionId).not.toEqual(version1.meta?.versionId);
 
-    const history = await systemRepo.readHistory('Patient', version1?.id as string);
+    const history = await systemRepo.readHistory('Patient', version1.id as string);
     expect(history).toBeDefined();
-    expect(history?.entry?.length).toBe(2);
-    expect(history?.entry?.[0]?.resource?.id).toBe(version2?.id);
-    expect(history?.entry?.[1]?.resource?.id).toBe(version1?.id);
+    expect(history.entry?.length).toBe(2);
+    expect(history.entry?.[0]?.resource?.id).toBe(version2.id);
+    expect(history.entry?.[1]?.resource?.id).toBe(version1.id);
   });
 
   test('Update patient', async () => {
@@ -266,8 +265,8 @@ describe('FHIR Repo', () => {
       active: true,
     });
 
-    expect(patient2?.id).toEqual(patient1?.id);
-    expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
+    expect(patient2.id).toEqual(patient1.id);
+    expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
   });
 
   test('Update patient no changes', async () => {
@@ -280,8 +279,8 @@ describe('FHIR Repo', () => {
       ...(patient1 as Patient),
     });
 
-    expect(patient2?.id).toEqual(patient1?.id);
-    expect(patient2?.meta?.versionId).toEqual(patient1?.meta?.versionId);
+    expect(patient2.id).toEqual(patient1.id);
+    expect(patient2.meta?.versionId).toEqual(patient1.meta?.versionId);
   });
 
   test('Update patient multiple names', async () => {
@@ -298,11 +297,11 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(patient2?.id).toEqual(patient1?.id);
-    expect(patient2?.meta?.versionId).not.toEqual(patient1?.meta?.versionId);
-    expect(patient2?.name?.length).toEqual(2);
-    expect(patient2?.name?.[0]?.family).toEqual('Smith');
-    expect(patient2?.name?.[1]?.family).toEqual('Jones');
+    expect(patient2.id).toEqual(patient1.id);
+    expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
+    expect(patient2.name?.length).toEqual(2);
+    expect(patient2.name?.[0]?.family).toEqual('Smith');
+    expect(patient2.name?.[1]?.family).toEqual('Jones');
   });
 
   test('Create Patient with custom ID', async () => {
@@ -337,7 +336,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(patient?.meta?.author?.reference).toEqual('system');
+    expect(patient.meta?.author?.reference).toEqual('system');
   });
 
   test('Create Patient as system on behalf of author', async () => {
@@ -352,7 +351,7 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(patient?.meta?.author?.reference).toEqual(author);
+    expect(patient.meta?.author?.reference).toEqual(author);
   });
 
   test('Create Patient as ClientApplication with no author', async () => {
@@ -370,7 +369,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(patient?.meta?.author?.reference).toEqual(clientApp);
+    expect(patient.meta?.author?.reference).toEqual(clientApp);
   });
 
   test('Create Patient as Practitioner with no author', async () => {
@@ -388,7 +387,7 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    expect(patient?.meta?.author?.reference).toEqual(author);
+    expect(patient.meta?.author?.reference).toEqual(author);
   });
 
   test('Create Patient as Practitioner on behalf of author', async () => {
@@ -416,7 +415,7 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(patient?.meta?.author?.reference).toEqual(author);
+    expect(patient.meta?.author?.reference).toEqual(author);
   });
 
   test('Create resource with account', async () => {
@@ -442,8 +441,8 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(patient?.meta?.author?.reference).toEqual(author);
-    expect(patient?.meta?.account?.reference).toEqual(account);
+    expect(patient.meta?.author?.reference).toEqual(author);
+    expect(patient.meta?.account?.reference).toEqual(account);
   });
 
   test('Create resource with lastUpdated', async () => {
@@ -458,7 +457,7 @@ describe('FHIR Repo', () => {
       },
     });
 
-    expect(patient?.meta?.lastUpdated).toEqual(lastUpdated);
+    expect(patient.meta?.lastUpdated).toEqual(lastUpdated);
   });
 
   test('Update resource with lastUpdated', async () => {
@@ -472,7 +471,7 @@ describe('FHIR Repo', () => {
         lastUpdated,
       },
     });
-    expect(patient1?.meta?.lastUpdated).toEqual(lastUpdated);
+    expect(patient1.meta?.lastUpdated).toEqual(lastUpdated);
 
     // But system cannot update the timestamp
     const patient2 = await systemRepo.updateResource<Patient>({
@@ -482,7 +481,7 @@ describe('FHIR Repo', () => {
         lastUpdated,
       },
     });
-    expect(patient2?.meta?.lastUpdated).not.toEqual(lastUpdated);
+    expect(patient2.meta?.lastUpdated).not.toEqual(lastUpdated);
   });
 
   test('Update Resource with Missing id', async () => {
@@ -575,8 +574,8 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult?.entry?.length).toEqual(1);
-    expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(comm1.id);
   });
 
   test('Search for Communications by ServiceRequest', async () => {
@@ -651,8 +650,8 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult?.entry?.length).toEqual(1);
-    expect(searchResult?.entry?.[0]?.resource?.id).toEqual(comm1?.id);
+    expect(searchResult.entry?.length).toEqual(1);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(comm1.id);
   });
 
   test('Search for QuestionnaireResponse by Questionnaire', async () => {
@@ -700,8 +699,8 @@ describe('FHIR Repo', () => {
       count: 100,
     });
 
-    expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
-    expect(bundle?.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
+    expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'name')).toBeDefined();
+    expect(bundle.entry?.find((e) => (e.resource as SearchParameter).code === 'email')).toBeDefined();
   });
 
   test('Search sort by Patient.id', async () => {
@@ -802,8 +801,8 @@ describe('FHIR Repo', () => {
       sortRules: [{ code: 'family' }],
     });
 
-    expect(bundle?.entry).toBeDefined();
-    expect(bundle?.entry?.length).toBeGreaterThanOrEqual(2);
+    expect(bundle.entry).toBeDefined();
+    expect(bundle.entry?.length).toBeGreaterThanOrEqual(2);
   });
 
   test('Compartment permissions', async () => {
@@ -824,11 +823,11 @@ describe('FHIR Repo', () => {
     });
 
     expect(patient1).toBeDefined();
-    expect(patient1?.id).toBeDefined();
+    expect(patient1.id).toBeDefined();
 
-    const patient2 = await repo1.readResource('Patient', patient1?.id as string);
+    const patient2 = await repo1.readResource('Patient', patient1.id as string);
     expect(patient2).toBeDefined();
-    expect(patient2?.id).toEqual(patient1?.id);
+    expect(patient2.id).toEqual(patient1.id);
 
     const registration2: RegisterRequest = {
       firstName: randomUUID(),
@@ -843,7 +842,7 @@ describe('FHIR Repo', () => {
 
     const repo2 = await getRepoForLogin({ resourceType: 'Login' }, result2.membership);
     try {
-      await repo2.readResource('Patient', patient1?.id as string);
+      await repo2.readResource('Patient', patient1.id as string);
       fail('Should have thrown');
     } catch (err) {
       expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
@@ -857,22 +856,22 @@ describe('FHIR Repo', () => {
       name: [{ given: ['Alice'], family: 'Smith' }],
     });
 
-    const history1 = await systemRepo.readHistory('Patient', patient?.id as string);
-    expect(history1?.entry?.length).toBe(1);
+    const history1 = await systemRepo.readHistory('Patient', patient.id as string);
+    expect(history1.entry?.length).toBe(1);
 
     // Delete the patient
-    await systemRepo.deleteResource('Patient', patient?.id as string);
+    await systemRepo.deleteResource('Patient', patient.id as string);
 
-    const history2 = await systemRepo.readHistory('Patient', patient?.id as string);
-    expect(history2?.entry?.length).toBe(2);
+    const history2 = await systemRepo.readHistory('Patient', patient.id as string);
+    expect(history2.entry?.length).toBe(2);
 
     // Restore the patient
     await systemRepo.updateResource({ ...patient, meta: undefined });
 
-    const history3 = await systemRepo.readHistory('Patient', patient?.id as string);
-    expect(history3?.entry?.length).toBe(3);
+    const history3 = await systemRepo.readHistory('Patient', patient.id as string);
+    expect(history3.entry?.length).toBe(3);
 
-    const entries = history3?.entry as BundleEntry[];
+    const entries = history3.entry as BundleEntry[];
     expect(entries[0].response?.status).toEqual('200');
     expect(entries[0].resource).toBeDefined();
     expect(entries[1].response?.status).toEqual('410');
@@ -907,10 +906,10 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(1);
-    expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+    expect(searchResult1.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.[0]?.resource?.id).toEqual(patient.id);
 
-    await systemRepo.deleteResource('Patient', patient?.id as string);
+    await systemRepo.deleteResource('Patient', patient.id as string);
 
     const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
@@ -928,7 +927,7 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult2?.entry?.length).toEqual(0);
+    expect(searchResult2.entry?.length).toEqual(0);
   });
 
   test('Search identifier after delete', async () => {
@@ -951,10 +950,10 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(1);
-    expect(searchResult1?.entry?.[0]?.resource?.id).toEqual(patient?.id);
+    expect(searchResult1.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.[0]?.resource?.id).toEqual(patient.id);
 
-    await systemRepo.deleteResource('Patient', patient?.id as string);
+    await systemRepo.deleteResource('Patient', patient.id as string);
 
     const searchResult2 = await systemRepo.search({
       resourceType: 'Patient',
@@ -967,7 +966,7 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult2?.entry?.length).toEqual(0);
+    expect(searchResult2.entry?.length).toEqual(0);
   });
 
   test('String filter', async () => {
@@ -987,9 +986,9 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle1?.entry?.length).toEqual(2);
-    expect((bundle1?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
-    expect((bundle1?.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
+    expect(bundle1.entry?.length).toEqual(2);
+    expect((bundle1.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+    expect((bundle1.entry?.[1]?.resource as StructureDefinition).name).toEqual('QuestionnaireResponse');
 
     const bundle2 = await systemRepo.search({
       resourceType: 'StructureDefinition',
@@ -1001,8 +1000,8 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle2?.entry?.length).toEqual(1);
-    expect((bundle2?.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
+    expect(bundle2.entry?.length).toEqual(1);
+    expect((bundle2.entry?.[0]?.resource as StructureDefinition).name).toEqual('Questionnaire');
   });
 
   test('Filter by _id', async () => {
@@ -1021,12 +1020,12 @@ describe('FHIR Repo', () => {
         {
           code: '_id',
           operator: Operator.EQUALS,
-          value: patient?.id as string,
+          value: patient.id as string,
         },
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
 
     const searchResult2 = await systemRepo.search({
@@ -1040,12 +1039,12 @@ describe('FHIR Repo', () => {
         {
           code: '_id',
           operator: Operator.NOT_EQUALS,
-          value: patient?.id as string,
+          value: patient.id as string,
         },
       ],
     });
 
-    expect(searchResult2?.entry?.length).toEqual(0);
+    expect(searchResult2.entry?.length).toEqual(0);
   });
 
   test('Non UUID _id', async () => {
@@ -1060,7 +1059,7 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(0);
+    expect(searchResult1.entry?.length).toEqual(0);
   });
 
   test('Non UUID _compartment', async () => {
@@ -1075,7 +1074,7 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(0);
+    expect(searchResult1.entry?.length).toEqual(0);
   });
 
   test('Reference string _compartment', async () => {
@@ -1092,7 +1091,7 @@ describe('FHIR Repo', () => {
       ],
     });
 
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toEqual(true);
   });
 
@@ -1128,7 +1127,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle?.entry?.length).toEqual(1);
+    expect(bundle.entry?.length).toEqual(1);
     expect(bundleContains(bundle as Bundle, patient1 as Patient)).toEqual(true);
     expect(bundleContains(bundle as Bundle, patient2 as Patient)).toEqual(false);
   });
@@ -1309,9 +1308,9 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle3?.entry?.length).toEqual(2);
-    expect(bundle3?.entry?.[0]?.resource?.id).toEqual(patient1?.id);
-    expect(bundle3?.entry?.[1]?.resource?.id).toEqual(patient2?.id);
+    expect(bundle3.entry?.length).toEqual(2);
+    expect(bundle3.entry?.[0]?.resource?.id).toEqual(patient1.id);
+    expect(bundle3.entry?.[1]?.resource?.id).toEqual(patient2.id);
 
     const bundle4 = await systemRepo.search({
       resourceType: 'Patient',
@@ -1329,9 +1328,9 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle4?.entry?.length).toEqual(2);
-    expect(bundle4?.entry?.[0]?.resource?.id).toEqual(patient2?.id);
-    expect(bundle4?.entry?.[1]?.resource?.id).toEqual(patient1?.id);
+    expect(bundle4.entry?.length).toEqual(2);
+    expect(bundle4.entry?.[0]?.resource?.id).toEqual(patient2.id);
+    expect(bundle4.entry?.[1]?.resource?.id).toEqual(patient1.id);
   });
 
   test('Unsupported date search param', async () => {
@@ -1348,7 +1347,7 @@ describe('FHIR Repo', () => {
       },
     });
     expect(resource).toBeDefined();
-    expect(resource?.id).toBeDefined();
+    expect(resource.id).toBeDefined();
   });
 
   test('Filter by Coding', async () => {
@@ -1899,7 +1898,7 @@ describe('FHIR Repo', () => {
       id: patient1.id,
       contact: [{}],
     });
-    expect(patient2?.id).toEqual(patient1?.id);
+    expect(patient2.id).toEqual(patient1.id);
   });
 
   test('Starts after', async () => {
@@ -2748,7 +2747,7 @@ describe('FHIR Repo', () => {
         ],
         include: [{ resourceType: 'Patient', searchParam: 'link', modifier: Operator.ITERATE }],
       })
-    ).resolves.toMatchObject<Bundle<Resource>>({
+    ).resolves.toMatchObject<Bundle>({
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [],
@@ -3367,7 +3366,7 @@ describe('FHIR Repo', () => {
         },
       ],
     });
-    expect(bundle?.entry?.length).toEqual(2);
+    expect(bundle.entry?.length).toEqual(2);
     expect(bundle.total).toEqual(2);
     expect(bundleContains(bundle, p1)).toBeTruthy();
     expect(bundleContains(bundle, p2)).not.toBeTruthy();

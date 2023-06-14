@@ -53,7 +53,7 @@ describe('Auth middleware', () => {
     });
 
     const accessToken = await generateAccessToken({
-      login_id: login?.id as string,
+      login_id: login.id as string,
       sub: client.id as string,
       username: client.id as string,
       client_id: client.id as string,
@@ -121,7 +121,7 @@ describe('Auth middleware', () => {
   test('Basic auth wrong password', async () => {
     const res = await request(app)
       .get('/fhir/R4/Patient')
-      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':' + 'wrong').toString('base64'));
+      .set('Authorization', 'Basic ' + Buffer.from(client.id + ':wrong').toString('base64'));
     expect(res.status).toBe(401);
   });
 

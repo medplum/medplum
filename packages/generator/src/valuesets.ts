@@ -9,7 +9,7 @@ import {
   ValueSetCompose,
 } from '@medplum/fhirtypes';
 
-const valueSets: Map<string, CodeSystem | ValueSet> = new Map();
+const valueSets = new Map<string, CodeSystem | ValueSet>();
 
 export function getValueSetValues(url: string): string[] {
   if (valueSets.size === 0) {

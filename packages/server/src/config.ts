@@ -108,7 +108,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
     database: {
       ...config.database,
       host: process.env['POSTGRES_HOST'] ?? 'localhost',
-      port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT']) : 5432,
+      port: process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432,
       dbname: 'medplum_test',
     },
   };
@@ -147,7 +147,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
         WithDecryption: true,
       })
     );
-    if (response?.Parameters) {
+    if (response.Parameters) {
       for (const param of response.Parameters) {
         const key = (param.Name as string).replace(path, '');
         const value = param.Value as string;
@@ -156,7 +156,7 @@ async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
         } else if (key === 'RedisSecrets') {
           config['redis'] = await loadAwsSecrets(region, value);
         } else if (key === 'port') {
-          config.port = parseInt(value);
+          config.port = parseInt(value, 10);
         } else if (key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled') {
           config[key] = value === 'true';
         } else {

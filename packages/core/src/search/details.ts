@@ -37,7 +37,7 @@ export interface SearchParameterDetails {
  */
 export function getSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   let result: SearchParameterDetails | undefined =
-    globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
+    globalSchema.types[resourceType].searchParamsDetails?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterDetails(resourceType, searchParam);
   }
@@ -119,35 +119,32 @@ function convertCodeToColumnName(code: string): string {
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyType: PropertyType): SearchParameterType {
-  let type = SearchParameterType.TEXT;
   switch (searchParam.type) {
     case 'date':
       if (propertyType === PropertyType.date) {
-        type = SearchParameterType.DATE;
+        return SearchParameterType.DATE;
       } else {
-        type = SearchParameterType.DATETIME;
+        return SearchParameterType.DATETIME;
       }
-      break;
     case 'number':
-      type = SearchParameterType.NUMBER;
-      break;
+      return SearchParameterType.NUMBER;
     case 'quantity':
-      type = SearchParameterType.QUANTITY;
-      break;
+      return SearchParameterType.QUANTITY;
     case 'reference':
       if (propertyType === PropertyType.canonical) {
-        type = SearchParameterType.CANONICAL;
+        return SearchParameterType.CANONICAL;
       } else {
-        type = SearchParameterType.REFERENCE;
+        return SearchParameterType.REFERENCE;
       }
-      break;
     case 'token':
-      if (propertyType === 'boolean') {
-        type = SearchParameterType.BOOLEAN;
+      if (propertyType === PropertyType.boolean) {
+        return SearchParameterType.BOOLEAN;
+      } else {
+        return SearchParameterType.TEXT;
       }
-      break;
+    default:
+      return SearchParameterType.TEXT;
   }
-  return type;
 }
 
 export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {

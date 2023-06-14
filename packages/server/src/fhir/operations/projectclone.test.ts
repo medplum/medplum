@@ -138,7 +138,7 @@ describe('Project clone', () => {
     for (const entry of ProjectMembershipBundle.entry as BundleEntry[]) {
       const resource = entry.resource as ProjectMembership;
 
-      expect(resource?.project?.display).toBe(newProjectName);
+      expect(resource.project?.display).toBe(newProjectName);
     }
 
     const ClientApplicationBundle = await systemRepo.search({
@@ -150,7 +150,7 @@ describe('Project clone', () => {
     for (const entry of ClientApplicationBundle.entry as BundleEntry[]) {
       const resource = entry.resource as ClientApplication;
 
-      expect(resource?.name).not.toContain(newProjectName);
+      expect(resource.name).not.toContain(newProjectName);
     }
   });
 
@@ -196,8 +196,8 @@ describe('Project clone', () => {
     for (const entry of ClientApplicationBundle.entry as BundleEntry[]) {
       const resource = entry.resource as ClientApplication;
 
-      expect(resource?.name).toContain(newProjectName);
-      expect(resource?.description).toContain(newProjectName);
+      expect(resource.name).toContain(newProjectName);
+      expect(resource.description).toContain(newProjectName);
     }
   });
 

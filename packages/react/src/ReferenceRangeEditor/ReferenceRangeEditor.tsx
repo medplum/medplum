@@ -37,7 +37,7 @@ type IntervalGroup = {
 const defaultProps: ReferenceRangeEditorProps = {
   definition: { resourceType: 'ObservationDefinition' },
   onSubmit: () => {
-    return;
+    return undefined;
   },
 };
 
@@ -120,8 +120,8 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
       groups = [...groups];
       const currentGroup = groups.find((g) => g.id === groupId);
 
-      const index = currentGroup?.intervals?.findIndex((interval) => interval.id === changedInterval.id);
-      if (index !== undefined && currentGroup?.intervals?.[index]) {
+      const index = currentGroup?.intervals.findIndex((interval) => interval.id === changedInterval.id);
+      if (index !== undefined && currentGroup?.intervals[index]) {
         currentGroup.intervals[index] = changedInterval;
       }
       return groups;
@@ -289,7 +289,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
           defaultValue={intervalGroup.filters.gender || ''}
           onChange={(e) => {
             for (const interval of intervalGroup.intervals) {
-              let newGender: string | undefined = e.currentTarget?.value;
+              let newGender: string | undefined = e.currentTarget.value;
               if (newGender === '') {
                 newGender = undefined;
               }
@@ -324,7 +324,7 @@ function ReferenceRangeGroupFilters(props: ReferenceRangeGroupFiltersProps): JSX
         defaultValue={intervalGroup.filters.context?.text || ''}
         onChange={(e) => {
           for (const interval of intervalGroup.intervals) {
-            let newEndocrine: string | undefined = e.currentTarget?.value;
+            let newEndocrine: string | undefined = e.currentTarget.value;
             if (newEndocrine === '') {
               newEndocrine = undefined;
               onChange(intervalGroup.id, { ...interval, context: undefined });
@@ -361,7 +361,7 @@ function ensureQualifiedIntervalKeys(
   let nextId =
     Math.max(
       ...intervals.map((interval) => {
-        const existingNum = parseInt(interval.id?.substring(3) || '');
+        const existingNum = parseInt(interval.id?.substring(3) || '', 10);
         return !isNaN(existingNum) ? existingNum : Number.NEGATIVE_INFINITY;
       })
     ) + 1;

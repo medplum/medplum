@@ -29,7 +29,7 @@ export async function scopeHandler(req: Request, res: Response): Promise<void> {
 
   // Send code
   res.status(200).json({
-    login: updated?.id,
-    code: updated?.code,
+    login: updated.id,
+    code: updated.code,
   });
 }

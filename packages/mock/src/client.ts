@@ -10,8 +10,6 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirRouter, HttpMethod, MemoryRepository } from '@medplum/fhir-router';
 import { Binary, Resource, SearchParameter, StructureDefinition, UserConfiguration } from '@medplum/fhirtypes';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-/** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import {
   BartSimpson,

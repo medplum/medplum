@@ -164,14 +164,14 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   function addItem(addedItem: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
-      item: [...(props.item?.item ?? []), addedItem],
+      item: [...(props.item.item ?? []), addedItem],
     });
   }
 
   function removeItem(removedItem: QuestionnaireItem): void {
     props.onChange({
       ...props.item,
-      item: props.item?.item?.filter((i) => i !== removedItem),
+      item: props.item.item?.filter((i) => i !== removedItem),
     });
   }
 
@@ -222,20 +222,19 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
           </>
         )}
       </div>
-      {item.item &&
-        item.item.map((i) => (
-          <div key={i.id}>
-            <ItemBuilder
-              item={i}
-              selectedKey={props.selectedKey}
-              setSelectedKey={props.setSelectedKey}
-              hoverKey={props.hoverKey}
-              setHoverKey={props.setHoverKey}
-              onChange={changeItem}
-              onRemove={() => removeItem(i)}
-            />
-          </div>
-        ))}
+      {item.item?.map((i) => (
+        <div key={i.id}>
+          <ItemBuilder
+            item={i}
+            selectedKey={props.selectedKey}
+            setSelectedKey={props.setSelectedKey}
+            hoverKey={props.hoverKey}
+            setHoverKey={props.setHoverKey}
+            onChange={changeItem}
+            onRemove={() => removeItem(i)}
+          />
+        </div>
+      ))}
       {!isContainer && (
         <div className={classes.topActions}>
           {editing ? (
@@ -439,10 +438,10 @@ function ensureQuestionnaireItemKeys(items: QuestionnaireItem[] | undefined): Qu
   }
   items.forEach((item) => {
     if (item.id?.match(/^id-\d+$/)) {
-      nextId = Math.max(nextId, parseInt(item.id.substring(3)) + 1);
+      nextId = Math.max(nextId, parseInt(item.id.substring(3), 10) + 1);
     }
     if (item.linkId?.match(/^q\d+$/)) {
-      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1)) + 1);
+      nextLinkId = Math.max(nextLinkId, parseInt(item.linkId.substring(1), 10) + 1);
     }
   });
   return items.map((item) => ({

@@ -1,8 +1,8 @@
 import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
-import { capitalize, isEmpty } from '../utils';
 import { OperationOutcomeError, serverError } from '../outcomes';
+import { TypedValue } from '../types';
+import { capitalize, isEmpty } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -281,7 +281,7 @@ class StructureDefinitionParser {
       name: element.sliceName ?? '',
       fields: {},
       min: element.min ?? 0,
-      max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string),
+      max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
     };
   }
 
@@ -313,7 +313,7 @@ class StructureDefinitionParser {
 }
 
 function parseCardinality(c: string): number {
-  return c === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(c);
+  return c === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(c, 10);
 }
 
 function elementPath(element: ElementDefinition, prefix = ''): string {

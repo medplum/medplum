@@ -76,10 +76,10 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     const el = e.target as HTMLInputElement;
     const checked = el.checked;
     const newSelected = {} as { [id: string]: boolean };
-    const resources = responseRef.current?.data?.ResourceList;
+    const resources = responseRef.current?.data.ResourceList;
     if (checked && resources) {
       resources.forEach((resource) => {
-        if (resource?.id) {
+        if (resource.id) {
           newSelected[resource.id] = true;
         }
       });
@@ -88,12 +88,12 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   }
 
   function isAllSelected(): boolean {
-    const resources = responseRef.current?.data?.ResourceList;
+    const resources = responseRef.current?.data.ResourceList;
     if (!resources || resources.length === 0) {
       return false;
     }
     for (const resource of resources) {
-      if (resource?.id && !selectedRef.current[resource.id]) {
+      if (resource.id && !selectedRef.current[resource.id]) {
         return false;
       }
     }
@@ -128,7 +128,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
       .catch(console.log);
   }, [medplum, props.resourceType]);
 
-  const typeSchema = schema?.types?.[props.resourceType];
+  const typeSchema = schema?.types[props.resourceType];
   if (!typeSchema) {
     return <Loader />;
   }
@@ -158,7 +158,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
           </tr>
         </thead>
         <tbody>
-          {response?.data?.ResourceList?.map(
+          {response?.data.ResourceList.map(
             (resource) =>
               resource && (
                 <tr
@@ -191,7 +191,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
           )}
         </tbody>
       </Table>
-      {response?.data?.ResourceList?.length === 0 && <div data-testid="empty-search">No results</div>}
+      {response?.data.ResourceList.length === 0 && <div data-testid="empty-search">No results</div>}
       {outcome && (
         <div data-testid="search-error">
           <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>

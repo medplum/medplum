@@ -527,7 +527,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     });
 
     const resultMeta = {
-      ...updated?.meta,
+      ...updated.meta,
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
@@ -1042,13 +1042,13 @@ export class Repository extends BaseRepository implements FhirRepository {
     const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
 
     const references = fhirPathResult
-      .filter((typedValue) => typedValue.type === PropertyType.Reference)
+      .filter((typedValue) => (typedValue.type as PropertyType) === PropertyType.Reference)
       .map((typedValue) => typedValue.value as Reference);
     const readResult = await this.readReferences(references);
     const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
 
     const canonicalReferences = fhirPathResult
-      .filter((typedValue) => typedValue.type === PropertyType.canonical || typedValue.type === PropertyType.uri)
+      .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type as PropertyType))
       .map((typedValue) => typedValue.value as string);
     if (canonicalReferences.length > 0) {
       const canonicalSearches = (searchParam.target || []).map((resourceType) =>
@@ -1215,7 +1215,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const queryPlan = row['QUERY PLAN'];
       const match = /rows=(\d+)/.exec(queryPlan);
       if (match) {
-        return parseInt(match[1]);
+        return parseInt(match[1], 10);
       }
     }
     return 0;
@@ -1351,7 +1351,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resourceType = searchRequest.resourceType;
     let param = getSearchParameter(resourceType, filter.code);
-    if (!param || !param.code) {
+    if (!param?.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
     }
 
@@ -1626,7 +1626,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resourceType = searchRequest.resourceType;
     const param = getSearchParameter(resourceType, sortRule.code);
-    if (!param || !param.code) {
+    if (!param?.code) {
       return;
     }
 
@@ -2077,7 +2077,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (create && this.context.accessPolicy?.compartment) {
       // If the user access policy specifies a compartment, then use it as the account.
-      return this.context.accessPolicy?.compartment;
+      return this.context.accessPolicy.compartment;
     }
 
     if (updated.resourceType !== 'Patient') {
@@ -2086,7 +2086,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         // If the resource is in a patient compartment, then lookup the patient.
         try {
           const patient = await systemRepo.readReference(patientRef);
-          if (patient?.meta?.account) {
+          if (patient.meta?.account) {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
           }
@@ -2351,14 +2351,14 @@ async function getCacheEntry<T extends Resource>(resourceType: string, id: strin
  * @param references Array of FHIR references.
  * @returns Array of cache entries or undefined.
  */
-async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Resource> | undefined)[]> {
+async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
   const referenceKeys = references.map((r) => r.reference as string);
   if (referenceKeys.length === 0) {
     // Return early to avoid calling mget() with no args, which is an error
     return [];
   }
   return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
-    cachedValue ? (JSON.parse(cachedValue) as CacheEntry<Resource>) : undefined
+    cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
   );
 }
 

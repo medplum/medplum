@@ -103,7 +103,7 @@ export async function newUserHandler(req: Request, res: Response): Promise<void>
       remoteAddress: req.ip,
       userAgent: req.get('User-Agent'),
     });
-    res.status(200).json({ login: login?.id });
+    res.status(200).json({ login: login.id });
   } catch (outcome) {
     sendOutcome(res, outcome as OperationOutcome);
   }

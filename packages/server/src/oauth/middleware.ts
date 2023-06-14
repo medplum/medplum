@@ -37,7 +37,7 @@ async function authenticateBearerToken(req: Request, res: Response, token: strin
       throw new OperationOutcomeError(unauthorized);
     }
 
-    if (!login || !login.membership || login.revoked) {
+    if (!login?.membership || login.revoked) {
       throw new OperationOutcomeError(unauthorized);
     }
 

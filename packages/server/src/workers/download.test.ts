@@ -163,7 +163,7 @@ describe('Download Worker', () => {
 
     // At this point the job should be in the queue
     // But let's delete the resource
-    await repo.deleteResource('Media', media?.id as string);
+    await repo.deleteResource('Media', media.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execDownloadJob(job);

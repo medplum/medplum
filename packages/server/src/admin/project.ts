@@ -27,10 +27,10 @@ projectAdminRouter.get(
     const project = res.locals.project as Project;
     return res.status(200).json({
       project: {
-        id: project?.id,
-        name: project?.name,
-        secret: project?.secret,
-        site: project?.site,
+        id: project.id,
+        name: project.name,
+        secret: project.secret,
+        site: project.site,
       },
     });
   })

@@ -173,29 +173,18 @@ export function validateLoginRequest(request: LoginRequest): void {
   if (request.authMethod === 'external' || request.authMethod === 'exchange') {
     if (!request.externalId && !request.email) {
       throw new OperationOutcomeError(badRequest('Missing email or externalId', 'externalId'));
-    }
-    if (request.externalId && !request.projectId) {
+    } else if (request.externalId && !request.projectId) {
       throw new OperationOutcomeError(badRequest('Project ID is required for external ID', 'projectId'));
     }
-  } else {
-    if (!request.email) {
-      throw new OperationOutcomeError(badRequest('Invalid email', 'email'));
-    }
-  }
-
-  if (!request.authMethod) {
+  } else if (!request.email) {
+    throw new OperationOutcomeError(badRequest('Invalid email', 'email'));
+  } else if (!request.authMethod) {
     throw new OperationOutcomeError(badRequest('Invalid authentication method', 'authMethod'));
-  }
-
-  if (request.authMethod === 'password' && !request.password) {
+  } else if (request.authMethod === 'password' && !request.password) {
     throw new OperationOutcomeError(badRequest('Invalid password', 'password'));
-  }
-
-  if (request.authMethod === 'google' && !request.googleCredentials) {
+  } else if (request.authMethod === 'google' && !request.googleCredentials) {
     throw new OperationOutcomeError(badRequest('Invalid google credentials', 'googleCredentials'));
-  }
-
-  if (!request.scope) {
+  } else if (!request.scope) {
     throw new OperationOutcomeError(badRequest('Invalid scope', 'scope'));
   }
 }

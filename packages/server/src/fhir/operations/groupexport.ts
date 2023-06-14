@@ -65,7 +65,7 @@ async function groupExportResources(
           await exporter.writeResource(resource);
         }
       } catch (err) {
-        logger.warn('Unable to read patient: ' + member.entity?.reference);
+        logger.warn('Unable to read patient: ' + member.entity.reference);
       }
     }
 

@@ -20,7 +20,7 @@ export const exchangeHandler = async (req: Request, res: Response): Promise<void
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     sendOutcome(res, invalidRequest(errors));
-    return;
+    return Promise.resolve();
   }
 
   return exchangeExternalAuthToken(

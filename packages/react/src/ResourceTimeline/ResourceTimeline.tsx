@@ -309,12 +309,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
           return (
-            <HistoryTimelineItem
-              key={key}
-              history={history as Bundle<Resource>}
-              resource={item}
-              onDetails={onVersionDetails}
-            />
+            <HistoryTimelineItem key={key} history={history as Bundle} resource={item} onDetails={onVersionDetails} />
           );
         }
         switch (item.resourceType) {
