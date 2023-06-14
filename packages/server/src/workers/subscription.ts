@@ -139,7 +139,11 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
  * @param context Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
-async function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): Promise<boolean> {
+async function matchesCriteria(
+  resource: Resource,
+  subscription: Subscription,
+  context: BackgroundJobContext
+): Promise<boolean> {
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
