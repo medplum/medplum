@@ -2,7 +2,7 @@ import { Operator } from '../search/search';
 import { parseFilterParameter } from './parse';
 import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from './types';
 
-describe('_filter Paramter parser', () => {
+describe('_filter Parameter parser', () => {
   test('Simple comparison', () => {
     const result = parseFilterParameter('name co "pet"');
     expect(result).toBeDefined();
