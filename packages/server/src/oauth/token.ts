@@ -1,5 +1,6 @@
 import {
   createReference,
+  normalizeErrorString,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
@@ -348,7 +349,13 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
-  const userInfo = await getExternalUserInfo(idp, subjectToken);
+  let userInfo;
+  try {
+    userInfo = await getExternalUserInfo(idp, subjectToken);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
+    return;
+  }
 
   let email: string | undefined = undefined;
   let externalId: string | undefined = undefined;
