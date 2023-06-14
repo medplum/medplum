@@ -1,15 +1,15 @@
-import { OAuthGrantType, OAuthTokenType, createReference, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
+import { createReference, OAuthGrantType, OAuthTokenType, parseJWTPayload, parseSearchDefinition } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
-import { SignJWT, generateKeyPair, jwtVerify } from 'jose';
+import { generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig, MedplumServerConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { createTestProject } from '../test.setup';
 import { generateSecret } from './keys';
@@ -1446,6 +1446,7 @@ describe('OAuth2 Token', () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
+      headers: { get: () => 'application/json' },
     }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
@@ -1456,6 +1457,27 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(200);
     expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange non-JSON response', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      json: () => {
+        throw new Error('Invalid JSON');
+      },
+      text: () => 'Unexpected error',
+      headers: { get: () => 'text/plain' },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
   });
 
   test('Token exchange missing client ID', async () => {
