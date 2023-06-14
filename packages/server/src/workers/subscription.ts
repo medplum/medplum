@@ -263,10 +263,16 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     // If the subscription has been disabled, then stop processing it.
     return;
   }
+
+  // If subscription is a delete interaction, then send the delete request and stop processing it.
   const isDelete = isDeleteInteraction(subscription);
   if (isDelete) {
-    sendDeleteRestHook(job, subscription, resource);
-    return;
+    try {
+      await sendDeleteRestHook(job, subscription, { resourceType: resourceType, id: id } as Resource);
+      return;
+    } catch (err) {
+      catchJobError(subscription, job, err);
+    }
   }
 
   let currentVersion;
@@ -298,17 +304,7 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
       }
     }
   } catch (err) {
-    const maxJobAttempts =
-      getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
-        ?.valueInteger ?? MAX_JOB_ATTEMPTS;
-
-    if (job.attemptsMade < maxJobAttempts) {
-      logger.debug(`Retrying job due to error: ${err}`);
-      throw err;
-    } else {
-      // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
-      logger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
-    }
+    catchJobError(subscription, job, err);
   }
 }
 
@@ -373,17 +369,11 @@ async function sendRestHook(
  * Builds a collection of HTTP request headers for the rest-hook subscription.
  * @param subscription The subscription resource.
  * @param resource The trigger resource.
- * @param additionalHeaders Additional Headers.
  * @returns The HTTP request headers.
  */
-function buildRestHookHeaders(
-  subscription: Subscription,
-  resource: Resource,
-  additionalHeaders?: HeadersInit
-): HeadersInit {
+function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/fhir+json',
-    ...additionalHeaders,
   };
 
   if (subscription.channel?.header) {
@@ -451,6 +441,12 @@ async function execBot(subscription: Subscription, resource: Resource): Promise<
   await createAuditEvent(resource, startTime, outcome, logResult, subscription, bot);
 }
 
+/**
+ * Sends a rest-hook subscription for deleted resource. Extra header is passed and the body is empty.
+ * @param job The subscription job details.
+ * @param subscription The subscription.
+ * @param resource The resource that triggered the subscription to add to the Audit Event.
+ */
 async function sendDeleteRestHook(
   job: Job<SubscriptionJobData>,
   subscription: Subscription,
@@ -464,9 +460,9 @@ async function sendDeleteRestHook(
   }
 
   const startTime = new Date().toISOString();
-  const headers = buildRestHookHeaders(subscription, resource, {
-    'X-Medplum-Deleted-Resource': `${resource.resourceType}/${resource.id}`,
-  });
+  const headers = buildRestHookHeaders(subscription, resource) as any;
+
+  headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
 
   try {
     logger.info('Sending rest hook to: ' + url);
@@ -475,7 +471,7 @@ async function sendDeleteRestHook(
     logger.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
-      resource,
+      {} as Resource,
       startTime,
       success ? AuditEventOutcome.Success : AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received status ${response.status}`,
@@ -484,11 +480,25 @@ async function sendDeleteRestHook(
   } catch (ex) {
     logger.info('Subscription exception: ' + ex);
     await createAuditEvent(
-      resource,
+      {} as Resource,
       startTime,
       AuditEventOutcome.MinorFailure,
       `Attempt ${job.attemptsMade} received error ${ex}`,
       subscription
     );
+  }
+}
+
+function catchJobError(subscription: Subscription, job: Job<SubscriptionJobData>, err: any): void {
+  const maxJobAttempts =
+    getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-max-attempts')
+      ?.valueInteger ?? MAX_JOB_ATTEMPTS;
+
+  if (job.attemptsMade < maxJobAttempts) {
+    logger.debug(`Retrying job due to error: ${err}`);
+    throw err;
+  } else {
+    // If the maxJobAttempts equals the jobs.attemptsMade, we won't throw, which won't trigger a retry
+    logger.debug(`Max attempts made for job ${job.id}, subscription: ${subscription.id}`);
   }
 }
