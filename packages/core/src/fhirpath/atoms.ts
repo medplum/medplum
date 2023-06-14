@@ -19,7 +19,6 @@ export class FhirPathAtom implements Atom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     try {
       if (input.length > 0) {
-        console.log(this.child)
         return input.map((e) => this.child.eval(context, [e])).flat();
       } else {
         return this.child.eval(context, []);
@@ -54,6 +53,9 @@ export class SymbolAtom implements Atom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     if (this.name === '$this') {
       return input;
+    }
+    if (this.name[0] === '%') {
+      return [context.variables[this.name.slice(1)]];
     }
     return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];
   }

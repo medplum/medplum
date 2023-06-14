@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { isDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -149,17 +149,23 @@ function matchesCriteria(resource: Resource, subscription: Subscription, context
     return false;
   }
 
-  const criteria = subscription.criteria;
-  if (!criteria) {
+  const subscriptionCriteria = subscription.criteria;
+  if (!subscriptionCriteria) {
     logger.debug(`Ignore rest hook missing criteria`);
     return false;
   }
 
-  const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+  const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
     logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
     );
+    return false;
+  }
+
+  const fhirPathCriteria = isFhirCriteriaMet(subscription, resource);
+  if (!fhirPathCriteria) {
+    logger.debug(`Ignore rest hook for criteria returning false`);
     return false;
   }
 

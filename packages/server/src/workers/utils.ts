@@ -8,7 +8,7 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, evalFhirPathTyped, getExtension, MedplumClient, Operator } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, Operator } from '@medplum/core';
 import { AuditEventOutcome } from '../util/auditevent';
 import { logger } from '../logger';
 import { toTypedValue } from '@medplum/core';
@@ -117,20 +117,23 @@ export function isDeleteInteraction(subscription: Subscription): boolean {
   return supportedInteractionExtension?.valueCode === 'delete';
 }
 
-export async function isFhirCriteriaMet(
-  subscription: Subscription,
-  currentResource: Resource,
-  medplum: MedplumClient
-): Promise<boolean> {
-  const criteria = getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/subscription-criteria');
+export async function isFhirCriteriaMet(subscription: Subscription, currentResource: Resource): Promise<boolean> {
+  const criteria = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression'
+  );
   if (!criteria?.valueString) {
     return true;
   }
-  const history = await medplum.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
   const previousResource = history.entry?.[1]?.resource as Resource;
+  // If there is no previous resource, then we can't compare and have the criteria to be met
+  if (!previousResource) {
+    return true;
+  }
   const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue(previousResource) };
-  const evalString = evalFhirPathTyped(criteria.valueString, [currentResource], evalInput);
-  if (evalString[0].value.toString() === 'true') {
+  const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
+  if (evalValue?.[0].value === true) {
     return true;
   }
   return false;

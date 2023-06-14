@@ -488,6 +488,29 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
+  test('Context no value comparison', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+
+    const patient2: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+    const variables = {current: toTypedValue(patient2)};
+    const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
+
+    expect(result).toEqual([undefined]);
+  });
+
+
   test('Choice of type', () => {
     const observations: Observation[] = [
       {
