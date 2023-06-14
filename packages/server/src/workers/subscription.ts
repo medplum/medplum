@@ -120,7 +120,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    if (matchesCriteria(resource, subscription, context)) {
+    const criteria = await matchesCriteria(resource, subscription, context);
+    if (criteria) {
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -138,7 +139,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
  * @param context Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
-function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): boolean {
+async function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): Promise<boolean> {
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
@@ -163,7 +164,7 @@ function matchesCriteria(resource: Resource, subscription: Subscription, context
     return false;
   }
 
-  const fhirPathCriteria = isFhirCriteriaMet(subscription, resource);
+  const fhirPathCriteria = await isFhirCriteriaMet(subscription, resource);
   if (!fhirPathCriteria) {
     logger.debug(`Ignore rest hook for criteria returning false`);
     return false;
