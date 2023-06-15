@@ -103,6 +103,14 @@ describe('Subscription Worker', () => {
 
     // Update should also trigger the subscription
     expect(queue.add).toHaveBeenCalled();
+
+    // Clear the queue
+    queue.add.mockClear();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).toHaveBeenCalled();
   });
 
   test('Status code 201', async () => {
