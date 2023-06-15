@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -268,15 +268,19 @@ export function normalizeErrorString(error: unknown): string {
  * @returns The string representation of the operation outcome.
  */
 export function operationOutcomeToString(outcome: OperationOutcome): string {
-  const strs = [];
-  if (outcome.issue) {
-    for (const issue of outcome.issue) {
-      let issueStr = issue.details?.text || 'Unknown error';
-      if (issue.expression?.length) {
-        issueStr += ` (${issue.expression.join(', ')})`;
-      }
-      strs.push(issueStr);
-    }
-  }
+  const strs = outcome.issue?.map(operationOutcomeIssueToString) ?? [];
   return strs.length > 0 ? strs.join('; ') : 'Unknown error';
+}
+
+/**
+ * Returns a string represenation of the operation outcome issue.
+ * @param issue The operation outcome issue.
+ * @returns The string representation of the operation outcome issue.
+ */
+export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): string {
+  let issueStr = issue.details?.text ?? issue.diagnostics ?? 'Unknown error';
+  if (issue.expression?.length) {
+    issueStr += ` (${issue.expression.join(', ')})`;
+  }
+  return issueStr;
 }
