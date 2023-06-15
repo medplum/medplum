@@ -534,7 +534,7 @@ describe('FHIRPath parser', () => {
     const variables = { current: toTypedValue(patient2) };
 
     expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
-      `FhirPathError on "%current=%previous": TypeError: Cannot read properties of undefined (reading 'value')`
+      `Undefined variable %previous`
     );
   });
 

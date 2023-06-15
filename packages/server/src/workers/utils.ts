@@ -125,14 +125,13 @@ export async function isFhirCriteriaMet(subscription: Subscription, currentResou
     return true;
   }
   const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue({}) };
   const previousResource = history.entry?.[1]?.resource as Resource;
-  // If there is no previous resource, then we can't compare and have the criteria automatically pass
-  if (!previousResource) {
-    return true;
+  if (previousResource) {
+    evalInput.previous = toTypedValue(previousResource);
   }
-  const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue(previousResource) };
   const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
-  if (evalValue?.[0].value === true) {
+  if (evalValue?.[0]?.value === true) {
     return true;
   }
   return false;
