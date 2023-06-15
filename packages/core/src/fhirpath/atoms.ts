@@ -54,7 +54,7 @@ export class SymbolAtom implements Atom {
     if (this.name === '$this') {
       return input;
     }
-    if (this.name[0] === '%') {
+    if (this.name.startsWith('%')) {
       return [context.variables[this.name.slice(1)]];
     }
     return input.flatMap((e) => this.evalValue(e)).filter((e) => e?.value !== undefined) as TypedValue[];

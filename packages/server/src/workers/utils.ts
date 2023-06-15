@@ -8,10 +8,9 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, evalFhirPathTyped, getExtension, Operator } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, Operator, toTypedValue } from '@medplum/core';
 import { AuditEventOutcome } from '../util/auditevent';
 import { logger } from '../logger';
-import { toTypedValue } from '@medplum/core';
 
 export async function findProjectMembership(
   project: string,
