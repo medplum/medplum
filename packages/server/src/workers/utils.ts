@@ -108,6 +108,14 @@ export async function createAuditEvent(
   });
 }
 
+export function isDeleteInteraction(subscription: Subscription): boolean {
+  const supportedInteractionExtension = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
+  );
+  return supportedInteractionExtension?.valueCode === 'delete';
+}
+
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,
