@@ -8,9 +8,9 @@ Use the following FHIR extensions to customize the Subscription behavior. The be
 
 ## Interactions
 
-By default, FHIR Subscriptions will execute on both "create" and "update" operations.
+By default, FHIR Subscriptions will execute on "create", "update", "delete" operations.
 
-To restrict the FHIR Subscription to only execute on "create", use the `http://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
+To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
 ```json
 {
@@ -30,6 +30,21 @@ To restrict the FHIR Subscription to only execute on "create", use the `http://m
   ]
 }
 ```
+
+The response for a deleted resource will contain:
+
+```json
+{
+  "method": "POST",
+  "body": "{}",
+  "headers": {
+    "Content-Type": "application/fhir+json",
+    "X-Medplum-Deleted-Resource": "${ResourceType}/${patient.id}"
+  }
+}
+```
+
+To execute only on "delete", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `delete`.
 
 ## Signatures
 
@@ -109,10 +124,9 @@ To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/
 }
 ```
 
-
 ## Custom Status Codes
 
-HTTP status codes can be customized to determine the success of the subscription operation. 
+HTTP status codes can be customized to determine the success of the subscription operation.
 
 To add custom codes, use the `https://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
 
@@ -133,8 +147,8 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-success-codes",
-      "valueString": "200-399,404",
-    },
+      "valueString": "200-399,404"
+    }
   ]
 }
 ```
