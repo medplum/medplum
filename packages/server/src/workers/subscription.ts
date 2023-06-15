@@ -20,7 +20,7 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, isDeleteInteraction, isFhirCriteriaMet, isJobSuccessful } from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
