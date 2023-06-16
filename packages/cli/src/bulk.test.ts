@@ -1,11 +1,13 @@
 import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
+import { getUnmappedExtension } from './bulk';
 import { createMedplumClient } from './util/client';
 
 const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
   `{"resourceType":"Patient", "id":"2222222"}`,
   `{"resourceType":"Patient", "id":"3333333"}`,
+  `{"resourceType":"ExplanationOfBenefit", "id":"1111111"}`,
 ];
 jest.mock('./util/client');
 jest.mock('child_process');
@@ -233,7 +235,26 @@ describe('CLI Bulk Commands', () => {
         );
       });
 
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toBeCalled();
+    });
+
+    test('success with option --add-extensions-for-missing-values', async () => {
+      await main(['node', 'index.js', 'bulk', 'import', 'file.json', '--add-extensions-for-missing-values']);
+
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(`"resourceType":"ExplanationOfBenefit","id":"1111111"`),
+        })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(JSON.stringify(getUnmappedExtension())),
+        })
+      );
+
+      expect(fetch).toBeCalled();
     });
   });
 });

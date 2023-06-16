@@ -54,7 +54,7 @@ bulkImportCommand
     const path = resolve(process.cwd(), fileName);
     const { numResourcesPerRequest, addExtensionsForMissingValues } = options;
     const medplum = await createMedplumClient(options);
-    console.log(options);
+
     await importFile(path, parseInt(numResourcesPerRequest), medplum, addExtensionsForMissingValues);
   });
 
@@ -72,7 +72,6 @@ async function importFile(
 
   for await (const line of rl) {
     const resource = parseResource(line, addExtensionsForMissingValues);
-
     entries.push({
       resource: resource,
       request: {
@@ -133,7 +132,7 @@ function addExtensionsForMissingValuesExplanationOfBenefits(resource: Explanatio
   return resource;
 }
 
-function getUnmappedExtension(): Extension {
+export function getUnmappedExtension(): Extension {
   return {
     extension: [
       {
