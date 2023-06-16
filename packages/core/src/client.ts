@@ -27,6 +27,8 @@ import {
   UserConfiguration,
   ValueSet,
 } from '@medplum/fhirtypes';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/** @ts-ignore */
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 import { encodeBase64 } from './base64';
 import { LRUCache } from './cache';

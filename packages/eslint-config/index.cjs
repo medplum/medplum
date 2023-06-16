@@ -102,7 +102,7 @@ module.exports = {
     '@typescript-eslint/prefer-reduce-type-parameter': 'error',
     '@typescript-eslint/prefer-return-this-type': 'error',
     '@typescript-eslint/prefer-string-starts-ends-with': 'error',
-    '@typescript-eslint/prefer-ts-expect-error': 'error',
+    '@typescript-eslint/prefer-ts-expect-error': 'off', // We must use @ts-ignore for optional dependencies in type definitions
     '@typescript-eslint/switch-exhaustiveness-check': 'error',
     '@typescript-eslint/unified-signatures': 'error',
     // TypeScript extensions for base rules
