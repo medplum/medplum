@@ -96,7 +96,7 @@ module.exports = {
     '@typescript-eslint/no-unsafe-enum-comparison': 'error',
     '@typescript-eslint/prefer-for-of': 'error',
     '@typescript-eslint/prefer-includes': 'error',
-    '@typescript-eslint/prefer-function-type': 'error',
+    '@typescript-eslint/prefer-function-type': 'off', // Docusaurus doesn't play nice with function type style
     '@typescript-eslint/prefer-literal-enum-member': 'error',
     '@typescript-eslint/prefer-optional-chain': 'error',
     '@typescript-eslint/prefer-reduce-type-parameter': 'error',
