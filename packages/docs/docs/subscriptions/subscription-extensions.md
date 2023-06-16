@@ -6,9 +6,66 @@ sidebar_position: 3
 
 Use the following FHIR extensions to customize the Subscription behavior. The behavior is non-standard, and will not necessarily work in other FHIR systems.
 
+## Adding Extensions
+
+Here is an example FHIR Subscription Object:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  }
+}
+```
+
+An subscription extension contains an array of objects that have `url` and `value*` in them. To add an extension, use one of medplum's url below that contains the value to be passed.
+
+The extension will look like this:
+
+```json
+{
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "valueInteger": 3
+    }
+  ]
+}
+```
+
+And your final Subscription object will be:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "valueInteger": 3
+    }
+  ]
+}
+```
+
+Below are explanations of the different extensions Medplum Provides
+
 ## Interactions
 
+:::caution Note
 By default, FHIR Subscriptions will execute on "create", "update", "delete" operations.
+:::
 
 To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
@@ -31,6 +88,13 @@ To restrict the FHIR Subscription to only execute on "create", use the `https://
 }
 ```
 
+### Handling Delete Interaction
+
+:::caution Note
+The delete interaction will contain a different response where configuration will be needed on the incoming data.
+Unless the subscription intended is only to be executed upon 'create' or 'update', it will by default be triggered up on it.
+:::
+
 The response for a deleted resource will contain:
 
 ```json
@@ -39,12 +103,20 @@ The response for a deleted resource will contain:
   "body": "{}",
   "headers": {
     "Content-Type": "application/fhir+json",
-    "X-Medplum-Deleted-Resource": "${ResourceType}/${patient.id}"
+    "X-Medplum-Deleted-Resource": "${resource.resourceType}/${resource.id}"
   }
 }
 ```
 
-To execute only on "delete", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `delete`.
+**_Few things to note:_**
+
+`X-Medplum-Deleted-Resource`: Will contain the resource type and resource id that was deleted.
+
+`body`: Will be an empty object in the response `{}`
+
+**_Executing only on delete_**
+
+Use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `delete`.
 
 ## Signatures
 
