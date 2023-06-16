@@ -43,19 +43,19 @@ const fhirTypeToJsType: Record<string, string> = {
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
 const validationRegexes: Record<string, RegExp> = {
-  base64Binary: /^([A-Za-z0-9+/]{4})*([A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/,
+  base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
-  date: /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1]))?)?$/,
+  date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
   dateTime:
-    /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2][0-9]|3[0-1])(T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]{1,9})?)?)?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00)?)?)?$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
-    /^([0-9]([0-9]([0-9][1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])T([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]{1,9})?(Z|(\+|-)((0[0-9]|1[0-3]):[0-5][0-9]|14:00))$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
   markdown: /^[\s\S]+$/,
-  oid: /^urn:oid:[0-2](\.(0|[1-9][0-9]*))+$/,
+  oid: /^urn:oid:[0-2](\.(0|[1-9]\d*))+$/,
   string: /^[\s\S]+$/,
-  time: /^([01][0-9]|2[0-3]):[0-5][0-9]:([0-5][0-9]|60)(\.[0-9]{1,9})?$/,
+  time: /^([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?$/,
   uri: /^\S*$/,
   url: /^\S*$/,
   uuid: /^urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
@@ -112,12 +112,11 @@ class ResourceValidator {
 
   private checkProperty(value: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
     const propertyValues = getNestedProperty(value, key);
+    const element = schema.fields[key];
+    if (!element) {
+      throw new Error(`Missing element validation schema for ${key}`);
+    }
     for (const property of propertyValues) {
-      const element = schema.fields[key];
-      if (!element) {
-        throw new Error(`Missing element validation schema for ${key}`);
-      }
-
       if (isEmpty(property)) {
         if (element.min > 0) {
           this.issues.push(createStructureIssue(path, 'Missing required property'));
@@ -260,9 +259,8 @@ function isChoiceOfType(
 ): boolean {
   const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
-  for (let i = 0; i < parts.length; i++) {
-    // const testProperty = parts.slice(0, i).join('');
-    testProperty += parts[i];
+  for (const part of parts) {
+    testProperty += part;
     if (!propertyDefinitions[testProperty + '[x]']) {
       continue;
     }

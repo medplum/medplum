@@ -167,6 +167,22 @@ export function validationError(details: string): OperationOutcome {
   };
 }
 
+export function serverError(err: Error): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    issue: [
+      {
+        severity: 'error',
+        code: 'exception',
+        details: {
+          text: 'Internal server error',
+        },
+        diagnostics: err.toString(),
+      },
+    ],
+  };
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }

@@ -1,7 +1,8 @@
 import { Bundle, ElementDefinition, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
-import { capitalize } from '../utils';
+import { capitalize, isEmpty } from '../utils';
+import { OperationOutcomeError, serverError } from '../outcomes';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
@@ -89,7 +90,7 @@ export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
 export function getDataType(type: string): InternalTypeSchema {
   const schema = DATA_TYPES[type];
   if (!schema) {
-    throw new Error('Unknown data type: ' + type);
+    throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
   }
   return schema;
 }
@@ -305,8 +306,8 @@ class StructureDefinitionParser {
           : t.code ?? '',
         targetProfile: t.targetProfile ?? [],
       })),
-      fixed: [getTypedPropertyValue(typedElementDef, 'fixed')].flat()[0],
-      pattern: [getTypedPropertyValue(typedElementDef, 'pattern')].flat()[0],
+      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
+      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
       binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
     };
   }
@@ -317,10 +318,13 @@ function parseCardinality(c: string): number {
 }
 
 function elementPath(element: ElementDefinition, prefix = ''): string {
-  return trimPrefix(element.path ?? '', prefix);
+  return trimPrefix(element.path, prefix);
 }
 
-function trimPrefix(str: string, prefix: string): string {
+function trimPrefix(str: string | undefined, prefix: string): string {
+  if (!str) {
+    return '';
+  }
   if (prefix && str.startsWith(prefix)) {
     return str.substring(prefix.length + 1);
   }
@@ -345,4 +349,14 @@ function buildTypeName(components: string[]): string {
     return components[0];
   }
   return components.map(capitalize).join('');
+}
+
+function firstValue(obj: TypedValue | TypedValue[] | undefined): TypedValue | undefined {
+  if (Array.isArray(obj) && obj.length > 0) {
+    return obj[0];
+  } else if (!isEmpty(obj)) {
+    return obj as TypedValue;
+  } else {
+    return undefined;
+  }
 }
