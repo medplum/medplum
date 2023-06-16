@@ -22,6 +22,12 @@ Use one of these authentication options:
 
 1. Stored credentials in `~/.medplum/credentials`. You can use the `medplum login` command (see below) to automatically create this file.
 2. Client credentials in environment variables `MEDPLUM_CLIENT_ID` and `MEDPLUM_CLIENT_SECRET`. `dotenv` is enabled, so you can store them in a `.env` file.
+3. Client credentials in optional command flags.
+
+- `--client-id <clientId>`
+  - FHIR server client id
+- `--client-secret <clientSecret>`
+  - FHIR server client id
 
 ## Usage
 
@@ -38,6 +44,17 @@ npx medplum <command> <args>
 ```
 
 By default, the `medplum` command uses the Medplum hosted API at "https://api.medplum.com". If you want to use the `medplum` command against your own self-hosted server, you can use the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
+
+### optional flags
+
+- `--base-url <baseUrl>`
+  - FHIR server base url
+- `--fhir-url-path <fhirUrlPath>`
+  - FHIR server url path
+- `--tokenUrl <tokenUrl>`
+  - FHIR server token url
+- `--authorizeUrl <authorizeUrl>`
+  - FHIR server authorize url
 
 ### Auth
 
@@ -421,4 +438,4 @@ medplum bulk import [options] <filename>
 ##### optional flags for `bulk import`
 
 - `--num-resources-per-request <numResourcesPerRequest>`
-  - number of resources to import per batch request. Defaults to 25. (default: "25")
+  - number of resources to import per batch request. Defaults to 25.
