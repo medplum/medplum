@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { BundleEntry } from '@medplum/fhirtypes';
+import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Extension, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
@@ -45,15 +45,25 @@ bulkImportCommand
     'optional number of resources to import per batch request. Defaults to 25.',
     '25'
   )
+  .option(
+    '--add-extensions-for-missing-values',
+    'optional flag to add extensions for missing values in a resource',
+    false
+  )
   .action(async (fileName, options) => {
     const path = resolve(process.cwd(), fileName);
-    const { numResourcesPerRequest } = options;
+    const { numResourcesPerRequest, addExtensionsForMissingValues } = options;
     const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest), medplum);
+    await importFile(path, parseInt(numResourcesPerRequest), medplum, addExtensionsForMissingValues);
   });
 
-async function importFile(path: string, numResourcesPerRequest: number, medplum: MedplumClient): Promise<void> {
+async function importFile(
+  path: string,
+  numResourcesPerRequest: number,
+  medplum: MedplumClient,
+  addExtensionsForMissingValues: boolean
+): Promise<void> {
   let entries = [] as BundleEntry[];
   const fileStream = createReadStream(path);
   const rl = createInterface({
@@ -61,7 +71,7 @@ async function importFile(path: string, numResourcesPerRequest: number, medplum:
   });
 
   for await (const line of rl) {
-    const resource = JSON.parse(line);
+    const resource = parseResource(line, addExtensionsForMissingValues);
     entries.push({
       resource: resource,
       request: {
@@ -89,4 +99,46 @@ async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient):
   result.entry?.forEach((resultEntry) => {
     prettyPrint(resultEntry.response);
   });
+}
+
+function parseResource(jsonString: string, addExtensionsForMissingValues: boolean): Resource {
+  const resource = JSON.parse(jsonString);
+
+  if (addExtensionsForMissingValues) {
+    return addExtensionsForMissingValuesResource(resource);
+  }
+
+  return resource;
+}
+
+function addExtensionsForMissingValuesResource(resource: Resource): Resource {
+  if (resource.resourceType === 'ExplanationOfBenefit') {
+    return addExtensionsForMissingValuesExplanationOfBenefits(resource);
+  }
+  return resource;
+}
+
+function addExtensionsForMissingValuesExplanationOfBenefits(resource: ExplanationOfBenefit): ExplanationOfBenefit {
+  if (!resource.provider) {
+    resource.provider = getUnmappedExtension();
+  }
+
+  resource.item?.forEach((item: ExplanationOfBenefitItem) => {
+    if (!item?.productOrService) {
+      item.productOrService = getUnmappedExtension();
+    }
+  });
+
+  return resource;
+}
+
+export function getUnmappedExtension(): Extension {
+  return {
+    extension: [
+      {
+        url: 'https://g.co/unmapped-by-bcda',
+        valueString: 'This is a required FHIR R4 Field, but not mapped by BCDA, which is why we expect it to be empty.',
+      },
+    ],
+  };
 }
