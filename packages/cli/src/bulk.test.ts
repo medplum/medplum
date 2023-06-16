@@ -7,7 +7,8 @@ const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
   `{"resourceType":"Patient", "id":"2222222"}`,
   `{"resourceType":"Patient", "id":"3333333"}`,
-  `{"resourceType":"ExplanationOfBenefit", "id":"1111111", "item":[{"sequence": 1}]}`,
+  `{"resourceType":"ExplanationOfBenefit", "id":"1111111", "item":[{"sequence": 1}]}`, // EOB with missing provider and item.productOrService
+  `{"resourceType":"ExplanationOfBenefit", "id":"2222222", "provider": "someprovider", "item":[{"sequence": 1, "productOrService": "someproduct"}]}`,
 ];
 jest.mock('./util/client');
 jest.mock('child_process');
