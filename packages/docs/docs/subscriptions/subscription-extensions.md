@@ -92,7 +92,7 @@ To restrict the FHIR Subscription to only execute on "create", use the `https://
 
 :::caution Note
 The delete interaction will contain a different response where configuration will be needed on the incoming data.
-Unless the subscription intended is only to be executed upon 'delete', it will by default be triggered up on it.
+Unless the subscription intended is only to be executed upon 'create' or 'update', it will by default be triggered up on it.
 :::
 
 The response for a deleted resource will contain:
