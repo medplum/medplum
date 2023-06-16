@@ -20,9 +20,9 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { FhirRequest, FhirRouter } from './fhirrouter';
+import { FhirRequest, FhirRouter } from '../fhirrouter';
 import { getRootSchema, graphqlHandler } from './graphql';
-import { MemoryRepository } from './repo';
+import { MemoryRepository } from '../repo';
 
 const repo = new MemoryRepository();
 let binary: Binary;
