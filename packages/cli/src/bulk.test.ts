@@ -7,7 +7,7 @@ const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
   `{"resourceType":"Patient", "id":"2222222"}`,
   `{"resourceType":"Patient", "id":"3333333"}`,
-  `{"resourceType":"ExplanationOfBenefit", "id":"1111111"}`,
+  `{"resourceType":"ExplanationOfBenefit", "id":"1111111", "item":[{"sequence": 1}]}`,
 ];
 jest.mock('./util/client');
 jest.mock('child_process');
@@ -250,7 +250,13 @@ describe('CLI Bulk Commands', () => {
       expect(fetch).toBeCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
-          body: expect.stringContaining(JSON.stringify(getUnmappedExtension())),
+          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnmappedExtension())),
+        })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnmappedExtension())),
         })
       );
 
