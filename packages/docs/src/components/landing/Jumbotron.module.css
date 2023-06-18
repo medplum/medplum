@@ -1,0 +1,13 @@
+.jumbotron {
+  max-width: 72rem;
+  display: flex;
+  margin: 20px auto 60px auto;
+  padding: 20px;
+}
+
+@media screen and (max-width: 996px) {
+  .jumbotron {
+    flex-direction: column-reverse;
+    gap: 2rem;
+  }
+}

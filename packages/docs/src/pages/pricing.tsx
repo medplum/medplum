@@ -1,12 +1,13 @@
 import Layout from '@theme/Layout';
 import React from 'react';
-import styles from './index.module.css';
+import { Container } from '../components/Container';
+import styles from './pricing.module.css';
 
 export default function PricingPage(): JSX.Element {
   return (
     <Layout title="Pricing">
-      <div className={styles.pagePadding}>
-        <div className={styles.aboutTitle}>
+      <Container>
+        <div className={styles.pricing}>
           <h1>Pricing</h1>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
             For questions about pricing or to schedule a demo please reach out to us at{' '}
@@ -388,7 +389,7 @@ export default function PricingPage(): JSX.Element {
             </ol>
           </div>
         </div>
-      </div>
+      </Container>
     </Layout>
   );
 }

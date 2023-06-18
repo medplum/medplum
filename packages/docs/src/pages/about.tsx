@@ -1,16 +1,19 @@
 import Layout from '@theme/Layout';
 import React from 'react';
-import styles from './index.module.css';
+import { CardContainer } from '../components/CardContainer';
+import { Section } from '../components/landing/Section';
+import styles from './about.module.css';
+import { Container } from '../components/Container';
 
 export default function AboutPage(): JSX.Element {
   return (
     <Layout title="About us">
-      <div className={styles.pagePadding}>
-        <div className={styles.aboutTitle}>
+      <Container>
+        <div className={styles.title}>
           <h1>Trusted Experts</h1>
         </div>
-        <div className={styles.section}>
-          <div className={styles.cardContainer}>
+        <Section>
+          <CardContainer>
             <div className={styles.profileCard}>
               <div className={styles.profileImage}>
                 <img src="/img/people/reshma.jpg" alt="Reshma Khilnani profile picture" />
@@ -48,9 +51,9 @@ export default function AboutPage(): JSX.Element {
                 <div>Linkedin</div>
               </a>
             </div>
-          </div>
-        </div>
-      </div>
+          </CardContainer>
+        </Section>
+      </Container>
     </Layout>
   );
 }

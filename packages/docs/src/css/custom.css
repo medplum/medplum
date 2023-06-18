@@ -227,3 +227,14 @@ div.theme-code-block {
   word-wrap: normal !important;
   word-break: normal;
 }
+
+/* Use Docusaurus font in Algolia search box */
+span.DocSearch-Button-Placeholder {
+  font-family: var(--ifm-font-family-base);
+  font-size: 11pt;
+}
+
+/* Hide Algolia keyboard shortcut icon */
+span.DocSearch-Button-Keys {
+  display: none;
+}

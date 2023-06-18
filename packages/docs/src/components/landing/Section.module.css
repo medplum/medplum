@@ -1,0 +1,20 @@
+.section {
+  max-width: 72rem;
+  margin: 20px auto 60px auto;
+}
+
+.section pre {
+  background-color: #faf8ff;
+  border-radius: 2rem;
+  padding: 3rem;
+  flex: 1;
+  font-size: 16px;
+}
+
+[data-theme='dark'] .section pre {
+  background-color: #000;
+}
+
+.section code {
+  color: #569aff;
+}

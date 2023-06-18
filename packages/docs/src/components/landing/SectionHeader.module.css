@@ -1,0 +1,23 @@
+.sectionHeader {
+  display: block;
+  margin: 150px auto 0 auto;
+  text-align: center;
+}
+
+.sectionHeader h2 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  font-weight: 300;
+}
+
+.sectionHeader p {
+  margin-bottom: 0px;
+  color: #4d4d4d;
+  font-size: 1rem;
+  font-weight: 400;
+  margin-top: 0;
+}
+
+[data-theme='dark'] .sectionHeader p {
+  color: #b2b2b2;
+}

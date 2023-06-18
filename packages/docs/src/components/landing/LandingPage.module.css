@@ -1,0 +1,117 @@
+.section {
+  max-width: 72rem;
+  display: flex;
+  margin: 50px auto 50px auto;
+  padding: 20px;
+}
+
+@media screen and (max-width: 996px) {
+  .section {
+    flex-direction: column;
+  }
+
+  .heroSection .section {
+    flex-direction: column-reverse;
+    gap: 2rem;
+  }
+}
+
+.heroSection {
+  display: flex;
+  height: 100vh;
+  min-height: 480px;
+  padding-top: 5rem;
+  padding-bottom: 0rem;
+  flex-direction: column;
+  justify-content: center;
+  background-image: radial-gradient(circle farthest-corner at 73% 18%, #f7f4ff, #e0dbf0);
+  transition: all 200ms ease;
+}
+
+[data-theme='dark'] .heroSection {
+  background: radial-gradient(81.56% 81.56% at 73.23% 18.44%, #211e2c 0%, #121116 100%);
+}
+
+.heroContent {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  margin-bottom: 2.9rem;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.heroTitle {
+  font-size: 4rem;
+  line-height: 1.2;
+  font-weight: 300;
+}
+
+@media screen and (max-width: 996px) {
+  .heroTitle {
+    font-size: 2rem;
+  }
+}
+
+.heroText {
+  margin-bottom: 0px;
+  font-family: Poppins, sans-serif;
+  color: #4d4d4d;
+  font-size: 1.125rem;
+  font-weight: 400;
+}
+
+[data-theme='dark'] .heroText {
+  color: #b2b2b2;
+}
+
+.heroImage {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+@media screen and (max-width: 996px) {
+  .heroImage img {
+    width: 300px;
+    height: 300px;
+  }
+}
+
+.getStartedButton {
+  display: flex;
+  height: 4.25rem;
+  max-height: none;
+  margin-top: 3rem;
+  padding-right: 1.125rem;
+  padding-left: 2.5rem;
+  grid-column-gap: 0.625rem;
+  background-color: #946af9;
+  transition: all 200ms ease;
+  font-size: 1.125rem;
+  text-decoration: none;
+  align-items: center;
+  border-style: none;
+  border-width: 1px;
+  border-color: #000;
+  border-radius: 2.5rem;
+  color: #fff;
+  text-align: center;
+  width: 320px;
+  max-width: 320px;
+  justify-content: center;
+}
+
+.getStartedButton:hover {
+  color: #fff;
+  text-decoration: none;
+}
+
+.cardImage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 2rem;
+}
