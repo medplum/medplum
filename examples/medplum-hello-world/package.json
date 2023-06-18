@@ -1,7 +1,7 @@
 {
   "name": "medplum-hello-world",
   "private": true,
-  "version": "2.0.22",
+  "version": "2.0.23",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -12,9 +12,9 @@
     "@mantine/core": "6.0.8",
     "@mantine/hooks": "6.0.8",
     "@mantine/notifications": "6.0.8",
-    "@medplum/core": "2.0.22",
-    "@medplum/fhirtypes": "2.0.22",
-    "@medplum/react": "2.0.22",
+    "@medplum/core": "2.0.23",
+    "@medplum/fhirtypes": "2.0.23",
+    "@medplum/react": "2.0.23",
     "@tabler/icons-react": "2.22.0",
     "@types/node": "20.2.5",
     "@types/react": "18.2.8",
