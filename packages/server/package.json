@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "2.0.22",
+  "version": "2.0.23",
   "description": "Medplum Server",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
