@@ -20,7 +20,13 @@ import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { BackgroundJobContext } from './context';
-import { isDeleteInteraction, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import {
+  createAuditEvent,
+  findProjectMembership,
+  isDeleteInteraction,
+  isFhirCriteriaMet,
+  isJobSuccessful,
+} from './utils';
 
 const MAX_JOB_ATTEMPTS = 18;
 
@@ -120,7 +126,8 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
   const subscriptions = await getSubscriptions(resource);
   logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
   for (const subscription of subscriptions) {
-    if (matchesCriteria(resource, subscription, context)) {
+    const criteria = await matchesCriteria(resource, subscription, context);
+    if (criteria) {
       await addSubscriptionJobData({
         subscriptionId: subscription.id as string,
         resourceType: resource.resourceType,
@@ -138,7 +145,11 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
  * @param context Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
-function matchesCriteria(resource: Resource, subscription: Subscription, context: BackgroundJobContext): boolean {
+async function matchesCriteria(
+  resource: Resource,
+  subscription: Subscription,
+  context: BackgroundJobContext
+): Promise<boolean> {
   if (subscription.meta?.account && resource.meta?.account?.reference !== subscription.meta.account.reference) {
     logger.debug('Ignore resource in different account compartment');
     return false;
@@ -149,17 +160,23 @@ function matchesCriteria(resource: Resource, subscription: Subscription, context
     return false;
   }
 
-  const criteria = subscription.criteria;
-  if (!criteria) {
+  const subscriptionCriteria = subscription.criteria;
+  if (!subscriptionCriteria) {
     logger.debug(`Ignore rest hook missing criteria`);
     return false;
   }
 
-  const searchRequest = parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+  const searchRequest = parseSearchUrl(new URL(subscriptionCriteria, 'https://api.medplum.com/'));
   if (resource.resourceType !== searchRequest.resourceType) {
     logger.debug(
       `Ignore rest hook for different resourceType (wanted "${searchRequest.resourceType}", received "${resource.resourceType}")`
     );
+    return false;
+  }
+
+  const fhirPathCriteria = await isFhirCriteriaMet(subscription, resource);
+  if (!fhirPathCriteria) {
+    logger.debug(`Ignore rest hook for criteria returning false`);
     return false;
   }
 
