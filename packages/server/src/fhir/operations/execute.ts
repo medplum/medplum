@@ -49,10 +49,12 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
 
   // Execute the bot
+  // If the request is HTTP POST, then the body is the input
+  // If the request is HTTP GET, then the query string is the input
   const result = await executeBot({
     bot,
     runAs: res.locals.membership as ProjectMembership,
-    input: req.body,
+    input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
   });
 
