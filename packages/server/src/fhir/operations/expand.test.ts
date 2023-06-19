@@ -199,4 +199,17 @@ describe('Expand', () => {
       },
     });
   });
+
+  test('Handle punctuation', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(
+          'http://hl7.org/fhir/ValueSet/observation-codes'
+        )}&filter=${encodeURIComponent('(left)')}`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body.expansion.contains[0].system).toBe('http://loinc.org');
+    expect(res.body.expansion.contains[0].display).toMatch(/left/i);
+  });
 });

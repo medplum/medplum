@@ -76,6 +76,8 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
       'display_tsv',
       Operator.TSVECTOR_MATCH,
       filter
+        .replace(/[^\p{Letter}\p{Number}]/gu, ' ')
+        .trim()
         .split(/\s+/)
         .map((token) => token + ':*')
         .join(' & ')
