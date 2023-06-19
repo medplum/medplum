@@ -30,7 +30,8 @@ export async function main(configName: string): Promise<void> {
   loadDataTypes(resourceTypes);
 
   const app = await initApp(express(), config);
-  app.listen(config.port);
+  const server = app.listen(config.port);
+  server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
   logger.info('Server started on port', config.port);
 }
 
