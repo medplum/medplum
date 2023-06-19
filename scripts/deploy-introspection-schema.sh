@@ -13,7 +13,7 @@ curl 'http://localhost:8103/fhir/R4/$graphql' \
 
 gzip schema-$version.json
 
-aws s3 cp ./schema-$version.json "s3://graphiq.medplum.com/schema/schema-$version.json" \
+aws s3 cp ./schema-$version.json.gz "s3://graphiq.medplum.com/schema/schema-$version.json" \
   --content-type "application/json" \
   --content-encoding "gzip" \
   --cache-control "public, max-age=31536000"
