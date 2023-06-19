@@ -1,20 +1,27 @@
 import {
   globalSchema,
   IndexedStructureDefinition,
-  indexSearchParameter,
+  indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  loadDataTypes,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 
 let loaded = false;
 
 export function getStructureDefinitions(): IndexedStructureDefinition {
   if (!loaded) {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
-    buildSearchParameters();
+    const dataTypes = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
+    const resourceTypes = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+    const medplumTypes = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
+    indexStructureDefinitionBundle(dataTypes);
+    indexStructureDefinitionBundle(resourceTypes);
+    indexStructureDefinitionBundle(medplumTypes);
+    loadDataTypes(dataTypes);
+    loadDataTypes(resourceTypes);
+    loadDataTypes(medplumTypes);
+    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
     loaded = true;
   }
   return globalSchema;
@@ -26,11 +33,4 @@ export function getSearchParameters(resourceType: string): Record<string, Search
 
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
   return getSearchParameters(resourceType)?.[code];
-}
-
-function buildSearchParameters(): void {
-  const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
-  for (const entry of searchParams.entry as BundleEntry<SearchParameter>[]) {
-    indexSearchParameter(entry.resource as SearchParameter);
-  }
 }
