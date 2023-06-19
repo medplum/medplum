@@ -38,6 +38,7 @@ export interface MedplumServerConfig {
   registerEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
+  keepAliveTimeout?: number;
 }
 
 /**
