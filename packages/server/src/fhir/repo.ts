@@ -5,6 +5,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
   evalFhirPathTyped,
+  experimentalValidateResource,
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterExpression,
@@ -498,6 +499,11 @@ export class Repository extends BaseRepository implements FhirRepository {
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
     if (this.context.strictMode) {
       validateResource(resource);
+      try {
+        experimentalValidateResource(resource);
+      } catch (err) {
+        logger.warn('Experimental validator error', err);
+      }
     } else {
       validateResourceWithJsonSchema(resource);
     }

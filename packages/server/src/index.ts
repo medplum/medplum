@@ -1,6 +1,6 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, loadDataTypes } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
@@ -21,9 +21,13 @@ export async function main(configName: string): Promise<void> {
   const config = await loadConfig(configName);
 
   // Preload the schema
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  const dataTypes = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
+  const resourceTypes = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+  indexStructureDefinitionBundle(dataTypes);
+  indexStructureDefinitionBundle(resourceTypes);
   indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  loadDataTypes(dataTypes);
+  loadDataTypes(resourceTypes);
 
   const app = await initApp(express(), config);
   app.listen(config.port);

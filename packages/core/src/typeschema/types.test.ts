@@ -1,9 +1,21 @@
 import { readFileSync } from 'fs';
-import { ElementValidator, SlicingRules, parseStructureDefinition } from './types';
+import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition } from './types';
 import { resolve } from 'path';
 
 describe('FHIR resource and data type representations', () => {
-  test('Basic parsing', () => {
+  test('Base resource parsing', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'base-patient.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.name).toBe('Patient');
+    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+      'PatientCommunication',
+      'PatientContact',
+      'PatientLink',
+    ]);
+  });
+
+  test('Constraining profile parsing', () => {
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
@@ -97,6 +109,70 @@ describe('FHIR resource and data type representations', () => {
         },
       ],
       ordered: false,
+    });
+    expect(profile.innerTypes).toHaveLength(2);
+    const [refRange, component] = profile.innerTypes;
+    expect(refRange).toMatchObject<Partial<InternalTypeSchema>>({
+      name: 'ObservationReferenceRange',
+      fields: {
+        id: expect.objectContaining({}),
+        low: expect.objectContaining({}),
+        high: expect.objectContaining({}),
+      },
+    });
+    expect(component).toMatchObject<Partial<InternalTypeSchema>>({
+      name: 'ObservationComponent',
+      fields: {
+        id: expect.objectContaining({}),
+        code: expect.objectContaining({}),
+        'value[x]': expect.objectContaining({}),
+      },
+    });
+  });
+
+  test('Nested BackboneElement parsing', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'capability-statement.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.innerTypes.map((t) => t.name).sort()).toEqual([
+      'CapabilityStatementDocument',
+      'CapabilityStatementImplementation',
+      'CapabilityStatementMessaging',
+      'CapabilityStatementMessagingEndpoint',
+      'CapabilityStatementMessagingSupportedMessage',
+      'CapabilityStatementRest',
+      'CapabilityStatementRestInteraction',
+      'CapabilityStatementRestResource',
+      'CapabilityStatementRestResourceInteraction',
+      'CapabilityStatementRestResourceOperation',
+      'CapabilityStatementRestResourceSearchParam',
+      'CapabilityStatementRestSecurity',
+      'CapabilityStatementSoftware',
+    ]);
+
+    const rest = profile.innerTypes.find((t) => t.name === 'CapabilityStatementRest');
+    const restProperties = Object.keys(rest?.fields ?? {});
+    expect(restProperties.sort()).toEqual([
+      'compartment',
+      'documentation',
+      'extension',
+      'id',
+      'interaction',
+      'mode',
+      'modifierExtension',
+      'operation',
+      'resource',
+      'searchParam',
+      'security',
+    ]);
+    expect(rest?.fields['interaction']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestInteraction', targetProfile: [] }],
+    });
+    expect(rest?.fields['searchParam']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestResourceSearchParam', targetProfile: [] }],
+    });
+    expect(rest?.fields['operation']).toMatchObject<Partial<ElementValidator>>({
+      type: [{ code: 'CapabilityStatementRestResourceOperation', targetProfile: [] }],
     });
   });
 });
