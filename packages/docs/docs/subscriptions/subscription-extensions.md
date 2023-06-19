@@ -227,7 +227,7 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
 
 ## fhirPathCritera
 
-Medplum offers an extension for triggering subscriptions based on a string expression. This string expression takes in two variables: `%previous` and `%current`. These two variables are the same resource and are compared to one another. The expression should return either `True` or `False`.
+Medplum offers an extension for triggering subscriptions based on a string expression. This string expression takes in two variables: `%previous` and `%current`. These two variables are the same resource and are compared to one another. The expression should return either `true` or `false`.
 
 Here is an example `subscription` resource with a fhirPathCriteria expression that compares the Patient resource:
 
