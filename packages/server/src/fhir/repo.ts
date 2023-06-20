@@ -497,17 +497,7 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
-    if (this.context.strictMode) {
-      validateResource(resource);
-      try {
-        experimentalValidateResource(resource);
-      } catch (err) {
-        logger.warn('Experimental validator error', err);
-      }
-    } else {
-      validateResourceWithJsonSchema(resource);
-    }
-
+    this.validate(resource);
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
     }
@@ -582,6 +572,30 @@ export class Repository extends BaseRepository implements FhirRepository {
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
+  }
+
+  private validate(resource: Resource): void {
+    let currentErr, experimentErr;
+    if (this.context.strictMode) {
+      try {
+        validateResource(resource);
+      } catch (err) {
+        currentErr = err;
+      }
+      try {
+        experimentalValidateResource(resource);
+      } catch (err) {
+        experimentErr = err;
+      }
+      if (Boolean(currentErr) !== Boolean(experimentErr)) {
+        logger.warn('Experimental validator deviation: current=', currentErr, 'next=', experimentErr);
+      }
+      if (currentErr) {
+        throw currentErr;
+      }
+    } else {
+      validateResourceWithJsonSchema(resource);
+    }
   }
 
   /**
