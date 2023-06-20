@@ -13,7 +13,7 @@ We welcome all who are interested to participate. This page includes pointers an
 We have several online venues where Medplum community members and team members convene.
 
 1. Star the [Medplum Github Repo](https://github.com/medplum/medplum)
-2. Join our [Discord](https://discord.gg/UBAWwvrVeN) - and introduce yourself
+2. Join our [Discord](https://discord.gg/medplum) - and introduce yourself
 3. Subscribe to [Medplum on LinkedIn](https://www.linkedin.com/company/medplum)
 4. Follow [Medplum on Twitter](https://twitter.com/Medplum1)
 5. Subscribe to our [Youtube Channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA)

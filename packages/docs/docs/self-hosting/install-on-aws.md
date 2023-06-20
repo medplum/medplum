@@ -12,7 +12,7 @@ This is a complex multi step process, and requires high proficiency with AWS, No
 
 Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
-If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/UBAWwvrVeN).
+If you have any questions, please [contact us](mailto:hello@medplum.com) or [join our Discord](https://discord.gg/medplum).
 
 :::
 

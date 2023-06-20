@@ -139,7 +139,7 @@ So once, assuming a developer is our audience and people who we think about as u
 
 We are early in our open source life, so I'm really excited for the chance to meet you all and to have your, your thoughts and feedback and engagement as part of this community. But we, you know, we publicly launched in September around 190 GitHub stars, if that's a metric that people care about. We're, just getting started 13 contributors and around 80 in in our discord, and we just released our v1. So we're like you know, in the stage of having, we do have some definitely implementations on the platform and are working to move past the early adopters in this coming year and have some more established players.
 
-**Updated stats as of April 14, 2023 - 622 Github Stars, 25 Contributors, 261 in [Discord](https://discord.gg/UBAWwvrVeN)**
+**Updated stats as of April 14, 2023 - 622 Github Stars, 25 Contributors, 261 in [Discord](https://discord.gg/medplum)**
 
 ## Business Model
 

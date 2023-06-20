@@ -70,4 +70,4 @@ We continue to take dependency management very seriously, and use automation whe
 - [SonarCloud](https://www.sonarsource.com/products/sonarcloud/) scans every PR
 - [Snyk](https://snyk.io/) scans every Docker image
 
-I'd be happy to discuss further if you have any questions, or if you have any suggestions on how we can do better. [Join our Discord!](https://discord.gg/UBAWwvrVeN)
+I'd be happy to discuss further if you have any questions, or if you have any suggestions on how we can do better. [Join our Discord!](https://discord.gg/medplum)
