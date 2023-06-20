@@ -1,6 +1,6 @@
 import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
-import { getUnsupportedExtension } from './bulk';
+import { getUnsupportedExtension } from './utils';
 import { createMedplumClient } from './util/client';
 
 const testLineOutput = [

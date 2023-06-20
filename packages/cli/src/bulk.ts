@@ -1,12 +1,12 @@
 import { MedplumClient } from '@medplum/core';
-import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Extension, Resource } from '@medplum/fhirtypes';
+import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { prettyPrint } from './utils';
+import { getUnsupportedExtension, prettyPrint } from './utils';
 
 const bulkExportCommand = createMedplumCommand('export');
 const bulkImportCommand = createMedplumCommand('import');
@@ -130,15 +130,4 @@ function addExtensionsForMissingValuesExplanationOfBenefits(resource: Explanatio
   });
 
   return resource;
-}
-
-export function getUnsupportedExtension(): Extension {
-  return {
-    extension: [
-      {
-        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
-        valueCode: 'unsupported',
-      },
-    ],
-  };
 }

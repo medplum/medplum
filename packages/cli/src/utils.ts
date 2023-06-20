@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { Bot, OperationOutcome } from '@medplum/fhirtypes';
+import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { existsSync, readFileSync, writeFile } from 'fs';
 import { resolve } from 'path';
 import internal from 'stream';
@@ -168,4 +168,15 @@ export function safeTarExtractor(destinationDir: string): internal.Writable {
       return true;
     },
   });
+}
+
+export function getUnsupportedExtension(): Extension {
+  return {
+    extension: [
+      {
+        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+        valueCode: 'unsupported',
+      },
+    ],
+  };
 }
