@@ -55,7 +55,7 @@ bulkImportCommand
     'optional flag to add extensions for missing values in a resource',
     false
   )
-  .option('-d, --target-directory <targetDirectory>', 'optional target directory to import files in the directory')
+  .option('-d, --target-directory <targetDirectory>', 'optional target directory of file to be imported')
   .action(async (fileName, options) => {
     const { numResourcesPerRequest, addExtensionsForMissingValues, targetDirectory } = options;
     const path = resolve(targetDirectory ?? process.cwd(), fileName);
