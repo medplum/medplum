@@ -43,4 +43,4 @@ Medplum supports self-hosting, and provides a [hosted service](https://app.medpl
 
 - Read our [documentation](https://www.medplum.com/docs)
 - Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
-- Join our [Discord](https://discord.gg/UBAWwvrVeN)
+- Join our [Discord](https://discord.gg/medplum)

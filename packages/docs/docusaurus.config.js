@@ -162,7 +162,7 @@ const config = {
               },
               {
                 label: 'Discord',
-                to: 'https://discord.gg/UBAWwvrVeN',
+                to: 'https://discord.gg/medplum',
               },
               {
                 label: 'Storybook',
