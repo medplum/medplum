@@ -38,6 +38,10 @@ if [[ "$FILES_CHANGED" =~ cicd-deploy.sh ]]; then
   DEPLOY_SERVER=true
 fi
 
+if [[ "$FILES_CHANGED" =~ deploy-introspection-schema.sh ]]; then
+  DEPLOY_GRAPHIQL=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
