@@ -3445,4 +3445,14 @@ describe('FHIR Repo', () => {
     expect(bundle.entry?.[1]?.resource?.id).toEqual(task3.id);
     expect(bundleContains(bundle, task1)).not.toBeTruthy();
   });
+
+  test('Malformed client assigned ID', async () => {
+    try {
+      await systemRepo.updateResource({ resourceType: 'Patient', id: '123' });
+      throw new Error('expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
+    }
+  });
 });

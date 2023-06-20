@@ -497,6 +497,15 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
+    const { resourceType, id } = resource;
+    if (!id) {
+      throw new OperationOutcomeError(badRequest('Missing id'));
+    }
+
+    if (!validator.isUUID(id)) {
+      throw new OperationOutcomeError(badRequest('Invalid id'));
+    }
+
     if (this.context.strictMode) {
       validateResource(resource);
       try {
@@ -510,11 +519,6 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
-    }
-
-    const { resourceType, id } = resource;
-    if (!id) {
-      throw new OperationOutcomeError(badRequest('Missing id'));
     }
 
     if (!this.canWriteResourceType(resourceType)) {
