@@ -30,6 +30,5 @@ The workflow requires tight coordination and real-time synchronization between m
 
 ## Related Materials
 
-- [How It Works](https://ro.co/weight-loss/#timelineSection-l2o3qWi7TYyp0Txr0ckO8) from the patient perspective
 - [Technical Documentation](https://docs.kit.com/docs/overview)
 - [Press Release](https://www.fiercehealthcare.com/tech/ro-scoops-up-at-home-testing-startup-kit-heels-workpath-modern-fertility-acquisitions)

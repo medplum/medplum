@@ -1,5 +1,5 @@
 ---
-slug: enage-case-study
+slug: ensage-case-study
 title: Value Based Care and Elderly Populations - Ensage Case Study
 authors:
   name: Reshma Khilnani
