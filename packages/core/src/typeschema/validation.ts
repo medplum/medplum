@@ -231,7 +231,7 @@ class ResourceValidator {
         return;
       }
     }
-    const regex = validationRegexes[type]; 
+    const regex = validationRegexes[type];
     if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
     }

@@ -102,6 +102,26 @@ describe('FHIR resource validation', () => {
     }).toThrow();
   });
 
+  test('Empty string type', () => {
+    const emptyBirthdate = {
+      resourceType: 'Patient',
+      birthDate: '    ',
+    } as unknown as Patient;
+    expect(() => {
+      validateResource(emptyBirthdate);
+    }).toThrow();
+  });
+
+  test('Invalid date', () => {
+    const emptyBirthdate = {
+      resourceType: 'Patient',
+      birthDate: '2022-13-32',
+    } as unknown as Patient;
+    expect(() => {
+      validateResource(emptyBirthdate);
+    }).toThrow();
+  });
+
   test('Valid property name special cases', () => {
     const primitiveExtension = {
       resourceType: 'Patient',
@@ -193,6 +213,26 @@ describe('FHIR resource validation', () => {
 
     expect(() => {
       validateResource(observation, observationProfile);
+    }).not.toThrow();
+  });
+
+  test('Valid date type', () => {
+    const invalidFormat: Patient = {
+      resourceType: 'Patient',
+      birthDate: '2023-05-31',
+    };
+    expect(() => {
+      validateResource(invalidFormat);
+    }).not.toThrow();
+  });
+
+  test('Valid dateTime type', () => {
+    const invalidFormat: Patient = {
+      resourceType: 'Patient',
+      deceasedDateTime: '2023-05-31T17:03:45-07:00',
+    };
+    expect(() => {
+      validateResource(invalidFormat);
     }).not.toThrow();
   });
 
