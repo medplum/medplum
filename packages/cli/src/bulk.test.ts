@@ -1,6 +1,6 @@
 import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
-import { getUnmappedExtension } from './bulk';
+import { getUnsupportedExtension } from './bulk';
 import { createMedplumClient } from './util/client';
 
 const testLineOutput = [
@@ -251,13 +251,13 @@ describe('CLI Bulk Commands', () => {
       expect(fetch).toBeCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
-          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnmappedExtension())),
+          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
       expect(fetch).toBeCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
-          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnmappedExtension())),
+          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
 

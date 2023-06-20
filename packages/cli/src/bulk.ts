@@ -120,24 +120,24 @@ function addExtensionsForMissingValuesResource(resource: Resource): Resource {
 
 function addExtensionsForMissingValuesExplanationOfBenefits(resource: ExplanationOfBenefit): ExplanationOfBenefit {
   if (!resource.provider) {
-    resource.provider = getUnmappedExtension();
+    resource.provider = getUnsupportedExtension();
   }
 
   resource.item?.forEach((item: ExplanationOfBenefitItem) => {
     if (!item?.productOrService) {
-      item.productOrService = getUnmappedExtension();
+      item.productOrService = getUnsupportedExtension();
     }
   });
 
   return resource;
 }
 
-export function getUnmappedExtension(): Extension {
+export function getUnsupportedExtension(): Extension {
   return {
     extension: [
       {
-        url: 'https://g.co/unmapped-by-bcda',
-        valueString: 'This is a required FHIR R4 Field, but not mapped by BCDA, which is why we expect it to be empty.',
+        url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+        valueCode: 'unsupported',
       },
     ],
   };
