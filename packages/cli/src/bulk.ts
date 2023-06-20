@@ -23,17 +23,22 @@ bulkExportCommand
     '-s, --since <since>',
     'optional Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).'
   )
+  .option(
+    '-d, --target-directory <targetDirectory>',
+    'optional target directory to save files from the bulk export operations.'
+  )
   .action(async (options) => {
-    const { exportLevel, types, since } = options;
+    const { exportLevel, types, since, targetDirectory } = options;
     const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
       const fileName = `${type}_${fileUrl.pathname}`.replace(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
+      const path = resolve(targetDirectory ?? '', fileName);
 
-      writeFile(`${fileName}`, await data.text(), () => {
-        console.log(`${fileName} is created`);
+      writeFile(`${path}`, await data.text(), () => {
+        console.log(`${path} is created`);
       });
     });
   });
@@ -50,9 +55,10 @@ bulkImportCommand
     'optional flag to add extensions for missing values in a resource',
     false
   )
+  .option('-d, --target-directory <targetDirectory>', 'optional target directory to import files in the directory')
   .action(async (fileName, options) => {
-    const path = resolve(process.cwd(), fileName);
-    const { numResourcesPerRequest, addExtensionsForMissingValues } = options;
+    const { numResourcesPerRequest, addExtensionsForMissingValues, targetDirectory } = options;
+    const path = resolve(targetDirectory ?? process.cwd(), fileName);
     const medplum = await createMedplumClient(options);
 
     await importFile(path, parseInt(numResourcesPerRequest), medplum, addExtensionsForMissingValues);
