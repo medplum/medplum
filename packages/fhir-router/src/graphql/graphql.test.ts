@@ -1151,6 +1151,40 @@ describe('GraphQL', () => {
     expect(retrievePatient?.name?.[1].family).toEqual('Smith');
   });
 
+  test('Invalid Update Mutation', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'female',
+      name: [{ given: ['Alice'] }],
+    });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+        ) {
+          id
+          gender
+          name {
+            given
+          }
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]?.issue?.[0]?.details?.text).toEqual(
+      'Field "PatientUpdate" argument "res" of type "PatientCreate!" is required, but it was not provided.'
+    );
+  });
+
   test('Delete Patient Record', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',

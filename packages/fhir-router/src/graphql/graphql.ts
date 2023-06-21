@@ -227,11 +227,10 @@ function buildRootSchema(): GraphQLSchema {
 function buildCreateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
   const args: GraphQLFieldConfigArgumentMap = {
     res: {
-      type: getGraphQLInputType(resourceType, 'Create'),
+      type: new GraphQLNonNull(getGraphQLInputType(resourceType, 'Create')),
       description: resourceType + ' Create',
     },
   };
-
   return args;
 }
 
@@ -242,7 +241,7 @@ function buildUpdateArgs(resourceType: string): GraphQLFieldConfigArgumentMap {
       description: resourceType + ' ID',
     },
     res: {
-      type: getGraphQLInputType(resourceType, 'Update'),
+      type: new GraphQLNonNull(getGraphQLInputType(resourceType, 'Update')),
       description: resourceType + ' Update',
     },
   };
