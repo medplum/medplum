@@ -16,7 +16,7 @@
     "form-data": "4.0.0",
     "node-fetch": "2.6.11",
     "pdfmake": "0.2.7",
-    "ssh2": "1.13.0",
+    "ssh2": "1.14.0",
     "ssh2-sftp-client": "9.1.0"
   },
   "devDependencies": {
