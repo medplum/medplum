@@ -1,4 +1,4 @@
-import { AccessPolicy, AccessPolicyResource, Resource } from '@medplum/fhirtypes';
+import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
 import { parseCriteriaAsSearchRequest } from './search/search';
 import { matchesSearchRequest } from './search/match';
 
@@ -33,7 +33,7 @@ export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'P
  * @param resourceType The resource type.
  * @returns True if the current user can read the specified resource type.
  */
-export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: string): boolean {
+export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (accessPolicy.resource) {
     for (const resourcePolicy of accessPolicy.resource) {
       if (matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
@@ -52,7 +52,7 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: st
  * @param resourceType The resource type.
  * @returns True if the current user can write the specified resource type.
  */
-export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: string): boolean {
+export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (protectedResourceTypes.includes(resourceType)) {
     return false;
   }
@@ -143,7 +143,10 @@ function matchesAccessPolicyResourcePolicy(
  * @param resourceType The candidate resource resource type.
  * @returns True if the resource type matches the access policy resource type.
  */
-function matchesAccessPolicyResourceType(accessPolicyResourceType: string | undefined, resourceType: string): boolean {
+function matchesAccessPolicyResourceType(
+  accessPolicyResourceType: string | undefined,
+  resourceType: ResourceType
+): boolean {
   if (accessPolicyResourceType === resourceType) {
     return true;
   }

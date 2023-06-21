@@ -2136,7 +2136,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    return canReadResourceType(this.context.accessPolicy, resourceType);
+    return canReadResourceType(this.context.accessPolicy, resourceType as ResourceType);
   }
 
   /**
@@ -2159,7 +2159,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    return canWriteResourceType(this.context.accessPolicy, resourceType);
+    return canWriteResourceType(this.context.accessPolicy, resourceType as ResourceType);
   }
 
   /**
