@@ -815,6 +815,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         id,
         lastUpdated,
         deleted: true,
+        projectId: resource.meta?.project,
         compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
         content,
       };
@@ -1678,6 +1679,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
+      projectId: meta.project,
       compartments,
       content,
     };
@@ -1724,6 +1726,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const result: Reference[] = [];
 
     if (resource.meta?.project) {
+      // Deprecated - to be removed
       result.push({ reference: 'Project/' + resource.meta.project });
     }
 
