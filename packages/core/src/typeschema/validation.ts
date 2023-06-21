@@ -225,17 +225,15 @@ class ResourceValidator {
       return;
     }
 
-    const structureIssue = createStructureIssue(path, 'Invalid ' + type + ' format');
-
     if (type === 'date' || type === 'dateTime') {
       if (isNaN(Date.parse(str))) {
-        this.issues.push(structureIssue);
+        this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
         return;
       }
     }
     const regex = validationRegexes[type];
     if (regex && !regex.exec(str)) {
-      this.issues.push(structureIssue);
+      this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
     }
   }
 
