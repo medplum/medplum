@@ -40,7 +40,7 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Case Studies
 
-- [Value Based Care and Elderly Populations - Ensage Case Study](/blog/enage-case-study)
+- [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
 
 ## Demos and Resources
 
