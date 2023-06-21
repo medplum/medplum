@@ -287,7 +287,7 @@ class StructureDefinitionParser {
 
   private parseFieldDefinition(ed: ElementDefinition): ElementValidator {
     const max = parseCardinality(ed.max as string);
-    const baseMax = ed.base && ed.base.max ? parseCardinality(ed.base.max) : max;
+    const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
       min: ed.min ?? 0,
