@@ -1,7 +1,7 @@
 import { Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath';
 import { globalSchema } from '../types';
-import { getSearchParameterDetails, SearchParameterType } from './details';
+import { SearchParameterType, getSearchParameterDetails } from './details';
 import { Filter, Operator, SearchRequest } from './search';
 
 /**

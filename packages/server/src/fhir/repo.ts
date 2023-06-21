@@ -1,6 +1,8 @@
 import {
   allOk,
   badRequest,
+  canReadResourceType,
+  canWriteResourceType,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
@@ -23,14 +25,16 @@ import {
   isNotFound,
   isOk,
   isResource,
-  matchesSearchRequest,
+  matchesAccessPolicy,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
+  parseCriteriaAsSearchRequest,
   parseFilterParameter,
-  parseSearchUrl,
   PropertyType,
+  protectedResourceTypes,
+  publicResourceTypes,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -59,7 +63,6 @@ import {
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
 import { applyPatch, Operation } from 'rfc6902';
-import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
@@ -177,31 +180,6 @@ export interface CacheEntry<T extends Resource = Resource> {
   resource: T;
   projectId: string;
 }
-
-/**
- * Public resource types are in the "public" project.
- * They are available to all users.
- */
-export const publicResourceTypes = [
-  'CapabilityStatement',
-  'CompartmentDefinition',
-  'ImplementationGuide',
-  'OperationDefinition',
-  'SearchParameter',
-  'StructureDefinition',
-];
-
-/**
- * Protected resource types are in the "medplum" project.
- * Reading and writing is limited to the system account.
- */
-export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
-
-/**
- * Project admin resource types are special resources that are only
- * accessible to project administrators.
- */
-export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -1301,7 +1279,7 @@ export class Repository extends BaseRepository implements FhirRepository {
           expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
-          const searchRequest = this.parseCriteriaAsSearchRequest(policy.criteria);
+          const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);
           const accessPolicyExpression = this.buildSearchExpression(builder, searchRequest);
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
@@ -2158,14 +2136,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return canReadResourceType(this.context.accessPolicy, resourceType);
   }
 
   /**
@@ -2188,17 +2159,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (
-          this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType) &&
-          !resourcePolicy.readonly
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return canWriteResourceType(this.context.accessPolicy, resourceType);
   }
 
   /**
@@ -2231,67 +2192,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (this.matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonlyMode)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Returns true if the resource satisfies the specified access policy resource policy.
-   * @param resource The resource.
-   * @param resourcePolicy One per-resource policy section from the access policy.
-   * @param readonlyMode True if the resource is being read.
-   * @returns True if the resource matches the access policy.
-   */
-  private matchesAccessPolicyResourcePolicy(
-    resource: Resource,
-    resourcePolicy: AccessPolicyResource,
-    readonlyMode: boolean
-  ): boolean {
-    const resourceType = resource.resourceType;
-    if (!this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-      return false;
-    }
-    if (!readonlyMode && resourcePolicy.readonly) {
-      return false;
-    }
-    if (
-      resourcePolicy.compartment &&
-      !resource.meta?.compartment?.find((c) => c.reference === resourcePolicy.compartment?.reference)
-    ) {
-      // Deprecated - to be removed
-      return false;
-    }
-    if (
-      resourcePolicy.criteria &&
-      !matchesSearchRequest(resource, this.parseCriteriaAsSearchRequest(resourcePolicy.criteria))
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * Returns true if the resource type matches the access policy resource type.
-   * @param accessPolicyResourceType The resource type from the access policy.
-   * @param resourceType The candidate resource resource type.
-   * @returns True if the resource type matches the access policy resource type.
-   */
-  private matchesAccessPolicyResourceType(accessPolicyResourceType: string | undefined, resourceType: string): boolean {
-    if (accessPolicyResourceType === resourceType) {
-      return true;
-    }
-    if (accessPolicyResourceType === '*' && !projectAdminResourceTypes.includes(resourceType)) {
-      // Project admin resource types are not allowed to be wildcarded
-      // Project admin resource types must be explicitly included
-      return true;
-    }
-    return false;
+    return matchesAccessPolicy(this.context.accessPolicy, resource, readonlyMode);
   }
 
   /**
@@ -2302,10 +2203,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private isCacheOnly(resource: Resource): boolean {
     return resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute');
-  }
-
-  private parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
-    return parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
   }
 
   /**

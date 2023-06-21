@@ -1,9 +1,9 @@
-import { accepted, getResourceTypes } from '@medplum/core';
+import { accepted, getResourceTypes, protectedResourceTypes, publicResourceTypes } from '@medplum/core';
 import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
-import { Repository, protectedResourceTypes, publicResourceTypes } from '../repo';
+import { Repository } from '../repo';
 import { BulkExporter } from './utils/bulkexporter';
 
 /**

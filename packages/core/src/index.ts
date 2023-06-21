@@ -1,3 +1,4 @@
+export * from './access';
 export * from './base64';
 export * from './bundle';
 export * from './cache';
