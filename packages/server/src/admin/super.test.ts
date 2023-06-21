@@ -113,14 +113,15 @@ describe('Super Admin routes', () => {
     await shutdownApp();
   });
 
-  test('Rebuild ValueSetElements as super admin', async () => {
+  test('Rebuild ValueSetElements require respond-async', async () => {
     const res = await request(app)
       .post('/admin/super/valuesets')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async', async () => {
@@ -166,14 +167,15 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(403);
   });
 
-  test('Rebuild StructureDefinitions as super admin', async () => {
+  test('Rebuild StructureDefinitions require respond-async', async () => {
     const res = await request(app)
       .post('/admin/super/structuredefinitions')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async', async () => {
@@ -219,14 +221,15 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(403);
   });
 
-  test('Rebuild SearchParameters as super admin', async () => {
+  test('Rebuild SearchParameters require async', async () => {
     const res = await request(app)
       .post('/admin/super/searchparameters')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Rebuild searchparameters as super admin with respond-async', async () => {
@@ -284,7 +287,7 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(403);
   });
 
-  test('Reindex success', async () => {
+  test('Reindex require async', async () => {
     const res = await request(app)
       .post('/admin/super/reindex')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -293,7 +296,8 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Reindex invalid resource type', async () => {
@@ -353,7 +357,7 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(403);
   });
 
-  test('Rebuild compartments success', async () => {
+  test('Rebuild compartments require async', async () => {
     const res = await request(app)
       .post('/admin/super/compartments')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -362,7 +366,8 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toEqual(400);
+    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
   test('Rebuild compartments invalid resource type', async () => {

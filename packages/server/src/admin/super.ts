@@ -1,4 +1,12 @@
-import { accepted, allOk, badRequest, forbidden, validateResourceType } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  accepted,
+  allOk,
+  badRequest,
+  forbidden,
+  getResourceTypes,
+  validateResourceType,
+} from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
@@ -7,13 +15,13 @@ import { getConfig } from '../config';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
-import { logger } from '../logger';
 import { authenticateToken } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
+import { getClient } from '../database';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -23,19 +31,11 @@ superAdminRouter.use(authenticateToken);
 // Run this after changes to how ValueSet elements are defined.
 superAdminRouter.post(
   '/valuesets',
-  asyncWrap(async (_req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin(res);
+    requireAsync(req);
 
-    if (_req.header('Prefer') === 'respond-async') {
-      await sendAsyncResponse(_req, res, createValueSets);
-      return;
-    }
-
-    await createValueSets();
-    sendOutcome(res, allOk);
+    await sendAsyncResponse(req, res, createValueSets);
   })
 );
 
@@ -44,19 +44,11 @@ superAdminRouter.post(
 // Run this after any changes to the built-in StructureDefinitions.
 superAdminRouter.post(
   '/structuredefinitions',
-  asyncWrap(async (_req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin(res);
+    requireAsync(req);
 
-    if (_req.header('Prefer') === 'respond-async') {
-      await sendAsyncResponse(_req, res, createStructureDefinitions);
-      return;
-    }
-
-    await createStructureDefinitions();
-    sendOutcome(res, allOk);
+    await sendAsyncResponse(req, res, createStructureDefinitions);
   })
 );
 
@@ -65,19 +57,11 @@ superAdminRouter.post(
 // Run this after any changes to the built-in SearchParameters.
 superAdminRouter.post(
   '/searchparameters',
-  asyncWrap(async (_req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin(res);
+    requireAsync(req);
 
-    if (_req.header('Prefer') === 'respond-async') {
-      await sendAsyncResponse(_req, res, createSearchParameters);
-      return;
-    }
-
-    await createSearchParameters();
-    sendOutcome(res, allOk);
+    await sendAsyncResponse(req, res, createSearchParameters);
   })
 );
 
@@ -87,29 +71,15 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/reindex',
   asyncWrap(async (req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+    requireSuperAdmin(res);
+    requireAsync(req);
 
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
 
-    if (req.header('Prefer') === 'respond-async') {
-      await sendAsyncResponse(req, res, async () => {
-        await systemRepo.reindexResourceType(resourceType);
-      });
-      return;
-    }
-
-    // Start reindex in the background
-    // This can take a long time, so we don't want to block the response
-    systemRepo
-      .reindexResourceType(resourceType)
-      .then(() => logger.info(`Reindexing ${resourceType} completed`))
-      .catch((err) => logger.error(`Reindexing ${resourceType} failed: ${err}`));
-
-    sendOutcome(res, allOk);
+    await sendAsyncResponse(req, res, async () => {
+      await systemRepo.reindexResourceType(resourceType);
+    });
   })
 );
 
@@ -119,29 +89,15 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/compartments',
   asyncWrap(async (req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+    requireSuperAdmin(res);
+    requireAsync(req);
 
     const resourceType = req.body.resourceType;
     validateResourceType(resourceType);
 
-    if (req.header('Prefer') === 'respond-async') {
-      await sendAsyncResponse(req, res, async () => {
-        await systemRepo.rebuildCompartmentsForResourceType(resourceType);
-      });
-      return;
-    }
-
-    // Start reindex in the background
-    // This can take a long time, so we don't want to block the response
-    systemRepo
-      .rebuildCompartmentsForResourceType(resourceType)
-      .then(() => logger.info(`Rebuilding compartments for ${resourceType} completed`))
-      .catch((err) => logger.error(`Rebuilding compartments for ${resourceType} failed: ${err}`));
-
-    sendOutcome(res, allOk);
+    await sendAsyncResponse(req, res, async () => {
+      await systemRepo.rebuildCompartmentsForResourceType(resourceType);
+    });
   })
 );
 
@@ -154,10 +110,7 @@ superAdminRouter.post(
     body('password').isLength({ min: 8 }).withMessage('Invalid password, must be at least 8 characters'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+    requireSuperAdmin(res);
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -185,10 +138,7 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+    requireSuperAdmin(res);
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -208,10 +158,7 @@ superAdminRouter.post(
   '/removebotidjobsfromqueue',
   [body('botId').notEmpty().withMessage('Bot ID is required')],
   asyncWrap(async (req: Request, res: Response) => {
-    if (!res.locals.login.superAdmin) {
-      sendOutcome(res, forbidden);
-      return;
-    }
+    requireSuperAdmin(res);
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -224,6 +171,38 @@ superAdminRouter.post(
     sendOutcome(res, allOk);
   })
 );
+
+// POST to /admin/super/rebuildprojectid
+// to rebuild the projectId column on all resource types.
+superAdminRouter.post(
+  '/rebuildprojectid',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin(res);
+    requireAsync(req);
+
+    await sendAsyncResponse(req, res, async () => {
+      const client = getClient();
+      const resourceTypes = getResourceTypes();
+      for (const resourceType of resourceTypes) {
+        await client.query(
+          `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
+        );
+      }
+    });
+  })
+);
+
+function requireSuperAdmin(res: Response): void {
+  if (!res.locals.login.superAdmin) {
+    throw new OperationOutcomeError(forbidden);
+  }
+}
+
+function requireAsync(req: Request): void {
+  if (req.header('Prefer') !== 'respond-async') {
+    throw new OperationOutcomeError(badRequest('Operation requires "Prefer: respond-async"'));
+  }
+}
 
 async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
   const { baseUrl } = getConfig();
