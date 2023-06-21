@@ -173,8 +173,5 @@ export async function run(client: PoolClient): Promise<void> {
     await client.query(
       `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_projectId_idx" ON "${resourceType}" ("projectId")`
     );
-    await client.query(
-      `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
-    );
   }
 }
