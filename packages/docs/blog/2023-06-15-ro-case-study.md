@@ -15,7 +15,7 @@ tags: [interop, fhir-datastore, compliance, case-study]
 
 ## Introduction
 
-[Ro](ro.co), is an innovator in direct-to-patient healthcare services, provides patient centric healthcare services nationwide.
+[Ro](https://ro.co), is an innovator in direct-to-patient healthcare services, provides patient centric healthcare services nationwide.
 
 ## Medplum Solutions Used
 
@@ -30,5 +30,6 @@ The workflow requires tight coordination and real-time synchronization between m
 
 ## Related Materials
 
-- [Technical Documentation](https://docs.kit.com/docs/overview)
+- [How It Works](https://ro.co/weight-loss/#timelineSection-l2o3qWi7TYyp0Txr0ckO8) from the patient perspective
 - [Press Release](https://www.fiercehealthcare.com/tech/ro-scoops-up-at-home-testing-startup-kit-heels-workpath-modern-fertility-acquisitions)
+- [Technical Documentation](https://docs.kit.com/docs/overview)
