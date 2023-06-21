@@ -11,7 +11,7 @@ Provider portals can be a great tool for care coordination, partnerships and rem
 
 ## Sample Application
 
-The Medplum provider portal sample application is called [Foo Medical provider](https://provider.foomedical.com/). You can [request access](https://forms.gle/c41NddaDroCU88yt7) to view the application, or view the [source code](https://github.com/medplum/foomedical-provider).
+The Medplum provider portal sample application is called `medplum-hello-world`. The [source code](https://github.com/medplum/medplum-hello-world) is available, and it is recommended that you run it locally using [sample data](/docs/tutorials/importing-sample-data) to prototype your application.
 
 Foo Medical Provider is intended as a sample, and the experience is truly up to the developer to determine. It is built off of the Medplum API, and is HIPAA compliant and SOC 2 Type 2 certified. Detailed compliance information can be found on our [compliance page](../docs/compliance).
 
@@ -51,10 +51,13 @@ Giving partner institutions access via API is a common scenario. Medplum support
 
 Commonly in diagnostics and specialty care providers are not part of the same professional corporation due to geographic or institutional restrictions. Data can be routed and tagged for [billing](../products/billing) using [bots](/docs/bots).
 
+## Case Studies
+
+- [At Home Diagnostics - Ro Case Study](/blog/ro-case-study)
+- [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
+
 ## Demos and Resources
 
-- Sample application [Foo Medical provider](https://provider.foomedical.com/), [request access](https://forms.gle/c41NddaDroCU88yt7) is a starter kit for a provider portal.
-- Source code for [Foo Medical Provider](https://github.com/medplum/foomedical-provider)
 - [Compliance](/docs/compliance) portal with guides and resources.
 - [Access Controls](/docs/auth/access-control)
 - [Authentication Methods](/docs/auth)

@@ -33,6 +33,8 @@ const config = {
         },
         blog: {
           showReadingTime: true,
+          blogSidebarCount: 15,
+          blogSidebarTitle: 'Recent posts',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
