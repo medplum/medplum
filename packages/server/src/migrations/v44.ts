@@ -169,18 +169,12 @@ export async function run(client: PoolClient): Promise<void> {
     'VisionPrescription',
   ];
   for (const resourceType of resourceTypes) {
-    try {
-      await client.query(`ALTER TABLE "${resourceType}" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
-      await client.query(
-        `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_projectId_idx" ON "${resourceType}" ("projectId")`
-      );
-      await client.query(
-        `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
-      );
-    } catch (err) {
-      console.log('resourceType', resourceType);
-      console.log('err', err);
-      throw err;
-    }
+    await client.query(`ALTER TABLE "${resourceType}" ADD COLUMN IF NOT EXISTS "projectId" UUID`);
+    await client.query(
+      `CREATE INDEX CONCURRENTLY IF NOT EXISTS "${resourceType}_projectId_idx" ON "${resourceType}" ("projectId")`
+    );
+    await client.query(
+      `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
+    );
   }
 }
