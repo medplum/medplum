@@ -133,6 +133,13 @@ export interface MedplumClientOptions {
   accessToken?: string;
 
   /**
+   * Auth Type
+   *
+   * Auth type used for FHIR Oauth flows.
+   */
+  authType?: string;
+
+  /**
    * Number of resources to store in the cache.
    *
    * Default value is 1000.
@@ -539,6 +546,7 @@ export class MedplumClient extends EventTarget {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly authType: string | undefined;
   private clientId?: string;
   private clientSecret?: string;
   private autoBatchTimerId?: any;
@@ -568,6 +576,7 @@ export class MedplumClient extends EventTarget {
     this.tokenUrl = options?.tokenUrl || this.baseUrl + 'oauth2/token';
     this.logoutUrl = options?.logoutUrl || this.baseUrl + 'oauth2/logout';
     this.onUnauthenticated = options?.onUnauthenticated;
+    this.authType = options?.authType;
 
     this.cacheTime = options?.cacheTime ?? DEFAULT_CACHE_TIME;
     if (this.cacheTime > 0) {
@@ -584,6 +593,9 @@ export class MedplumClient extends EventTarget {
       this.autoBatchQueue = undefined;
     }
 
+    // if (this.authType === 'basic') {
+    //   this.clearActiveLogin();
+    // }
     const activeLogin = this.getActiveLogin();
     if (activeLogin) {
       this.accessToken = activeLogin.accessToken;
@@ -631,7 +643,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   clearActiveLogin(): void {
-    if (this.basicAuth) {
+    if (this.authType === 'basic') {
       return;
     }
     this.storage.setString('activeLogin', undefined);
@@ -2069,7 +2081,7 @@ export class MedplumClient extends EventTarget {
   async setActiveLogin(login: LoginState): Promise<void> {
     this.clearActiveLogin();
     this.accessToken = login.accessToken;
-    if (this.basicAuth) {
+    if (this.authType === 'basic') {
       return;
     }
     this.refreshToken = login.refreshToken;
@@ -2116,7 +2128,7 @@ export class MedplumClient extends EventTarget {
 
   private async refreshProfile(): Promise<ProfileResource | undefined> {
     this.profilePromise = new Promise((resolve, reject) => {
-      if (this.basicAuth) {
+      if (this.authType === 'basic') {
         return;
       }
       this.get('auth/me')

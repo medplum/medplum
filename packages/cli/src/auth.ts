@@ -13,6 +13,7 @@ export const whoami = createMedplumCommand('whoami');
 
 login.action(async (options) => {
   const medplum = await createMedplumClient(options);
+  medplum.clearActiveLogin();
   await startLogin(medplum);
 });
 

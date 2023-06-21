@@ -8,6 +8,9 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
   const tokenUrl = options.tokenUrl ?? process.env['MEDPLUM_TOKEN_URL'] ?? '';
   const authorizeUrl = options.authorizeUrl ?? process.env['MEDPLUM_AUTHORIZE_URL'] ?? '';
   const fetchApi = options.fetch ?? fetch;
+  const clientId = options.clientId || process.env['MEDPLUM_CLIENT_ID'];
+  const clientSecret = options.clientSecret || process.env['MEDPLUM_CLIENT_SECRET'];
+  const authType = getAuthType(options.authType, clientId, clientSecret);
 
   const medplumClient = new MedplumClient({
     fetch: fetchApi,
@@ -17,20 +20,34 @@ export async function createMedplumClient(options: MedplumClientOptions): Promis
     authorizeUrl,
     storage: new FileSystemStorage(),
     onUnauthenticated: onUnauthenticated,
+    authType,
   });
 
   if (accessToken) {
     medplumClient.setAccessToken(accessToken);
   }
 
-  const clientId = options.clientId || process.env['MEDPLUM_CLIENT_ID'];
-  const clientSecret = options.clientSecret || process.env['MEDPLUM_CLIENT_SECRET'];
-
   if (clientId && clientSecret) {
     medplumClient.setBasicAuth(clientId, clientSecret);
     await medplumClient.startClientLogin(clientId, clientSecret);
   }
   return medplumClient;
+}
+
+function getAuthType(
+  authType: string | undefined,
+  clientId: string | undefined,
+  clientSecret: string | undefined
+): string {
+  if (authType) {
+    return authType;
+  }
+
+  if (clientId && clientSecret) {
+    return 'basic';
+  }
+
+  return '';
 }
 
 export function onUnauthenticated(): void {
