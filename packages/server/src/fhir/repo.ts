@@ -1277,7 +1277,7 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private addProjectFilter(builder: SelectQuery): void {
     if (this.context.project) {
-      builder.where('compartments', Operator.ARRAY_CONTAINS, [this.context.project], 'UUID[]');
+      builder.where('projectId', Operator.EQUALS, this.context.project);
     }
   }
 
@@ -1448,7 +1448,15 @@ export class Repository extends BaseRepository implements FhirRepository {
       return this.buildDateSearchFilter({ type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
     }
 
-    if (code === '_compartment' || code === '_project') {
+    if (code === '_project') {
+      return this.buildIdSearchFilter(
+        resourceType,
+        { columnName: 'projectId', type: SearchParameterType.UUID },
+        filter
+      );
+    }
+
+    if (code === '_compartment') {
       return this.buildIdSearchFilter(
         resourceType,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
