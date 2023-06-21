@@ -4,11 +4,8 @@ import {
   DescribeStacksCommand,
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
-import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { main } from '../index';
-
-const medplum = new MockClient();
 
 describe('list command', () => {
   beforeAll(() => {
@@ -110,7 +107,7 @@ describe('list command', () => {
 
   test('List command', async () => {
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'list']);
+    await main(['node', 'index.js', 'aws', 'list']);
     expect(console.log).toBeCalledWith('Stack ID:        123');
   });
 });

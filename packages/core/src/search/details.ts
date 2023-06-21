@@ -1,5 +1,5 @@
 import { ElementDefinition, SearchParameter } from '@medplum/fhirtypes';
-import { PropertyType, buildTypeName, getElementDefinition, globalSchema } from '../types';
+import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -39,12 +39,12 @@ export function getSearchParameterDetails(resourceType: string, searchParam: Sea
   let result: SearchParameterDetails | undefined =
     globalSchema.types[resourceType]?.searchParamsDetails?.[searchParam.code as string];
   if (!result) {
-    result = buildSearchParamterDetails(resourceType, searchParam);
+    result = buildSearchParameterDetails(resourceType, searchParam);
   }
   return result;
 }
 
-function setSearchParamterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
+function setSearchParameterDetails(resourceType: string, code: string, details: SearchParameterDetails): void {
   const typeSchema = globalSchema.types[resourceType];
   if (!typeSchema.searchParamsDetails) {
     typeSchema.searchParamsDetails = {};
@@ -52,7 +52,7 @@ function setSearchParamterDetails(resourceType: string, code: string, details: S
   typeSchema.searchParamsDetails[code] = details;
 }
 
-function buildSearchParamterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
+function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
   const columnName = convertCodeToColumnName(code);
   const expression = getExpressionForResourceType(resourceType, searchParam.expression as string)?.split('.');
@@ -101,7 +101,7 @@ function buildSearchParamterDetails(resourceType: string, searchParam: SearchPar
 
   const type = getSearchParameterType(searchParam, propertyType as PropertyType);
   const result = { columnName, type, elementDefinition, array };
-  setSearchParamterDetails(resourceType, code, result);
+  setSearchParameterDetails(resourceType, code, result);
   return result;
 }
 

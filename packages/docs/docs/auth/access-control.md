@@ -119,7 +119,7 @@ The following policy uses a FHIR Search Query to grant access only to Patients w
 
 :::caution
 
-This feature is still in Beta. If you have questions about your specific AccessPolicy needs, please [reach out to the Medplum team.](https://discord.gg/UBAWwvrVeN)
+This feature is still in Beta. If you have questions about your specific AccessPolicy needs, please [reach out to the Medplum team.](https://discord.gg/medplum)
 
 :::
 

@@ -700,15 +700,38 @@ export async function getExternalUserInfo(
   idp: IdentityProvider,
   externalAccessToken: string
 ): Promise<Record<string, unknown>> {
+  let response;
   try {
-    const response = await fetch(idp.userInfoUrl as string, {
+    response = await fetch(idp.userInfoUrl as string, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
         Authorization: `Bearer ${externalAccessToken}`,
       },
     });
+  } catch (err) {
+    logger.warn('Failed to verify code', err);
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
 
+  if (response.status !== 200) {
+    logger.warn('Failed to verify code', response.status);
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  // Make sure content type is json
+  if (!response.headers.get('content-type')?.includes('application/json')) {
+    let text = '';
+    try {
+      text = await response.text();
+    } catch (err) {
+      logger.debug('Failed to get response text', err);
+    }
+    logger.warn('Failed to verify code, non-JSON response', text);
+    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
+  }
+
+  try {
     return await response.json();
   } catch (err) {
     logger.warn('Failed to verify code', err);

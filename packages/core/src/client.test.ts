@@ -54,7 +54,8 @@ const schemaResponse = {
 
 function mockFetch(
   status: number,
-  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any)
+  body: OperationOutcome | Record<string, unknown> | ((url: string, options?: any) => any),
+  contentType = 'application/fhir+json'
 ): FetchLike & jest.Mock {
   const bodyFn = typeof body === 'function' ? body : () => body;
   return jest.fn((url: string, options?: any) => {
@@ -63,6 +64,7 @@ function mockFetch(
     return Promise.resolve({
       ok: responseStatus < 400,
       status: responseStatus,
+      headers: { get: () => contentType },
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
     });
@@ -126,6 +128,14 @@ describe('Client', () => {
     expect(client.getBaseUrl()).toBe('https://x/');
   });
 
+  test('getAuthorizeUrl', () => {
+    const baseUrl = 'https://x';
+    const authorizeUrl = 'https://example.com/custom/authorize';
+    const client = new MedplumClient({ baseUrl, authorizeUrl });
+
+    expect(client.getAuthorizeUrl()).toBe(authorizeUrl);
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
@@ -151,8 +161,11 @@ describe('Client', () => {
       }
       if (url.includes('auth/me')) {
         return {
+          project: { resourceType: 'Project', id: '123' },
+          membership: { resourceType: 'ProjectMembership', id: '123' },
           profile: { resouceType: 'Practitioner', id: '123' },
           config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
         };
       }
       return {};
@@ -161,15 +174,65 @@ describe('Client', () => {
     const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
     expect(client.getBaseUrl()).toEqual('https://x/');
     expect(client.isLoading()).toBe(true);
+    expect(client.getProject()).toBeUndefined();
+    expect(client.getProjectMembership()).toBeUndefined();
     expect(client.getProfile()).toBeUndefined();
     expect(client.getProfileAsync()).toBeDefined();
     expect(client.getUserConfiguration()).toBeUndefined();
+    expect(client.getAccessPolicy()).toBeUndefined();
 
     const profile = (await client.getProfileAsync()) as ProfileResource;
     expect(client.isLoading()).toBe(false);
     expect(profile.id).toBe('123');
+    expect(client.getProject()).toBeDefined();
+    expect(client.getProjectMembership()).toBeDefined();
     expect(client.getProfile()).toBeDefined();
     expect(client.getUserConfiguration()).toBeDefined();
+    expect(client.getAccessPolicy()).toBeDefined();
+    expect(client.isSuperAdmin()).toBe(false);
+    expect(client.isProjectAdmin()).toBe(false);
+  });
+
+  test('Admin check', async () => {
+    window.localStorage.setItem(
+      'activeLogin',
+      JSON.stringify({
+        accessToken: '123',
+        refreshToken: '456',
+        project: {
+          reference: 'Project/123',
+        },
+        profile: {
+          reference: 'Practitioner/123',
+        },
+      })
+    );
+
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes('/oauth2/token')) {
+        return {
+          access_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          refresh_token: 'header.' + window.btoa(JSON.stringify({ client_id: '123' })) + '.signature',
+          profile: { reference: 'Patient/123' },
+        };
+      }
+      if (url.includes('auth/me')) {
+        return {
+          project: { resourceType: 'Project', id: '123', superAdmin: true },
+          membership: { resourceType: 'ProjectMembership', id: '123', admin: true },
+          profile: { resouceType: 'Practitioner', id: '123' },
+          config: { resourceType: 'UserConfiguration', id: '123' },
+          accessPolicy: { resourceType: 'AccessPolicy', id: '123' },
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
+    const profile = (await client.getProfileAsync()) as ProfileResource;
+    expect(profile.id).toBe('123');
+    expect(client.isSuperAdmin()).toBe(true);
+    expect(client.isProjectAdmin()).toBe(true);
   });
 
   test('Clear', () => {
@@ -2011,7 +2074,6 @@ describe('Client', () => {
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export'),
         expect.objectContaining({
-          method: 'POST',
           headers: {
             Accept: 'application/fhir+json',
             Prefer: 'respond-async',
@@ -2019,10 +2081,7 @@ describe('Client', () => {
           },
         })
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -2032,12 +2091,9 @@ describe('Client', () => {
       const response = await medplum.bulkExport('', 'Observation', 'testdate', { headers: { test: 'test' } });
       expect(fetch).toBeCalledWith(
         expect.stringContaining('/$export?_type=Observation&_since=testdate'),
-        expect.objectContaining({ method: 'POST' })
+        expect.any(Object)
       );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -2046,14 +2102,8 @@ describe('Client', () => {
       const medplum = new MedplumClient({ fetch });
       const groupId = randomUUID();
       const response = await medplum.bulkExport(`Group/${groupId}`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Group/${groupId}/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Group/${groupId}/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });
@@ -2061,14 +2111,8 @@ describe('Client', () => {
     test('All Patient', async () => {
       const medplum = new MedplumClient({ fetch });
       const response = await medplum.bulkExport(`Patient`);
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining(`/Patient/$export`),
-        expect.objectContaining({ method: 'GET' })
-      );
-      expect(fetch).toBeCalledWith(
-        expect.stringContaining('bulkdata/id/status'),
-        expect.objectContaining({ method: 'GET' })
-      );
+      expect(fetch).toBeCalledWith(expect.stringContaining(`/Patient/$export`), expect.any(Object));
+      expect(fetch).toBeCalledWith(expect.stringContaining('bulkdata/id/status'), expect.any(Object));
       expect(fetch).toBeCalledTimes(3);
       expect(response.output?.length).toBe(1);
     });

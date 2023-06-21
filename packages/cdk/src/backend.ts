@@ -17,6 +17,7 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
+import { ClusterInstance } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { awsManagedRules } from './waf';
 
@@ -65,6 +66,25 @@ export class BackEnd extends Construct {
     let rdsCluster = undefined;
     let rdsSecretsArn = config.rdsSecretsArn;
     if (!rdsSecretsArn) {
+      // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
+      const instanceProps: rds.ProvisionedClusterInstanceProps = {
+        instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
+        enablePerformanceInsights: true,
+        isFromLegacyInstanceProps: true,
+      };
+
+      let readers = undefined;
+      if (config.rdsInstances > 1) {
+        readers = [];
+        for (let i = 0; i < config.rdsInstances - 1; i++) {
+          readers.push(
+            ClusterInstance.provisioned('Instance' + (i + 2), {
+              ...instanceProps,
+            })
+          );
+        }
+      }
+
       rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine: rds.DatabaseClusterEngine.auroraPostgres({
           version: rds.AuroraPostgresEngineVersion.VER_12_9,
@@ -72,15 +92,14 @@ export class BackEnd extends Construct {
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
-        instances: config.rdsInstances,
-        instanceProps: {
-          vpc: vpc,
-          vpcSubnets: {
-            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          },
-          instanceType: config.rdsInstanceType ? new ec2.InstanceType(config.rdsInstanceType) : undefined,
-          enablePerformanceInsights: true,
+        vpc: vpc,
+        vpcSubnets: {
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
+        writer: ClusterInstance.provisioned('Instance1', {
+          ...instanceProps,
+        }),
+        readers,
         backup: {
           retention: Duration.days(7),
         },

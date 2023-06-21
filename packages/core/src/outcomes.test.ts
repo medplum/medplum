@@ -98,5 +98,17 @@ describe('Outcomes', () => {
         ],
       })
     ).toEqual('error1 (expr1); error2 (expr2)');
+    expect(
+      operationOutcomeToString({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'processing',
+            diagnostics: 'Supplied Patient is unknown.',
+          },
+        ],
+      })
+    ).toEqual('Supplied Patient is unknown.');
   });
 });

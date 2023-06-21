@@ -10,7 +10,6 @@ import { capitalize, getExtensionValue, isEmpty, isLowerCase } from './utils';
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-
 const fhirTypeToJsType: Record<string, string> = {
   base64Binary: 'string',
   boolean: 'boolean',

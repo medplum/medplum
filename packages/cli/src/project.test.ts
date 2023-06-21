@@ -4,7 +4,9 @@ import { Project } from '@medplum/fhirtypes';
 import fs from 'fs';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
+import { createMedplumClient } from './util/client';
 
+jest.mock('./util/client');
 jest.mock('child_process');
 jest.mock('http');
 
@@ -27,6 +29,8 @@ describe('CLI Project', () => {
     jest.resetModules();
     jest.clearAllMocks();
     medplum = new MockClient({ storage: new FileSystemStorage() });
+    (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
     console.log = jest.fn();
     console.error = jest.fn();
     process.exit = jest.fn() as never;
@@ -52,7 +56,7 @@ describe('CLI Project', () => {
         ]),
       })
     );
-    await main(medplum, ['node', 'index.js', 'project', 'list']);
+    await main(['node', 'index.js', 'project', 'list']);
     expect(console.log).toBeCalledWith(expect.stringMatching(`(Project/456)`));
   });
 
@@ -74,7 +78,7 @@ describe('CLI Project', () => {
         }),
       })
     );
-    await main(medplum, ['node', 'index.js', 'project', 'current']);
+    await main(['node', 'index.js', 'project', 'current']);
     expect(console.log).toBeCalledWith(expect.stringMatching(`(Project/456)`));
   });
 
@@ -110,7 +114,7 @@ describe('CLI Project', () => {
         ]),
       })
     );
-    await main(medplum, ['node', 'index.js', 'project', 'switch', '789']);
+    await main(['node', 'index.js', 'project', 'switch', '789']);
     expect(console.log).toBeCalledWith(expect.stringMatching(`Switched to project 789`));
   });
 
@@ -146,13 +150,13 @@ describe('CLI Project', () => {
         ]),
       })
     );
-    await main(medplum, ['node', 'index.js', 'project', 'switch', 'bad-projectId']);
+    await main(['node', 'index.js', 'project', 'switch', 'bad-projectId']);
     expect(console.log).toBeCalledWith(expect.stringMatching(`Error: project bad-projectId not found.`));
   });
 
   test('Project invite with no login', async () => {
     try {
-      await main(medplum, ['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
+      await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
     } catch (err) {
       expect(console.error).toBeCalledWith('Unauthenticated: run `npx medplum login` to login');
     }
@@ -169,7 +173,7 @@ describe('CLI Project', () => {
       })
     );
     try {
-      await main(medplum, ['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
+      await main(['node', 'index.js', 'project', 'invite', 'homer', 'simpon', 'homer@simpson.com']);
     } catch (err) {
       expect(console.error).toBeCalledWith('No current project to invite user to');
     }
@@ -194,7 +198,7 @@ describe('CLI Project', () => {
         }),
       })
     );
-    await main(medplum, [
+    await main([
       'node',
       'index.js',
       'project',
@@ -229,7 +233,7 @@ describe('CLI Project', () => {
         }),
       })
     );
-    await main(medplum, [
+    await main([
       'node',
       'index.js',
       'project',

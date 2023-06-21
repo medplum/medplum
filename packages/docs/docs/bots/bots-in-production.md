@@ -160,7 +160,7 @@ Running this command does the following:
 4. Adds a bot entry to the `medplum.config.json` file in the `bots` array
 
 :::caution Note
-If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
+If you see an error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
 :::
 
 After creating the bot, you should go to `medplum.config.json` and you should see the new bot added in the bottom of the file. It should look like this:
@@ -215,7 +215,7 @@ Running this command does two things:
 2. Deploys your compiled Javascript code as an AWS Lambda function with your Medplum deployment.
 
 :::caution Note
-There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/UBAWwvrVeN)
+There is a known timing issue with the `bot deploy` command. If you see the following error, try running the command again. If it fails after 3 tries, please [**submit a bug report**](https://github.com/medplum/medplum/issues/new) or [**contact us on Discord**](https://discord.gg/medplum)
 
 ```
 Deploy error: {

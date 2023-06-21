@@ -5,11 +5,8 @@ import {
   ListStacksCommand,
 } from '@aws-sdk/client-cloudformation';
 import { ECSClient, UpdateServiceCommand } from '@aws-sdk/client-ecs';
-import { MockClient } from '@medplum/mock';
 import { mockClient } from 'aws-sdk-client-mock';
 import { main } from '../index';
-
-const medplum = new MockClient();
 
 describe('update-server command', () => {
   beforeAll(() => {
@@ -136,25 +133,25 @@ describe('update-server command', () => {
 
   test('Update server command', async () => {
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'dev']);
+    await main(['node', 'index.js', 'aws', 'update-server', 'dev']);
     expect(console.log).toBeCalledWith('Service "medplum-dev-MedplumEcsService-123" updated successfully.');
   });
 
   test('Update server not found', async () => {
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'not-found']);
+    await main(['node', 'index.js', 'aws', 'update-server', 'not-found']);
     expect(console.log).toBeCalledWith('Stack not found');
   });
 
   test('Update server stack incomplete', async () => {
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'incomplete']);
+    await main(['node', 'index.js', 'aws', 'update-server', 'incomplete']);
     expect(console.log).toBeCalledWith('ECS Cluster not found');
   });
 
   test('Update server stack missing service', async () => {
     console.log = jest.fn();
-    await main(medplum, ['node', 'index.js', 'aws', 'update-server', 'missing-service']);
+    await main(['node', 'index.js', 'aws', 'update-server', 'missing-service']);
     expect(console.log).toBeCalledWith('ECS Service not found');
   });
 });

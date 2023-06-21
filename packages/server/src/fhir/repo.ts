@@ -5,6 +5,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
   evalFhirPathTyped,
+  experimentalValidateResource,
   FhirFilterComparison,
   FhirFilterConnective,
   FhirFilterExpression,
@@ -496,19 +497,28 @@ export class Repository extends BaseRepository implements FhirRepository {
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean): Promise<T> {
+    const { resourceType, id } = resource;
+    if (!id) {
+      throw new OperationOutcomeError(badRequest('Missing id'));
+    }
+
+    if (!validator.isUUID(id)) {
+      throw new OperationOutcomeError(badRequest('Invalid id'));
+    }
+
     if (this.context.strictMode) {
       validateResource(resource);
+      try {
+        experimentalValidateResource(resource);
+      } catch (err) {
+        logger.warn('Experimental validator error', err);
+      }
     } else {
       validateResourceWithJsonSchema(resource);
     }
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
-    }
-
-    const { resourceType, id } = resource;
-    if (!id) {
-      throw new OperationOutcomeError(badRequest('Missing id'));
     }
 
     if (!this.canWriteResourceType(resourceType)) {
@@ -829,6 +839,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
       await this.deleteFromLookupTables(client, resource);
       this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+      await addSubscriptionJobs(resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;

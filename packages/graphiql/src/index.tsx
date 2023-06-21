@@ -1,7 +1,7 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
 import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { MedplumClient, ProfileResource, getDisplayString } from '@medplum/core';
+import { decodeBase64, encodeBase64, getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import GraphiQL from 'graphiql';
 import React from 'react';
@@ -88,10 +88,73 @@ const medplumPlugin: GraphiQLPlugin = {
   ),
 };
 
+// Parse the search string to get url parameters.
+const searchParams = new URLSearchParams(location.search);
+const parameters: FetcherParams = {
+  query: tryDecodeBase64(searchParams.get('query')),
+  variables: tryDecodeBase64(searchParams.get('variables')),
+  operationName: tryDecodeBase64(searchParams.get('operationName')),
+};
+
+function onEditQuery(newQuery: string): void {
+  parameters.query = newQuery;
+  updateURL();
+}
+
+function onEditVariables(newVariables: string): void {
+  parameters.variables = newVariables;
+  updateURL();
+}
+
+function onEditOperationName(newOperationName: string): void {
+  parameters.operationName = newOperationName;
+  updateURL();
+}
+
+function updateURL(): void {
+  const newSearch = new URLSearchParams();
+  newSearch.set('query', tryEncodeBase64(parameters.query));
+  newSearch.set('variables', tryEncodeBase64(parameters.variables));
+  newSearch.set('operationName', tryEncodeBase64(parameters.operationName));
+  history.replaceState(null, '', `?${newSearch}`);
+}
+
+function tryEncodeBase64(value: string | null | undefined): string {
+  if (!value) {
+    return '';
+  }
+  try {
+    return encodeBase64(value);
+  } catch (err) {
+    return '';
+  }
+}
+
+function tryDecodeBase64(value: string | null): string {
+  if (!value) {
+    return '';
+  }
+  try {
+    return decodeBase64(value);
+  } catch (err) {
+    return '';
+  }
+}
+
 function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
-    <GraphiQL fetcher={fetcher} defaultQuery={HELP_TEXT} plugins={[medplumPlugin]} />
+    <GraphiQL
+      fetcher={fetcher}
+      defaultQuery={HELP_TEXT}
+      query={parameters.query}
+      variables={parameters.variables}
+      operationName={parameters.operationName || undefined}
+      plugins={[medplumPlugin]}
+      onEditQuery={onEditQuery}
+      onEditVariables={onEditVariables}
+      onEditOperationName={onEditOperationName}
+    />
   ) : (
     <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />

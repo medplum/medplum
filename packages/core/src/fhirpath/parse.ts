@@ -248,8 +248,14 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
  * Evaluates a FHIRPath expression against a resource or other object.
  * @param expression The FHIRPath expression to parse.
  * @param input The resource or object to evaluate the expression against.
+ * @param variables A map of variables for eval input.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPathTyped(expression: string, input: TypedValue[]): TypedValue[] {
-  return parseFhirPath(expression).eval(input);
+export function evalFhirPathTyped(
+  expression: string,
+  input: TypedValue[],
+  variables?: Record<string, TypedValue>
+): TypedValue[] {
+  const variableInput = variables ? variables : {};
+  return parseFhirPath(expression).eval({ variables: variableInput }, input);
 }

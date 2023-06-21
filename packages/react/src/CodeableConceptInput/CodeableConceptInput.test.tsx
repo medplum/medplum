@@ -93,16 +93,8 @@ describe('CodeableConceptInput', () => {
 
     await waitFor(() => screen.getByText('+ Create XYZ'));
 
-    // Press down arrow
-    for (let i = 0; i < 3; i++) {
-      await act(async () => {
-        fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
-      });
-    }
-
-    // Press "Enter"
     await act(async () => {
-      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+      fireEvent.mouseDown(screen.getByText('+ Create XYZ'));
     });
 
     await waitFor(() => screen.getByText('XYZ'));

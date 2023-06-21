@@ -8,7 +8,7 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { systemRepo } from '../fhir/repo';
-import { createReference, getExtension, Operator } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, Operator, toTypedValue } from '@medplum/core';
 import { AuditEventOutcome } from '../util/auditevent';
 import { logger } from '../logger';
 
@@ -106,6 +106,35 @@ export async function createAuditEvent(
     outcome,
     outcomeDesc,
   });
+}
+
+export function isDeleteInteraction(subscription: Subscription): boolean {
+  const supportedInteractionExtension = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
+  );
+  return supportedInteractionExtension?.valueCode === 'delete';
+}
+
+export async function isFhirCriteriaMet(subscription: Subscription, currentResource: Resource): Promise<boolean> {
+  const criteria = getExtension(
+    subscription,
+    'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression'
+  );
+  if (!criteria?.valueString) {
+    return true;
+  }
+  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
+  const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue({}) };
+  const previousResource = history.entry?.[1]?.resource as Resource;
+  if (previousResource) {
+    evalInput.previous = toTypedValue(previousResource);
+  }
+  const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
+  if (evalValue?.[0]?.value === true) {
+    return true;
+  }
+  return false;
 }
 
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {

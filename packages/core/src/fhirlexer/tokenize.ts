@@ -48,7 +48,7 @@ export class Tokenizer {
     this.keywords = keywords;
     this.operators = operators;
     this.dateTimeLiterals = !!options?.dateTimeLiterals;
-    this.symbolRegex = options?.symbolRegex ?? /[$\w]/;
+    this.symbolRegex = options?.symbolRegex ?? /[$\w%]/;
   }
 
   tokenize(): Token[] {
@@ -113,7 +113,7 @@ export class Tokenizer {
       return this.consumeSymbol();
     }
 
-    if (c === '$' && next.match(/\w/)) {
+    if ((c === '$' || c === '%') && next.match(/\w/)) {
       return this.consumeSymbol();
     }
 

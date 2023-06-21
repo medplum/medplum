@@ -1,11 +1,16 @@
-import { MedplumClient, created } from '@medplum/core';
+import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
+import { getUnsupportedExtension } from './utils';
+import { createMedplumClient } from './util/client';
 
 const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
   `{"resourceType":"Patient", "id":"2222222"}`,
   `{"resourceType":"Patient", "id":"3333333"}`,
+  `{"resourceType":"ExplanationOfBenefit", "id":"1111111", "item":[{"sequence": 1}]}`, // EOB with missing provider and item.productOrService
+  `{"resourceType":"ExplanationOfBenefit", "id":"2222222", "provider": "someprovider", "item":[{"sequence": 1, "productOrService": "someproduct"}]}`,
 ];
+jest.mock('./util/client');
 jest.mock('child_process');
 jest.mock('http');
 jest.mock('readline', () => ({
@@ -113,11 +118,11 @@ describe('CLI Bulk Commands', () => {
             output: [
               {
                 type: 'ProjectMembership',
-                url: 'https://api.medplum.com/storage/TEST',
+                url: 'https://api.medplum.com/storage/20fabdd3-e036-49fc-9260-8a30eaffefb1/498475fe-5eb0-46e5-b9f4-b46943c9719b?Expires=1685749878&Key-Pair-Id=my-key-id&Signature=PWyrVFf',
               },
               {
                 type: 'Project',
-                url: 'https://api.medplum.com/storage/TEST',
+                url: 'https://sandbox.bcda.cms.gov/data/55555/aaaaaa-bbbbb-ccc-ddddd-eeeeee.ndjson',
               },
             ],
             error: [],
@@ -127,6 +132,8 @@ describe('CLI Bulk Commands', () => {
       jest.resetModules();
       jest.clearAllMocks();
       medplum = new MedplumClient({ fetch });
+
+      (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
 
       console.log = jest.fn();
       console.error = jest.fn();
@@ -139,10 +146,37 @@ describe('CLI Bulk Commands', () => {
           text: jest.fn(),
         };
       });
-      await main(medplum, ['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
+      await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient']);
       expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(expect.stringMatching('ProjectMembership.ndjson is created'));
-      expect(console.log).toBeCalledWith(expect.stringMatching('Project.ndjson is created'));
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching(
+          'ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created'
+        )
+      );
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching('Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created')
+      );
+    });
+
+    test('with --target-directory', async () => {
+      const medplumDownloadSpy = jest.spyOn(medplum, 'download').mockImplementation((): any => {
+        return {
+          text: jest.fn(),
+        };
+      });
+      const testDirectory = 'testtargetdirectory';
+      await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient', '--target-directory', testDirectory]);
+      expect(medplumDownloadSpy).toBeCalled();
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching(
+          `${testDirectory}/ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created`
+        )
+      );
+      expect(console.log).toBeCalledWith(
+        expect.stringMatching(
+          `${testDirectory}/Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created`
+        )
+      );
     });
   });
 
@@ -174,11 +208,12 @@ describe('CLI Bulk Commands', () => {
           })),
         };
       });
+      medplum = new MedplumClient({ fetch });
+      (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
     });
 
     test('success', async () => {
-      medplum = new MedplumClient({ fetch });
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json']);
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
@@ -201,9 +236,8 @@ describe('CLI Bulk Commands', () => {
       expect(console.log).toBeCalledWith(expect.stringMatching(`"text": "Created"`));
     });
 
-    test('success with option numResourcesPerRequest', async () => {
-      medplum = new MedplumClient({ fetch });
-      await main(medplum, ['node', 'index.js', 'bulk', 'import', 'Patient.json', '--numResourcesPerRequest', '1']);
+    test('success with option --num-resources-per-request', async () => {
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
@@ -223,7 +257,56 @@ describe('CLI Bulk Commands', () => {
         );
       });
 
-      expect(fetch).toBeCalledTimes(3);
+      expect(fetch).toBeCalled();
+    });
+
+    test('success with option --target-directory', async () => {
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--target-directory', 'testdirectory']);
+
+      testLineOutput.forEach((line) => {
+        const resource = JSON.parse(line);
+        expect(fetch).toBeCalledWith(
+          expect.stringMatching(`/fhir/R4`),
+          expect.objectContaining({
+            body: expect.stringContaining(
+              JSON.stringify({
+                resource: resource,
+                request: {
+                  method: 'POST',
+                  url: resource.resourceType,
+                },
+              })
+            ),
+          })
+        );
+      });
+
+      expect(fetch).toBeCalled();
+    });
+
+    test('success with option --add-extensions-for-missing-values', async () => {
+      await main(['node', 'index.js', 'bulk', 'import', 'file.json', '--add-extensions-for-missing-values']);
+
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(`"resourceType":"ExplanationOfBenefit","id":"1111111"`),
+        })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnsupportedExtension())),
+        })
+      );
+      expect(fetch).toBeCalledWith(
+        expect.stringMatching(`/fhir/R4`),
+        expect.objectContaining({
+          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnsupportedExtension())),
+        })
+      );
+
+      expect(fetch).toBeCalled();
     });
   });
 });

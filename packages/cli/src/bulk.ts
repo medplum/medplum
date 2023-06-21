@@ -1,17 +1,21 @@
-import { BundleEntry } from '@medplum/fhirtypes';
+import { MedplumClient } from '@medplum/core';
+import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
-import { medplum } from '.';
-import { prettyPrint } from './utils';
+import { createMedplumClient } from './util/client';
+import { createMedplumCommand } from './util/command';
+import { getUnsupportedExtension, prettyPrint } from './utils';
 
-export const bulk = new Command('bulk');
+const bulkExportCommand = createMedplumCommand('export');
+const bulkImportCommand = createMedplumCommand('import');
 
-bulk
-  .command('export')
+export const bulk = new Command('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
+
+bulkExportCommand
   .option(
-    '-e, --exportLevel <exportLevel>',
+    '-e, --export-level <exportLevel>',
     'Optional export level. Defaults to system level export. "Group/:id" - Group of Patients, "Patient" - All Patients.'
   )
   .option('-t, --types <types>', 'optional resource types to export')
@@ -19,33 +23,53 @@ bulk
     '-s, --since <since>',
     'optional Resources will be included in the response if their state has changed after the supplied time (e.g. if Resource.meta.lastUpdated is later than the supplied _since time).'
   )
-  .action(async ({ exportLevel, types, since }) => {
+  .option(
+    '-d, --target-directory <targetDirectory>',
+    'optional target directory to save files from the bulk export operations.'
+  )
+  .action(async (options) => {
+    const { exportLevel, types, since, targetDirectory } = options;
+    const medplum = await createMedplumClient(options);
     const response = await medplum.bulkExport(exportLevel, types, since);
     response.output?.forEach(async ({ type, url }) => {
+      const fileUrl = new URL(url as string);
       const data = await medplum.download(url as string);
-      const fileName = `${type}.ndjson`;
-      writeFile(`${fileName}`, await data.text(), () => {
-        console.log(`${fileName} is created`);
+      const fileName = `${type}_${fileUrl.pathname}`.replace(/[^a-zA-Z0-9]+/g, '_') + '.ndjson';
+      const path = resolve(targetDirectory ?? '', fileName);
+
+      writeFile(`${path}`, await data.text(), () => {
+        console.log(`${path} is created`);
       });
     });
   });
 
-bulk
-  .command('import')
+bulkImportCommand
   .argument('<filename>', 'File Name')
   .option(
-    '--numResourcesPerRequest <numResourcesPerRequest>',
+    '--num-resources-per-request <numResourcesPerRequest>',
     'optional number of resources to import per batch request. Defaults to 25.',
     '25'
   )
+  .option(
+    '--add-extensions-for-missing-values',
+    'optional flag to add extensions for missing values in a resource',
+    false
+  )
+  .option('-d, --target-directory <targetDirectory>', 'optional target directory of file to be imported')
   .action(async (fileName, options) => {
-    const path = resolve(process.cwd(), fileName);
-    const { numResourcesPerRequest } = options;
+    const { numResourcesPerRequest, addExtensionsForMissingValues, targetDirectory } = options;
+    const path = resolve(targetDirectory ?? process.cwd(), fileName);
+    const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest));
+    await importFile(path, parseInt(numResourcesPerRequest), medplum, addExtensionsForMissingValues);
   });
 
-async function importFile(path: string, numResourcesPerRequest: number): Promise<void> {
+async function importFile(
+  path: string,
+  numResourcesPerRequest: number,
+  medplum: MedplumClient,
+  addExtensionsForMissingValues: boolean
+): Promise<void> {
   let entries = [] as BundleEntry[];
   const fileStream = createReadStream(path);
   const rl = createInterface({
@@ -53,7 +77,7 @@ async function importFile(path: string, numResourcesPerRequest: number): Promise
   });
 
   for await (const line of rl) {
-    const resource = JSON.parse(line);
+    const resource = parseResource(line, addExtensionsForMissingValues);
     entries.push({
       resource: resource,
       request: {
@@ -62,16 +86,16 @@ async function importFile(path: string, numResourcesPerRequest: number): Promise
       },
     });
     if (entries.length % numResourcesPerRequest === 0) {
-      await sendBatchEntries(entries);
+      await sendBatchEntries(entries, medplum);
       entries = [];
     }
   }
   if (entries.length > 0) {
-    await sendBatchEntries(entries);
+    await sendBatchEntries(entries, medplum);
   }
 }
 
-async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
+async function sendBatchEntries(entries: BundleEntry[], medplum: MedplumClient): Promise<void> {
   const result = await medplum.executeBatch({
     resourceType: 'Bundle',
     type: 'transaction',
@@ -81,4 +105,35 @@ async function sendBatchEntries(entries: BundleEntry[]): Promise<void> {
   result.entry?.forEach((resultEntry) => {
     prettyPrint(resultEntry.response);
   });
+}
+
+function parseResource(jsonString: string, addExtensionsForMissingValues: boolean): Resource {
+  const resource = JSON.parse(jsonString);
+
+  if (addExtensionsForMissingValues) {
+    return addExtensionsForMissingValuesResource(resource);
+  }
+
+  return resource;
+}
+
+function addExtensionsForMissingValuesResource(resource: Resource): Resource {
+  if (resource.resourceType === 'ExplanationOfBenefit') {
+    return addExtensionsForMissingValuesExplanationOfBenefits(resource);
+  }
+  return resource;
+}
+
+function addExtensionsForMissingValuesExplanationOfBenefits(resource: ExplanationOfBenefit): ExplanationOfBenefit {
+  if (!resource.provider) {
+    resource.provider = getUnsupportedExtension();
+  }
+
+  resource.item?.forEach((item: ExplanationOfBenefitItem) => {
+    if (!item?.productOrService) {
+      item.productOrService = getUnsupportedExtension();
+    }
+  });
+
+  return resource;
 }

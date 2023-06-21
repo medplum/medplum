@@ -3,6 +3,7 @@ import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { getConfig } from '../config';
 import { authenticateToken } from '../oauth/middleware';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
@@ -23,7 +24,6 @@ import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { rewriteAttachments, RewriteMode } from './rewrite';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { getConfig } from '../config';
 
 export const fhirRouter = Router();
 
@@ -77,6 +77,7 @@ protectedRoutes.use(authenticateToken);
 fhirRouter.use(protectedRoutes);
 
 // Project $export
+protectedRoutes.get('/([$]|%24)export', bulkExportHandler);
 protectedRoutes.post('/([$]|%24)export', bulkExportHandler);
 
 // Project $clone
@@ -89,6 +90,8 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
+protectedRoutes.get('/Bot/([$]|%24)execute', executeHandler);
+protectedRoutes.get('/Bot/:id/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/([$]|%24)execute', executeHandler);
 protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
 

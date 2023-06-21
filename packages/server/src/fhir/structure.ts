@@ -3,17 +3,24 @@ import {
   IndexedStructureDefinition,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  loadDataTypes,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 
 let loaded = false;
 
 export function getStructureDefinitions(): IndexedStructureDefinition {
   if (!loaded) {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    const dataTypes = readJson('fhir/r4/profiles-types.json') as Bundle<StructureDefinition>;
+    const resourceTypes = readJson('fhir/r4/profiles-resources.json') as Bundle<StructureDefinition>;
+    const medplumTypes = readJson('fhir/r4/profiles-medplum.json') as Bundle<StructureDefinition>;
+    indexStructureDefinitionBundle(dataTypes);
+    indexStructureDefinitionBundle(resourceTypes);
+    indexStructureDefinitionBundle(medplumTypes);
+    loadDataTypes(dataTypes);
+    loadDataTypes(resourceTypes);
+    loadDataTypes(medplumTypes);
     buildSearchParameters();
     loaded = true;
   }

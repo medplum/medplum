@@ -23,6 +23,10 @@ function setup(): void {
 }
 
 describe('SuperAdminPage', () => {
+  beforeEach(() => {
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+  });
+
   test('Rebuild StructureDefinitions', async () => {
     setup();
 
@@ -129,5 +133,11 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Access denied', async () => {
+    jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
+    setup();
+    expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
 });

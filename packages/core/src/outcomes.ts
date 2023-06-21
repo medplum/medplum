@@ -1,4 +1,4 @@
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -167,6 +167,22 @@ export function validationError(details: string): OperationOutcome {
   };
 }
 
+export function serverError(err: Error): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    issue: [
+      {
+        severity: 'error',
+        code: 'exception',
+        details: {
+          text: 'Internal server error',
+        },
+        diagnostics: err.toString(),
+      },
+    ],
+  };
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }
@@ -268,15 +284,19 @@ export function normalizeErrorString(error: unknown): string {
  * @returns The string representation of the operation outcome.
  */
 export function operationOutcomeToString(outcome: OperationOutcome): string {
-  const strs = [];
-  if (outcome.issue) {
-    for (const issue of outcome.issue) {
-      let issueStr = issue.details?.text || 'Unknown error';
-      if (issue.expression?.length) {
-        issueStr += ` (${issue.expression.join(', ')})`;
-      }
-      strs.push(issueStr);
-    }
-  }
+  const strs = outcome.issue?.map(operationOutcomeIssueToString) ?? [];
   return strs.length > 0 ? strs.join('; ') : 'Unknown error';
+}
+
+/**
+ * Returns a string represenation of the operation outcome issue.
+ * @param issue The operation outcome issue.
+ * @returns The string representation of the operation outcome issue.
+ */
+export function operationOutcomeIssueToString(issue: OperationOutcomeIssue): string {
+  let issueStr = issue.details?.text ?? issue.diagnostics ?? 'Unknown error';
+  if (issue.expression?.length) {
+    issueStr += ` (${issue.expression.join(', ')})`;
+  }
+  return issueStr;
 }

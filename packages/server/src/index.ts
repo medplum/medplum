@@ -1,6 +1,7 @@
 import express from 'express';
 import { initApp } from './app';
 import { loadConfig } from './config';
+import { getStructureDefinitions } from './fhir/structure';
 import { logger } from './logger';
 
 export async function main(configName: string): Promise<void> {
@@ -17,8 +18,12 @@ export async function main(configName: string): Promise<void> {
 
   const config = await loadConfig(configName);
 
+  // Preload the schema
+  getStructureDefinitions();
+
   const app = await initApp(express(), config);
-  app.listen(config.port);
+  const server = app.listen(config.port);
+  server.keepAliveTimeout = config.keepAliveTimeout ?? 90000;
   logger.info('Server started on port', config.port);
 }
 

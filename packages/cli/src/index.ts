@@ -1,4 +1,4 @@
-import { MEDPLUM_VERSION, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { Command } from 'commander';
 import dotenv from 'dotenv';
 import { login, whoami } from './auth';
@@ -7,20 +7,9 @@ import { bot, createBotDeprecate, deployBotDeprecate, saveBotDeprecate } from '.
 import { bulk } from './bulk';
 import { project } from './project';
 import { deleteObject, get, patch, post, put } from './rest';
-import { FileSystemStorage } from './storage';
 
-export let medplum: MedplumClient;
-
-export async function main(medplumClient: MedplumClient, argv: string[]): Promise<void> {
-  medplum = medplumClient;
-
+export async function main(argv: string[]): Promise<void> {
   try {
-    const clientId = process.env['MEDPLUM_CLIENT_ID'];
-    const clientSecret = process.env['MEDPLUM_CLIENT_SECRET'];
-    if (clientId && clientSecret) {
-      medplumClient.setBasicAuth(clientId, clientSecret);
-      await medplumClient.startClientLogin(clientId, clientSecret);
-    }
     const index = new Command('medplum').description('Command to access Medplum CLI');
     index.version(MEDPLUM_VERSION);
 
@@ -38,7 +27,7 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
     // Project
     index.addCommand(project);
 
-    // Export
+    // Bulk Commands
     index.addCommand(bulk);
 
     // Bot Commands
@@ -60,30 +49,9 @@ export async function main(medplumClient: MedplumClient, argv: string[]): Promis
 
 export async function run(): Promise<void> {
   dotenv.config();
-  const baseUrl = process.env['MEDPLUM_BASE_URL'] || 'https://api.medplum.com/';
-  const fhirUrlPath = process.env['MEDPLUM_FHIR_URL_PATH'] || '';
-  const accessToken = process.env['MEDPLUM_CLIENT_ACCESS_TOKEN'] || '';
-  const tokenUrl = process.env['MEDPLUM_TOKEN_URL'] || '';
-
-  const medplumClient = new MedplumClient({
-    fetch,
-    baseUrl,
-    tokenUrl,
-    fhirUrlPath,
-    storage: new FileSystemStorage(),
-    onUnauthenticated: onUnauthenticated,
-  });
-
-  if (accessToken) {
-    medplumClient.setAccessToken(accessToken);
-  }
-  await main(medplumClient, process.argv);
+  await main(process.argv);
 }
 
 if (require.main === module) {
   run().catch((err) => console.error('Unhandled error:', err));
-}
-
-function onUnauthenticated(): void {
-  console.log('Unauthenticated: run `npx medplum login` to sign in');
 }

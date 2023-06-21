@@ -461,6 +461,83 @@ describe('FHIRPath parser', () => {
     ]);
   });
 
+  test('Context type comparison', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+
+    const patient2: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+    const variables = { current: toTypedValue(patient2), previous: toTypedValue(patient) };
+    const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: true,
+      },
+    ]);
+  });
+
+  test('Context type comparison false', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+
+    const patient2: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+    const variables = { current: toTypedValue(patient2), previous: toTypedValue(patient) };
+    const result = evalFhirPathTyped('%current!=%previous', [toTypedValue(patient)], variables);
+
+    expect(result).toEqual([
+      {
+        type: PropertyType.boolean,
+        value: false,
+      },
+    ]);
+  });
+
+  test('Variable missing in context', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+
+    const patient2: Patient = {
+      resourceType: 'Patient',
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    };
+    const variables = { current: toTypedValue(patient2) };
+
+    expect(() => evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables)).toThrowError(
+      `Undefined variable %previous`
+    );
+  });
+
   test('Choice of type', () => {
     const observations: Observation[] = [
       {

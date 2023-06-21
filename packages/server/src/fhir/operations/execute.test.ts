@@ -225,4 +225,12 @@ describe('Execute', () => {
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Must specify bot ID or identifier.');
   });
+
+  test('GET request with query params', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Bot/${bot.id}/$execute?foo=bar`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    expect(res.body.foo).toBe('bar');
+  });
 });

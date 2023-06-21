@@ -58,3 +58,7 @@ Some system generated resources can accumulate and lead to degraded performance.
 ### Force Set Password
 
 User accounts are global, and can be members of multiple projects. Therefore, normal project administrators do not have access to "Set Password" functionality. Use the "Force Set Password" button to forcefully override a user's password.
+
+### Inviting Users to Projects
+
+When logged in as super admin you can invite users to any project.  To do so navigate to the `admin/invite` page.  The first field on the page will allow you to specify which project you want to invite a user to as well as whether you want them to be an admin.  This functionality is also available via the [API](/docs/auth/user-management-guide#invite-via-api).

@@ -1,6 +1,6 @@
 ---
 slug: codex-and-the-power-of-g10
-title: Codex and the power of g10
+title: Power of g10 - Codex Case Study
 authors:
   name: Reshma Khilnani
   title: Medplum Core Team

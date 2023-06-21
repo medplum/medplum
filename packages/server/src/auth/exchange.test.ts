@@ -116,6 +116,7 @@ describe('Token Exchange', () => {
   test('Unknown user', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
+      headers: { get: () => 'application/json' },
       json: () => ({ email: 'not-found@' + domain }),
     }));
 
@@ -130,6 +131,7 @@ describe('Token Exchange', () => {
   test('ClientApplication success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
+      headers: { get: () => 'application/json' },
       json: () => ({ email }),
     }));
 
@@ -144,6 +146,7 @@ describe('Token Exchange', () => {
   test('Missing projectId success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
+      headers: { get: () => 'application/json' },
       json: () => ({ email }),
     }));
 
@@ -158,9 +161,11 @@ describe('Token Exchange', () => {
   test('Invalid token request', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
+      headers: { get: () => 'text/plain' },
       json: () => {
         throw new Error('Invalid JSON');
       },
+      text: () => 'Unexpected error',
     }));
 
     const res = await request(app).post('/auth/exchange').type('json').send({
@@ -168,12 +173,14 @@ describe('Token Exchange', () => {
       clientId: externalAuthClient.id,
     });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
   });
 
   test('Subject auth success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
+      headers: { get: () => 'application/json' },
       json: () => ({ email: '', sub: externalId }),
     }));
 

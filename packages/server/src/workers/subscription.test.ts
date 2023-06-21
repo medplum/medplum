@@ -103,6 +103,14 @@ describe('Subscription Worker', () => {
 
     // Update should also trigger the subscription
     expect(queue.add).toHaveBeenCalled();
+
+    // Clear the queue
+    queue.add.mockClear();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).toHaveBeenCalled();
   });
 
   test('Status code 201', async () => {
@@ -244,6 +252,71 @@ describe('Subscription Worker', () => {
 
     // Update should not trigger the subscription
     expect(queue.add).not.toHaveBeenCalled();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Delete-only subscription', async () => {
+    const url = 'https://example.com/subscription';
+
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'delete',
+        },
+      ],
+    });
+    expect(subscription).toBeDefined();
+
+    // Clear the queue
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    // Create the patient
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    // Create should trigger the subscription
+    expect(queue.add).not.toHaveBeenCalled();
+
+    // Update the patient
+    await repo.updateResource({ ...patient, active: true });
+
+    // Update should not trigger the subscription
+    expect(queue.add).not.toHaveBeenCalled();
+
+    // Delete the patient
+    await repo.deleteResource('Patient', patient.id as string);
+
+    expect(queue.add).toHaveBeenCalled();
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: '{}',
+        headers: {
+          'Content-Type': 'application/fhir+json',
+          'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
+        },
+      })
+    );
   });
 
   test('Send subscriptions with signature', async () => {
@@ -1078,5 +1151,98 @@ describe('Subscription Worker', () => {
     const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
     // Should return a successful AuditEventOutcome with a normally failing status
     expect(auditEvent.outcome).toEqual(AuditEventOutcome.Success);
+  });
+
+  test('FhirPathCriteria extension', async () => {
+    const url = 'https://example.com/subscription';
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+          valueString: '%previous.name!=%current.name',
+        },
+      ],
+    });
+
+    expect(subscription).toBeDefined();
+
+    // Create the patient
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    // Clear the queue
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    // Clear the queue
+    queue.add.mockClear();
+
+    // Update the patient
+    const patient2 = await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
+
+    expect(queue.add).toHaveBeenCalled();
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    await execSubscriptionJob(job);
+    expect(fetch).toHaveBeenCalledWith(
+      url,
+      expect.objectContaining({
+        method: 'POST',
+        body: stringify(patient2),
+      })
+    );
+  });
+
+  test('FhirPathCriteria extension not met', async () => {
+    const url = 'https://example.com/subscription';
+    const subscription = await repo.createResource<Subscription>({
+      resourceType: 'Subscription',
+      reason: 'test',
+      status: 'active',
+      criteria: 'Patient',
+      channel: {
+        type: 'rest-hook',
+        endpoint: url,
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+          valueString: '%previous.name=%current.name',
+        },
+      ],
+    });
+
+    expect(subscription).toBeDefined();
+
+    // Create the patient
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+    expect(patient).toBeDefined();
+
+    // Clear the queue
+    const queue = getSubscriptionQueue() as any;
+    queue.add.mockClear();
+
+    // Clear the queue
+    queue.add.mockClear();
+
+    // Update the patient
+    await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
+
+    expect(queue.add).not.toHaveBeenCalled();
   });
 });

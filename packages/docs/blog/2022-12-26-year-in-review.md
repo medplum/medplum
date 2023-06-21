@@ -21,7 +21,7 @@ We wanted to highlight a few memorable moments and reflect on all that happened 
 
 ✅ First Enterprise customer went live!
 
-✅ Launched our [Youtube Channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA) and [Discord Community](https://discord.gg/UBAWwvrVeN)
+✅ Launched our [Youtube Channel](https://www.youtube.com/channel/UCu_sS6aXEHz3GPk2NTugtJA) and [Discord Community](https://discord.gg/medplum)
 
 ✅ Had our [YC S22 Demo Day](https://www.ycombinator.com/companies/medplum)
 

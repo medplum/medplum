@@ -6,11 +6,68 @@ sidebar_position: 3
 
 Use the following FHIR extensions to customize the Subscription behavior. The behavior is non-standard, and will not necessarily work in other FHIR systems.
 
+## Adding Extensions
+
+Here is an example FHIR Subscription Object:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  }
+}
+```
+
+An subscription extension contains an array of objects that have `url` and `value*` in them. To add an extension, use one of medplum's url below that contains the value to be passed.
+
+The extension will look like this:
+
+```json
+{
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "valueInteger": 3
+    }
+  ]
+}
+```
+
+And your final Subscription object will be:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-max-attempts",
+      "valueInteger": 3
+    }
+  ]
+}
+```
+
+Below are explanations of the different extensions Medplum Provides
+
 ## Interactions
 
-By default, FHIR Subscriptions will execute on both "create" and "update" operations.
+:::caution Note
+By default, FHIR Subscriptions will execute on "create", "update", "delete" operations.
+:::
 
-To restrict the FHIR Subscription to only execute on "create", use the `http://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
+To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
 ```json
 {
@@ -30,6 +87,36 @@ To restrict the FHIR Subscription to only execute on "create", use the `http://m
   ]
 }
 ```
+
+### Handling Delete Interaction
+
+:::caution Note
+The delete interaction will contain a different response where configuration will be needed on the incoming data.
+Unless the subscription intended is only to be executed upon 'create' or 'update', it will by default be triggered up on it.
+:::
+
+The response for a deleted resource will contain:
+
+```json
+{
+  "method": "POST",
+  "body": "{}",
+  "headers": {
+    "Content-Type": "application/fhir+json",
+    "X-Medplum-Deleted-Resource": "${resource.resourceType}/${resource.id}"
+  }
+}
+```
+
+**_Few things to note:_**
+
+`X-Medplum-Deleted-Resource`: Will contain the resource type and resource id that was deleted.
+
+`body`: Will be an empty object in the response `{}`
+
+**_Executing only on delete_**
+
+Use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `delete`.
 
 ## Signatures
 
@@ -109,10 +196,9 @@ To add an attempt number, use the `https://medplum.com/fhir/StructureDefinition/
 }
 ```
 
-
 ## Custom Status Codes
 
-HTTP status codes can be customized to determine the success of the subscription operation. 
+HTTP status codes can be customized to determine the success of the subscription operation.
 
 To add custom codes, use the `https://medplum.com/fhir/StructureDefinition/subscription-success-codes` extension with the valueString having a comma separated list of HTTP status codes for success (i.e., "200,201"). We also allow ranges (i.e., "200-399,404")
 
@@ -133,8 +219,37 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-success-codes",
-      "valueString": "200-399,404",
-    },
+      "valueString": "200-399,404"
+    }
   ]
 }
 ```
+
+## fhirPathCritera
+
+Medplum offers an extension for triggering subscriptions based on a string expression. This string expression takes in two variables: `%previous` and `%current`. These two variables are the same resource and are compared to one another. The expression should return either `true` or `false`.
+
+Here is an example `subscription` resource with a fhirPathCriteria expression that compares the Patient resource:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "DiagnosticReport?status=completed",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression",
+      "valueString": "%previous.name!=%current.name"
+    }
+  ]
+}
+```
+
+:::caution Note
+Upon the creation of a resource, there won't be a previous version of the resource. `previous` will be an empty object 
+:::

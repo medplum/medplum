@@ -33,6 +33,8 @@ const config = {
         },
         blog: {
           showReadingTime: true,
+          blogSidebarCount: 15,
+          blogSidebarTitle: 'Recent posts',
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -162,7 +164,7 @@ const config = {
               },
               {
                 label: 'Discord',
-                to: 'https://discord.gg/UBAWwvrVeN',
+                to: 'https://discord.gg/medplum',
               },
               {
                 label: 'Storybook',

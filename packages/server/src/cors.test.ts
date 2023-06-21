@@ -49,6 +49,7 @@ describe('CORS', () => {
   });
 
   test('Closed', () => {
+    getConfig().allowedOrigins = undefined;
     const req = {
       header: () => 'https://example.com',
       path: '/fhir/R4/Patient',

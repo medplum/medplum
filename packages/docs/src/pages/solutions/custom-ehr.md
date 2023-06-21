@@ -4,17 +4,13 @@ Providers often want a custom experience to help smooth workflow, productivity a
 
 ## Sample Application
 
-The Medplum custom EHR sample application is called [Foo Medical provider](https://provider.foomedical.com/). You can [request access](https://questionnaires.gle/c41NddaDroCU88yt7) to view the application, or view the [source code](https://github.com/medplum/foomedical-provider).
+The Medplum custom EHR sample base application is called `medplum-hello-world`. You can view the [source code](https://github.com/medplum/medplum-hello-world).
 
-Foo Medical Provider is intended as a sample, and the experience is truly up to the developer to determine. It is built off of the Medplum API, and is HIPAA compliant and SOC 2 Type 2 certified. Detailed compliance information can be found on our [compliance portal](../docs/compliance).
+The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/ui-components).
 
-## Customizable Home Page
+## Customizable Pages
 
-The homepage is customizable, and can be a great place to communicate the most important tasks to practitioners. On the home page dashboards, worklists, task lists and upcoming appointments are popular.
-
-## Care Plans and Service Menu
-
-Design your service menu and care plans and track patients across their journey. Custom reports and analytics are available as well. [Learn more](../products/careplans).
+The pages are customizable, and can be a great place to communicate the most important tasks to practitioners. On the home page dashboards, worklists, task lists and upcoming appointments are popular.
 
 ## Questionnaires
 
@@ -32,10 +28,6 @@ Create schedules and slots and allow patients to book them. Create schedules tha
 
 Manage patient medications and refills, and create a pharmacy service that fits the needs of your patient population through custom [integrations](../products/integration).
 
-## Specialties, patient education and more
-
-Medplum data model is based on FHIR and has data structures and ontologies that support specialties like pediatrics, oncology, immunology and more. Create a custom EHR that is purpose built for a specialty.
-
 ## API Access
 
 All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/auth/access-control).
@@ -46,9 +38,11 @@ There is a wide range of functionality that could be included in an EHR. Organiz
 
 In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommended, and ONC Certification is not required, except in some scenarios.
 
+## Case Studies
+
+- [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
+
 ## Demos and Resources
 
-- Sample application [Foo Medical provider](https://provider.foomedical.com/), [request access](https://questionnaires.gle/c41NddaDroCU88yt7) or run the application off of your own Medplum project.
-- Source code for [Foo Medical Provider](https://github.com/medplum/foomedical-provider)
 - [Compliance](https://www.medplum.com/docs/compliance) portal with guides and resources.
 - [CMS Definition of Electronic Health Record](https://www.cms.gov/Medicare/E-Health/EHealthRecords)

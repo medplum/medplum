@@ -62,11 +62,12 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.boolean:
       return <>{value === undefined ? '' : Boolean(value).toString()}</>;
     case PropertyType.SystemString:
+    case PropertyType.string:
+      return <div style={{ whiteSpace: 'pre-wrap' }}>{value}</div>;
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.integer:
     case PropertyType.positiveInt:
-    case PropertyType.string:
     case PropertyType.unsignedInt:
     case PropertyType.uri:
     case PropertyType.url:

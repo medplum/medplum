@@ -86,6 +86,21 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('hello')).toBeInTheDocument();
   });
 
+  test('Renders string with newline', () => {
+    setup(
+      <ResourcePropertyDisplay
+        property={{ type: [{ code: 'string' }] }}
+        propertyType={PropertyType.string}
+        value={'hello\nworld'}
+      />
+    );
+    const textElement = screen.getByText('hello world');
+    const lines = textElement.textContent?.split('\n');
+    const numberOfLines = lines?.length || 0;
+    expect(numberOfLines).toBe(2);
+    expect(numberOfLines).not.toBe(1);
+  });
+
   test('Renders canonical', () => {
     setup(
       <MemoryRouter>
