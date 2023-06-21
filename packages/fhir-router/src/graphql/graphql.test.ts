@@ -6,8 +6,6 @@ import {
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  serverError,
-  validationError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -1153,7 +1151,7 @@ describe('GraphQL', () => {
     expect(retrievePatient?.name?.[1].family).toEqual('Smith');
   });
 
-  test('Invalid Mutation', async () => {
+  test('Invalid Update Mutation', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       gender: 'female',
