@@ -230,9 +230,9 @@ export interface MedplumClientOptions {
   onUnauthenticated?: () => void;
 }
 
-export type FetchLike = {
+export interface FetchLike {
   (url: string, options?: any): Promise<any>;
-};
+}
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -246,13 +246,13 @@ export type FetchLike = {
  */
 export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | string | undefined;
 
-export type CreatePdfFunction = {
+export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
     tableLayouts?: Record<string, CustomTableLayout> | undefined,
     fonts?: TFontDictionary | undefined
   ): Promise<any>;
-};
+}
 
 export interface BaseLoginRequest {
   readonly projectId?: string;
