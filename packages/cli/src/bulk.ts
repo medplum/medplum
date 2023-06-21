@@ -1,12 +1,12 @@
 import { MedplumClient } from '@medplum/core';
-import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Extension, Resource } from '@medplum/fhirtypes';
+import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { createReadStream, writeFile } from 'fs';
 import { resolve } from 'path';
 import { createInterface } from 'readline';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
-import { prettyPrint } from './utils';
+import { getUnsupportedExtension, prettyPrint } from './utils';
 
 const bulkExportCommand = createMedplumCommand('export');
 const bulkImportCommand = createMedplumCommand('import');
@@ -120,25 +120,14 @@ function addExtensionsForMissingValuesResource(resource: Resource): Resource {
 
 function addExtensionsForMissingValuesExplanationOfBenefits(resource: ExplanationOfBenefit): ExplanationOfBenefit {
   if (!resource.provider) {
-    resource.provider = getUnmappedExtension();
+    resource.provider = getUnsupportedExtension();
   }
 
   resource.item?.forEach((item: ExplanationOfBenefitItem) => {
     if (!item?.productOrService) {
-      item.productOrService = getUnmappedExtension();
+      item.productOrService = getUnsupportedExtension();
     }
   });
 
   return resource;
-}
-
-export function getUnmappedExtension(): Extension {
-  return {
-    extension: [
-      {
-        url: 'https://g.co/unmapped-by-bcda',
-        valueString: 'This is a required FHIR R4 Field, but not mapped by BCDA, which is why we expect it to be empty.',
-      },
-    ],
-  };
 }
