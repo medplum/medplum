@@ -266,9 +266,12 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
 }
 
 function getOutputPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
-  const graphqlType = getGraphQLOutputType(typeName);
+  let graphqlType = getGraphQLOutputType(typeName);
   if (elementDefinition.max === '*') {
-    return new GraphQLList(graphqlType);
+    graphqlType = new GraphQLList(graphqlType);
+  }
+  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+    graphqlType = new GraphQLNonNull(graphqlType);
   }
   return graphqlType;
 }
