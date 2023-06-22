@@ -3,6 +3,7 @@ import { Project, ResourceType } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
+import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { BulkExporter } from './utils/bulkexporter';
 
@@ -31,8 +32,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   exportResources(exporter, project, types)
     .then(() => logger.info(`export for ${project.id} is completed`))
     .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
-  // Send the response
-  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
+
+  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
 
 export async function exportResources(

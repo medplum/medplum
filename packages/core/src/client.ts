@@ -36,7 +36,14 @@ import { encryptSHA256, getRandomString } from './crypto';
 import { EventTarget } from './eventtarget';
 import { Hl7Message } from './hl7';
 import { parseJWTPayload } from './jwt';
-import { badRequest, isOk, normalizeOperationOutcome, notFound, OperationOutcomeError } from './outcomes';
+import {
+  badRequest,
+  isOk,
+  isOperationOutcome,
+  normalizeOperationOutcome,
+  notFound,
+  OperationOutcomeError,
+} from './outcomes';
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
@@ -2294,7 +2301,7 @@ export class MedplumClient extends EventTarget {
     exportLevel = '',
     resourceTypes?: string,
     since?: string,
-    options: RequestInit = {}
+    options?: RequestInit
   ): Promise<Partial<BulkDataExport>> {
     const fhirPath = exportLevel ? `${exportLevel}/` : exportLevel;
     const url = this.fhirUrl(`${fhirPath}$export`);
@@ -2306,21 +2313,41 @@ export class MedplumClient extends EventTarget {
       url.searchParams.set('_since', since);
     }
 
+    return this.startAsyncRequest<Partial<BulkDataExport>>(url.toString(), options);
+  }
+
+  /**
+   * Starts an async request following the FHIR "Asynchronous Request Pattern".
+   * See: https://hl7.org/fhir/r4/async.html
+   * @param url The URL to request.
+   * @param options Optional fetch options.
+   * @returns The response body.
+   */
+  async startAsyncRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
     this.addFetchOptionsDefaults(options);
 
     const headers = options.headers as Record<string, string>;
     headers['Prefer'] = 'respond-async';
-    const response = await this.fetchWithRetry(url.toString(), options);
+
+    const response = await this.fetchWithRetry(url, options);
 
     if (response.status === 202) {
+      // Accepted content location can come from multiple sources
+      // The authoritative source is the "Content-Location" HTTP header.
       const contentLocation = response.headers.get('content-location');
-
       if (contentLocation) {
-        return await this.pollStatus(contentLocation);
+        return this.pollStatus(contentLocation);
+      }
+
+      // However, "Content-Location" may not be available due to CORS limitations.
+      // In this case, we use the OperationOutcome.diagnostics field.
+      const body = await response.json();
+      if (isOperationOutcome(body) && body.issue?.[0]?.diagnostics) {
+        return this.pollStatus(body.issue[0].diagnostics);
       }
     }
 
-    return await this.parseResponse(response, 'POST', url.toString());
+    return this.parseResponse(response, 'POST', url);
   }
 
   //
@@ -2392,10 +2419,6 @@ export class MedplumClient extends EventTarget {
       await this.refreshPromise;
     }
 
-    if (!url.startsWith('http')) {
-      url = this.baseUrl + url;
-    }
-
     options.method = method;
     this.addFetchOptionsDefaults(options);
 
@@ -2441,6 +2464,10 @@ export class MedplumClient extends EventTarget {
   }
 
   private async fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
+    if (!url.startsWith('http')) {
+      url = this.baseUrl + url;
+    }
+
     const maxRetries = 3;
     const retryDelay = 200;
     let response: Response | undefined = undefined;
@@ -2461,7 +2488,7 @@ export class MedplumClient extends EventTarget {
   private async pollStatus<T>(statusUrl: string): Promise<T> {
     let checkStatus = true;
     let resultResponse;
-    const retryDelay = 200;
+    const retryDelay = 2000;
 
     while (checkStatus) {
       const fetchOptions = {};

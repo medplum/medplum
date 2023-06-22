@@ -1,10 +1,10 @@
 import {
-  OperationOutcomeError,
   accepted,
   allOk,
   badRequest,
   forbidden,
   getResourceTypes,
+  OperationOutcomeError,
   validateResourceType,
 } from '@medplum/core';
 import { Request, Response, Router } from 'express';
@@ -12,6 +12,7 @@ import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
+import { getClient } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { Repository, systemRepo } from '../fhir/repo';
@@ -21,7 +22,6 @@ import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { getClient } from '../database';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateToken);
@@ -210,5 +210,5 @@ async function sendAsyncResponse(req: Request, res: Response, callback: () => Pr
   const exec = new AsyncJobExecutor(repo);
   await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
   exec.start(callback);
-  res.set('Content-Location', exec.getContentLocation(baseUrl)).status(202).json(accepted);
+  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 }

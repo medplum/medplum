@@ -3,6 +3,7 @@ import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../../config';
 import { logger } from '../../logger';
+import { sendOutcome } from '../outcomes';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
@@ -38,8 +39,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
     .then(() => logger.info(`export for ${project.id} is completed`))
     .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
 
-  // Send the response
-  res.set('Content-Location', `${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`).status(202).json(accepted);
+  sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
 
 async function groupExportResources(

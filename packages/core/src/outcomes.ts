@@ -122,19 +122,22 @@ export const tooManyRequests: OperationOutcome = {
   ],
 };
 
-export const accepted: OperationOutcome = {
-  resourceType: 'OperationOutcome',
-  id: ACCEPTED_ID,
-  issue: [
-    {
-      severity: 'information',
-      code: 'informational',
-      details: {
-        text: 'Accepted',
+export function accepted(location: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: ACCEPTED_ID,
+    issue: [
+      {
+        severity: 'information',
+        code: 'informational',
+        details: {
+          text: 'Accepted',
+        },
+        diagnostics: location,
       },
-    },
-  ],
-};
+    ],
+  };
+}
 
 export function badRequest(details: string, expression?: string): OperationOutcome {
   return {
@@ -188,7 +191,13 @@ export function isOperationOutcome(value: unknown): value is OperationOutcome {
 }
 
 export function isOk(outcome: OperationOutcome): boolean {
-  return outcome.id === OK_ID || outcome.id === CREATED_ID || outcome.id === NOT_MODIFIED_ID;
+  return (
+    outcome.id === OK_ID || outcome.id === CREATED_ID || outcome.id === NOT_MODIFIED_ID || outcome.id === ACCEPTED_ID
+  );
+}
+
+export function isAccepted(outcome: OperationOutcome): boolean {
+  return outcome.id === ACCEPTED_ID;
 }
 
 export function isNotFound(outcome: OperationOutcome): boolean {
@@ -204,6 +213,8 @@ export function getStatus(outcome: OperationOutcome): number {
     return 200;
   } else if (outcome.id === CREATED_ID) {
     return 201;
+  } else if (outcome.id === ACCEPTED_ID) {
+    return 202;
   } else if (outcome.id === NOT_MODIFIED_ID) {
     return 304;
   } else if (outcome.id === UNAUTHORIZED_ID) {

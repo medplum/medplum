@@ -1,4 +1,4 @@
-import { getStatus } from '@medplum/core';
+import { getStatus, isAccepted } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Response } from 'express';
@@ -26,5 +26,8 @@ function getValidationErrorExpression(error: ValidationError): string[] | undefi
 }
 
 export function sendOutcome(res: Response, outcome: OperationOutcome): Response<any, Record<string, any>> {
+  if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
+    res.set('Content-Location', outcome.issue[0].diagnostics);
+  }
   return res.status(getStatus(outcome)).json(outcome);
 }
