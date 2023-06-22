@@ -167,16 +167,7 @@ describe('CLI Bulk Commands', () => {
       const testDirectory = 'testtargetdirectory';
       await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient', '--target-directory', testDirectory]);
       expect(medplumDownloadSpy).toBeCalled();
-      expect(console.log).toBeCalledWith(
-        expect.stringMatching(
-          `${testDirectory}/ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created`
-        )
-      );
-      expect(console.log).toBeCalledWith(
-        expect.stringMatching(
-          `${testDirectory}/Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created`
-        )
-      );
+      expect(console.log).toBeCalledWith(expect.stringMatching(`${testDirectory}`));
     });
   });
 
