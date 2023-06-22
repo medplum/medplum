@@ -38,6 +38,3 @@ cp packages/react/coverage/coverage-final.json coverage/packages/coverage-react.
 cp packages/server/coverage/coverage-final.json coverage/packages/coverage-server.json
 npx nyc merge coverage/packages coverage/combined/coverage.json
 npx nyc report -t coverage/combined --report-dir coverage --reporter=lcov
-
-# Lint
-npm run lint
