@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs';
 import { ElementValidator, InternalTypeSchema, SlicingRules, parseStructureDefinition } from './types';
 import { resolve } from 'path';
+import { TypedValue } from '../types';
 
 describe('FHIR resource and data type representations', () => {
   test('Base resource parsing', () => {
@@ -31,6 +32,17 @@ describe('FHIR resource and data type representations', () => {
       'vs-2',
     ]);
     expect(profile.fields['status'].binding).toEqual('http://hl7.org/fhir/ValueSet/observation-status|4.0.1');
+    expect(profile.fields['code'].pattern).toMatchObject<TypedValue>({
+      type: 'CodeableConcept',
+      value: {
+        coding: [
+          {
+            code: '85354-9',
+            system: 'http://loinc.org',
+          },
+        ],
+      },
+    });
     expect(profile.fields['category'].slicing).toMatchObject<SlicingRules>({
       discriminator: [
         { type: 'value', path: 'coding.code' },

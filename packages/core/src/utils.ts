@@ -411,18 +411,6 @@ export function deepEquals(object1: unknown, object2: unknown, path?: string): b
   return false;
 }
 
-function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
-  if (array1.length !== array2.length) {
-    return false;
-  }
-  for (let i = 0; i < array1.length; i++) {
-    if (!deepEquals(array1[i], array2[i])) {
-      return false;
-    }
-  }
-  return true;
-}
-
 function deepEqualsObject(
   object1: Record<string, unknown>,
   object2: Record<string, unknown>,
@@ -444,6 +432,55 @@ function deepEqualsObject(
     }
   }
   return true;
+}
+
+function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
+  if (array1.length !== array2.length) {
+    return false;
+  }
+  for (let i = 0; i < array1.length; i++) {
+    if (!deepEquals(array1[i], array2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Checks if object2 includes all fields and values of object1.
+ * It doesn't matter if object2 has extra fields.
+ * @param object1 The first object.
+ * @param object2 The second object.
+ * @returns True if object2 includes all fields and values of object1.
+ */
+export function deepIncludes(object1: unknown, object2: unknown): boolean {
+  if (isEmpty(object1)) {
+    return true;
+  }
+  if (isEmpty(object2)) {
+    return false;
+  }
+  if (Array.isArray(object1) && Array.isArray(object2)) {
+    return deepIncludesArray(object1, object2);
+  }
+  if (Array.isArray(object1) || Array.isArray(object2)) {
+    return false;
+  }
+  if (isObject(object1) && isObject(object2)) {
+    return deepIncludesObject(object1, object2);
+  }
+  if (isObject(object1) || isObject(object2)) {
+    return false;
+  }
+  return object1 === object2;
+}
+
+function deepIncludesArray(array1: any[], array2: any[]): boolean {
+  return array1.every((value, index) => deepIncludes(value, array2[index]));
+}
+
+function deepIncludesObject(object1: { [key: string]: unknown }, object2: { [key: string]: unknown }): boolean {
+  return Object.entries(object1).every(([key, value]) => key in object2 && deepIncludes(value, object2[key]));
 }
 
 /**
