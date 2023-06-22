@@ -1,4 +1,4 @@
-import { ProfileResource, resolveId } from '@medplum/core';
+import { ProfileResource, projectAdminResourceTypes, resolveId } from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -8,7 +8,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
-import { projectAdminResourceTypes, Repository, systemRepo } from './repo';
+import { Repository, systemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
 /**

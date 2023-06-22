@@ -160,6 +160,16 @@ export function parseSearchDefinition<T extends Resource = Resource>(url: string
   return parseSearchUrl<T>(new URL(url, 'https://example.com/'));
 }
 
+/**
+ * Parses a FHIR criteria string into a SearchRequest.
+ * FHIR criteria strings are found on resources such as Subscription.
+ * @param criteria The FHIR criteria string.
+ * @returns Parsed search definition.
+ */
+export function parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
+  return parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
+}
+
 function parseSearchImpl<T extends Resource = Resource>(
   resourceType: T['resourceType'],
   query: [string, string][] | IterableIterator<[string, string]>
