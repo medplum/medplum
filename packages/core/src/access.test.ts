@@ -1,7 +1,11 @@
 import { readJson } from '@medplum/definitions';
 import { AccessPolicy, Bundle, SearchParameter } from '@medplum/fhirtypes';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
 import { canReadResourceType, canWriteResource, canWriteResourceType, matchesAccessPolicy } from './access';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
+
+const nullPolicy: AccessPolicy = {
+  resourceType: 'AccessPolicy',
+};
 
 const wildcardPolicy: AccessPolicy = {
   resourceType: 'AccessPolicy',
@@ -44,13 +48,18 @@ describe('Access', () => {
   });
 
   test('canReadResourceType', () => {
+    expect(canReadResourceType(nullPolicy, 'Patient')).toBe(false);
+
     expect(canReadResourceType(wildcardPolicy, 'Patient')).toBe(true);
+
     expect(canReadResourceType(restrictedPolicy, 'Patient')).toBe(true);
     expect(canReadResourceType(restrictedPolicy, 'Observation')).toBe(true);
     expect(canReadResourceType(restrictedPolicy, 'Practitioner')).toBe(false);
   });
 
   test('canWriteResourceType', () => {
+    expect(canWriteResourceType(nullPolicy, 'Patient')).toBe(false);
+
     expect(canWriteResourceType(wildcardPolicy, 'CapabilityStatement')).toBe(false);
     expect(canWriteResourceType(wildcardPolicy, 'Login')).toBe(false);
     expect(canWriteResourceType(wildcardPolicy, 'Patient')).toBe(true);
@@ -64,7 +73,10 @@ describe('Access', () => {
   });
 
   test('canWriteResource', () => {
+    expect(canWriteResource(nullPolicy, { resourceType: 'Patient' })).toBe(false);
+
     expect(canWriteResource(wildcardPolicy, { resourceType: 'Patient' })).toBe(true);
+
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Patient' })).toBe(false);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Observation' })).toBe(true);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication' })).toBe(false);
@@ -76,7 +88,15 @@ describe('Access', () => {
     // Once upon a time, the recommended way to restrict access to a resource was AccessPolicy.compartment
     // That is now obsolete, becaues you can always use criteria with "_compartment=x"
     // We still hold onto this for backwards compatibility.
-    const ap: AccessPolicy = { resourceType: 'AccessPolicy', compartment: { reference: '1' } };
+    const ap: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+          compartment: { reference: '1' },
+        },
+      ],
+    };
     expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } }, true));
     expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false));
   });
