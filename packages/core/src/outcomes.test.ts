@@ -1,4 +1,5 @@
 import {
+  accepted,
   allOk,
   assertOk,
   badRequest,
@@ -6,6 +7,7 @@ import {
   forbidden,
   getStatus,
   gone,
+  isAccepted,
   isGone,
   isNotFound,
   isOk,
@@ -22,6 +24,7 @@ describe('Outcomes', () => {
   test('OK', () => {
     expect(isOk(allOk)).toBe(true);
     expect(isOk(created)).toBe(true);
+    expect(isAccepted(created)).toBe(false);
     expect(isNotFound(allOk)).toBe(false);
     expect(isGone(allOk)).toBe(false);
   });
@@ -37,6 +40,25 @@ describe('Outcomes', () => {
     expect(isGone(gone)).toBe(true);
   });
 
+  test('Accepted', () => {
+    expect(isOk(accepted('https://example.com'))).toBe(true);
+    expect(isAccepted(accepted('https://example.com'))).toBe(true);
+    expect(accepted('https://example.com')).toMatchObject({
+      resourceType: 'OperationOutcome',
+      id: 'accepted',
+      issue: [
+        {
+          severity: 'information',
+          code: 'informational',
+          details: {
+            text: 'Accepted',
+          },
+          diagnostics: 'https://example.com',
+        },
+      ],
+    });
+  });
+
   test('Bad Request', () => {
     expect(isOk(badRequest('bad'))).toBe(false);
     expect(badRequest('bad', 'bad')?.issue?.[0]?.expression?.[0]).toBe('bad');
@@ -45,6 +67,7 @@ describe('Outcomes', () => {
   test('Status', () => {
     expect(getStatus(allOk)).toBe(200);
     expect(getStatus(created)).toBe(201);
+    expect(getStatus(accepted('https://example.com'))).toBe(202);
     expect(getStatus(notModified)).toBe(304);
     expect(getStatus(unauthorized)).toBe(401);
     expect(getStatus(forbidden)).toBe(403);
