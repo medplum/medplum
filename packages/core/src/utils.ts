@@ -411,6 +411,18 @@ export function deepEquals(object1: unknown, object2: unknown, path?: string): b
   return false;
 }
 
+function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
+  if (array1.length !== array2.length) {
+    return false;
+  }
+  for (let i = 0; i < array1.length; i++) {
+    if (!deepEquals(array1[i], array2[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 function deepEqualsObject(
   object1: Record<string, unknown>,
   object2: Record<string, unknown>,
@@ -428,18 +440,6 @@ function deepEqualsObject(
     const val1 = object1[key];
     const val2 = object2[key];
     if (!deepEquals(val1, val2, key)) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function deepEqualsArray(array1: unknown[], array2: unknown[]): boolean {
-  if (array1.length !== array2.length) {
-    return false;
-  }
-  for (let i = 0; i < array1.length; i++) {
-    if (!deepEquals(array1[i], array2[i])) {
       return false;
     }
   }
