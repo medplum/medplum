@@ -9,10 +9,10 @@ import { loadTestConfig } from '../config';
 import { systemRepo } from '../fhir/repo';
 import { logger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
+import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
 import { createTestProject } from '../test.setup';
-import { createSearchParameters } from '../seeds/searchparameters';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -138,6 +138,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res.headers['content-location']);
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
@@ -192,6 +193,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res.headers['content-location']);
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
@@ -246,6 +248,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res.headers['content-location']);
   });
 
   test('Rebuild searchparameters as super admin with respond-async error', async () => {
@@ -324,6 +327,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res.headers['content-location']);
   });
 
   test('Reindex with respond-async error', async () => {
@@ -556,4 +560,32 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toBe(400);
   });
+
+  test('Rebuild projectId as super admin with respond-async', async () => {
+    const res1 = await request(app)
+      .post('/admin/super/rebuildprojectid')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({});
+
+    expect(res1.status).toEqual(202);
+    expect(res1.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res1.headers['content-location']);
+  });
 });
+
+async function waitForAsyncJob(contentLocation: string): Promise<void> {
+  for (let i = 0; i < 10; i++) {
+    const res = await request(app)
+      .get(new URL(contentLocation).pathname)
+      .set('Authorization', 'Bearer ' + adminAccessToken);
+    if (res.status !== 202) {
+      return;
+    }
+    await sleep(1000);
+  }
+  throw new Error('Async job did not complete');
+}
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));

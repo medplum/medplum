@@ -181,10 +181,9 @@ superAdminRouter.post(
     requireAsync(req);
 
     await sendAsyncResponse(req, res, async () => {
-      const client = getClient();
       const resourceTypes = getResourceTypes();
       for (const resourceType of resourceTypes) {
-        await client.query(
+        await getClient().query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
