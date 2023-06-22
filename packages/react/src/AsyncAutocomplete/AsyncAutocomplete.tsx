@@ -1,5 +1,7 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -69,7 +71,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           }
         }
       })
-      .catch(console.log);
+      .catch((err) => {
+        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+        }
+      });
   }, [loadOptions, onChange, toOption]);
 
   const handleSearchChange = useCallback((): void => {
