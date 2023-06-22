@@ -1,4 +1,21 @@
 import {
+  buildTypeName,
+  capitalize,
+  evalFhirPathTyped,
+  getElementDefinition,
+  getResourceTypes,
+  getResourceTypeSchema,
+  getSearchParameters,
+  globalSchema,
+  isLowerCase,
+  isResourceTypeSchema,
+  normalizeOperationOutcome,
+  OperationOutcomeError,
+  toJsBoolean,
+  toTypedValue,
+} from '@medplum/core';
+import { ElementDefinition, ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import {
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
   GraphQLFieldConfig,
@@ -13,24 +30,7 @@ import {
   GraphQLString,
   GraphQLUnionType,
 } from 'graphql';
-import { GraphQLContext, buildSearchArgs, fhirParamToGraphQLField, resolveBySearch, typeCache } from './utils';
-import {
-  OperationOutcomeError,
-  buildTypeName,
-  capitalize,
-  evalFhirPathTyped,
-  getElementDefinition,
-  getResourceTypeSchema,
-  getResourceTypes,
-  getSearchParameters,
-  globalSchema,
-  isLowerCase,
-  isResourceTypeSchema,
-  normalizeOperationOutcome,
-  toJsBoolean,
-  toTypedValue,
-} from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { buildSearchArgs, fhirParamToGraphQLField, GraphQLContext, resolveBySearch, typeCache } from './utils';
 
 export const outputTypeCache: Record<string, GraphQLOutputType | undefined> = {
   ...typeCache,
@@ -239,7 +239,7 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
     let count = 0;
     if (childSearchParams) {
       for (const [code, searchParam] of Object.entries(childSearchParams)) {
-        if (searchParam.target && searchParam.target.includes(resourceType)) {
+        if (searchParam.target?.includes(resourceType)) {
           enumValues[fhirParamToGraphQLField(code)] = { value: code };
           count++;
         }
