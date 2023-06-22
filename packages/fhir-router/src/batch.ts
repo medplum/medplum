@@ -72,7 +72,7 @@ class BatchProcessor {
       const rewritten = this.rewriteIdsInObject(entry);
       // If the resource 'id' element is specified, we want to replace teh `urn:uuid:*` string and
       // remove the `resourceType` prefix
-      if (entry?.resource?.id) {
+      if (entry.resource?.id) {
         rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
       }
 
@@ -104,7 +104,7 @@ class BatchProcessor {
       const baseUrl = `https://example.com/${entry.resource.resourceType}`;
       const searchUrl = new URL('?' + request.ifNoneExist, baseUrl);
       const searchBundle = await this.repo.search(parseSearchUrl(searchUrl));
-      const entries = searchBundle?.entry as BundleEntry[];
+      const entries = searchBundle.entry as BundleEntry[];
       if (entries.length > 1) {
         return buildBundleResponse(badRequest('Multiple matches'));
       }
@@ -176,7 +176,7 @@ class BatchProcessor {
   }
 
   private addReplacementId(fullUrl: string, resource: Resource): void {
-    if (fullUrl?.startsWith('urn:uuid:')) {
+    if (fullUrl.startsWith('urn:uuid:')) {
       this.ids[fullUrl] = resource;
     }
   }

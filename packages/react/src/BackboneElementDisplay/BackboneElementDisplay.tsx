@@ -40,7 +40,7 @@ export function BackboneElementDisplay(props: BackboneElementDisplayProps): JSX.
     <DescriptionList compact={props.compact}>
       {Object.entries(typeSchema.properties).map((entry) => {
         const key = entry[0];
-        if (DEFAULT_IGNORED_PROPERTIES.indexOf(key) >= 0) {
+        if (DEFAULT_IGNORED_PROPERTIES.includes(key)) {
           return null;
         }
         const property = entry[1];

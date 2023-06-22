@@ -35,7 +35,7 @@ export class BulkExporter {
   readonly types: string[];
   private resource: BulkDataExport | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
-  readonly resourceSet: Set<string> = new Set();
+  readonly resourceSet = new Set<string>();
 
   constructor(repo: Repository, since: string | undefined, types: string[] = []) {
     this.repo = repo;

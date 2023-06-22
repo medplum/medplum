@@ -426,9 +426,9 @@ const MaxDepthRule = (context: ValidationContext): ASTVisitor => ({
     /** The index or key to this node from the parent node or Array. */
     _key: string | number | undefined,
     /** The parent immediately above this node, which may be an Array. */
-    _parent: ASTNode | ReadonlyArray<ASTNode> | undefined,
+    _parent: ASTNode | readonly ASTNode[] | undefined,
     /** The key path to get to this node from the root node. */
-    path: ReadonlyArray<string | number>
+    path: readonly (string | number)[]
   ): any {
     const depth = getDepth(path);
     const maxDepth = 12;

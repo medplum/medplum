@@ -123,7 +123,7 @@ async function getIdentityProvider(
 ): Promise<{ idp?: IdentityProvider; client?: ClientApplication }> {
   if (state.clientId) {
     const client = await systemRepo.readResource<ClientApplication>('ClientApplication', state.clientId);
-    if (client?.identityProvider) {
+    if (client.identityProvider) {
       return { idp: client.identityProvider, client };
     }
   }

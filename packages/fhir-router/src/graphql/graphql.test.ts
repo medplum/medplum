@@ -197,7 +197,7 @@ describe('GraphQL', () => {
     expect(result.length).toBe(2);
     expect(result[0]).toMatchObject(allOk);
 
-    const data = (result?.[1] as any).data;
+    const data = (result[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
@@ -225,10 +225,10 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeNull();
 
-    const errors = (res?.[1] as any).errors;
+    const errors = (res[1] as any).errors;
     expect(errors[0].message).toEqual('Not found');
   });
 
@@ -254,7 +254,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientList).toBeDefined();
   });
 
@@ -279,7 +279,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientList).toBeDefined();
     expect(data.PatientList.length).toBe(1);
   });
@@ -305,7 +305,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.EncounterList).toBeDefined();
     expect(data.EncounterList.length).toBe(1);
   });
@@ -331,7 +331,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.EncounterList).toBeDefined();
     expect(data.EncounterList.length).toBe(1);
   });
@@ -358,7 +358,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.EncounterList).toBeDefined();
     expect(data.EncounterList.length >= 2).toBe(true);
 
@@ -389,7 +389,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.EncounterList).toBeDefined();
     expect(data.EncounterList.length >= 2).toBe(true);
 
@@ -436,7 +436,7 @@ describe('GraphQL', () => {
     expect(result.length).toBe(2);
     expect(result[0]).toMatchObject(allOk);
 
-    const data = (result?.[1] as any).data;
+    const data = (result[1] as any).data;
     expect(data.Encounter.id).toEqual(encounter1.id);
     expect(data.Encounter.subject.resource).toBeDefined();
     expect(data.Encounter.subject.resource.id).toEqual(patient.id);
@@ -479,7 +479,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Encounter).toBeDefined();
     expect(data.Encounter.subject.resource).toBeNull();
   });
@@ -512,7 +512,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientList).toBeDefined();
     expect(data.PatientList[0].ObservationList).toBeDefined();
   });
@@ -542,7 +542,7 @@ describe('GraphQL', () => {
     };
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
-    expect(res[0]?.issue?.[0]?.details?.text).toEqual(
+    expect(res[0].issue?.[0]?.details?.text).toEqual(
       'Field "ObservationList" argument "_reference" of type "Patient_Observation_reference!" is required, but it was not provided.'
     );
   });
@@ -632,7 +632,7 @@ describe('GraphQL', () => {
     };
 
     const res2 = await graphqlHandler(request2, repo, fhirRouter);
-    expect(res2[0]?.issue?.[0]?.details?.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
+    expect(res2[0].issue?.[0]?.details?.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
 
     // Customer request for patients and children via RelatedPerson links
     const request3: FhirRequest = {
@@ -764,7 +764,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.name).toHaveLength(2);
     expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
@@ -805,7 +805,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.name).toHaveLength(1);
     expect(data.Patient.name[0]).toMatchObject(patient.name?.[0] as HumanName);
@@ -845,7 +845,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.name).toHaveLength(2);
     expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
@@ -887,7 +887,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.name).toHaveLength(1);
     expect(data.Patient.name[0]).toMatchObject(patient.name?.[1] as HumanName);
@@ -927,7 +927,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.extension).toHaveLength(1);
     expect(data.Patient.extension[0]).toMatchObject(patient.extension?.[1] as Extension);
@@ -972,7 +972,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientList).toBeDefined();
     expect(data.PatientList).toHaveLength(3);
 
@@ -1015,7 +1015,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientConnection).toBeDefined();
     expect(data.PatientConnection).toMatchObject({
       count: 1,
@@ -1050,7 +1050,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientConnection).toBeDefined();
     expect(data.PatientConnection).toMatchObject({
       offset: 0,
@@ -1093,7 +1093,7 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
 
-    const data = (res?.[1] as any).data;
+    const data = (res[1] as any).data;
     expect(data.PatientCreate).toBeDefined();
 
     const retrievePatient = await repo.readResource<Patient>('Patient', data.PatientCreate.id ?? '');
@@ -1148,7 +1148,7 @@ describe('GraphQL', () => {
 
     const retrievePatient = await repo.readResource<Patient>('Patient', patient.id ?? '');
     expect(retrievePatient.gender).toEqual('male');
-    expect(retrievePatient?.name?.[1].family).toEqual('Smith');
+    expect(retrievePatient.name?.[1].family).toEqual('Smith');
   });
 
   test('Invalid Update Mutation', async () => {

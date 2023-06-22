@@ -1,8 +1,8 @@
 import CodeBlock, { Props } from '@theme/CodeBlock';
 import * as React from 'react';
 
-const BLOCK_START_PATTERN = new RegExp('^\\s*//\\s*start-block\\s+([A-Za-z_-]*)', '');
-const BLOCK_END_PATTERN = new RegExp('^\\s*//\\s*end-block\\s+([A-Za-z_-]*)', '');
+const BLOCK_START_PATTERN = /^\s*\/\/\s*start-block\s+([A-Za-z_-]*)/;
+const BLOCK_END_PATTERN = /^\s*\/\/\s*end-block\s+([A-Za-z_-]*)/;
 
 interface MedplumCodeBlockProps extends Props {
   selectLines?: number[][];

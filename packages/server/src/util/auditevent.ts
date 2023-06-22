@@ -96,6 +96,7 @@ export const OperationInteraction: Coding = {
   display: 'operation',
 };
 
+/* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 export type AuditEventType = typeof UserAuthenticationEvent | typeof RestfulOperationType;
 
 export type AuditEventSubtype =
@@ -112,6 +113,7 @@ export type AuditEventSubtype =
   | typeof TransactionInteraction
   | typeof BatchInteraction
   | typeof OperationInteraction;
+/* eslint-enable @typescript-eslint/no-duplicate-type-constituents */
 
 /**
  * AuditEvent action code.

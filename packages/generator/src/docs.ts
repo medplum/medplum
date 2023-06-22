@@ -190,7 +190,7 @@ function filterDefinitions(bundle: Bundle): StructureDefinition[] {
       ['resource', 'complex-type'].includes(definition.kind) &&
       definition.name &&
       !['Resource', 'BackboneElement', 'DomainResource', 'MetadataResource', 'Element'].includes(definition.name) &&
-      !isLowerCase(definition.name?.[0])
+      !isLowerCase(definition.name[0])
   );
 }
 

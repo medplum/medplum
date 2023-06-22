@@ -27,7 +27,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>(defaultItems?.map(toOption));
+  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
 
   const lastValueRef = useRef<string>();
   lastValueRef.current = lastValue;
@@ -47,7 +47,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
-    const value = inputRef.current?.value?.trim() || '';
+    const value = inputRef.current?.value.trim() || '';
     if (value === lastValueRef.current) {
       // Nothing has changed, move on
       return;

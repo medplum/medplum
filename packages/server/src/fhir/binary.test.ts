@@ -158,7 +158,7 @@ async function createBufferForStream(message: string, stream: Duplex): Promise<B
   input.pipe(stream);
 
   return new Promise<Buffer>((resolve, reject) => {
-    const _buf = Array<any>();
+    const _buf: any[] = [];
     stream.on('data', (chunk) => _buf.push(chunk));
     stream.on('end', () => resolve(Buffer.concat(_buf)));
     stream.on('error', (err) => reject(new Error(`error converting stream - ${err}`)));

@@ -61,7 +61,7 @@ bulkImportCommand
     const path = resolve(targetDirectory ?? process.cwd(), fileName);
     const medplum = await createMedplumClient(options);
 
-    await importFile(path, parseInt(numResourcesPerRequest), medplum, addExtensionsForMissingValues);
+    await importFile(path, parseInt(numResourcesPerRequest, 10), medplum, addExtensionsForMissingValues);
   });
 
 async function importFile(

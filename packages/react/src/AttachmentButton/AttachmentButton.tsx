@@ -57,7 +57,7 @@ export function AttachmentButton(props: AttachmentButtonProps): JSX.Element {
         });
       })
       .catch((outcome: OperationOutcome) => {
-        alert(outcome?.issue?.[0]?.details?.text);
+        alert(outcome.issue?.[0]?.details?.text);
       });
   }
 

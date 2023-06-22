@@ -3,7 +3,7 @@ import { Address } from '@medplum/fhirtypes';
 import React, { useRef, useState } from 'react';
 
 function getLine(address: Address, index: number): string {
-  return address && address.line && address.line.length > index ? address.line[index] : '';
+  return address.line && address.line.length > index ? address.line[index] : '';
 }
 
 function setLine(address: Address, index: number, str: string): Address {
@@ -66,13 +66,13 @@ export function AddressInput(props: AddressInputProps): JSX.Element {
     <Group spacing="xs" grow noWrap>
       <NativeSelect
         data-testid="address-use"
-        defaultValue={value?.use}
+        defaultValue={value.use}
         onChange={(e) => setUse(e.currentTarget.value as 'home' | 'work' | 'temp' | 'old' | 'billing')}
         data={['', 'home', 'work', 'temp', 'old', 'billing']}
       />
       <NativeSelect
         data-testid="address-type"
-        defaultValue={value?.type}
+        defaultValue={value.type}
         onChange={(e) => setType(e.currentTarget.value as 'postal' | 'physical' | 'both')}
         data={['', 'postal', 'physical', 'both']}
       />

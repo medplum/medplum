@@ -71,71 +71,11 @@
   },
   "eslintConfig": {
     "root": true,
-    "parser": "@typescript-eslint/parser",
+    "extends": [
+      "./packages/eslint-config"
+    ],
     "parserOptions": {
       "project": "./tsconfig.base.json"
-    },
-    "plugins": [
-      "@typescript-eslint"
-    ],
-    "extends": [
-      "eslint:recommended",
-      "plugin:@typescript-eslint/recommended",
-      "plugin:jsdoc/recommended-typescript-error",
-      "plugin:prettier/recommended",
-      "plugin:react-hooks/recommended"
-    ],
-    "rules": {
-      "@typescript-eslint/explicit-function-return-type": [
-        "error",
-        {
-          "allowExpressions": true
-        }
-      ],
-      "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-floating-promises": "error",
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
-        }
-      ],
-      "curly": [
-        "error",
-        "all"
-      ],
-      "eqeqeq": [
-        "error",
-        "always"
-      ],
-      "jsdoc/check-tag-names": [
-        "error",
-        {
-          "definedTags": [
-            "category",
-            "experimental",
-            "ts-ignore"
-          ]
-        }
-      ],
-      "jsdoc/require-jsdoc": 0,
-      "prefer-promise-reject-errors": "error"
-    },
-    "ignorePatterns": [
-      "coverage",
-      "dist",
-      "node_modules",
-      "packages/**/dist/",
-      "packages/docs/build/",
-      "packages/docs/docusaurus.config.js",
-      "packages/docs/sidebars.js",
-      "babel.config.js",
-      "jest.sequencer.js",
-      "package-lock.json",
-      "rollup.config.mjs",
-      "webpack.config.js"
-    ]
+    }
   }
 }

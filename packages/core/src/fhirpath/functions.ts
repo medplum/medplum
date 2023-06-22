@@ -11,9 +11,7 @@ import { booleanToTypedValue, fhirPathIs, isQuantity, removeDuplicates, toJsBool
  * See: https://hl7.org/fhirpath/#functions
  */
 
-export interface FhirPathFunction {
-  (context: AtomContext, input: TypedValue[], ...args: Atom[]): TypedValue[];
-}
+export type FhirPathFunction = (context: AtomContext, input: TypedValue[], ...args: Atom[]) => TypedValue[];
 
 /**
  * Temporary placholder for unimplemented methods.
@@ -1724,7 +1722,7 @@ function applyStringFunc<T>(
   if (typeof value !== 'string') {
     throw new Error('String function cannot be called with non-string');
   }
-  const result = func(value, ...argsAtoms.map((atom) => atom && atom.eval(context, input)?.[0]?.value));
+  const result = func(value, ...argsAtoms.map((atom) => atom?.eval(context, input)[0]?.value));
   if (result === undefined) {
     return [];
   }
@@ -1749,7 +1747,7 @@ function applyMathFunc(
   if (typeof numberInput !== 'number') {
     throw new Error('Math function cannot be called with non-number');
   }
-  const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval(context, input)?.[0]?.value));
+  const result = func(numberInput, ...argsAtoms.map((atom) => atom.eval(context, input)[0]?.value));
   const type = quantity ? PropertyType.Quantity : input[0].type;
   const returnValue = quantity ? { ...value, value: result } : result;
   return [{ type, value: returnValue }];

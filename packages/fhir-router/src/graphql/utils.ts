@@ -1,4 +1,14 @@
 import {
+  Filter,
+  getReferenceString,
+  getSearchParameters,
+  Operator,
+  parseSearchRequest,
+  SearchRequest,
+} from '@medplum/core';
+import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import DataLoader from 'dataloader';
+import {
   GraphQLBoolean,
   GraphQLError,
   GraphQLFieldConfigArgumentMap,
@@ -8,18 +18,9 @@ import {
   GraphQLResolveInfo,
   GraphQLScalarType,
   GraphQLString,
+  Kind,
 } from 'graphql';
 import { FhirRepository } from '../repo';
-import DataLoader from 'dataloader';
-import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
-import {
-  Filter,
-  Operator,
-  SearchRequest,
-  getReferenceString,
-  getSearchParameters,
-  parseSearchRequest,
-} from '@medplum/core';
 
 export interface GraphQLContext {
   repo: FhirRepository;
@@ -160,7 +161,7 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
  * @param path The GraphQL node path.
  * @returns The "depth" of the node.
  */
-export function getDepth(path: ReadonlyArray<string | number>): number {
+export function getDepth(path: readonly (string | number)[]): number {
   return path.filter((p) => p === 'selections').length;
 }
 
@@ -173,7 +174,7 @@ export function getDepth(path: ReadonlyArray<string | number>): number {
 export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): boolean {
   return info.fieldNodes.some((fieldNode) =>
     fieldNode.selectionSet?.selections.some((selection) => {
-      return selection.kind === 'Field' && selection.name.value === fieldName;
+      return selection.kind === Kind.FIELD && selection.name.value === fieldName;
     })
   );
 }
@@ -183,7 +184,7 @@ export function isFieldRequested(info: GraphQLResolveInfo, fieldName: string): b
  * @param errors Array of GraphQL errors.
  * @returns OperationOutcome with the GraphQL errors as OperationOutcome issues.
  */
-export function invalidRequest(errors: ReadonlyArray<GraphQLError>): OperationOutcome {
+export function invalidRequest(errors: readonly GraphQLError[]): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     issue: errors.map((error) => ({

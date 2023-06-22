@@ -116,17 +116,15 @@ export async function addCronJobs(resource: Resource): Promise<void> {
       logger.debug('cronTiming had the wrong format for a timed cron job');
       return;
     }
+  } else if (bot.cronString && isValidCron(bot.cronString)) {
+    cron = bot.cronString;
+  } else if (bot.cronString === '') {
+    await removeBullMQJobByKey(bot.id as string);
+    logger.debug(`no job for bot: ${bot.id}`);
+    return;
   } else {
-    if (bot.cronString && isValidCron(bot.cronString)) {
-      cron = bot.cronString;
-    } else if (bot.cronString === '') {
-      await removeBullMQJobByKey(bot.id as string);
-      logger.debug(`no job for bot: ${bot.id}`);
-      return;
-    } else {
-      logger.debug('cronString had the wrong format for a timed cron job');
-      return;
-    }
+    logger.debug('cronString had the wrong format for a timed cron job');
+    return;
   }
 
   const cronObject = { repeat: { pattern: cron } };
@@ -179,7 +177,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
   }
 
   // if period isn't available, we'll have it at 1
-  const repeat = timing.repeat?.period ? timing.repeat.period : 1;
+  const repeat = timing.repeat.period ? timing.repeat.period : 1;
 
   // Keep it a max rate of Once a minute for the time being
   if (repeat > 24 && repeat < 60) {
@@ -192,7 +190,7 @@ export function convertTimingToCron(timing: Timing): string | undefined {
   }
 
   // Days of the week
-  const days = timing.repeat?.dayOfWeek ? timing.repeat.dayOfWeek : undefined;
+  const days = timing.repeat.dayOfWeek ? timing.repeat.dayOfWeek : undefined;
   if (days) {
     const daysCronFormat = [];
     for (const day of days) {

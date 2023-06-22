@@ -43,7 +43,7 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
   const value = props.defaultValue;
 
   if (property.max === '*' && !props.arrayElement) {
-    if (propertyType === 'Attachment') {
+    if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
     }
     return <ResourceArrayInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
@@ -75,7 +75,7 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
     <Group spacing="xs" grow noWrap>
       <NativeSelect
         style={{ width: '200px' }}
-        defaultValue={selectedType?.code}
+        defaultValue={selectedType.code}
         onChange={(e) => {
           setSelectedType(
             propertyTypes.find(

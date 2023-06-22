@@ -160,7 +160,7 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
 
   const selected = state.search.fields ?? [];
   const available = getFieldsList(typeDef)
-    .filter((field) => !selected?.includes(field))
+    .filter((field) => !selected.includes(field))
     .sort();
 
   return (

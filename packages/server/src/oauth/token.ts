@@ -474,7 +474,7 @@ async function parseClientAssertion(clientAssertiontype: string, clientAssertion
     // and we need to iterate throught the JWKSMultipleMatchingKeys error
     // and return the first verified match
     if (error?.code === 'ERR_JWKS_MULTIPLE_MATCHING_KEYS') {
-      return await verifyMultipleMatchingException(error, clientId, clientAssertion, verifyOptions, client);
+      return verifyMultipleMatchingException(error, clientId, clientAssertion, verifyOptions, client);
     }
     return { error: 'Invalid client assertion signature' };
   }
@@ -563,7 +563,7 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
  * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
  * @returns Reference to the HTTP response.
  */
-function sendTokenError(res: Response, error: string, description?: string): Response<any, Record<string, any>> {
+function sendTokenError(res: Response, error: string, description?: string): Response {
   return res.status(400).json({
     error,
     error_description: description,
@@ -602,7 +602,7 @@ export function hashCode(code: string): string {
     .update(code)
     .digest()
     .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 }

@@ -84,7 +84,7 @@ mfaRouter.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       sendOutcome(res, invalidRequest(errors));
-      return;
+      return Promise.resolve();
     }
 
     const login = await systemRepo.readResource<Login>('Login', req.body.login);

@@ -434,7 +434,7 @@ describe('FHIR schema', () => {
       validateResource(structureDefinition);
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      console.log(JSON.stringify(outcome, null, 2).substring(0, 1000));
+      console.log(JSON.stringify(outcome, null, 2)?.substring(0, 1000));
     }
   });
 

@@ -38,12 +38,12 @@ export function BulkAppPage(): JSX.Element {
           <div key={questionnaire.id}>
             <h3>
               <MedplumLink
-                to={`/forms/${questionnaire?.id}?subject=` + ids.map((id) => `${resourceType}/${id}`).join(',')}
+                to={`/forms/${questionnaire.id}?subject=` + ids.map((id) => `${resourceType}/${id}`).join(',')}
               >
                 {questionnaire.name}
               </MedplumLink>
             </h3>
-            <p>{questionnaire?.description}</p>
+            <p>{questionnaire.description}</p>
           </div>
         ))}
       </div>

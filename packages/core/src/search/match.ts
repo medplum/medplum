@@ -32,7 +32,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
  * @returns True if the resource satisfies the search filter.
  */
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
-  const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
+  const searchParam = globalSchema.types[searchRequest.resourceType].searchParams?.[filter.code];
   switch (searchParam?.type) {
     case 'reference':
       return matchesReferenceFilter(resource, filter, searchParam);
@@ -43,10 +43,11 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
       return matchesTokenFilter(resource, filter, searchParam);
     case 'date':
       return matchesDateFilter(resource, filter, searchParam);
+    default:
+      // Unknown search parameter or search parameter type
+      // Default fail the check
+      return false;
   }
-  // Unknown search parameter or search parameter type
-  // Default fail the check
-  return false;
 }
 
 function matchesReferenceFilter(resource: Resource, filter: Filter, searchParam: SearchParameter): boolean {
@@ -174,8 +175,9 @@ function matchesDateValue(resourceValue: string, operator: Operator, filterValue
     case Operator.EQUALS:
     case Operator.NOT_EQUALS:
       return resourceValue === filterValue;
+    default:
+      return false;
   }
-  return false;
 }
 
 function isNegated(operator: Operator): boolean {

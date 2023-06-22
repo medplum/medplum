@@ -249,11 +249,7 @@ export type QueryTypes = URLSearchParams | string[][] | Record<string, any> | st
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
-    tableLayouts?:
-      | {
-          [name: string]: CustomTableLayout;
-        }
-      | undefined,
+    tableLayouts?: Record<string, CustomTableLayout> | undefined,
     fonts?: TFontDictionary | undefined
   ): Promise<any>;
 }
@@ -562,7 +558,7 @@ export class MedplumClient extends EventTarget {
       }
     }
 
-    this.fetch = options?.fetch || getDefaultFetch();
+    this.fetch = options?.fetch ?? getDefaultFetch();
     this.storage = options?.storage || new ClientStorage();
     this.createPdfImpl = options?.createPdf;
     this.baseUrl = ensureTrailingSlash(options?.baseUrl) || DEFAULT_BASE_URL;
@@ -581,7 +577,7 @@ export class MedplumClient extends EventTarget {
     }
 
     if (options?.autoBatchTime) {
-      this.autoBatchTime = options?.autoBatchTime ?? 0;
+      this.autoBatchTime = options.autoBatchTime ?? 0;
       this.autoBatchQueue = [];
     } else {
       this.autoBatchTime = 0;
@@ -946,7 +942,7 @@ export class MedplumClient extends EventTarget {
    * @param loginParams Optional login parameters.
    * @returns The user profile resource if available.
    */
-  async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | void> {
+  async signInWithRedirect(loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource | undefined> {
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
     if (!code) {
@@ -1241,13 +1237,13 @@ export class MedplumClient extends EventTarget {
     while (url) {
       const searchParams: URLSearchParams = new URL(url).searchParams;
       const bundle = await this.search(resourceType, searchParams, options);
-      const nextLink: BundleLink | undefined = bundle?.link?.find((link) => link.relation === 'next');
-      if (!bundle?.entry?.length && !nextLink) {
+      const nextLink: BundleLink | undefined = bundle.link?.find((link) => link.relation === 'next');
+      if (!bundle.entry?.length && !nextLink) {
         break;
       }
 
-      yield bundle?.entry?.map((e) => e.resource as ExtractResource<K>) ?? [];
-      url = nextLink?.url ? new URL(nextLink?.url) : undefined;
+      yield bundle.entry?.map((e) => e.resource as ExtractResource<K>) ?? [];
+      url = nextLink?.url ? new URL(nextLink.url) : undefined;
     }
   }
 
@@ -1276,7 +1272,7 @@ export class MedplumClient extends EventTarget {
    */
   getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
     const cached = this.requestCache?.get(this.fhirUrl(resourceType, id).toString())?.value;
-    return cached && cached.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
+    return cached?.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
   }
 
   /**
@@ -1345,7 +1341,7 @@ export class MedplumClient extends EventTarget {
    * @returns The resource if available; undefined otherwise.
    */
   readReference<T extends Resource>(reference: Reference<T>, options?: RequestInit): ReadablePromise<T> {
-    const refString = reference?.reference;
+    const refString = reference.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
@@ -1693,7 +1689,7 @@ export class MedplumClient extends EventTarget {
   async createPdf(
     docDefinition: TDocumentDefinitions,
     filename?: string,
-    tableLayouts?: { [name: string]: CustomTableLayout },
+    tableLayouts?: Record<string, CustomTableLayout>,
     fonts?: TFontDictionary
   ): Promise<Binary> {
     if (!this.createPdfImpl) {
@@ -1866,26 +1862,6 @@ export class MedplumClient extends EventTarget {
   validateResource<T extends Resource>(resource: T, options?: RequestInit): Promise<OperationOutcome> {
     return this.post(this.fhirUrl(resource.resourceType, '$validate'), resource, undefined, options);
   }
-
-  /**
-   * Executes a bot by ID.
-   * @param id The Bot ID.
-   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
-   * @param contentType The content type to be included in the "Content-Type" header.
-   * @param options Optional fetch options.
-   * @returns The Bot return value.
-   */
-  executeBot(id: string, body: any, contentType?: string, options?: RequestInit): Promise<any>;
-
-  /**
-   * Executes a bot by Identifier.
-   * @param id The Bot Identifier.
-   * @param body The content body. Strings and `File` objects are passed directly. Other objects are converted to JSON.
-   * @param contentType The content type to be included in the "Content-Type" header.
-   * @param options Optional fetch options.
-   * @returns The Bot return value.
-   */
-  executeBot(identifier: Identifier, body: any, contentType?: string, options?: RequestInit): Promise<any>;
 
   /**
    * Executes a bot by ID or Identifier.
@@ -2073,8 +2049,8 @@ export class MedplumClient extends EventTarget {
     id: string,
     graphName: string,
     options?: RequestInit
-  ): ReadablePromise<Bundle<Resource>> {
-    return this.get<Bundle<Resource>>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
+  ): ReadablePromise<Bundle> {
+    return this.get<Bundle>(`${this.fhirUrl(resourceType, id)}/$graph?graph=${graphName}`, options);
   }
 
   /**
@@ -2171,7 +2147,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   isSuperAdmin(): boolean {
-    return !!this.sessionDetails?.project?.superAdmin;
+    return !!this.sessionDetails?.project.superAdmin;
   }
 
   /**
@@ -2180,7 +2156,7 @@ export class MedplumClient extends EventTarget {
    * @category Authentication
    */
   isProjectAdmin(): boolean {
-    return !!this.sessionDetails?.membership?.admin;
+    return !!this.sessionDetails?.membership.admin;
   }
 
   /**
@@ -2298,6 +2274,7 @@ export class MedplumClient extends EventTarget {
    * @returns Bulk Data Response containing links to Bulk Data files. See "Response - Complete Status" for full details: https://build.fhir.org/ig/HL7/bulk-data/export.html#response---complete-status
    */
   async bulkExport(
+    //eslint-disable-next-line default-param-last
     exportLevel = '',
     resourceTypes?: string,
     since?: string,
@@ -2424,7 +2401,7 @@ export class MedplumClient extends EventTarget {
 
     const response = await this.fetchWithRetry(url, options);
 
-    return await this.parseResponse(response, method, url, options);
+    return this.parseResponse(response, method, url, options);
   }
 
   private async parseResponse<T>(
@@ -2480,7 +2457,9 @@ export class MedplumClient extends EventTarget {
       } catch (err: any) {
         this.retryCatch(retry, maxRetries, err);
       }
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      await new Promise((resolve) => {
+        setTimeout(resolve, retryDelay);
+      });
     }
     return response as Response;
   }
@@ -2498,9 +2477,11 @@ export class MedplumClient extends EventTarget {
         checkStatus = false;
         resultResponse = statusResponse;
       }
-      await new Promise((resolve) => setTimeout(resolve, retryDelay));
+      await new Promise((resolve) => {
+        setTimeout(resolve, retryDelay);
+      });
     }
-    return await this.parseResponse(resultResponse as Response, 'POST', statusUrl);
+    return this.parseResponse(resultResponse as Response, 'POST', statusUrl);
   }
 
   /**
@@ -2654,7 +2635,7 @@ export class MedplumClient extends EventTarget {
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const codeChallenge = arrayBufferToBase64(arrayHash).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
     sessionStorage.setItem('codeChallenge', codeChallenge);
 
     return { codeChallengeMethod: 'S256', codeChallenge };

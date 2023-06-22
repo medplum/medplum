@@ -312,9 +312,9 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
   try {
     const resourceVersion = await systemRepo.readVersion(resourceType, id, versionId);
-    const channelType = subscription?.channel?.type;
+    const channelType = subscription.channel?.type;
     if (channelType === 'rest-hook') {
-      if (subscription?.channel?.endpoint?.startsWith('Bot/')) {
+      if (subscription.channel?.endpoint?.startsWith('Bot/')) {
         await execBot(subscription, resourceVersion);
       } else {
         await sendRestHook(job, subscription, resourceVersion);
@@ -336,7 +336,7 @@ async function sendRestHook(
   subscription: Subscription,
   resource: Resource
 ): Promise<void> {
-  const url = subscription?.channel?.endpoint as string;
+  const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
     logger.debug(`Ignore rest hook missing URL`);
@@ -421,7 +421,7 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
  */
 async function execBot(subscription: Subscription, resource: Resource): Promise<void> {
   const startTime = new Date().toISOString();
-  const url = subscription?.channel?.endpoint as string;
+  const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
     logger.debug(`Ignore rest hook missing URL`);

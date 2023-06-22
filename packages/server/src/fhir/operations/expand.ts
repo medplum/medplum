@@ -50,12 +50,12 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
 
   let offset = 0;
   if (req.query.offset) {
-    offset = Math.max(0, parseInt(req.query.offset as string));
+    offset = Math.max(0, parseInt(req.query.offset as string, 10));
   }
 
   let count = 10;
   if (req.query.count) {
-    count = Math.max(1, Math.min(20, parseInt(req.query.count as string)));
+    count = Math.max(1, Math.min(20, parseInt(req.query.count as string, 10)));
   }
 
   const client = getClient();
@@ -91,7 +91,7 @@ export const expandOperator = asyncWrap(async (req: Request, res: Response) => {
     display: row.display,
   }));
 
-  return res.status(200).json({
+  res.status(200).json({
     resourceType: 'ValueSet',
     url,
     expansion: {
@@ -107,7 +107,7 @@ async function getValueSetByUrl(url: string): Promise<ValueSet | undefined> {
     count: 1,
     filters: [{ code: 'url', operator: SearchOperator.EQUALS, value: url }],
   });
-  return result?.entry?.[0]?.resource;
+  return result.entry?.[0]?.resource;
 }
 
 function buildValueSetSystems(valueSet: ValueSet): Expression[] {

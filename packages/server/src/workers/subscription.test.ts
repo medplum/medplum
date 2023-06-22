@@ -754,7 +754,8 @@ describe('Subscription Worker', () => {
 
     const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 1 } as unknown as Job;
     // Job shouldn't throw after max attempts, which will cause it to not retry
-    expect(execSubscriptionJob(job)).resolves;
+    const result = await execSubscriptionJob(job);
+    expect(result).toBeUndefined();
   });
 
   test('Ignore bots if feature not enabled', async () => {
@@ -960,7 +961,7 @@ describe('Subscription Worker', () => {
 
     // At this point the job should be in the queue
     // But let's delete the subscription
-    await repo.deleteResource('Subscription', subscription?.id as string);
+    await repo.deleteResource('Subscription', subscription.id as string);
 
     const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
     await execSubscriptionJob(job);
@@ -1082,7 +1083,7 @@ describe('Subscription Worker', () => {
     });
     expect(bundle.entry?.length).toEqual(1);
 
-    const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
+    const auditEvent = bundle.entry?.[0].resource as AuditEvent;
     expect(auditEvent.meta?.account).toBeDefined();
     expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
     expect(auditEvent.entity).toHaveLength(2);
@@ -1148,7 +1149,7 @@ describe('Subscription Worker', () => {
 
     expect(bundle.entry?.length).toEqual(1);
 
-    const auditEvent = bundle?.entry?.[0].resource as AuditEvent;
+    const auditEvent = bundle.entry?.[0].resource as AuditEvent;
     // Should return a successful AuditEventOutcome with a normally failing status
     expect(auditEvent.outcome).toEqual(AuditEventOutcome.Success);
   });

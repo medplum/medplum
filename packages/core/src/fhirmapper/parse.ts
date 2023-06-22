@@ -300,7 +300,7 @@ class StructureMapParser {
       case 'create':
         result.parameter = [
           {
-            valueString: (functionAtom.args?.[0] as LiteralAtom).value.value as string,
+            valueString: (functionAtom.args[0] as LiteralAtom).value.value as string,
           },
         ];
         break;
