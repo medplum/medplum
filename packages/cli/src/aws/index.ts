@@ -18,9 +18,15 @@ aws
   .action(describeStacksCommand);
 
 aws
-  .command('deploy-server|update-server')
+  .command('update-server')
+  .alias('deploy-server')
   .description('Update the server image')
   .argument('<tag>')
   .action(updateServerCommand);
 
-aws.command('deploy-app|update-app').description('Update the app site').argument('<tag>').action(updateAppCommand);
+aws
+  .command('update-app')
+  .alias('deploy-app')
+  .description('Update the app site')
+  .argument('<tag>')
+  .action(updateAppCommand);
