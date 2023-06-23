@@ -475,7 +475,7 @@ export function deepIncludes(value: any, pattern: any): boolean {
 }
 
 function deepIncludesArray(array1: any[], array2: any[]): boolean {
-  return array1.every((value1) => array2.some((value2) => deepEquals(value1, value2)));
+  return array1.every((value1) => array2.some((value2) => deepIncludes(value1, value2)));
 }
 
 function deepIncludesObject(object1: { [key: string]: unknown }, object2: { [key: string]: unknown }): boolean {
