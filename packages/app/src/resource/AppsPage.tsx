@@ -56,6 +56,8 @@ export function AppsPage(): JSX.Element | null {
         smartAppLaunch.patient = resource.subject as Reference<Patient>;
         smartAppLaunch.encounter = createReference(resource);
         break;
+      default:
+        break;
     }
 
     medplum
@@ -74,22 +76,21 @@ export function AppsPage(): JSX.Element | null {
       {questionnaires.map((questionnaire) => (
         <div key={questionnaire.id}>
           <Title order={3}>
-            <MedplumLink to={`/forms/${questionnaire?.id}?subject=${getReferenceString(resource)}`}>
+            <MedplumLink to={`/forms/${questionnaire.id}?subject=${getReferenceString(resource)}`}>
               {questionnaire.title || questionnaire.name}
             </MedplumLink>
           </Title>
-          <Text>{questionnaire?.description}</Text>
+          <Text>{questionnaire.description}</Text>
         </div>
       ))}
-      {clientApplications &&
-        clientApplications.map((clientApplication) => (
-          <div key={clientApplication.id}>
-            <Title order={3}>
-              <Anchor onClick={() => launchApp(clientApplication)}>{clientApplication.name}</Anchor>
-            </Title>
-            <Text>{clientApplication.description}</Text>
-          </div>
-        ))}
+      {clientApplications?.map((clientApplication) => (
+        <div key={clientApplication.id}>
+          <Title order={3}>
+            <Anchor onClick={() => launchApp(clientApplication)}>{clientApplication.name}</Anchor>
+          </Title>
+          <Text>{clientApplication.description}</Text>
+        </div>
+      ))}
     </Document>
   );
 }

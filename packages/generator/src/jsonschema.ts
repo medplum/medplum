@@ -56,15 +56,15 @@ export function main(): void {
 
   // Then add element types
   for (const typeSchema of Object.values(globalSchema.types)) {
-    const typeName = buildTypeName((typeSchema.elementDefinition?.path as string).split('.'));
-    if (typeSchema.structureDefinition?.url?.startsWith('https://medplum.com/fhir/StructureDefinition/')) {
+    const typeName = buildTypeName((typeSchema.elementDefinition.path as string).split('.'));
+    if (typeSchema.structureDefinition.url?.startsWith('https://medplum.com/fhir/StructureDefinition/')) {
       if (
         typeName !== 'BackboneElement' &&
         typeName !== 'Resource' &&
         typeName !== 'DomainResource' &&
         typeName !== 'MetadataResource' &&
-        (typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
-          typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
+        (typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
+          typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
         typeSchema.structureDefinition.id === typeSchema.elementDefinition.id
       ) {
         if (!fhirSchema.discriminator.mapping[typeName]) {
@@ -107,7 +107,7 @@ function buildElementSchema(typeSchema: TypeSchema): JSONSchema6Definition {
 }
 
 function getDescription(typeSchema: TypeSchema): string | undefined {
-  return typeSchema.elementDefinition?.definition;
+  return typeSchema.elementDefinition.definition;
 }
 
 function buildProperties(typeSchema: TypeSchema): {
@@ -118,8 +118,8 @@ function buildProperties(typeSchema: TypeSchema): {
   let required: string[] | undefined = undefined;
 
   if (
-    (typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
-      typeSchema.structureDefinition?.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
+    (typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/DomainResource' ||
+      typeSchema.structureDefinition.baseDefinition === 'http://hl7.org/fhir/StructureDefinition/Resource') &&
     typeSchema.structureDefinition.id === typeSchema.elementDefinition.id
   ) {
     properties['resourceType'] = {
@@ -173,12 +173,10 @@ function buildPropertySchema(
       result.items.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
     }
     result.type = 'array';
+  } else if (enumValues) {
+    result.enum = enumValues;
   } else {
-    if (enumValues) {
-      result.enum = enumValues;
-    } else {
-      result.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
-    }
+    result.$ref = `#/definitions/${getTypeName(elementDefinition, elementDefinitionType)}`;
   }
 
   return result;

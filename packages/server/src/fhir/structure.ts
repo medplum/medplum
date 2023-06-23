@@ -28,7 +28,7 @@ export function getStructureDefinitions(): IndexedStructureDefinition {
 }
 
 export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
-  return getStructureDefinitions().types[resourceType]?.searchParams;
+  return getStructureDefinitions().types[resourceType].searchParams;
 }
 
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {

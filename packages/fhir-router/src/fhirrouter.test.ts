@@ -47,9 +47,9 @@ describe('FHIR Router', () => {
     const [outcome, bundle] = (await router.handleRequest(request, repo)) as [OperationOutcome, Bundle];
     expect(outcome).toMatchObject(allOk);
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
   });

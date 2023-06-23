@@ -22,7 +22,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
     const { menuname, bookmarkname: name } = formData;
     const target = `${props.pathname}?${props.searchParams.toString()}`;
     const newConfig = deepClone(config) as UserConfiguration;
-    const menu = newConfig?.menu?.find(({ title }) => title === menuname);
+    const menu = newConfig.menu?.find(({ title }) => title === menuname);
 
     menu?.link?.push({ name, target });
     medplum
@@ -74,7 +74,7 @@ function SelectMenu(props: SelectMenuProps): JSX.Element {
   return (
     <NativeSelect
       name="menuname"
-      defaultValue={menus?.[0]}
+      defaultValue={menus[0]}
       label="Select Menu Option"
       placeholder="Menu"
       data={menus}

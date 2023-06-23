@@ -130,10 +130,10 @@ describe('Batch', () => {
     });
 
     expect(bundle).toBeDefined();
-    expect(bundle?.type).toEqual('batch-response');
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.type).toEqual('batch-response');
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(5);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
@@ -152,7 +152,7 @@ describe('Batch', () => {
       reference: results[1].response?.location as string,
     });
     expect(observation).toBeDefined();
-    expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient?.id);
+    expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient.id);
   });
 
   test('Process batch create success', async () => {
@@ -172,9 +172,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
   });
@@ -193,9 +193,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
   });
@@ -215,9 +215,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
   });
@@ -239,9 +239,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
   });
@@ -264,9 +264,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
   });
@@ -298,9 +298,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('201');
 
@@ -353,9 +353,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(2);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('200');
@@ -382,9 +382,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
   });
@@ -449,9 +449,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
@@ -522,7 +522,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PUT',
-            url: 'Patient/' + patient?.id,
+            url: 'Patient/' + patient.id,
           },
           resource: {
             ...patient,
@@ -532,9 +532,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('200');
   });
@@ -553,9 +553,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
   });
@@ -572,7 +572,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PATCH',
-            url: 'Patient/' + patient?.id,
+            url: 'Patient/' + patient.id,
           },
           resource: {
             resourceType: 'Binary',
@@ -583,9 +583,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('200');
   });
@@ -605,7 +605,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PATCH',
-            url: 'ServiceRequest/' + serviceRequest?.id,
+            url: 'ServiceRequest/' + serviceRequest.id,
           },
           resource: {
             resourceType: 'Binary',
@@ -618,9 +618,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -643,7 +643,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PATCH',
-            url: 'ServiceRequest/' + serviceRequest?.id,
+            url: 'ServiceRequest/' + serviceRequest.id,
           },
           resource: {
             resourceType: 'Binary',
@@ -656,9 +656,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -680,9 +680,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('404');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Not found');
@@ -702,9 +702,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -729,9 +729,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -756,9 +756,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -784,9 +784,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('200');
   });
@@ -805,9 +805,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('404');
   });
@@ -823,9 +823,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -849,9 +849,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -876,9 +876,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('404');
   });
@@ -899,9 +899,9 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
@@ -935,12 +935,12 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
 
-    const results = bundle?.entry as BundleEntry[];
+    const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(3);
-    for (let i = 0; i < results.length; i++) {
-      expect(results[i].response?.status).toEqual('404');
+    for (const result of results) {
+      expect(result.response?.status).toEqual('404');
     }
   });
 
@@ -963,7 +963,7 @@ describe('Batch', () => {
       ],
     });
     expect(bundle).toBeDefined();
-    expect(bundle?.entry).toBeDefined();
+    expect(bundle.entry).toBeDefined();
   });
 
   describe('Process Transactions', () => {
@@ -1013,10 +1013,10 @@ describe('Batch', () => {
         ],
       });
       expect(bundle).toBeDefined();
-      expect(bundle?.type).toEqual('transaction-response');
-      expect(bundle?.entry).toBeDefined();
+      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.entry).toBeDefined();
 
-      const results = bundle?.entry as BundleEntry[];
+      const results = bundle.entry as BundleEntry[];
       expect(results.length).toEqual(2);
       expect(results[0].response?.status).toEqual('201');
       expect(results[1].response?.status).toEqual('201');
@@ -1061,16 +1061,16 @@ describe('Batch', () => {
         ],
       });
       expect(bundle).toBeDefined();
-      expect(bundle?.type).toEqual('transaction-response');
-      expect(bundle?.entry).toBeDefined();
+      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.entry).toBeDefined();
 
-      const results = bundle?.entry as BundleEntry[];
+      const results = bundle.entry as BundleEntry[];
       expect(results.length).toEqual(2);
       expect(results[0].response?.status).toEqual('201');
       expect(results[1].response?.status).toEqual('200');
-      expect(results[0].response?.location).toBeDefined;
+      expect(results[0].response?.location).toBeDefined();
 
-      const ref = { reference: results?.[0]?.response?.location } as Reference<Patient>;
+      const ref = { reference: results[0]?.response?.location } as Reference<Patient>;
       const checkPatient: Patient = await repo.readResource('Patient', resolveId(ref) as string);
       expect(checkPatient.name).toMatchObject([{ given: ['Jane'], family: 'Doe' }]);
     });

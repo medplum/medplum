@@ -105,15 +105,15 @@ export function Header(props: HeaderProps): JSX.Element {
               <ResourceAvatar size="xl" radius={100} value={context.profile} />
               <HumanNameDisplay value={context.profile?.name?.[0] as HumanName} />
               <Text color="dimmed" size="xs">
-                {medplum.getActiveLogin()?.project?.display}
+                {medplum.getActiveLogin()?.project.display}
               </Text>
             </Stack>
             {logins.length > 1 && <Menu.Divider />}
             {logins.map(
               (login) =>
-                login.profile?.reference !== getReferenceString(context.profile as ProfileResource) && (
+                login.profile.reference !== getReferenceString(context.profile as ProfileResource) && (
                   <Menu.Item
-                    key={login.profile?.reference}
+                    key={login.profile.reference}
                     onClick={() => {
                       medplum
                         .setActiveLogin(login)
@@ -125,10 +125,10 @@ export function Header(props: HeaderProps): JSX.Element {
                       <Avatar radius="xl" />
                       <div style={{ flex: 1 }}>
                         <Text size="sm" weight={500}>
-                          {login.profile?.display}
+                          {login.profile.display}
                         </Text>
                         <Text color="dimmed" size="xs">
-                          {login.project?.display}
+                          {login.project.display}
                         </Text>
                       </div>
                     </Group>

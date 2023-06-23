@@ -62,7 +62,7 @@ projectInviteCommand
     if (!login) {
       throw new Error('Unauthenticated: run `npx medplum login` to login');
     }
-    if (!login.project?.reference) {
+    if (!login.project.reference) {
       throw new Error('No current project to invite user to');
     }
 
@@ -80,7 +80,7 @@ projectInviteCommand
 
 async function switchProject(medplum: MedplumClient, projectId: string): Promise<void> {
   const logins = medplum.getLogins();
-  const login = logins.find((login: LoginState) => login.project?.reference?.includes(projectId));
+  const login = logins.find((login: LoginState) => login.project.reference?.includes(projectId));
   if (!login) {
     console.log(`Error: project ${projectId} not found. Make sure you are added as a user to this project`);
   } else {

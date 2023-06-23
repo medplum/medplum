@@ -1552,8 +1552,8 @@ describe('Client', () => {
       ];
       fetch = mockFetch(200, (url) => {
         const parsedUrl = new URL(url);
-        const offset = Number.parseInt(parsedUrl.searchParams.get('_offset') ?? '0');
-        const count = Number.parseInt(parsedUrl.searchParams.get('_count') ?? '1');
+        const offset = Number.parseInt(parsedUrl.searchParams.get('_offset') ?? '0', 10);
+        const count = Number.parseInt(parsedUrl.searchParams.get('_count') ?? '1', 10);
 
         if (offset >= resources.length) {
           return {
@@ -1953,7 +1953,7 @@ describe('Client', () => {
 
   test('Dispatch on bad connection', async () => {
     const fetch = jest.fn(async () => {
-      throw { message: 'Failed to fetch' };
+      throw new Error('Failed to fetch');
     });
     const mockDispatchEvent = jest.fn();
     const client = new MedplumClient({ fetch });
@@ -2185,7 +2185,7 @@ describe('Client', () => {
 
 function createPdf(
   docDefinition: TDocumentDefinitions,
-  tableLayouts?: { [name: string]: CustomTableLayout },
+  tableLayouts?: Record<string, CustomTableLayout>,
   fonts?: TFontDictionary
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {

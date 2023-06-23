@@ -74,7 +74,7 @@ If you are using the Medplum Hosted service, you can login to your Medplum Insta
 - Recaptcha Site Key
 - Recaptcha Secret Key
 
-Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [Discord](https://discord.gg/UBAWwvrVeN])) with any questions.
+Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [Discord](https://discord.gg/medplum])) with any questions.
 
 ### Data Setup
 
@@ -82,7 +82,7 @@ When you log into Foo Medical a set of sample FHIR records is created on your be
 
 ### Compliance
 
-Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set up requires registering on [medplum.com](https://www.medplum.com/). Feel free to ask us questions in real time on our [Discord Server](https://discord.gg/UBAWwvrVeN).
+Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set up requires registering on [medplum.com](https://www.medplum.com/). Feel free to ask us questions in real time on our [Discord Server](https://discord.gg/medplum).
 
 ### About Medplum
 
@@ -92,4 +92,4 @@ Medplum supports self-hosting, and provides a [hosted service](https://app.medpl
 
 - Read our [documentation](https://docs.medplum.com/)
 - Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
-- Join our [Discord](https://discord.gg/UBAWwvrVeN)
+- Join our [Discord](https://discord.gg/medplum)

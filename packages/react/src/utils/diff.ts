@@ -108,7 +108,7 @@ function buildRevisions(startNode: PathNode, orig: string[], rev: string[]): Del
     path = path.prev;
   }
 
-  while (path && path.prev && path.prev.j >= 0) {
+  while (path?.prev && path.prev.j >= 0) {
     const i = path.i;
     const j = path.j;
 

@@ -17,7 +17,7 @@ export interface SearchFilterValueDisplayProps {
 export function SearchFilterValueDisplay(props: SearchFilterValueDisplayProps): JSX.Element {
   const { resourceType, filter } = props;
 
-  const searchParam = globalSchema.types[resourceType]?.searchParams?.[filter.code];
+  const searchParam = globalSchema.types[resourceType].searchParams?.[filter.code];
   if (searchParam) {
     if (
       searchParam.type === 'reference' &&

@@ -117,7 +117,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     });
 
     const redirectUrl = new URL(params.redirect_uri as string);
-    redirectUrl.searchParams.append('code', existingLogin?.code as string);
+    redirectUrl.searchParams.append('code', existingLogin.code as string);
     redirectUrl.searchParams.append('state', state);
     res.redirect(redirectUrl.toString());
     return false;
@@ -163,7 +163,7 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 
   const authTime = getDateProperty(login.authTime) as Date;
   const age = (Date.now() - authTime.getTime()) / 1000;
-  const maxAge = req.query.max_age ? parseInt(req.query.max_age as string) : 3600;
+  const maxAge = req.query.max_age ? parseInt(req.query.max_age as string, 10) : 3600;
   if (age > maxAge) {
     return undefined;
   }
@@ -224,7 +224,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
   });
 
   const login = bundle.entry?.[0]?.resource;
-  return login && login.granted && !login.revoked ? login : undefined;
+  return login?.granted && !login.revoked ? login : undefined;
 }
 
 /**

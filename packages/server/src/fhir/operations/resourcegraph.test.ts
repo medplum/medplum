@@ -69,7 +69,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(serviceRequest, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
     expect(resources).toHaveLength(2);
     expect(resources?.[0]).toMatchObject(serviceRequest);
     expect(resources?.[1]).toMatchObject(patient);
@@ -220,7 +220,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
 
     expect(resources).toHaveLength(3);
     expect(resources?.[0]).toMatchObject(planDefinition);
@@ -289,7 +289,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
 
     expect(resources).toHaveLength(6);
     expect(resources?.[0]).toMatchObject(planDefinition);
@@ -372,7 +372,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(planDefinition, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
 
     expect(resources).toHaveLength(8);
     expect(resources?.[0]).toMatchObject(planDefinition);
@@ -415,7 +415,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(serviceRequest, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
     expect(resources).toHaveLength(2);
     expect(resources?.[0]).toMatchObject(serviceRequest);
     expect(resources?.[1]).toMatchObject(report);
@@ -474,7 +474,7 @@ describe('Resource $graph', () => {
 
     // 4. Apply the PlanDefinition to create the Task and RequestGroup
     const bundle = await getResourceGraph(serviceRequest, graphName);
-    const resources = bundle.entry?.map((entry) => entry?.resource);
+    const resources = bundle.entry?.map((entry) => entry.resource);
     expect(resources).toHaveLength(5);
     expect(resources?.[0]).toMatchObject(serviceRequest);
     expect(resources?.filter((res) => res?.resourceType === 'Observation')).toContainEqual(observations[0]);
@@ -490,7 +490,7 @@ async function getResourceGraph<T extends Resource>(
   resource: T | undefined,
   graphName: string,
   expectedReturnCode = 200,
-  token?: string
+  token: string | undefined = undefined
 ): Promise<Bundle> {
   const url = `/fhir/R4/${resource?.resourceType}/${resource?.id}/$graph?graph=${graphName}`;
   const currentToken = token || defaultAccessToken;

@@ -45,7 +45,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   const { property, propertyType, value } = props;
 
   if (property?.max === '*' && !props.arrayElement) {
-    if (propertyType === 'Attachment') {
+    if (propertyType === PropertyType.Attachment) {
       return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
     }
     return (

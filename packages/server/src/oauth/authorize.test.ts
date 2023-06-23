@@ -306,7 +306,7 @@ describe('OAuth Authorize', () => {
           resourceType: 'Login',
           filters: [{ code: 'cookie', operator: Operator.EQUALS, value: cookie.value }],
         })
-      )?.entry?.[0]?.resource as Login
+      ).entry?.[0]?.resource as Login
     );
 
     const params = new URLSearchParams({

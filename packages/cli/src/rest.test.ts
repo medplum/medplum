@@ -20,7 +20,7 @@ describe('CLI rest', () => {
     medplum = new MockClient();
     console.log = jest.fn();
     console.error = jest.fn();
-    process.exit = jest.fn<never, any, any>();
+    process.exit = jest.fn<never, any>();
 
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
   });

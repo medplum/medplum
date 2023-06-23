@@ -56,7 +56,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -88,7 +88,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Date submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -135,7 +135,7 @@ describe('SearchPopupMenu', () => {
 
       setup({
         search: currSearch,
-        searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+        searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
         onChange: (e) => (currSearch = e),
       });
 
@@ -169,7 +169,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -208,7 +208,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['birthdate'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -224,7 +224,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity sort', async () => {
-    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
@@ -264,7 +264,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity submenu prompt', async () => {
-    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -304,7 +304,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity missing', async () => {
-    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Observation',
@@ -338,7 +338,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Quantity clear filters', async () => {
-    const searchParam = globalSchema.types['Observation']?.searchParams?.['value-quantity'] as SearchParameter;
+    const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Observation',
@@ -382,7 +382,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -398,7 +398,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Reference submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -434,7 +434,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Reference missing', async () => {
-    const searchParam = globalSchema.types['Patient']?.searchParams?.['organization'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
@@ -474,7 +474,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -519,7 +519,7 @@ describe('SearchPopupMenu', () => {
 
     setup({
       search: currSearch,
-      searchParams: [globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter],
+      searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
 
@@ -535,7 +535,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text submenu prompt', async () => {
-    const searchParam = globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
     const onPrompt = jest.fn();
 
     setup({
@@ -573,7 +573,7 @@ describe('SearchPopupMenu', () => {
   });
 
   test('Text missing', async () => {
-    const searchParam = globalSchema.types['Patient']?.searchParams?.['name'] as SearchParameter;
+    const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
 
     let currSearch: SearchRequest = {
       resourceType: 'Patient',

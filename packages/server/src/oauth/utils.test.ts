@@ -431,7 +431,7 @@ describe('OAuth utils', () => {
   test('CLI client', async () => {
     const client = await getClient('medplum-cli');
     expect(client).toBeDefined();
-    expect(client?.id).toEqual('medplum-cli');
+    expect(client.id).toEqual('medplum-cli');
   });
 });
 

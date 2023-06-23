@@ -1,6 +1,6 @@
 import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { forbidden, normalizeErrorString } from '@medplum/core';
+import { notifications, showNotification } from '@mantine/notifications';
+import { forbidden, MedplumClient, normalizeErrorString } from '@medplum/core';
 import {
   convertLocalToIso,
   DateTimeInput,
@@ -10,6 +10,7 @@ import {
   OperationOutcomeAlert,
   useMedplum,
 } from '@medplum/react';
+import { IconCheck, IconX } from '@tabler/icons-react';
 import React from 'react';
 
 export function SuperAdminPage(): JSX.Element {
@@ -20,38 +21,23 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function rebuildStructureDefinitions(): void {
-    medplum
-      .post('admin/super/structuredefinitions', {})
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    startAsyncJob(medplum, 'Rebuilding Structure Definitions', 'admin/super/structuredefinitions');
   }
 
   function rebuildSearchParameters(): void {
-    medplum
-      .post('admin/super/searchparameters', {})
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    startAsyncJob(medplum, 'Rebuilding Search Parameters', 'admin/super/searchparameters');
   }
 
   function rebuildValueSets(): void {
-    medplum
-      .post('admin/super/valuesets', {})
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    startAsyncJob(medplum, 'Rebuilding Value Sets', 'admin/super/valuesets');
   }
 
   function reindexResourceType(formData: Record<string, string>): void {
-    medplum
-      .post('admin/super/reindex', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/valuesets', formData);
   }
 
   function rebuildCompartments(formData: Record<string, string>): void {
-    medplum
-      .post('admin/super/compartments', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/valuesets', formData);
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -176,4 +162,43 @@ export function SuperAdminPage(): JSX.Element {
       </Form>
     </Document>
   );
+}
+
+function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+  notifications.show({
+    id: url,
+    loading: true,
+    title,
+    message: 'Running...',
+    autoClose: false,
+    withCloseButton: false,
+  });
+
+  const options: RequestInit = { method: 'POST' };
+  if (body) {
+    options.body = JSON.stringify(body);
+  }
+
+  medplum
+    .startAsyncRequest(url, options)
+    .then(() => {
+      notifications.update({
+        id: url,
+        color: 'green',
+        title,
+        message: 'Done',
+        icon: <IconCheck size="1rem" />,
+        autoClose: 2000,
+      });
+    })
+    .catch((err) => {
+      notifications.update({
+        id: url,
+        color: 'red',
+        title,
+        message: normalizeErrorString(err),
+        icon: <IconX size="1rem" />,
+        autoClose: 2000,
+      });
+    });
 }

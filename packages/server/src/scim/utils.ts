@@ -116,7 +116,7 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
   user.externalId = scimUser.externalId;
 
   if (scimUser.emails?.[0]?.value) {
-    user.email = scimUser.emails?.[0]?.value;
+    user.email = scimUser.emails[0]?.value;
   }
 
   user = await systemRepo.updateResource(user);

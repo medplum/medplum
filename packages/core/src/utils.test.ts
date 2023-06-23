@@ -318,8 +318,8 @@ describe('Core Utils', () => {
       ],
     };
 
-    expect(getExtension(resource, 'http://example.com')).toBe(resource?.extension?.[0]);
-    expect(getExtension(resource, 'http://example.com', 'key1')).toBe(resource?.extension?.[0]?.extension?.[0]);
+    expect(getExtension(resource, 'http://example.com')).toBe(resource.extension?.[0]);
+    expect(getExtension(resource, 'http://example.com', 'key1')).toBe(resource.extension?.[0]?.extension?.[0]);
   });
 
   test('Stringify', () => {

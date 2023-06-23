@@ -34,6 +34,10 @@ Labs often require multiple integrations to work well, and are high leverage for
 - Physician network for report review (e.g. SteadyMD, OpenLoop)
 - EHR integrations
 
+## Case Studies
+
+- [At Home Diagnostics - Ro Case Study](/blog/ro-case-study)
+
 ## Demos and Reference Material
 
 - [CLIA/CAP Checklist](/docs/compliance/clia-cap)

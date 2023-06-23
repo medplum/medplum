@@ -1,6 +1,6 @@
 import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
-import { getUnmappedExtension } from './bulk';
+import { getUnsupportedExtension } from './utils';
 import { createMedplumClient } from './util/client';
 
 const testLineOutput = [
@@ -157,6 +157,18 @@ describe('CLI Bulk Commands', () => {
         expect.stringMatching('Project_data_55555_aaaaaa_bbbbb_ccc_ddddd_eeeeee_ndjson.ndjson is created')
       );
     });
+
+    test('with --target-directory', async () => {
+      const medplumDownloadSpy = jest.spyOn(medplum, 'download').mockImplementation((): any => {
+        return {
+          text: jest.fn(),
+        };
+      });
+      const testDirectory = 'testtargetdirectory';
+      await main(['node', 'index.js', 'bulk', 'export', '-t', 'Patient', '--target-directory', testDirectory]);
+      expect(medplumDownloadSpy).toBeCalled();
+      expect(console.log).toBeCalledWith(expect.stringMatching(`${testDirectory}`));
+    });
   });
 
   describe('import', () => {
@@ -215,8 +227,32 @@ describe('CLI Bulk Commands', () => {
       expect(console.log).toBeCalledWith(expect.stringMatching(`"text": "Created"`));
     });
 
-    test('success with option numResourcesPerRequest', async () => {
+    test('success with option --num-resources-per-request', async () => {
       await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--num-resources-per-request', '1']);
+
+      testLineOutput.forEach((line) => {
+        const resource = JSON.parse(line);
+        expect(fetch).toBeCalledWith(
+          expect.stringMatching(`/fhir/R4`),
+          expect.objectContaining({
+            body: expect.stringContaining(
+              JSON.stringify({
+                resource: resource,
+                request: {
+                  method: 'POST',
+                  url: resource.resourceType,
+                },
+              })
+            ),
+          })
+        );
+      });
+
+      expect(fetch).toBeCalled();
+    });
+
+    test('success with option --target-directory', async () => {
+      await main(['node', 'index.js', 'bulk', 'import', 'Patient.json', '--target-directory', 'testdirectory']);
 
       testLineOutput.forEach((line) => {
         const resource = JSON.parse(line);
@@ -251,13 +287,13 @@ describe('CLI Bulk Commands', () => {
       expect(fetch).toBeCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
-          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnmappedExtension())),
+          body: expect.stringContaining(`"provider":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
       expect(fetch).toBeCalledWith(
         expect.stringMatching(`/fhir/R4`),
         expect.objectContaining({
-          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnmappedExtension())),
+          body: expect.stringContaining(`"productOrService":` + JSON.stringify(getUnsupportedExtension())),
         })
       );
 

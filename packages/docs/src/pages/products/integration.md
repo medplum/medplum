@@ -55,7 +55,7 @@ This is by no means a comprehensive list, but we provide this list of interfaces
 | Text Delimited | Billing systems                                | EDI 837                                                                                                                                                                                                                                                                       |
 | Binary files   | Billing systems, video and photo               | [CMS 1500](https://www.cms.gov/Medicare/Billing/ElectronicBillingEDITrans/16_1500), [X12](https://x12.org/examples), Twilio                                                                                                                                                   |
 
-If you are interested in a specific integration type, please contact us at hello@medplum.com or in our [Discord](https://discord.gg/UBAWwvrVeN).
+If you are interested in a specific integration type, please contact us at hello@medplum.com or in our [Discord](https://discord.gg/medplum).
 
 ## Examples: Integrations by Product Category
 
@@ -81,7 +81,7 @@ Below are some of the classes of applications indexed by common integration meth
 | Logistics             | REST                      | 3PL like ShipBob or Fulfilled by Amazon have REST API        |
 | Direct Project        | REST                      | Special medical grade email from companies like Paubox       |
 
-We have a lot of experience with medical integrations, and welcome questions at hello@medplum.com or on our [Discord](https://discord.gg/UBAWwvrVeN).
+We have a lot of experience with medical integrations, and welcome questions at hello@medplum.com or on our [Discord](https://discord.gg/medplum).
 
 ## System Diagram
 

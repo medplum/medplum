@@ -49,8 +49,8 @@ export async function newProjectHandler(req: Request, res: Response): Promise<vo
   const updated = await setLoginMembership(login, membership.id as string);
 
   res.status(200).json({
-    login: updated?.id,
-    code: updated?.code,
+    login: updated.id,
+    code: updated.code,
   });
 }
 

@@ -36,7 +36,7 @@ describe('Identifier Lookup Table', () => {
       ],
     });
     expect(searchResult.entry?.length).toEqual(1);
-    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient?.id);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
   });
 
   test('Multiple identifiers', async () => {
@@ -171,7 +171,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(false);
   });
@@ -201,7 +201,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(false);
   });
@@ -231,7 +231,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(2);
+    expect(searchResult1.entry?.length).toEqual(2);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(true);
   });
@@ -267,7 +267,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, patient1)).toBe(false);
     expect(bundleContains(searchResult1, patient2)).toBe(true);
   });
@@ -298,7 +298,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(2);
+    expect(searchResult1.entry?.length).toEqual(2);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(true);
   });
@@ -330,7 +330,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, patient1)).toBe(true);
     expect(bundleContains(searchResult1, patient2)).toBe(false);
 
@@ -344,7 +344,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult2?.entry?.length).toEqual(1);
+    expect(searchResult2.entry?.length).toEqual(1);
     expect(bundleContains(searchResult2, patient1)).toBe(false);
     expect(bundleContains(searchResult2, patient2)).toBe(true);
   });
@@ -368,7 +368,7 @@ describe('Identifier Lookup Table', () => {
       ],
     });
     expect(searchResult.entry?.length).toEqual(1);
-    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource.id);
   });
 
   test('Leading whitespace', async () => {
@@ -390,7 +390,7 @@ describe('Identifier Lookup Table', () => {
       ],
     });
     expect(searchResult.entry?.length).toEqual(1);
-    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource?.id);
+    expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource.id);
   });
 
   test('CodeableConcept text', async () => {
@@ -420,7 +420,7 @@ describe('Identifier Lookup Table', () => {
         },
       ],
     });
-    expect(searchResult1?.entry?.length).toEqual(1);
+    expect(searchResult1.entry?.length).toEqual(1);
     expect(bundleContains(searchResult1, sr1)).toBe(true);
     expect(bundleContains(searchResult1, sr2)).toBe(false);
   });

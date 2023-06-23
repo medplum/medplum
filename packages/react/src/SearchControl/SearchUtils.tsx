@@ -155,7 +155,7 @@ export function addFilter(
  * @returns The updated search request.
  */
 export function addField(definition: SearchRequest, field: string): SearchRequest {
-  if (definition.fields && definition.fields.includes(field)) {
+  if (definition.fields?.includes(field)) {
     return definition;
   }
   const newFields = [];

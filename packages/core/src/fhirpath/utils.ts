@@ -58,7 +58,7 @@ export function toJsBoolean(obj: TypedValue[]): boolean {
  * @returns The value of the property and the property type.
  */
 export function getTypedPropertyValue(input: TypedValue, path: string): TypedValue[] | TypedValue | undefined {
-  if (!input?.value) {
+  if (!input.value) {
     return undefined;
   }
 
@@ -156,6 +156,7 @@ function getTypedPropertyValueWithoutSchema(
     // value + valueDecimal = ok, because "decimal" is valid
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
+    //eslint-disable-next-line guard-for-in
     for (const propertyType in PropertyType) {
       const propertyName = path + capitalize(propertyType);
       if (propertyName in input) {
@@ -389,10 +390,8 @@ function deepEquals<T1 extends object, T2 extends object>(object1: T1, object2: 
       if (!deepEquals(val1, val2)) {
         return false;
       }
-    } else {
-      if (val1 !== val2) {
-        return false;
-      }
+    } else if (val1 !== val2) {
+      return false;
     }
   }
   return true;

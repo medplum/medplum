@@ -20,7 +20,7 @@ describe('CLI', () => {
     jest.resetModules();
     jest.clearAllMocks();
     process.env = { ...env };
-    process.exit = jest.fn<never, any, any>();
+    process.exit = jest.fn<never, any>();
   });
 
   afterEach(() => {

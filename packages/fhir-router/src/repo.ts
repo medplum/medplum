@@ -210,11 +210,11 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       result.meta = {};
     }
 
-    if (!result.meta?.versionId) {
+    if (!result.meta.versionId) {
       result.meta.versionId = generateId();
     }
 
-    if (!result.meta?.lastUpdated) {
+    if (!result.meta.lastUpdated) {
       result.meta.lastUpdated = new Date().toISOString();
     }
 
@@ -286,7 +286,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
     return this.readResource(parts[0], parts[1]);
   }
 
-  async readReferences(references: readonly Reference<Resource>[]): Promise<(Resource | OperationOutcomeError)[]> {
+  async readReferences(references: readonly Reference[]): Promise<(Resource | OperationOutcomeError)[]> {
     return Promise.all(references.map((r) => this.readReference(r)));
   }
 
@@ -351,7 +351,7 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
 }
 
 const sortComparator = <T extends Resource>(a: T, b: T, sortRule: SortRule): number => {
-  const searchParam = globalSchema.types[a.resourceType]?.searchParams?.[sortRule.code];
+  const searchParam = globalSchema.types[a.resourceType].searchParams?.[sortRule.code];
   const expression = searchParam?.expression;
   if (!expression) {
     return 0;

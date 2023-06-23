@@ -9,8 +9,7 @@ import {
   SpecimenDefinition,
   Task,
 } from '@medplum/fhirtypes';
-import { DrAliceSmith, DrAliceSmithSchedule } from '@medplum/mock';
-import { HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
+import { DrAliceSmith, DrAliceSmithSchedule, HomerDiagnosticReport, HomerSimpson } from '@medplum/mock';
 
 export const Covid19AssessmentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',

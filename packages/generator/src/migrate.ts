@@ -227,7 +227,7 @@ function isLookupTableParam(searchParam: SearchParameter, details: SearchParamet
 }
 
 function getColumnType(details: SearchParameterDetails): string {
-  let baseColumnType = 'TEXT';
+  let baseColumnType: string;
   switch (details.type) {
     case SearchParameterType.BOOLEAN:
       baseColumnType = 'BOOLEAN';
@@ -241,6 +241,9 @@ function getColumnType(details: SearchParameterDetails): string {
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
       baseColumnType = 'DOUBLE PRECISION';
+      break;
+    default:
+      baseColumnType = 'TEXT';
       break;
   }
 

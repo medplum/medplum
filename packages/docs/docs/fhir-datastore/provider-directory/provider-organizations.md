@@ -155,4 +155,4 @@ B --participant--> E
 
 The `Organization`, `CareTeam`, and `HealthcareService` resources are the primary building blocks for modeling your practice, and the `Practitioner` and `PractitionerRole` resources allow you to flexibly model your provider group.
 
-While the model described works well for an in-house group or PC, more complicated organizations and coordination with 3rd parties might require more complicated models. Consult the [Da Vinci Plan Network Implementation Guide](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/index.html) or contact the [Medplum team](https://discord.gg/UBAWwvrVeN) for more information!
+While the model described works well for an in-house group or PC, more complicated organizations and coordination with 3rd parties might require more complicated models. Consult the [Da Vinci Plan Network Implementation Guide](https://build.fhir.org/ig/HL7/davinci-pdex-plan-net/index.html) or contact the [Medplum team](https://discord.gg/medplum) for more information!

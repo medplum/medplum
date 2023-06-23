@@ -124,8 +124,8 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
     const msh = msg.get('MSH') as Hl7Segment;
     expect(msh).toBeDefined();
-    expect(msh.get(2)?.toString()).toBe('cobas pro');
-    expect(msh.get(4)?.toString()).toBe('host');
+    expect(msh.get(2).toString()).toBe('cobas pro');
+    expect(msh.get(4).toString()).toBe('host');
 
     const obxs = msg.getAll('OBX');
     expect(obxs).toBeDefined();

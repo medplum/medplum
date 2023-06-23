@@ -45,7 +45,7 @@ export async function sendEmail(options: Mail.Options): Promise<void> {
   );
 }
 
-function buildAddresses(input: string | Address | Array<string | Address> | undefined): string[] | undefined {
+function buildAddresses(input: string | Address | (string | Address)[] | undefined): string[] | undefined {
   if (!input) {
     return undefined;
   }
@@ -72,7 +72,8 @@ function buildRawMessage(options: Mail.Options): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     msg.compile().build((err, message) => {
       if (err) {
-        return reject(err);
+        reject(err);
+        return;
       }
       resolve(message);
     });

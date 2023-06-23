@@ -5,7 +5,7 @@ import React from 'react';
 import { InfoBar } from './InfoBar';
 
 export interface ResourceHeaderProps {
-  resource: Resource | Reference<Resource>;
+  resource: Resource | Reference;
 }
 
 export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
@@ -39,7 +39,7 @@ export function ResourceHeader(props: ResourceHeaderProps): JSX.Element | null {
       if (Array.isArray(concept.coding)) {
         addEntry(key, concept.coding.map((c) => c.display || c.code).join(', '));
       } else {
-        addEntry(key, concept?.text);
+        addEntry(key, concept.text);
       }
     }
   }

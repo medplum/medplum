@@ -241,16 +241,21 @@ function buildTokensForSearchParameter(
  */
 function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: TypedValue): void {
   const { type, value } = typedValue;
-  if (type === PropertyType.Identifier) {
-    buildIdentifierToken(result, searchParam, value as Identifier);
-  } else if (type === PropertyType.CodeableConcept) {
-    buildCodeableConceptToken(result, searchParam, value as CodeableConcept);
-  } else if (type === PropertyType.Coding) {
-    buildCodingToken(result, searchParam, value as Coding);
-  } else if (type === PropertyType.ContactPoint) {
-    buildContactPointToken(result, searchParam, value as ContactPoint);
-  } else {
-    buildSimpleToken(result, searchParam, undefined, value?.toString() as string | undefined);
+  switch (type as PropertyType) {
+    case PropertyType.Identifier:
+      buildIdentifierToken(result, searchParam, value as Identifier);
+      break;
+    case PropertyType.CodeableConcept:
+      buildCodeableConceptToken(result, searchParam, value as CodeableConcept);
+      break;
+    case PropertyType.Coding:
+      buildCodingToken(result, searchParam, value as Coding);
+      break;
+    case PropertyType.ContactPoint:
+      buildContactPointToken(result, searchParam, value as ContactPoint);
+      break;
+    default:
+      buildSimpleToken(result, searchParam, undefined, value?.toString() as string | undefined);
   }
 }
 
