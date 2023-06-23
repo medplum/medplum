@@ -341,7 +341,7 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
           // This tests for the one case where `null` is allowed in FHIR JSON, where an array of primitive values
           // has extensions for some but not all values
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid null value'));
-        } else {
+        } else if (value[i]) {
           checkObjectForNull(value[i], `${propertyPath}[${i}]`, issues);
         }
       }
