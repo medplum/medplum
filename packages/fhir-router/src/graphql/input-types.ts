@@ -6,6 +6,7 @@ import {
   GraphQLInputObjectType,
   GraphQLInputType,
   GraphQLList,
+  GraphQLNonNull,
   GraphQLString,
 } from 'graphql';
 import { typeCache } from './utils';
@@ -78,7 +79,10 @@ function buildInputPropertyField(
   };
 
   if (elementDefinition.max === '*') {
-    fieldConfig.type = new GraphQLList(getGraphQLInputType(typeName, nameSuffix));
+    fieldConfig.type = new GraphQLList(new GraphQLNonNull(getGraphQLInputType(typeName, nameSuffix)));
+  }
+  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+    fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
   }
 
   const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
