@@ -8,17 +8,17 @@ import { Repository } from '../repo';
 import { BulkExporter, exportResources } from './utils/bulkexporter';
 
 /**
- * Handles a bulk export request.
+ * Handles a Patient export request.
  *
  * Endpoint
- *   [fhir base]/$export
+ *   [fhir base]/Patient/$export
  *
- * See: https://hl7.org/fhir/uv/bulkdata/export.html
+ * See: https://hl7.org/fhir/uv/bulkdata/export.html#endpoint---all-patients
  * See: https://hl7.org/fhir/R4/async.html
  * @param req The HTTP request.
  * @param res The HTTP response.
  */
-export async function bulkExportHandler(req: Request, res: Response): Promise<void> {
+export async function patientExportHandler(req: Request, res: Response): Promise<void> {
   const { baseUrl } = getConfig();
   const query = req.query as Record<string, string | undefined>;
   const since = query._since;
@@ -30,8 +30,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   exportResources(exporter, project, types)
-    .then(() => logger.info(`export for ${project.id} is completed`))
-    .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
+    .then(() => logger.info(`Patient export for ${project.id} is completed`))
+    .catch((err) => logger.error(`Patient export for ${project.id} failed: ${err}`));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }

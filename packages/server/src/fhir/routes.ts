@@ -17,6 +17,7 @@ import { bulkExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientExportHandler } from './operations/patientexport';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { resourceGraphHandler } from './operations/resourcegraph';
@@ -100,6 +101,9 @@ protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // Group $export operation
 protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
+
+// Patient $export operation
+protectedRoutes.get('/Patient/:id/([$]|%24)export', asyncWrap(patientExportHandler));
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);

@@ -1,5 +1,5 @@
 import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, getResourceTypes, protectedResourceTypes, publicResourceTypes } from '@medplum/core';
 import { Repository, systemRepo } from '../../repo';
 import { PassThrough } from 'node:stream';
 import { getBinaryStorage } from '../../storage';
@@ -117,4 +117,61 @@ export class BulkExporter {
       })),
     });
   }
+}
+
+export async function exportResources(
+  exporter: BulkExporter,
+  project: Project,
+  types: string[] | undefined
+): Promise<void> {
+  const resourceTypes = getResourceTypes();
+
+  for (const resourceType of resourceTypes) {
+    if (!canBeExported(resourceType) || (types && !types.includes(resourceType))) {
+      continue;
+    }
+    await exportResourceType(exporter, resourceType as ResourceType);
+  }
+
+  // Close the exporter
+  await exporter.close(project);
+}
+
+export async function exportResourceType(
+  exporter: BulkExporter,
+  resourceType: ResourceType,
+  maxResources = 1000
+): Promise<void> {
+  const repo = exporter.repo;
+  let hasMore = true;
+  let offset = 0;
+  while (hasMore) {
+    const bundle = await repo.search({
+      resourceType,
+      count: maxResources,
+      offset,
+    });
+    if (!bundle.entry || bundle.entry.length === 0) {
+      break;
+    }
+
+    for (const entry of bundle.entry) {
+      if (entry.resource) {
+        await exporter.writeResource(entry.resource);
+      }
+    }
+
+    const linkNext = bundle.link?.find((b) => b.relation === 'next');
+    hasMore = !!linkNext;
+    offset += maxResources;
+  }
+}
+
+function canBeExported(resourceType: string): boolean {
+  if (resourceType === 'BulkDataExport') {
+    return false;
+  } else if (publicResourceTypes.includes(resourceType) || protectedResourceTypes.includes(resourceType)) {
+    return false;
+  }
+  return true;
 }

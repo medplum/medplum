@@ -36,8 +36,8 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   groupExportResources(exporter, project, group, repo)
-    .then(() => logger.info(`export for ${project.id} is completed`))
-    .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
+    .then(() => logger.info(`Group export for ${project.id} is completed`))
+    .catch((err) => logger.error(`Group export for  ${project.id} failed: ${err}`));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
