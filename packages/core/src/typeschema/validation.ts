@@ -330,11 +330,11 @@ function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedV
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
   for (const [key, value] of Object.entries(obj)) {
     const propertyPath = `${path}.${key}`;
+    const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
     if (value === null) {
       issues.push(createStructureIssue(propertyPath, 'Invalid null value'));
     } else if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
-        const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
         if (value[i] === undefined) {
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid undefined value'));
         } else if (value[i] === null && !(obj[partnerKey] as any)?.[i]) {
