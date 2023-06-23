@@ -119,16 +119,11 @@ class ResourceValidator {
       throw new Error(`Missing element validation schema for ${key}`);
     }
     for (const value of propertyValues) {
-      if (value === undefined) {
-        if (element.min > 0) {
-          this.issues.push(createStructureIssue(path, 'Missing required property'));
-        }
-        return;
-      } else if (isEmpty(value)) {
-        this.issues.push(createStructureIssue(path, 'Invalid empty value'));
+      if (!this.checkPresence(value, element, path)) {
         return;
       }
 
+      // Check cardinality
       let values: TypedValue[];
       if (element.isArray) {
         if (!Array.isArray(value)) {
@@ -141,26 +136,38 @@ class ResourceValidator {
           this.issues.push(createStructureIssue(path, 'Expected single value for property'));
           return;
         }
-        values = [value as TypedValue];
+        values = [value];
       }
 
-      if (element.pattern) {
-        if (!deepIncludes(value, element.pattern)) {
-          this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
-          return;
-        }
-      }
-
-      if (element.fixed) {
-        if (!deepEquals(value, element.fixed)) {
-          this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
-          return;
-        }
-      }
-
+      this.checkSpecifiedValue(value, element, path);
       for (const value of values) {
         this.checkPropertyValue(value, path);
       }
+    }
+  }
+
+  private checkPresence(
+    value: TypedValue | TypedValue[] | undefined,
+    element: ElementValidator,
+    path: string
+  ): value is TypedValue | TypedValue[] {
+    if (value === undefined) {
+      if (element.min > 0) {
+        this.issues.push(createStructureIssue(path, 'Missing required property'));
+      }
+      return false;
+    } else if (isEmpty(value)) {
+      this.issues.push(createStructureIssue(path, 'Invalid empty value'));
+      return false;
+    }
+    return true;
+  }
+
+  private checkSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
+    if (element.pattern && !deepIncludes(value, element.pattern)) {
+      this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
+    } else if (element.fixed && !deepEquals(value, element.fixed)) {
+      this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
     }
   }
 
@@ -327,16 +334,13 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
       issues.push(createStructureIssue(propertyPath, 'Invalid null value'));
     } else if (Array.isArray(value)) {
       for (let i = 0; i < value.length; i++) {
+        const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
         if (value[i] === undefined) {
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid undefined value'));
-        } else if (value[i] === null) {
-          const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
-          if ((obj[partnerKey] as any)?.[i]) {
-            // This is the one case where `null` is allowed in FHIR JSON, where an array of primitive values
-            // has extensions for some but not all values
-          } else {
-            issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid null value'));
-          }
+        } else if (value[i] === null && !(obj[partnerKey] as any)?.[i]) {
+          // This tests for the one case where `null` is allowed in FHIR JSON, where an array of primitive values
+          // has extensions for some but not all values
+          issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid null value'));
         } else {
           checkObjectForNull(value[i], `${propertyPath}[${i}]`, issues);
         }
