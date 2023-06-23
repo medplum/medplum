@@ -103,7 +103,7 @@ protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
 
 // Patient $export operation
-protectedRoutes.get('/Patient/:id/([$]|%24)export', asyncWrap(patientExportHandler));
+protectedRoutes.get('/Patient/([$]|%24)export', asyncWrap(patientExportHandler));
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);

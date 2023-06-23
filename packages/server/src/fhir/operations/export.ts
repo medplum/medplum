@@ -30,8 +30,8 @@ export async function bulkExportHandler(req: Request, res: Response): Promise<vo
   const bulkDataExport = await exporter.start(req.protocol + '://' + req.get('host') + req.originalUrl);
 
   exportResources(exporter, project, types)
-    .then(() => logger.info(`export for ${project.id} is completed`))
-    .catch((err) => logger.error(`export for  ${project.id} failed: ${err}`));
+    .then(() => logger.info(`System level export for ${project.id} is completed`))
+    .catch((err) => logger.error(`System level export for  ${project.id} failed: ${err}`));
 
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }

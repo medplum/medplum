@@ -5,8 +5,7 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
 import { systemRepo } from '../repo';
-import { exportResourceType } from './export';
-import { BulkExporter } from './utils/bulkexporter';
+import { BulkExporter, exportResourceType } from './utils/bulkexporter';
 import { createReference } from '@medplum/core';
 
 const app = express();
