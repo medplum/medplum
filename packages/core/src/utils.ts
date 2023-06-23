@@ -449,34 +449,33 @@ function deepEqualsObject(
 /**
  * Checks if object2 includes all fields and values of object1.
  * It doesn't matter if object2 has extra fields.
- * @param object1 The first object.
- * @param object2 The second object.
- * @returns True if object2 includes all fields and values of object1.
+ * @param value The object to test if contained in pattern.
+ * @param pattern The object to test against.
+ * @returns True if pattern includes all fields and values of value.
  */
-export function deepIncludes(object1: unknown, object2: unknown): boolean {
-  if (isEmpty(object1)) {
+export function deepIncludes(value: any, pattern: any): boolean {
+  if (isEmpty(value)) {
     return true;
   }
-  if (isEmpty(object2)) {
+  if (isEmpty(pattern)) {
     return false;
   }
-  if (Array.isArray(object1) && Array.isArray(object2)) {
-    return deepIncludesArray(object1, object2);
+  if (Array.isArray(value) && Array.isArray(pattern)) {
+    return deepIncludesArray(value, pattern);
   }
-  if (Array.isArray(object1) || Array.isArray(object2)) {
+  if (Array.isArray(value) || Array.isArray(pattern)) {
     return false;
   }
-  if (isObject(object1) && isObject(object2)) {
-    return deepIncludesObject(object1, object2);
-  }
-  if (isObject(object1) || isObject(object2)) {
+  if (isObject(value) && isObject(pattern)) {
+    return deepIncludesObject(value, pattern);
+  } else if (isObject(value) || isObject(pattern)) {
     return false;
   }
-  return object1 === object2;
+  return value === pattern;
 }
 
 function deepIncludesArray(array1: any[], array2: any[]): boolean {
-  return array1.every((value, index) => deepIncludes(value, array2[index]));
+  return array1.every((value1) => array2.some((value2) => deepEquals(value1, value2)));
 }
 
 function deepIncludesObject(object1: { [key: string]: unknown }, object2: { [key: string]: unknown }): boolean {

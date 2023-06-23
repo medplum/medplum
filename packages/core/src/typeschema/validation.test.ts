@@ -196,7 +196,7 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
   });
 
-  test('Invalide resource under pattern fields profile', () => {
+  test('Invalid resource under pattern fields profile', () => {
     const observation: Observation = {
       resourceType: 'Observation',
       status: 'final',
@@ -214,8 +214,7 @@ describe('FHIR resource validation', () => {
         coding: [
           {
             code: '85354-9',
-            // Invalid system value
-            system: 'http://loinc',
+            system: 'http://incorrect.system',
           },
         ],
       },
