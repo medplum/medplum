@@ -315,7 +315,7 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
         if (value[i] === undefined) {
           issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid undefined value'));
         } else if (value[i] === null) {
-          const partnerKey = key[0] === '_' ? key.slice(1) : `_${key}`;
+          const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
           if ((obj[partnerKey] as any)?.[i]) {
             // This is the one case where `null` is allowed in FHIR JSON, where an array of primitive values
             // has extensions for some but not all values

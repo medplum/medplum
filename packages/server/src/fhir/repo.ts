@@ -589,7 +589,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         }
       }
       if (currentErr) {
-        throw currentErr;
+        throw currentErr as Error;
       }
     } else {
       validateResourceWithJsonSchema(resource);
