@@ -4,7 +4,7 @@ import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { isEmpty, isLowerCase } from '../utils';
+import { deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -138,6 +138,21 @@ class ResourceValidator {
         }
         values = [property as TypedValue];
       }
+
+      if (element.pattern) {
+        if (!deepIncludes(element.pattern, property)) {
+          this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
+          return;
+        }
+      }
+
+      if (element.fixed) {
+        if (!deepEquals(element.fixed, property)) {
+          this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
+          return;
+        }
+      }
+
       for (const value of values) {
         this.checkPropertyValue(value, path);
       }
