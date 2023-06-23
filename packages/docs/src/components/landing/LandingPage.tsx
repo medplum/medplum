@@ -130,25 +130,21 @@ export function LandingPage(): JSX.Element {
               <Card>
                 <h3>Custom EHR</h3>
                 <p>Save hundreds of hours of dev time with our headless EHR.</p>
-                <CardButton href="/docs" alt="Learn more about Medplum">
+                <CardButton href="/solutions/custom-ehr" alt="Learn more about Medplum Custom EHR">
                   Learn more
                 </CardButton>
               </Card>
               <Card>
                 <h3>Patient Portal</h3>
                 <p>Accelerate customizable, scalable patient-facing experiences.</p>
-                <CardButton
-                  href="https://github.com/medplum/medplum"
-                  target="_blank"
-                  alt="Go to Medplum GitHub repository"
-                >
+                <CardButton href="/solutions/patient-portal" alt="Learn more about Medplum Patient Portal">
                   Learn more
                 </CardButton>
               </Card>
               <Card>
                 <h3>Provider Portal</h3>
                 <p>Accelerate customizable, scalable provider-facing experiences.</p>
-                <CardButton href="/docs/fhir-basics" alt="Learn more about FHIR Basics">
+                <CardButton href="/solutions/provider-portal" alt="Learn more about Medplum Provider Portal">
                   Learn more
                 </CardButton>
               </Card>
@@ -205,11 +201,7 @@ export function LandingPage(): JSX.Element {
               <Card>
                 <h3>Plans and pricing</h3>
                 <p>A plan for every project with no hidden fees and an always-free tier.</p>
-                <CardButton
-                  href="https://github.com/medplum/medplum"
-                  target="_blank"
-                  alt="Go to Medplum GitHub repository"
-                >
+                <CardButton href="/pricing" alt="Go to Medplum Pricing page">
                   Pricing
                 </CardButton>
               </Card>
