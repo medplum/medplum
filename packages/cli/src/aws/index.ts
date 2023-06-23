@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import { describeStacksCommand } from './describe';
+import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
 import { updateAppCommand } from './update-app';
 import { updateServerCommand } from './update-server';
-import { initStackCommand } from './init';
 
 export const aws = new Command('aws').description('Commands to manage AWS resources');
 
@@ -17,6 +17,10 @@ aws
   .argument('<tag>')
   .action(describeStacksCommand);
 
-aws.command('update-server').description('Update the server image').argument('<tag>').action(updateServerCommand);
+aws
+  .command('deploy-server|update-server')
+  .description('Update the server image')
+  .argument('<tag>')
+  .action(updateServerCommand);
 
-aws.command('update-app').description('Update the app site').argument('<tag>').action(updateAppCommand);
+aws.command('deploy-app|update-app').description('Update the app site').argument('<tag>').action(updateAppCommand);
