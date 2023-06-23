@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@medplum/app",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "description": "Medplum App",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
