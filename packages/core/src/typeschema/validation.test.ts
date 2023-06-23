@@ -213,6 +213,61 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
   });
 
+  test('Invalid resource under pattern fields profile', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code: '85354-9',
+            system: 'http://incorrect.system',
+          },
+        ],
+      },
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-05-31T17:03:45-07:00',
+      component: [
+        {
+          code: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+        {
+          code: {
+            coding: [
+              {
+                code: '8462-4',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => {
+      validateResource(observation, observationProfile);
+    }).toThrow();
+  });
+
   test('StructureDefinition', () => {
     const structureDefinition = readJson('fhir/r4/profiles-resources.json') as Bundle;
     expect(() => {
