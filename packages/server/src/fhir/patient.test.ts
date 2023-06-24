@@ -1,8 +1,9 @@
 import { Account, CarePlan, ExplanationOfBenefit, Observation, Patient, Reference } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { getPatientCompartmentParams, getPatient } from './patient';
+import { getPatientCompartmentParams, getPatient, getPatientResourceTypes } from './patient';
 import { systemRepo } from './repo';
+import { isResourceType } from '@medplum/core';
 
 describe('FHIR Patient utils', () => {
   beforeAll(async () => {
@@ -149,5 +150,13 @@ describe('FHIR Patient utils', () => {
       },
     });
     expect(eob).toBeDefined();
+  });
+
+  test('getPatientResourceTypes', () => {
+    const resourceTypes = getPatientResourceTypes();
+    expect(resourceTypes.length).toBeGreaterThan(1);
+    resourceTypes.forEach((resourceType) => {
+      expect(isResourceType(resourceType)).toBe(true);
+    });
   });
 });
