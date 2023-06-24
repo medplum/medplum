@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/medplum/medplum.git",
-    "directory": "packages/ui"
+    "directory": "packages/react"
   },
   "scripts": {
     "clean": "rimraf dist storybook-static",
