@@ -28,6 +28,7 @@ const options = {
     'fs',
     'node-fetch',
     'path',
+    'readline',
     'tar',
   ],
 };

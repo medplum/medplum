@@ -13,9 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "vite",
-    "build": "npm run clean && tsc && vite build",
-    "dev:webpack": "webpack serve --mode development",
-    "build:webpack": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
+    "build": "npm run clean && tsc && vite build"
   },
   "devDependencies": {
     "@graphiql/react": "0.17.6",

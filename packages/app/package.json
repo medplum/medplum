@@ -18,10 +18,6 @@
     "clean": "rimraf dist",
     "dev": "vite",
     "build": "npm run clean && tsc && vite build",
-    "dev:webpack": "webpack serve --mode development",
-    "build:webpack": "npm run clean && tsc && cross-env NODE_ENV=production webpack --mode production",
-    "debug": "webpack --mode development",
-    "start:webpack": "http-server dist --port 3000 --proxy http://localhost:3000?",
     "test": "jest",
     "source-map-explorer": "source-map-explorer dist/**/*.js --gzip"
   },
@@ -46,7 +42,8 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.13.0",
-    "vite": "4.3.9"
+    "vite": "4.3.9",
+    "vite-plugin-pwa": "0.16.4"
   },
   "browserslist": [
     "last 1 Chrome versions"

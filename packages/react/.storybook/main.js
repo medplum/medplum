@@ -5,9 +5,12 @@ module.exports = {
     '../src/**/*.stories.@(js|jsx|ts|tsx)',
   ],
   addons: ['@storybook/addon-links', '@storybook/addon-essentials'],
+  core: {
+    builder: '@storybook/builder-vite',
+  },
   staticDirs: ['../public'],
   framework: {
-    name: '@storybook/react-webpack5',
+    name: '@storybook/react-vite',
     options: {},
   },
   docs: {

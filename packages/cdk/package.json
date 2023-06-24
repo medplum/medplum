@@ -12,7 +12,6 @@
   },
   "scripts": {
     "clean": "rimraf dist cdk.out",
-    "build:rollup": "npm run clean && tsc && rollup --config rollup.config.mjs",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "cdk": "cdk",
     "test": "jest --runInBand"
