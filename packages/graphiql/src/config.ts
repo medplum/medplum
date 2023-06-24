@@ -3,7 +3,7 @@ export interface MedplumGraphiQLConfig {
 }
 
 const config: MedplumGraphiQLConfig = {
-  introspectionUrl: process.env.MEDPLUM_INTROSPECTION_URL || undefined,
+  introspectionUrl: import.meta.env.MEDPLUM_INTROSPECTION_URL || undefined,
 };
 
 export function getConfig(): MedplumGraphiQLConfig {
