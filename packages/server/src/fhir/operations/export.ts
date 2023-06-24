@@ -68,7 +68,7 @@ export async function exportResources(
     if (!canBeExported(resourceType) || (types && !types.includes(resourceType))) {
       continue;
     }
-    await exportResourceType(exporter, resourceType as ResourceType);
+    await exportResourceType(exporter, resourceType);
   }
 
   // Close the exporter
