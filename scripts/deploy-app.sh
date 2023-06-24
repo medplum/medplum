@@ -26,16 +26,7 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
   --include "*.js" \
-  --exclude "service-worker.js"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "application/json" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.css.map" \
-  --include "*.js.map" \
-  --exclude "service-worker.js.map"
+  --exclude "sw.js"
 
 aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --recursive \
@@ -84,12 +75,8 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --exclude "*" \
   --include "*.webmanifest"
 
-aws s3 cp dist/service-worker.js "s3://${APP_BUCKET}/" \
+aws s3 cp dist/sw.js "s3://${APP_BUCKET}/" \
   --content-type "application/javascript" \
-  --cache-control "no-cache"
-
-aws s3 cp dist/service-worker.js.map "s3://${APP_BUCKET}/" \
-  --content-type "application/json" \
   --cache-control "no-cache"
 
 popd

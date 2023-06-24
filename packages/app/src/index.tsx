@@ -8,7 +8,7 @@ import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { App } from './App';
 import { getConfig } from './config';
 
-if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
+if (import.meta.env?.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/service-worker.js')
