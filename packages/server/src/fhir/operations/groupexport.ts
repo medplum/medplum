@@ -42,7 +42,7 @@ export async function groupExportHandler(req: Request, res: Response): Promise<v
   sendOutcome(res, accepted(`${baseUrl}fhir/R4/bulkdata/export/${bulkDataExport.id}`));
 }
 
-async function groupExportResources(
+export async function groupExportResources(
   exporter: BulkExporter,
   project: Project,
   group: Group,

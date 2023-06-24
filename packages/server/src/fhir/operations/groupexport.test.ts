@@ -1,10 +1,12 @@
-import { BulkDataExportOutput } from '@medplum/fhirtypes';
+import { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
 import { systemRepo } from '../repo';
+import { groupExportResources } from './groupexport';
+import { BulkExporter } from './utils/bulkexporter';
 
 const app = express();
 let accessToken: string;
@@ -292,5 +294,23 @@ describe('Group Export', () => {
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
+  });
+
+  test('groupExportResources without members', async () => {
+    const { project } = await createTestProject();
+    expect(project).toBeDefined();
+    const exporter = new BulkExporter(systemRepo, undefined);
+    const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
+
+    const group: Group = await systemRepo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+    });
+    await exporter.start('http://example.com');
+    await groupExportResources(exporter, project, group, systemRepo);
+    const bulkDataExport = await exporter.close(project);
+    expect(bulkDataExport.status).toBe('completed');
+    expect(exportWriteResourceSpy).toBeCalledTimes(0);
   });
 });
