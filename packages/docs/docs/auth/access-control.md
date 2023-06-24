@@ -100,7 +100,7 @@ The following access policy grants read-only access to the "Patient" resource ty
 
 ### Criteria-based Access Control
 
-The following policy uses a FHIR Search Query to grant access only to Coverage who's `payor` is `Organization/123`:
+The following policy uses a FHIR Search Query to grant access only to Coverage whose `payor` is `Organization/123`:
 
 ```json
 {
@@ -115,7 +115,7 @@ The following policy uses a FHIR Search Query to grant access only to Coverage w
 }
 ```
 
-Note that in this implementation access policy, only the `Coverage` resources that `payor=Organization/123` will be visible.
+Note that in this implementation access policy, only the `Coverage` resources that have `payor=Organization/123` will be visible.
 
 ### Parameterized Policies (Beta)
 
