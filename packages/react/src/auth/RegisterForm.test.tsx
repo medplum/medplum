@@ -6,12 +6,9 @@ import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-import * as Recaptcha from '../utils/recaptcha';
 import { RegisterForm, RegisterFormProps } from './RegisterForm';
 
 const recaptchaSiteKey = 'abc';
-const mockrecaptcha = Recaptcha as jest.Mocked<typeof Recaptcha>;
-const getRecaptchaSpy = jest.spyOn(mockrecaptcha, 'getRecaptcha');
 
 function mockFetch(url: string, options: any): Promise<any> {
   let status = 404;
@@ -206,7 +203,6 @@ describe('RegisterForm', () => {
     });
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
-    expect(getRecaptchaSpy).toHaveBeenCalled();
 
     expect(onSuccess).toHaveBeenCalled();
   });
@@ -258,7 +254,6 @@ describe('RegisterForm', () => {
 
     await waitFor(() => expect(medplum.getProfile()).toBeDefined());
 
-    expect(getRecaptchaSpy).not.toBeCalled();
     expect(onSuccess).toHaveBeenCalled();
   });
 

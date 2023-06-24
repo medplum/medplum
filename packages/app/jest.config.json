@@ -2,7 +2,7 @@
   "testEnvironment": "jsdom",
   "testTimeout": 120000,
   "transform": {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx)$": "esbuild-jest"
   },
   "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
   "moduleNameMapper": {

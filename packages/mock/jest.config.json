@@ -1,7 +1,7 @@
 {
   "testEnvironment": "jsdom",
   "transform": {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx)$": "esbuild-jest"
   },
   "moduleFileExtensions": ["ts", "js", "json", "node"],
   "testMatch": ["**/src/**/*.test.ts"],

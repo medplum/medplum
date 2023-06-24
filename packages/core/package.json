@@ -13,6 +13,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && tsc --project tsconfig.build.json && rollup --config rollup.config.mjs",
+    "build2": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "test": "jest"
   },
   "devDependencies": {

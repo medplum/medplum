@@ -3,7 +3,7 @@
   "testTimeout": 600000,
   "testSequencer": "<rootDir>/jest.sequencer.js",
   "transform": {
-    "^.+\\.(js|jsx|ts|tsx)$": "babel-jest"
+    "^.+\\.(js|jsx|ts|tsx)$": "esbuild-jest"
   },
   "moduleFileExtensions": ["ts", "js", "json", "node"],
   "testMatch": ["**/src/**/*.test.ts"],
