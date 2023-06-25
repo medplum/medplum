@@ -159,8 +159,8 @@ const config = {
             title: 'Community',
             items: [
               {
-                label: 'Stack Overflow',
-                to: 'https://stackoverflow.com/questions/tagged/medplum',
+                label: 'Case Studies',
+                to: '/blog/tags/case-study',
               },
               {
                 label: 'Discord',
