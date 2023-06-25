@@ -8,6 +8,7 @@ src/
 storybook-static/
 .env
 .env.defaults
+babel.config.json
 esbuild.mjs
 jest.config.json
 tsconfig.build.json
