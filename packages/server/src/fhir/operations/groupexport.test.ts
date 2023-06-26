@@ -1,4 +1,4 @@
-import { BulkDataExportOutput, Group } from '@medplum/fhirtypes';
+import { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -296,6 +296,26 @@ describe('Group Export', () => {
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
   });
 
+  test('status accepted with error', async () => {
+    // Create group
+    const groupRes = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: { reference: `Patient/1234` } }],
+      });
+    expect(groupRes.status).toBe(201);
+    const res4 = await request(app)
+      .get(`/fhir/R4/Group/${groupRes.body.id}/$export`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(202);
+    expect(res4.headers['content-location']).toBeDefined();
+  });
+
   test('groupExportResources without members', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
@@ -312,5 +332,31 @@ describe('Group Export', () => {
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
     expect(exportWriteResourceSpy).toBeCalledTimes(0);
+  });
+
+  test('groupExportResources members without reference', async () => {
+    const { project } = await createTestProject();
+    expect(project).toBeDefined();
+    const exporter = new BulkExporter(systemRepo, undefined);
+
+    const patient: Patient = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      address: [{ use: 'home', line: ['123 Main St'], city: 'Anywhere', state: 'CA', postalCode: '90210' }],
+      telecom: [
+        { system: 'phone', value: '555-555-5555' },
+        { system: 'email', value: 'alice@example.com' },
+      ],
+    });
+    const group: Group = await systemRepo.createResource<Group>({
+      resourceType: 'Group',
+      type: 'person',
+      actual: true,
+      member: [{ entity: { reference: '' } }, { entity: { reference: `Patient/${patient.id}` } }],
+    });
+    await exporter.start('http://example.com');
+    await groupExportResources(exporter, project, group, systemRepo);
+    const bulkDataExport = await exporter.close(project);
+    expect(bulkDataExport.status).toBe('completed');
   });
 });
