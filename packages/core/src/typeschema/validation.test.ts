@@ -213,6 +213,52 @@ describe('FHIR resource validation', () => {
     }).not.toThrow();
   });
 
+  test('Invalid cardinality', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        {
+          coding: [
+            {
+              code: 'vital-signs',
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            code: '85354-9',
+            system: 'http://loinc.org',
+          },
+        ],
+      },
+      subject: {
+        reference: 'Patient/example',
+      },
+      effectiveDateTime: '2023-05-31T17:03:45-07:00',
+      component: [
+        // Should have two components
+        {
+          code: {
+            coding: [
+              {
+                code: '8480-6',
+                system: 'http://loinc.org',
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    expect(() => {
+      validateResource(observation, observationProfile);
+    }).toThrow('Invalid number of values: expected 2..*, but found 1 (Observation.component)');
+  });
+
   test('Invalid resource under pattern fields profile', () => {
     const observation: Observation = {
       resourceType: 'Observation',

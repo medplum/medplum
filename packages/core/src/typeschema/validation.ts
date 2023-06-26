@@ -138,6 +138,16 @@ class ResourceValidator {
         }
         values = [value];
       }
+      if (values.length < element.min || values.length > element.max) {
+        this.issues.push(
+          createStructureIssue(
+            path,
+            `Invalid number of values: expected ${element.min}..${
+              Number.isFinite(element.max) ? element.max : '*'
+            }, but found ${values.length}`
+          )
+        );
+      }
 
       this.checkSpecifiedValue(value, element, path);
       for (const value of values) {
