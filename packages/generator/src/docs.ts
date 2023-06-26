@@ -1,6 +1,6 @@
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path/posix';
 import {
@@ -10,7 +10,17 @@ import {
   ResourceDocsProps,
 } from '../../docs/src/types/documentationTypes';
 
-const searchParams = readJson('fhir/r4/search-parameters.json') as Bundle;
+const searchParams: SearchParameter[] = [];
+for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
+  if (entry.resource) {
+    searchParams.push(entry.resource);
+  }
+}
+for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
+  if (entry.resource) {
+    searchParams.push(entry.resource);
+  }
+}
 
 let documentedTypes: Record<string, DocumentationLocation>;
 
@@ -47,11 +57,9 @@ export function main(): void {
  * @param searchParams The bundle of SearchParameter resources.
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
-function indexSearchParameters(searchParams: Bundle): Record<string, SearchParameter[]> {
-  const entries = searchParams.entry || [];
+function indexSearchParameters(searchParams: SearchParameter[]): Record<string, SearchParameter[]> {
   const results = {} as Record<string, SearchParameter[]>;
-  for (const entry of entries) {
-    const searchParam = entry.resource as SearchParameter;
+  for (const searchParam of searchParams) {
     for (const resType of searchParam.base || []) {
       if (!results[resType]) {
         results[resType] = [];

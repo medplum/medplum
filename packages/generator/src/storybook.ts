@@ -103,9 +103,14 @@ function addStructureDefinitions(fileName: string, output: StructureDefinition[]
 }
 
 function writeSearchParameters(): void {
-  const input = readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>;
   const output: SearchParameter[] = [];
-  for (const entry of input.entry as BundleEntry<SearchParameter>[]) {
+  for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
+    const resource = entry.resource as SearchParameter;
+    if (searchParams.includes(resource.id as string)) {
+      output.push(resource);
+    }
+  }
+  for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
     const resource = entry.resource as SearchParameter;
     if (searchParams.includes(resource.id as string)) {
       output.push(resource);
