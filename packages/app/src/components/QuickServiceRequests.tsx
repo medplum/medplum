@@ -73,8 +73,8 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
           <p>
             <MedplumLink to={r}>{getServiceRequestIdentifier(r)}</MedplumLink>
           </p>
-          {r.category?.[0]?.text && <p>{r.category?.[0]?.text}</p>}
-          {r.code?.coding?.[0]?.code && <p>{r.code?.coding?.[0]?.code}</p>}
+          {r.category?.[0]?.text && <p>{r.category[0]?.text}</p>}
+          {r.code?.coding?.[0]?.code && <p>{r.code.coding[0]?.code}</p>}
           <p>{getServiceRequestDate(r)}</p>
         </div>
       ))}

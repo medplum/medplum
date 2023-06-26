@@ -1,4 +1,4 @@
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, MantineThemeOverride } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
@@ -19,22 +19,22 @@ export const parameters = {
 const medplum = new MockClient();
 medplum.get('/');
 
-const theme = {
+const theme: MantineThemeOverride = {
   headings: {
     sizes: {
       h1: {
-        fontSize: 18,
+        fontSize: '1.125rem',
         fontWeight: 500,
         lineHeight: 2.0,
       },
     },
   },
   fontSizes: {
-    xs: 11,
-    sm: 14,
-    md: 14,
-    lg: 16,
-    xl: 18,
+    xs: '0.6875rem',
+    sm: '0.875rem',
+    md: '0.875rem',
+    lg: '1.0rem',
+    xl: '1.125rem',
   },
 };
 

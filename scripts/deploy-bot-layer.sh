@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 
 if [[ -z "${BOT_LAYER_NAME}" ]]; then
-  echo "BOT_LAYER_NAME is missing"
-  exit 1
+  echo "Using default BOT_LAYER_NAME 'medplum-bot-layer'"
+  BOT_LAYER_NAME="medplum-bot-layer"
 fi
-
 
 # Fail on error
 set -e

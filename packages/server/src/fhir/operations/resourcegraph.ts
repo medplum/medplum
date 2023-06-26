@@ -154,18 +154,18 @@ async function followFhirPathLink(
 
   // The only kinds of links we can follow are 'reference search parameters'. This includes elements of type
   // Reference and type canonical
-  if (!elements.every((elem) => elem.type === PropertyType.Reference || elem.type === PropertyType.canonical)) {
+  if (!elements.every((elem) => [PropertyType.Reference, PropertyType.canonical].includes(elem.type as PropertyType))) {
     throw new OperationOutcomeError(badRequest('Invalid link path. Must return a path to a Reference type'));
   }
 
   // For each of the elements we found on the current resource, follow their various targets
 
-  const referenceElements = elements.filter((elem) => elem.type === PropertyType.Reference);
+  const referenceElements = elements.filter((elem) => (elem.type as PropertyType) === PropertyType.Reference);
   if (referenceElements.length > 0) {
     results.push(...(await followReferenceElements(repo, referenceElements, target, resourceCache)));
   }
 
-  const canonicalElements = elements.filter((elem) => elem.type === PropertyType.canonical);
+  const canonicalElements = elements.filter((elem) => (elem.type as PropertyType) === PropertyType.canonical);
   if (canonicalElements.length > 0) {
     results.push(...(await followCanonicalElements(repo, canonicalElements, target, resourceCache)));
   }
@@ -207,7 +207,7 @@ async function followCanonicalElements(
   target: GraphDefinitionLinkTarget,
   resourceCache: Record<string, Resource>
 ): Promise<Resource[]> {
-  if (!target?.type) {
+  if (!target.type) {
     return [];
   }
 
@@ -223,7 +223,7 @@ async function followCanonicalElements(
         resourceType: target.type,
         filters: [{ code: 'url', operator: Operator.EQUALS, value: url }],
       });
-      if (linkedResources?.length > 1) {
+      if (linkedResources.length > 1) {
         logger.warn(`Warning: Found more than 1 resource with canonical URL ${url}`);
       }
 
@@ -317,7 +317,7 @@ function parseCardinality(cardinality: string | undefined): number {
   if (cardinality === '*') {
     return Number.POSITIVE_INFINITY;
   }
-  return parseInt(cardinality);
+  return parseInt(cardinality, 10);
 }
 
 function addToCache(resource: Resource, cache: Record<string, Resource>): void {

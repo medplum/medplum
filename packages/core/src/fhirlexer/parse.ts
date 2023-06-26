@@ -7,6 +7,8 @@ export interface AtomContext {
 }
 export interface Atom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[];
+
+  toString(): string;
 }
 
 export abstract class PrefixOperatorAtom implements Atom {
@@ -42,17 +44,17 @@ export class ParserBuilder {
   private readonly prefixParselets: Record<string, PrefixParselet> = {};
   private readonly infixParselets: Record<string, InfixParselet> = {};
 
-  public registerInfix(tokenType: string, parselet: InfixParselet): ParserBuilder {
+  public registerInfix(tokenType: string, parselet: InfixParselet): this {
     this.infixParselets[tokenType] = parselet;
     return this;
   }
 
-  public registerPrefix(tokenType: string, parselet: PrefixParselet): ParserBuilder {
+  public registerPrefix(tokenType: string, parselet: PrefixParselet): this {
     this.prefixParselets[tokenType] = parselet;
     return this;
   }
 
-  public prefix(tokenType: string, precedence: number, builder: (token: Token, right: Atom) => Atom): ParserBuilder {
+  public prefix(tokenType: string, precedence: number, builder: (token: Token, right: Atom) => Atom): this {
     return this.registerPrefix(tokenType, {
       parse(parser, token) {
         const right = parser.consumeAndParse(precedence);
@@ -65,7 +67,7 @@ export class ParserBuilder {
     tokenType: string,
     precedence: number,
     builder: (left: Atom, token: Token, right: Atom) => Atom
-  ): ParserBuilder {
+  ): this {
     return this.registerInfix(tokenType, {
       parse(parser, left, token) {
         const right = parser.consumeAndParse(precedence);

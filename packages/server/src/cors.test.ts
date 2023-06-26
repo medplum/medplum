@@ -34,7 +34,10 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { credentials: true, origin: 'http://localhost:3000' });
+    expect(callback).toBeCalledWith(
+      null,
+      expect.objectContaining({ credentials: true, origin: 'http://localhost:3000' })
+    );
   });
 
   test('Open', () => {
@@ -45,7 +48,10 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { credentials: true, origin: 'https://example.com' });
+    expect(callback).toBeCalledWith(
+      null,
+      expect.objectContaining({ credentials: true, origin: 'https://example.com' })
+    );
   });
 
   test('Closed', () => {
@@ -67,7 +73,10 @@ describe('CORS', () => {
     } as unknown as Request;
     const callback = jest.fn();
     corsOptions(req, callback);
-    expect(callback).toBeCalledWith(null, { credentials: true, origin: 'https://example.com' });
+    expect(callback).toBeCalledWith(
+      null,
+      expect.objectContaining({ credentials: true, origin: 'https://example.com' })
+    );
   });
 
   test('Disallowed origins ', () => {

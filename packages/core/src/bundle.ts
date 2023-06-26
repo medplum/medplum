@@ -12,9 +12,9 @@ import { Bundle } from '@medplum/fhirtypes';
  */
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
   for (const entry of bundle.entry || []) {
-    delete entry?.resource?.meta;
-    entry.fullUrl = 'urn:uuid:' + entry?.resource?.id;
-    delete entry?.resource?.id;
+    delete entry.resource?.meta;
+    entry.fullUrl = 'urn:uuid:' + entry.resource?.id;
+    delete entry.resource?.id;
   }
   const input = bundle.entry;
   const jsonString = JSON.stringify(

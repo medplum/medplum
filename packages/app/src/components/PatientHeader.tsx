@@ -20,7 +20,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
         <InfoBar.Key>Name</InfoBar.Key>
         <InfoBar.Value>
           <MedplumLink to={patient}>
-            {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
+            {patient.name ? <HumanNameDisplay value={patient.name[0]} options={{ use: false }} /> : '[blank]'}
           </MedplumLink>
         </InfoBar.Value>
       </InfoBar.Entry>
@@ -45,7 +45,7 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
       {patient.address && (
         <InfoBar.Entry>
           <InfoBar.Key>State</InfoBar.Key>
-          <InfoBar.Value>{patient.address?.[0]?.state}</InfoBar.Value>
+          <InfoBar.Value>{patient.address[0]?.state}</InfoBar.Value>
         </InfoBar.Entry>
       )}
       {patient.identifier?.map((identifier, index) => (

@@ -94,12 +94,12 @@ If you have not already done so, add the common AWS CDK dependencies. This inclu
 npm i aws-cdk-lib cdk constructs
 ```
 
-### Add Medplum CDK dependency
+### Add Medplum dependencies
 
-Add the Medplum CDK dependency. This includes the Medplum CDK construct.
+Add the Medplum CDK and CLI dependencies. This includes the Medplum CDK construct.
 
 ```bash
-npm i @medplum/cdk
+npm i @medplum/cdk @medplum/cli
 ```
 
 ### Add cdk.json
@@ -114,10 +114,10 @@ Create a new file called `cdk.json` with the following contents:
 
 ### Run the init tool
 
-Most AWS resources are automatically created using CDK, but some either cannot or are not recommended. Use the `medplum-cdk-init` tool to setup those resources and build the Medplum CDK config file.
+Most AWS resources are automatically created using CDK, but some either cannot or are not recommended. Use the `medplum aws init` command to setup those resources and build the Medplum CDK config file.
 
 ```bash
-npx medplum-cdk-init
+npx medplum aws init
 ```
 
 Then follow the prompts.
@@ -175,49 +175,18 @@ Run CDK diff:
 npx cdk diff -c config=my-config.json
 ```
 
-## Deploy
-
-Now let's switch back to the main Medplum repo. If you have not done so already, see [Clone the repo](/docs/contributing/clone-the-repo).
-
-### Setup your app
-
-Add a `.env` file in `packages/app` with your deployment details:
-
-```
-MEDPLUM_BASE_URL=https://api.medplum.example.com/
-GOOGLE_CLIENT_ID=***Your google client ID for Google auth***
-RECAPTCHA_SITE_KEY=***Your reCAPTCHA site key for user verification***
-```
-
-> **_TODO:_** Update the build to pull from a centralized config file rather than environment variable.
-
-### Build the app
-
-From the root of the Medplum repo, run:
-
-```bash
-npm run build -- --filter=@medplum/app
-```
-
-See the [Build](/docs/contributing/run-the-stack#build) page for more details.
-
 ### Deploy the app
 
-After the AWS infrastructure is setup, you need to deploy the front-end web application.
+:::tip
 
-Use the `deploy-app.sh` script with a `APP_BUCKET` environment variable:
+Historically this step required building from source. You can now deploy the app from prebuilt images.
 
-> **_TODO:_** Update the script to pull from a centralized config file rather than environment variable.
+:::
 
-```bash
-export APP_BUCKET=app.example.com
-./scripts/deploy-app.sh
-```
-
-or
+Use the Medplum CLI to deploy the app:
 
 ```bash
-APP_BUCKET=app.example.com ./scripts/deploy-app.sh
+npx medplum aws deploy-app MY_TAG_NAME
 ```
 
 ## Advanced
@@ -226,7 +195,9 @@ APP_BUCKET=app.example.com ./scripts/deploy-app.sh
 
 **Optional:** If you intend to use Medplum Bots, you will need an [AWS Lambda Layer](https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-concepts.html#gettingstarted-concepts-layer).
 
-You can use the `deploy-bot-layer.sh` script to automate this process:
+At present, the bot layer must be built from source. See [Clone the repo](/docs/contributing/clone-the-repo) and [Run the stack](/docs/contributing/run-the-stack) to build from source.
+
+After you successfully build the Medplum project from source, you can use the `deploy-bot-layer.sh` script to build and deploy the Lambda Layer:
 
 ```bash
 ./scripts/deploy-bot-layer.sh
@@ -236,25 +207,20 @@ See the [Creating and sharing Lambda layers](https://docs.aws.amazon.com/lambda/
 
 ## Ongoing
 
-### Upgrade the server
+### Upgrade the app
 
-If using a custom Docker image, first build and deploy your image:
+Use the Medplum CLI to upgrade the app. This will upgrade your app to the latest version.
 
 ```bash
-# Build and push using normal Docker commands
-docker build . -t "$DOCKER_REPOSITORY:$TAG"
-docker push "$DOCKER_REPOSITORY:$TAG"
+npx medplum aws update-app MY_TAG_NAME
 ```
 
-To deploy the latest version to your AWS Fargate cluster, use the AWS CLI:
+### Upgrade the server
+
+Use the Medplum CLI to upgrade the server. This will upgrade your server to the latest version.
 
 ```bash
-# Update the Medplum Fargate service
-aws ecs update-service \
-  --region "$AWS_REGION" \
-  --cluster "$ECS_CLUSTER" \
-  --service "$ECS_SERVICE" \
-  --force-new-deployment
+npx medplum aws update-server MY_TAG_NAME
 ```
 
 ## Troubleshooting

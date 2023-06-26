@@ -423,7 +423,7 @@ export function formatObservationValue(obs: Observation | ObservationComponent |
     return (obs.component as ObservationComponent[]).map((c) => formatObservationValue(c)).join(' / ');
   }
 
-  if (obs?.valueQuantity) {
+  if (obs.valueQuantity) {
     return formatQuantity(obs.valueQuantity);
   }
 

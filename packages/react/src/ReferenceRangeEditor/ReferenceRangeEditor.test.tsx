@@ -139,7 +139,7 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+    expect(checkSubmitted.qualifiedInterval).toMatchObject(
       Array(3).fill({
         gender: 'female',
       })
@@ -163,7 +163,7 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+    expect(checkSubmitted.qualifiedInterval).toMatchObject(
       Array(3).fill({
         age: {
           low: { value: 10, unit: 'years', system: 'http://unitsofmeasure.org' },
@@ -189,7 +189,7 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+    expect(checkSubmitted.qualifiedInterval).toMatchObject(
       Array(3).fill({
         context: {
           text: 'luteal',
@@ -214,7 +214,7 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted?.qualifiedInterval).toMatchObject(
+    expect(checkSubmitted.qualifiedInterval).toMatchObject(
       Array(3).fill({
         gender: undefined,
       })
@@ -404,7 +404,7 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.condition)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.condition)).toMatchObject([
       'Very Low',
       'Normal risk',
       'Negative risk',
@@ -431,11 +431,11 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.low?.value)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.age?.low?.value)).toMatchObject([
       11, 11, 17, 17, 17, 20, 20, 20, 50, 50, 50, 11, 11, 20, 20, 20, 50, 50, 50,
     ]);
 
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.high?.value)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.age?.high?.value)).toMatchObject([
       16,
       16,
       19,
@@ -476,11 +476,11 @@ describe('ReferenceRangeEditor', () => {
     fireEvent.click(screen.getByText('Save'));
 
     const checkSubmitted = onSubmit.mock.calls[0][0] as ObservationDefinition;
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.gender)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.gender)).toMatchObject([
       ...Array(11).fill('male'),
       ...Array(8).fill('female'),
     ]);
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.low?.value)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.age?.low?.value)).toMatchObject([
       ...Array(5).fill(11),
       20,
       20,
@@ -498,7 +498,7 @@ describe('ReferenceRangeEditor', () => {
       50,
     ]);
 
-    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval?.age?.high?.value)).toMatchObject([
+    expect(checkSubmitted.qualifiedInterval?.map((interval) => interval.age?.high?.value)).toMatchObject([
       14,
       14,
       19,

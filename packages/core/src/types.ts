@@ -335,7 +335,7 @@ export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
   const structureDefinition = typeSchema.structureDefinition;
   return (
     structureDefinition &&
-    structureDefinition.name === typeSchema.elementDefinition?.path &&
+    structureDefinition.name === typeSchema.elementDefinition.path &&
     structureDefinition.kind === 'resource' &&
     !structureDefinition.abstract
   );

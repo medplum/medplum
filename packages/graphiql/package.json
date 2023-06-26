@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "description": "Medplum GraphiQL",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -12,8 +12,8 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "dev": "webpack serve --mode development",
-    "build": "npm run clean && cross-env NODE_ENV=production webpack --mode production"
+    "dev": "vite",
+    "build": "npm run clean && tsc && vite build"
   },
   "devDependencies": {
     "@graphiql/react": "0.17.6",
@@ -25,18 +25,12 @@
     "@medplum/react": "*",
     "@types/react": "18.2.13",
     "@types/react-dom": "18.2.6",
-    "babel-loader": "9.1.2",
-    "css-loader": "6.8.1",
-    "dotenv-webpack": "8.0.1",
     "graphiql": "2.4.7",
     "graphql": "16.6.0",
     "graphql-ws": "5.13.1",
-    "html-webpack-plugin": "5.5.3",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "regenerator-runtime": "0.13.11",
-    "style-loader": "3.3.3",
-    "worker-loader": "3.0.8"
+    "vite": "4.3.9"
   },
   "browserslist": [
     "last 1 Chrome versions"

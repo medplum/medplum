@@ -4,7 +4,7 @@ import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { isEmpty, isLowerCase } from '../utils';
+import { deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -88,6 +88,8 @@ class ResourceValidator {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
+    checkObjectForNull(resource as unknown as Record<string, unknown>, resource.resourceType, this.issues);
+
     this.validateObject({ type: resourceType, value: resource }, this.schema, resourceType);
 
     const issues = this.issues;
@@ -100,47 +102,72 @@ class ResourceValidator {
     }
   }
 
-  private validateObject(value: TypedValue, schema: InternalTypeSchema, path: string): void {
+  private validateObject(obj: TypedValue, schema: InternalTypeSchema, path: string): void {
     for (const [key, _propSchema] of Object.entries(schema.fields)) {
-      this.checkProperty(value, key, schema, path + '.' + key);
+      this.checkProperty(obj, key, schema, `${path}.${key}`);
     }
 
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
-    this.checkAdditionalProperties(value, schema.fields, path);
+    this.checkAdditionalProperties(obj, schema.fields, path);
   }
 
-  private checkProperty(value: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
-    const propertyValues = getNestedProperty(value, key);
+  private checkProperty(parent: TypedValue, key: string, schema: InternalTypeSchema, path: string): void {
+    const propertyValues = getNestedProperty(parent, key);
     const element = schema.fields[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
-    for (const property of propertyValues) {
-      if (isEmpty(property)) {
-        if (element.min > 0) {
-          this.issues.push(createStructureIssue(path, 'Missing required property'));
-        }
+    for (const value of propertyValues) {
+      if (!this.checkPresence(value, element, path)) {
         return;
       }
 
+      // Check cardinality
       let values: TypedValue[];
       if (element.isArray) {
-        if (!Array.isArray(property)) {
-          this.issues.push(createStructureIssue(path, 'Expected array of values'));
+        if (!Array.isArray(value)) {
+          this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
           return;
         }
-        values = property;
+        values = value;
       } else {
-        if (Array.isArray(property)) {
-          this.issues.push(createStructureIssue(path, 'Expected single value'));
+        if (Array.isArray(value)) {
+          this.issues.push(createStructureIssue(path, 'Expected single value for property'));
           return;
         }
-        values = [property as TypedValue];
+        values = [value];
       }
+
+      this.checkSpecifiedValue(value, element, path);
       for (const value of values) {
         this.checkPropertyValue(value, path);
       }
+    }
+  }
+
+  private checkPresence(
+    value: TypedValue | TypedValue[] | undefined,
+    element: ElementValidator,
+    path: string
+  ): value is TypedValue | TypedValue[] {
+    if (value === undefined) {
+      if (element.min > 0) {
+        this.issues.push(createStructureIssue(path, 'Missing required property'));
+      }
+      return false;
+    } else if (isEmpty(value)) {
+      this.issues.push(createStructureIssue(path, 'Invalid empty value'));
+      return false;
+    }
+    return true;
+  }
+
+  private checkSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
+    if (element.pattern && !deepIncludes(value, element.pattern)) {
+      this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
+    } else if (element.fixed && !deepEquals(value, element.fixed)) {
+      this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
     }
   }
 
@@ -155,19 +182,19 @@ class ResourceValidator {
   }
 
   private checkAdditionalProperties(
-    typedValue: TypedValue,
+    parent: TypedValue,
     properties: Record<string, ElementValidator>,
     path: string
   ): void {
-    const object = typedValue.value as Record<string, unknown>;
-    for (const key of Object.keys(object)) {
+    const object = parent.value as Record<string, unknown>;
+    for (const key of Object.keys(object ?? {})) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
       if (
         !(key in properties) &&
-        !isChoiceOfType(typedValue, key, properties) &&
-        !this.isPrimitiveExtension(typedValue, key, path)
+        !(key.slice(1) in properties && this.isPrimitiveExtension(parent, key, path)) &&
+        !isChoiceOfType(parent, key, properties)
       ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
@@ -182,12 +209,12 @@ class ResourceValidator {
    *   2) a JSON property with _ prepended to the name of the element, which, if present, contains the value's id and/or extensions
    *
    * See: https://hl7.org/fhir/json.html#primitive
-   * @param typedValue The parent value
+   * @param parent The parent value
    * @param key The property key to check
    * @param path The path to the property
    * @returns Whether the element is a primitive extension
    */
-  private isPrimitiveExtension(typedValue: TypedValue, key: string, path: string): boolean {
+  private isPrimitiveExtension(parent: TypedValue, key: string, path: string): boolean {
     // Primitive element starts with underscore
     if (!key.startsWith('_')) {
       return false;
@@ -195,7 +222,14 @@ class ResourceValidator {
 
     // Then validate the element
     //@TODO(mattwiller 2023-06-05): Move this to occur along with the rest of validation
-    this.validateObject({ type: 'Element', value: typedValue.value[key] }, getDataType('Element'), path);
+    const extensionProperty = parent.value[key];
+    if (Array.isArray(extensionProperty)) {
+      for (const ext of extensionProperty) {
+        this.validateObject({ type: 'Element', value: ext }, getDataType('Element'), path);
+      }
+    } else {
+      this.validateObject({ type: 'Element', value: extensionProperty }, getDataType('Element'), path);
+    }
     return true;
   }
 
@@ -205,9 +239,11 @@ class ResourceValidator {
     // First, make sure the value is the correct JS type
     const expectedType = fhirTypeToJsType[type];
     if (typeof value !== expectedType) {
-      this.issues.push(
-        createStructureIssue(path, `Invalid JSON type at ${path}: expected ${expectedType}, but got ${typeof value}`)
-      );
+      if (value !== null) {
+        this.issues.push(
+          createStructureIssue(path, `Invalid JSON type: expected ${expectedType}, but got ${typeof value}`)
+        );
+      }
       return;
     }
 
@@ -289,4 +325,28 @@ function getNestedProperty(value: TypedValue, key: string): (TypedValue | TypedV
     propertyValues = next;
   }
   return propertyValues;
+}
+
+function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
+  for (const [key, value] of Object.entries(obj)) {
+    const propertyPath = `${path}.${key}`;
+    const partnerKey = key.startsWith('_') ? key.slice(1) : `_${key}`;
+    if (value === null) {
+      issues.push(createStructureIssue(propertyPath, 'Invalid null value'));
+    } else if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        if (value[i] === undefined) {
+          issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid undefined value'));
+        } else if (value[i] === null && !(obj[partnerKey] as any)?.[i]) {
+          // This tests for the one case where `null` is allowed in FHIR JSON, where an array of primitive values
+          // has extensions for some but not all values
+          issues.push(createStructureIssue(`${propertyPath}[${i}]`, 'Invalid null value'));
+        } else if (value[i]) {
+          checkObjectForNull(value[i], `${propertyPath}[${i}]`, issues);
+        }
+      }
+    } else if (typeof value === 'object') {
+      checkObjectForNull(value as Record<string, unknown>, propertyPath, issues);
+    }
+  }
 }

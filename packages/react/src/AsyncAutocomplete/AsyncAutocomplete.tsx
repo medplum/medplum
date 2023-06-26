@@ -1,5 +1,7 @@
 import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import { killEvent } from '../utils/dom';
 
 export interface AsyncAutocompleteOption<T> extends SelectItem {
@@ -25,7 +27,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
-  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>(defaultItems?.map(toOption));
+  const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
 
   const lastValueRef = useRef<string>();
   lastValueRef.current = lastValue;
@@ -45,7 +47,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
-    const value = inputRef.current?.value?.trim() || '';
+    const value = inputRef.current?.value.trim() || '';
     if (value === lastValueRef.current) {
       // Nothing has changed, move on
       return;
@@ -69,7 +71,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           }
         }
       })
-      .catch(console.log);
+      .catch((err) => {
+        if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
+          showNotification({ color: 'red', message: normalizeErrorString(err) });
+        }
+      });
   }, [loadOptions, onChange, toOption]);
 
   const handleSearchChange = useCallback((): void => {

@@ -39,7 +39,7 @@ const HELP_TEXT = `# Welcome to Medplum GraphiQL
 `;
 
 const medplum = new MedplumClient({
-  baseUrl: process.env.MEDPLUM_BASE_URL,
+  baseUrl: import.meta.env.MEDPLUM_BASE_URL,
 });
 
 const theme: MantineThemeOverride = {
@@ -78,7 +78,7 @@ const medplumPlugin: GraphiQLPlugin = {
     <div>
       <p>Medplum GraphiQL</p>
       <p>User: {getDisplayString(medplum.getProfile() as ProfileResource)}</p>
-      <p>Project: {medplum.getActiveLogin()?.project?.display}</p>
+      <p>Project: {medplum.getActiveLogin()?.project.display}</p>
       <p>
         <a href="#" onClick={() => medplum.signOut().then(() => window.location.reload())}>
           Sign out
@@ -147,8 +147,8 @@ function App(): JSX.Element {
     <GraphiQL
       fetcher={fetcher}
       defaultQuery={HELP_TEXT}
-      query={parameters.query}
-      variables={parameters.variables}
+      query={parameters.query || undefined}
+      variables={parameters.variables || undefined}
       operationName={parameters.operationName || undefined}
       plugins={[medplumPlugin]}
       onEditQuery={onEditQuery}
@@ -156,7 +156,7 @@ function App(): JSX.Element {
       onEditOperationName={onEditOperationName}
     />
   ) : (
-    <SignInForm googleClientId={process.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
+    <SignInForm googleClientId={import.meta.env.GOOGLE_CLIENT_ID} onSuccess={() => undefined}>
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>
     </SignInForm>

@@ -131,8 +131,8 @@ export function parseSearchRequest<T extends Resource = Resource>(
   const queryArray: [string, string][] = [];
   for (const [key, value] of Object.entries(query)) {
     if (Array.isArray(value)) {
-      for (let i = 0; i < value.length; i++) {
-        queryArray.push([key, value[i]]);
+      for (const v of value) {
+        queryArray.push([key, v]);
       }
     } else {
       queryArray.push([key, value || '']);
@@ -158,6 +158,16 @@ export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchR
  */
 export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
   return parseSearchUrl<T>(new URL(url, 'https://example.com/'));
+}
+
+/**
+ * Parses a FHIR criteria string into a SearchRequest.
+ * FHIR criteria strings are found on resources such as Subscription.
+ * @param criteria The FHIR criteria string.
+ * @returns Parsed search definition.
+ */
+export function parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
+  return parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
 }
 
 function parseSearchImpl<T extends Resource = Resource>(
@@ -194,11 +204,11 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       break;
 
     case '_count':
-      searchRequest.count = parseInt(value);
+      searchRequest.count = parseInt(value, 10);
       break;
 
     case '_offset':
-      searchRequest.offset = parseInt(value);
+      searchRequest.offset = parseInt(value, 10);
       break;
 
     case '_total':
@@ -295,6 +305,8 @@ function parseParameter(
       break;
     case 'quantity':
       parseQuantity(searchRequest, searchParam, value);
+      break;
+    default:
       break;
   }
 }

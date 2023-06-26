@@ -88,8 +88,8 @@ function printMe(medplum: MedplumClient): void {
   const loginState = medplum.getActiveLogin();
   if (loginState) {
     console.log(`Server:  ${medplum.getBaseUrl()}`);
-    console.log(`Profile: ${loginState.profile?.display} (${loginState.profile?.reference})`);
-    console.log(`Project: ${loginState.project?.display} (${loginState.project?.reference})`);
+    console.log(`Profile: ${loginState.profile.display} (${loginState.profile.reference})`);
+    console.log(`Project: ${loginState.project.display} (${loginState.project.reference})`);
   } else {
     console.log('Not logged in');
   }

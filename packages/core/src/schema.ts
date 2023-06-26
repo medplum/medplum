@@ -292,7 +292,7 @@ export class FhirSchemaValidator<T extends Resource> {
     }
 
     // Try to get the regex
-    const valueDefinition = globalSchema.types[type]?.properties?.['value'];
+    const valueDefinition = globalSchema.types[type]?.properties['value'];
     if (valueDefinition?.type) {
       const regex = getExtensionValue(valueDefinition.type[0], 'http://hl7.org/fhir/StructureDefinition/regex');
       if (regex) {

@@ -61,8 +61,8 @@ export function FormPage(): JSX.Element {
         if (bundle.entry?.[0]?.response?.status !== '200') {
           setError(bundle.entry?.[0]?.response as OperationOutcome);
         } else {
-          setQuestionnaire(bundle.entry?.[0]?.resource as Questionnaire);
-          setSubject(bundle.entry?.[1]?.resource as Resource);
+          setQuestionnaire(bundle.entry[0]?.resource as Questionnaire);
+          setSubject(bundle.entry[1]?.resource as Resource);
         }
         setLoading(false);
       })

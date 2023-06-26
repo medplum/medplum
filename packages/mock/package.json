@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "description": "Medplum Mock Client",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -12,7 +12,7 @@
   },
   "scripts": {
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc --project tsconfig.build.json && rollup --config rollup.config.mjs",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "test": "jest"
   },
   "dependencies": {

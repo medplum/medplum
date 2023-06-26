@@ -29,7 +29,7 @@ describe('FHIR Bundle Download', () => {
 
   test('create a FHIR bundle from JSON File', () => {
     const transactionBundle = convertToTransactionBundle(jsonFile);
-    const firstEntry = transactionBundle?.entry?.[0];
+    const firstEntry = transactionBundle.entry?.[0];
     expect(firstEntry?.request?.url).toEqual('Patient');
   });
 });

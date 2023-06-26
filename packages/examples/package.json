@@ -1,6 +1,6 @@
 {
   "name": "@medplum/examples",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "description": "Medplum Code Examples",
   "author": "Medplum <hello@medplum.com>",
   "license": "Apache-2.0",
@@ -20,5 +20,13 @@
     "@medplum/fhirtypes": "*",
     "@medplum/mock": "*",
     "jest": "29.5.0"
+  },
+  "eslintConfig": {
+    "extends": [
+      "../eslint-config"
+    ],
+    "rules": {
+      "no-duplicate-imports": "off"
+    }
   }
 }

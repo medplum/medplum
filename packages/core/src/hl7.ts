@@ -277,13 +277,13 @@ export function parseHl7Date(hl7Date: string | undefined, options?: Hl7DateParse
 
   options = { ...{ seconds: true, tzOffset: 'Z' }, ...options };
 
-  const year = Number.parseInt(hl7Date.substring(0, 4));
-  const month = Number.parseInt(hl7Date.substring(4, 6));
-  const date = Number.parseInt(hl7Date.substring(6, 8));
-  const hours = Number.parseInt(hl7Date.substring(8, 10));
-  const minutes = Number.parseInt(hl7Date.substring(10, 12));
+  const year = Number.parseInt(hl7Date.substring(0, 4), 10);
+  const month = Number.parseInt(hl7Date.substring(4, 6), 10);
+  const date = Number.parseInt(hl7Date.substring(6, 8), 10);
+  const hours = Number.parseInt(hl7Date.substring(8, 10), 10);
+  const minutes = Number.parseInt(hl7Date.substring(10, 12), 10);
 
-  const seconds = options.seconds ? Number.parseInt(hl7Date.substring(12, 14)) : 0;
+  const seconds = options.seconds ? Number.parseInt(hl7Date.substring(12, 14), 10) : 0;
 
   return `${pad2(year)}-${pad2(month)}-${pad2(date)}T${pad2(hours)}:${pad2(minutes)}:${pad2(seconds)}.000${
     options.tzOffset

@@ -119,28 +119,26 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
           </Text>
         </div>
       )}
-      {value.resultsInterpreter &&
-        value.resultsInterpreter.map((interpreter) => (
-          <div key={interpreter.reference}>
-            <Text size="xs" transform="uppercase" color="dimmed">
-              Interpreter
-            </Text>
-            <Text>
-              <ResourceBadge value={interpreter} link={true} />
-            </Text>
-          </div>
-        ))}
-      {value.performer &&
-        value.performer.map((performer) => (
-          <div key={performer.reference}>
-            <Text size="xs" transform="uppercase" color="dimmed">
-              Performer
-            </Text>
-            <Text>
-              <ResourceBadge value={performer} link={true} />
-            </Text>
-          </div>
-        ))}
+      {value.resultsInterpreter?.map((interpreter) => (
+        <div key={interpreter.reference}>
+          <Text size="xs" transform="uppercase" color="dimmed">
+            Interpreter
+          </Text>
+          <Text>
+            <ResourceBadge value={interpreter} link={true} />
+          </Text>
+        </div>
+      ))}
+      {value.performer?.map((performer) => (
+        <div key={performer.reference}>
+          <Text size="xs" transform="uppercase" color="dimmed">
+            Performer
+          </Text>
+          <Text>
+            <ResourceBadge value={performer} link={true} />
+          </Text>
+        </div>
+      ))}
       {value.issued && (
         <div>
           <Text size="xs" transform="uppercase" color="dimmed">
@@ -231,7 +229,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
   if (!observation) {
     return null;
   }
-  const displayNotes = !props.hideObservationNotes && observation?.note;
+  const displayNotes = !props.hideObservationNotes && observation.note;
 
   const critical = isCritical(observation);
 
@@ -267,7 +265,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
         </td>
         <td>
           {observation.performer?.map((performer) => (
-            <ReferenceDisplay key={performer?.reference} value={performer} />
+            <ReferenceDisplay key={performer.reference} value={performer} />
           ))}
         </td>
         <td>{observation.status && <StatusBadge status={observation.status} />}</td>

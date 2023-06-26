@@ -1,6 +1,8 @@
 import {
   allOk,
   badRequest,
+  canReadResourceType,
+  canWriteResourceType,
   deepEquals,
   DEFAULT_SEARCH_COUNT,
   evalFhirPath,
@@ -23,14 +25,16 @@ import {
   isNotFound,
   isOk,
   isResource,
-  matchesSearchRequest,
+  matchesAccessPolicy,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
+  parseCriteriaAsSearchRequest,
   parseFilterParameter,
-  parseSearchUrl,
   PropertyType,
+  protectedResourceTypes,
+  publicResourceTypes,
   resolveId,
   SearchParameterDetails,
   SearchParameterType,
@@ -59,7 +63,6 @@ import {
 import { randomUUID } from 'crypto';
 import { Pool, PoolClient } from 'pg';
 import { applyPatch, Operation } from 'rfc6902';
-import { URL } from 'url';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getClient } from '../database';
@@ -177,31 +180,6 @@ export interface CacheEntry<T extends Resource = Resource> {
   resource: T;
   projectId: string;
 }
-
-/**
- * Public resource types are in the "public" project.
- * They are available to all users.
- */
-export const publicResourceTypes = [
-  'CapabilityStatement',
-  'CompartmentDefinition',
-  'ImplementationGuide',
-  'OperationDefinition',
-  'SearchParameter',
-  'StructureDefinition',
-];
-
-/**
- * Protected resource types are in the "medplum" project.
- * Reading and writing is limited to the system account.
- */
-export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
-
-/**
- * Project admin resource types are special resources that are only
- * accessible to project administrators.
- */
-export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -505,17 +483,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-
-    if (this.context.strictMode) {
-      validateResource(resource);
-      try {
-        experimentalValidateResource(resource);
-      } catch (err) {
-        logger.warn('Experimental validator error', err);
-      }
-    } else {
-      validateResourceWithJsonSchema(resource);
-    }
+    this.validate(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -549,7 +517,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     });
 
     const resultMeta = {
-      ...updated?.meta,
+      ...updated.meta,
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
@@ -586,6 +554,46 @@ export class Repository extends BaseRepository implements FhirRepository {
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
+  }
+
+  private validate(resource: Resource): void {
+    let currentErr, experimentErr;
+    let currentTime = 0n;
+    let experimentTime = 0n;
+    if (this.context.strictMode) {
+      try {
+        const start = process.hrtime.bigint();
+        validateResource(resource);
+        currentTime = process.hrtime.bigint() - start;
+      } catch (err) {
+        currentErr = err;
+      }
+      try {
+        const start = process.hrtime.bigint();
+        experimentalValidateResource(resource);
+        experimentTime = process.hrtime.bigint() - start;
+      } catch (err) {
+        experimentErr = err;
+      }
+
+      if (Boolean(currentErr) !== Boolean(experimentErr)) {
+        logger.warn(
+          `Experimental validator deviation on ${resource.resourceType}/${resource.id}: current=${currentErr}; next=${experimentErr}`
+        );
+      } else {
+        const MILLISECONDS = 1e6; // Conversion factor from ns to ms
+        const timeDiff = currentTime && experimentTime ? experimentTime - currentTime : 0n;
+        // Log if experiment is more than 25% / 0.5ms slower
+        if (timeDiff / currentTime > 0.25 && timeDiff > 0.5 * MILLISECONDS) {
+          logger.warn(`Experimental validator latency: current=${currentTime}; next=${experimentTime}`);
+        }
+      }
+      if (currentErr) {
+        throw currentErr as Error;
+      }
+    } else {
+      validateResourceWithJsonSchema(resource);
+    }
   }
 
   /**
@@ -815,6 +823,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         id,
         lastUpdated,
         deleted: true,
+        projectId: resource.meta?.project,
         compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
         content,
       };
@@ -1063,13 +1072,13 @@ export class Repository extends BaseRepository implements FhirRepository {
     const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
 
     const references = fhirPathResult
-      .filter((typedValue) => typedValue.type === PropertyType.Reference)
+      .filter((typedValue) => (typedValue.type as PropertyType) === PropertyType.Reference)
       .map((typedValue) => typedValue.value as Reference);
     const readResult = await this.readReferences(references);
     const includedResources = readResult.filter((e) => isResource(e as Resource | undefined)) as Resource[];
 
     const canonicalReferences = fhirPathResult
-      .filter((typedValue) => typedValue.type === PropertyType.canonical || typedValue.type === PropertyType.uri)
+      .filter((typedValue) => [PropertyType.canonical, PropertyType.uri].includes(typedValue.type as PropertyType))
       .map((typedValue) => typedValue.value as string);
     if (canonicalReferences.length > 0) {
       const canonicalSearches = (searchParam.target || []).map((resourceType) =>
@@ -1236,7 +1245,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       const queryPlan = row['QUERY PLAN'];
       const match = /rows=(\d+)/.exec(queryPlan);
       if (match) {
-        return parseInt(match[1]);
+        return parseInt(match[1], 10);
       }
     }
     return 0;
@@ -1301,7 +1310,7 @@ export class Repository extends BaseRepository implements FhirRepository {
           expressions.push(new Condition('compartments', Operator.ARRAY_CONTAINS, [policyCompartmentId], 'UUID[]'));
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
-          const searchRequest = this.parseCriteriaAsSearchRequest(policy.criteria);
+          const searchRequest = parseCriteriaAsSearchRequest(policy.criteria);
           const accessPolicyExpression = this.buildSearchExpression(builder, searchRequest);
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
@@ -1372,7 +1381,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resourceType = searchRequest.resourceType;
     let param = getSearchParameter(resourceType, filter.code);
-    if (!param || !param.code) {
+    if (!param?.code) {
       throw new OperationOutcomeError(badRequest(`Unknown search parameter: ${filter.code}`));
     }
 
@@ -1647,7 +1656,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     const resourceType = searchRequest.resourceType;
     const param = getSearchParameter(resourceType, sortRule.code);
-    if (!param || !param.code) {
+    if (!param?.code) {
       return;
     }
 
@@ -1678,6 +1687,7 @@ export class Repository extends BaseRepository implements FhirRepository {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
+      projectId: meta.project,
       compartments,
       content,
     };
@@ -1724,6 +1734,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     const result: Reference[] = [];
 
     if (resource.meta?.project) {
+      // Deprecated - to be removed
       result.push({ reference: 'Project/' + resource.meta.project });
     }
 
@@ -2096,7 +2107,7 @@ export class Repository extends BaseRepository implements FhirRepository {
 
     if (create && this.context.accessPolicy?.compartment) {
       // If the user access policy specifies a compartment, then use it as the account.
-      return this.context.accessPolicy?.compartment;
+      return this.context.accessPolicy.compartment;
     }
 
     if (updated.resourceType !== 'Patient') {
@@ -2105,7 +2116,7 @@ export class Repository extends BaseRepository implements FhirRepository {
         // If the resource is in a patient compartment, then lookup the patient.
         try {
           const patient = await systemRepo.readReference(patientRef);
-          if (patient?.meta?.account) {
+          if (patient.meta?.account) {
             // If the patient has an account, then use it as the resource account.
             return patient.meta.account;
           }
@@ -2158,14 +2169,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return canReadResourceType(this.context.accessPolicy, resourceType as ResourceType);
   }
 
   /**
@@ -2188,17 +2192,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (
-          this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType) &&
-          !resourcePolicy.readonly
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
+    return canWriteResourceType(this.context.accessPolicy, resourceType as ResourceType);
   }
 
   /**
@@ -2231,67 +2225,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!this.context.accessPolicy) {
       return true;
     }
-    if (this.context.accessPolicy.resource) {
-      for (const resourcePolicy of this.context.accessPolicy.resource) {
-        if (this.matchesAccessPolicyResourcePolicy(resource, resourcePolicy, readonlyMode)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Returns true if the resource satisfies the specified access policy resource policy.
-   * @param resource The resource.
-   * @param resourcePolicy One per-resource policy section from the access policy.
-   * @param readonlyMode True if the resource is being read.
-   * @returns True if the resource matches the access policy.
-   */
-  private matchesAccessPolicyResourcePolicy(
-    resource: Resource,
-    resourcePolicy: AccessPolicyResource,
-    readonlyMode: boolean
-  ): boolean {
-    const resourceType = resource.resourceType;
-    if (!this.matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-      return false;
-    }
-    if (!readonlyMode && resourcePolicy.readonly) {
-      return false;
-    }
-    if (
-      resourcePolicy.compartment &&
-      !resource.meta?.compartment?.find((c) => c.reference === resourcePolicy.compartment?.reference)
-    ) {
-      // Deprecated - to be removed
-      return false;
-    }
-    if (
-      resourcePolicy.criteria &&
-      !matchesSearchRequest(resource, this.parseCriteriaAsSearchRequest(resourcePolicy.criteria))
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  /**
-   * Returns true if the resource type matches the access policy resource type.
-   * @param accessPolicyResourceType The resource type from the access policy.
-   * @param resourceType The candidate resource resource type.
-   * @returns True if the resource type matches the access policy resource type.
-   */
-  private matchesAccessPolicyResourceType(accessPolicyResourceType: string | undefined, resourceType: string): boolean {
-    if (accessPolicyResourceType === resourceType) {
-      return true;
-    }
-    if (accessPolicyResourceType === '*' && !projectAdminResourceTypes.includes(resourceType)) {
-      // Project admin resource types are not allowed to be wildcarded
-      // Project admin resource types must be explicitly included
-      return true;
-    }
-    return false;
+    return matchesAccessPolicy(this.context.accessPolicy, resource, readonlyMode);
   }
 
   /**
@@ -2302,10 +2236,6 @@ export class Repository extends BaseRepository implements FhirRepository {
    */
   private isCacheOnly(resource: Resource): boolean {
     return resource.resourceType === 'Login' && (resource.authMethod === 'client' || resource.authMethod === 'execute');
-  }
-
-  private parseCriteriaAsSearchRequest(criteria: string): SearchRequest {
-    return parseSearchUrl(new URL(criteria, 'https://api.medplum.com/'));
   }
 
   /**
@@ -2451,14 +2381,14 @@ async function getCacheEntry<T extends Resource>(resourceType: string, id: strin
  * @param references Array of FHIR references.
  * @returns Array of cache entries or undefined.
  */
-async function getCacheEntries(references: Reference[]): Promise<(CacheEntry<Resource> | undefined)[]> {
+async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
   const referenceKeys = references.map((r) => r.reference as string);
   if (referenceKeys.length === 0) {
     // Return early to avoid calling mget() with no args, which is an error
     return [];
   }
   return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
-    cachedValue ? (JSON.parse(cachedValue) as CacheEntry<Resource>) : undefined
+    cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
   );
 }
 

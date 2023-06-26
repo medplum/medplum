@@ -334,9 +334,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <QuestionnaireChoiceRadioInput name={name} item={item} initial={initial} onChangeAnswer={onChangeAnswer} />
         );
       }
+    default:
+      return null;
   }
-
-  return null;
 }
 
 interface QuestionnaireChoiceInputProps {

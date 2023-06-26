@@ -111,13 +111,13 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                   step={1}
                   id="timing-dialog-period"
                   name="timing-dialog-period"
-                  defaultValue={value?.repeat?.period || 1}
-                  onChange={(e) => setPeriod(parseInt(e.currentTarget.value) || 1)}
+                  defaultValue={value.repeat.period || 1}
+                  onChange={(e) => setPeriod(parseInt(e.currentTarget.value, 10) || 1)}
                 />
                 <NativeSelect
                   id="timing-dialog-periodUnit"
                   name="timing-dialog-periodUnit"
-                  defaultValue={value?.repeat?.periodUnit}
+                  defaultValue={value.repeat.periodUnit}
                   onChange={(e) => setPeriodUnit(e.currentTarget.value as PeriodUnit | undefined)}
                   data={[
                     { label: 'second', value: 's' },
@@ -131,7 +131,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
                 />
               </Group>
             </FormSection>
-            {value.repeat?.periodUnit === 'wk' && (
+            {value.repeat.periodUnit === 'wk' && (
               <FormSection title="Repeat on">
                 <Chip.Group multiple onChange={setDaysOfWeek as (v: string[] | undefined) => void}>
                   <Group position="apart" mt="md" spacing="xs">

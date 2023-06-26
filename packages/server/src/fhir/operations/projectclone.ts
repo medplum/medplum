@@ -120,6 +120,8 @@ class ProjectCloner {
             resourceObj.description = `Default client for ${this.projectName}`;
           }
           break;
+        default:
+          return resourceObj;
       }
     }
 

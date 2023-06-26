@@ -55,21 +55,19 @@ export class FhirReferenceValidator<T extends Resource> {
         await this.checkPropertyValue(path, item);
       }
     } else {
-      return this.checkPropertyValue(path, value as TypedValue);
+      await this.checkPropertyValue(path, value as TypedValue);
     }
   }
 
   private async checkPropertyValue(path: string, typedValue: TypedValue): Promise<void> {
-    if (typedValue.type === PropertyType.Meta) {
+    if ((typedValue.type as PropertyType) === PropertyType.Meta) {
       return;
     }
-
-    if (typedValue.type === PropertyType.Reference) {
-      return this.checkReference(path, typedValue.value as Reference);
+    if ((typedValue.type as PropertyType) === PropertyType.Reference) {
+      await this.checkReference(path, typedValue.value as Reference);
     }
-
     if (typeof typedValue.value === 'object') {
-      return this.validateObject(path, typedValue);
+      await this.validateObject(path, typedValue);
     }
   }
 

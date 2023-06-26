@@ -58,7 +58,7 @@ export function ResourcePage(): JSX.Element | null {
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
-    const restoredResource = historyBundle?.entry?.find((e) => !!e.resource)?.resource;
+    const restoredResource = historyBundle.entry?.find((e) => !!e.resource)?.resource;
     if (restoredResource) {
       onSubmit(restoredResource);
     } else {
