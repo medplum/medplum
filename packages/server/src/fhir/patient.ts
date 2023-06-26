@@ -1,6 +1,13 @@
 import { createReference, evalFhirPath } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { CompartmentDefinition, CompartmentDefinitionResource, Patient, Reference, Resource } from '@medplum/fhirtypes';
+import {
+  CompartmentDefinition,
+  CompartmentDefinitionResource,
+  Patient,
+  Reference,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { getSearchParameter } from './structure';
 
 /**
@@ -90,4 +97,19 @@ function getPatientIdFromReference(reference: Reference): Reference<Patient> | u
     return reference as Reference<Patient>;
   }
   return undefined;
+}
+
+/**
+ * Returns the list of patient resource types.
+ * @returns List of all patient resource types
+ */
+export function getPatientResourceTypes(): ResourceType[] {
+  const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
+  const resourceTypes: ResourceType[] = [];
+  for (const resource of resourceList) {
+    if (resource.code) {
+      resourceTypes.push(resource.code);
+    }
+  }
+  return resourceTypes;
 }

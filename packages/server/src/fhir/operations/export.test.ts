@@ -1,3 +1,4 @@
+import { createReference } from '@medplum/core';
 import { BulkDataExportOutput, Observation, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -7,11 +8,10 @@ import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
-import { createReference } from '@medplum/core';
 
 const app = express();
 
-describe('System export', () => {
+describe('Export', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -99,12 +99,26 @@ describe('System export', () => {
     expect(JSON.parse(resourceJSON[0])?.subject?.reference).toEqual(`Patient/${res1.body.id}`);
   });
 
-  test('Accepted with GET', async () => {
+  test('System Export Accepted with GET', async () => {
     const accessToken = await initTestAuth();
 
     // Start the export
     const initRes = await request(app)
       .get('/fhir/R4/$export')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(initRes.status).toBe(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+  });
+
+  test('Patient Export Accepted with GET', async () => {
+    const accessToken = await initTestAuth();
+
+    // Start the export
+    const initRes = await request(app)
+      .get('/fhir/R4/Patient/$export')
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', 'application/fhir+json')
       .set('X-Medplum', 'extended')

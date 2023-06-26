@@ -13,7 +13,7 @@ import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
-import { bulkExportHandler } from './operations/export';
+import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { groupExportHandler } from './operations/groupexport';
 import { patientEverythingHandler } from './operations/patienteverything';
@@ -100,6 +100,9 @@ protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);
 
 // Group $export operation
 protectedRoutes.get('/Group/:id/([$]|%24)export', asyncWrap(groupExportHandler));
+
+// Patient $export operation
+protectedRoutes.get('/Patient/([$]|%24)export', asyncWrap(patientExportHandler));
 
 // Bulk Data
 protectedRoutes.use('/bulkdata', bulkDataRouter);
