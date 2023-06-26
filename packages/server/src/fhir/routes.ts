@@ -90,10 +90,14 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
-protectedRoutes.get('/Bot/([$]|%24)execute', executeHandler);
-protectedRoutes.get('/Bot/:id/([$]|%24)execute', executeHandler);
-protectedRoutes.post('/Bot/([$]|%24)execute', executeHandler);
-protectedRoutes.post('/Bot/:id/([$]|%24)execute', executeHandler);
+const botPaths = [
+  '/Bot/([$]|%24)execute',
+  '/Bot/:id/([$]|%24)execute',
+  '/Bot/([$]|%24)execute/*',
+  '/Bot/:id/([$]|%24)execute/*',
+];
+protectedRoutes.get(botPaths, executeHandler);
+protectedRoutes.post(botPaths, executeHandler);
 
 // Bot $deploy operation
 protectedRoutes.post('/Bot/:id/([$]|%24)deploy', deployHandler);

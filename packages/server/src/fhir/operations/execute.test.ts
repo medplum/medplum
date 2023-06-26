@@ -233,4 +233,14 @@ describe('Execute', () => {
     expect(res.status).toBe(200);
     expect(res.body.foo).toBe('bar');
   });
+
+  test('POST request with extra path', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute/RequestGroup`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({ foo: 'bar' });
+    expect(res.status).toBe(200);
+    expect(res.body.foo).toBe('bar');
+  });
 });
