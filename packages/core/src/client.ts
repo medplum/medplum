@@ -2411,23 +2411,27 @@ export class MedplumClient extends EventTarget {
       return undefined as unknown as T;
     }
 
-    if (response.status === 404) {
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/fhir+json')) {
-        throw new OperationOutcomeError(notFound);
-      }
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType?.includes('json');
+
+    if (response.status === 404 && !isJson) {
+      throw new OperationOutcomeError(notFound);
     }
+
     let obj: any = undefined;
-    try {
-      obj = await response.json();
-    } catch (err) {
-      console.error('Error parsing response', response.status, err);
-      throw err;
+    if (isJson) {
+      try {
+        obj = await response.json();
+      } catch (err) {
+        console.error('Error parsing response', response.status, err);
+        throw err;
+      }
     }
 
     if (response.status >= 400) {
       throw new OperationOutcomeError(normalizeOperationOutcome(obj));
     }
+
     return obj;
   }
 
