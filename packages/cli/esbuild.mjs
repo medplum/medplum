@@ -31,6 +31,7 @@ const options = {
     'readline',
     'tar',
   ],
+  banner: { js: '#!/usr/bin/env node' },
 };
 
 esbuild
