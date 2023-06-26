@@ -2181,6 +2181,79 @@ describe('Client', () => {
       expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
     });
   });
+
+  describe('Prefer async', () => {
+    test('Follow Content-Location', async () => {
+      const fetch = jest.fn();
+
+      // First time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'content-location') {
+              return 'https://example.com/content-location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Second time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'content-location') {
+              return 'https://example.com/content-location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Third time, return 201 Created with Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 201,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'location') {
+              return 'https://example.com/location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Fourth time, return 200 with JSON
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 201,
+        headers: { get: () => 'application/fhir+json' },
+        json: async () => ({ resourceType: 'Patient' }),
+      }));
+
+      const client = new MedplumClient({ fetch });
+      const response = await client.startAsyncRequest('/test', { method: 'POST', body: '{}' });
+      expect(fetch).toHaveBeenCalledTimes(4);
+      expect((response as any).resourceType).toEqual('Patient');
+    });
+  });
 });
 
 function createPdf(
