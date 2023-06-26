@@ -9,7 +9,7 @@ storybook-static/
 .env
 .env.defaults
 babel.config.json
+esbuild.mjs
 jest.config.json
-rollup.config.mjs
 tsconfig.build.json
 tsconfig.json

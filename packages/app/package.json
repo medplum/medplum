@@ -16,10 +16,8 @@
   ],
   "scripts": {
     "clean": "rimraf dist",
-    "dev": "webpack serve --mode development",
-    "build": "npm run clean && tsc && cross-env NODE_ENV=production webpack --mode production",
-    "debug": "webpack --mode development",
-    "start": "http-server dist --port 3000 --proxy http://localhost:3000?",
+    "dev": "vite",
+    "build": "npm run clean && tsc && vite build",
     "test": "jest",
     "source-map-explorer": "source-map-explorer dist/**/*.js --gzip"
   },
@@ -41,19 +39,11 @@
     "@types/react": "18.2.13",
     "@types/react-dom": "18.2.6",
     "@types/react-router-dom": "5.3.3",
-    "babel-loader": "9.1.2",
-    "copy-webpack-plugin": "11.0.0",
-    "css-loader": "6.8.1",
-    "dotenv-webpack": "8.0.1",
-    "html-webpack-plugin": "5.5.3",
-    "http-server": "14.1.1",
-    "identity-obj-proxy": "3.0.0",
-    "mini-css-extract-plugin": "2.7.6",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.13.0",
-    "webpack-manifest-plugin": "5.0.0",
-    "workbox-webpack-plugin": "7.0.0"
+    "vite": "4.3.9",
+    "vite-plugin-pwa": "0.16.4"
   },
   "browserslist": [
     "last 1 Chrome versions"
