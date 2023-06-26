@@ -483,17 +483,7 @@ export class Repository extends BaseRepository implements FhirRepository {
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-
-    if (this.context.strictMode) {
-      validateResource(resource);
-      try {
-        experimentalValidateResource(resource);
-      } catch (err) {
-        logger.warn('Experimental validator error', err);
-      }
-    } else {
-      validateResourceWithJsonSchema(resource);
-    }
+    this.validate(resource);
 
     if (this.context.checkReferencesOnWrite) {
       await validateReferences(this, resource);
@@ -564,6 +554,46 @@ export class Repository extends BaseRepository implements FhirRepository {
     await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
+  }
+
+  private validate(resource: Resource): void {
+    let currentErr, experimentErr;
+    let currentTime = 0n;
+    let experimentTime = 0n;
+    if (this.context.strictMode) {
+      try {
+        const start = process.hrtime.bigint();
+        validateResource(resource);
+        currentTime = process.hrtime.bigint() - start;
+      } catch (err) {
+        currentErr = err;
+      }
+      try {
+        const start = process.hrtime.bigint();
+        experimentalValidateResource(resource);
+        experimentTime = process.hrtime.bigint() - start;
+      } catch (err) {
+        experimentErr = err;
+      }
+
+      if (Boolean(currentErr) !== Boolean(experimentErr)) {
+        logger.warn(
+          `Experimental validator deviation on ${resource.resourceType}/${resource.id}: current=${currentErr}; next=${experimentErr}`
+        );
+      } else {
+        const MILLISECONDS = 1e6; // Conversion factor from ns to ms
+        const timeDiff = currentTime && experimentTime ? experimentTime - currentTime : 0n;
+        // Log if experiment is more than 25% / 0.5ms slower
+        if (timeDiff / currentTime > 0.25 && timeDiff > 0.5 * MILLISECONDS) {
+          logger.warn(`Experimental validator latency: current=${currentTime}; next=${experimentTime}`);
+        }
+      }
+      if (currentErr) {
+        throw currentErr as Error;
+      }
+    } else {
+      validateResourceWithJsonSchema(resource);
+    }
   }
 
   /**
