@@ -17,6 +17,7 @@ const options = {
   target: 'es2021',
   tsconfig: 'tsconfig.json',
   minify: true,
+  sourcemap: true,
   define: {
     'process.env.NODE_ENV': '"production"',
     'process.env.GOOGLE_AUTH_ORIGINS': `"${process.env.GOOGLE_AUTH_ORIGINS}"`,
