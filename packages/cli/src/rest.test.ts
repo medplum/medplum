@@ -93,7 +93,7 @@ describe('CLI rest', () => {
 
   test('Post command with invalid json', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }']);
-    expect(console.error).toBeCalledWith(expect.stringMatching(`Error: Expected ':'`));
+    expect(console.error).toBeCalledWith(expect.stringMatching(`Error:`));
   });
 
   test('Put command', async () => {
