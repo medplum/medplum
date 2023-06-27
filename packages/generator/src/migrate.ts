@@ -9,12 +9,22 @@ import {
   isResourceTypeSchema,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { FileBuilder } from './filebuilder';
 
-const searchParams = readJson('fhir/r4/search-parameters.json');
+const searchParams: SearchParameter[] = [];
+for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
+  if (entry.resource) {
+    searchParams.push(entry.resource);
+  }
+}
+for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
+  if (entry.resource) {
+    searchParams.push(entry.resource);
+  }
+}
 const builder = new FileBuilder();
 
 export function main(): void {
@@ -127,9 +137,8 @@ function buildCreateTables(b: FileBuilder, resourceType: string, fhirType: TypeS
 
 function buildSearchColumns(resourceType: string): string[] {
   const result: string[] = [];
-  for (const entry of searchParams.entry) {
-    const searchParam = entry.resource;
-    if (!searchParam.base?.includes(resourceType)) {
+  for (const searchParam of searchParams) {
+    if (!searchParam.base?.includes(resourceType as ResourceType)) {
       continue;
     }
 

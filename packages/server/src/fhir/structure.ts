@@ -21,7 +21,7 @@ export function getStructureDefinitions(): IndexedStructureDefinition {
     loadDataTypes(dataTypes);
     loadDataTypes(resourceTypes);
     loadDataTypes(medplumTypes);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    buildSearchParameters();
     loaded = true;
   }
   return globalSchema;
@@ -33,4 +33,9 @@ export function getSearchParameters(resourceType: string): Record<string, Search
 
 export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
   return getSearchParameters(resourceType)?.[code];
+}
+
+function buildSearchParameters(): void {
+  indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+  indexSearchParameterBundle(readJson('fhir/r4/search-parameters-medplum.json') as Bundle<SearchParameter>);
 }

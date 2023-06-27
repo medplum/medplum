@@ -250,11 +250,7 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
-  if (!searchParam.base) {
-    return;
-  }
-
-  for (const resourceType of searchParam.base) {
+  for (const resourceType of searchParam.base ?? []) {
     const typeSchema = globalSchema.types[resourceType];
     if (!typeSchema) {
       continue;

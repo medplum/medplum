@@ -1,6 +1,3 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, render, screen, waitFor } from '@testing-library/react';
@@ -29,12 +26,6 @@ describe('BulkAppPage', () => {
       );
     });
   }
-
-  beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-  });
 
   test('Patient apps', async () => {
     await setup('/bulk/Patient?ids=123,456');
