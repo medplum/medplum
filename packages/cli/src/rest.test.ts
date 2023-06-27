@@ -63,6 +63,17 @@ describe('CLI rest', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
+  test('Get command with fhir-url-path flag', async () => {
+    const medplumGetSpy = jest.spyOn(medplum, 'get').mockImplementation((): any => {
+      return {
+        text: jest.fn(),
+      };
+    });
+
+    await main(['node', 'index.js', 'get', `Patient`, '--fhir-url-path', 'fhirpathtest']);
+    expect(medplumGetSpy).toBeCalledWith('fhirpathtest/Patient');
+  });
+
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
