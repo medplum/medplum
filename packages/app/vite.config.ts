@@ -1,7 +1,12 @@
 /// <reference types="vite/client" />
 import react from '@vitejs/plugin-react';
+import { copyFileSync, existsSync } from 'fs';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+if (!existsSync('.env')) {
+  copyFileSync('.env.defaults', '.env');
+}
 
 export default defineConfig({
   envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
