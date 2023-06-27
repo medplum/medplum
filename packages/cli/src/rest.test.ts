@@ -86,6 +86,16 @@ describe('CLI rest', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
   });
 
+  test('Post command with empty body', async () => {
+    await main(['node', 'index.js', 'post', 'Patient', '']);
+    expect(console.error).toBeCalledWith(expect.stringMatching(`Error: Cannot read properties of undefined`));
+  });
+
+  test('Post command with invalid json', async () => {
+    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }']);
+    expect(console.error).toBeCalledWith(expect.stringMatching(`Error: Expected ':'`));
+  });
+
   test('Put command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'put', `Patient/${patient.id}`, JSON.stringify({ ...patient, gender: 'male' })]);
