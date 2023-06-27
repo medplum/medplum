@@ -90,6 +90,7 @@ protectedRoutes.get('/ValueSet/([$]|%24)expand', expandOperator);
 protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 
 // Bot $execute operation
+// Allow extra path content after the "$execute" to support external callers who append path info
 const botPaths = [
   '/Bot/([$]|%24)execute',
   '/Bot/:id/([$]|%24)execute',
