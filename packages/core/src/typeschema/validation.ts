@@ -1,10 +1,17 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { ElementValidator, getDataType, parseStructureDefinition, InternalTypeSchema } from './types';
-import { OperationOutcomeError, validationError } from '../outcomes';
+import {
+  ElementValidator,
+  getDataType,
+  parseStructureDefinition,
+  InternalTypeSchema,
+  SliceDefinition,
+  SliceDiscriminator,
+} from './types';
+import { OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
-import { deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
+import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -149,9 +156,41 @@ class ResourceValidator {
         );
       }
 
-      this.checkSpecifiedValue(value, element, path);
-      for (const value of values) {
+      if (!matchesSpecifiedValue(value, element)) {
+        this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
+      }
+      const sliceCounts: Record<string, number> = Object.fromEntries(
+        element.slicing?.slices.map((s) => [s.name, 0]) ?? []
+      );
+      nextValue: for (const value of values) {
         this.checkPropertyValue(value, path);
+        if (element.slicing) {
+          nextSlice: for (const slice of element.slicing.slices) {
+            for (const discriminator of element.slicing.discriminator) {
+              const discrimValues = arrayify(getNestedProperty(value, discriminator.path));
+              if (!discrimValues) {
+                continue nextValue;
+              }
+              if (!discrimValues.some((v) => matchDiscriminant(v, discriminator, slice))) {
+                continue nextSlice;
+              }
+            }
+            sliceCounts[slice.name] += 1;
+          }
+        }
+      }
+      for (const slice of element.slicing?.slices ?? []) {
+        const sliceCardinality = sliceCounts[slice.name];
+        if (sliceCardinality < slice.min || sliceCardinality > slice.max) {
+          this.issues.push(
+            createStructureIssue(
+              path,
+              `Incorrect number of values provided for slice '${slice.name}': expected ${slice.min}..${
+                Number.isFinite(slice.max) ? slice.max : '*'
+              }, but found ${sliceCardinality}`
+            )
+          );
+        }
       }
     }
   }
@@ -171,14 +210,6 @@ class ResourceValidator {
       return false;
     }
     return true;
-  }
-
-  private checkSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
-    if (element.pattern && !deepIncludes(value, element.pattern)) {
-      this.issues.push(createStructureIssue(path, 'Pattern fields need to be included in element definition'));
-    } else if (element.fixed && !deepEquals(value, element.fixed)) {
-      this.issues.push(createStructureIssue(path, 'Fixed needs exact match to element definition'));
-    }
   }
 
   private checkPropertyValue(value: TypedValue, path: string): void {
@@ -359,4 +390,46 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
       checkObjectForNull(value as Record<string, unknown>, propertyPath, issues);
     }
   }
+}
+
+function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator): boolean {
+  if (element.pattern && !deepIncludes(value, element.pattern)) {
+    return false;
+  } else if (element.fixed && !deepEquals(value, element.fixed)) {
+    return false;
+  }
+  return true;
+}
+
+function matchDiscriminant(
+  value: TypedValue | TypedValue[] | undefined,
+  discriminator: SliceDiscriminator,
+  slice: SliceDefinition
+): boolean {
+  const element = slice.fields[discriminator.path];
+  switch (discriminator.type) {
+    case 'value':
+    case 'pattern':
+      if (!element) {
+        throw new OperationOutcomeError(
+          serverError(new Error(`Failed to match slicing discriminator at ${discriminator.path}`))
+        );
+      } else if (!value) {
+        return false;
+      } else if (matchesSpecifiedValue(value, element)) {
+        return true;
+      }
+      break;
+    case 'exists':
+      if (slice.min === 0 && slice.max === 0 && !value) {
+        return true;
+      } else if (slice.min > 0 && value) {
+        return true;
+      }
+      break;
+    case 'type':
+      break;
+  }
+  // Default to no match
+  return false;
 }

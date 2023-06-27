@@ -796,3 +796,13 @@ export function findResourceByCode(
       : getCodeBySystem(r.code || {}, system) === getCodeBySystem(code, system)
   );
 }
+
+export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
+  if (!value) {
+    return undefined;
+  } else if (Array.isArray(value)) {
+    return value;
+  } else {
+    return [value];
+  }
+}
