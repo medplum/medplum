@@ -106,6 +106,7 @@ function mockFetch(url: string, options: any): Promise<any> {
   return Promise.resolve({
     status,
     ok: status < 400,
+    headers: { get: () => 'application/fhir+json' },
     json: () => Promise.resolve(response),
   });
 }

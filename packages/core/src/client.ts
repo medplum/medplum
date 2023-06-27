@@ -2309,18 +2309,9 @@ export class MedplumClient extends EventTarget {
     const response = await this.fetchWithRetry(url, options);
 
     if (response.status === 202) {
-      // Accepted content location can come from multiple sources
-      // The authoritative source is the "Content-Location" HTTP header.
-      const contentLocation = response.headers.get('content-location');
+      const contentLocation = await tryGetContentLocation(response);
       if (contentLocation) {
         return this.pollStatus(contentLocation);
-      }
-
-      // However, "Content-Location" may not be available due to CORS limitations.
-      // In this case, we use the OperationOutcome.diagnostics field.
-      const body = await response.json();
-      if (isOperationOutcome(body) && body.issue?.[0]?.diagnostics) {
-        return this.pollStatus(body.issue[0].diagnostics);
       }
     }
 
@@ -2420,29 +2411,33 @@ export class MedplumClient extends EventTarget {
       return undefined as unknown as T;
     }
 
-    if (response.status === 404) {
-      const contentType = response.headers.get('content-type');
-      if (!contentType?.includes('application/fhir+json')) {
-        throw new OperationOutcomeError(notFound);
-      }
+    const contentType = response.headers.get('content-type');
+    const isJson = contentType?.includes('json');
+
+    if (response.status === 404 && !isJson) {
+      throw new OperationOutcomeError(notFound);
     }
+
     let obj: any = undefined;
-    try {
-      obj = await response.json();
-    } catch (err) {
-      console.error('Error parsing response', response.status, err);
-      throw err;
+    if (isJson) {
+      try {
+        obj = await response.json();
+      } catch (err) {
+        console.error('Error parsing response', response.status, err);
+        throw err;
+      }
     }
 
     if (response.status >= 400) {
       throw new OperationOutcomeError(normalizeOperationOutcome(obj));
     }
+
     return obj;
   }
 
   private async fetchWithRetry(url: string, options: RequestInit): Promise<Response> {
     if (!url.startsWith('http')) {
-      url = this.baseUrl + url;
+      url = new URL(url, this.baseUrl).href;
     }
 
     const maxRetries = 3;
@@ -2476,6 +2471,13 @@ export class MedplumClient extends EventTarget {
       if (statusResponse.status !== 202) {
         checkStatus = false;
         resultResponse = statusResponse;
+
+        if (statusResponse.status === 201) {
+          const contentLocation = await tryGetContentLocation(statusResponse);
+          if (contentLocation) {
+            resultResponse = await this.fetchWithRetry(contentLocation, fetchOptions);
+          }
+        }
       }
       await new Promise((resolve) => {
         setTimeout(resolve, retryDelay);
@@ -2899,4 +2901,44 @@ function ensureTrailingSlash(url: string | undefined): string | undefined {
     return url;
   }
   return url.endsWith('/') ? url : url + '/';
+}
+
+/**
+ * Attempts to retrieve the content location from the given HTTP response.
+ *
+ * This function prioritizes the "Content-Location" HTTP header as the
+ * most authoritative source for the content location. If this header is
+ * not present, it falls back to the "Location" HTTP header.
+ *
+ * In cases where neither of these headers are available (for instance,
+ * due to CORS restrictions), it attempts to retrieve the content location
+ * from the 'diagnostics' field of the first issue in an OperationOutcome object
+ * present in the response body. If all attempts fail, the function returns 'undefined'.
+ * @async
+ * @param response The HTTP response object from which to extract the content location.
+ * @returns A Promise that resolves to the content location string if it is found, or 'undefined' if the content location cannot be determined from the response.
+ */
+async function tryGetContentLocation(response: Response): Promise<string | undefined> {
+  // Accepted content location can come from multiple sources
+  // The authoritative source is the "Content-Location" HTTP header.
+  const contentLocation = response.headers.get('content-location');
+  if (contentLocation) {
+    return contentLocation;
+  }
+
+  // The next best source is the "Location" HTTP header.
+  const location = response.headers.get('location');
+  if (location) {
+    return location;
+  }
+
+  // However, "Content-Location" may not be available due to CORS limitations.
+  // In this case, we use the OperationOutcome.diagnostics field.
+  const body = await response.json();
+  if (isOperationOutcome(body) && body.issue?.[0]?.diagnostics) {
+    return body.issue[0].diagnostics;
+  }
+
+  // If all else fails, return undefined.
+  return undefined;
 }

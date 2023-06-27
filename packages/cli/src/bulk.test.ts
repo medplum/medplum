@@ -1,7 +1,7 @@
 import { created, MedplumClient } from '@medplum/core';
 import { main } from '.';
-import { getUnsupportedExtension } from './utils';
 import { createMedplumClient } from './util/client';
+import { getUnsupportedExtension } from './utils';
 
 const testLineOutput = [
   `{"resourceType":"Patient", "id":"1111111"}`,
@@ -51,6 +51,7 @@ describe('CLI Bulk Commands', () => {
         if (url.includes('/$export?_since=200')) {
           return {
             status: 200,
+            headers: { get: () => 'application/fhir+json' },
             json: jest.fn(async () => {
               return {
                 resourceType: 'OperationOutcome',
@@ -90,6 +91,7 @@ describe('CLI Bulk Commands', () => {
             headers: {
               get(name: string): string | undefined {
                 return {
+                  'content-type': 'application/fhir+json',
                   'content-location': 'bulkdata/id/status',
                 }[name];
               },
@@ -102,6 +104,7 @@ describe('CLI Bulk Commands', () => {
             count++;
             return {
               status: 202,
+              headers: { get: () => 'application/fhir+json' },
               json: jest.fn(async () => {
                 return {};
               }),
@@ -111,6 +114,7 @@ describe('CLI Bulk Commands', () => {
 
         return {
           status: 200,
+          headers: { get: () => 'application/fhir+json' },
           json: jest.fn(async () => ({
             transactionTime: '2023-05-18T22:55:31.280Z',
             request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
@@ -182,6 +186,7 @@ describe('CLI Bulk Commands', () => {
       fetch = jest.fn(async () => {
         return {
           status: 200,
+          headers: { get: () => 'application/fhir+json' },
           json: jest.fn(async () => ({
             resourceType: 'Bundle',
             type: 'transaction-response',

@@ -1777,6 +1777,7 @@ describe('Client', () => {
   test('setAccessToken', async () => {
     const fetch = jest.fn(async () => ({
       status: 200,
+      headers: { get: () => 'application/fhir+json' },
       json: async () => ({ resourceType: 'Patient' }),
     }));
 
@@ -1941,6 +1942,7 @@ describe('Client', () => {
       }
       return {
         status: 200,
+        headers: { get: () => 'application/fhir+json' },
         json: async () => ({ resourceType: 'Patient' }),
       };
     });
@@ -1968,8 +1970,10 @@ describe('Client', () => {
   });
 
   test('Log non-JSON response', async () => {
+    // Handle the ugly case where server returns JSON header but non-JSON body
     const fetch = jest.fn(async () => ({
       status: 200,
+      headers: { get: () => 'application/json' },
       json: () => Promise.reject(new Error('Not JSON')),
     }));
     console.error = jest.fn();
@@ -1992,6 +1996,7 @@ describe('Client', () => {
         if (url.includes('/$export?_since=200')) {
           return {
             status: 200,
+            headers: { get: () => 'application/fhir+json' },
             json: jest.fn(async () => {
               return {
                 resourceType: 'OperationOutcome',
@@ -2031,6 +2036,7 @@ describe('Client', () => {
             headers: {
               get(name: string): string | undefined {
                 return {
+                  'content-type': 'application/fhir+json',
                   'content-location': 'bulkdata/id/status',
                 }[name];
               },
@@ -2052,6 +2058,7 @@ describe('Client', () => {
 
         return {
           status: 200,
+          headers: { get: () => 'application/fhir+json' },
           json: jest.fn(async () => ({
             transactionTime: '2023-05-18T22:55:31.280Z',
             request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
@@ -2137,7 +2144,7 @@ describe('Client', () => {
             };
           }),
           headers: {
-            get: jest.fn(),
+            get: (key: string) => (key === 'content-type' ? 'application/fhir+json' : null),
           },
         };
       });
@@ -2179,6 +2186,79 @@ describe('Client', () => {
 
       expect(retrievedMedia.id).toEqual(media.id);
       expect(retrievedMedia.content?.contentType).toEqual(media.content?.contentType);
+    });
+  });
+
+  describe('Prefer async', () => {
+    test('Follow Content-Location', async () => {
+      const fetch = jest.fn();
+
+      // First time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'content-location') {
+              return 'https://example.com/content-location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Second time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 202,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'content-location') {
+              return 'https://example.com/content-location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Third time, return 201 Created with Location
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 201,
+        headers: {
+          get: (key: string) => {
+            if (key.toLowerCase() === 'location') {
+              return 'https://example.com/location/1';
+            }
+            if (key.toLowerCase() === 'content-type') {
+              return 'application/fhir+json';
+            }
+            return null;
+          },
+        },
+        json: async () => ({}),
+      }));
+
+      // Fourth time, return 200 with JSON
+      fetch.mockImplementationOnce(async () => ({
+        ok: true,
+        status: 201,
+        headers: { get: () => 'application/fhir+json' },
+        json: async () => ({ resourceType: 'Patient' }),
+      }));
+
+      const client = new MedplumClient({ fetch });
+      const response = await client.startAsyncRequest('/test', { method: 'POST', body: '{}' });
+      expect(fetch).toHaveBeenCalledTimes(4);
+      expect((response as any).resourceType).toEqual('Patient');
     });
   });
 });
