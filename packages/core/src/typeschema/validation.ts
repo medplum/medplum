@@ -10,7 +10,7 @@ import {
 } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
-import { getTypedPropertyValue } from '../fhirpath';
+import { evalFhirPathTyped, getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
@@ -243,6 +243,22 @@ class ResourceValidator {
         !isChoiceOfType(parent, key, properties)
       ) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
+      }
+    }
+  }
+
+  private constraintsCheck(value: TypedValue | TypedValue[], element: ElementValidator, path: string): void {
+    const constraints = element.constraints;
+    const arrayValue = Array.isArray(value) ? value : [value];
+    for (const constraint of constraints) {
+      if (constraint.key !== 'error' || constraint.key in skippedConstraintKeys) {
+        continue;
+      } else {
+        const expression = evalFhirPathTyped(constraint.expression, arrayValue);
+        if (!expression) {
+          this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed`));
+          return;
+        }
       }
     }
   }
