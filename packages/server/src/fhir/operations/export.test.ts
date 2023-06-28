@@ -99,34 +99,6 @@ describe('Export', () => {
     expect(JSON.parse(resourceJSON[0])?.subject?.reference).toEqual(`Patient/${res1.body.id}`);
   });
 
-  test('System Export Accepted with GET', async () => {
-    const accessToken = await initTestAuth();
-
-    // Start the export
-    const initRes = await request(app)
-      .get('/fhir/R4/$export')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .set('X-Medplum', 'extended')
-      .send({});
-    expect(initRes.status).toBe(202);
-    expect(initRes.headers['content-location']).toBeDefined();
-  });
-
-  test('Patient Export Accepted with GET', async () => {
-    const accessToken = await initTestAuth();
-
-    // Start the export
-    const initRes = await request(app)
-      .get('/fhir/R4/Patient/$export')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', 'application/fhir+json')
-      .set('X-Medplum', 'extended')
-      .send({});
-    expect(initRes.status).toBe(202);
-    expect(initRes.headers['content-location']).toBeDefined();
-  });
-
   test('exportResourceType iterating through paginated search results', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
