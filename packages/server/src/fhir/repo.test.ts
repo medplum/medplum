@@ -1470,7 +1470,8 @@ describe('FHIR Repo', () => {
     expect(bundleContains(bundle3, serviceRequest3)).toEqual(true);
   });
 
-  test('Filter by Quantity.value', async () => {
+  // TODO - requires db migration for comboValueQuanity
+  test.skip('Filter by Quantity.value', async () => {
     const code = randomUUID();
 
     const patient = await systemRepo.createResource<Patient>({

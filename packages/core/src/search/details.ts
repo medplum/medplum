@@ -7,10 +7,10 @@ import {
   FunctionAtom,
   IndexerAtom,
   IsAtom,
-  UnionAtom,
   parseFhirPath,
+  UnionAtom,
 } from '../fhirpath';
-import { PropertyType, buildTypeName, getElementDefinition, globalSchema } from '../types';
+import { buildTypeName, getElementDefinition, globalSchema, PropertyType } from '../types';
 import { capitalize } from '../utils';
 
 export enum SearchParameterType {
@@ -186,11 +186,7 @@ function convertCodeToColumnName(code: string): string {
 function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set<string>): SearchParameterType {
   switch (searchParam.type) {
     case 'date':
-      // if (propertyType === PropertyType.date) {
-      if (propertyTypes.has(PropertyType.date)) {
-        if (propertyTypes.size > 1) {
-          console.log('too many property types', searchParam.code, searchParam.type, propertyTypes, searchParam.base);
-        }
+      if (propertyTypes.size === 1 && propertyTypes.has(PropertyType.date)) {
         return SearchParameterType.DATE;
       } else {
         return SearchParameterType.DATETIME;
@@ -200,21 +196,13 @@ function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set
     case 'quantity':
       return SearchParameterType.QUANTITY;
     case 'reference':
-      // if (propertyType === PropertyType.canonical) {
       if (propertyTypes.has(PropertyType.canonical)) {
-        if (propertyTypes.size > 1) {
-          console.log('too many property types', searchParam.code, searchParam.type, propertyTypes, searchParam.base);
-        }
         return SearchParameterType.CANONICAL;
       } else {
         return SearchParameterType.REFERENCE;
       }
     case 'token':
-      // if (propertyType === PropertyType.boolean) {
-      if (propertyTypes.has(PropertyType.boolean)) {
-        if (propertyTypes.size > 1) {
-          console.log('too many property types', searchParam.code, searchParam.type, propertyTypes, searchParam.base);
-        }
+      if (propertyTypes.size === 1 && propertyTypes.has(PropertyType.boolean)) {
         return SearchParameterType.BOOLEAN;
       } else {
         return SearchParameterType.TEXT;
@@ -229,6 +217,14 @@ export function getExpressionsForResourceType(resourceType: string, expression: 
   const fhirPathExpression = parseFhirPath(expression);
   buildExpressionsForResourceType(resourceType, fhirPathExpression.child, result);
   return result;
+}
+
+export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
+  const atoms = getExpressionsForResourceType(resourceType, expression);
+  if (atoms.length === 0) {
+    return undefined;
+  }
+  return atoms.map((atom) => atom.toString()).join(' | ');
 }
 
 function buildExpressionsForResourceType(resourceType: string, atom: Atom, result: Atom[]): void {
