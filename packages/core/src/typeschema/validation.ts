@@ -428,7 +428,13 @@ function matchDiscriminant(
       }
       break;
     case 'type':
-      break;
+      if (!value) {
+        return false;
+      } else if (Array.isArray(value)) {
+        return value.some((v) => element.type.some((t) => t.code === v.type));
+      } else {
+        return element.type.some((t) => t.code === value.type);
+      }
   }
   // Default to no match
   return false;
