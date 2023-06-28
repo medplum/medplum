@@ -1,0 +1,1566 @@
+{
+	"info": {
+		"_postman_id": "f859b603-f3c5-4be8-b732-b3e7d668ec4d",
+		"name": "Medplum API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "103574"
+	},
+	"item": [
+		{
+			"name": "Set Access Token",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"var data = JSON.parse(responseBody);",
+							"pm.environment.set(\"Authorization\", \"Bearer \" + data.access_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "client_id",
+							"value": "{{client_id}}",
+							"type": "text"
+						},
+						{
+							"key": "client_secret",
+							"value": "{{client_secret}}",
+							"type": "text"
+						},
+						{
+							"key": "grant_type",
+							"value": "client_credentials",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{base_url}}/oauth2/token",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"oauth2",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Patient Demographics",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Patient?_count=20&_offset=0&_sort=-_lastUpdated&_total=estimate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Patient"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						},
+						{
+							"key": "_total",
+							"value": "estimate"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Practitioner",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Practitioner?_count=20&_fields=_lastUpdated,name,telecom,address&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Practitioner"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,name,telecom,address"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Condition",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Condition?_count=20&_fields=_lastUpdated,subject,code,clinicalStatus&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Condition"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,code,clinicalStatus"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Vitals",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Observation?_count=20&_fields=_lastUpdated,subject,code,category,status,effective[x],issued&_offset=0&_sort=-_lastUpdated&category:contains=Vital-Signs",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Observation"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,code,category,status,effective[x],issued"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						},
+						{
+							"key": "category:contains",
+							"value": "Vital-Signs"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Lab Observations",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Observation?_count=20&_fields=_lastUpdated,subject,code,category,status,effective[x],issued&_offset=0&_sort=-_lastUpdated&category:contains=Laboratory",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Observation"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,code,category,status,effective[x],issued"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						},
+						{
+							"key": "category:contains",
+							"value": "Laboratory"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Diagnostic Report",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/DiagnosticReport?_count=20&_offset=0&_sort=-_lastUpdated&_fields=_lastUpdated,subject,code,status",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"DiagnosticReport"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,code,status"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Medication",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Medication?_count=20&_fields=id,code,status&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Medication"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "id,code,status"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Medication Request",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/MedicationRequest?_count=20&_fields=_lastUpdated,subject,authoredOn,requester,medication[x],reasonReference,intent,reported[x]&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"MedicationRequest"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,authoredOn,requester,medication[x],reasonReference,intent,reported[x]"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Immunization",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Immunization?_count=20&_fields=_lastUpdated,patient,vaccineCode,encounter,occurrence[x],primarySource,location&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Immunization"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,patient,vaccineCode,encounter,occurrence[x],primarySource,location"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Encounter",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Encounter?_count=20&_fields=_lastUpdated,subject,type,period,status&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Encounter"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,type,period,status"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "AllergyIntolerance",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/AllergyIntolerance?_count=20&_fields=_lastUpdated,patient,clinicalStatus,verificationStatus,type,category,code,recordedDate&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"AllergyIntolerance"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,patient,clinicalStatus,verificationStatus,type,category,code,recordedDate"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DocumentReference",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/DocumentReference?_count=20&_fields=_lastUpdated,subject,type,date,author,custodian&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"DocumentReference"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,type,date,author,custodian"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Procedure",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Procedure?_count=20&_fields=_lastUpdated,status,code,subject,performed[x]&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Procedure"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,status,code,subject,performed[x]"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CarePlan",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/CarePlan?_count=20&_fields=_lastUpdated,status,intent,category,subject,period&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"CarePlan"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,status,intent,category,subject,period"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "CareTeam",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/CareTeam?_count=20&_fields=_lastUpdated,subject,encounter,period,reasonCode,managingOrganization&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"CareTeam"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,encounter,period,reasonCode,managingOrganization"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Goal",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Goal?_count=20&_fields=_lastUpdated,subject,description,lifecycleStatus&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Goal"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,description,lifecycleStatus"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "SmokingStatus",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Observation?_count=20&_fields=_lastUpdated,subject,code,category,status,effective[x],issued&_offset=0&_sort=-_lastUpdated&code:contains=tobacco",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Observation"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,subject,code,category,status,effective[x],issued"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						},
+						{
+							"key": "code:contains",
+							"value": "tobacco"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "ImplantableDevice",
+			"request": {
+				"auth": {
+					"type": "jwt",
+					"jwt": [
+						{
+							"key": "addTokenTo",
+							"value": "header",
+							"type": "string"
+						},
+						{
+							"key": "algorithm",
+							"value": "HS256",
+							"type": "string"
+						},
+						{
+							"key": "isSecretBase64Encoded",
+							"value": false,
+							"type": "boolean"
+						},
+						{
+							"key": "payload",
+							"value": "{}",
+							"type": "string"
+						},
+						{
+							"key": "headerPrefix",
+							"value": "Bearer",
+							"type": "string"
+						},
+						{
+							"key": "queryParamKey",
+							"value": "token",
+							"type": "string"
+						},
+						{
+							"key": "header",
+							"value": "{}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "{{Authorization}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/fhir/R4/Device?_count=20&_fields=_lastUpdated,manufacturer,deviceName,patient&_offset=0&_sort=-_lastUpdated",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"fhir",
+						"R4",
+						"Device"
+					],
+					"query": [
+						{
+							"key": "_count",
+							"value": "20"
+						},
+						{
+							"key": "_fields",
+							"value": "_lastUpdated,manufacturer,deviceName,patient"
+						},
+						{
+							"key": "_offset",
+							"value": "0"
+						},
+						{
+							"key": "_sort",
+							"value": "-_lastUpdated"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
