@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitFor, waitForJob } from '../../test.setup';
+import { createTestProject, initTestAuth, waitFor, waitForAsyncJob } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
@@ -111,7 +111,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
-    await waitForJob(app, initRes.headers['content-location'], accessToken);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
   test('Patient Export Accepted with GET', async () => {
@@ -126,7 +126,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
-    await waitForJob(app, initRes.headers['content-location'], accessToken);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
   test('exportResourceType iterating through paginated search results', async () => {

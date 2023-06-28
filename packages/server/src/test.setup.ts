@@ -186,7 +186,7 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
   });
 }
 
-export async function waitForJob(app: Express, contentLocation: string, accessToken: string): Promise<void> {
+export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<void> {
   for (let i = 0; i < 10; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
@@ -196,7 +196,7 @@ export async function waitForJob(app: Express, contentLocation: string, accessTo
     }
     await sleep(1000);
   }
-  throw new Error('Job did not complete');
+  throw new Error('Async Job did not complete');
 }
 
 const sleep = (ms: number): Promise<void> =>
