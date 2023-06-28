@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { globalSchema, indexStructureDefinitionBundle } from '../types';
-import { SearchParameterType, getSearchParameterDetails } from './details';
+import { getSearchParameterDetails, SearchParameterType } from './details';
 
 const searchParamsBundle = readJson('fhir/r4/search-parameters.json');
 const medplumSearchParamsBundle = readJson('fhir/r4/search-parameters-medplum.json');
@@ -18,6 +18,7 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Get details', () => {
+    // expression: 'Patient.name | Person.name | Practitioner.name | RelatedPerson.name'
     const individualPhoneticParam = searchParams.find((e) => e.id === 'individual-phonetic') as SearchParameter;
     const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
@@ -26,6 +27,7 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Boolean param', () => {
+    // expression: 'Patient.active'
     const activeParam = searchParams.find((e) => e.id === 'Patient-active') as SearchParameter;
     const details = getSearchParameterDetails('Patient', activeParam);
     expect(details).toBeDefined();
@@ -35,6 +37,7 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Date param', () => {
+    // expression: 'Patient.birthDate'
     const birthDateParam = searchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const details = getSearchParameterDetails('Patient', birthDateParam);
     expect(details).toBeDefined();
@@ -44,6 +47,7 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Date/Time param', () => {
+    // expression: 'ServiceRequest.authoredOn'
     const authoredParam = searchParams.find((e) => e.id === 'ServiceRequest-authored') as SearchParameter;
     const details = getSearchParameterDetails('ServiceRequest', authoredParam);
     expect(details).toBeDefined();
@@ -53,6 +57,7 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Get nested details', () => {
+    // expression: 'Patient.link.other'
     const missingExpressionParam = searchParams.find((e) => e.id === 'Patient-link') as SearchParameter;
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
@@ -157,23 +162,12 @@ describe('SearchParameterDetails', () => {
       expression: 'ProjectMembership.accessPolicy | ProjectMembership.access.policy',
       target: ['AccessPolicy'],
     };
-    // expression: 'ProjectMembership.profile.resolve().resourceType',
-    // const searchParam = searchParams.find((e) => e.id === 'ProjectMembership-access-policy') as SearchParameter;
     const details = getSearchParameterDetails('ProjectMembership', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
   });
 
   test('Account-patient', () => {
-    // const searchParam: SearchParameter = {
-    //   resourceType: 'SearchParameter',
-    //   id: 'Account-patient',
-    //   code: 'patient',
-    //   base: ['Account'],
-    //   type: 'reference',
-    //   expression: 'Account.subject.where(resolve() is Patient)',
-    //   target: ['Patient'],
-    // };
     // expression: 'Account.subject.where(resolve() is Patient)',
     const searchParam = searchParams.find((e) => e.id === 'Account-patient') as SearchParameter;
     const details = getSearchParameterDetails('Account', searchParam);
@@ -182,15 +176,6 @@ describe('SearchParameterDetails', () => {
   });
 
   test('ActivityDefinition-composed-of', () => {
-    // const searchParam: SearchParameter = {
-    //   resourceType: 'SearchParameter',
-    //   id: 'ActivityDefinition-composed-of',
-    //   name: 'composed-of',
-    //   code: 'composed-of',
-    //   base: ['ActivityDefinition'],
-    //   type: 'reference',
-    //   expression: "ActivityDefinition.relatedArtifact.where(type='composed-of').resource",
-    // };
     // expression: 'Account.subject.where(resolve() is Patient)',
     const searchParam = searchParams.find((e) => e.id === 'ActivityDefinition-composed-of') as SearchParameter;
     const details = getSearchParameterDetails('ActivityDefinition', searchParam);
@@ -199,15 +184,6 @@ describe('SearchParameterDetails', () => {
   });
 
   test('Patient-deceased', () => {
-    // const searchParam: SearchParameter = {
-    //   resourceType: 'SearchParameter',
-    //   id: 'Patient-deceased',
-    //   name: 'deceased',
-    //   code: 'deceased',
-    //   base: ['Patient'],
-    //   type: 'token',
-    //   expression: 'Patient.deceased.exists() and Patient.deceased != false',
-    // };
     // expression: 'Patient.deceased.exists() and Patient.deceased != false',
     const searchParam = searchParams.find((e) => e.id === 'Patient-deceased') as SearchParameter;
     const details = getSearchParameterDetails('Patient', searchParam);
