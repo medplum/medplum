@@ -52,6 +52,11 @@ describe('Atoms', () => {
     expect(evalFhirPath('x | y', [])).toEqual([]);
   });
 
+  test.each([
+  ])('ImpliesAtom: %s %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toEqual([expected]);
+  });
+
   test('AsAtom', () => {
     const obs1: Observation = {
       resourceType: 'Observation',
