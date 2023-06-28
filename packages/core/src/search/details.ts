@@ -113,22 +113,8 @@ function crawlSearchParameterDetails(
   }
 
   if (currAtom instanceof FunctionAtom) {
-    if (currAtom.name === 'as') {
-      details.propertyTypes.add(currAtom.args[0].toString());
-      return;
-    }
-
-    if (currAtom.name === 'resolve') {
-      details.propertyTypes.add('string');
-      return;
-    }
-
-    if (currAtom.name === 'where' && currAtom.args[0] instanceof IsAtom) {
-      // Common pattern: "where(resolve() is Patient)"
-      // Use the type information
-      details.propertyTypes.add(currAtom.args[0].right.toString());
-      return;
-    }
+    handleFunctionAtom(details, currAtom);
+    return;
   }
 
   const propertyName = currAtom.toString();
@@ -168,6 +154,28 @@ function crawlSearchParameterDetails(
       details.propertyTypes.add(elementDefinitionType.code as string);
     }
   }
+}
+
+function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom: FunctionAtom): void {
+  if (functionAtom.name === 'as') {
+    builder.propertyTypes.add(functionAtom.args[0].toString());
+    return;
+  }
+
+  if (functionAtom.name === 'resolve') {
+    // Handle .resolve().resourceType
+    builder.propertyTypes.add('string');
+    return;
+  }
+
+  if (functionAtom.name === 'where' && functionAtom.args[0] instanceof IsAtom) {
+    // Common pattern: "where(resolve() is Patient)"
+    // Use the type information
+    builder.propertyTypes.add(functionAtom.args[0].right.toString());
+    return;
+  }
+
+  throw new Error(`Unhandled FHIRPath function: ${functionAtom.name}`);
 }
 
 function isBackboneElement(propertyType: string): boolean {
@@ -250,7 +258,7 @@ function flattenAtom(atom: Atom): Atom[] {
     return [flattenAtom(atom.left), flattenAtom(atom.right)].flat();
   }
   if (atom instanceof FunctionAtom) {
-    if (atom.name === 'where' && !(atom.args[0] instanceof AsAtom)) {
+    if (atom.name === 'where' && !(atom.args[0] instanceof IsAtom)) {
       // Remove all "where" functions other than "where(x as type)"
       return [];
     }

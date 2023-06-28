@@ -94,6 +94,17 @@ describe('SearchParameterDetails', () => {
       resourceType: 'SearchParameter',
       code: 'name-unknown',
       type: 'string',
+      expression: 'Patient.name.select()',
+    };
+
+    expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
+  });
+
+  test('Unhandled function', () => {
+    const missingExpressionParam: SearchParameter = {
+      resourceType: 'SearchParameter',
+      code: 'unhandled-function',
+      type: 'string',
       expression: 'Patient.name.unknown',
     };
 
