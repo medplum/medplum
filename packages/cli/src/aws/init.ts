@@ -103,7 +103,7 @@ export async function initStackCommand(): Promise<void> {
   header('API DOMAIN NAME');
   print('Medplum deploys a REST API for the backend services.');
   config.apiDomainName = await ask('Enter your REST API domain name:', 'api.' + config.domainName);
-  config.baseUrl = `https://${config.apiDomainName}`;
+  config.baseUrl = `https://${config.apiDomainName}/`;
   writeConfig(configFileName, config);
 
   header('APP DOMAIN NAME');
