@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
@@ -68,15 +68,13 @@ describe('Export', () => {
 
     // Check the export status
     const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
 
-    let resBody: any;
-    await waitFor(async () => {
-      const statusRes = await request(app)
-        .get(contentLocation.pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(statusRes.status).toBe(200);
-      resBody = statusRes.body;
-    });
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes.status).toBe(200);
+    const resBody = statusRes.body;
 
     const output = resBody?.output as BulkDataExportOutput[];
     expect(
@@ -111,6 +109,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
   test('Patient Export Accepted with GET', async () => {
@@ -125,6 +124,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
   });
 
   test('exportResourceType iterating through paginated search results', async () => {
