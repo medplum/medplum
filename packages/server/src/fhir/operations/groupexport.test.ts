@@ -3,12 +3,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth, waitFor, waitForJob } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
-
-jest.mock('../../logger');
 
 const app = express();
 let accessToken: string;
@@ -316,6 +314,7 @@ describe('Group Export', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(202);
     expect(res4.headers['content-location']).toBeDefined();
+    await waitForJob(app, res4.headers['content-location'], accessToken);
   });
 
   test('groupExportResources without members', async () => {

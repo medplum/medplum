@@ -4,12 +4,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth, waitFor, waitForJob } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { exportResourceType } from './export';
 import { BulkExporter } from './utils/bulkexporter';
-
-jest.mock('../../logger');
 
 const app = express();
 
@@ -113,6 +111,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
+    await waitForJob(app, initRes.headers['content-location'], accessToken);
   });
 
   test('Patient Export Accepted with GET', async () => {
@@ -127,6 +126,7 @@ describe('Export', () => {
       .send({});
     expect(initRes.status).toBe(202);
     expect(initRes.headers['content-location']).toBeDefined();
+    await waitForJob(app, initRes.headers['content-location'], accessToken);
   });
 
   test('exportResourceType iterating through paginated search results', async () => {
