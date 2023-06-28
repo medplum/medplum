@@ -13,6 +13,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      outDir: 'dist/assets',
       registerType: 'autoUpdate',
       injectRegister: null,
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -48,4 +49,7 @@ export default defineConfig({
     port: 3000,
   },
   publicDir: 'static',
+  build: {
+    sourcemap: true,
+  },
 });
