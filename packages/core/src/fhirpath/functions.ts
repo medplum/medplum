@@ -511,6 +511,13 @@ export const functions: Record<string, FhirPathFunction> = {
     return [...input, ...otherArray];
   },
 
+  /**
+   * Returns true if the input is a value HTML element.
+   *
+   * See: https://hl7.org/fhir/fhirpath.html#variables
+   */
+  htmlChecks: stub,
+
   /*
    * 5.5. Conversion
    *

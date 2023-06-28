@@ -625,7 +625,7 @@ describe('Legacy tests for parity checking', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.length).toEqual(1);
+      expect(outcome.issue?.length).toEqual(9);
       expect(outcome.issue?.[0]?.severity).toEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
       expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
@@ -941,7 +941,7 @@ describe('Legacy tests for parity checking', () => {
           { linkId: 'test', type: 'string', text: 'test', _text: { extension: [] } } as unknown as QuestionnaireItem,
         ],
       })
-    ).not.toThrow();
+    ).toThrow();
   });
 
   test('Array mismatch', () => {

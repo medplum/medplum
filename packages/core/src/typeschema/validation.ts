@@ -9,8 +9,8 @@ import {
   SlicingRules,
 } from './types';
 import { OperationOutcomeError, validationError } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
-import { evalFhirPathTyped, getTypedPropertyValue } from '../fhirpath';
+import { PropertyType, TypedValue, isResource } from '../types';
+import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
 import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
 
@@ -76,10 +76,16 @@ export function validate(resource: Resource, profile?: StructureDefinition): voi
 
 class ResourceValidator {
   private issues: OperationOutcomeIssue[];
+  private rootResource: Resource;
+  private resources: Resource[];
+  private currentResource: Resource;
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, profile?: StructureDefinition) {
+  constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
     this.issues = [];
+    this.rootResource = rootResource;
+    this.resources = [rootResource];
+    this.currentResource = rootResource;
     if (!profile) {
       this.schema = getDataType(resourceType);
     } else {
@@ -87,18 +93,15 @@ class ResourceValidator {
     }
   }
 
-  validate(resource: Resource): void {
-    if (!resource) {
-      throw new OperationOutcomeError(validationError('Resource is null'));
-    }
-    const resourceType = resource.resourceType;
+  validate(): void {
+    const resourceType = this.rootResource.resourceType;
     if (!resourceType) {
       throw new OperationOutcomeError(validationError('Missing resource type'));
     }
 
-    checkObjectForNull(resource as unknown as Record<string, unknown>, resource.resourceType, this.issues);
+    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, this.rootResource.resourceType, this.issues);
 
-    this.validateObject({ type: resourceType, value: resource }, this.schema, resourceType);
+    this.validateObject({ type: resourceType, value: this.currentResource }, this.schema, resourceType);
 
     const issues = this.issues;
     this.issues = []; // Reset issues to allow re-using the validator for other resources
@@ -195,9 +198,15 @@ class ResourceValidator {
     if (isLowerCase(value.type.charAt(0))) {
       this.validatePrimitiveType(value, path);
     } else {
+      // take next resource, push that onto the stack.
+
       // Recursively validate as the expected data type
       const type = getDataType(value.type);
+      // if (isResource(value.value)) {
+
+      // }
       this.validateObject(value, type, path);
+      // pop object off stack
     }
   }
 
@@ -251,15 +260,33 @@ class ResourceValidator {
     const constraints = element.constraints;
     const arrayValue = Array.isArray(value) ? value : [value];
     for (const constraint of constraints) {
-      if (constraint.key !== 'error' || constraint.key in skippedConstraintKeys) {
+      if (constraint.severity !== 'error' || constraint.key in skippedConstraintKeys) {
         continue;
       } else {
-        const expression = evalFhirPathTyped(constraint.expression, arrayValue);
+        const expression = this.isExpressionTrue(constraint, arrayValue, path);
         if (!expression) {
           this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed`));
           return;
         }
       }
+    }
+  }
+
+  private isExpressionTrue(constraint: Constraint, values: TypedValue[], path: string): boolean {
+    try {
+      const expression = values.every((value) => {
+        const evalValues = evalFhirPathTyped(constraint.expression, [value], {
+          context: value,
+          resource: toTypedValue(this.currentResource),
+          rootResource: toTypedValue(this.rootResource),
+          ucum: toTypedValue('http://unitsofmeasure.org'),
+        });
+        return evalValues.every((evalValue) => evalValue.value === true);
+      });
+      return expression;
+    } catch (e: any) {
+      this.issues.push(createStructureIssue(path, `Constraint ${constraint.key} failed with error: ${e.message}`));
+      return false;
     }
   }
 
