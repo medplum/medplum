@@ -8,6 +8,8 @@ import { systemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
 
+jest.mock('../../logger');
+
 const app = express();
 let accessToken: string;
 
@@ -294,6 +296,26 @@ describe('Group Export', () => {
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
     expect(output.some((o) => o.type === 'Observation')).not.toBeTruthy();
+  });
+
+  test('status accepted with error', async () => {
+    // Create group
+    const groupRes = await request(app)
+      .post(`/fhir/R4/Group`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Group',
+        type: 'person',
+        actual: true,
+        member: [{ entity: { reference: `Patient/1234` } }],
+      });
+    expect(groupRes.status).toBe(201);
+    const res4 = await request(app)
+      .get(`/fhir/R4/Group/${groupRes.body.id}/$export`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(202);
+    expect(res4.headers['content-location']).toBeDefined();
   });
 
   test('groupExportResources without members', async () => {
