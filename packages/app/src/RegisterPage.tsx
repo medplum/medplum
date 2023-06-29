@@ -3,7 +3,7 @@ import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getConfig } from './config';
+import { getConfig, isRegisterEnabled } from './config';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -16,7 +16,7 @@ export function RegisterPage(): JSX.Element | null {
     }
   }, [medplum, navigate]);
 
-  if (!config.registerEnabled) {
+  if (!isRegisterEnabled()) {
     return (
       <Document width={450}>
         <Alert icon={<IconAlertCircle size={16} />} title="New projects disabled" color="red">
