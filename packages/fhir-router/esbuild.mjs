@@ -13,6 +13,7 @@ const options = {
   target: 'es2021',
   tsconfig: 'tsconfig.json',
   minify: true,
+  sourcemap: true,
   external: ['@medplum/core', 'dataloader', 'rfc6902'],
 };
 

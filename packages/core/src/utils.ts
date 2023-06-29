@@ -797,6 +797,7 @@ export function findResourceByCode(
   );
 }
 
+
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (!value) {
     return undefined;
@@ -806,3 +807,13 @@ export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
     return [value];
   }
 }
+
+/**
+ * Sleeps for the specified number of milliseconds.
+ * @param ms Time delay in milliseconds
+ * @returns A promise that resolves after the specified number of milliseconds.
+ */
+export const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });

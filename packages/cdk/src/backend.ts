@@ -309,6 +309,7 @@ export class BackEnd extends Construct {
       },
       desiredCount: config.desiredServerCount,
       securityGroups: [fargateSecurityGroup],
+      healthCheckGracePeriod: Duration.minutes(5),
     });
 
     // Add dependencies - make sure Fargate service is created after RDS and Redis
