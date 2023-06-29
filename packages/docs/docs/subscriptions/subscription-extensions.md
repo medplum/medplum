@@ -67,6 +67,10 @@ Below are explanations of the different extensions Medplum Provides
 By default, FHIR Subscriptions will execute on "create" and "update" operations.
 :::
 
+You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent).
+
+### Subscriptions for "create"-only events
+
 To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
 ```json
@@ -88,33 +92,11 @@ To restrict the FHIR Subscription to only execute on "create", use the `https://
 }
 ```
 
-### Handling Delete Interaction
+### Subscriptions for "delete" events
 
 :::caution Note
 The delete interaction will contain a different response where configuration will be needed on the incoming data.
-Unless the subscription intended is only to be executed upon 'create' or 'update', it will by default be triggered up on it.
 :::
-
-The response for a deleted resource will contain:
-
-```json
-{
-  "method": "POST",
-  "body": "{}",
-  "headers": {
-    "Content-Type": "application/fhir+json",
-    "X-Medplum-Deleted-Resource": "${resource.resourceType}/${resource.id}"
-  }
-}
-```
-
-**_Few things to note:_**
-
-`X-Medplum-Deleted-Resource`: Will contain the resource type and resource id that was deleted.
-
-`body`: Will be an empty object in the response `{}`
-
-**_Executing only on delete_**
 
 Use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `delete`. For example:
 
@@ -136,6 +118,25 @@ Use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-int
   ]
 }
 ```
+
+The response for a deleted resource will contain:
+
+```json
+{
+  "method": "POST",
+  "body": "{}",
+  "headers": {
+    "Content-Type": "application/fhir+json",
+    "X-Medplum-Deleted-Resource": "${resource.resourceType}/${resource.id}"
+  }
+}
+```
+
+**_Few things to note:_**
+
+`X-Medplum-Deleted-Resource`: Will contain the resource type and resource id that was deleted.
+
+`body`: Will be an empty object in the response `{}`
 
 ## Signatures
 
