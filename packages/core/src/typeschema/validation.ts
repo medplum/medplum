@@ -172,19 +172,7 @@ class ResourceValidator {
           }
         }
       }
-      for (const slice of element.slicing?.slices ?? []) {
-        const sliceCardinality = sliceCounts[slice.name];
-        if (sliceCardinality < slice.min || sliceCardinality > slice.max) {
-          this.issues.push(
-            createStructureIssue(
-              path,
-              `Incorrect number of values provided for slice '${slice.name}': expected ${slice.min}..${
-                Number.isFinite(slice.max) ? slice.max : '*'
-              }, but found ${sliceCardinality}`
-            )
-          );
-        }
-      }
+      this.validateSlices(element.slicing?.slices ?? [], sliceCounts, path);
     }
   }
 
@@ -212,6 +200,22 @@ class ResourceValidator {
       // Recursively validate as the expected data type
       const type = getDataType(value.type);
       this.validateObject(value, type, path);
+    }
+  }
+
+  private validateSlices(slices: SliceDefinition[], counts: Record<string, number>, path: string): void {
+    for (const slice of slices) {
+      const sliceCardinality = counts[slice.name];
+      if (sliceCardinality < slice.min || sliceCardinality > slice.max) {
+        this.issues.push(
+          createStructureIssue(
+            path,
+            `Incorrect number of values provided for slice '${slice.name}': expected ${slice.min}..${
+              Number.isFinite(slice.max) ? slice.max : '*'
+            }, but found ${sliceCardinality}`
+          )
+        );
+      }
     }
   }
 
