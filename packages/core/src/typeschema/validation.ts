@@ -6,6 +6,7 @@ import {
   InternalTypeSchema,
   SliceDefinition,
   SliceDiscriminator,
+  SlicingRules,
 } from './types';
 import { OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
@@ -162,20 +163,12 @@ class ResourceValidator {
       const sliceCounts: Record<string, number> = Object.fromEntries(
         element.slicing?.slices.map((s) => [s.name, 0]) ?? []
       );
-      nextValue: for (const value of values) {
+      for (const value of values) {
         this.checkPropertyValue(value, path);
         if (element.slicing) {
-          nextSlice: for (const slice of element.slicing.slices) {
-            for (const discriminator of element.slicing.discriminator) {
-              const discrimValues = arrayify(getNestedProperty(value, discriminator.path));
-              if (!discrimValues) {
-                continue nextValue;
-              }
-              if (!discrimValues.some((v) => matchDiscriminant(v, discriminator, slice))) {
-                continue nextSlice;
-              }
-            }
-            sliceCounts[slice.name] += 1;
+          const sliceName = checkSliceElement(value, element.slicing);
+          if (sliceName) {
+            sliceCounts[sliceName] += 1;
           }
         }
       }
@@ -438,4 +431,20 @@ function matchDiscriminant(
   }
   // Default to no match
   return false;
+}
+
+function checkSliceElement(value: TypedValue, slicingRules: SlicingRules): string | undefined {
+  nextSlice: for (const slice of slicingRules.slices) {
+    for (const discriminator of slicingRules.discriminator) {
+      const discrimValues = arrayify(getNestedProperty(value, discriminator.path));
+      if (!discrimValues) {
+        return undefined;
+      }
+      if (!discrimValues.some((v) => matchDiscriminant(v, discriminator, slice))) {
+        continue nextSlice;
+      }
+    }
+    return slice.name;
+  }
+  return undefined;
 }
