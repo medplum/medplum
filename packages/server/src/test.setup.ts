@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource, sleep } from '@medplum/core';
 import {
   AccessPolicy,
   Bundle,
@@ -198,8 +198,3 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
   }
   throw new Error('Async Job did not complete');
 }
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
