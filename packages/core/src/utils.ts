@@ -797,7 +797,6 @@ export function findResourceByCode(
   );
 }
 
-
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   if (!value) {
     return undefined;
