@@ -25,8 +25,7 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --content-type "application/javascript" \
   --cache-control "public, max-age=31536000" \
   --exclude "*" \
-  --include "*.js" \
-  --exclude "sw.js"
+  --include "*.js"
 
 aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --recursive \
@@ -67,16 +66,5 @@ aws s3 cp dist/ "s3://${APP_BUCKET}/" \
   --cache-control "no-cache" \
   --exclude "*" \
   --include "*.html"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "application/manifest+json" \
-  --cache-control "no-cache" \
-  --exclude "*" \
-  --include "*.webmanifest"
-
-aws s3 cp dist/sw.js "s3://${APP_BUCKET}/" \
-  --content-type "application/javascript" \
-  --cache-control "no-cache"
 
 popd
