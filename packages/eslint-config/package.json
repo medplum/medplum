@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "0.1.0",
+  "version": "2.0.25",
   "description": "Shared ESLint configuration for Medplum projects",
   "main": "index.cjs",
   "repository": {
@@ -14,7 +14,10 @@
     "url": "https://github.com/medplum/medplum/issues"
   },
   "homepage": "https://github.com/medplum/medplum#readme",
-  "keywords": ["eslint", "eslintconfig"],
+  "keywords": [
+    "eslint",
+    "eslintconfig"
+  ],
   "peerDependencies": {
     "eslint": ">= 8",
     "@typescript-eslint/eslint-plugin": ">= 5"
