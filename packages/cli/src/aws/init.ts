@@ -323,10 +323,10 @@ async function choose(text: string, options: (string | number)[], defaultValue =
  * Prints a question and waits for the user to choose a valid integer option.
  * @param text The prompt text to print.
  * @param options The list of options that the user can select.
- * @param defaultValue Optional default value.
+ * @param defaultValue Default value.
  * @returns The selected value, or default value on empty selection.
  */
-async function chooseInt(text: string, options: number[], defaultValue = 0): Promise<number> {
+async function chooseInt(text: string, options: number[], defaultValue: number): Promise<number> {
   return parseInt(
     await choose(
       text,
