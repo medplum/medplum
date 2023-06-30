@@ -1,17 +1,17 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
-import { mockClient } from 'aws-sdk-client-mock'
+import { mockClient } from 'aws-sdk-client-mock';
 
 import { getConfig, loadConfig } from './config';
 
 describe('Config', () => {
   beforeEach(() => {
-    const secretsManagerMock = mockClient(SecretsManagerClient)
-      secretsManagerMock.on(GetSecretValueCommand).resolves({
+    const secretsManagerMock = mockClient(SecretsManagerClient);
+    secretsManagerMock.on(GetSecretValueCommand).resolves({
       SecretString: JSON.stringify({ host: 'host', port: 123 }),
     })
 
-    const ssmMock = mockClient(SSMClient)
+    const ssmMock = mockClient(SSMClient);
     ssmMock.on(GetParametersByPathCommand).resolves({
       Parameters: [
         { Name: 'baseUrl', Value: 'https://www.example.com/' },
