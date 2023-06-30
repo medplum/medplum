@@ -1,5 +1,5 @@
 import { ACMClient, CertificateSummary, ListCertificatesCommand, RequestCertificateCommand } from '@aws-sdk/client-acm';
-import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'crypto';
@@ -40,6 +40,14 @@ export async function initStackCommand(): Promise<void> {
   print('Some questions have default values in (parentheses), which you can accept by pressing Enter.');
   print('Press Ctrl+C at any time to exit.');
 
+  const currentAccountId = await getAccountId(config.region);
+  if (!currentAccountId) {
+    print('It appears that you do not have AWS credentials configured.');
+    print('AWS credntials are not strictly required, but will enable some additional features.');
+    print('If you intend to use AWS credentials, please configure them now.');
+    await checkOk('Do you want to continue without AWS credentials?');
+  }
+
   header('ENVIRONMENT NAME');
   print('Medplum deployments have a short environment name such as "prod", "staging", "alice", or "demo".');
   print('The environment name is used in multiple places:');
@@ -66,18 +74,22 @@ export async function initStackCommand(): Promise<void> {
 
   header('AWS ACCOUNT NUMBER');
   print('Medplum Infrastructure will use your AWS account number to create AWS resources.');
-  const currentAccountId = await getAccountId(config.region);
-  print('Using the AWS CLI, your current account ID is: ' + currentAccountId);
+  if (currentAccountId) {
+    print('Using the AWS CLI, your current account ID is: ' + currentAccountId);
+  }
   config.accountNumber = await ask('What is your AWS account number?', currentAccountId);
   writeConfig(configFileName, config);
 
   header('STACK NAME');
   print('Medplum will create a CloudFormation stack to manage AWS resources.');
+  print('AWS CloudFormation stack names ');
   const defaultStackName = 'Medplum' + config.name.charAt(0).toUpperCase() + config.name.slice(1);
   config.stackName = await ask('Enter your CloudFormation stack name?', defaultStackName);
   writeConfig(configFileName, config);
 
   header('BASE DOMAIN NAME');
+  print('Please enter the base domain name for your Medplum deployment.');
+  print('');
   print('Medplum deploys multiple subdomains for various services.');
   print('');
   print('For example, "api." for the REST API and "app." for the web application.');
@@ -86,8 +98,9 @@ export async function initStackCommand(): Promise<void> {
   print('For example, if your base domain name is "example.com",');
   print('then the REST API will be "api.example.com".');
   print('');
+  print('The base domain should include the TLD (i.e., ".com", ".org", ".net").');
+  print('');
   print('Note that you must own the base domain, and it must use Route53 DNS.');
-  print('Medplum will create subdomains for you, but you must configure the base domain.');
   while (!config.domainName) {
     config.domainName = await ask('Enter your base domain name:');
   }
@@ -254,6 +267,7 @@ export async function initStackCommand(): Promise<void> {
   print('');
   print('    https://www.medplum.com/docs/self-hosting/install-on-aws');
   print('');
+  terminal.close();
 }
 
 /**
@@ -501,15 +515,36 @@ function generateSigningKey(): { publicKey: string; privateKey: string; passphra
 }
 
 /**
+ * Reads a parameter from AWS Parameter Store.
+ * @param client The AWS SSM client.
+ * @param name The parameter name.
+ * @returns The parameter value, or undefined if not found.
+ */
+async function readParameter(client: SSMClient, name: string): Promise<string | undefined> {
+  const command = new GetParameterCommand({
+    Name: name,
+    WithDecryption: true,
+  });
+  try {
+    const result = await client.send(command);
+    return result.Parameter?.Value;
+  } catch (err: any) {
+    if (err.name === 'ParameterNotFound') {
+      return undefined;
+    }
+    throw err;
+  }
+}
+
+/**
  * Writes a parameter to AWS Parameter Store.
- * @param region The AWS region.
- * @param key The parameter key.
+ * @param client The AWS SSM client.
+ * @param name The parameter name.
  * @param value The parameter value.
  */
-async function writeParameter(region: string, key: string, value: string): Promise<void> {
-  const client = new SSMClient({ region });
+async function writeParameter(client: SSMClient, name: string, value: string): Promise<void> {
   const command = new PutParameterCommand({
-    Name: key,
+    Name: name,
     Value: value,
     Type: 'SecureString',
     Overwrite: true,
@@ -524,10 +559,17 @@ async function writeParameter(region: string, key: string, value: string): Promi
  * @param params The parameters to write.
  */
 async function writeParameters(region: string, prefix: string, params: Record<string, string | number>): Promise<void> {
+  const client = new SSMClient({ region });
   for (const [key, value] of Object.entries(params)) {
+    const name = prefix + key;
     const valueStr = value.toString();
-    if (valueStr) {
-      await writeParameter(region, prefix + key, valueStr);
+    const existingValue = await readParameter(client, name);
+
+    if (existingValue !== undefined && existingValue !== valueStr) {
+      print(`Parameter "${name}" exists with different value.`);
+      await checkOk(`Do you want to overwrite "${name}"?`);
     }
+
+    await writeParameter(client, name, valueStr);
   }
 }

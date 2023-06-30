@@ -45,6 +45,24 @@ The resulting AWS configuration will look like the following:
 
 ## Prerequisites
 
+### AWS CLI Setup
+
+While not strictly required, it is recommended to setup the [AWS Command Line Interface (AWS CLI)](https://aws.amazon.com/cli/) and your [AWS credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
+
+When the AWS CLI and credentials are configured, the Medplum `aws init` command will be able to automate some tasks.
+
+### AWS Account Number
+
+The Medplum `aws init` command will ask for your AWS Account Number.
+
+If the AWS CLI and credentials are configured, then the tool will automatically identify your AWS Account Number.
+
+If not, you can [find your AWS Account Number](https://docs.aws.amazon.com/marketplace/latest/buyerguide/GettingSupport.html):
+
+1. Sign in to the [AWS Management Console](https://console.aws.amazon.com/console/home) with your user name.
+2. In the top navigation bar, choose Support and then choose Support Center.
+3. Your AWS account ID (account number) appears below the top navigation bar.
+
 ### AWS Permissions
 
 You will need permission to access the following AWS services:
@@ -64,13 +82,33 @@ You will need permission to access the following AWS services:
 | Systems Manager (SSM)                | Store configuration details                                                           |
 | Web Application Firewall (WAF)       | Protect your web applications or APIs against common web exploits and bots            |
 
-You will also need to setup your [AWS credential file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html).
-
 ### Setup SES
 
 It is **strongly** recommended to setup an SES email address with production access, meaning that it can send email to any email recipient. Email is used to verify identities, send login instructions, and handle password reset requests.
 
 Follow the [Creating and verifying identities in Amazon SES](https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html) guide to register an email address for system generated emails.
+
+### Choose an environment name
+
+Throughout this document, instructions will refer to an "environment name". This environment name is used in multiple places:
+
+1. As part of config file names (i.e., `medplum.demo.config.json`)
+2. As the base of CloudFormation stack names (i.e., `MedplumDemo`)
+3. AWS Parameter Store keys (i.e., `/medplum/demo/...`)
+
+If you plan to deploy multiple Medplum clusters, you may want to consider a naming strategy.
+
+For example:
+
+| Env Name | Config file name              | CloudFormation stack name | Parameter Store prefix |
+| -------- | ----------------------------- | ------------------------- | ---------------------- |
+| prod     | `medplum.prod.config.json`    | `MedplumProd`             | `/medplum/prod/...`    |
+| staging  | `medplum.staging.config.json` | `MedplumStaging`          | `/medplum/staging/...` |
+| test     | `medplum.test.config.json`    | `MedplumTest`             | `/medplum/test/...`    |
+| alice    | `medplum.alice.config.json`   | `MedplumAlice`            | `/medplum/alice/...`   |
+| bob      | `medplum.bob.config.json`     | `MedplumBob`              | `/medplum/bob/...`     |
+
+Medplum configuration files and environment names are quite flexible, but it is always recommended to be consistent and stay organized.
 
 ## Setup a config repo
 
@@ -140,7 +178,7 @@ Bootstrapping is the process of provisioning resources for the AWS CDK before yo
 Run CDK bootstrap:
 
 ```bash
-npx cdk bootstrap -c config=my-config.json
+npx cdk bootstrap -c config=medplum.demo.config.json
 ```
 
 Learn more about bootstrapping: <https://docs.aws.amazon.com/cdk/latest/guide/bootstrapping.html>
@@ -152,7 +190,7 @@ The `synth` step catches logical errors in defining your AWS resources.
 Run CDK synth:
 
 ```bash
-npx cdk synth -c config=my-config.json
+npx cdk synth -c config=medplum.demo.config.json
 ```
 
 ### CDK Deploy
@@ -162,8 +200,10 @@ When you are ready to actually execute the CDK configuration, use the `deploy` c
 Run CDK deploy:
 
 ```bash
-npx cdk deploy -c config=my-config.json
+npx cdk deploy -c config=medplum.demo.config.json
 ```
+
+Note that you may receive warnings about changing security details. This is normal and expected anytime CDK makes changes to VPC, IAM, and other security features.
 
 ### CDK Diff
 
@@ -172,7 +212,7 @@ If you make changes to the CDK config, you can use the `diff` command to see how
 Run CDK diff:
 
 ```bash
-npx cdk diff -c config=my-config.json
+npx cdk diff -c config=medplum.demo.config.json
 ```
 
 ### Deploy the app
@@ -186,7 +226,13 @@ Historically this step required building from source. You can now deploy the app
 Use the Medplum CLI to deploy the app:
 
 ```bash
-npx medplum aws deploy-app MY_TAG_NAME
+npx medplum aws deploy-app [env name]
+```
+
+For example:
+
+```bash
+npx medplum aws deploy-app demo
 ```
 
 ## Advanced
@@ -212,7 +258,13 @@ See the [Creating and sharing Lambda layers](https://docs.aws.amazon.com/lambda/
 Use the Medplum CLI to upgrade the app. This will upgrade your app to the latest version.
 
 ```bash
-npx medplum aws update-app MY_TAG_NAME
+npx medplum aws update-app [env name]
+```
+
+For example:
+
+```bash
+npx medplum aws update-app demo
 ```
 
 ### Upgrade the server
@@ -220,7 +272,13 @@ npx medplum aws update-app MY_TAG_NAME
 Use the Medplum CLI to upgrade the server. This will upgrade your server to the latest version.
 
 ```bash
-npx medplum aws update-server MY_TAG_NAME
+npx medplum aws update-server [env name]
+```
+
+For example:
+
+```bash
+npx medplum aws update-server demo
 ```
 
 ## Troubleshooting
@@ -258,5 +316,5 @@ Next, make sure that your AWS account has permission to assume the role via `sts
 All CDK operations support verbose logging by adding the `--verbose` flag. Verbose logging can often reveal hints about confusing behavior.
 
 ```bash
-npx cdk synth --verbose -c config=my-config.json
+npx cdk synth --verbose -c config=medplum.demo.config.json
 ```
