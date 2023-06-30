@@ -45,7 +45,7 @@ npx medplum <command> <args>
 
 By default, the `medplum` command uses the Medplum hosted API at "https://api.medplum.com". If you want to use the `medplum` command against your own self-hosted server, you can use the `MEDPLUM_BASE_URL` environment variable. `dotenv` is enabled, so you can store this value in a `.env` file.
 
-#### optional flags for medplum <command>
+### optional flags for medplum commands
 
 - `--base-url <baseUrl>`
   - FHIR server base url
