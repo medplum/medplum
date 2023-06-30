@@ -585,7 +585,9 @@ export class Repository extends BaseRepository implements FhirRepository {
         const timeDiff = currentTime && experimentTime ? experimentTime - currentTime : 0n;
         // Log if experiment is more than 25% / 0.5ms slower
         if (timeDiff / currentTime > 0.25 && timeDiff > 0.5 * MILLISECONDS) {
-          logger.warn(`Experimental validator latency: current=${currentTime}; next=${experimentTime}`);
+          logger.warn(
+            `Experimental validator latency on ${resource.resourceType}/${resource.id}: current=${currentTime}; next=${experimentTime}`
+          );
         }
       }
       if (currentErr) {
