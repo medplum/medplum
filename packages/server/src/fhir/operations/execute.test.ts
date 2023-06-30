@@ -2,6 +2,9 @@ import { Bot } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock';
+import { InvokeCommand, LambdaClient, ListLayerVersionsCommand } from '@aws-sdk/client-lambda';
+
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
@@ -13,6 +16,36 @@ let accessToken: string;
 let bot: Bot;
 
 describe('Execute', () => {
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  beforeEach(() => {
+    mockLambdaClient = mockClient(LambdaClient);
+
+    mockLambdaClient.on(ListLayerVersionsCommand).resolves({
+      LayerVersions: [
+        {
+          LayerVersionArn: 'xyz',
+        },
+      ],
+    });
+
+    mockLambdaClient.on(InvokeCommand).callsFake(({ Payload }) => {
+      const decoder = new TextDecoder();
+      const event = JSON.parse(decoder.decode(Payload));
+      const output = typeof event.input === 'string' ? event.input : JSON.stringify(event.input);
+      const encoder = new TextEncoder();
+
+      return {
+        LogResult: `U1RBUlQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMgVmVyc2lvbjogJExBVEVTVAoyMDIyLTA1LTMwVDE2OjEyOjIyLjY4NVoJMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODczCUlORk8gdGVzdApFTkQgUmVxdWVzdElkOiAxNDZmY2ZjZi1jMzJiLTQzZjUtODJhNi1lZTBmMzEzMmQ4NzMKUkVQT1JUIFJlcXVlc3RJZDogMTQ2ZmNmY2YtYzMyYi00M2Y1LTgyYTYtZWUwZjMxMzJkODcz`,
+        Payload: encoder.encode(output),
+      };
+    });
+  });
+
+  afterEach(() => {
+    mockLambdaClient.restore();
+  });
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
