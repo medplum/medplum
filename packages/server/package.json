@@ -79,6 +79,8 @@
     "@types/supertest": "2.0.12",
     "@types/ua-parser-js": "0.7.36",
     "@types/validator": "13.7.17",
+    "aws-sdk-client-mock": "^2.2.0",
+    "aws-sdk-client-mock-jest": "^2.2.0",
     "mailparser": "3.6.4",
     "openapi3-ts": "4.1.2",
     "set-cookie-parser": "2.6.0",
