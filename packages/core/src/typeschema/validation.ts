@@ -8,7 +8,7 @@ import {
   SliceDiscriminator,
   SlicingRules,
 } from './types';
-import { OperationOutcomeError, serverError, validationError } from '../outcomes';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { PropertyType, TypedValue } from '../types';
 import { getTypedPropertyValue } from '../fhirpath';
 import { createStructureIssue } from '../schema';
@@ -160,19 +160,17 @@ class ResourceValidator {
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
-      const sliceCounts: Record<string, number> = Object.fromEntries(
-        element.slicing?.slices.map((s) => [s.name, 0]) ?? []
-      );
+      const sliceCounts: Record<string, number> | undefined = element.slicing
+        ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
+        : undefined;
       for (const value of values) {
         this.checkPropertyValue(value, path);
-        if (element.slicing) {
-          const sliceName = checkSliceElement(value, element.slicing);
-          if (sliceName) {
-            sliceCounts[sliceName] += 1;
-          }
+        const sliceName = checkSliceElement(value, element.slicing);
+        if (sliceName && sliceCounts) {
+          sliceCounts[sliceName] += 1;
         }
       }
-      this.validateSlices(element.slicing?.slices ?? [], sliceCounts, path);
+      this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
 
@@ -203,7 +201,14 @@ class ResourceValidator {
     }
   }
 
-  private validateSlices(slices: SliceDefinition[], counts: Record<string, number>, path: string): void {
+  private validateSlices(
+    slices: SliceDefinition[] | undefined,
+    counts: Record<string, number> | undefined,
+    path: string
+  ): void {
+    if (!slices || !counts) {
+      return;
+    }
     for (const slice of slices) {
       const sliceCardinality = counts[slice.name];
       if (sliceCardinality < slice.min || sliceCardinality > slice.max) {
@@ -224,8 +229,11 @@ class ResourceValidator {
     properties: Record<string, ElementValidator>,
     path: string
   ): void {
-    const object = parent.value as Record<string, unknown>;
-    for (const key of Object.keys(object ?? {})) {
+    const object = parent.value as Record<string, unknown> | undefined;
+    if (!object) {
+      return;
+    }
+    for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
@@ -408,9 +416,7 @@ function matchDiscriminant(
     case 'value':
     case 'pattern':
       if (!element) {
-        throw new OperationOutcomeError(
-          serverError(new Error(`Failed to match slicing discriminator at ${discriminator.path}`))
-        );
+        throw new Error(`Failed to match slicing discriminator at ${discriminator.path}`);
       } else if (!value) {
         return false;
       } else if (matchesSpecifiedValue(value, element)) {
@@ -437,18 +443,18 @@ function matchDiscriminant(
   return false;
 }
 
-function checkSliceElement(value: TypedValue, slicingRules: SlicingRules): string | undefined {
-  nextSlice: for (const slice of slicingRules.slices) {
-    for (const discriminator of slicingRules.discriminator) {
-      const discrimValues = arrayify(getNestedProperty(value, discriminator.path));
-      if (!discrimValues) {
-        return undefined;
-      }
-      if (!discrimValues.some((v) => matchDiscriminant(v, discriminator, slice))) {
-        continue nextSlice;
-      }
+function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undefined): string | undefined {
+  if (!slicingRules) {
+    return undefined;
+  }
+  for (const slice of slicingRules.slices) {
+    if (
+      slicingRules.discriminator.every((discriminator) =>
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
+      )
+    ) {
+      return slice.name;
     }
-    return slice.name;
   }
   return undefined;
 }
