@@ -124,7 +124,6 @@ describe('Logger', () => {
     logger.logAuditEvent({ resourceType: 'AuditEvent' });
     logger.logAuditEvent({ resourceType: 'AuditEvent' });
 
-    // await waitFor(async () => expect(PutLogEventsCommand).toHaveBeenCalled());
     await waitFor(async () => expect(mockCloudWatchLogsClient).toHaveReceivedCommand(PutLogEventsCommand));
 
     // CloudWatch logs should have been created
