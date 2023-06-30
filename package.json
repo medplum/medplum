@@ -68,5 +68,8 @@
     "parserOptions": {
       "project": "./tsconfig.base.json"
     }
+  },
+  "dependencies": {
+    "aws-sdk-client-mock": "^2.2.0"
   }
 }

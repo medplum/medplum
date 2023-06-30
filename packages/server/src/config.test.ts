@@ -1,9 +1,30 @@
+import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { mockClient } from 'aws-sdk-client-mock'
+
 import { getConfig, loadConfig } from './config';
 
-jest.mock('@aws-sdk/client-secrets-manager');
-jest.mock('@aws-sdk/client-ssm');
-
 describe('Config', () => {
+  beforeEach(() => {
+    const secretsManagerMock = mockClient(SecretsManagerClient)
+      secretsManagerMock.on(GetSecretValueCommand).resolves({
+      SecretString: JSON.stringify({ host: 'host', port: 123 }),
+    })
+
+    const ssmMock = mockClient(SSMClient)
+    ssmMock.on(GetParametersByPathCommand).resolves({
+      Parameters: [
+        { Name: 'baseUrl', Value: 'https://www.example.com/' },
+        { Name: 'DatabaseSecrets', Value: 'DatabaseSecretsArn' },
+        { Name: 'RedisSecrets', Value: 'RedisSecretsArn' },
+        { Name: 'port', Value: '8080' },
+        { Name: 'botCustomFunctionsEnabled', Value: 'true' },
+        { Name: 'logAuditEvents', Value: 'true' },
+        { Name: 'registerEnabled', Value: 'false' },
+      ],
+    })
+  })
+
   test('Unrecognized config', async () => {
     await expect(loadConfig('unrecognized')).rejects.toThrow();
   });
