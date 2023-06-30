@@ -3,7 +3,7 @@ import { CloudFormationClient } from '@aws-sdk/client-cloudformation';
 import { CloudFrontClient } from '@aws-sdk/client-cloudfront';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { S3Client } from '@aws-sdk/client-s3';
-import { PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
 import { randomUUID } from 'crypto';
@@ -41,6 +41,8 @@ describe('init command', () => {
     });
 
     const ssmClient = mockClient(SSMClient);
+
+    ssmClient.on(GetParameterCommand).rejects({ name: 'ParameterNotFound' });
 
     ssmClient.on(PutParameterCommand).resolves({});
 
@@ -189,6 +191,7 @@ describe('init command', () => {
 
     readline.createInterface = jest.fn(() =>
       mockReadline(
+        'y', // Do you want to continue without AWS credentials?
         'foo',
         filename,
         'us-bad-1', // Special fake region for mock clients
@@ -489,7 +492,7 @@ describe('init command', () => {
 });
 
 function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn() };
+  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
   const debug = false;
   for (const answer of answers) {
     result.question.mockImplementationOnce((q: string, cb: (answer: string) => void) => {
