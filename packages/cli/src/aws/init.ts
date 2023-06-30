@@ -43,7 +43,7 @@ export async function initStackCommand(): Promise<void> {
   const currentAccountId = await getAccountId(config.region);
   if (!currentAccountId) {
     print('It appears that you do not have AWS credentials configured.');
-    print('AWS credntials are not strictly required, but will enable some additional features.');
+    print('AWS credentials are not strictly required, but will enable some additional features.');
     print('If you intend to use AWS credentials, please configure them now.');
     await checkOk('Do you want to continue without AWS credentials?');
   }

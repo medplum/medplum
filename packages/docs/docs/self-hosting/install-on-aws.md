@@ -90,7 +90,7 @@ Follow the [Creating and verifying identities in Amazon SES](https://docs.aws.am
 
 ### Choose an environment name
 
-Throughout this document, instructions will refer to an "environment name". This environment name is used in multiple places:
+Throughout this document, instructions will refer to an "environment name". This environment name is used in multiple places, for example an environment named `demo` will result in:
 
 1. As part of config file names (i.e., `medplum.demo.config.json`)
 2. As the base of CloudFormation stack names (i.e., `MedplumDemo`)
