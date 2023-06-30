@@ -63,6 +63,17 @@ describe('CLI rest', () => {
     expect(console.log).toBeCalledWith(expect.stringMatching('urn:uuid'));
   });
 
+  test('Get command with fhir-url-path flag', async () => {
+    const medplumGetSpy = jest.spyOn(medplum, 'get').mockImplementation((): any => {
+      return {
+        text: jest.fn(),
+      };
+    });
+
+    await main(['node', 'index.js', 'get', `Patient`, '--fhir-url-path', 'fhirpathtest']);
+    expect(medplumGetSpy).toBeCalledWith('fhirpathtest/Patient');
+  });
+
   test('Get command with invalid flag', async () => {
     await medplum.createResource<Patient>({ resourceType: 'Patient' });
 
@@ -73,6 +84,16 @@ describe('CLI rest', () => {
   test('Post command', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
     expect(console.log).toBeCalledWith(expect.stringMatching('Patient'));
+  });
+
+  test('Post command with empty body', async () => {
+    await main(['node', 'index.js', 'post', 'Patient', '']);
+    expect(console.error).toBeCalledWith(expect.stringMatching(`Error: Cannot read properties of undefined`));
+  });
+
+  test('Post command with invalid json', async () => {
+    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType" }']);
+    expect(console.error).toBeCalledWith(expect.stringMatching(`Error:`));
   });
 
   test('Put command', async () => {

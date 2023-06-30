@@ -1,7 +1,7 @@
 import { CreateInvalidationCommand } from '@aws-sdk/client-cloudfront';
 import { PutObjectCommand } from '@aws-sdk/client-s3';
 import fastGlob from 'fast-glob';
-import { createReadStream, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'fs';
+import { createReadStream, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import fetch from 'node-fetch';
 import { tmpdir } from 'os';
 import { join, sep } from 'path';
@@ -110,7 +110,7 @@ function replaceVariables(folderName: string, replacements: Record<string, strin
 function replaceVariablesInFile(fileName: string, replacements: Record<string, string>): void {
   let contents = readFileSync(fileName, 'utf-8');
   for (const [placeholder, replacement] of Object.entries(replacements)) {
-    contents = contents.replaceAll(`process.env.${placeholder}`, `'${replacement}'`);
+    contents = contents.replaceAll(`__${placeholder}__`, replacement);
   }
   writeFileSync(fileName, contents);
 }

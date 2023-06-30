@@ -47,7 +47,7 @@ import {
 import { ReadablePromise } from './readablepromise';
 import { ClientStorage } from './storage';
 import { globalSchema, IndexedStructureDefinition, indexSearchParameter, indexStructureDefinition } from './types';
-import { arrayBufferToBase64, createReference, ProfileResource } from './utils';
+import { arrayBufferToBase64, createReference, ProfileResource, sleep } from './utils';
 
 export const MEDPLUM_VERSION = process.env.MEDPLUM_VERSION ?? '';
 
@@ -2452,9 +2452,7 @@ export class MedplumClient extends EventTarget {
       } catch (err: any) {
         this.retryCatch(retry, maxRetries, err);
       }
-      await new Promise((resolve) => {
-        setTimeout(resolve, retryDelay);
-      });
+      await sleep(retryDelay);
     }
     return response as Response;
   }
@@ -2479,9 +2477,7 @@ export class MedplumClient extends EventTarget {
           }
         }
       }
-      await new Promise((resolve) => {
-        setTimeout(resolve, retryDelay);
-      });
+      await sleep(retryDelay);
     }
     return this.parseResponse(resultResponse as Response, 'POST', statusUrl);
   }

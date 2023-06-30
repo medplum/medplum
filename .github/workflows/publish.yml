@@ -30,7 +30,11 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          KEEP_ENV_VARS: 'true'
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
       - name: Publish
         run: ./scripts/publish.sh
         env:

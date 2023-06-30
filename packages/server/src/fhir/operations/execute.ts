@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
-import { Hl7Message, Operator, badRequest, createReference, getIdentifier, resolveId } from '@medplum/core';
+import { Hl7Message, Operator, badRequest, createReference, getIdentifier, resolveId, allOk } from '@medplum/core';
 import { AuditEvent, Bot, Login, Organization, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { TextDecoder, TextEncoder } from 'util';
@@ -69,7 +69,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
   res
     .status(result.success ? 200 : 400)
     .type(getResponseContentType(req))
-    .send(result.returnValue || badRequest(result.logResult));
+    .send(result.returnValue ?? (result.success ? allOk : badRequest(result.logResult)));
 });
 
 /**

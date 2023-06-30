@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { createTestProject, initTestAuth, waitFor } from '../../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { systemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
 import { BulkExporter } from './utils/bulkexporter';
@@ -104,14 +104,12 @@ describe('Group Export', () => {
 
     // Check the export status
     const contentLocation = new URL(res6.headers['content-location']);
+    await waitForAsyncJob(res6.headers['content-location'], app, accessToken);
 
-    let contentLocationRes: any;
-    await waitFor(async () => {
-      contentLocationRes = await request(app)
-        .get(contentLocation.pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(contentLocationRes.status).toBe(200);
-    });
+    const contentLocationRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(contentLocationRes.status).toBe(200);
 
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(4);
@@ -201,14 +199,12 @@ describe('Group Export', () => {
 
     // Check the export status
     const contentLocation = new URL(res5.headers['content-location']);
+    await waitForAsyncJob(res5.headers['content-location'], app, accessToken);
 
-    let contentLocationRes: any;
-    await waitFor(async () => {
-      contentLocationRes = await request(app)
-        .get(contentLocation.pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(contentLocationRes.status).toBe(200);
-    });
+    const contentLocationRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(contentLocationRes.status).toBe(200);
 
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output).toHaveLength(3);
@@ -282,14 +278,12 @@ describe('Group Export', () => {
 
     // Check the export status
     const contentLocation = new URL(res4.headers['content-location']);
+    await waitForAsyncJob(res4.headers['content-location'], app, accessToken);
 
-    let contentLocationRes: any;
-    await waitFor(async () => {
-      contentLocationRes = await request(app)
-        .get(contentLocation.pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(contentLocationRes.status).toBe(200);
-    });
+    const contentLocationRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(contentLocationRes.status).toBe(200);
 
     const output = contentLocationRes.body.output as BulkDataExportOutput[];
     expect(output.some((o) => o.type === 'Patient')).toBeTruthy();
@@ -314,6 +308,7 @@ describe('Group Export', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(202);
     expect(res4.headers['content-location']).toBeDefined();
+    await waitForAsyncJob(res4.headers['content-location'], app, accessToken);
   });
 
   test('groupExportResources without members', async () => {
