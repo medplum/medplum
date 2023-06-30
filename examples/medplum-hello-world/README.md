@@ -13,7 +13,7 @@ This example app demonstrates the following:
 - Adding basic URL routing
 - Using the [Medplum client](https://www.medplum.com/docs/sdk/classes/MedplumClient) to search for FHIR resources
 - Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
-- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--page) to display FHIR data
+- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display FHIR data
 
 ### Getting Started
 

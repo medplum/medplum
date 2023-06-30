@@ -12,7 +12,7 @@ import { generateAccessToken } from '../oauth/keys';
 import { createSearchParameters } from '../seeds/searchparameters';
 import { createStructureDefinitions } from '../seeds/structuredefinitions';
 import { createValueSets } from '../seeds/valuesets';
-import { createTestProject } from '../test.setup';
+import { createTestProject, waitForAsyncJob } from '../test.setup';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -138,7 +138,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location']);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
@@ -193,7 +193,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location']);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Rebuild StructureDefinitions as super admin with respond-async error', async () => {
@@ -248,7 +248,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location']);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Rebuild searchparameters as super admin with respond-async error', async () => {
@@ -327,7 +327,7 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res.headers['content-location']);
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Reindex with respond-async error', async () => {
@@ -571,24 +571,6 @@ describe('Super Admin routes', () => {
 
     expect(res1.status).toEqual(202);
     expect(res1.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res1.headers['content-location']);
+    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
 });
-
-async function waitForAsyncJob(contentLocation: string): Promise<void> {
-  for (let i = 0; i < 10; i++) {
-    const res = await request(app)
-      .get(new URL(contentLocation).pathname)
-      .set('Authorization', 'Bearer ' + adminAccessToken);
-    if (res.status !== 202) {
-      return;
-    }
-    await sleep(1000);
-  }
-  throw new Error('Async job did not complete');
-}
-
-const sleep = (ms: number): Promise<void> =>
-  new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });

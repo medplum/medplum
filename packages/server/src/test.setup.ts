@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource, sleep } from '@medplum/core';
 import {
   AccessPolicy,
   Bundle,
@@ -10,6 +10,8 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { Express } from 'express';
+import request from 'supertest';
 import { inviteUser } from './admin/invite';
 import { systemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
@@ -182,4 +184,17 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
         });
     }, 100);
   });
+}
+
+export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<void> {
+  for (let i = 0; i < 10; i++) {
+    const res = await request(app)
+      .get(new URL(contentLocation).pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    if (res.status !== 202) {
+      return;
+    }
+    await sleep(1000);
+  }
+  throw new Error('Async Job did not complete');
 }
